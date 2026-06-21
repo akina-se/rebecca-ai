@@ -1,0 +1,28 @@
+{
+  "name": "rebecca-ai-gal",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node src/index.js",
+    "deploy": "node scripts/deploy.js",
+    "chat": "node scripts/chat.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@google-cloud/firestore": "^8.6.0",
+    "@google-cloud/tasks": "^6.2.3",
+    "@google/genai": "^2.9.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "twitter-api-v2": "^1.29.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
+  }
+}
