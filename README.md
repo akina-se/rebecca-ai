@@ -2,7 +2,7 @@
 
 This is the backend system for the unconditional affirmation Gyaru AI, "Rebecca". It operates entirely serverless, utilizing X (formerly Twitter), Google Cloud Platform (GCP), and the Gemini API.
 
-[日本語版の仕様書はこちら (Japanese Specification)](docs/specification_jp.md) | [English Specification](docs/specification_en.md)
+[日本語版の仕様書はこちら (Japanese Specification)](docs/specification_ja.md) | [English Specification](docs/specification_en.md)
 
 ## Features
 - **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory without losing detail.
