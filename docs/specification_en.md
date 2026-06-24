@@ -1,6 +1,6 @@
 # Rebecca IP Project: System Specification
 
-[日本語版の仕様書はこちら (Japanese Specification)](specification.md)
+[日本語版の仕様書はこちら (Japanese Specification)](specification_jp.md)
 
 ## 1. Architecture and Tech Stack
 This system is built with a highly scalable, fully serverless architecture that maximizes the GCP free tier to maintain low costs.
