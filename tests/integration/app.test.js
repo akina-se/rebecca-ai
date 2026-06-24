@@ -87,6 +87,36 @@ describe('Integration Tests', () => {
             expect(firestore.appendEpisodicBuffer).toHaveBeenCalledTimes(2); // user and model
         });
 
+        it('should process english reply task successfully', async () => {
+            const payload = {
+                tweetId: '12345',
+                text: '@rebecca_ai Hello',
+                authorId: 'user_1'
+            };
+
+            const gemini = require('../../src/services/gemini');
+            gemini.detectLanguage.mockResolvedValueOnce('en');
+            const xApi = require('../../src/services/xApi');
+            const firestore = require('../../src/services/firestore');
+
+            const response = await request(app)
+                .post('/worker/reply')
+                .send(payload);
+            
+            expect(response.status).toBe(200);
+            
+            // Check if reply was generated
+            expect(gemini.generateReply).toHaveBeenCalled();
+            
+            // Verify that English prompt logic was used (indirectly via generated system prompt if possible, but generateReply args will have it)
+            const generateReplyCalls = gemini.generateReply.mock.calls;
+            const lastCall = generateReplyCalls[generateReplyCalls.length - 1];
+            expect(lastCall[0]).toContain('You are an AI developed by Gemitech'); // BASE_SYSTEM_PROMPT_EN starts or contains this
+
+            // Check if reply was posted
+            expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');
+        });
+
         it('should block if rate limit is exceeded', async () => {
             const firestore = require('../../src/services/firestore');
             // Mock rate limit exceeded

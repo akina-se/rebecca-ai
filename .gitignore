@@ -15,3 +15,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Test coverage & Generated artifacts
+coverage/
+artifacts/
