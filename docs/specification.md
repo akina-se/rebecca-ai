@@ -1,5 +1,7 @@
 # レベッカIP化プロジェクト システム仕様書
 
+[English Specification is here](specification_en.md)
+
 ## 1. システム構成と技術スタック (Architecture)
 本システムは、GCPの無料枠を最大限活用し、低コストかつスケーラブルな完全サーバーレスアーキテクチャで構築する。
 

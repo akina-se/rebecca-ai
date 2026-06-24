@@ -1,16 +1,18 @@
-# レベッカIP化プロジェクト：AIチャットボット「Rebecca」
+# Rebecca IP Project: AI Chatbot "Rebecca"
 
-全肯定ギャルAI「レベッカ」のバックエンドシステムです。X（旧Twitter）、Google Cloud Platform（GCP）、Gemini APIを活用し、完全サーバーレスで動作します。
+This is the backend system for the unconditional affirmation Gyaru AI, "Rebecca". It operates entirely serverless, utilizing X (formerly Twitter), Google Cloud Platform (GCP), and the Gemini API.
 
-## 機能・特徴
-- **トリプル・バッファ記憶システム**: 会話コンテキストを漏らさず長期記憶化。
-- **動的コンテキスト注入**: 朝・深夜の時間帯や、ユーザーの放置日数、社畜キーワード（残業、上司等）に反応してプロンプトを動的に変更。
-- **多言語自動分岐（Language Separation）**: LLMを用いた言語判定により、英語ユーザーには完全に英語のシステムプロンプトとコンテキスト（English Slang仕様）に切り替え、コードスイッチングを防ぎます。
-- **意図的遅延**: Xからのメンションに対し、1〜3分のランダムな遅延を挟んで人間らしさを演出。
-- **厳格なレートリミット**: GCP破産・X API課金爆発を防ぐための多段コスト管理（全体月間、全体日間、ユーザーダイナミック配分）。
+[日本語版の仕様書はこちら (Japanese Specification)](docs/specification.md) | [English Specification](docs/specification_en.md)
 
-## 技術スタック
-- **言語**: Node.js / Express
+## Features
+- **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory without losing detail.
+- **Dynamic Context Injection**: Dynamically alters the prompt based on time of day (morning/late night), user absence duration, and overworked-related keywords (e.g., overtime, boss).
+- **Automatic Language Separation**: Uses LLM-based language detection to switch completely to an English system prompt and context (featuring English Slang) for English-speaking users, preventing awkward code-switching.
+- **Intentional Delay**: Introduces a random 1-3 minute delay before replying to X mentions to simulate human behavior.
+- **Strict Rate Limiting**: Multi-tiered cost management (Global Monthly, Global Daily, Dynamic User Allocation) to prevent GCP budget blowouts and X API billing explosions.
+
+## Tech Stack
+- **Language**: Node.js / Express
 - **LLM**: Gemini 3.1 Flash Lite (`@google/genai`)
 - **DB**: Cloud Firestore
 - **Queue**: Cloud Tasks
@@ -18,21 +20,21 @@
 - **Scheduler**: Cloud Scheduler
 - **SNS Integration**: X API v2 (`twitter-api-v2`)
 
-## セットアップ手順
+## Setup Instructions
 
-### 1. GCPプロジェクトの設定
-1. GCPコンソールにて新しいプロジェクトを作成し、課金を有効にします（無料枠利用の場合も必須）。
-2. 以下のAPIを有効化します：
+### 1. GCP Project Setup
+1. Create a new project in the GCP Console and enable billing (required even for the free tier).
+2. Enable the following APIs:
    - Cloud Run API
    - Cloud Tasks API
    - Cloud Firestore API
    - Cloud Scheduler API
-3. Firestoreデータベースを作成します（ネイティブモード推奨）。
-4. Cloud Tasksのキューを作成します：
+3. Create a Firestore database (Native mode recommended).
+4. Create a Cloud Tasks queue:
    ```bash
    gcloud tasks queues create rebecca-reply-queue --location=asia-northeast1
    ```
-5. Firestoreのベクトル検索インデックスを作成します（RAG記憶用）：
+5. Create a Firestore vector search index (for RAG memory):
    ```bash
    gcloud alpha firestore indexes composite create \
      --collection-group=rag_memories \
@@ -42,8 +44,8 @@
      --project=your-gcp-project-id
    ```
 
-### 2. 環境変数の設定
-プロジェクトルートに `.env` ファイルを作成し、以下の内容を記述します：
+### 2. Environment Variables
+Create a `.env` file in the project root and configure the following variables:
 
 ```env
 # Server
@@ -53,10 +55,10 @@ PORT=8080
 GCP_PROJECT_ID=your-gcp-project-id
 GCP_LOCATION=asia-northeast1
 GCP_TASK_QUEUE_NAME=rebecca-reply-queue
-# デプロイ後にCloud RunのURLを発行し、ここに設定します
+# Generate a Cloud Run URL after deployment and set it here
 WORKER_URL=https://your-cloud-run-service-url.a.run.app
 
-# X API (Free Plan以上)
+# X API (Free Plan or higher)
 X_API_KEY=
 X_API_SECRET=
 X_ACCESS_TOKEN=
@@ -69,37 +71,37 @@ GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
-### 3. ローカルでの実行・テスト
+### 3. Local Execution & Testing
 ```bash
-# 依存関係のインストール
+# Install dependencies
 npm install
 
-# テストの実行（単体・インテグレーション・モック使用）
+# Run tests (Unit, Integration with Mocks)
 npm test
 
-# ローカルでチャットをテストする
+# Test chatting locally via CLI
 npm run chat
 
-# LLM as a Judge によるプロンプト安全性テスト
+# Run LLM-as-a-Judge Prompt Safety tests
 npm run test:eval
 
-# Evolutionバッチ（集合無意識抽出＆監査）の手動テスト
+# Manually trigger the Evolution batch (Collective Unconscious Extraction & Auditing)
 npm run batch:evolution
 
-# ニュース定時配信バッチ（Proactive Talk）の手動テスト
+# Manually trigger the News Proactive Post batch
 npm run batch:news
 ```
-※ローカルから webhook を検証するには `ngrok` 等でポート8080を公開し、X Developer PortalでWebhook URLを設定してください。（X API Freeプランの場合、Webhook(Account Activity API)が利用できない可能性があります。その場合は、必要に応じて別途ポーリングする構成へ微調整してください）
+*Note: To test webhooks locally, expose port 8080 using `ngrok` or similar tools and configure the Webhook URL in the X Developer Portal. (If you are on the X API Free Plan, the Account Activity API for webhooks might not be available. In that case, you may need to adjust the architecture to use polling instead.)*
 
-### 4. デプロイ
-提供しているデプロイスクリプトを利用してCloud Runにデプロイします。
-※事前に `gcloud auth login` および `gcloud config set project [YOUR_PROJECT_ID]` を実行してください。
+### 4. Deployment
+Use the provided deployment script to deploy the application to Cloud Run.
+*Make sure to run `gcloud auth login` and `gcloud config set project [YOUR_PROJECT_ID]` beforehand.*
 
 ```bash
 npm run deploy
 ```
 
-## アーキテクチャ図（簡易）
+## Simplified Architecture Diagram
 1. [User] --(Mention)--> [X API] --(Webhook)--> [Cloud Run (Webhook Receiver)]
 2. [Cloud Run] --(Enqueue 1-3min delay)--> [Cloud Tasks]
 3. [Cloud Tasks] --(HTTP POST)--> [Cloud Run (Worker)]
@@ -107,16 +109,16 @@ npm run deploy
 5. [Cloud Run (Worker)] <--(Generate)--> [Gemini API]
 6. [Cloud Run (Worker)] --(Reply)--> [X API]
 
-## ディレクトリ構成
-- `src/index.js` : エントリポイント
-- `src/core/` : コアロジック（記憶管理、コンテキスト注入、レートリミット）
-- `src/services/` : 外部サービス通信（Firestore, Gemini, X, Cloud Tasks）
-- `src/config/` : 設定・環境変数管理
-- `tests/` : 単体・統合テスト
-- `scripts/` : デプロイ等の便利スクリプト
+## Directory Structure
+- `src/index.js` : Entry point
+- `src/core/` : Core logic (Memory management, Context injection, Rate limiting)
+- `src/services/` : External service integrations (Firestore, Gemini, X, Cloud Tasks)
+- `src/config/` : Configuration and environment variables
+- `tests/` : Unit and integration tests
+- `scripts/` : Deployment and utility scripts
 
-## ライセンス
-このプロジェクトは [MIT ライセンス](LICENSE) の下で公開されています。
+## License
+This project is licensed under the [MIT License](LICENSE).
 
 ## Author
 AKINA
