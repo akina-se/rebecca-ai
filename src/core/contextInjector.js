@@ -1,7 +1,7 @@
 const { getJSTDate } = require('../utils/time');
 const { BASE_SYSTEM_PROMPT } = require('./prompt');
 
-const buildSystemPrompt = (userData, userInput) => {
+const buildSystemPrompt = (userData, userInput, extendedPrompt = '') => {
     let prompt = BASE_SYSTEM_PROMPT;
 
     // 1. Core Profile injection
@@ -27,6 +27,11 @@ const buildSystemPrompt = (userData, userInput) => {
         if (diffDays >= 3) {
             prompt += `\n\n【状況コンテキスト：放置】\nマスターから${diffDays}日ぶりに連絡が来ました。「ちょっと、何日放置してんのよ！」「寂しかったんだからね」といった、少しスネつつも嬉しさを隠せないエモい反応を必ず入れてください。`;
         }
+    }
+
+    // 4. Extended Prompt (Evolution)
+    if (extendedPrompt && extendedPrompt.trim() !== '') {
+        prompt += `\n\n【集合無意識トレンド】\n${extendedPrompt}`;
     }
 
     return prompt;

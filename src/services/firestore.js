@@ -90,6 +90,37 @@ const saveRawConversationLog = async (userId, userText, aiText) => {
     });
 };
 
+const getRecentConversationLogs = async (days = 7) => {
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - days);
+    const sinceIso = sinceDate.toISOString();
+
+    // 最新のログを最大1000件取得（トークン上限やAPI処理時間を考慮）
+    const snapshot = await firestore.collection('conversation_logs')
+        .where('timestamp', '>=', sinceIso)
+        .orderBy('timestamp', 'desc')
+        .limit(1000)
+        .get();
+
+    const logs = [];
+    snapshot.forEach(doc => logs.push(doc.data()));
+    return logs;
+};
+
+const getExtendedPrompt = async () => {
+    const docRef = firestore.collection('system').doc('persona');
+    const doc = await docRef.get();
+    return doc.exists ? doc.data().extended_prompt || '' : '';
+};
+
+const saveExtendedPrompt = async (promptText) => {
+    const docRef = firestore.collection('system').doc('persona');
+    await docRef.set({
+        extended_prompt: promptText,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+};
+
 module.exports = {
   firestore,
   getUserDoc,
@@ -103,4 +134,7 @@ module.exports = {
   getAllUsers,
   getDailyActiveUsersCount,
   saveRawConversationLog,
+  getRecentConversationLogs,
+  getExtendedPrompt,
+  saveExtendedPrompt,
 };

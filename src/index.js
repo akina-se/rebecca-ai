@@ -1,6 +1,7 @@
 const express = require('express');
 const config = require('./config');
 const { getWorkingMemory, saveInteraction, runGlobalDreamingBatch } = require('./core/memory');
+const { runGlobalEvolutionBatch } = require('./core/evolution');
 const { buildSystemPrompt } = require('./core/contextInjector');
 const { checkAndIncrementRateLimits } = require('./core/rateLimiter');
 const firestore = require('./services/firestore');
@@ -64,7 +65,8 @@ app.post('/worker/reply', async (req, res) => {
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
         // 3. Context Injection (Build prompt)
-        const systemPrompt = buildSystemPrompt(userData, text);
+        const extendedPrompt = await firestore.getExtendedPrompt();
+        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt);
 
         // 4. Generate AI Reply
         const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, text);
@@ -93,6 +95,18 @@ app.get('/batch/dreaming', async (req, res) => {
         console.log('Global Dreaming Batch completed successfully.');
     } catch (error) {
         console.error('Global Dreaming Batch failed:', error);
+    }
+});
+
+// Batch process for Evolution (Trend Analysis)
+app.get('/batch/evolution', async (req, res) => {
+    // Triggered by Cloud Scheduler (e.g. Sunday 5AM)
+    res.status(200).send('Evolution Batch started');
+    try {
+        await runGlobalEvolutionBatch();
+        console.log('Global Evolution Batch completed successfully.');
+    } catch (error) {
+        console.error('Global Evolution Batch failed:', error);
     }
 });
 
