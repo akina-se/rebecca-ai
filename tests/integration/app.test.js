@@ -22,6 +22,7 @@ jest.mock('../../src/services/gemini', () => ({
     generateReply: jest.fn().mockResolvedValue('Mock AI Reply'),
     generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+    detectLanguage: jest.fn().mockResolvedValue('ja'),
 }));
 
 jest.mock('../../src/services/xApi', () => ({

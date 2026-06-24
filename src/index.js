@@ -81,16 +81,19 @@ app.post('/worker/reply', async (req, res) => {
 
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
-        // RAG Pipeline: Retrieve Episodic Memories
-        const recentContextStr = workingMemory.map(m => `${m.role === 'user' ? 'User' : 'Rebecca'}: ${m.content}`).join('\n');
-        const searchQuery = await gemini.generateSearchQuery(recentContextStr, text);
-        const queryVector = await gemini.generateEmbedding(searchQuery);
-        const ragMemories = await firestore.findRagMemories(authorId, queryVector);
-
-        // 3. Context Injection (Build prompt)
+        // 3. RAG Retrieval & Context Injection (Build prompt)
         const extendedPrompt = await firestore.getExtendedPrompt();
         const timelineSummary = await firestore.getTimelineSummary();
-        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt, timelineSummary, ragMemories);
+        
+        let ragMemories = [];
+        const query = await gemini.generateSearchQuery(text, workingMemory);
+        if (query) {
+            const queryEmb = await gemini.generateEmbedding(query);
+            ragMemories = await firestore.findRagMemories(authorId, queryEmb);
+        }
+
+        const lang = await gemini.detectLanguage(text);
+        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt, timelineSummary, ragMemories, lang);
 
         // 4. Generate AI Reply
         const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, text);

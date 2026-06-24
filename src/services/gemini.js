@@ -304,6 +304,25 @@ ${input}
     }
 };
 
+const detectLanguage = async (text) => {
+    if (!ai || !text) return 'ja';
+    const prompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
+テキスト: "${text}"`;
+    try {
+        const response = await ai.models.generateContent({
+            // 言語判定は軽量なのでモデルは問わないが、judgeModelかデフォルトを使う
+            model: config.gemini.judgeModel || config.gemini.model,
+            contents: prompt,
+            config: { maxOutputTokens: 5 }
+        });
+        const lang = response.text.trim().toLowerCase();
+        return lang.includes('en') ? 'en' : 'ja';
+    } catch (e) {
+        console.error('Error detecting language:', e);
+        return 'ja'; // Fallback to Japanese
+    }
+};
+
 module.exports = {
     generateReply,
     generateDreaming,
@@ -312,6 +331,7 @@ module.exports = {
     analyzeUserProfile,
     generateNewsPost,
     generateTimelineSummary,
+    detectLanguage,
     generateEmbedding,
     generateSearchQuery
 };
