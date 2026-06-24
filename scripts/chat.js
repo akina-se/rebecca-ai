@@ -7,6 +7,12 @@ const { getWorkingMemory } = require('../src/core/memory');
 const { buildSystemPrompt } = require('../src/core/contextInjector');
 
 const DB_FILE = path.join(__dirname, '../local_db.json');
+const RAW_LOG_FILE = path.join(__dirname, '../local_raw_logs.jsonl');
+
+const appendRawLog = (userId, userText, aiText) => {
+    const entry = JSON.stringify({ userId, userText, aiText, timestamp: new Date().toISOString() }) + '\n';
+    fs.appendFileSync(RAW_LOG_FILE, entry, 'utf8');
+};
 
 // Local DB Mock
 const readDB = () => {
@@ -72,6 +78,9 @@ const chatLoop = async () => {
             userData.episodicBuffer.push({ role: 'model', content: reply, timestamp: new Date().toISOString() });
             userData.last_reply_date = new Date().toISOString();
             writeDB(userData);
+
+            // Append to local raw logs for analytics
+            appendRawLog('local_user', input, reply);
 
         } catch (error) {
             console.error('\nエラーが発生しました:', error.message);

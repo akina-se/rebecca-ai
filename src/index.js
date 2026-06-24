@@ -75,6 +75,9 @@ app.post('/worker/reply', async (req, res) => {
         // 6. Save Interaction to Memory
         await saveInteraction(authorId, text, aiResponseText);
 
+        // 7. Save Raw Log for Analysis
+        await firestore.saveRawConversationLog(authorId, text, aiResponseText);
+
         console.log(`Successfully replied to tweet ${tweetId} by user ${authorId}`);
     } catch (error) {
         console.error('Error processing reply in worker:', error);

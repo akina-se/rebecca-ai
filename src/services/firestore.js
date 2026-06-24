@@ -72,6 +72,24 @@ const getDailyActiveUsersCount = async (dateStr) => {
     return doc.exists ? doc.data().count : 1; // Default to 1 to avoid div by zero
 };
 
+const saveRawConversationLog = async (userId, userText, aiText) => {
+    // プロンプト改善や分析のため、圧縮されない生ログとして保存する
+    const logRef = firestore.collection('conversation_logs').doc();
+    const now = new Date();
+    
+    // リテンション（TTL）の計算
+    const expireAt = new Date(now);
+    expireAt.setDate(expireAt.getDate() + config.logs.retentionDays);
+
+    await logRef.set({
+        userId,
+        userText,
+        aiText,
+        timestamp: now.toISOString(),
+        expireAt: Firestore.Timestamp.fromDate(expireAt)
+    });
+};
+
 module.exports = {
   firestore,
   getUserDoc,
@@ -84,4 +102,5 @@ module.exports = {
   getUserDailyLimit,
   getAllUsers,
   getDailyActiveUsersCount,
+  saveRawConversationLog,
 };

@@ -101,3 +101,6 @@ npm run deploy
 
 ## ライセンス
 このプロジェクトは [MIT ライセンス](LICENSE) の下で公開されています。
+
+## Author
+AKINA
