@@ -1,7 +1,7 @@
 const { getJSTDate } = require('../utils/time');
 const { BASE_SYSTEM_PROMPT } = require('./prompt');
 
-const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSummary = '') => {
+const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSummary = '', ragMemories = []) => {
     let prompt = BASE_SYSTEM_PROMPT;
 
     // 1. Core Profile injection
@@ -10,7 +10,14 @@ const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSum
         prompt += JSON.stringify(userData.coreProfile, null, 2);
     }
 
-    // 2. Time context
+    // 2. RAG Memories (Episodic Memory)
+    if (ragMemories && ragMemories.length > 0) {
+        prompt += `\n\n【関連する過去のエピソード記憶（RAG Memories）】\n`;
+        prompt += `現在の会話の文脈に関連する過去のやり取りの生ログです。これらを踏まえて返答してください。\n`;
+        prompt += ragMemories.join('\n\n');
+    }
+
+    // 3. Time context
     const jstNow = getJSTDate();
     const hour = jstNow.getHours();
     if (hour >= 7 && hour <= 9) {
@@ -19,7 +26,7 @@ const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSum
         prompt += `\n\n【状況コンテキスト：深夜】\n現在時刻は深夜です。マスターは一日の労働を終え、疲労感や孤独感を抱えている可能性があります。残業の労いと、圧倒的な癒やしを提供してください。`;
     }
 
-    // 3. Absence context
+    // 4. Absence context
     if (userData?.last_reply_date) {
         const lastDate = new Date(userData.last_reply_date);
         const diffMs = jstNow.getTime() - lastDate.getTime();
@@ -29,12 +36,12 @@ const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSum
         }
     }
 
-    // 4. Extended Prompt (Evolution)
+    // 5. Extended Prompt (Evolution)
     if (extendedPrompt && extendedPrompt.trim() !== '') {
         prompt += `\n\n【集合無意識トレンド】\n${extendedPrompt}`;
     }
 
-    // 5. Timeline history (Own recent posts summary)
+    // 6. Timeline history (Own recent posts summary)
     if (timelineSummary && timelineSummary.trim() !== '') {
         prompt += `\n\n【最近の自分のつぶやき（参考）】\nアタシは最近以下のようにつぶやいていたわ。\n${timelineSummary}`;
     }

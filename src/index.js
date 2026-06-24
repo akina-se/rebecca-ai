@@ -81,10 +81,16 @@ app.post('/worker/reply', async (req, res) => {
 
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
+        // RAG Pipeline: Retrieve Episodic Memories
+        const recentContextStr = workingMemory.map(m => `${m.role === 'user' ? 'User' : 'Rebecca'}: ${m.content}`).join('\n');
+        const searchQuery = await gemini.generateSearchQuery(recentContextStr, text);
+        const queryVector = await gemini.generateEmbedding(searchQuery);
+        const ragMemories = await firestore.findRagMemories(authorId, queryVector);
+
         // 3. Context Injection (Build prompt)
         const extendedPrompt = await firestore.getExtendedPrompt();
         const timelineSummary = await firestore.getTimelineSummary();
-        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt, timelineSummary);
+        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt, timelineSummary, ragMemories);
 
         // 4. Generate AI Reply
         const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, text);
@@ -92,8 +98,15 @@ app.post('/worker/reply', async (req, res) => {
         // 5. Post to X
         await xApi.replyToMention(tweetId, aiResponseText);
 
-        // 6. Save Interaction to Memory
+        // 6. Save Interaction to Memory (Working Memory / Episodic Buffer)
         await saveInteraction(authorId, text, aiResponseText);
+
+        // 6.5. Save RAG Memory (Long-term Episodic Vector)
+        const combinedText = `User: ${text}\nRebecca: ${aiResponseText}`;
+        const memoryVector = await gemini.generateEmbedding(combinedText);
+        if (memoryVector && memoryVector.length > 0) {
+            await firestore.saveRagMemory(authorId, combinedText, memoryVector);
+        }
 
         // 7. Save Raw Log for Analysis
         await firestore.saveRawConversationLog(authorId, text, aiResponseText);

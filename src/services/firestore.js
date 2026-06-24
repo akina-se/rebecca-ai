@@ -160,6 +160,53 @@ const getRecentTimelinePosts = async (limit = 3) => {
     return posts.reverse(); // 古い順に戻す
 };
 
+const saveRagMemory = async (userId, text, embedding) => {
+    const memRef = firestore.collection('rag_memories').doc();
+    const now = new Date();
+    await memRef.set({
+        userId,
+        text,
+        embedding: Firestore.FieldValue.vector(embedding),
+        timestamp: now.toISOString()
+    });
+
+    // 上限（キャップ）管理
+    const maxMemories = config.rag.maxMemories;
+    const snapshot = await firestore.collection('rag_memories')
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'asc')
+        .get();
+
+    if (snapshot.size > maxMemories) {
+        const docsToDelete = snapshot.size - maxMemories;
+        const batch = firestore.batch();
+        for (let i = 0; i < docsToDelete; i++) {
+            batch.delete(snapshot.docs[i].ref);
+        }
+        await batch.commit();
+    }
+};
+
+const findRagMemories = async (userId, queryVector, limit = 3) => {
+    try {
+        const snapshot = await firestore.collection('rag_memories')
+            .where('userId', '==', userId)
+            .findNearest('embedding', Firestore.FieldValue.vector(queryVector), {
+                limit: limit,
+                distanceMeasure: 'COSINE'
+            })
+            .get();
+            
+        const memories = [];
+        snapshot.forEach(doc => memories.push(doc.data().text));
+        return memories;
+    } catch (e) {
+        console.error('Error during vector search (findNearest):', e);
+        // インデックスがない場合などにエラーになるため、空配列を返す
+        return [];
+    }
+};
+
 module.exports = {
   firestore,
   getUserDoc,
@@ -179,5 +226,7 @@ module.exports = {
   getTimelineSummary,
   saveTimelineSummary,
   saveTimelinePost,
-  getRecentTimelinePosts
+  getRecentTimelinePosts,
+  saveRagMemory,
+  findRagMemories
 };

@@ -31,6 +31,15 @@
    ```bash
    gcloud tasks queues create rebecca-reply-queue --location=asia-northeast1
    ```
+5. Firestoreのベクトル検索インデックスを作成します（RAG記憶用）：
+   ```bash
+   gcloud alpha firestore indexes composite create \
+     --collection-group=rag_memories \
+     --query-scope=COLLECTION \
+     --field-config=field-path=embedding,vector-config='{"dimension":768,"flat": "{}"}' \
+     --field-config=field-path=userId,order=ASCENDING \
+     --project=your-gcp-project-id
+   ```
 
 ### 2. 環境変数の設定
 プロジェクトルートに `.env` ファイルを作成し、以下の内容を記述します：

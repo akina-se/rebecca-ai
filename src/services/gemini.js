@@ -22,20 +22,63 @@ const generateReply = async (systemInstruction, history, userInput, mediaUrls = 
         // Add current input
         contents.push({ role: 'user', parts: [{ text: userInput }] });
 
+        const baseConfig = {
+            systemInstruction: systemInstruction,
+            maxOutputTokens: 120,
+            safetySettings: [
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
+            ]
+        };
+
         const response = await ai.models.generateContent({
             model: config.gemini.model,
             contents: contents,
             config: {
-                systemInstruction: systemInstruction,
-                maxOutputTokens: 120,
-                safetySettings: [
-                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
-                ]
+                ...baseConfig,
+                tools: [{
+                    functionDeclarations: [
+                        {
+                            name: "search_news",
+                            description: "Fetches the latest news headlines. Useful when the user asks about current events, news, or today's topics."
+                        }
+                    ]
+                }]
             }
         });
+
+        // Function Calling
+        if (response.functionCalls && response.functionCalls.length > 0) {
+            const call = response.functionCalls[0];
+            if (call.name === 'search_news') {
+                const { fetchYahooNewsHeadlines } = require('../core/news');
+                const headlines = await fetchYahooNewsHeadlines();
+                const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
+                
+                // Append model's function call
+                contents.push(response.candidates[0].content);
+                // Append tool response
+                contents.push({
+                    role: 'user',
+                    parts: [{
+                        functionResponse: {
+                            name: call.name,
+                            response: { result: newsResult }
+                        }
+                    }]
+                });
+
+                // Generate final response
+                const finalResponse = await ai.models.generateContent({
+                    model: config.gemini.model,
+                    contents: contents,
+                    config: baseConfig
+                });
+                return finalResponse.text;
+            }
+        }
 
         return response.text;
     } catch (error) {
@@ -226,6 +269,41 @@ ${recentPosts.join('\n')}
     }
 };
 
+const generateEmbedding = async (text) => {
+    if (!ai || !text) return [];
+    try {
+        const response = await ai.models.embedContent({
+            model: config.gemini.embeddingModel,
+            contents: text,
+        });
+        return response.embeddings[0].values;
+    } catch (e) {
+        console.error('Error generating embedding:', e);
+        return [];
+    }
+};
+
+const generateSearchQuery = async (context, input) => {
+    if (!ai) return input;
+    const prompt = `あなたは検索クエリ生成AIです。以下の直近の会話文脈とユーザーの最新の発言を踏まえて、ユーザーの意図を汲み取った「検索用クエリ（短い一文または単語の羅列）」を生成してください。
+【直前の会話文脈】
+${context}
+【ユーザーの最新の発言】
+${input}
+出力は検索クエリのみとし、不要な解説は含めないでください。`;
+    try {
+        const response = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: prompt,
+            config: { maxOutputTokens: 50 }
+        });
+        return response.text.trim();
+    } catch (e) {
+        console.error('Error generating search query:', e);
+        return input;
+    }
+};
+
 module.exports = {
     generateReply,
     generateDreaming,
@@ -233,5 +311,7 @@ module.exports = {
     auditEvolutionPrompt,
     analyzeUserProfile,
     generateNewsPost,
-    generateTimelineSummary
+    generateTimelineSummary,
+    generateEmbedding,
+    generateSearchQuery
 };

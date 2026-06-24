@@ -62,5 +62,6 @@ const runProactiveNewsPostBatch = async () => {
 };
 
 module.exports = {
-    runProactiveNewsPostBatch
+    runProactiveNewsPostBatch,
+    fetchYahooNewsHeadlines
 };

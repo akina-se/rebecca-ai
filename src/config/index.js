@@ -19,6 +19,10 @@ module.exports = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
     model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
+  },
+  rag: {
+    maxMemories: parseInt(process.env.RAG_MAX_MEMORIES) || 100,
   },
   limits: {
     globalMinuteLimit: 5,

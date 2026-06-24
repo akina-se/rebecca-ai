@@ -11,10 +11,17 @@ jest.mock('../../src/services/firestore', () => ({
     getDailyActiveUsersCount: jest.fn().mockResolvedValue(1),
     incrementGlobalRateLimit: jest.fn().mockResolvedValue(),
     incrementUserDailyLimit: jest.fn().mockResolvedValue(),
+    getExtendedPrompt: jest.fn().mockResolvedValue(''),
+    getTimelineSummary: jest.fn().mockResolvedValue(''),
+    saveRawConversationLog: jest.fn().mockResolvedValue(),
+    findRagMemories: jest.fn().mockResolvedValue([]),
+    saveRagMemory: jest.fn().mockResolvedValue(),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
     generateReply: jest.fn().mockResolvedValue('Mock AI Reply'),
+    generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
+    generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
 }));
 
 jest.mock('../../src/services/xApi', () => ({
