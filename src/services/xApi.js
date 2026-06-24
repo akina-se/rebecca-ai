@@ -41,7 +41,36 @@ const getTweetDetails = async (tweetId) => {
     }
 }
 
+const tweet = async (text) => {
+  if (!rwClient) {
+      console.warn('Twitter API client not initialized. Skipping actual API call.');
+      return { data: { id: 'mock_tweet_id' } };
+  }
+  try {
+    const response = await rwClient.v2.tweet(text);
+    return response;
+  } catch (error) {
+    console.error('Error posting tweet:', error);
+    throw error;
+  }
+};
+
+const getUserProfile = async (userId) => {
+    if (!rwClient) return { data: { description: 'ダミーのプロフィール文です。仕事に疲れています。' } };
+    try {
+        const response = await rwClient.v2.user(userId, {
+            'user.fields': ['description']
+        });
+        return response;
+    } catch (error) {
+        console.error('Error getting user profile:', error);
+        throw error;
+    }
+}
+
 module.exports = {
   replyToMention,
-  getTweetDetails
+  getTweetDetails,
+  tweet,
+  getUserProfile
 };

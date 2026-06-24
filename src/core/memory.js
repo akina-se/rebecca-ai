@@ -33,9 +33,23 @@ const processDreamingForUser = async (userId, userData) => {
 };
 
 const runGlobalDreamingBatch = async () => {
+    // 1. 各ユーザーのパーソナルな記憶を統合
     const users = await firestore.getAllUsers();
     for (const user of users) {
         await processDreamingForUser(user.id, user);
+    }
+
+    // 2. 自身の自発ポスト履歴（Timeline）を統合
+    try {
+        const recentPosts = await firestore.getRecentTimelinePosts(10);
+        if (recentPosts.length > 0) {
+            const previousSummary = await firestore.getTimelineSummary();
+            const newSummary = await gemini.generateTimelineSummary(recentPosts, previousSummary);
+            await firestore.saveTimelineSummary(newSummary);
+            console.log("Timeline summary updated:", newSummary);
+        }
+    } catch (e) {
+        console.error("Failed to summarize timeline", e);
     }
 };
 

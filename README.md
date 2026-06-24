@@ -75,6 +75,9 @@ npm run test:eval
 
 # Evolutionバッチ（集合無意識抽出＆監査）の手動テスト
 npm run batch:evolution
+
+# ニュース定時配信バッチ（Proactive Talk）の手動テスト
+npm run batch:news
 ```
 ※ローカルから webhook を検証するには `ngrok` 等でポート8080を公開し、X Developer PortalでWebhook URLを設定してください。（X API Freeプランの場合、Webhook(Account Activity API)が利用できない可能性があります。その場合は、必要に応じて別途ポーリングする構成へ微調整してください）
 

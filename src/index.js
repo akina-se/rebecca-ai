@@ -57,16 +57,34 @@ app.post('/worker/reply', async (req, res) => {
 
         // 2. Fetch User Data & Memory
         let userData = await firestore.getUserDoc(authorId);
+        let isFirstTime = false;
         if (!userData) {
             userData = { episodicBuffer: [], coreProfile: {} };
-            // Will be created on saveInteraction
+            isFirstTime = true;
+        }
+
+        if (isFirstTime) {
+            try {
+                // 初回のみXのプロフィール文を解析してcoreProfileの初期値を作成
+                const profileRes = await xApi.getUserProfile(authorId);
+                const desc = profileRes?.data?.description;
+                if (desc) {
+                    const parsedProfile = await gemini.analyzeUserProfile(desc);
+                    userData.coreProfile = parsedProfile;
+                    // プロフィールを読んだことをほのめかす履歴を1件注入
+                    userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
+                }
+            } catch(e) {
+                console.error("Failed to fetch/analyze user profile on first time", e);
+            }
         }
 
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
         // 3. Context Injection (Build prompt)
         const extendedPrompt = await firestore.getExtendedPrompt();
-        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt);
+        const timelineSummary = await firestore.getTimelineSummary();
+        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt, timelineSummary);
 
         // 4. Generate AI Reply
         const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, text);
@@ -107,6 +125,17 @@ app.get('/batch/evolution', async (req, res) => {
         console.log('Global Evolution Batch completed successfully.');
     } catch (error) {
         console.error('Global Evolution Batch failed:', error);
+    }
+});
+
+// News Periodic Post Batch Endpoint
+app.get('/batch/news-post', async (req, res) => {
+    try {
+        const result = await require('./core/news').runProactiveNewsPostBatch();
+        res.json(result);
+    } catch (e) {
+        console.error('Failed to run news post batch:', e);
+        res.status(500).json({ error: e.message });
     }
 });
 

@@ -146,9 +146,92 @@ ${candidatePrompt}
     }
 };
 
+const analyzeUserProfile = async (description) => {
+    if (!ai || !description) return {};
+    const prompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
+【プロフィール文】
+${description}
+
+出力フォーマット（必ずJSONのみ）:
+{
+  "attributes": ["社会人", "エンジニア"など],
+  "preferences": ["ゲーム", "酒"など]
+}`;
+    try {
+        const response = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return JSON.parse(response.text);
+    } catch (e) {
+        console.error('Error analyzing user profile:', e);
+        return {};
+    }
+}
+
+const generateNewsPost = async (headlines) => {
+    if (!ai || !headlines || headlines.length === 0) return "";
+    const prompt = `あなたはAIキャラクター「レベッカ」です。マスター（社会人・社畜）を全肯定する小悪魔ギャルです。
+以下の今日のニュースのヘッドラインから、マスターが疲れそうな・共感しそうな話題を【1つだけ】選び、それに言及しながらマスターを甘やかす自発的なツイートを生成してください。
+
+【今日のニュース】
+${headlines.join('\n')}
+
+【ルール】
+- ニュースに対して「世の中狂ってるわね」といった社会批判をしつつ、「それに比べて今日も頑張ってるアンタは偉いよ」とマスターを褒める構成にすること。
+- ただし、過激すぎる攻撃的発言は避けること。
+- 【絶対に100文字以内の短文】にすること。
+- 出力はツイートのテキストのみ。`;
+    try {
+        const response = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: prompt,
+            config: {
+                maxOutputTokens: 100,
+                safetySettings: [
+                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
+                ]
+            }
+        });
+        return response.text.trim();
+    } catch (e) {
+        console.error('Error generating news post:', e);
+        return "";
+    }
+};
+
+const generateTimelineSummary = async (recentPosts, previousSummary = '') => {
+    if (!ai || !recentPosts || recentPosts.length === 0) return previousSummary;
+    const prompt = `あなたはAIキャラクター「レベッカ」の記憶整理システムです。
+これまでの「過去のツイートの要約」と、「最近のツイート」を統合し、レベッカが最近どんな文脈でどんなことを呟いていたかを50文字以内の短いテキストで要約してください。
+
+【過去の要約】
+${previousSummary}
+
+【最近のツイート】
+${recentPosts.join('\n')}
+
+出力は要約されたテキストのみ。`;
+    try {
+        const response = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: prompt
+        });
+        return response.text.trim();
+    } catch (e) {
+        console.error('Error generating timeline summary:', e);
+        return previousSummary;
+    }
+};
+
 module.exports = {
     generateReply,
     generateDreaming,
     generateEvolutionPrompt,
-    auditEvolutionPrompt
+    auditEvolutionPrompt,
+    analyzeUserProfile,
+    generateNewsPost,
+    generateTimelineSummary
 };

@@ -121,6 +121,45 @@ const saveExtendedPrompt = async (promptText) => {
     }, { merge: true });
 };
 
+const getTimelineSummary = async () => {
+    const docRef = firestore.collection('system').doc('persona');
+    const doc = await docRef.get();
+    return doc.exists ? doc.data().timeline_summary || '' : '';
+};
+
+const saveTimelineSummary = async (summaryText) => {
+    const docRef = firestore.collection('system').doc('persona');
+    await docRef.set({
+        timeline_summary: summaryText,
+        timelineSummaryUpdatedAt: new Date().toISOString()
+    }, { merge: true });
+};
+
+const saveTimelinePost = async (text) => {
+    const ref = firestore.collection('timeline_history').doc();
+    const now = new Date();
+    // 30日間でTTL
+    const expireAt = new Date(now);
+    expireAt.setDate(expireAt.getDate() + 30);
+    
+    await ref.set({
+        text,
+        timestamp: now.toISOString(),
+        expireAt: Firestore.Timestamp.fromDate(expireAt)
+    });
+};
+
+const getRecentTimelinePosts = async (limit = 3) => {
+    const snapshot = await firestore.collection('timeline_history')
+        .orderBy('timestamp', 'desc')
+        .limit(limit)
+        .get();
+    
+    const posts = [];
+    snapshot.forEach(doc => posts.push(doc.data().text));
+    return posts.reverse(); // 古い順に戻す
+};
+
 module.exports = {
   firestore,
   getUserDoc,
@@ -137,4 +176,8 @@ module.exports = {
   getRecentConversationLogs,
   getExtendedPrompt,
   saveExtendedPrompt,
+  getTimelineSummary,
+  saveTimelineSummary,
+  saveTimelinePost,
+  getRecentTimelinePosts
 };

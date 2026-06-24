@@ -1,7 +1,7 @@
 const { getJSTDate } = require('../utils/time');
 const { BASE_SYSTEM_PROMPT } = require('./prompt');
 
-const buildSystemPrompt = (userData, userInput, extendedPrompt = '') => {
+const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSummary = '') => {
     let prompt = BASE_SYSTEM_PROMPT;
 
     // 1. Core Profile injection
@@ -32,6 +32,11 @@ const buildSystemPrompt = (userData, userInput, extendedPrompt = '') => {
     // 4. Extended Prompt (Evolution)
     if (extendedPrompt && extendedPrompt.trim() !== '') {
         prompt += `\n\n【集合無意識トレンド】\n${extendedPrompt}`;
+    }
+
+    // 5. Timeline history (Own recent posts summary)
+    if (timelineSummary && timelineSummary.trim() !== '') {
+        prompt += `\n\n【最近の自分のつぶやき（参考）】\nアタシは最近以下のようにつぶやいていたわ。\n${timelineSummary}`;
     }
 
     return prompt;

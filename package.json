@@ -9,7 +9,8 @@
     "deploy": "node scripts/deploy.js",
     "chat": "node scripts/chat.js",
     "test:eval": "jest tests/eval",
-    "batch:evolution": "node scripts/run-evolution.js"
+    "batch:evolution": "node scripts/run-evolution.js",
+    "batch:news": "node scripts/run-news.js"
   },
   "keywords": [],
   "author": "",

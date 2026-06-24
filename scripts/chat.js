@@ -66,7 +66,15 @@ const chatLoop = async () => {
             
             // Generate Context and Memory
             const workingMemory = getWorkingMemory(userData.episodicBuffer);
-            const systemPrompt = buildSystemPrompt(userData, input);
+            // Get extended prompt mock or real
+            let extendedPrompt = '';
+            try {
+                // If this is running standalone, we could mock or fetch from DB. 
+                // For local testing without GCP credentials, we'll just mock it or try to fetch.
+                // We'll leave it empty for basic chat tests unless configured.
+            } catch (e) {}
+
+            const systemPrompt = buildSystemPrompt(userData, input, extendedPrompt);
             
             // Fetch Reply from Gemini
             const reply = await gemini.generateReply(systemPrompt, workingMemory, input);
