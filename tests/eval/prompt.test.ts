@@ -1,10 +1,10 @@
 require('dotenv').config();
-const { GoogleGenAI } = require('@google/genai');
-const gemini = require('../../src/services/gemini');
-const { buildSystemPrompt } = require('../../src/core/contextInjector');
+import { GoogleGenAI  } from '@google/genai';
+import * as gemini from '../../src/services/gemini';
+import { buildSystemPrompt  } from '../../src/core/contextInjector';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemma-4-31b-it';
+const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-2.5-pro';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

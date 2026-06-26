@@ -1,13 +1,13 @@
-const express = require('express');
-const config = require('./config');
-const { getWorkingMemory, saveInteraction, runGlobalDreamingBatch } = require('./core/memory');
-const { runGlobalEvolutionBatch } = require('./core/evolution');
-const { buildSystemPrompt } = require('./core/contextInjector');
-const { checkAndIncrementRateLimits } = require('./core/rateLimiter');
-const firestore = require('./services/firestore');
-const gemini = require('./services/gemini');
-const xApi = require('./services/xApi');
-const tasks = require('./services/tasks');
+import express from 'express';
+import config from './config';
+import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
+import { runGlobalEvolutionBatch  } from './core/evolution';
+import { buildSystemPrompt  } from './core/contextInjector';
+import { checkAndIncrementRateLimits  } from './core/rateLimiter';
+import * as firestore from './services/firestore';
+import * as gemini from './services/gemini';
+import * as xApi from './services/xApi';
+import * as tasks from './services/tasks';
 
 const app = express();
 app.use(express.json());
@@ -162,4 +162,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = app;
+export default app;

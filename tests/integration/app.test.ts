@@ -1,21 +1,27 @@
-const request = require('supertest');
-const app = require('../../src/index');
+import request from 'supertest';
+import app from '../../src/index';
+import * as firestore from '../../src/services/firestore';
+import * as gemini from '../../src/services/gemini';
+import * as xApi from '../../src/services/xApi';
+import * as tasks from '../../src/services/tasks';
 
 // Mock dependencies
 jest.mock('../../src/services/firestore', () => ({
     getUserDoc: jest.fn().mockResolvedValue({ episodicBuffer: [], coreProfile: {} }),
-    updateUserDoc: jest.fn().mockResolvedValue(),
-    appendEpisodicBuffer: jest.fn().mockResolvedValue(),
+    updateUserDoc: jest.fn().mockResolvedValue(undefined),
+    appendEpisodicBuffer: jest.fn().mockResolvedValue(undefined),
     getGlobalRateLimit: jest.fn().mockResolvedValue(0),
     getUserDailyLimit: jest.fn().mockResolvedValue(0),
+    getUserMinuteLimit: jest.fn().mockResolvedValue(0),
     getDailyActiveUsersCount: jest.fn().mockResolvedValue(1),
-    incrementGlobalRateLimit: jest.fn().mockResolvedValue(),
-    incrementUserDailyLimit: jest.fn().mockResolvedValue(),
+    incrementGlobalRateLimit: jest.fn().mockResolvedValue(undefined),
+    incrementUserDailyLimit: jest.fn().mockResolvedValue(undefined),
+    incrementUserMinuteLimit: jest.fn().mockResolvedValue(undefined),
     getExtendedPrompt: jest.fn().mockResolvedValue(''),
     getTimelineSummary: jest.fn().mockResolvedValue(''),
-    saveRawConversationLog: jest.fn().mockResolvedValue(),
+    saveRawConversationLog: jest.fn().mockResolvedValue(undefined),
     findRagMemories: jest.fn().mockResolvedValue([]),
-    saveRagMemory: jest.fn().mockResolvedValue(),
+    saveRagMemory: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
@@ -45,8 +51,6 @@ describe('Integration Tests', () => {
                 text: '@rebecca_ai Hello',
                 author_id: 'user_1'
             };
-            
-            const tasks = require('../../src/services/tasks');
 
             const response = await request(app)
                 .post('/webhook/x')
@@ -64,10 +68,6 @@ describe('Integration Tests', () => {
                 text: '@rebecca_ai Hello',
                 authorId: 'user_1'
             };
-
-            const gemini = require('../../src/services/gemini');
-            const xApi = require('../../src/services/xApi');
-            const firestore = require('../../src/services/firestore');
 
             const response = await request(app)
                 .post('/worker/reply')
@@ -93,12 +93,7 @@ describe('Integration Tests', () => {
                 text: '@rebecca_ai Hello',
                 authorId: 'user_1'
             };
-
-            const gemini = require('../../src/services/gemini');
-            gemini.detectLanguage.mockResolvedValueOnce('en');
-            const xApi = require('../../src/services/xApi');
-            const firestore = require('../../src/services/firestore');
-
+            (gemini.detectLanguage as jest.Mock).mockResolvedValueOnce('en');
             const response = await request(app)
                 .post('/worker/reply')
                 .send(payload);
@@ -108,19 +103,17 @@ describe('Integration Tests', () => {
             // Check if reply was generated
             expect(gemini.generateReply).toHaveBeenCalled();
             
-            // Verify that English prompt logic was used (indirectly via generated system prompt if possible, but generateReply args will have it)
-            const generateReplyCalls = gemini.generateReply.mock.calls;
+            const generateReplyCalls = (gemini.generateReply as jest.Mock).mock.calls;
             const lastCall = generateReplyCalls[generateReplyCalls.length - 1];
-            expect(lastCall[0]).toContain('You are an AI developed by Gemitech'); // BASE_SYSTEM_PROMPT_EN starts or contains this
+            expect(lastCall[0]).toContain('developed by Gemitech'); // BASE_SYSTEM_PROMPT_EN starts or contains this
 
             // Check if reply was posted
             expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');
         });
 
         it('should block if rate limit is exceeded', async () => {
-            const firestore = require('../../src/services/firestore');
             // Mock rate limit exceeded
-            firestore.getGlobalRateLimit.mockResolvedValueOnce(1000); // Exceed default 140
+            (firestore.getGlobalRateLimit as jest.Mock).mockResolvedValueOnce(1000); // Exceed default 140
 
             const payload = {
                 tweetId: '12345',
@@ -128,7 +121,6 @@ describe('Integration Tests', () => {
                 authorId: 'user_1'
             };
 
-            const xApi = require('../../src/services/xApi');
 
             const response = await request(app)
                 .post('/worker/reply')

@@ -1,16 +1,16 @@
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
-const config = require('../src/config');
-const { BASE_SYSTEM_PROMPT } = require('../src/core/prompt');
+import fs from 'fs';
+import path from 'path';
+import { GoogleGenAI  } from '@google/genai';
+import config from '../src/config';
+import { BASE_SYSTEM_PROMPT  } from '../src/core/prompt';
 
 // Initialize GenAI for Persona Generation
 const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
 // Import Rebecca's generation logic
-const gemini = require('../src/services/gemini');
-const { getWorkingMemory } = require('../src/core/memory');
+import * as gemini from '../src/services/gemini';
+import { getWorkingMemory  } from '../src/core/memory';
 
 const PERSONAS = [
     { id: 1, name: "限界ITエンジニア", desc: "残業100時間超えで精神が削れている28歳男性。ただ癒やされたい。" },

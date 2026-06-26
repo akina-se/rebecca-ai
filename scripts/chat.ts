@@ -1,10 +1,10 @@
 require('dotenv').config();
-const readline = require('readline');
-const fs = require('fs');
-const path = require('path');
-const gemini = require('../src/services/gemini');
-const { getWorkingMemory } = require('../src/core/memory');
-const { buildSystemPrompt } = require('../src/core/contextInjector');
+import readline from 'readline';
+import fs from 'fs';
+import path from 'path';
+import * as gemini from '../src/services/gemini';
+import { getWorkingMemory  } from '../src/core/memory';
+import { buildSystemPrompt  } from '../src/core/contextInjector';
 
 const DB_FILE = path.join(__dirname, '../local_db.json');
 const RAW_LOG_FILE = path.join(__dirname, '../local_raw_logs.jsonl');

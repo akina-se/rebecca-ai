@@ -1,5 +1,6 @@
-const { GoogleGenAI } = require('@google/genai');
-const config = require('../config');
+import { GoogleGenAI  } from '@google/genai';
+import config from '../config';
+import { fetchYahooNewsHeadlines } from '../core/news';
 
 let ai = null;
 if (config.gemini.apiKey) {
@@ -25,12 +26,7 @@ const generateReply = async (systemInstruction, history, userInput, mediaUrls = 
         const baseConfig = {
             systemInstruction: systemInstruction,
             maxOutputTokens: 120,
-            safetySettings: [
-                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
-            ]
+            safetySettings: [] as any
         };
 
         const response = await ai.models.generateContent({
@@ -53,7 +49,6 @@ const generateReply = async (systemInstruction, history, userInput, mediaUrls = 
         if (response.functionCalls && response.functionCalls.length > 0) {
             const call = response.functionCalls[0];
             if (call.name === 'search_news') {
-                const { fetchYahooNewsHeadlines } = require('../core/news');
                 const headlines = await fetchYahooNewsHeadlines();
                 const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
                 
@@ -107,12 +102,7 @@ const generateDreaming = async (systemPrompt, episodicBuffer, coreProfile) => {
             config: {
                 systemInstruction: systemPrompt,
                 responseMimeType: "application/json",
-                safetySettings: [
-                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
-                ]
+                safetySettings: [] as any
             }
         });
 
@@ -137,12 +127,7 @@ const generateEvolutionPrompt = async (logsText) => {
             contents: logsText,
             config: {
                 systemInstruction: systemPrompt,
-                safetySettings: [
-                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' }
-                ]
+                safetySettings: [] as any
             }
         });
         return response.text.trim();
@@ -232,10 +217,7 @@ ${headlines.join('\n')}
             contents: prompt,
             config: {
                 maxOutputTokens: 100,
-                safetySettings: [
-                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' }
-                ]
+                safetySettings: [] as any
             }
         });
         return response.text.trim();
@@ -323,7 +305,7 @@ const detectLanguage = async (text) => {
     }
 };
 
-module.exports = {
+export { 
     generateReply,
     generateDreaming,
     generateEvolutionPrompt,
@@ -334,4 +316,4 @@ module.exports = {
     detectLanguage,
     generateEmbedding,
     generateSearchQuery
-};
+ };

@@ -2,16 +2,20 @@
   "name": "rebecca-ai-gal",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "license-check": "license-checker --summary --onlyAllow \"MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC-BY-4.0;BlueOak-1.0.0;CC-BY-3.0;CC0-1.0;Unlicense\"",
+    "audit:fix": "npm audit fix",
     "test": "jest",
-    "start": "node src/index.js",
-    "deploy": "node scripts/deploy.js",
-    "chat": "node scripts/chat.js",
+    "start": "node dist/index.js",
+    "deploy": "npx ts-node scripts/deploy.ts",
+    "chat": "npx ts-node scripts/chat.ts",
     "test:eval": "jest tests/eval",
-    "batch:evolution": "node scripts/run-evolution.js",
-    "batch:news": "node scripts/run-news.js",
-    "simulate": "node scripts/simulate.js"
+    "batch:evolution": "npx ts-node scripts/run-evolution.ts",
+    "batch:news": "npx ts-node scripts/run-news.ts",
+    "simulate": "npx ts-node scripts/simulate.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +30,18 @@
     "twitter-api-v2": "^1.29.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.0.1",
+    "@types/supertest": "^7.2.0",
+    "eslint": "^10.6.0",
     "jest": "^30.4.2",
-    "supertest": "^7.2.2"
+    "license-checker": "^25.0.1",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.0"
   }
 }

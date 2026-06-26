@@ -1,5 +1,5 @@
-const { getJSTDate } = require('../utils/time');
-const { BASE_SYSTEM_PROMPT, BASE_SYSTEM_PROMPT_EN } = require('./prompt');
+import { getJSTDate  } from '../utils/time';
+import { BASE_SYSTEM_PROMPT, BASE_SYSTEM_PROMPT_EN  } from './prompt';
 
 const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSummary = '', ragMemories = [], lang = 'ja') => {
     let prompt = lang === 'en' ? BASE_SYSTEM_PROMPT_EN : BASE_SYSTEM_PROMPT;
@@ -62,6 +62,6 @@ const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSum
     return prompt;
 };
 
-module.exports = {
+export { 
     buildSystemPrompt
-};
+ };

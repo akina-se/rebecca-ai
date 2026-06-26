@@ -1,6 +1,6 @@
-const firestore = require('../services/firestore');
-const gemini = require('../services/gemini');
-const { getDreamingPrompt } = require('./prompt');
+import * as firestore from '../services/firestore';
+import * as gemini from '../services/gemini';
+import { getDreamingPrompt  } from './prompt';
 
 // 1. Working Memory: Sliding window of last 10-15 interactions from Episodic Buffer
 const getWorkingMemory = (episodicBuffer, limit = 10) => {
@@ -53,9 +53,9 @@ const runGlobalDreamingBatch = async () => {
     }
 };
 
-module.exports = {
+export { 
     getWorkingMemory,
     saveInteraction,
     runGlobalDreamingBatch,
     processDreamingForUser
-};
+ };

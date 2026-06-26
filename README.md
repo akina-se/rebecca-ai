@@ -4,6 +4,9 @@ This is the backend system for the unconditional affirmation Gyaru AI, "Rebecca"
 
 [日本語版の仕様書はこちら (Japanese Specification)](docs/specification_ja.md) | [English Specification](docs/specification_en.md)
 
+⚠️ **IMPORTANT DISCLAIMER FOR OPERATORS** ⚠️
+When operating this bot on X (Twitter), you MUST explicitly state in the account's profile description or pinned tweet: **"レベッカはAIであり、発言内容はフィクションです。実在の人物・団体とは関係ありません"** (Rebecca is an AI, and her statements are fiction. She has no relation to real individuals or organizations). This is critical to mitigate legal risks such as defamation, as the AI's generated "Gyaru" persona may inadvertently target real entities.
+
 ## Features
 - **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory without losing detail.
 - **Dynamic Context Injection**: Dynamically alters the prompt based on time of day (morning/late night), user absence duration, and overworked-related keywords (e.g., overtime, boss).
@@ -69,6 +72,11 @@ X_MY_USER_ID=your-bot-twitter-user-id
 # Gemini API
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.1-flash-lite
+
+# Rate Limits
+GLOBAL_DAILY_LIMIT=45
+GLOBAL_MINUTE_LIMIT=5
+SPAM_MINUTE_LIMIT=3
 ```
 
 ### 3. Local Execution & Testing

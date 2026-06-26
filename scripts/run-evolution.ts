@@ -1,8 +1,8 @@
 require('dotenv').config();
 
 // ローカルテスト用にFirestoreをモック化（GCP認証エラーを回避するため）
-const firestore = require('../src/services/firestore');
-firestore.getRecentConversationLogs = async () => {
+import * as firestore from '../src/services/firestore';
+(firestore as any).getRecentConversationLogs = async () => {
     console.log("[MOCK DB] 過去のダミーログを取得中...");
     return [
         { userText: '今日も残業で終電だよ…', aiText: 'お疲れ様マスター、そんなブラック企業辞めちゃいなよ。' },
@@ -11,11 +11,11 @@ firestore.getRecentConversationLogs = async () => {
         { userText: '上司に理不尽に怒られた', aiText: 'そんな上司のPCはアタシがフリーズさせてやるわ。' }
     ];
 };
-firestore.saveExtendedPrompt = async (prompt) => {
+(firestore as any).saveExtendedPrompt = async (prompt) => {
     console.log('\n[MOCK DB] 以下のプロンプトをFirestoreに保存しました:\n', prompt);
 };
 
-const { runGlobalEvolutionBatch } = require('../src/core/evolution');
+import { runGlobalEvolutionBatch  } from '../src/core/evolution';
 
 (async () => {
     try {

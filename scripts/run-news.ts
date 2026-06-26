@@ -1,16 +1,16 @@
 require('dotenv').config();
-const { runProactiveNewsPostBatch } = require('../src/core/news');
-const firestore = require('../src/services/firestore');
-const xApi = require('../src/services/xApi');
-const gemini = require('../src/services/gemini');
+import { runProactiveNewsPostBatch  } from '../src/core/news';
+import * as firestore from '../src/services/firestore';
+import * as xApi from '../src/services/xApi';
+import * as gemini from '../src/services/gemini';
 
 // Mock external APIs for safe local testing
-xApi.tweet = async (text) => {
+(xApi as any).tweet = async (text) => {
     console.log(`[MOCK TWEET]: ${text}`);
     return { data: { id: 'mock-tweet-id' } };
 };
 
-firestore.saveTimelinePost = async (text) => {
+(firestore as any).saveTimelinePost = async (text) => {
     console.log(`[MOCK DB] Saved timeline post: ${text}`);
 };
 

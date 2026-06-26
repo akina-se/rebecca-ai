@@ -1,6 +1,6 @@
-const firestore = require('../services/firestore');
-const gemini = require('../services/gemini');
-const xApi = require('../services/xApi');
+import * as firestore from '../services/firestore';
+import * as gemini from '../services/gemini';
+import * as xApi from '../services/xApi';
 
 const fetchYahooNewsHeadlines = async () => {
     try {
@@ -61,7 +61,7 @@ const runProactiveNewsPostBatch = async () => {
     }
 };
 
-module.exports = {
+export { 
     runProactiveNewsPostBatch,
     fetchYahooNewsHeadlines
-};
+ };

@@ -1,5 +1,5 @@
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync  } from 'child_process';
+import path from 'path';
 require('dotenv').config();
 
 const projectId = process.env.GCP_PROJECT_ID;

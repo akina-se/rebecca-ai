@@ -1,5 +1,5 @@
-const { CloudTasksClient } = require('@google-cloud/tasks');
-const config = require('../config');
+import { CloudTasksClient  } from '@google-cloud/tasks';
+import config from '../config';
 
 // Delay loading to avoid errors in dev without credentials
 let client = null;
@@ -43,6 +43,7 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
     };
 
     if (delaySeconds > 0) {
+        // @ts-ignore
         task.scheduleTime = {
             seconds: delaySeconds + Date.now() / 1000,
         };
@@ -58,6 +59,6 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
     }
 };
 
-module.exports = {
+export { 
     enqueueReplyTask
-};
+ };

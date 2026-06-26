@@ -1,5 +1,5 @@
-const { TwitterApi } = require('twitter-api-v2');
-const config = require('../config');
+import { TwitterApi  } from 'twitter-api-v2';
+import config from '../config';
 
 // Initialize client if credentials exist, otherwise let it be empty (e.g. during test)
 let rwClient = null;
@@ -68,9 +68,9 @@ const getUserProfile = async (userId) => {
     }
 }
 
-module.exports = {
+export { 
   replyToMention,
   getTweetDetails,
   tweet,
   getUserProfile
-};
+ };

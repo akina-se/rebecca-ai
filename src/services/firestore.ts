@@ -1,5 +1,5 @@
-const { Firestore } = require('@google-cloud/firestore');
-const config = require('../config');
+import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';
+import config from '../config';
 
 const firestore = new Firestore({
   projectId: config.gcp.projectId,
@@ -20,7 +20,7 @@ const updateUserDoc = async (userId, data) => {
 const appendEpisodicBuffer = async (userId, logEntry) => {
   const docRef = firestore.collection('users').doc(userId);
   await docRef.set({
-    episodicBuffer: Firestore.FieldValue.arrayUnion(logEntry),
+    episodicBuffer: FieldValue.arrayUnion(logEntry),
     last_reply_date: new Date().toISOString()
   }, { merge: true });
 };
@@ -36,7 +36,7 @@ const updateCoreProfile = async (userId, profileData) => {
 const incrementGlobalRateLimit = async (type, timeKey) => {
     const docRef = firestore.collection('rate_limits').doc(`global_${type}_${timeKey}`);
     await docRef.set({
-        count: Firestore.FieldValue.increment(1)
+        count: FieldValue.increment(1)
     }, { merge: true });
 };
 
@@ -49,12 +49,25 @@ const getGlobalRateLimit = async (type, timeKey) => {
 const incrementUserDailyLimit = async (userId, dateStr) => {
     const docRef = firestore.collection('rate_limits').doc(`user_daily_${userId}_${dateStr}`);
     await docRef.set({
-        count: Firestore.FieldValue.increment(1)
+        count: FieldValue.increment(1)
     }, { merge: true });
 };
 
 const getUserDailyLimit = async (userId, dateStr) => {
     const docRef = firestore.collection('rate_limits').doc(`user_daily_${userId}_${dateStr}`);
+    const doc = await docRef.get();
+    return doc.exists ? doc.data().count : 0;
+};
+
+const incrementUserMinuteLimit = async (userId, timeKey) => {
+    const docRef = firestore.collection('rate_limits').doc(`user_minute_${userId}_${timeKey}`);
+    await docRef.set({
+        count: FieldValue.increment(1)
+    }, { merge: true });
+};
+
+const getUserMinuteLimit = async (userId, timeKey) => {
+    const docRef = firestore.collection('rate_limits').doc(`user_minute_${userId}_${timeKey}`);
     const doc = await docRef.get();
     return doc.exists ? doc.data().count : 0;
 };
@@ -79,14 +92,14 @@ const saveRawConversationLog = async (userId, userText, aiText) => {
     
     // リテンション（TTL）の計算
     const expireAt = new Date(now);
-    expireAt.setDate(expireAt.getDate() + config.logs.retentionDays);
+    expireAt.setDate(expireAt.getDate() + 30);
 
     await logRef.set({
         userId,
         userText,
         aiText,
         timestamp: now.toISOString(),
-        expireAt: Firestore.Timestamp.fromDate(expireAt)
+        expireAt: Timestamp.fromDate(expireAt)
     });
 };
 
@@ -145,7 +158,7 @@ const saveTimelinePost = async (text) => {
     await ref.set({
         text,
         timestamp: now.toISOString(),
-        expireAt: Firestore.Timestamp.fromDate(expireAt)
+        expireAt: Timestamp.fromDate(expireAt)
     });
 };
 
@@ -166,7 +179,7 @@ const saveRagMemory = async (userId, text, embedding) => {
     await memRef.set({
         userId,
         text,
-        embedding: Firestore.FieldValue.vector(embedding),
+        embedding: FieldValue.vector(embedding),
         timestamp: now.toISOString()
     });
 
@@ -191,7 +204,7 @@ const findRagMemories = async (userId, queryVector, limit = 3) => {
     try {
         const snapshot = await firestore.collection('rag_memories')
             .where('userId', '==', userId)
-            .findNearest('embedding', Firestore.FieldValue.vector(queryVector), {
+            .findNearest('embedding', FieldValue.vector(queryVector), {
                 limit: limit,
                 distanceMeasure: 'COSINE'
             })
@@ -207,7 +220,7 @@ const findRagMemories = async (userId, queryVector, limit = 3) => {
     }
 };
 
-module.exports = {
+export { 
   firestore,
   getUserDoc,
   updateUserDoc,
@@ -217,6 +230,8 @@ module.exports = {
   getGlobalRateLimit,
   incrementUserDailyLimit,
   getUserDailyLimit,
+  incrementUserMinuteLimit,
+  getUserMinuteLimit,
   getAllUsers,
   getDailyActiveUsersCount,
   saveRawConversationLog,
@@ -229,4 +244,4 @@ module.exports = {
   getRecentTimelinePosts,
   saveRagMemory,
   findRagMemories
-};
+ };

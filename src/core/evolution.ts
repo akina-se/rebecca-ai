@@ -1,5 +1,5 @@
-const firestore = require('../services/firestore');
-const gemini = require('../services/gemini');
+import * as firestore from '../services/firestore';
+import * as gemini from '../services/gemini';
 
 const runGlobalEvolutionBatch = async () => {
     console.log("Starting Global Evolution Batch...");
@@ -43,6 +43,6 @@ const runGlobalEvolutionBatch = async () => {
     }
 };
 
-module.exports = {
+export { 
     runGlobalEvolutionBatch
-};
+ };
