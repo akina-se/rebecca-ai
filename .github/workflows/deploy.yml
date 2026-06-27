@@ -36,6 +36,7 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       - name: Deploy to Cloud Run
+        id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: rebecca-ai-gal
@@ -52,3 +53,14 @@ jobs:
             TWITTER_ACCESS_SECRET=${{ secrets.TWITTER_ACCESS_SECRET }}
             GCP_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
             GCP_LOCATION=asia-northeast1
+
+      - name: Run Smoke Test
+        run: |
+          echo "Waiting 10 seconds for service to stabilize..."
+          sleep 10
+          STATUSCODE=$(curl --silent --output /dev/stderr --write-out "%{http_code}" ${{ steps.deploy.outputs.url }}/health)
+          if test $STATUSCODE -ne 200; then
+            echo "Smoke test failed with status $STATUSCODE"
+            exit 1
+          fi
+          echo "Smoke test passed!"
