@@ -40,10 +40,16 @@ const runProactiveNewsPostBatch = async () => {
         console.log("Fetched headlines:\n", headlines.join('\n'));
 
         // 生成
-        const postText = await gemini.generateNewsPost(headlines);
+        let postText = await gemini.generateNewsPost(headlines);
         if (!postText) {
             console.log("Failed to generate news post.");
             return { status: 'failed', reason: 'Generation failed' };
+        }
+
+        // タグ付け機能: 文字数に余裕がある場合のみ別口でハッシュタグを付与
+        const hashtag = "\n#全肯定AIレベッカ";
+        if (postText.length + hashtag.length <= 140) {
+            postText += hashtag;
         }
 
         console.log("Generated Post:", postText);
