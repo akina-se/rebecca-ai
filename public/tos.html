@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>利用規約 / Terms of Service - Rebecca AI</title>
     <style>
         body { 
@@ -12,7 +12,8 @@
             background-color: #05050f; /* Deep cyber dark */
             max-width: 800px; 
             margin: 0 auto; 
-            padding: 30px 20px; 
+            padding: calc(30px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)); 
+            position: relative;
             word-wrap: break-word;
             overflow-wrap: break-word;
             background-image: 
@@ -58,14 +59,41 @@
         }
         /* Mobile responsive adjustments */
         @media (max-width: 600px) {
-            body { padding: 15px 12px; }
+            body { padding: calc(15px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(15px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
             h1 { letter-spacing: 0; }
             h2 { font-size: 1.25em; margin-top: 25px; }
             .en-text { padding: 10px 12px; font-size: 0.9em; border-left-width: 2px; }
         }
+
+        /* Back Button */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin-bottom: 30px;
+            background: rgba(123, 44, 191, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(199, 125, 255, 0.2);
+            border-radius: 24px;
+            color: #df90ff;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            /* Touch target minimum size */
+            min-height: 44px;
+            box-sizing: border-box;
+        }
+        .back-btn:hover {
+            background: rgba(123, 44, 191, 0.3);
+            transform: translateX(-5px);
+            box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
+        }
     </style>
 </head>
 <body>
+    <a href="./" class="back-btn">← Back to Top</a>
     <h1>利用規約 / Terms of Service</h1>
     <p>最終更新日: 2026年6月 / Last Updated: June 2026</p>
 
