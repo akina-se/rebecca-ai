@@ -67,7 +67,7 @@ const chatLoop = async () => {
             // Generate Context and Memory
             const workingMemory = getWorkingMemory(userData.episodicBuffer);
             // Get extended prompt mock or real
-            let extendedPrompt = '';
+            const extendedPrompt = '';
             try {
                 // If this is running standalone, we could mock or fetch from DB. 
                 // For local testing without GCP credentials, we'll just mock it or try to fetch.

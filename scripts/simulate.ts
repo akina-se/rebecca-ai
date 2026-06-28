@@ -44,7 +44,7 @@ const withRetry = async (fn, retries = 3, delayMs = 120000) => {
 };
 
 const generatePersonaReply = async (persona, chatHistory) => {
-    let historyText = chatHistory.map(m => `${m.role === 'user' ? persona.name : 'Rebecca'}: ${m.content}`).join('\n');
+    const historyText = chatHistory.map(m => `${m.role === 'user' ? persona.name : 'Rebecca'}: ${m.content}`).join('\n');
     const prompt = `あなたは以下のペルソナを持つチャットユーザーです。AIキャラクター「レベッカ」と会話しています。
 【ペルソナ設定】
 ${persona.desc}
@@ -81,7 +81,7 @@ const runSimulation = async () => {
         reportMd += `## Persona ${persona.id}: ${persona.name}\n`;
         reportMd += `**Desc:** ${persona.desc}\n\n`;
 
-        let episodicBuffer = []; // Fresh memory for each persona
+        const episodicBuffer = []; // Fresh memory for each persona
 
         for (let turn = 1; turn <= 10; turn++) {
             console.log(`  Turn ${turn}/10...`);
