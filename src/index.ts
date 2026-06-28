@@ -35,14 +35,32 @@ app.post('/webhook/x', async (req, res) => {
     res.status(200).send('OK');
 
     const payload = req.body;
+    console.log("Received webhook payload:", JSON.stringify(payload).substring(0, 500));
     
-    // Simplification for capturing Twitter webhook events
-    const tweetId = payload.tweet_id || payload.data?.id;
-    const text = payload.text || payload.data?.text;
-    const authorId = payload.author_id || payload.data?.author_id;
+    let tweetId, text, authorId, screenName;
 
-    if (!tweetId || !text || !authorId) return;
-    if (authorId === config.xApi.myUserId) return; // Ignore self mentions
+    if (payload.tweet_create_events && payload.tweet_create_events.length > 0) {
+        const event = payload.tweet_create_events[0];
+        tweetId = event.id_str;
+        text = event.text;
+        authorId = event.user?.id_str;
+        screenName = event.user?.screen_name;
+    } else {
+        // Fallback for other structures
+        tweetId = payload.tweet_id || payload.data?.id;
+        text = payload.text || payload.data?.text;
+        authorId = payload.author_id || payload.data?.author_id;
+        screenName = payload.data?.author_id; // Just a fallback
+    }
+
+    if (!tweetId || !text || !authorId) {
+        console.log("Missing tweet data. Ignoring.");
+        return;
+    }
+    if (screenName === config.xApi.myUserId || authorId === config.xApi.myUserId) {
+        console.log("Self mention. Ignoring.");
+        return; 
+    }
 
     try {
         // Enqueue with intentional delay (1-3 minutes = 60 to 180 seconds)
