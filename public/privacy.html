@@ -13,6 +13,8 @@
             max-width: 800px; 
             margin: 0 auto; 
             padding: 30px 20px; 
+            word-wrap: break-word;
+            overflow-wrap: break-word;
             background-image: 
                 radial-gradient(circle at 15% 50%, rgba(138, 43, 226, 0.08), transparent 40%),
                 radial-gradient(circle at 85% 30%, rgba(255, 0, 255, 0.05), transparent 40%);
@@ -51,6 +53,13 @@
             border-top: 1px solid #3c096c; 
             padding-top: 20px; 
             text-shadow: 0 0 5px rgba(123, 44, 191, 0.3);
+        }
+        /* Mobile responsive adjustments */
+        @media (max-width: 600px) {
+            body { padding: 15px 12px; }
+            h1 { font-size: 1.5em; letter-spacing: 0; }
+            h2 { font-size: 1.25em; margin-top: 25px; }
+            .en-text { padding: 10px 12px; font-size: 0.9em; border-left-width: 2px; }
         }
     </style>
 </head>
