@@ -20,10 +20,19 @@ Manages memories and status per user (Master).
 
 - `{userId}` (Document ID: The X user ID is used directly to ensure strict tenant separation)
   - `coreProfile`: JSON (Long-term memories such as preferences, sleep habits, kinks, and concerns)
-  - `working_memory`: Array (The last 10-15 conversation logs, formatted for Gemini's History)
+  - `working_memory`: Array (The last 20 conversation logs, formatted for Gemini's History)
   - `episodic_buffer`: Array (Conversation logs yet to be batch-processed. Appended continuously without deletion)
   - `last_reply_date`: Timestamp (Date and time of the last conversation. Used to calculate absence duration)
-  - `daily_reply_count`: Number (Number of replies sent today)
+  - `daily_reply_count`: Number (Today's reply count)
+
+### Collection: `rag_memories`
+Vector search collection for episodic memory (long-term memory).
+- `{memoryId}`
+  - `userId`: String (ID of the corresponding user)
+  - `content`: String (The conversation episode text)
+  - `embedding`: Vector (Vector representation of the text)
+  - `timestamp`: Timestamp (Creation time of the memory)
+  - * Retains up to `RAG_MAX_MEMORIES` (default 100) per user; older entries are deleted when exceeded.
 
 ### Collection: `system`
 Manages global system settings and rate limits.
