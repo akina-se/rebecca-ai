@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import config from './config';
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';
@@ -14,6 +15,19 @@ app.use(express.json());
 // Serve static files (Terms of Service, Privacy Policy)
 import path from 'path';
 app.use(express.static(path.join(process.cwd(), 'public')));
+
+// X Webhook CRC (Challenge-Response Check)
+app.get('/webhook/x', (req, res) => {
+    const crcToken = req.query.crc_token as string;
+    if (crcToken) {
+        const hash = crypto.createHmac('sha256', config.xApi.appSecret)
+            .update(crcToken)
+            .digest('base64');
+        res.status(200).json({ response_token: `sha256=${hash}` });
+    } else {
+        res.status(400).send('Error: crc_token missing');
+    }
+});
 
 // X Webhook Receiver
 app.post('/webhook/x', async (req, res) => {
