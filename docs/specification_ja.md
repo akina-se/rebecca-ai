@@ -20,10 +20,19 @@
 
 - `{userId}` (Document ID: XのユーザーIDをそのまま使用し、テナント分離を徹底)
   - `core_profile`: JSON (好みの味付け、睡眠時間、性癖、悩みなどの長期記憶)
-  - `working_memory`: Array (直近10〜15往復の会話ログ。GeminiのHistory形式)
+  - `working_memory`: Array (直近10往復の会話ログ。GeminiのHistory形式)
   - `episodic_buffer`: Array (バッチ未処理の会話ログ。削除せずAppendし続ける)
   - `last_reply_date`: Timestamp (最終会話日時。放置日数の計算に使用)
   - `daily_reply_count`: Number (本日の返信回数)
+
+### Collection: `rag_memories`
+エピソード記憶（長期記憶）のベクトル検索用コレクション。
+- `{memoryId}`
+  - `userId`: String (該当ユーザーのID)
+  - `content`: String (会話のエピソードテキスト)
+  - `embedding`: Vector (テキストのベクトル表現)
+  - `timestamp`: Timestamp (記憶の生成日時)
+  - ※ 1ユーザーあたり `RAG_MAX_MEMORIES` (デフォルト100件) まで保持し、超過分は古いものから削除される。
 
 ### Collection: `system`
 システム全体の設定とレートリミットを管理。
