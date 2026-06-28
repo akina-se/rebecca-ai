@@ -14,6 +14,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
 
 ENV PORT=8080
 EXPOSE 8080
