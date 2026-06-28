@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>全肯定AIレベッカ - Rebecca AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -31,6 +31,8 @@
             flex-direction: column;
             align-items: center;
             position: relative;
+            /* Safe area for modern mobile devices (e.g., iPhone notch) */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         /* Dynamic Background Gradients */
@@ -207,6 +209,9 @@
             font-weight: 400;
             transition: color 0.3s ease, text-shadow 0.3s ease;
             position: relative;
+            /* Modern touch target best practice: min 44px height */
+            padding: 10px 5px;
+            display: inline-block;
         }
 
         .legal-links a::after {
