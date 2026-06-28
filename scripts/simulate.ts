@@ -27,7 +27,7 @@ const PERSONAS = [
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const withRetry = async (fn, retries = 3, delayMs = 60000) => {
+const withRetry = async (fn, retries = 3, delayMs = 120000) => {
     for (let i = 0; i < retries; i++) {
         try {
             return await fn();
@@ -118,6 +118,10 @@ const runSimulation = async () => {
     
     console.log(`\n✅ Simulation complete! Results saved to ${reportPath}`);
     
+    // Rate limit cooldown before large judge request
+    console.log("\nWaiting 65 seconds for Rate Limit token bucket to refill before Evaluation...");
+    await sleep(65000);
+
     // --- LLM as a Judge (Objective Evaluation) ---
     console.log("\nRunning Objective Evaluation...");
     const evalPrompt = `あなたはAIチャットボット「レベッカ」の品質を客観的に評価する専門の審査員です。

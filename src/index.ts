@@ -12,11 +12,6 @@ import * as tasks from './services/tasks';
 const app = express();
 app.use(express.json());
 
-// Health check endpoint for CI/CD smoke tests
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
 // X Webhook Receiver
 app.post('/webhook/x', async (req, res) => {
     // Quick acknowledge to prevent X API timeout
