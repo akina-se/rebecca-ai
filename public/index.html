@@ -134,7 +134,8 @@
 
         /* Typography */
         h1 {
-            font-size: 3.5rem;
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            white-space: nowrap;
             font-weight: 800;
             letter-spacing: -1px;
             margin-bottom: 10px;
@@ -243,7 +244,6 @@
 
         /* Responsive */
         @media (max-width: 600px) {
-            h1 { font-size: 2.5rem; }
             .hero-image { width: 200px; height: 200px; }
             .info-card { padding: 30px 20px; }
             .legal-links { flex-direction: column; gap: 15px; }
