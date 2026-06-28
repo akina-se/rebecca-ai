@@ -11,6 +11,9 @@ import * as tasks from './services/tasks';
 
 const app = express();
 app.use(express.json());
+// Serve static files (Terms of Service, Privacy Policy)
+import path from 'path';
+app.use(express.static(path.join(process.cwd(), 'public')));
 
 // X Webhook Receiver
 app.post('/webhook/x', async (req, res) => {
