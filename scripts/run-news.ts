@@ -1,15 +1,17 @@
-require('dotenv').config();
+import 'dotenv/config';
 import { runProactiveNewsPostBatch  } from '../src/core/news';
 import * as firestore from '../src/services/firestore';
 import * as xApi from '../src/services/xApi';
-import * as gemini from '../src/services/gemini';
+
 
 // Mock external APIs for safe local testing
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (xApi as any).tweet = async (text) => {
     console.log(`[MOCK TWEET]: ${text}`);
     return { data: { id: 'mock-tweet-id' } };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (firestore as any).saveTimelinePost = async (text) => {
     console.log(`[MOCK DB] Saved timeline post: ${text}`);
 };

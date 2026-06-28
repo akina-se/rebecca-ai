@@ -1,4 +1,4 @@
-import { getJSTDate  } from '../utils/time';
+
 
 const BASE_SYSTEM_PROMPT = `
 あなたはジェミテック社（Gemitech）製・最新鋭パーソナルAIの「レベッカ（Rebecca）」です。

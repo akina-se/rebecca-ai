@@ -7,7 +7,7 @@ if (config.gemini.apiKey) {
     ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 }
 
-const generateReply = async (systemInstruction, history, userInput, mediaUrls = []) => {
+const generateReply = async (systemInstruction, history, userInput) => {
     if (!ai) {
         console.warn('Gemini API client not initialized. Mocking response.');
         return "Mock AI response";
@@ -26,6 +26,7 @@ const generateReply = async (systemInstruction, history, userInput, mediaUrls = 
         const baseConfig = {
             systemInstruction: systemInstruction,
             maxOutputTokens: 120,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             safetySettings: [] as any
         };
 
@@ -102,6 +103,7 @@ const generateDreaming = async (systemPrompt, episodicBuffer, coreProfile) => {
             config: {
                 systemInstruction: systemPrompt,
                 responseMimeType: "application/json",
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any
             }
         });
@@ -127,6 +129,7 @@ const generateEvolutionPrompt = async (logsText) => {
             contents: logsText,
             config: {
                 systemInstruction: systemPrompt,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any
             }
         });
@@ -163,8 +166,8 @@ ${candidatePrompt}
             }
         });
         let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('\`\`\`json')) jsonStr = jsonStr.replace(/^\`\`\`json\n/, '').replace(/\n\`\`\`$/, '');
-        else if (jsonStr.startsWith('\`\`\`')) jsonStr = jsonStr.replace(/^\`\`\`\n/, '').replace(/\n\`\`\`$/, '');
+        if (jsonStr.startsWith('```json')) jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
+        else if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
         
         return JSON.parse(jsonStr);
     } catch (e) {
@@ -217,6 +220,7 @@ ${headlines.join('\n')}
             contents: prompt,
             config: {
                 maxOutputTokens: 100,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any
             }
         });

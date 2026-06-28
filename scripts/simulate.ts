@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenAI  } from '@google/genai';

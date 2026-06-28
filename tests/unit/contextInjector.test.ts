@@ -1,5 +1,4 @@
 import { buildSystemPrompt  } from '../../src/core/contextInjector';
-import { BASE_SYSTEM_PROMPT  } from '../../src/core/prompt';
 
 // Mock time for deterministic tests
 jest.mock('../../src/utils/time', () => ({

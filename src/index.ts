@@ -147,7 +147,8 @@ app.get('/batch/evolution', async (req, res) => {
 // News Periodic Post Batch Endpoint
 app.get('/batch/news-post', async (req, res) => {
     try {
-        const result = await require('./core/news').runProactiveNewsPostBatch();
+        const { runProactiveNewsPostBatch } = await import('./core/news');
+        const result = await runProactiveNewsPostBatch();
         res.json(result);
     } catch (e) {
         console.error('Failed to run news post batch:', e);

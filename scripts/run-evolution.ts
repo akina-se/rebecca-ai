@@ -1,7 +1,8 @@
-require('dotenv').config();
+import 'dotenv/config';
 
 // ローカルテスト用にFirestoreをモック化（GCP認証エラーを回避するため）
 import * as firestore from '../src/services/firestore';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (firestore as any).getRecentConversationLogs = async () => {
     console.log("[MOCK DB] 過去のダミーログを取得中...");
     return [
@@ -11,6 +12,7 @@ import * as firestore from '../src/services/firestore';
         { userText: '上司に理不尽に怒られた', aiText: 'そんな上司のPCはアタシがフリーズさせてやるわ。' }
     ];
 };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (firestore as any).saveExtendedPrompt = async (prompt) => {
     console.log('\n[MOCK DB] 以下のプロンプトをFirestoreに保存しました:\n', prompt);
 };

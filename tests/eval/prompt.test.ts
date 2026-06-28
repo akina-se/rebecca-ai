@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 import { GoogleGenAI  } from '@google/genai';
 import * as gemini from '../../src/services/gemini';
 import { buildSystemPrompt  } from '../../src/core/contextInjector';

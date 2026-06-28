@@ -1,6 +1,6 @@
 import { execSync  } from 'child_process';
-import path from 'path';
-require('dotenv').config();
+import 'dotenv/config';
+
 
 const projectId = process.env.GCP_PROJECT_ID;
 const region = process.env.GCP_LOCATION || 'asia-northeast1';
@@ -19,7 +19,7 @@ try {
     console.log(`Running: ${cmd}`);
     execSync(cmd, { stdio: 'inherit' });
     console.log('Deployment successful!');
-} catch (error) {
+} catch {
     console.error('Deployment failed. Make sure gcloud is installed and authenticated.');
     process.exit(1);
 }

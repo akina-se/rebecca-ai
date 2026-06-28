@@ -7,13 +7,7 @@ export default tseslint.config(
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-require-imports': 'off',
-      'no-useless-escape': 'off',
-      '@typescript-eslint/ban-ts-comment': 'off',
-      'no-undef': 'off',
-      'no-empty': 'off',
-      'prefer-const': 'off'
+      '@typescript-eslint/no-unused-vars': 'warn'
     }
   },
   {
