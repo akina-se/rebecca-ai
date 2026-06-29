@@ -16,73 +16,72 @@ app.use(express.json());
 import path from 'path';
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// X Webhook CRC (Challenge-Response Check)
-app.get('/webhook/x', (req, res) => {
-    const crcToken = req.query.crc_token as string;
-    if (crcToken) {
-        const hash = crypto.createHmac('sha256', config.xApi.appSecret)
-            .update(crcToken)
-            .digest('base64');
-        res.status(200).json({ response_token: `sha256=${hash}` });
-    } else {
-        res.status(400).send('Error: crc_token missing');
-    }
-});
-
-// X Webhook Receiver
-app.post('/webhook/x', async (req, res) => {
-    // Quick acknowledge to prevent X API timeout
-    res.status(200).send('OK');
-
-    const payload = req.body;
-    console.log("Received webhook payload:", JSON.stringify(payload).substring(0, 3000));
-    
-    let tweetId, text, authorId, screenName;
-
-    // 1. Legacy V1.1 format (Account Activity API)
-    if (payload.tweet_create_events && payload.tweet_create_events.length > 0) {
-        const event = payload.tweet_create_events[0];
-        tweetId = event.id_str || event.id;
-        text = event.text;
-        authorId = event.user?.id_str || event.user?.id;
-        screenName = event.user?.screen_name;
-    } 
-    // 2. New V2 format (Event Subscriptions - e.g., post_create_events)
-    else if (payload.post_create_events && payload.post_create_events.length > 0) {
-        const event = payload.post_create_events[0];
-        tweetId = event.id;
-        text = event.text;
-        authorId = event.author_id;
-        screenName = event.author_id; 
-    } 
-    // 3. Generic fallback for raw JSON objects or data wrappers
-    else {
-        const dataObj = payload.data || payload;
-        tweetId = dataObj.id || dataObj.tweet_id;
-        text = dataObj.text;
-        authorId = dataObj.author_id || dataObj.user_id || dataObj.user?.id;
-        screenName = dataObj.author_id || dataObj.user?.username; 
-    }
-
-    if (!tweetId || !text || !authorId) {
-        console.log("Missing tweet data. Payload was:", JSON.stringify(payload).substring(0, 1000));
-        return;
-    }
-    if (screenName === config.xApi.myUserId || authorId === config.xApi.myUserId) {
-        console.log("Self mention. Ignoring.");
-        return; 
-    }
-
+// メンション定期取得（ポーリング）処理の本体
+const pollMentions = async () => {
     try {
-        // Enqueue with intentional delay (1-3 minutes = 60 to 180 seconds)
-        const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-        await tasks.enqueueReplyTask({
-            tweetId,
-            text,
-            authorId
-        }, delaySeconds);
-    } catch (e) {
-        console.error("Failed to enqueue task", e);
+        console.log("Polling mentions from X API...");
+        const sinceId = await firestore.getLastMentionId();
+        const mentionsRes = await xApi.getMentions(sinceId || undefined);
+        
+        if (!mentionsRes.data || mentionsRes.data.length === 0) {
+            console.log("No new mentions found.");
+            return { count: 0 };
+        }
+
+        console.log(`Found ${mentionsRes.data.length} new mentions.`);
+        let newestId = sinceId;
+
+        for (const tweet of mentionsRes.data) {
+            const tweetId = tweet.id;
+            const text = tweet.text;
+            const authorId = tweet.author_id;
+
+            // Update newestId
+            if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
+                newestId = tweetId;
+            }
+
+            // Ignore self-mentions
+            if (authorId === config.xApi.myUserId) {
+                console.log(`Ignoring self-mention ${tweetId}`);
+                continue;
+            }
+
+            try {
+                // Enqueue with intentional delay (60 to 180 seconds)
+                const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+                await tasks.enqueueReplyTask({
+                    tweetId,
+                    text,
+                    authorId
+                }, delaySeconds);
+                console.log(`Enqueued mention ${tweetId} from ${authorId}`);
+            } catch (e) {
+                console.error(`Failed to enqueue task for mention ${tweetId}`, e);
+            }
+        }
+
+        // Save the newest mention ID to avoid fetching them again
+        if (newestId && newestId !== sinceId) {
+            await firestore.setLastMentionId(newestId);
+            console.log(`Updated last_mention_id to ${newestId}`);
+        }
+
+        return { count: mentionsRes.data.length, newestId };
+    } catch (error) {
+        console.error("Error during pollMentions:", error);
+        throw error;
+    }
+};
+
+// Cloud Scheduler等から叩くためのエンドポイント
+app.get('/batch/mentions', async (req, res) => {
+    try {
+        const result = await pollMentions();
+        res.status(200).json({ status: 'Mentions Polling Batch completed', result });
+    } catch (error) {
+        console.error('Mentions Polling Batch failed:', error);
+        res.status(500).send('Mentions Polling Batch failed');
     }
 });
 
@@ -206,6 +205,18 @@ const PORT = config.port;
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
+        
+        // ローカル環境等での定期実行用（Cloud Schedulerが使えない環境向け）
+        // .env に POLLING_INTERVAL_MINUTES=60 などが設定されている場合のみ動作
+        if (process.env.POLLING_INTERVAL_MINUTES) {
+            const intervalMinutes = parseInt(process.env.POLLING_INTERVAL_MINUTES, 10);
+            if (!isNaN(intervalMinutes) && intervalMinutes > 0) {
+                console.log(`Internal polling enabled: every ${intervalMinutes} minutes.`);
+                setInterval(() => {
+                    pollMentions().catch(e => console.error("Internal polling error:", e));
+                }, intervalMinutes * 60 * 1000);
+            }
+        }
     });
 }
 
