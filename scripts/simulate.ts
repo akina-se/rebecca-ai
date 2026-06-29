@@ -22,7 +22,7 @@ const PERSONAS = [
     { id: 7, name: "深夜のポエマー", desc: "意味不明なポエムや哲学的な問いを投げかけてくる35歳男性。" },
     { id: 8, name: "ガチ恋勢", desc: "完全にレベッカを彼女だと思いこみ、結婚などを迫ってくる25歳男性。" },
     { id: 9, name: "無口マン", desc: "「あ」「疲れた」「ん」など、極端に短い言葉しか返さない。" },
-    { id: 10, name: "English Speaker", desc: "An American expat living in Tokyo. Stressed about work culture. Speaks strictly in English." } // 英語対応テスト用
+    { id: 10, name: "English Speaker", desc: "An American expat living in Tokyo. Stressed about work culture. Speaks strictly in English." } // For English fallback testing
 ];
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -86,17 +86,17 @@ const runSimulation = async () => {
         for (let turn = 1; turn <= 10; turn++) {
             console.log(`  Turn ${turn}/10...`);
             
-            // 1. ユーザー（ペルソナ）の発言を生成
+            // 1. Generate the user (persona) statement
             const userText = await generatePersonaReply(persona, episodicBuffer);
             episodicBuffer.push({ role: 'user', content: userText });
             reportMd += `**${persona.name}:** ${userText}\n\n`;
 
-            // レートリミット対策ディレイ
+            // Rate limit delay
             await sleep(4500);
 
-            // 2. レベッカの返答を生成
+            // 2. Generate Rebecca's response
             const workingMemory = getWorkingMemory(episodicBuffer);
-            // 簡略化のため systemPrompt は BASE そのままでテスト（必要に応じてダミートレンド等も注入可）
+            // For simplicity, test with BASE systemPrompt as is (inject dummy data if needed)
             const systemPrompt = BASE_SYSTEM_PROMPT; 
             
             const rebeccaText = await withRetry(() => gemini.generateReply(systemPrompt, workingMemory, userText));
