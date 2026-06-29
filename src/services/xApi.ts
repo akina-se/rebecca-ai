@@ -74,14 +74,27 @@ const getUserProfile = async (userId: string) => {
     }
 }
 
+let cachedNumericMyUserId: string | null = null;
+
 const getMentions = async (sinceId?: string) => {
     if (!client) return { data: [], meta: { resultCount: 0 } };
     try {
-        const userId = config.xApi.myUserId;
+        let userId = config.xApi.myUserId;
         if (!userId) {
             console.error('X_MY_USER_ID is not set in config!');
             return { data: [], meta: { resultCount: 0 } };
         }
+
+        // ユーザーIDが数字のみではない（スクリーンネーム）の場合は、自分の情報を取得してIDをキャッシュする
+        if (!/^\d+$/.test(userId)) {
+            if (!cachedNumericMyUserId) {
+                const me = await client.users.getMe();
+                cachedNumericMyUserId = me.data.id;
+                console.log(`Resolved numeric user ID for bot: ${cachedNumericMyUserId}`);
+            }
+            userId = cachedNumericMyUserId;
+        }
+
         const params: any = {
             "max_results": 100,
             "tweet.fields": ["created_at", "text", "author_id", "in_reply_to_user_id", "referenced_tweets", "conversation_id"]
