@@ -1,5 +1,4 @@
 import { Client } from '@xdevplatform/xdk';
-import * as xApi from '../../src/services/xApi';
 import config from '../../src/config';
 
 jest.mock('../../src/config', () => ({
@@ -162,7 +161,7 @@ describe('xApi.ts', () => {
             mockClientInstance.users.getMe.mockResolvedValueOnce({ data: { id: '123456' } });
             mockClientInstance.users.getMentions.mockResolvedValueOnce({ data: [], meta: { resultCount: 0 } });
             
-            const result = await api.getMentions();
+            await api.getMentions();
             expect(mockClientInstance.users.getMe).toHaveBeenCalledTimes(1);
             expect(mockClientInstance.users.getMentions).toHaveBeenCalledWith('123456', expect.any(Object));
 
