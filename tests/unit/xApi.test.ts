@@ -193,4 +193,20 @@ describe('xApi.ts', () => {
             config.xApi.myUserId = originalUserId;
         });
     });
+
+    describe('Missing Credentials Fallback (!client)', () => {
+        it('should return mock responses when client is not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; // trigger !client condition
+            const api = getXApiModule();
+            
+            expect(await api.replyToMention('123', 'Hi')).toEqual({ data: { id: 'mock_tweet_id' } });
+            expect(await api.tweet('Test')).toEqual({ data: { id: 'mock_tweet_id' } });
+            expect(await api.getTweetDetails('123')).toEqual({ data: null });
+            expect(await api.getUserProfile('user1')).toEqual({ data: { description: 'ダミーのプロフィール文です。仕事に疲れています。' } });
+            expect(await api.getMentions()).toEqual({ data: [], meta: { resultCount: 0 } });
+            
+            config.xApi.appKey = originalAppKey;
+        });
+    });
 });
