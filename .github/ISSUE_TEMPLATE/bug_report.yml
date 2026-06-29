@@ -1,0 +1,66 @@
+name: "🐛 バグ報告 (Bug Report)"
+description: バグを報告してRebecca AIの改善にご協力ください
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告ありがとうございます！
+        新しくIssueを作成する前に、**過去のIssueに類似のものがないか検索**をお願いします。
+  - type: input
+    id: version
+    attributes:
+      label: バージョン情報 (Version)
+      description: ご利用中のRebecca AIのバージョンやコミットハッシュを教えてください。
+      placeholder: 例: 1.0.0 または a1b2c3d
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: バグの概要 (Description)
+      description: どのようなバグが発生したのか、明確かつ簡潔に記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 再現手順 (Steps to Reproduce)
+      description: バグを再現するための具体的な手順を記載してください。
+      placeholder: |
+        1. '...' を実行する
+        2. '....' をクリックする
+        3. '....' というエラーが表示される
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作 (Expected behavior)
+      description: 本来はどう動作するべきだったのかを記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ / エラー出力 (Logs / Output)
+      description: 関連するログやエラーメッセージがあれば貼り付けてください。
+      render: shell
+  - type: checkboxes
+    id: environment
+    attributes:
+      label: 動作環境 (Environment)
+      description: 該当する動作環境を選択してください。
+      options:
+        - label: ローカル環境 (Local Node.js)
+        - label: Google Cloud Run (GCP)
+        - label: その他 (Other)
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 確認事項
+      options:
+        - label: 既存のIssueに類似の報告がないことを確認しました。
+          required: true
