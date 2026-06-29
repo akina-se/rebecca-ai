@@ -39,20 +39,24 @@ app.post('/webhook/x', async (req, res) => {
     
     let tweetId, text, authorId, screenName;
 
+    // 1. Legacy V1.1 format (Account Activity API)
     if (payload.tweet_create_events && payload.tweet_create_events.length > 0) {
         const event = payload.tweet_create_events[0];
         tweetId = event.id_str || event.id;
         text = event.text;
         authorId = event.user?.id_str || event.user?.id;
         screenName = event.user?.screen_name;
-    } else if (payload.post_create_events && payload.post_create_events.length > 0) {
+    } 
+    // 2. New V2 format (Event Subscriptions - e.g., post_create_events)
+    else if (payload.post_create_events && payload.post_create_events.length > 0) {
         const event = payload.post_create_events[0];
         tweetId = event.id;
         text = event.text;
         authorId = event.author_id;
         screenName = event.author_id; 
-    } else {
-        // Fallback for V2 event subscriptions or other structures
+    } 
+    // 3. Generic fallback for raw JSON objects or data wrappers
+    else {
         const dataObj = payload.data || payload;
         tweetId = dataObj.id || dataObj.tweet_id;
         text = dataObj.text;
