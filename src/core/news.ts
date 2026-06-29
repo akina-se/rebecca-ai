@@ -4,7 +4,11 @@ import * as xApi from '../services/xApi';
 
 const fetchYahooNewsHeadlines = async () => {
     try {
-        const response = await fetch('https://news.yahoo.co.jp/rss/topics/top-picks.xml');
+        const categories = ['top-picks', 'domestic', 'entertainment', 'it', 'sports'];
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        const url = `https://news.yahoo.co.jp/rss/topics/${randomCategory}.xml`;
+        console.log(`Fetching news from: ${url}`);
+        const response = await fetch(url);
         const text = await response.text();
         
         // 正規表現で簡易的にRSSからタイトルを抽出（依存関係追加を避けるため）

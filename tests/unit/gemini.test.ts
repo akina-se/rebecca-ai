@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-
+import config from '../../src/config';
 jest.mock('../../src/config', () => ({
     __esModule: true,
     default: {
@@ -239,6 +239,27 @@ describe('gemini.ts', () => {
             mockGenerateContent.mockRejectedValueOnce(new Error('Error'));
             const result = await gemini.detectLanguage('Hello');
             expect(result).toBe('ja');
+        });
+    });
+
+    describe('Missing Credentials Fallback (!ai)', () => {
+        it('should return mock responses when API key is missing', async () => {
+            const originalKey = config.gemini.apiKey;
+            config.gemini.apiKey = '';
+            const { gemini } = getGeminiModule();
+
+            expect(await gemini.generateReply('sys', [], 'test')).toBe('Mock AI response');
+            expect(await gemini.generateDreaming('sys', [], {})).toEqual({ attributes: [], preferences: [], concerns: [], important_memories: [] });
+            expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
+            expect(await gemini.auditEvolutionPrompt('cand')).toBe(true);
+            expect(await gemini.analyzeUserProfile('desc')).toEqual({});
+            expect(await gemini.generateNewsPost(['news'])).toBe('');
+            expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
+            expect(await gemini.detectLanguage('test')).toBe('ja');
+            expect(await gemini.generateEmbedding('test')).toEqual([]);
+            expect(await gemini.generateSearchQuery('ctx', 'in')).toBe('in');
+
+            config.gemini.apiKey = originalKey;
         });
     });
 });
