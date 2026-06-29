@@ -202,7 +202,7 @@ ${description}
 }
 
 const generateNewsPost = async (headlines) => {
-    if (!ai || !headlines || headlines.length === 0) return "";
+    if (!ai || !headlines?.length) return "";
     const prompt = `あなたはAIキャラクター「レベッカ」です。マスター（社会人・社畜）を全肯定する小悪魔ギャルです。
 以下の今日のニュースのヘッドラインから、マスターが疲れそうな・共感しそうな話題を【1つだけ】選び、それに言及しながらマスターを甘やかす自発的なツイートを生成してください。
 
@@ -232,7 +232,7 @@ ${headlines.join('\n')}
 };
 
 const generateTimelineSummary = async (recentPosts, previousSummary = '') => {
-    if (!ai || !recentPosts || recentPosts.length === 0) return previousSummary;
+    if (!ai || !recentPosts?.length) return previousSummary;
     const prompt = `あなたはAIキャラクター「レベッカ」の記憶整理システムです。
 これまでの「過去のツイートの要約」と、「最近のツイート」を統合し、レベッカが最近どんな文脈でどんなことを呟いていたかを50文字以内の短いテキストで要約してください。
 

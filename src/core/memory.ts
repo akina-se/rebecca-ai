@@ -4,7 +4,7 @@ import { getDreamingPrompt  } from './prompt';
 
 // 1. Working Memory: Sliding window of last 10-15 interactions from Episodic Buffer
 const getWorkingMemory = (episodicBuffer, limit = 10) => {
-    if (!episodicBuffer || episodicBuffer.length === 0) return [];
+    if (!episodicBuffer?.length) return [];
     // We want the last `limit` pairs.
     return episodicBuffer.slice(-limit * 2); 
 };
@@ -18,7 +18,7 @@ const saveInteraction = async (userId, userText, modelText) => {
 // 3. Dreaming: Batch process to update Core Profile
 const processDreamingForUser = async (userId, userData) => {
     const { episodicBuffer, coreProfile } = userData;
-    if (!episodicBuffer || episodicBuffer.length === 0) {
+    if (!episodicBuffer?.length) {
         return; // Nothing to integrate
     }
 
