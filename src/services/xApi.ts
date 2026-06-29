@@ -97,6 +97,7 @@ const getMentions = async (sinceId?: string) => {
 
         const params: any = {
             "max_results": 100,
+            "expansions": ["author_id"],
             "tweet.fields": ["created_at", "text", "author_id", "in_reply_to_user_id", "referenced_tweets", "conversation_id"]
         };
         if (sinceId) {

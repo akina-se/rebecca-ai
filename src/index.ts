@@ -34,11 +34,16 @@ const pollMentions = async () => {
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
-            const authorId = tweet.author_id;
+            const authorId = tweet.author_id || tweet.authorId || (tweet as any).author?.id || (tweet as any).user?.id || (tweet as any).user_id;
 
             // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
                 newestId = tweetId;
+            }
+
+            if (!authorId) {
+                console.warn(`Could not determine author ID for tweet ${tweetId}. Tweet object:`, JSON.stringify(tweet));
+                continue;
             }
 
             // Ignore self-mentions
