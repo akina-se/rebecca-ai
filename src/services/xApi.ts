@@ -74,9 +74,34 @@ const getUserProfile = async (userId: string) => {
     }
 }
 
+const getMentions = async (sinceId?: string) => {
+    if (!client) return { data: [], meta: { resultCount: 0 } };
+    try {
+        const userId = config.xApi.myUserId;
+        if (!userId) {
+            console.error('X_MY_USER_ID is not set in config!');
+            return { data: [], meta: { resultCount: 0 } };
+        }
+        const params: any = {
+            "max_results": 100,
+            "tweet.fields": ["created_at", "text", "author_id", "in_reply_to_user_id", "referenced_tweets", "conversation_id"]
+        };
+        if (sinceId) {
+            params.since_id = sinceId;
+        }
+        
+        const response = await client.users.getMentions(userId, params);
+        return response as any;
+    } catch (error) {
+        console.error('Error fetching mentions:', error);
+        throw error;
+    }
+}
+
 export { 
   replyToMention,
   getTweetDetails,
   tweet,
-  getUserProfile
+  getUserProfile,
+  getMentions
 };

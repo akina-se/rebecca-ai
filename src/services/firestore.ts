@@ -220,6 +220,20 @@ const findRagMemories = async (userId, queryVector, limit = 3) => {
     }
 };
 
+const getLastMentionId = async () => {
+    const docRef = firestore.collection('system').doc('x_api_state');
+    const doc = await docRef.get();
+    return doc.exists ? doc.data().last_mention_id || null : null;
+};
+
+const setLastMentionId = async (mentionId: string) => {
+    const docRef = firestore.collection('system').doc('x_api_state');
+    await docRef.set({
+        last_mention_id: mentionId,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
+};
+
 export { 
   firestore,
   getUserDoc,
@@ -243,5 +257,7 @@ export {
   saveTimelinePost,
   getRecentTimelinePosts,
   saveRagMemory,
-  findRagMemories
+  findRagMemories,
+  getLastMentionId,
+  setLastMentionId
  };
