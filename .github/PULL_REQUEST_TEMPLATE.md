@@ -1,29 +1,38 @@
-## 概要 (Overview)
+## Overview / 概要
 <!-- 
-このPRが解決する課題や、実装した機能の概要を記載してください。
-関連するIssueがあれば `Fixes #XX` のように記載してください。
+Describe what this PR does and why.
+Link related issues with `Fixes #XX`.
+
+このPRの目的と変更理由を記載してください。
+関連するIssueがあれば `Fixes #XX` で紐付けてください。
 -->
 
-## 変更内容 (Changes)
+## Changes / 変更内容
 <!-- 
-どのような変更を加えたのか、箇条書き等で簡潔に記載してください。
-- 〇〇の不具合を修正
-- 〇〇機能の追加
+List the changes made in this PR.
+- Fixed bug in ...
+- Added feature for ...
+
+変更点を箇条書きで記載してください。
 -->
 
-## 動作確認 (Verification)
+## Verification / 動作確認
 <!-- 
-このPRの変更が正しく動作することを確認した手順や、テスト結果を記載してください。
-- [x] `npm run test` で全てのテストがパスした
-- [x] ローカル環境で〇〇の動作を確認した
+Describe how you verified these changes work correctly.
+- [x] All tests pass (`npm test`)
+- [x] Verified locally that ...
+
+動作確認の手順や結果を記載してください。
 -->
 
-## スクリーンショット / ログ (Screenshots / Logs) (任意)
+## Screenshots / Logs (optional) / スクリーンショット・ログ（任意）
 <!-- 
-UIの変更や、出力結果の変化がある場合は、ここに貼り付けてください。
+Attach screenshots or logs if applicable.
+UIの変更や出力結果の変化がある場合は貼り付けてください。
 -->
 
-## その他 (Additional Comments)
+## Additional Comments / その他
 <!-- 
-レビュアーに特に見てほしいポイントや、今後の課題などがあれば記載してください。
+Any notes for reviewers or follow-up tasks.
+レビュアーへの補足や今後の課題があれば記載してください。
 -->
