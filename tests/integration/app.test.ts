@@ -22,6 +22,8 @@ jest.mock('../../src/services/firestore', () => ({
     saveRawConversationLog: jest.fn().mockResolvedValue(undefined),
     findRagMemories: jest.fn().mockResolvedValue([]),
     saveRagMemory: jest.fn().mockResolvedValue(undefined),
+    getLastMentionId: jest.fn().mockResolvedValue(undefined),
+    setLastMentionId: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
@@ -33,6 +35,7 @@ jest.mock('../../src/services/gemini', () => ({
 
 jest.mock('../../src/services/xApi', () => ({
     replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
+    getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
 }));
 
 jest.mock('../../src/services/tasks', () => ({
@@ -44,20 +47,23 @@ describe('Integration Tests', () => {
         jest.clearAllMocks();
     });
 
-    describe('POST /webhook/x', () => {
-        it('should receive webhook and enqueue task', async () => {
-            const payload = {
-                tweet_id: '12345',
-                text: '@rebecca_ai Hello',
-                author_id: 'user_1'
-            };
+    describe('GET /batch/mentions', () => {
+        it('should fetch mentions and enqueue tasks', async () => {
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
+                data: [
+                    { id: '12345', text: '@rebecca_ai Hello', author_id: 'user_1' }
+                ],
+                meta: { resultCount: 1 }
+            });
 
-            const response = await request(app)
-                .post('/webhook/x')
-                .send(payload);
+            const response = await request(app).get('/batch/mentions');
             
             expect(response.status).toBe(200);
-            expect(tasks.enqueueReplyTask).toHaveBeenCalled();
+            expect(xApi.getMentions).toHaveBeenCalled();
+            expect(tasks.enqueueReplyTask).toHaveBeenCalledWith(
+                { tweetId: '12345', text: '@rebecca_ai Hello', authorId: 'user_1' },
+                expect.any(Number)
+            );
         });
     });
 
