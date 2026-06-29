@@ -35,26 +35,33 @@ app.post('/webhook/x', async (req, res) => {
     res.status(200).send('OK');
 
     const payload = req.body;
-    console.log("Received webhook payload:", JSON.stringify(payload).substring(0, 500));
+    console.log("Received webhook payload:", JSON.stringify(payload).substring(0, 3000));
     
     let tweetId, text, authorId, screenName;
 
     if (payload.tweet_create_events && payload.tweet_create_events.length > 0) {
         const event = payload.tweet_create_events[0];
-        tweetId = event.id_str;
+        tweetId = event.id_str || event.id;
         text = event.text;
-        authorId = event.user?.id_str;
+        authorId = event.user?.id_str || event.user?.id;
         screenName = event.user?.screen_name;
+    } else if (payload.post_create_events && payload.post_create_events.length > 0) {
+        const event = payload.post_create_events[0];
+        tweetId = event.id;
+        text = event.text;
+        authorId = event.author_id;
+        screenName = event.author_id; 
     } else {
-        // Fallback for other structures
-        tweetId = payload.tweet_id || payload.data?.id;
-        text = payload.text || payload.data?.text;
-        authorId = payload.author_id || payload.data?.author_id;
-        screenName = payload.data?.author_id; // Just a fallback
+        // Fallback for V2 event subscriptions or other structures
+        const dataObj = payload.data || payload;
+        tweetId = dataObj.id || dataObj.tweet_id;
+        text = dataObj.text;
+        authorId = dataObj.author_id || dataObj.user_id || dataObj.user?.id;
+        screenName = dataObj.author_id || dataObj.user?.username; 
     }
 
     if (!tweetId || !text || !authorId) {
-        console.log("Missing tweet data. Ignoring.");
+        console.log("Missing tweet data. Payload was:", JSON.stringify(payload).substring(0, 1000));
         return;
     }
     if (screenName === config.xApi.myUserId || authorId === config.xApi.myUserId) {
