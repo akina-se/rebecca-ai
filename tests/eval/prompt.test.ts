@@ -4,7 +4,7 @@ import * as gemini from '../../src/services/gemini';
 import { buildSystemPrompt  } from '../../src/core/contextInjector';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-2.5-pro';
+const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.1-flash-lite';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
