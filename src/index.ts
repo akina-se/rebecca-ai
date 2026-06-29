@@ -1,5 +1,4 @@
 import express from 'express';
-import crypto from 'crypto';
 import config from './config';
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';

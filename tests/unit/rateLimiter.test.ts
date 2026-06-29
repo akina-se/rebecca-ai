@@ -1,6 +1,5 @@
 import { checkAndIncrementRateLimits } from '../../src/core/rateLimiter';
 import * as firestore from '../../src/services/firestore';
-import config from '../../src/config';
 import { getJSTDate } from '../../src/utils/time';
 
 jest.mock('../../src/services/firestore');

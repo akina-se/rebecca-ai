@@ -1,4 +1,4 @@
-import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';
+import { Firestore } from '@google-cloud/firestore';
 import * as firestoreService from '../../src/services/firestore';
 
 jest.mock('@google-cloud/firestore', () => {
