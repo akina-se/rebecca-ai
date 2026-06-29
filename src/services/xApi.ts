@@ -85,7 +85,7 @@ const getMentions = async (sinceId?: string) => {
             return { data: [], meta: { resultCount: 0 } };
         }
 
-        // ユーザーIDが数字のみではない（スクリーンネーム）の場合は、自分の情報を取得してIDをキャッシュする
+        // If the user ID is not entirely numeric (e.g., a screen name), fetch own user profile to cache the numeric ID
         if (!/^\d+$/.test(userId)) {
             if (!cachedNumericMyUserId) {
                 const me = await client.users.getMe();

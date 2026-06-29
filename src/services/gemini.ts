@@ -296,7 +296,7 @@ const detectLanguage = async (text) => {
 テキスト: "${text}"`;
     try {
         const response = await ai.models.generateContent({
-            // 言語判定は軽量なのでモデルは問わないが、judgeModelかデフォルトを使う
+            // Since the judgment should be lightweight and cost-effective, use the default gemini-flash model instead of judgeModel
             model: config.gemini.judgeModel || config.gemini.model,
             contents: prompt,
             config: { maxOutputTokens: 5 }

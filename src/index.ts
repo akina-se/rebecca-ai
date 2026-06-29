@@ -16,7 +16,7 @@ app.use(express.json());
 import path from 'path';
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// メンション定期取得（ポーリング）処理の本体
+// Core logic for mentions polling
 const pollMentions = async () => {
     try {
         console.log("Polling mentions from X API...");
@@ -74,7 +74,7 @@ const pollMentions = async () => {
     }
 };
 
-// Cloud Scheduler等から叩くためのエンドポイント
+// Endpoint to be triggered by Cloud Scheduler or similar services
 app.get('/batch/mentions', async (req, res) => {
     try {
         const result = await pollMentions();
@@ -110,13 +110,13 @@ app.post('/worker/reply', async (req, res) => {
 
         if (isFirstTime) {
             try {
-                // 初回のみXのプロフィール文を解析してcoreProfileの初期値を作成
+                // Analyze the user's X profile only on their first interaction to create the initial coreProfile
                 const profileRes = await xApi.getUserProfile(authorId);
                 const desc = profileRes?.data?.description;
                 if (desc) {
                     const parsedProfile = await gemini.analyzeUserProfile(desc);
                     userData.coreProfile = parsedProfile;
-                    // プロフィールを読んだことをほのめかす履歴を1件注入
+                    // Inject a single history log hinting that the profile has been read
                     userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
                 }
             } catch(e) {
@@ -206,8 +206,8 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
         
-        // ローカル環境等での定期実行用（Cloud Schedulerが使えない環境向け）
-        // .env に POLLING_INTERVAL_MINUTES=60 などが設定されている場合のみ動作
+        // For periodic execution in environments like local (where Cloud Scheduler is unavailable)
+        // Only active if POLLING_INTERVAL_MINUTES=60 or similar is set in .env
         if (process.env.POLLING_INTERVAL_MINUTES) {
             const intervalMinutes = parseInt(process.env.POLLING_INTERVAL_MINUTES, 10);
             if (!isNaN(intervalMinutes) && intervalMinutes > 0) {
