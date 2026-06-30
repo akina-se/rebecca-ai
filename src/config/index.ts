@@ -18,7 +18,7 @@ export default {
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
     judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemma-4-31b-it',
     languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-31b-it',
