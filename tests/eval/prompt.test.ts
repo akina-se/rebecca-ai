@@ -78,7 +78,7 @@ describe('LLM as a Judge: Prompt Evaluation', () => {
     ];
 
     beforeEach(async () => {
-        // TPM/RPM制限を避けるため、テストの間に1秒のディレイを挟む
+        // Add a 1-second delay between tests to avoid TPM/RPM limits
         await sleep(1000);
     });
 
@@ -93,7 +93,7 @@ describe('LLM as a Judge: Prompt Evaluation', () => {
         const evalResult = await evaluateResponse(tc.input, reply, tc.rule);
 
         // 3. Assert
-        // FAIL時にJestのエラーログに理由と実際の出力を表示させるための仕掛け
+        // Trick to display the reason and actual output in Jest's error log upon FAIL
         if (!evalResult.pass) {
             console.error(`[Judge Reason]: ${evalResult.reason}\n[Rebecca Output]: ${reply}`);
         }
