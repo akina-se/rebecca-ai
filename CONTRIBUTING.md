@@ -16,7 +16,7 @@ Rebecca AI is built with a serverless microservices architecture (GCP Cloud Run 
 ## 2. Issues & Feature Requests
 
 ### Reporting Bugs
-If you find a bug in the source code, you can help us by [submitting an issue](#). Before you submit an issue, please search the issue tracker to ensure it hasn't been reported already.
+If you find a bug in the source code, you can help us by [submitting an issue](https://github.com/akina-se/rebecca-ai/issues). Before you submit an issue, please search the issue tracker to ensure it hasn't been reported already.
 When submitting a bug report, please include:
 - A clear and descriptive title.
 - Steps to reproduce the issue.
