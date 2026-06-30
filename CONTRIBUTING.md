@@ -13,7 +13,20 @@ Rebecca AI is built with a serverless microservices architecture (GCP Cloud Run 
 - **`src/config/`**: Global configuration and environment variable validation.
 - **`tests/`**: Unit, integration, and evaluation tests.
 
-## 2. Coding Guidelines
+## 2. Issues & Feature Requests
+
+### Reporting Bugs
+If you find a bug in the source code, you can help us by [submitting an issue](#). Before you submit an issue, please search the issue tracker to ensure it hasn't been reported already.
+When submitting a bug report, please include:
+- A clear and descriptive title.
+- Steps to reproduce the issue.
+- Expected and actual behavior.
+- Environment details (Node.js version, OS, etc.).
+
+### Suggesting Enhancements
+Feature requests are always welcome. Please provide a clear and detailed explanation of the feature you want, why it is needed, and ideally, how it should be implemented.
+
+## 3. Coding Guidelines
 
 ### TypeScript & Linting
 - All code must be written in **TypeScript**.
@@ -29,7 +42,7 @@ Rebecca AI is built with a serverless microservices architecture (GCP Cloud Run 
 - **Do NOT log Personal Identifiable Information (PII)** or sensitive user data (like raw DM contents or real names) in plain text.
 - Ensure error logs include sufficient context for debugging in GCP Cloud Logging (e.g., `console.error('Failed to enqueue task for userId:', userId, error)`).
 
-## 3. Pull Request Process
+## 4. Pull Request Process
 
 We use a standard Git Flow-inspired branching strategy.
 
@@ -42,7 +55,7 @@ We use a standard Git Flow-inspired branching strategy.
    - CI workflows will automatically run ESLint and Jest. Your PR cannot be merged if CI fails.
 5. **Commit Messages**: Write clear, concise commit messages. We recommend using [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat: ...`, `fix: ...`, `docs: ...`, `chore: ...`).
 
-## 4. Local Development Setup
+## 5. Local Development Setup
 
 To set up the project locally:
 
@@ -51,9 +64,9 @@ To set up the project locally:
 3. Copy `.env.example` to `.env` and fill in your development keys (dummy values are fine for running basic unit tests).
 4. Run `npm run test` to verify your environment is working correctly.
 
-## 5. Code of Conduct
+## 6. Code of Conduct
 
-By participating in this project, you are expected to uphold a welcoming, inclusive, and professional environment. Harassment or unacceptable behavior will not be tolerated.
+By participating in this project, you are expected to uphold a welcoming, inclusive, and professional environment. We expect all contributors to adhere to the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). Harassment or unacceptable behavior will not be tolerated.
 
 ---
 
