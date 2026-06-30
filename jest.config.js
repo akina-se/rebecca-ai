@@ -12,6 +12,9 @@ module.exports = {
     '!src/**/*.d.ts',
   ],
 
+  // Specify coverage reporters needed for GitHub Actions
+  coverageReporters: ['text', 'json-summary', 'lcov'],
+
   // Coverage thresholds based on industry best practice (80% "Goldilocks zone").
   // Jest will exit with a non-zero code if any threshold is not met,
   // which blocks PR merges when enforced as a required CI check.

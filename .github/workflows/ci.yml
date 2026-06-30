@@ -37,6 +37,12 @@ jobs:
       - name: Run Tests with Coverage Gate
         run: npm test -- --coverage
 
+      - name: Jest Coverage Comment
+        uses: MishaKav/jest-coverage-comment@main
+        if: github.event_name == 'pull_request'
+        with:
+          coverage-summary-path: ./coverage/coverage-summary.json
+
   eval-test:
     name: LLM Evaluation (main PR only)
     runs-on: ubuntu-latest
