@@ -37,7 +37,7 @@ graph TD
     User([User on X]) -- "@Mention" --> XAPI[X API]
     XAPI -- "Webhook / Polling" --> Webhook[Cloud Run: Receiver]
     
-    subgraph Serverless Backend (GCP)
+    subgraph GCP [Serverless Backend]
         Webhook -- "Enqueue (1-3 min delay)" --> Tasks[Cloud Tasks]
         Tasks -- "Execute Worker" --> Worker[Cloud Run: Worker]
         
