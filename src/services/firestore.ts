@@ -86,11 +86,11 @@ const getDailyActiveUsersCount = async (dateStr) => {
 };
 
 const saveRawConversationLog = async (userId, userText, aiText) => {
-    // プロンプト改善や分析のため、圧縮されない生ログとして保存する
+    // Save as uncompressed raw log for prompt improvement and analysis
     const logRef = firestore.collection('conversation_logs').doc();
     const now = new Date();
     
-    // リテンション（TTL）の計算
+    // Calculate retention (TTL)
     const expireAt = new Date(now);
     expireAt.setDate(expireAt.getDate() + 30);
 
@@ -108,7 +108,7 @@ const getRecentConversationLogs = async (days = 7) => {
     sinceDate.setDate(sinceDate.getDate() - days);
     const sinceIso = sinceDate.toISOString();
 
-    // 最新のログを最大1000件取得（トークン上限やAPI処理時間を考慮）
+    // Fetch up to 1000 latest logs (considering token limits and API processing time)
     const snapshot = await firestore.collection('conversation_logs')
         .where('timestamp', '>=', sinceIso)
         .orderBy('timestamp', 'desc')
@@ -151,7 +151,7 @@ const saveTimelineSummary = async (summaryText) => {
 const saveTimelinePost = async (text) => {
     const ref = firestore.collection('timeline_history').doc();
     const now = new Date();
-    // 30日間でTTL
+    // TTL for 30 days
     const expireAt = new Date(now);
     expireAt.setDate(expireAt.getDate() + 30);
     
@@ -170,7 +170,7 @@ const getRecentTimelinePosts = async (limit = 3) => {
     
     const posts = [];
     snapshot.forEach(doc => posts.push(doc.data().text));
-    return posts.reverse(); // 古い順に戻す
+    return posts.reverse(); // Revert to chronological order
 };
 
 const saveRagMemory = async (userId, text, embedding) => {
@@ -183,7 +183,7 @@ const saveRagMemory = async (userId, text, embedding) => {
         timestamp: now.toISOString()
     });
 
-    // 上限（キャップ）管理
+    // Upper limit (cap) management
     const maxMemories = config.rag.maxMemories;
     const snapshot = await firestore.collection('rag_memories')
         .where('userId', '==', userId)
@@ -215,9 +215,23 @@ const findRagMemories = async (userId, queryVector, limit = 3) => {
         return memories;
     } catch (e) {
         console.error('Error during vector search (findNearest):', e);
-        // インデックスがない場合などにエラーになるため、空配列を返す
+        // Return empty array to handle errors like missing indexes gracefully
         return [];
     }
+};
+
+const getLastMentionId = async () => {
+    const docRef = firestore.collection('system').doc('x_api_state');
+    const doc = await docRef.get();
+    return doc.exists ? doc.data().last_mention_id || null : null;
+};
+
+const setLastMentionId = async (mentionId: string) => {
+    const docRef = firestore.collection('system').doc('x_api_state');
+    await docRef.set({
+        last_mention_id: mentionId,
+        updatedAt: new Date().toISOString()
+    }, { merge: true });
 };
 
 export { 
@@ -243,5 +257,7 @@ export {
   saveTimelinePost,
   getRecentTimelinePosts,
   saveRagMemory,
-  findRagMemories
+  findRagMemories,
+  getLastMentionId,
+  setLastMentionId
  };

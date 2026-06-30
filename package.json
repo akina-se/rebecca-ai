@@ -8,7 +8,7 @@
     "lint": "eslint . --ext .ts",
     "license-check": "license-checker --summary --onlyAllow \"MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC-BY-4.0;BlueOak-1.0.0;CC-BY-3.0;CC0-1.0;Unlicense\"",
     "audit:fix": "npm audit fix",
-    "test": "jest",
+    "test": "jest tests/unit tests/integration",
     "start": "node dist/index.js",
     "deploy": "npx ts-node scripts/deploy.ts",
     "chat": "npx ts-node scripts/chat.ts",
@@ -25,9 +25,9 @@
     "@google-cloud/firestore": "^8.6.0",
     "@google-cloud/tasks": "^6.2.3",
     "@google/genai": "^2.9.0",
+    "@xdevplatform/xdk": "^0.5.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "twitter-api-v2": "^1.29.0"
+    "express": "^5.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

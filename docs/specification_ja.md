@@ -6,11 +6,14 @@
 本システムは、GCPの無料枠を最大限活用し、低コストかつスケーラブルな完全サーバーレスアーキテクチャで構築する。
 
 - **クラウドプロバイダ**: Google Cloud Platform (GCP)
-- **Webhook受信 / メイン処理**: Cloud Run (Node.js / Express)
+- **メンション取得 / メイン処理**: Cloud Run (Node.js / Express) ※X API Free枠の制限によりWebhookではなくポーリング（定期取得）を採用
 - **非同期キュー (遅延実行)**: Cloud Tasks
 - **データベース**: Firestore (NoSQL)
 - **定期バッチ処理**: Cloud Scheduler
-- **LLMエンジン**: Gemini 2.5 Flash (Google AI Studio経由 / 画像認識マルチモーダル対応) ※設定によりLiteやGemma等も併用
+- **LLMエンジン**: 
+  - メイン会話・記憶統合・ニュース生成: Gemini 3.1 Flash Lite
+  - 言語判定・安全性監査 (LLM-as-a-Judge): Gemma 4 31B IT
+  - ベクトル化処理: text-embedding-004
 - **連携API**: X (Twitter) API v2
 
 ## 2. データベース設計 (Firestore Schema)
@@ -20,10 +23,19 @@
 
 - `{userId}` (Document ID: XのユーザーIDをそのまま使用し、テナント分離を徹底)
   - `core_profile`: JSON (好みの味付け、睡眠時間、性癖、悩みなどの長期記憶)
-  - `working_memory`: Array (直近10〜15往復の会話ログ。GeminiのHistory形式)
+  - `working_memory`: Array (直近10往復の会話ログ。GeminiのHistory形式)
   - `episodic_buffer`: Array (バッチ未処理の会話ログ。削除せずAppendし続ける)
   - `last_reply_date`: Timestamp (最終会話日時。放置日数の計算に使用)
   - `daily_reply_count`: Number (本日の返信回数)
+
+### Collection: `rag_memories`
+エピソード記憶（長期記憶）のベクトル検索用コレクション。
+- `{memoryId}`
+  - `userId`: String (該当ユーザーのID)
+  - `content`: String (会話のエピソードテキスト)
+  - `embedding`: Vector (テキストのベクトル表現)
+  - `timestamp`: Timestamp (記憶の生成日時)
+  - ※ 1ユーザーあたり `RAG_MAX_MEMORIES` (デフォルト100件) まで保持し、超過分は古いものから削除される。
 
 ### Collection: `system`
 システム全体の設定とレートリミットを管理。
@@ -39,9 +51,9 @@
 
 ## 3. コア処理フロー (Main Execution Flow)
 
-- **Webhook受信 (Cloud Run A)**:
-  - Xからメンションを受信。リプライ内に画像(Media URL)が含まれていれば抽出。
-  - 直ちに HTTP 200 OK を返し、X APIのタイムアウトを防ぐ。
+- **メンション取得 (Polling Worker)**:
+  - 設定された間隔 (`POLLING_INTERVAL_MINUTES`) に基づき、X APIから新規メンションを定期取得。
+  - リプライ内に画像(Media URL)が含まれていれば抽出。
 - **レートリミット判定 (Middleware)**:
   - `monthly_count`, `daily_count`, `user_daily_limit` をFirestoreから読み込み超過をチェック。
   - 超過している場合は処理を中断（バズ時のクラウド破産を防止）。

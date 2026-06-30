@@ -6,7 +6,7 @@ const runGlobalEvolutionBatch = async () => {
     try {
         // 1. Fetch recent logs (last 7 days)
         const logs = await firestore.getRecentConversationLogs(7);
-        if (!logs || logs.length === 0) {
+        if (logs.length === 0) {
             console.log("No recent logs found. Skipping evolution.");
             return { status: 'skipped', reason: 'No logs found' };
         }

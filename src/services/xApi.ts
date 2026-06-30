@@ -1,69 +1,113 @@
-import { TwitterApi  } from 'twitter-api-v2';
+import { Client, OAuth1 } from '@xdevplatform/xdk';
 import config from '../config';
 
 // Initialize client if credentials exist, otherwise let it be empty (e.g. during test)
-let rwClient = null;
+let client: Client | null = null;
 if (config.xApi.appKey) {
-  const client = new TwitterApi({
-    appKey: config.xApi.appKey,
-    appSecret: config.xApi.appSecret,
+  const oauth1 = new OAuth1({
+    apiKey: config.xApi.appKey,
+    apiSecret: config.xApi.appSecret,
+    callback: 'oob',
     accessToken: config.xApi.accessToken,
-    accessSecret: config.xApi.accessSecret,
+    accessTokenSecret: config.xApi.accessSecret,
   });
-  rwClient = client.readWrite;
+  client = new Client({
+    oauth1
+  });
 }
 
-const replyToMention = async (tweetId, text) => {
-  if (!rwClient) {
+const replyToMention = async (tweetId: string, text: string) => {
+  if (!client) {
       console.warn('Twitter API client not initialized. Skipping actual API call.');
       return { data: { id: 'mock_tweet_id' } };
   }
-  try {
-    const response = await rwClient.v2.reply(text, tweetId);
-    return response;
+    try {
+    const response = await client.posts.create({
+      text,
+      reply: { in_reply_to_tweet_id: tweetId }
+    } as any);
+    return response as any;
   } catch (error) {
     console.error('Error replying to mention:', error);
     throw error;
   }
 };
 
-const getTweetDetails = async (tweetId) => {
-    if (!rwClient) return { data: null };
+const getTweetDetails = async (tweetId: string) => {
+    if (!client) return { data: null };
     try {
-        const response = await rwClient.v2.singleTweet(tweetId, {
+        const response = await client.posts.getById(tweetId, {
             expansions: ['attachments.media_keys'],
             'media.fields': ['url']
-        });
-        return response;
+        } as any);
+        return response as any;
     } catch (error) {
         console.error('Error getting tweet details:', error);
         throw error;
     }
 }
 
-const tweet = async (text) => {
-  if (!rwClient) {
+const tweet = async (text: string) => {
+  if (!client) {
       console.warn('Twitter API client not initialized. Skipping actual API call.');
       return { data: { id: 'mock_tweet_id' } };
   }
   try {
-    const response = await rwClient.v2.tweet(text);
-    return response;
+    const response = await client.posts.create({ text } as any);
+    return response as any;
   } catch (error) {
     console.error('Error posting tweet:', error);
     throw error;
   }
 };
 
-const getUserProfile = async (userId) => {
-    if (!rwClient) return { data: { description: 'ダミーのプロフィール文です。仕事に疲れています。' } };
+const getUserProfile = async (userId: string) => {
+    if (!client) return { data: { description: 'ダミーのプロフィール文です。仕事に疲れています。' } };
     try {
-        const response = await rwClient.v2.user(userId, {
+        const response = await client.users.getById(userId, {
             'user.fields': ['description']
-        });
-        return response;
+        } as any);
+        return response as any;
     } catch (error) {
         console.error('Error getting user profile:', error);
+        throw error;
+    }
+}
+
+let cachedNumericMyUserId: string | null = null;
+
+const getMentions = async (sinceId?: string) => {
+    if (!client) return { data: [], meta: { resultCount: 0 } };
+    try {
+        let userId = config.xApi.myUserId;
+        if (!userId) {
+            console.error('X_MY_USER_ID is not set in config!');
+            return { data: [], meta: { resultCount: 0 } };
+        }
+
+        // If the user ID is not entirely numeric (e.g., a screen name), fetch own user profile to cache the numeric ID
+        if (!/^\d+$/.test(userId)) {
+            if (!cachedNumericMyUserId) {
+                const me = await client.users.getMe();
+                cachedNumericMyUserId = me.data.id;
+                console.log(`Resolved numeric user ID for bot: ${cachedNumericMyUserId}`);
+            }
+            userId = cachedNumericMyUserId;
+        }
+
+        const params: any = {
+            "max_results": 100,
+            "expansions": ["author_id"],
+            "tweet.fields": ["created_at", "text", "author_id", "in_reply_to_user_id", "referenced_tweets", "conversation_id"]
+        };
+        if (sinceId) {
+            params.since_id = sinceId;
+        }
+        
+        const response = await client.users.getMentions(userId, params);
+        return response as any;
+    } catch (error) {
+        console.error('Error fetching mentions:', error);
         throw error;
     }
 }
@@ -72,5 +116,6 @@ export {
   replyToMention,
   getTweetDetails,
   tweet,
-  getUserProfile
- };
+  getUserProfile,
+  getMentions
+};

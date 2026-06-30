@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 import readline from 'readline';
 import fs from 'fs';
 import path from 'path';
@@ -19,7 +19,7 @@ const readDB = () => {
     if (fs.existsSync(DB_FILE)) {
         try {
             return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-        } catch (e) {
+        } catch {
             console.error("Failed to parse local_db.json. Starting fresh.");
         }
     }
@@ -67,12 +67,10 @@ const chatLoop = async () => {
             // Generate Context and Memory
             const workingMemory = getWorkingMemory(userData.episodicBuffer);
             // Get extended prompt mock or real
-            let extendedPrompt = '';
-            try {
-                // If this is running standalone, we could mock or fetch from DB. 
-                // For local testing without GCP credentials, we'll just mock it or try to fetch.
-                // We'll leave it empty for basic chat tests unless configured.
-            } catch (e) {}
+            const extendedPrompt = '';
+            // If this is running standalone, we could mock or fetch from DB. 
+            // For local testing without GCP credentials, we'll just mock it or try to fetch.
+            // We'll leave it empty for basic chat tests unless configured.
 
             const systemPrompt = buildSystemPrompt(userData, input, extendedPrompt);
             

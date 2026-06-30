@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+.git
+.github
+.env
+local_db.json
+local_raw_logs.jsonl
+artifacts

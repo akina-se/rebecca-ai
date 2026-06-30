@@ -43,7 +43,7 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
     };
 
     if (delaySeconds > 0) {
-        // @ts-ignore
+        // @ts-expect-error scheduleTime expects specific proto format but basic structure works
         task.scheduleTime = {
             seconds: delaySeconds + Date.now() / 1000,
         };

@@ -11,37 +11,81 @@ import * as tasks from './services/tasks';
 
 const app = express();
 app.use(express.json());
+// Serve static files (Terms of Service, Privacy Policy)
+import path from 'path';
+app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Health check endpoint for CI/CD smoke tests
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// X Webhook Receiver
-app.post('/webhook/x', async (req, res) => {
-    // Quick acknowledge to prevent X API timeout
-    res.status(200).send('OK');
-
-    const payload = req.body;
-    
-    // Simplification for capturing Twitter webhook events
-    const tweetId = payload.tweet_id || payload.data?.id;
-    const text = payload.text || payload.data?.text;
-    const authorId = payload.author_id || payload.data?.author_id;
-
-    if (!tweetId || !text || !authorId) return;
-    if (authorId === config.xApi.myUserId) return; // Ignore self mentions
-
+// Core logic for mentions polling
+const pollMentions = async () => {
     try {
-        // Enqueue with intentional delay (1-3 minutes = 60 to 180 seconds)
-        const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-        await tasks.enqueueReplyTask({
-            tweetId,
-            text,
-            authorId
-        }, delaySeconds);
-    } catch (e) {
-        console.error("Failed to enqueue task", e);
+        console.log("Polling mentions from X API...");
+        const sinceId = await firestore.getLastMentionId();
+        const mentionsRes = await xApi.getMentions(sinceId || undefined);
+        
+        if (!mentionsRes.data || mentionsRes.data.length === 0) {
+            console.log("No new mentions found.");
+            return { count: 0 };
+        }
+
+        console.log(`Found ${mentionsRes.data.length} new mentions.`);
+        let newestId = sinceId;
+
+        for (const tweet of mentionsRes.data) {
+            const tweetId = tweet.id;
+            const text = tweet.text;
+            const authorId = tweet.author_id || tweet.authorId || (tweet as any).author?.id || (tweet as any).user?.id || (tweet as any).user_id;
+
+            // Update newestId
+            if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
+                newestId = tweetId;
+            }
+
+            if (!authorId) {
+                console.warn(`Could not determine author ID for tweet ${tweetId}. Tweet object:`, JSON.stringify(tweet));
+                continue;
+            }
+
+            // Ignore self-mentions
+            if (authorId === config.xApi.myUserId) {
+                console.log(`Ignoring self-mention ${tweetId}`);
+                continue;
+            }
+
+            try {
+                // Enqueue with intentional delay (60 to 180 seconds)
+                const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
+                await tasks.enqueueReplyTask({
+                    tweetId,
+                    text,
+                    authorId
+                }, delaySeconds);
+                console.log(`Enqueued mention ${tweetId} from ${authorId}`);
+            } catch (e) {
+                console.error(`Failed to enqueue task for mention ${tweetId}`, e);
+            }
+        }
+
+        // Save the newest mention ID to avoid fetching them again
+        if (newestId && newestId !== sinceId) {
+            await firestore.setLastMentionId(newestId);
+            console.log(`Updated last_mention_id to ${newestId}`);
+        }
+
+        return { count: mentionsRes.data.length, newestId };
+    } catch (error) {
+        console.error("Error during pollMentions:", error);
+        throw error;
+    }
+};
+
+// Endpoint to be triggered by Cloud Scheduler or similar services
+app.get('/batch/mentions', async (req, res) => {
+    try {
+        const result = await pollMentions();
+        res.status(200).json({ status: 'Mentions Polling Batch completed', result });
+    } catch (error) {
+        console.error('Mentions Polling Batch failed:', error);
+        res.status(500).send('Mentions Polling Batch failed');
     }
 });
 
@@ -70,13 +114,13 @@ app.post('/worker/reply', async (req, res) => {
 
         if (isFirstTime) {
             try {
-                // 初回のみXのプロフィール文を解析してcoreProfileの初期値を作成
+                // Analyze the user's X profile only on their first interaction to create the initial coreProfile
                 const profileRes = await xApi.getUserProfile(authorId);
                 const desc = profileRes?.data?.description;
                 if (desc) {
                     const parsedProfile = await gemini.analyzeUserProfile(desc);
                     userData.coreProfile = parsedProfile;
-                    // プロフィールを読んだことをほのめかす履歴を1件注入
+                    // Inject a single history log hinting that the profile has been read
                     userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
                 }
             } catch(e) {
@@ -152,7 +196,8 @@ app.get('/batch/evolution', async (req, res) => {
 // News Periodic Post Batch Endpoint
 app.get('/batch/news-post', async (req, res) => {
     try {
-        const result = await require('./core/news').runProactiveNewsPostBatch();
+        const { runProactiveNewsPostBatch } = await import('./core/news');
+        const result = await runProactiveNewsPostBatch();
         res.json(result);
     } catch (e) {
         console.error('Failed to run news post batch:', e);
@@ -164,6 +209,15 @@ const PORT = config.port;
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
+        
+        // For periodic execution in environments like local (where Cloud Scheduler is unavailable)
+        // Only active if POLLING_INTERVAL_MINUTES=60 or similar is set in .env
+        if (config.pollingIntervalMinutes > 0) {
+            console.log(`Internal polling enabled: every ${config.pollingIntervalMinutes} minutes.`);
+            setInterval(() => {
+                pollMentions().catch(e => console.error("Internal polling error:", e));
+            }, config.pollingIntervalMinutes * 60 * 1000);
+        }
     });
 }
 

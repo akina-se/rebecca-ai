@@ -4,23 +4,27 @@ import * as xApi from '../services/xApi';
 
 const fetchYahooNewsHeadlines = async () => {
     try {
-        const response = await fetch('https://news.yahoo.co.jp/rss/topics/top-picks.xml');
+        const categories = ['top-picks', 'domestic', 'entertainment', 'it', 'sports'];
+        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+        const url = `https://news.yahoo.co.jp/rss/topics/${randomCategory}.xml`;
+        console.log(`Fetching news from: ${url}`);
+        const response = await fetch(url);
         const text = await response.text();
         
-        // 正規表現で簡易的にRSSからタイトルを抽出（依存関係追加を避けるため）
+        // Extract titles from RSS using simple regex (to avoid adding dependencies)
         const titleRegex = /<title>(.*?)<\/title>/g;
         let match;
         const headlines = [];
         
         while ((match = titleRegex.exec(text)) !== null) {
             const title = match[1];
-            // Yahooニュースのタイトルやサイト名などのノイズを除去
+            // Remove noise like Yahoo News site names
             if (title !== 'Yahoo!ニュース・トピックス - 主要' && !title.includes('Yahoo!')) {
                 headlines.push(title);
             }
         }
         
-        // 最新の5件程度を返す
+        // Return top 5 items
         return headlines.slice(0, 5);
     } catch (e) {
         console.error("Failed to fetch news", e);
@@ -39,19 +43,25 @@ const runProactiveNewsPostBatch = async () => {
 
         console.log("Fetched headlines:\n", headlines.join('\n'));
 
-        // 生成
-        const postText = await gemini.generateNewsPost(headlines);
+        // Generate tweet
+        let postText = await gemini.generateNewsPost(headlines);
         if (!postText) {
             console.log("Failed to generate news post.");
             return { status: 'failed', reason: 'Generation failed' };
         }
 
+        // Tagging feature: Append a hashtag only if character limits allow
+        const hashtag = "\n#全肯定AIレベッカ";
+        if (postText.length + hashtag.length <= 140) {
+            postText += hashtag;
+        }
+
         console.log("Generated Post:", postText);
 
-        // Xに投稿
+        // Post to X
         await xApi.tweet(postText);
         
-        // 履歴をFirestoreに保存
+        // Save history to Firestore
         await firestore.saveTimelinePost(postText);
 
         return { status: 'success', post: postText };

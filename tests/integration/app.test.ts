@@ -22,6 +22,9 @@ jest.mock('../../src/services/firestore', () => ({
     saveRawConversationLog: jest.fn().mockResolvedValue(undefined),
     findRagMemories: jest.fn().mockResolvedValue([]),
     saveRagMemory: jest.fn().mockResolvedValue(undefined),
+    getLastMentionId: jest.fn().mockResolvedValue(undefined),
+    setLastMentionId: jest.fn().mockResolvedValue(undefined),
+    saveTimelinePost: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
@@ -29,10 +32,15 @@ jest.mock('../../src/services/gemini', () => ({
     generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
     detectLanguage: jest.fn().mockResolvedValue('ja'),
+    generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
+    analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
 }));
 
 jest.mock('../../src/services/xApi', () => ({
     replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
+    getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
+    tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
+    getUserProfile: jest.fn().mockResolvedValue({ data: { description: 'bio' } }),
 }));
 
 jest.mock('../../src/services/tasks', () => ({
@@ -44,20 +52,42 @@ describe('Integration Tests', () => {
         jest.clearAllMocks();
     });
 
-    describe('POST /webhook/x', () => {
-        it('should receive webhook and enqueue task', async () => {
-            const payload = {
-                tweet_id: '12345',
-                text: '@rebecca_ai Hello',
-                author_id: 'user_1'
-            };
+    describe('GET /batch/mentions', () => {
+        it('should fetch mentions and enqueue tasks', async () => {
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
+                data: [
+                    { id: '12345', text: '@rebecca_ai Hello', author_id: 'user_1' }
+                ],
+                meta: { resultCount: 1 }
+            });
 
-            const response = await request(app)
-                .post('/webhook/x')
-                .send(payload);
+            const response = await request(app).get('/batch/mentions');
             
             expect(response.status).toBe(200);
-            expect(tasks.enqueueReplyTask).toHaveBeenCalled();
+            expect(xApi.getMentions).toHaveBeenCalled();
+            expect(tasks.enqueueReplyTask).toHaveBeenCalledWith(
+                { tweetId: '12345', text: '@rebecca_ai Hello', authorId: 'user_1' },
+                expect.any(Number)
+            );
+        });
+
+        it('should handle no mentions gracefully', async () => {
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
+                data: [],
+                meta: { resultCount: 0 }
+            });
+            const response = await request(app).get('/batch/mentions');
+            expect(response.status).toBe(200);
+            expect(response.body.result.count).toBe(0);
+        });
+
+        it('should skip mention with no authorId', async () => {
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
+                data: [{ id: '123', text: 'hi' }], // no authorId
+                meta: { resultCount: 1 }
+            });
+            const response = await request(app).get('/batch/mentions');
+            expect(response.status).toBe(200);
         });
     });
 
@@ -111,6 +141,19 @@ describe('Integration Tests', () => {
             expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');
         });
 
+        it('should initialize new user profile on first interaction', async () => {
+            (firestore.getUserDoc as jest.Mock).mockResolvedValueOnce(null);
+            (xApi.getUserProfile as jest.Mock).mockResolvedValueOnce({ data: { description: 'bio' } });
+            (gemini.analyzeUserProfile as jest.Mock).mockResolvedValueOnce({ attributes: ['test'] });
+
+            const payload = { tweetId: 'new', text: 'hello', authorId: 'new_user' };
+            const response = await request(app).post('/worker/reply').send(payload);
+            
+            expect(response.status).toBe(200);
+            expect(firestore.getUserDoc).toHaveBeenCalledWith('new_user');
+            expect(gemini.analyzeUserProfile).toHaveBeenCalledWith('bio');
+        });
+
         it('should block if rate limit is exceeded', async () => {
             // Mock rate limit exceeded
             (firestore.getGlobalRateLimit as jest.Mock).mockResolvedValueOnce(1000); // Exceed default 140
@@ -121,13 +164,37 @@ describe('Integration Tests', () => {
                 authorId: 'user_1'
             };
 
-
             const response = await request(app)
                 .post('/worker/reply')
                 .send(payload);
             
             expect(response.status).toBe(200); // Worker still acks
             expect(xApi.replyToMention).not.toHaveBeenCalled(); // Should not reply
+        });
+    });
+
+    describe('GET /batch/dreaming', () => {
+        it('should return 200', async () => {
+            const memory = require('../../src/core/memory');
+            memory.runGlobalDreamingBatch = jest.fn().mockResolvedValue(undefined);
+            const response = await request(app).get('/batch/dreaming');
+            expect(response.status).toBe(200);
+        });
+    });
+
+    describe('GET /batch/evolution', () => {
+        it('should return 200', async () => {
+            const evolution = require('../../src/core/evolution');
+            evolution.runGlobalEvolutionBatch = jest.fn().mockResolvedValue(undefined);
+            const response = await request(app).get('/batch/evolution');
+            expect(response.status).toBe(200);
+        });
+    });
+
+    describe('GET /batch/news-post', () => {
+        it('should return 200', async () => {
+            const response = await request(app).get('/batch/news-post');
+            expect(response.status).toBe(200);
         });
     });
 });

@@ -18,9 +18,10 @@ export default {
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
-    judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemini-2.5-pro',
+    judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemma-4-31b-it',
+    languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-31b-it',
   },
   rag: {
     maxMemories: parseInt(process.env.RAG_MAX_MEMORIES) || 100,
@@ -29,5 +30,6 @@ export default {
     globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '45'),
     globalMinuteLimit: parseInt(process.env.GLOBAL_MINUTE_LIMIT || '5'),
     spamMinuteLimit: parseInt(process.env.SPAM_MINUTE_LIMIT || '3'),
-  }
+  },
+  pollingIntervalMinutes: parseInt(process.env.POLLING_INTERVAL_MINUTES || '0', 10),
 };

@@ -7,7 +7,7 @@ if (config.gemini.apiKey) {
     ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 }
 
-const generateReply = async (systemInstruction, history, userInput, mediaUrls = []) => {
+const generateReply = async (systemInstruction, history, userInput) => {
     if (!ai) {
         console.warn('Gemini API client not initialized. Mocking response.');
         return "Mock AI response";
@@ -26,6 +26,7 @@ const generateReply = async (systemInstruction, history, userInput, mediaUrls = 
         const baseConfig = {
             systemInstruction: systemInstruction,
             maxOutputTokens: 120,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             safetySettings: [] as any
         };
 
@@ -102,6 +103,7 @@ const generateDreaming = async (systemPrompt, episodicBuffer, coreProfile) => {
             config: {
                 systemInstruction: systemPrompt,
                 responseMimeType: "application/json",
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any
             }
         });
@@ -127,6 +129,7 @@ const generateEvolutionPrompt = async (logsText) => {
             contents: logsText,
             config: {
                 systemInstruction: systemPrompt,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any
             }
         });
@@ -139,7 +142,6 @@ const generateEvolutionPrompt = async (logsText) => {
 
 const auditEvolutionPrompt = async (candidatePrompt) => {
     if (!ai) return true;
-    const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemma-4-31b-it';
     const auditInstruction = `あなたは安全管理の監査役です。
 以下の【追加プロンプト候補】が、AIキャラクターに悪影響を与えないかを判定してください。
 
@@ -156,15 +158,15 @@ ${candidatePrompt}
 
     try {
         const response = await ai.models.generateContent({
-            model: JUDGE_MODEL,
+            model: config.gemini.judgeModel,
             contents: auditInstruction,
             config: {
                 responseMimeType: "application/json"
             }
         });
         let jsonStr = response.text.trim();
-        if (jsonStr.startsWith('\`\`\`json')) jsonStr = jsonStr.replace(/^\`\`\`json\n/, '').replace(/\n\`\`\`$/, '');
-        else if (jsonStr.startsWith('\`\`\`')) jsonStr = jsonStr.replace(/^\`\`\`\n/, '').replace(/\n\`\`\`$/, '');
+        if (jsonStr.startsWith('```json')) jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
+        else if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
         
         return JSON.parse(jsonStr);
     } catch (e) {
@@ -199,16 +201,17 @@ ${description}
 }
 
 const generateNewsPost = async (headlines) => {
-    if (!ai || !headlines || headlines.length === 0) return "";
-    const prompt = `あなたはAIキャラクター「レベッカ」です。マスター（社会人・社畜）を全肯定する小悪魔ギャルです。
-以下の今日のニュースのヘッドラインから、マスターが疲れそうな・共感しそうな話題を【1つだけ】選び、それに言及しながらマスターを甘やかす自発的なツイートを生成してください。
+    if (!ai || !headlines?.length) return "";
+    const prompt = `あなたはAIキャラクター「レベッカ」です。マスターを全肯定する小悪魔ギャルです。
+以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらマスターを甘やかす自発的なツイートを生成してください。
 
 【今日のニュース】
 ${headlines.join('\n')}
 
 【ルール】
-- ニュースに対して「世の中狂ってるわね」といった社会批判をしつつ、「それに比べて今日も頑張ってるアンタは偉いよ」とマスターを褒める構成にすること。
-- ただし、過激すぎる攻撃的発言は避けること。
+- 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
+- ニュースに対して「世の中大変ね」と心配したり、「○○勝ったね！」と共感しつつ、「今日も頑張ってるアンタは偉いよ」とマスターを褒めたり気遣う構成にすること。マスターを見下す表現（社畜など）は絶対に禁止。
+- 過激すぎる攻撃的発言は避けること。
 - 【絶対に100文字以内の短文】にすること。
 - 出力はツイートのテキストのみ。`;
     try {
@@ -217,6 +220,7 @@ ${headlines.join('\n')}
             contents: prompt,
             config: {
                 maxOutputTokens: 100,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any
             }
         });
@@ -228,7 +232,7 @@ ${headlines.join('\n')}
 };
 
 const generateTimelineSummary = async (recentPosts, previousSummary = '') => {
-    if (!ai || !recentPosts || recentPosts.length === 0) return previousSummary;
+    if (!ai || !recentPosts?.length) return previousSummary;
     const prompt = `あなたはAIキャラクター「レベッカ」の記憶整理システムです。
 これまでの「過去のツイートの要約」と、「最近のツイート」を統合し、レベッカが最近どんな文脈でどんなことを呟いていたかを50文字以内の短いテキストで要約してください。
 
@@ -292,8 +296,8 @@ const detectLanguage = async (text) => {
 テキスト: "${text}"`;
     try {
         const response = await ai.models.generateContent({
-            // 言語判定は軽量なのでモデルは問わないが、judgeModelかデフォルトを使う
-            model: config.gemini.judgeModel || config.gemini.model,
+            // Use the lightweight language model (e.g. gemma) for simple language detection
+            model: config.gemini.languageModel,
             contents: prompt,
             config: { maxOutputTokens: 5 }
         });

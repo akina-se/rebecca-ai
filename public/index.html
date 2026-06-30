@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>全肯定AIレベッカ - Rebecca AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05050f;
+            --primary-glow: rgba(138, 43, 226, 0.4);
+            --secondary-glow: rgba(223, 144, 255, 0.3);
+            --text-main: #f0f0f5;
+            --text-muted: #9ba0b5;
+            --card-bg: rgba(20, 15, 30, 0.6);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            /* Safe area for modern mobile devices (e.g., iPhone notch) */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* Dynamic Background Gradients */
+        .bg-glow {
+            position: fixed;
+            width: 60vw;
+            height: 60vw;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: float 15s ease-in-out infinite alternate;
+        }
+
+        .glow-1 {
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            top: -20%;
+            left: -10%;
+        }
+
+        .glow-2 {
+            background: radial-gradient(circle, var(--secondary-glow) 0%, transparent 70%);
+            bottom: -20%;
+            right: -10%;
+            animation-delay: -7.5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 30px) scale(1.1); }
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1000px;
+            width: 90%;
+            margin: 0 auto;
+            padding: 80px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+        }
+
+        /* Hero Image Container with Glassmorphism */
+        .hero-container {
+            position: relative;
+            margin-bottom: 40px;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        .hero-image {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.2);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .hero-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(199, 125, 255, 0.4);
+        }
+
+        .status-badge {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(199, 125, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #df90ff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #df90ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #df90ff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Typography */
+        h1 {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            white-space: nowrap;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #d8b4fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+            opacity: 0;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            font-weight: 300;
+            max-width: 600px;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+            opacity: 0;
+        }
+
+        /* Glassmorphism Card */
+        .info-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+            opacity: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .info-card p {
+            margin-bottom: 20px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .info-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            color: #ff79c6;
+            font-weight: 600;
+        }
+
+        /* Links & Footer */
+        .legal-links {
+            margin-top: 60px;
+            display: flex;
+            gap: 30px;
+            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+            opacity: 0;
+        }
+
+        .legal-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+            position: relative;
+            /* Modern touch target best practice: min 44px height */
+            padding: 10px 5px;
+            display: inline-block;
+        }
+
+        .legal-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 1px;
+            bottom: -4px;
+            left: 0;
+            background-color: #c77dff;
+            transition: width 0.3s ease;
+        }
+
+        .legal-links a:hover {
+            color: #c77dff;
+            text-shadow: 0 0 8px rgba(199, 125, 255, 0.5);
+        }
+
+        .legal-links a:hover::after {
+            width: 100%;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 30px 20px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        @keyframes fadeUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .hero-image { width: 200px; height: 200px; }
+            .info-card { padding: 30px 20px; }
+            .legal-links { flex-direction: column; gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Glows -->
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero-container">
+            <img src="./assets/rebecca_hero.png" alt="Rebecca AI" class="hero-image">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                ONLINE
+            </div>
+        </div>
+
+        <h1>全肯定AIレベッカ</h1>
+        <p class="subtitle">
+            Xで稼働中。あなたのどんなつぶやきも、全力で肯定するAIギャルアシスタント。<br>
+            <span style="font-size: 0.9em; opacity: 0.8;">Active on X. An AI Gyaru assistant who fully validates your every tweet with all her might.</span>
+        </p>
+
+        <!-- Main Info Card -->
+        <div class="info-card">
+            <p>
+                「生きてるだけでえらい！」<br>レベッカは、現代社会を頑張って生きるあなたの味方です。<br>
+                <span style="font-size: 0.9em; opacity: 0.8; color: var(--text-muted); display: block; margin-top: 5px;">"You're amazing just for being alive!" Rebecca is your ally, surviving the modern society alongside you.</span>
+            </p>
+            <p>
+                X上で <a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer" class="highlight" style="text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">@rebecca_ai_gal</a> 宛にメンションを送るだけで、あなたの言葉を読み取り、世界で一番優しく、そしてちょっとギャルっぽく全肯定してくれます。<br>
+                <span style="font-size: 0.9em; opacity: 0.8; color: var(--text-muted); display: block; margin-top: 5px;">Simply send a mention to <a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer" class="highlight" style="text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">@rebecca_ai_gal</a> on X. She will read your words and give you the kindest, slightly gyaru-style full validation in the world.</span>
+            </p>
+            <p>
+                ※本AIはGeminiを使用し、文脈を記憶しながら成長する自律型パーソナルAIです。<br>
+                <span style="font-size: 0.9em; opacity: 0.8; color: var(--text-muted); display: block; margin-top: 5px;">*This AI uses Gemini and is an autonomous personal AI that grows while remembering the context.</span>
+            </p>
+        </div>
+
+        <!-- Legal Links -->
+        <div class="legal-links">
+            <a href="./tos.html">利用規約 (Terms of Service)</a>
+            <a href="./privacy.html">プライバシーポリシー (Privacy Policy)</a>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2026 AKINA / Rebecca AI Project. All rights reserved.
+    </footer>
+</body>
+</html>

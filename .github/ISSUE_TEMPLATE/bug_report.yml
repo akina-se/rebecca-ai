@@ -1,0 +1,66 @@
+name: "🐛 Bug Report / バグ報告"
+description: Report a bug to help us improve Rebecca AI
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! / バグ報告ありがとうございます！
+        Before creating a new issue, please **search existing issues** to avoid duplicates.
+  - type: input
+    id: version
+    attributes:
+      label: Version / バージョン
+      description: The version or commit hash of Rebecca AI you are using.
+      placeholder: "e.g. 1.0.0 or a1b2c3d"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description / バグの概要
+      description: A clear and concise description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce / 再現手順
+      description: Specific steps to reproduce the bug.
+      placeholder: |
+        1. Run '...'
+        2. Click on '...'
+        3. See error '...'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior / 期待される動作
+      description: What you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error Output / ログ・エラー出力
+      description: Paste any relevant logs or error messages here.
+      render: shell
+  - type: checkboxes
+    id: environment
+    attributes:
+      label: Environment / 動作環境
+      description: Select the environment(s) where you encountered the bug.
+      options:
+        - label: Local (Node.js)
+        - label: Google Cloud Run (GCP)
+        - label: Other / その他
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist / 確認事項
+      options:
+        - label: I have searched existing issues and confirmed this is not a duplicate. / 既存のIssueに類似の報告がないことを確認しました。
+          required: true

@@ -1,0 +1,36 @@
+name: "🚀 Feature Request / 機能要望"
+description: Suggest a new idea or feature for Rebecca AI
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your feature suggestion! / 機能提案ありがとうございます！
+        Please describe your idea in as much detail as possible.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / 解決したい課題
+      description: What problem does this feature solve? What is your current pain point?
+      placeholder: "e.g. I find it difficult to do X because..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / 望ましい解決策
+      description: Describe your ideal solution or the feature you'd like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered / 検討した代替案
+      description: Have you tried any workarounds or alternative approaches?
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context / その他
+      description: Any other context, references, or screenshots that might be helpful.
