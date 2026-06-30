@@ -1,5 +1,7 @@
 # Rebecca IP Project: AI Chatbot "Rebecca"
 
+![全肯定AIレベッカ](docs/rebecca_landscape.jpg)
+
 This is the backend system for the unconditional affirmation Gyaru AI, "Rebecca". It operates entirely serverless, utilizing X (formerly Twitter), Google Cloud Platform (GCP), and the Gemini API.
 
 [日本語版の仕様書はこちら (Japanese Specification)](docs/specification_ja.md) | [English Specification](docs/specification_en.md)
