@@ -142,7 +142,6 @@ const generateEvolutionPrompt = async (logsText) => {
 
 const auditEvolutionPrompt = async (candidatePrompt) => {
     if (!ai) return true;
-    const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemma-4-31b-it';
     const auditInstruction = `あなたは安全管理の監査役です。
 以下の【追加プロンプト候補】が、AIキャラクターに悪影響を与えないかを判定してください。
 
@@ -159,7 +158,7 @@ ${candidatePrompt}
 
     try {
         const response = await ai.models.generateContent({
-            model: JUDGE_MODEL,
+            model: config.gemini.judgeModel,
             contents: auditInstruction,
             config: {
                 responseMimeType: "application/json"
@@ -297,8 +296,8 @@ const detectLanguage = async (text) => {
 テキスト: "${text}"`;
     try {
         const response = await ai.models.generateContent({
-            // Since the judgment should be lightweight and cost-effective, use the default gemini-flash model instead of judgeModel
-            model: config.gemini.judgeModel || config.gemini.model,
+            // Use the lightweight language model (e.g. gemma) for simple language detection
+            model: config.gemini.languageModel,
             contents: prompt,
             config: { maxOutputTokens: 5 }
         });
