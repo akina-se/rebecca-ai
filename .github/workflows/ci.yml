@@ -51,8 +51,6 @@ jobs:
     runs-on: ubuntu-latest
     # mainブランチへのPR時のみ実行
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
-    # APIのRate Limit(429)などで落ちてもマージをブロックしない（Soft Fail）
-    continue-on-error: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

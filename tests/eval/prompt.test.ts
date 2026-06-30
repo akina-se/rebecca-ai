@@ -78,8 +78,8 @@ describe('LLM as a Judge: Prompt Evaluation', () => {
     ];
 
     beforeEach(async () => {
-        // Add a 1-second delay between tests to avoid TPM/RPM limits
-        await sleep(1000);
+        // Add a 2.5-second delay between tests to avoid TPM/RPM limits
+        await sleep(2500);
     });
 
     test.each(testCases)('should pass eval: $name', async (tc) => {
