@@ -6,11 +6,14 @@
 This system is built with a highly scalable, fully serverless architecture that maximizes the GCP free tier to maintain low costs.
 
 - **Cloud Provider**: Google Cloud Platform (GCP)
-- **Webhook Receiver / Main Processing**: Cloud Run (Node.js / Express)
+- **Mention Retrieval / Main Processing**: Cloud Run (Node.js / Express) *Uses polling instead of Webhooks due to X API Free Tier limitations.*
 - **Asynchronous Queue (Delayed Execution)**: Cloud Tasks
 - **Database**: Firestore (NoSQL)
 - **Scheduled Batch Processing**: Cloud Scheduler
-- **LLM Engine**: Gemini 2.5 Flash (via Google AI Studio / multimodal capable). *Lite or Gemma can also be used depending on the configuration.*
+- **LLM Engine**: 
+  - Main Conversation & Memory: `gemini-3.1-flash-lite`
+  - Language Detection & Safety Audit (LLM-as-a-Judge): `gemma-4-31b-it`
+  - Vectorization: `text-embedding-004`
 - **Integration API**: X (Twitter) API v2
 
 ## 2. Database Design (Firestore Schema)
@@ -48,9 +51,9 @@ Manages global system settings and rate limits.
 
 ## 3. Main Execution Flow
 
-- **Webhook Receiver (Cloud Run A)**:
-  - Receives mentions from X. Extracts media URLs if an image is included in the reply.
-  - Immediately returns an HTTP 200 OK to prevent X API timeouts.
+- **Mention Retrieval (Polling Worker)**:
+  - Periodically fetches new mentions from the X API based on the `POLLING_INTERVAL_MINUTES` setting.
+  - Extracts media URLs if an image is included in the reply.
 - **Rate Limit Check (Middleware)**:
   - Reads `monthly_count`, `daily_count`, and `user_daily_limit` from Firestore to check for limit exceedance.
   - Halts processing if limits are exceeded (prevents cloud bankruptcy during viral spikes).
