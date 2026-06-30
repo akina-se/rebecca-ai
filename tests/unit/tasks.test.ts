@@ -24,6 +24,12 @@ describe('Cloud Tasks Service', () => {
         originalConfig = { ...config.gcp };
         jest.clearAllMocks();
         mockQueuePath.mockReturnValue('mock/queue/path');
+        
+        // Ensure config has dummy values so it doesn't fall back to mock implementation in CI
+        config.gcp.projectId = 'test-project';
+        config.gcp.location = 'test-location';
+        config.gcp.queueName = 'test-queue';
+        config.gcp.workerUrl = 'http://test-url';
     });
 
     afterEach(() => {
