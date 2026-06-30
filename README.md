@@ -50,6 +50,10 @@ graph TD
 
 ## Setup Instructions
 
+> **⚠️ Note on Gemini API (Free Tier):**
+> If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
+
+
 ### 1. GCP Project Setup
 1. Create a new project in the GCP Console and enable billing (required even for the free tier).
 2. Enable the following APIs: `Cloud Run API`, `Cloud Tasks API`, `Cloud Firestore API`, `Cloud Scheduler API`
