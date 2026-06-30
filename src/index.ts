@@ -212,14 +212,11 @@ if (require.main === module) {
         
         // For periodic execution in environments like local (where Cloud Scheduler is unavailable)
         // Only active if POLLING_INTERVAL_MINUTES=60 or similar is set in .env
-        if (process.env.POLLING_INTERVAL_MINUTES) {
-            const intervalMinutes = parseInt(process.env.POLLING_INTERVAL_MINUTES, 10);
-            if (!isNaN(intervalMinutes) && intervalMinutes > 0) {
-                console.log(`Internal polling enabled: every ${intervalMinutes} minutes.`);
-                setInterval(() => {
-                    pollMentions().catch(e => console.error("Internal polling error:", e));
-                }, intervalMinutes * 60 * 1000);
-            }
+        if (config.pollingIntervalMinutes > 0) {
+            console.log(`Internal polling enabled: every ${config.pollingIntervalMinutes} minutes.`);
+            setInterval(() => {
+                pollMentions().catch(e => console.error("Internal polling error:", e));
+            }, config.pollingIntervalMinutes * 60 * 1000);
         }
     });
 }
