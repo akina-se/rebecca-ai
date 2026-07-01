@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { GoogleGenAI  } from '@google/genai';
 import * as gemini from '../../src/services/gemini';
 import { buildSystemPrompt  } from '../../src/core/contextInjector';
+import { Language } from '../../src/core/prompt';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.1-flash-lite';
@@ -85,8 +86,8 @@ describe('LLM as a Judge: Prompt Evaluation', () => {
     test.each(testCases)('should pass eval: $name', async (tc) => {
         // 1. Generate Rebecca's response
         const userData = { episodicBuffer: [] }; // Mock empty memory
-        const lang = tc.lang || 'ja';
-        const systemPrompt = buildSystemPrompt(userData, tc.input, '', '', [], lang);
+        const lang: Language = (tc.lang as Language) || 'ja';
+        const systemPrompt = buildSystemPrompt('reply', userData, tc.input, '', '', [], lang);
         const reply = await gemini.generateReply(systemPrompt, [], tc.input);
 
         // 2. Evaluate with Judge
