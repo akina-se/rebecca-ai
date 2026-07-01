@@ -1,8 +1,8 @@
 import { getJSTDate  } from '../utils/time';
-import { BASE_SYSTEM_PROMPT, BASE_SYSTEM_PROMPT_EN  } from './prompt';
+import { getBasePrompt, PromptContext, Language  } from './prompt';
 
-const buildSystemPrompt = (userData, userInput, extendedPrompt = '', timelineSummary = '', ragMemories = [], lang = 'ja') => {
-    let prompt = lang === 'en' ? BASE_SYSTEM_PROMPT_EN : BASE_SYSTEM_PROMPT;
+const buildSystemPrompt = (promptContext: PromptContext, userData, userInput, extendedPrompt = '', timelineSummary = '', ragMemories = [], lang: Language = 'ja') => {
+    let prompt = getBasePrompt(promptContext, lang);
 
     // 1. Core Profile injection
     if (userData?.coreProfile) {
