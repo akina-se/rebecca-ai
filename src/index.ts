@@ -106,7 +106,10 @@ app.post('/worker/reply', async (req, res) => {
         // 1. Rate Limit Check
         const rateLimit = await checkAndIncrementRateLimits(authorId);
         if (!rateLimit.allowed) {
-            console.log(`Rate limit exceeded for user ${sanitizeForLog(authorId)}, reason: ${sanitizeForLog(rateLimit.reason)}`);
+            console.log('Rate limit exceeded for user', {
+                authorId: sanitizeForLog(authorId),
+                reason: sanitizeForLog(rateLimit.reason),
+            });
             return;
         }
 
