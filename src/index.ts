@@ -2,6 +2,9 @@ import express from 'express';
 import config from './config';
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';
+
+const sanitizeForLog = (str: any) => String(str).replace(/[\r\n]+/g, ' ');
+
 import { buildSystemPrompt  } from './core/contextInjector';
 import { checkAndIncrementRateLimits  } from './core/rateLimiter';
 import * as firestore from './services/firestore';
@@ -100,7 +103,7 @@ app.post('/worker/reply', async (req, res) => {
         // 1. Rate Limit Check
         const rateLimit = await checkAndIncrementRateLimits(authorId);
         if (!rateLimit.allowed) {
-            console.log(`Rate limit exceeded for user ${authorId}, reason: ${rateLimit.reason}`);
+            console.log(`Rate limit exceeded for user ${sanitizeForLog(authorId)}, reason: ${sanitizeForLog(rateLimit.reason)}`);
             return;
         }
 
@@ -163,7 +166,7 @@ app.post('/worker/reply', async (req, res) => {
         // 7. Save Raw Log for Analysis
         await firestore.saveRawConversationLog(authorId, text, aiResponseText);
 
-        console.log(`Successfully replied to tweet ${tweetId} by user ${authorId}`);
+        console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
     } catch (error) {
         console.error('Error processing reply in worker:', error);
     }
