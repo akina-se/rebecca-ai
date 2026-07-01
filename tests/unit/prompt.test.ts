@@ -1,4 +1,4 @@
-import { PromptContext, Language, getBasePrompt, getDreamingPrompt } from '../../src/core/prompt';
+import { getBasePrompt, getDreamingPrompt } from '../../src/core/prompt';
 import * as promptModule from '../../src/core/prompt';
 
 describe('prompt.ts exports verification', () => {
