@@ -3,11 +3,6 @@ import config from './config';
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';
 
-const sanitizeForLog = (str: unknown) => String(str).replace(/[\r\n]+/g, ' ');
-const sanitizeIdForLog = (value: unknown) =>
-    String(value)
-        .replace(/[\r\n]+/g, ' ')
-        .replace(/[^a-zA-Z0-9._:@-]/g, '_');
 
 import { buildSystemPrompt  } from './core/contextInjector';
 import { checkAndIncrementRateLimits  } from './core/rateLimiter';
@@ -110,10 +105,7 @@ app.post('/worker/reply', async (req, res) => {
         // 1. Rate Limit Check
         const rateLimit = await checkAndIncrementRateLimits(authorId);
         if (!rateLimit.allowed) {
-            console.log('Rate limit exceeded for user', {
-                authorId: sanitizeForLog(authorId),
-                reason: sanitizeForLog(rateLimit.reason),
-            });
+            console.log(`Rate limit exceeded for user ${authorId.replace(/[\r\n]/g, '')}, reason: ${rateLimit.reason.replace(/[\r\n]/g, '')}`);
             return;
         }
 
@@ -176,7 +168,7 @@ app.post('/worker/reply', async (req, res) => {
         // 7. Save Raw Log for Analysis
         await firestore.saveRawConversationLog(authorId, text, aiResponseText);
 
-        console.log(`Successfully replied to tweet ${sanitizeIdForLog(tweetId)} by user ${sanitizeIdForLog(authorId)}`);
+        console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
     } catch (error) {
         console.error('Error processing reply in worker:', error);
     }
