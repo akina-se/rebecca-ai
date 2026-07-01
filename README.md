@@ -1,5 +1,10 @@
 # Rebecca - The Unconditional Affirmation Gyaru AI 
 
+[![CI Status](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/github/v/release/akina-se/rebecca-ai)](https://github.com/akina-se/rebecca-ai/releases)
+
 ![Rebecca AI](docs/rebecca_landscape.jpg)
 
 **The kindest, unconditional affirmation Gyaru AI.**
@@ -49,6 +54,10 @@ graph TD
 ```
 
 ## Setup Instructions
+
+> **⚠️ Note on Gemini API (Free Tier):**
+> If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
+
 
 ### 1. GCP Project Setup
 1. Create a new project in the GCP Console and enable billing (required even for the free tier).
@@ -126,6 +135,12 @@ npm run batch:news
 ```bash
 npm run deploy
 ```
+
+## Community & Security
+
+- **[Code of Conduct](CODE_OF_CONDUCT.md)**: We are committed to fostering a welcoming community. Please read and follow our Code of Conduct.
+- **[Security Policy](SECURITY.md)**: If you discover a security vulnerability, please refer to our Security Policy for reporting instructions.
+- **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
 
 ## Directory Structure
 - `src/index.ts` : Application entry point

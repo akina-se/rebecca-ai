@@ -26,3 +26,8 @@ build/
 
 # Linter caches
 .eslintcache
+
+# GCP Service Account Keys
+credentials.json
+*-key.json
+*.pem

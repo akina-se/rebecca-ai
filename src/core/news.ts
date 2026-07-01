@@ -1,6 +1,7 @@
 import * as firestore from '../services/firestore';
 import * as gemini from '../services/gemini';
 import * as xApi from '../services/xApi';
+import { getBasePrompt } from './prompt';
 
 const fetchYahooNewsHeadlines = async () => {
     try {
@@ -44,7 +45,8 @@ const runProactiveNewsPostBatch = async () => {
         console.log("Fetched headlines:\n", headlines.join('\n'));
 
         // Generate tweet
-        let postText = await gemini.generateNewsPost(headlines);
+        const systemInstruction = getBasePrompt('timeline', 'ja');
+        let postText = await gemini.generateNewsPost(systemInstruction, headlines);
         if (!postText) {
             console.log("Failed to generate news post.");
             return { status: 'failed', reason: 'Generation failed' };

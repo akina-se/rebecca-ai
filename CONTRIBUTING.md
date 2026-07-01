@@ -16,7 +16,7 @@ Rebecca AI is built with a serverless microservices architecture (GCP Cloud Run 
 ## 2. Issues & Feature Requests
 
 ### Reporting Bugs
-If you find a bug in the source code, you can help us by [submitting an issue](#). Before you submit an issue, please search the issue tracker to ensure it hasn't been reported already.
+If you find a bug in the source code, you can help us by [submitting an issue](https://github.com/akina-se/rebecca-ai/issues). Before you submit an issue, please search the issue tracker to ensure it hasn't been reported already.
 When submitting a bug report, please include:
 - A clear and descriptive title.
 - Steps to reproduce the issue.
@@ -66,7 +66,7 @@ To set up the project locally:
 
 ## 6. Code of Conduct
 
-By participating in this project, you are expected to uphold a welcoming, inclusive, and professional environment. We expect all contributors to adhere to the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). Harassment or unacceptable behavior will not be tolerated.
+By participating in this project, you are expected to uphold a welcoming, inclusive, and professional environment. We expect all contributors to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Harassment or unacceptable behavior will not be tolerated.
 
 ---
 
