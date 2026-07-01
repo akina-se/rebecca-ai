@@ -3,7 +3,7 @@ import config from './config';
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';
 
-const sanitizeForLog = (str: any) => String(str).replace(/[\r\n]+/g, ' ');
+const sanitizeForLog = (str: unknown) => String(str).replace(/[\r\n]+/g, ' ');
 
 import { buildSystemPrompt  } from './core/contextInjector';
 import { checkAndIncrementRateLimits  } from './core/rateLimiter';
@@ -36,7 +36,10 @@ const pollMentions = async () => {
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
-            const authorId = tweet.author_id || tweet.authorId || (tweet as any).author?.id || (tweet as any).user?.id || (tweet as any).user_id;
+            const tweetObj = tweet as Record<string, unknown>;
+            const authorObj = tweetObj.author as Record<string, string> | undefined;
+            const userObj = tweetObj.user as Record<string, string> | undefined;
+            const authorId = tweet.author_id || tweet.authorId || authorObj?.id || userObj?.id || tweetObj.user_id;
 
             // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
