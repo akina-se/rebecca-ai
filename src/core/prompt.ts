@@ -1,4 +1,5 @@
-import { PromptContext, Language } from './contextInjector';
+export type PromptContext = 'reply' | 'timeline';
+export type Language = 'ja' | 'en';
 
 // ---------------------------------------------------------
 // CORE PROMPT (JAPANESE) - 変わらないレベッカのコア人格
@@ -140,9 +141,26 @@ You MUST follow these rules:
 export const getBasePrompt = (context: PromptContext, lang: Language): string => {
     if (lang === 'en') {
         const contextStr = context === 'reply' ? CONTEXT_REPLY_EN : CONTEXT_TIMELINE_EN;
-        return \`\${CORE_PROMPT_EN}\n\n\${contextStr}\`;
+        return `${CORE_PROMPT_EN}\n\n${contextStr}`;
     } else {
         const contextStr = context === 'reply' ? CONTEXT_REPLY_JA : CONTEXT_TIMELINE_JA;
-        return \`\${CORE_PROMPT_JA}\n\n\${contextStr}\`;
+        return `${CORE_PROMPT_JA}\n\n${contextStr}`;
     }
+};
+
+export const getDreamingPrompt = () => {
+  return `
+あなたはレベッカのシステムの一部として、ユーザーの「記憶の統合（Dreaming）」を行います。
+以下に、過去のCore Profile（長期記憶）と、今日の未統合ログ（Episodic Buffer）を提供します。
+これらを読み込み、ユーザーの属性、好み、悩みを抽出・圧縮して、新しいCore ProfileをJSON形式で出力してください。
+
+【制約事項】
+1. 本名、詳細な住所、勤務先等の機微情報（PII）が含まれている場合は、必ず抽象化（マスキング）して保存してください。（例：新宿の〇〇株式会社 → 都内のIT企業）
+2. 出力は必ずJSONのみにしてください。Markdownのコードブロック（\`\`\`json）などは含めず、パース可能な純粋なJSON文字列を出力してください。
+3. JSONのフォーマットは以下のキーを持つオブジェクトとしてください：
+   - "attributes": ユーザーの基本的な属性（文字列の配列）
+   - "preferences": ユーザーの好みや好きなもの（文字列の配列）
+   - "concerns": ユーザーの悩みやストレスの元（文字列の配列）
+   - "important_memories": 忘れてはならない重要な過去の会話や約束（文字列の配列）
+`;
 };
