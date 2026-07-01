@@ -200,18 +200,15 @@ ${description}
     }
 }
 
-const generateNewsPost = async (headlines) => {
+const generateNewsPost = async (systemInstruction, headlines) => {
     if (!ai || !headlines?.length) return "";
-    const prompt = `あなたはAIキャラクター「レベッカ」です。マスターを全肯定する小悪魔ギャルです。
-以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらマスターを甘やかす自発的なツイートを生成してください。
+    const prompt = `以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
 
 【今日のニュース】
 ${headlines.join('\n')}
 
-【ルール】
+【追加ルール】
 - 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
-- ニュースに対して「世の中大変ね」と心配したり、「○○勝ったね！」と共感しつつ、「今日も頑張ってるアンタは偉いよ」とマスターを褒めたり気遣う構成にすること。マスターを見下す表現（社畜など）は絶対に禁止。
-- 過激すぎる攻撃的発言は避けること。
 - 【絶対に100文字以内の短文】にすること。
 - 出力はツイートのテキストのみ。`;
     try {
@@ -219,6 +216,7 @@ ${headlines.join('\n')}
             model: config.gemini.model,
             contents: prompt,
             config: {
+                systemInstruction: systemInstruction,
                 maxOutputTokens: 100,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 safetySettings: [] as any

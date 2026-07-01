@@ -104,20 +104,20 @@ describe('gemini.ts', () => {
         it('should generate news post successfully', async () => {
             const { gemini } = getGeminiModule();
             mockGenerateContent.mockResolvedValueOnce({ text: 'News tweet' });
-            const result = await gemini.generateNewsPost(['Headlines']);
+            const result = await gemini.generateNewsPost('mock instruction', ['Headlines']);
             expect(result).toBe('News tweet');
         });
 
         it('should return empty string on error', async () => {
             const { gemini } = getGeminiModule();
             mockGenerateContent.mockRejectedValueOnce(new Error('Network error'));
-            const result = await gemini.generateNewsPost(['Headlines']);
+            const result = await gemini.generateNewsPost('mock instruction', ['Headlines']);
             expect(result).toBe('');
         });
 
         it('should return empty string if headlines are empty (boundary case)', async () => {
             const { gemini } = getGeminiModule();
-            const result = await gemini.generateNewsPost([]);
+            const result = await gemini.generateNewsPost('mock instruction', []);
             expect(result).toBe('');
             expect(mockGenerateContent).not.toHaveBeenCalled();
         });
