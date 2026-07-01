@@ -4,6 +4,10 @@ import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './co
 import { runGlobalEvolutionBatch  } from './core/evolution';
 
 const sanitizeForLog = (str: unknown) => String(str).replace(/[\r\n]+/g, ' ');
+const sanitizeIdForLog = (value: unknown) =>
+    String(value)
+        .replace(/[\r\n]+/g, ' ')
+        .replace(/[^a-zA-Z0-9._:@-]/g, '_');
 
 import { buildSystemPrompt  } from './core/contextInjector';
 import { checkAndIncrementRateLimits  } from './core/rateLimiter';
@@ -172,7 +176,7 @@ app.post('/worker/reply', async (req, res) => {
         // 7. Save Raw Log for Analysis
         await firestore.saveRawConversationLog(authorId, text, aiResponseText);
 
-        console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
+        console.log(`Successfully replied to tweet ${sanitizeIdForLog(tweetId)} by user ${sanitizeIdForLog(authorId)}`);
     } catch (error) {
         console.error('Error processing reply in worker:', error);
     }
