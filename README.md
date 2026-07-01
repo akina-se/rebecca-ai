@@ -1,5 +1,10 @@
 # Rebecca - The Unconditional Affirmation Gyaru AI 
 
+[![CI Status](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/github/v/release/akina-se/rebecca-ai)](https://github.com/akina-se/rebecca-ai/releases)
+
 ![Rebecca AI](docs/rebecca_landscape.jpg)
 
 **The kindest, unconditional affirmation Gyaru AI.**
