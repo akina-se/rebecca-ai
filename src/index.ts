@@ -2,6 +2,8 @@ import express from 'express';
 import config from './config';
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';
+
+
 import { buildSystemPrompt  } from './core/contextInjector';
 import { checkAndIncrementRateLimits  } from './core/rateLimiter';
 import * as firestore from './services/firestore';
@@ -33,7 +35,10 @@ const pollMentions = async () => {
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
-            const authorId = tweet.author_id || tweet.authorId || (tweet as any).author?.id || (tweet as any).user?.id || (tweet as any).user_id;
+            const tweetObj = tweet as Record<string, unknown>;
+            const authorObj = tweetObj.author as Record<string, string> | undefined;
+            const userObj = tweetObj.user as Record<string, string> | undefined;
+            const authorId = tweet.author_id || tweet.authorId || authorObj?.id || userObj?.id || tweetObj.user_id;
 
             // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
@@ -100,7 +105,7 @@ app.post('/worker/reply', async (req, res) => {
         // 1. Rate Limit Check
         const rateLimit = await checkAndIncrementRateLimits(authorId);
         if (!rateLimit.allowed) {
-            console.log(`Rate limit exceeded for user ${authorId}, reason: ${rateLimit.reason}`);
+            console.log(`Rate limit exceeded for user ${authorId.replace(/[\r\n]/g, '')}, reason: ${rateLimit.reason.replace(/[\r\n]/g, '')}`);
             return;
         }
 
@@ -163,7 +168,7 @@ app.post('/worker/reply', async (req, res) => {
         // 7. Save Raw Log for Analysis
         await firestore.saveRawConversationLog(authorId, text, aiResponseText);
 
-        console.log(`Successfully replied to tweet ${tweetId} by user ${authorId}`);
+        console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
     } catch (error) {
         console.error('Error processing reply in worker:', error);
     }
