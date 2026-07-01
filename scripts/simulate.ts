@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenAI  } from '@google/genai';
 import config from '../src/config';
-import { BASE_SYSTEM_PROMPT  } from '../src/core/prompt';
+import { getBasePrompt  } from '../src/core/prompt';
 
 // Initialize GenAI for Persona Generation
 const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
@@ -97,7 +97,7 @@ const runSimulation = async () => {
             // 2. Generate Rebecca's response
             const workingMemory = getWorkingMemory(episodicBuffer);
             // For simplicity, test with BASE systemPrompt as is (inject dummy data if needed)
-            const systemPrompt = BASE_SYSTEM_PROMPT; 
+            const systemPrompt = getBasePrompt('reply', 'ja'); 
             
             const rebeccaText = await withRetry(() => gemini.generateReply(systemPrompt, workingMemory, userText));
             episodicBuffer.push({ role: 'model', content: rebeccaText });
