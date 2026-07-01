@@ -142,7 +142,7 @@ app.post('/worker/reply', async (req, res) => {
         }
 
         const lang = await gemini.detectLanguage(text);
-        const systemPrompt = buildSystemPrompt(userData, text, extendedPrompt, timelineSummary, ragMemories, lang);
+        const systemPrompt = buildSystemPrompt('reply', userData, text, extendedPrompt, timelineSummary, ragMemories, lang);
 
         // 4. Generate AI Reply
         const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, text);

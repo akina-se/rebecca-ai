@@ -72,7 +72,7 @@ const chatLoop = async () => {
             // For local testing without GCP credentials, we'll just mock it or try to fetch.
             // We'll leave it empty for basic chat tests unless configured.
 
-            const systemPrompt = buildSystemPrompt(userData, input, extendedPrompt);
+            const systemPrompt = buildSystemPrompt('reply', userData, input, extendedPrompt);
             
             // Fetch Reply from Gemini
             const reply = await gemini.generateReply(systemPrompt, workingMemory, input);
