@@ -77,7 +77,7 @@ const getAllUsers = async () => {
     const users = [];
     snapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
     return users;
-}
+};
 
 const getDailyActiveUsersCount = async (dateStr) => {
     const docRef = firestore.collection('system_stats').doc(`dau_${dateStr}`);
