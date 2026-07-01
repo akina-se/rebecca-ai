@@ -131,6 +131,12 @@ npm run batch:news
 npm run deploy
 ```
 
+## Community & Security
+
+- **[Code of Conduct](CODE_OF_CONDUCT.md)**: We are committed to fostering a welcoming community. Please read and follow our Code of Conduct.
+- **[Security Policy](SECURITY.md)**: If you discover a security vulnerability, please refer to our Security Policy for reporting instructions.
+- **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
+
 ## Directory Structure
 - `src/index.ts` : Application entry point
 - `src/core/` : Core domain logic (Memory management, Context injection, Evolution audit)
