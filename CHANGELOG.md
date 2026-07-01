@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.1](https://github.com/akina-se/rebecca-ai/compare/v1.1.0...v1.1.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* resolve CodeQL and Dependabot security alerts ([0a72fe9](https://github.com/akina-se/rebecca-ai/commit/0a72fe9919e6359908f44e951f0fb35722b3916b))
+* resolve CodeQL security alerts (ASI and CLI injection) ([2d36091](https://github.com/akina-se/rebecca-ai/commit/2d360911d86e9374a279aafdc4564b8e6c52e00c))
+* resolve Log Injection alerts and update vulnerable dependencies ([3b2deed](https://github.com/akina-se/rebecca-ai/commit/3b2deede5d538a29e2ddff7b0185758fbc532fb0))
+* use inline replace for log injection to satisfy CodeQL taint tracking ([9a9e272](https://github.com/akina-se/rebecca-ai/commit/9a9e2725b72c70d1b074ce6bd48877adfb9644fc))
+
 ## [1.1.0](https://github.com/akina-se/rebecca-ai/compare/v1.0.0...v1.1.0) (2026-07-01)
 
 
