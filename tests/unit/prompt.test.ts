@@ -1,5 +1,5 @@
 import { PromptContext, Language, getBasePrompt, getDreamingPrompt } from '../../src/core/prompt';
-import { BASE_SYSTEM_PROMPT, BASE_SYSTEM_PROMPT_EN } from '../../src/core/prompt';
+import * as promptModule from '../../src/core/prompt';
 
 describe('prompt.ts exports verification', () => {
     test('should export getBasePrompt and getDreamingPrompt functions', () => {
@@ -8,8 +8,8 @@ describe('prompt.ts exports verification', () => {
     });
 
     test('should NOT export BASE_SYSTEM_PROMPT directly anymore (must use getBasePrompt)', () => {
-        expect(BASE_SYSTEM_PROMPT).toBeUndefined();
-        expect(BASE_SYSTEM_PROMPT_EN).toBeUndefined();
+        expect((promptModule as any).BASE_SYSTEM_PROMPT).toBeUndefined();
+        expect((promptModule as any).BASE_SYSTEM_PROMPT_EN).toBeUndefined();
     });
 
     test('getBasePrompt should return string with context', () => {
