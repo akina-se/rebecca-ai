@@ -34,6 +34,7 @@ jest.mock('../../src/services/gemini', () => ({
     detectLanguage: jest.fn().mockResolvedValue('ja'),
     generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
+    inferImageKeyword: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('../../src/services/xApi', () => ({

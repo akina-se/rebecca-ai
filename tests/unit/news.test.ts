@@ -2,10 +2,12 @@ import { runProactiveNewsPostBatch, fetchYahooNewsHeadlines } from '../../src/co
 import * as firestore from '../../src/services/firestore';
 import * as gemini from '../../src/services/gemini';
 import * as xApi from '../../src/services/xApi';
+import * as storage from '../../src/services/storage';
 
 jest.mock('../../src/services/firestore');
 jest.mock('../../src/services/gemini');
 jest.mock('../../src/services/xApi');
+jest.mock('../../src/services/storage');
 
 describe('news.ts', () => {
     beforeEach(() => {
@@ -62,6 +64,7 @@ describe('news.ts', () => {
 
             const result = await runProactiveNewsPostBatch();
             expect(result).toEqual({ status: 'failed', reason: 'Generation failed' });
+            expect(gemini.inferImageKeyword).not.toHaveBeenCalled();
             expect(xApi.tweet).not.toHaveBeenCalled();
         });
 
@@ -77,7 +80,7 @@ describe('news.ts', () => {
             
             expect(result.status).toBe('success');
             expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
-            expect(xApi.tweet).toHaveBeenCalledWith(shortPost + '\n#全肯定AIレベッカ');
+            expect(xApi.tweet).toHaveBeenCalledWith(shortPost + '\n#全肯定AIレベッカ', []);
             expect(firestore.saveTimelinePost).toHaveBeenCalled();
         });
 
@@ -94,7 +97,53 @@ describe('news.ts', () => {
             
             expect(result.status).toBe('success');
             expect(result.post).toBe(longPost); // no hashtag appended
-            expect(xApi.tweet).toHaveBeenCalledWith(longPost);
+            expect(xApi.tweet).toHaveBeenCalledWith(longPost, []);
+        });
+
+        it('should infer keyword, find image, and attach media if successful', async () => {
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
+            });
+            const text = 'A post about coffee';
+            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce(text);
+            (firestore.getTimelineSummary as jest.Mock).mockResolvedValueOnce('summary');
+            (gemini.inferImageKeyword as jest.Mock).mockResolvedValueOnce('coffee');
+            (firestore.findImageByKeyword as jest.Mock).mockResolvedValueOnce({
+                id: 'hash123',
+                url: 'gs://bucket/images/hash123.jpg'
+            });
+            (storage.downloadImage as jest.Mock).mockResolvedValueOnce(Buffer.from('image'));
+            (xApi.uploadMedia as jest.Mock).mockResolvedValueOnce('media_123');
+
+            const result = await runProactiveNewsPostBatch();
+
+            expect(result.status).toBe('success');
+            expect(result.attachedMedia).toBe(true);
+            expect(storage.downloadImage).toHaveBeenCalledWith('gs://bucket/images/hash123.jpg');
+            expect(xApi.uploadMedia).toHaveBeenCalledWith(expect.any(Buffer), 'image/jpeg');
+            expect(firestore.updateImageLastUsed).toHaveBeenCalledWith('hash123');
+            // Check tweet was called with mediaId
+            expect(xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', ['media_123']);
+        });
+
+        it('should handle image download or upload failure gracefully', async () => {
+            (global.fetch as jest.Mock).mockResolvedValueOnce({
+                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
+            });
+            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('post');
+            (gemini.inferImageKeyword as jest.Mock).mockResolvedValueOnce('coffee');
+            (firestore.findImageByKeyword as jest.Mock).mockResolvedValueOnce({
+                id: 'hash123',
+                url: 'gs://bucket/images/hash123.jpg'
+            });
+            (storage.downloadImage as jest.Mock).mockRejectedValueOnce(new Error('GCS Error'));
+
+            const result = await runProactiveNewsPostBatch();
+
+            // Still posts successfully but without media
+            expect(result.status).toBe('success');
+            expect(result.attachedMedia).toBe(false);
+            expect(xApi.tweet).toHaveBeenCalledWith('post\n#全肯定AIレベッカ', []);
         });
 
         it('should throw and log if tweet fails (abnormal case)', async () => {

@@ -234,6 +234,60 @@ const setLastMentionId = async (mentionId: string) => {
     }, { merge: true });
 };
 
+const saveImageMetadata = async (hash: string, url: string, tags: string[]) => {
+    const docRef = firestore.collection('images').doc(hash);
+    await docRef.set({
+        url,
+        tags,
+        lastUsedAt: null,
+        useCount: 0
+    });
+};
+
+const getImageByHash = async (hash: string) => {
+    const docRef = firestore.collection('images').doc(hash);
+    const doc = await docRef.get();
+    return doc.exists ? doc.data() : null;
+};
+
+const findImageByKeyword = async (keyword: string) => {
+    const snapshot = await firestore.collection('images')
+        .where('tags', 'array-contains', keyword)
+        .get();
+    
+    if (snapshot.empty) return null;
+
+    const now = new Date();
+    let bestImage = null;
+
+    // Filter by cooldown
+    const cooldownMs = config.images.cooldownDays * 24 * 60 * 60 * 1000;
+    const availableImages = [];
+    for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const lastUsed = data.lastUsedAt ? data.lastUsedAt.toDate() : null;
+        if (!lastUsed || (now.getTime() - lastUsed.getTime()) > cooldownMs) {
+            availableImages.push({ id: doc.id, ...data });
+        }
+    }
+
+    if (availableImages.length > 0) {
+        // Pick a random one from available to avoid always picking the same first one
+        const randomIndex = Math.floor(Math.random() * availableImages.length);
+        bestImage = availableImages[randomIndex];
+    }
+
+    return bestImage;
+};
+
+const updateImageLastUsed = async (hash: string) => {
+    const docRef = firestore.collection('images').doc(hash);
+    await docRef.set({
+        lastUsedAt: FieldValue.serverTimestamp(),
+        useCount: FieldValue.increment(1)
+    }, { merge: true });
+};
+
 export { 
   firestore,
   getUserDoc,
@@ -259,5 +313,9 @@ export {
   saveRagMemory,
   findRagMemories,
   getLastMentionId,
-  setLastMentionId
+  setLastMentionId,
+  saveImageMetadata,
+  getImageByHash,
+  findImageByKeyword,
+  updateImageLastUsed
  };

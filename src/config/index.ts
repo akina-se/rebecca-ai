@@ -22,9 +22,14 @@ export default {
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
     judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemma-4-31b-it',
     languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-31b-it',
+    visionModel: process.env.GEMINI_VISION_MODEL || 'gemini-1.5-flash',
+    imageInferenceModel: process.env.GEMINI_IMAGE_INFERENCE_MODEL || 'gemini-1.5-flash',
   },
   rag: {
     maxMemories: parseInt(process.env.RAG_MAX_MEMORIES) || 100,
+  },
+  images: {
+    cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '3', 10),
   },
   limits: {
     globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '45'),

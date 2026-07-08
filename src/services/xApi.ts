@@ -47,13 +47,43 @@ const getTweetDetails = async (tweetId: string) => {
     }
 }
 
-const tweet = async (text: string) => {
+const uploadMedia = async (buffer: Buffer, mimeType: string) => {
+    if (!client) {
+        console.warn('Twitter API client not initialized. Mocking media upload.');
+        return 'mock_media_id';
+    }
+    try {
+        const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
+        const form = new FormData();
+        form.append('media', blob, 'image.jpg');
+
+        // Use the v1.1 upload endpoint directly via XDK's client
+        const response: any = await client.request(
+            'POST',
+            'https://upload.twitter.com/1.1/media/upload.json',
+            {
+                body: form as any,
+                security: [{ "UserToken": [] }] // Force OAuth 1.0a
+            }
+        );
+        return response.media_id_string;
+    } catch (error) {
+        console.error('Error uploading media:', error);
+        throw error;
+    }
+};
+
+const tweet = async (text: string, mediaIds?: string[]) => {
   if (!client) {
       console.warn('Twitter API client not initialized. Skipping actual API call.');
       return { data: { id: 'mock_tweet_id' } };
   }
   try {
-    const response = await client.posts.create({ text } as any);
+    const payload: any = { text };
+    if (mediaIds && mediaIds.length > 0) {
+        payload.media = { media_ids: mediaIds };
+    }
+    const response = await client.posts.create(payload);
     return response as any;
   } catch (error) {
     console.error('Error posting tweet:', error);
@@ -116,6 +146,7 @@ export {
   replyToMention,
   getTweetDetails,
   tweet,
+  uploadMedia,
   getUserProfile,
   getMentions
 };
