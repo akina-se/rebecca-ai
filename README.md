@@ -22,7 +22,7 @@ When operating this bot on X (Twitter), you MUST explicitly state in the account
 - **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory (RAG) efficiently without losing detail.
 - **Dynamic Context Injection**: Dynamically alters the AI's prompt based on the time of day (morning/late night), user absence duration, and specific keywords like "overtime" or "boss".
 - **Automatic Language Separation**: Detects the user's input language and switches entirely to an English system prompt (featuring English slang) for English-speaking users, preventing unnatural code-switching.
-- **Proactive Image Attachment**: Automatically analyzes uploaded images with Gemini Vision, tags them in Firestore, and intelligently attaches them to proactive timeline posts based on inferred context and keywords.
+- **Proactive Image Attachment**: Automatically analyzes uploaded images with Gemini Vision, converts captions to vector embeddings, and uses Firestore Semantic Vector Search (KNN) to intelligently attach them to proactive timeline posts based on inferred context and search queries.
 - **Intentional Delay**: Introduces a random 1-3 minute delay before replying to simulate human behavior.
 - **Strict Rate Limiting**: Multi-tiered dynamic limit management (Global Monthly, Global Daily, Dynamic User Allocation) to prevent unexpected API billing explosions for both X API and GCP.
 

@@ -25,7 +25,7 @@ jest.mock('../../src/services/firestore', () => ({
     getLastMentionId: jest.fn().mockResolvedValue(undefined),
     setLastMentionId: jest.fn().mockResolvedValue(undefined),
     saveTimelinePost: jest.fn().mockResolvedValue(undefined),
-    findImageByKeyword: jest.fn().mockResolvedValue(null),
+    findImageByVector: jest.fn().mockResolvedValue(null),
     updateImageLastUsed: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -36,7 +36,7 @@ jest.mock('../../src/services/gemini', () => ({
     detectLanguage: jest.fn().mockResolvedValue('ja'),
     generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
-    inferImageKeyword: jest.fn().mockResolvedValue(null),
+    inferImageSearchQuery: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('../../src/services/xApi', () => ({

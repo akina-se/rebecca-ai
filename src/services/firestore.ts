@@ -234,11 +234,12 @@ const setLastMentionId = async (mentionId: string) => {
     }, { merge: true });
 };
 
-const saveImageMetadata = async (hash: string, url: string, tags: string[]) => {
+const saveImageMetadata = async (hash: string, url: string, caption: string, embedding: number[]) => {
     const docRef = firestore.collection('images').doc(hash);
     await docRef.set({
         url,
-        tags,
+        caption,
+        embedding: FieldValue.vector(embedding),
         lastUsedAt: null,
         useCount: 0
     });
@@ -250,34 +251,42 @@ const getImageByHash = async (hash: string) => {
     return doc.exists ? doc.data() : null;
 };
 
-const findImageByKeyword = async (keyword: string) => {
-    const snapshot = await firestore.collection('images')
-        .where('tags', 'array-contains', keyword)
-        .get();
-    
-    if (snapshot.empty) return null;
+const findImageByVector = async (queryVector: number[]) => {
+    try {
+        const snapshot = await firestore.collection('images')
+            .findNearest('embedding', FieldValue.vector(queryVector), {
+                limit: 10,
+                distanceMeasure: 'COSINE'
+            })
+            .get();
+        
+        if (snapshot.empty) return null;
 
-    const now = new Date();
-    let bestImage = null;
+        const now = new Date();
+        let bestImage = null;
 
-    // Filter by cooldown
-    const cooldownMs = config.images.cooldownDays * 24 * 60 * 60 * 1000;
-    const availableImages = [];
-    for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const lastUsed = data.lastUsedAt ? data.lastUsedAt.toDate() : null;
-        if (!lastUsed || (now.getTime() - lastUsed.getTime()) > cooldownMs) {
-            availableImages.push({ id: doc.id, ...data });
+        // Filter by cooldown
+        const cooldownMs = config.images.cooldownDays * 24 * 60 * 60 * 1000;
+        const availableImages = [];
+        for (const doc of snapshot.docs) {
+            const data = doc.data();
+            const lastUsed = data.lastUsedAt ? data.lastUsedAt.toDate() : null;
+            if (!lastUsed || (now.getTime() - lastUsed.getTime()) > cooldownMs) {
+                availableImages.push({ id: doc.id, ...data });
+            }
         }
-    }
 
-    if (availableImages.length > 0) {
-        // Pick a random one from available to avoid always picking the same first one
-        const randomIndex = Math.floor(Math.random() * availableImages.length);
-        bestImage = availableImages[randomIndex];
-    }
+        if (availableImages.length > 0) {
+            // Pick a random one from available to avoid always picking the same first one
+            const randomIndex = Math.floor(Math.random() * availableImages.length);
+            bestImage = availableImages[randomIndex];
+        }
 
-    return bestImage;
+        return bestImage;
+    } catch (e) {
+        console.error('Error during image vector search:', e);
+        return null;
+    }
 };
 
 const updateImageLastUsed = async (hash: string) => {
@@ -316,6 +325,6 @@ export {
   setLastMentionId,
   saveImageMetadata,
   getImageByHash,
-  findImageByKeyword,
+  findImageByVector,
   updateImageLastUsed
  };

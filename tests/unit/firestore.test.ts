@@ -21,7 +21,8 @@ jest.mock('@google-cloud/firestore', () => {
         FieldValue: {
             arrayUnion: jest.fn((arg) => ({ _mocked: 'arrayUnion', arg })),
             increment: jest.fn((arg) => ({ _mocked: 'increment', arg })),
-            vector: jest.fn((arg) => ({ _mocked: 'vector', arg }))
+            vector: jest.fn((arg) => ({ _mocked: 'vector', arg })),
+            serverTimestamp: jest.fn(() => ({ _mocked: 'serverTimestamp' }))
         },
         Timestamp: {
             fromDate: jest.fn((arg) => ({ _mocked: 'fromDate', arg }))
@@ -35,6 +36,70 @@ describe('firestore.ts', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         firestoreInstance = new Firestore();
+    });
+
+    describe('Image metadata', () => {
+        it('should save image metadata', async () => {
+            await firestoreService.saveImageMetadata('hash123', 'gs://test', 'caption test', [0.1, 0.2]);
+            expect(firestoreInstance.doc).toHaveBeenCalledWith('hash123');
+            expect(firestoreInstance.set).toHaveBeenCalled();
+        });
+
+        it('should get image by hash', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({ url: 'gs://test', caption: 'test' }) });
+            const image = await firestoreService.getImageByHash('hash123');
+            expect(image).not.toBeNull();
+            expect(image?.url).toBe('gs://test');
+        });
+
+        it('should return null if image not found by hash', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: false });
+            const image = await firestoreService.getImageByHash('hash123');
+            expect(image).toBeNull();
+        });
+
+        it('should find image by vector', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({
+                empty: false,
+                docs: [{ id: 'hash123', data: () => ({ url: 'gs://test', caption: 'test' }) }]
+            });
+            const image = await firestoreService.findImageByVector([0.1, 0.2]);
+            expect(image).not.toBeNull();
+            expect(image?.id).toBe('hash123');
+        });
+
+        it('should return null if no image matches vector', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ empty: true });
+            const image = await firestoreService.findImageByVector([0.1, 0.2]);
+            expect(image).toBeNull();
+        });
+
+        it('should filter out images within cooldown period', async () => {
+            const recentDate = new Date();
+            firestoreInstance.get.mockResolvedValueOnce({
+                empty: false,
+                docs: [{ id: 'hash123', data: () => ({ url: 'gs://test', caption: 'test', lastUsedAt: { toDate: () => recentDate } }) }]
+            });
+            const image = await firestoreService.findImageByVector([0.1, 0.2]);
+            expect(image).toBeNull();
+        });
+
+        it('should include images past cooldown period', async () => {
+            const oldDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
+            firestoreInstance.get.mockResolvedValueOnce({
+                empty: false,
+                docs: [{ id: 'hash123', data: () => ({ url: 'gs://test', caption: 'test', lastUsedAt: { toDate: () => oldDate } }) }]
+            });
+            const image = await firestoreService.findImageByVector([0.1, 0.2]);
+            expect(image).not.toBeNull();
+            expect(image?.id).toBe('hash123');
+        });
+
+        it('should update image last used', async () => {
+            await firestoreService.updateImageLastUsed('hash123');
+            expect(firestoreInstance.doc).toHaveBeenCalledWith('hash123');
+            expect(firestoreInstance.set).toHaveBeenCalled();
+        });
     });
 
     describe('User Operations', () => {
