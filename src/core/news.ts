@@ -63,12 +63,13 @@ const runProactiveNewsPostBatch = async () => {
 
         // 2-step: Infer keyword based on the generated text and recent timeline
         const timelineSummary = await firestore.getTimelineSummary();
-        const keyword = await gemini.inferImageKeyword(postText, timelineSummary);
+        const searchQuery = await gemini.inferImageSearchQuery(postText, timelineSummary);
         
         const mediaIds: string[] = [];
-        if (keyword) {
-            console.log(`Inferred image keyword: ${keyword}`);
-            const bestImage = await firestore.findImageByKeyword(keyword);
+        if (searchQuery) {
+            console.log(`Inferred image search query: ${searchQuery}`);
+            const queryVector = await gemini.generateEmbedding(searchQuery);
+            const bestImage = queryVector.length > 0 ? await firestore.findImageByVector(queryVector) : null;
             if (bestImage) {
                 console.log(`Found matching image: ${bestImage.url}`);
                 try {

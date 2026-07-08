@@ -64,7 +64,7 @@ describe('news.ts', () => {
 
             const result = await runProactiveNewsPostBatch();
             expect(result).toEqual({ status: 'failed', reason: 'Generation failed' });
-            expect(gemini.inferImageKeyword).not.toHaveBeenCalled();
+            expect(gemini.inferImageSearchQuery).not.toHaveBeenCalled();
             expect(xApi.tweet).not.toHaveBeenCalled();
         });
 
@@ -107,8 +107,9 @@ describe('news.ts', () => {
             const text = 'A post about coffee';
             (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce(text);
             (firestore.getTimelineSummary as jest.Mock).mockResolvedValueOnce('summary');
-            (gemini.inferImageKeyword as jest.Mock).mockResolvedValueOnce('coffee');
-            (firestore.findImageByKeyword as jest.Mock).mockResolvedValueOnce({
+            (gemini.inferImageSearchQuery as jest.Mock).mockResolvedValueOnce('coffee');
+            (gemini.generateEmbedding as jest.Mock).mockResolvedValueOnce([0.1, 0.2]);
+            (firestore.findImageByVector as jest.Mock).mockResolvedValueOnce({
                 id: 'hash123',
                 url: 'gs://bucket/images/hash123.jpg'
             });
@@ -131,8 +132,9 @@ describe('news.ts', () => {
                 text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
             });
             (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('post');
-            (gemini.inferImageKeyword as jest.Mock).mockResolvedValueOnce('coffee');
-            (firestore.findImageByKeyword as jest.Mock).mockResolvedValueOnce({
+            (gemini.inferImageSearchQuery as jest.Mock).mockResolvedValueOnce('coffee');
+            (gemini.generateEmbedding as jest.Mock).mockResolvedValueOnce([0.1, 0.2]);
+            (firestore.findImageByVector as jest.Mock).mockResolvedValueOnce({
                 id: 'hash123',
                 url: 'gs://bucket/images/hash123.jpg'
             });

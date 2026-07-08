@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import * as firestore from '../src/services/firestore';
-import * as gemini from '../src/services/gemini';
+import { analyzeImageCaption, generateEmbedding } from '../src/services/gemini';
 import * as storage from '../src/services/storage';
 
 const IMAGES_DIR = path.join(process.cwd(), 'images');
@@ -67,16 +67,16 @@ const run = async () => {
             continue;
         }
 
-        // Analyze tags
-        console.log(` -> Analyzing tags with Gemini Vision...`);
-        let tags = [];
+        // Analyze caption
+        console.log(` -> Analyzing caption with Gemini Vision...`);
+        let caption = "";
         let retries = 3;
         while (retries > 0) {
             try {
-                tags = await gemini.analyzeImageTags(buffer, mimeType);
-                if (tags.length > 0) break;
+                caption = await analyzeImageCaption(buffer, mimeType);
+                if (caption) break;
             } catch (e) {
-                console.error(` -> Error analyzing tags (Retries left: ${retries - 1}):`, e.message || e);
+                console.error(` -> Error analyzing caption (Retries left: ${retries - 1}):`, e.message || e);
             }
             retries--;
             if (retries > 0) {
@@ -85,16 +85,25 @@ const run = async () => {
             }
         }
 
-        if (tags.length === 0) {
-            console.error(" -> Error: Tags could not be generated after retries. Skipping Firestore save.");
+        if (!caption) {
+            console.error(" -> Error: Caption could not be generated after retries. Skipping Firestore save.");
             continue;
         }
-        console.log(` -> Tags inferred: ${tags.join(', ')}`);
+        console.log(` -> Caption: ${caption}`);
+
+        // Generate embedding
+        console.log(` -> Generating text embedding...`);
+        const embedding = await generateEmbedding(caption);
+        
+        if (!embedding || embedding.length === 0) {
+            console.warn(` -> Failed to generate embedding for ${file}. Skipping.`);
+            continue;
+        }
 
         // Save to Firestore
         console.log(` -> Saving metadata to Firestore...`);
-        await firestore.saveImageMetadata(hash, gsUri, tags);
-        console.log(` -> Done!`);
+        await firestore.saveImageMetadata(hash, gsUri, caption, embedding);
+        console.log(` -> Success!`);
 
         // Delay to avoid hitting RPM limits (15 RPM -> 4s, 5 RPM -> 12s)
         console.log(` -> Waiting 10 seconds before processing the next image to respect rate limits...`);

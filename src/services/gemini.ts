@@ -307,13 +307,8 @@ const detectLanguage = async (text) => {
     }
 };
 
-const ALLOWED_IMAGE_TAGS = [
-    '喜', '怒', '哀', '楽', 'ドヤ顔', '照れ', '呆れ', '驚き', 
-    'リラックス', '疲労', '仕事', '食事', '日常', '風景', '挨拶'
-];
-
-const analyzeImageTags = async (imageBuffer: Buffer, mimeType: string) => {
-    if (!ai) return [];
+const analyzeImageCaption = async (imageBuffer: Buffer, mimeType: string) => {
+    if (!ai) return "";
     try {
         const response = await ai.models.generateContent({
             model: config.gemini.visionModel,
@@ -324,28 +319,25 @@ const analyzeImageTags = async (imageBuffer: Buffer, mimeType: string) => {
                         mimeType: mimeType
                     }
                 },
-                `この画像から読み取れる状況や感情を分析してください。出力するタグは、必ず以下のリストから最も当てはまるものを1〜5個だけ選んでください。\n許可されたタグリスト: ${ALLOWED_IMAGE_TAGS.join(', ')}\n\n出力はJSONの文字列配列形式のみとしてください。例: ["喜", "日常"]`
+                `この画像に写っている状況、被写体の表情、および感情を詳細に描写する説明文（キャプション）を1〜2文の短いテキストで出力してください。`
             ],
             config: {
-                responseMimeType: "application/json"
+                maxOutputTokens: 200
             }
         });
-        return JSON.parse(response.text);
+        return response.text.trim();
     } catch (e) {
-        console.error("Error analyzing image tags:", e);
-        return [];
+        console.error("Error analyzing image caption:", e);
+        return "";
     }
 };
 
-const inferImageKeyword = async (tweetText: string, timelineSummary: string) => {
+const inferImageSearchQuery = async (tweetText: string, timelineSummary: string) => {
     if (!ai) return null;
     try {
         const prompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
-以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、必ず以下の「許可されたキーワードリスト」の中から最も当てはまるものを1つだけ選んで、JSON形式で出力してください。
-
-許可されたキーワードリスト: ${ALLOWED_IMAGE_TAGS.join(', ')}
-
-画像が不要だと思われる内容（事務連絡や抽象的すぎる内容）の場合は、keywordをnullにしてください。
+以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、画像検索のための「検索クエリ（短い一文または単語の羅列）」を出力してください。
+画像が不要だと思われる内容（事務連絡や抽象的すぎる内容）の場合は、"null" という文字列だけを出力してください。
 
 【直近のタイムライン要約】
 ${timelineSummary}
@@ -353,22 +345,19 @@ ${timelineSummary}
 【今回のツイート内容】
 ${tweetText}
 
-出力フォーマット（JSONのみ）:
-{ "keyword": "ドヤ顔" }
-または
-{ "keyword": null }`;
+出力は検索クエリのテキストのみとし、不要な解説やMarkdown表記は含めないでください。`;
 
         const response = await ai.models.generateContent({
             model: config.gemini.imageInferenceModel,
             contents: prompt,
             config: {
-                responseMimeType: "application/json"
+                maxOutputTokens: 100
             }
         });
-        const result = JSON.parse(response.text);
-        return result.keyword || null;
+        const result = response.text.trim();
+        return result === 'null' ? null : result;
     } catch (e) {
-        console.error("Error inferring image keyword:", e);
+        console.error("Error inferring image search query:", e);
         return null;
     }
 };
@@ -384,6 +373,6 @@ export {
     detectLanguage,
     generateEmbedding,
     generateSearchQuery,
-    analyzeImageTags,
-    inferImageKeyword
+    analyzeImageCaption,
+    inferImageSearchQuery
  };
