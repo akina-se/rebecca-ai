@@ -307,6 +307,64 @@ const detectLanguage = async (text) => {
     }
 };
 
+const analyzeImageTags = async (imageBuffer: Buffer, mimeType: string) => {
+    if (!ai) return [];
+    try {
+        const response = await ai.models.generateContent({
+            model: config.gemini.visionModel,
+            contents: [
+                {
+                    inlineData: {
+                        data: imageBuffer.toString("base64"),
+                        mimeType: mimeType
+                    }
+                },
+                "この画像から、どのような状況や感情が読み取れますか？オブジェクト（例: カフェ、スマホ）と感情・表情（例: 笑顔、ドヤ顔、悲しい）の両方を含むタグをJSONの文字列配列形式で出力してください。\n出力例: [\"カフェ\", \"コーヒー\", \"笑顔\", \"リラックス\"]"
+            ],
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+        return JSON.parse(response.text);
+    } catch (e) {
+        console.error("Error analyzing image tags:", e);
+        return [];
+    }
+};
+
+const inferImageKeyword = async (tweetText: string, timelineSummary: string) => {
+    if (!ai) return null;
+    try {
+        const prompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
+以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、画像検索のための「キーワード（単語1つか2つ）」をJSONで出力してください。
+画像が不要だと思われる内容（事務連絡や抽象的すぎる内容）の場合は、keywordをnullにしてください。
+
+【直近のタイムライン要約】
+${timelineSummary}
+
+【今回のツイート内容】
+${tweetText}
+
+出力フォーマット（JSONのみ）:
+{ "keyword": "ドヤ顔" }
+または
+{ "keyword": null }`;
+
+        const response = await ai.models.generateContent({
+            model: config.gemini.imageInferenceModel,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+        const result = JSON.parse(response.text);
+        return result.keyword || null;
+    } catch (e) {
+        console.error("Error inferring image keyword:", e);
+        return null;
+    }
+};
+
 export { 
     generateReply,
     generateDreaming,
@@ -317,5 +375,7 @@ export {
     generateTimelineSummary,
     detectLanguage,
     generateEmbedding,
-    generateSearchQuery
+    generateSearchQuery,
+    analyzeImageTags,
+    inferImageKeyword
  };

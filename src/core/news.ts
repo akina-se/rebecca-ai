@@ -1,6 +1,7 @@
 import * as firestore from '../services/firestore';
 import * as gemini from '../services/gemini';
 import * as xApi from '../services/xApi';
+import * as storage from '../services/storage';
 import { getBasePrompt } from './prompt';
 
 const fetchYahooNewsHeadlines = async () => {
@@ -60,13 +61,46 @@ const runProactiveNewsPostBatch = async () => {
 
         console.log("Generated Post:", postText);
 
+        // 2-step: Infer keyword based on the generated text and recent timeline
+        const timelineSummary = await firestore.getTimelineSummary();
+        const keyword = await gemini.inferImageKeyword(postText, timelineSummary);
+        
+        const mediaIds: string[] = [];
+        if (keyword) {
+            console.log(`Inferred image keyword: ${keyword}`);
+            const bestImage = await firestore.findImageByKeyword(keyword);
+            if (bestImage) {
+                console.log(`Found matching image: ${bestImage.url}`);
+                try {
+                    // Download from GCS privately
+                    const buffer = await storage.downloadImage(bestImage.url);
+                    // Determine mimetype from extension (defaulting to jpeg if unknown)
+                    let mimeType = 'image/jpeg';
+                    if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
+                    else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
+                    
+                    // Upload to X
+                    const mediaId = await xApi.uploadMedia(buffer, mimeType);
+                    if (mediaId && mediaId !== 'mock_media_id') {
+                        mediaIds.push(mediaId);
+                        await firestore.updateImageLastUsed(bestImage.id);
+                        console.log(`Attached media ID: ${mediaId}`);
+                    }
+                } catch (e) {
+                    console.error("Failed to attach image to post:", e);
+                }
+            } else {
+                console.log("No matching image found or all are in cooldown.");
+            }
+        }
+
         // Post to X
-        await xApi.tweet(postText);
+        await xApi.tweet(postText, mediaIds);
         
         // Save history to Firestore
         await firestore.saveTimelinePost(postText);
 
-        return { status: 'success', post: postText };
+        return { status: 'success', post: postText, attachedMedia: mediaIds.length > 0 };
     } catch (e) {
         console.error("Error in runProactiveNewsPostBatch:", e);
         throw e;
