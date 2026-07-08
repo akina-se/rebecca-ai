@@ -70,9 +70,14 @@ const run = async () => {
         let tags = [];
         try {
             tags = await gemini.analyzeImageTags(buffer, mimeType);
+            if (tags.length === 0) {
+                console.error(" -> Error: Tags could not be generated (empty). Skipping Firestore save.");
+                continue;
+            }
             console.log(` -> Tags inferred: ${tags.join(', ')}`);
         } catch (e) {
             console.error(" -> Error analyzing tags:", e);
+            continue;
         }
 
         // Save to Firestore
