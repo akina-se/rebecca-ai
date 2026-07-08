@@ -13,6 +13,8 @@ const getMimeType = (ext: string) => {
     return 'image/jpeg';
 };
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const run = async () => {
     console.log("Starting bulk image upload process...");
 
@@ -68,22 +70,35 @@ const run = async () => {
         // Analyze tags
         console.log(` -> Analyzing tags with Gemini Vision...`);
         let tags = [];
-        try {
-            tags = await gemini.analyzeImageTags(buffer, mimeType);
-            if (tags.length === 0) {
-                console.error(" -> Error: Tags could not be generated (empty). Skipping Firestore save.");
-                continue;
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                tags = await gemini.analyzeImageTags(buffer, mimeType);
+                if (tags.length > 0) break;
+            } catch (e) {
+                console.error(` -> Error analyzing tags (Retries left: ${retries - 1}):`, e.message || e);
             }
-            console.log(` -> Tags inferred: ${tags.join(', ')}`);
-        } catch (e) {
-            console.error(" -> Error analyzing tags:", e);
+            retries--;
+            if (retries > 0) {
+                console.log(" -> Waiting 5 seconds before retrying...");
+                await sleep(5000);
+            }
+        }
+
+        if (tags.length === 0) {
+            console.error(" -> Error: Tags could not be generated after retries. Skipping Firestore save.");
             continue;
         }
+        console.log(` -> Tags inferred: ${tags.join(', ')}`);
 
         // Save to Firestore
         console.log(` -> Saving metadata to Firestore...`);
         await firestore.saveImageMetadata(hash, gsUri, tags);
         console.log(` -> Done!`);
+
+        // Delay to avoid hitting RPM limits (15 RPM -> 4s, 5 RPM -> 12s)
+        console.log(` -> Waiting 10 seconds before processing the next image to respect rate limits...`);
+        await sleep(10000);
     }
 
     console.log("\nBulk upload process completed.");
