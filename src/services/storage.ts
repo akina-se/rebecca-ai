@@ -2,8 +2,8 @@ import { Storage } from '@google-cloud/storage';
 import config from '../config';
 
 // The Storage client will use Application Default Credentials (ADC) implicitly.
-const storage = new Storage({ projectId: config.gcp.projectId });
-const bucketName = 'rebecca-ai-gal-images'; // Explicitly set to match infrastructure
+const storage = new Storage();
+const bucketName = config.images.bucketName;
 const bucket = storage.bucket(bucketName);
 
 /**

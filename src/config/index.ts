@@ -30,6 +30,7 @@ export default {
   },
   images: {
     cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '3', 10),
+    bucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
   },
   limits: {
     globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '45'),
