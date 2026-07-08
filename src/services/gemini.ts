@@ -307,6 +307,11 @@ const detectLanguage = async (text) => {
     }
 };
 
+const ALLOWED_IMAGE_TAGS = [
+    '喜', '怒', '哀', '楽', 'ドヤ顔', '照れ', '呆れ', '驚き', 
+    'リラックス', '疲労', '仕事', '食事', '日常', '風景', '挨拶'
+];
+
 const analyzeImageTags = async (imageBuffer: Buffer, mimeType: string) => {
     if (!ai) return [];
     try {
@@ -319,7 +324,7 @@ const analyzeImageTags = async (imageBuffer: Buffer, mimeType: string) => {
                         mimeType: mimeType
                     }
                 },
-                "この画像から、どのような状況や感情が読み取れますか？オブジェクト（例: カフェ、スマホ）と感情・表情（例: 笑顔、ドヤ顔、悲しい）の両方を含むタグをJSONの文字列配列形式で出力してください。\n出力例: [\"カフェ\", \"コーヒー\", \"笑顔\", \"リラックス\"]"
+                `この画像から読み取れる状況や感情を分析してください。出力するタグは、必ず以下のリストから最も当てはまるものを1〜5個だけ選んでください。\n許可されたタグリスト: ${ALLOWED_IMAGE_TAGS.join(', ')}\n\n出力はJSONの文字列配列形式のみとしてください。例: ["喜", "日常"]`
             ],
             config: {
                 responseMimeType: "application/json"
@@ -336,7 +341,10 @@ const inferImageKeyword = async (tweetText: string, timelineSummary: string) => 
     if (!ai) return null;
     try {
         const prompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
-以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、画像検索のための「キーワード（単語1つか2つ）」をJSONで出力してください。
+以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、必ず以下の「許可されたキーワードリスト」の中から最も当てはまるものを1つだけ選んで、JSON形式で出力してください。
+
+許可されたキーワードリスト: ${ALLOWED_IMAGE_TAGS.join(', ')}
+
 画像が不要だと思われる内容（事務連絡や抽象的すぎる内容）の場合は、keywordをnullにしてください。
 
 【直近のタイムライン要約】
