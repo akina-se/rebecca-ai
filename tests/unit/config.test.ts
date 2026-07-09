@@ -24,7 +24,7 @@ describe('Config', () => {
         expect(config.gcp.location).toBe('asia-northeast1');
         expect(config.gcp.queueName).toBe('rebecca-reply-queue');
         expect(config.gemini.model).toBe('gemini-3.1-flash-lite');
-        expect(config.gemini.embeddingModel).toBe('text-embedding-004');
+        expect(config.gemini.embeddingModel).toBe('gemini-embedding-2');
         expect(config.gemini.judgeModel).toBe('gemma-4-31b-it');
         expect(config.gemini.languageModel).toBe('gemma-4-31b-it');
         expect(Number(config.rag.maxMemories)).toBe(100);

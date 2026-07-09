@@ -25,6 +25,8 @@ jest.mock('../../src/services/firestore', () => ({
     getLastMentionId: jest.fn().mockResolvedValue(undefined),
     setLastMentionId: jest.fn().mockResolvedValue(undefined),
     saveTimelinePost: jest.fn().mockResolvedValue(undefined),
+    findImageByVector: jest.fn().mockResolvedValue(null),
+    updateImageLastUsed: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
@@ -34,6 +36,7 @@ jest.mock('../../src/services/gemini', () => ({
     detectLanguage: jest.fn().mockResolvedValue('ja'),
     generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
+    inferImageSearchQuery: jest.fn().mockResolvedValue(null),
 }));
 
 jest.mock('../../src/services/xApi', () => ({
@@ -195,6 +198,6 @@ describe('Integration Tests', () => {
         it('should return 200', async () => {
             const response = await request(app).get('/batch/news-post');
             expect(response.status).toBe(200);
-        });
+        }, 15000); // Increased timeout for external RSS fetch
     });
 });

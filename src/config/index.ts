@@ -19,12 +19,18 @@ export default {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
     model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
-    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
+    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
     judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemma-4-31b-it',
     languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-31b-it',
+    visionModel: process.env.GEMINI_VISION_MODEL || 'gemini-3.1-flash-lite',
+    imageInferenceModel: process.env.GEMINI_IMAGE_INFERENCE_MODEL || 'gemini-3.1-flash-lite',
   },
   rag: {
     maxMemories: parseInt(process.env.RAG_MAX_MEMORIES) || 100,
+  },
+  images: {
+    cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '3', 10),
+    bucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
   },
   limits: {
     globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '45'),

@@ -19,6 +19,7 @@ Thumbs.db
 # Test coverage & Generated artifacts
 coverage/
 artifacts/
+images/
 
 # Build output
 dist/
