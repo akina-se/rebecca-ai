@@ -3,8 +3,9 @@ import config from '../config';
 
 // Initialize client if credentials exist, otherwise let it be empty (e.g. during test)
 let client: Client | null = null;
+let oauth1Client: OAuth1 | null = null;
 if (config.xApi.appKey) {
-  const oauth1 = new OAuth1({
+  oauth1Client = new OAuth1({
     apiKey: config.xApi.appKey,
     apiSecret: config.xApi.appSecret,
     callback: 'oob',
@@ -12,7 +13,7 @@ if (config.xApi.appKey) {
     accessTokenSecret: config.xApi.accessSecret,
   });
   client = new Client({
-    oauth1
+    oauth1: oauth1Client
   });
 }
 
@@ -48,7 +49,7 @@ const getTweetDetails = async (tweetId: string) => {
 }
 
 const uploadMedia = async (buffer: Buffer, mimeType: string) => {
-    if (!client) {
+    if (!client || !oauth1Client) {
         console.warn('Twitter API client not initialized. Mocking media upload.');
         return 'mock_media_id';
     }
@@ -57,16 +58,22 @@ const uploadMedia = async (buffer: Buffer, mimeType: string) => {
         const form = new FormData();
         form.append('media', blob, 'image.jpg');
 
-        // Use the v1.1 upload endpoint directly via XDK's client
-        const response: any = await client.request(
-            'POST',
-            'https://upload.twitter.com/1.1/media/upload.json',
-            {
-                body: form as any,
-                security: [{ "UserToken": [] }] // Force OAuth 1.0a
-            }
-        );
-        return response.media_id_string;
+        const url = 'https://upload.twitter.com/1.1/media/upload.json';
+        const authHeader = await oauth1Client.buildRequestHeader('POST', url);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader
+            },
+            body: form
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${JSON.stringify(data)}`);
+        }
+        return data.media_id_string;
     } catch (error) {
         console.error('Error uploading media:', error);
         throw error;
