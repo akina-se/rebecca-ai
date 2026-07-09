@@ -9,10 +9,12 @@ This system is built with a highly scalable, fully serverless architecture that 
 - **Mention Retrieval / Main Processing**: Cloud Run (Node.js / Express) *Uses polling instead of Webhooks due to X API Free Tier limitations.*
 - **Asynchronous Queue (Delayed Execution)**: Cloud Tasks
 - **Database**: Firestore (NoSQL)
+- **Image Storage**: Cloud Storage (GCS)
 - **Scheduled Batch Processing**: Cloud Scheduler
 - **LLM Engine**: 
-  - Main Conversation & Memory: `gemini-3.1-flash-lite`
-  - Language Detection & Safety Audit (LLM-as-a-Judge): `gemma-4-31b-it`
+  - Main Conversation, Memory & Inference: `gemini-3.1-flash-lite`
+  - Image Recognition (Vision): `gemini-3.5-flash`
+  - Language Detection & Safety Audit: `gemma-4-31b-it`
   - Vectorization: `text-embedding-004`
 - **Integration API**: X (Twitter) API v2
 
@@ -101,10 +103,11 @@ Uses Cloud Scheduler to execute the following batch processes sequentially late 
   - **Application**: Saves the generated result to `system/persona/extended_prompt` and dynamically injects it into the base prompt.
   - **Guardrail**: Ensures that the evolution only applies to "vocabulary" and "variations in empathy," while isolating the core settings ("Master supremacy, no abusive language") so they can never be overwritten.
 
-- **Batch 4: Proactive Talk (Spontaneous News Sharing and Pampering)**
+- **Batch 4: Proactive Talk (Spontaneous News Sharing and Image Attachment)**
   - **Execution Time**: Multiple times daily (e.g., Morning, Noon, Night)
   - **Process**: Fetches a public RSS feed (e.g., Yahoo! News) and asks Gemini to "choose a news story the Master might relate to." It then generates a comforting post within 100 characters and posts it spontaneously on X.
+  - **Image Attachment**: Infers a "search query" representing the current emotion or situation based on the generated text and timeline summary. The query is vectorized and matched against the caption vectors of pre-registered images in GCS and Firestore using cosine similarity (KNN). A matching image is automatically attached to the post (with cooldowns to prevent repetition).
   - **Memory Consolidation**: The posted content is saved to `timeline_history`, summarized (`timeline_summary`) during Batch 1 (Dreaming), and incorporated into the prompt as her own past statements.
 
-## 6. Marketing and Operations Guidelines
-When daily reply limits are reached due to a viral spike, the automated morning post on the following day should explicitly mention the limitation as a character quirk (Tsundere/Scarcity). For example: "Today's reply ration is limited to XX. My compute resources aren't infinite, you know!" This helps manage user expectations.
+## 6. Rate Limit Handling Specifications
+When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently or throwing explicit errors, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.
