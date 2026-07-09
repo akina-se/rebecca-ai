@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0](https://github.com/akina-se/rebecca-ai/compare/v1.1.1...v1.2.0) (2026-07-08)
+
+
+### Features
+
+* add favicon with dark purple gradient background ([655cfc7](https://github.com/akina-se/rebecca-ai/commit/655cfc743e0d9002ebb0eac921a173beb45f0cab))
+* add GitHub repository link to landing page ([8a035e4](https://github.com/akina-se/rebecca-ai/commit/8a035e422e97874bf701bd3339140ff33c07363d))
+* UI enhancements (favicon and GitHub link) ([e455a6b](https://github.com/akina-se/rebecca-ai/commit/e455a6b745b0f6f2a08a59af54a1bae860e10044))
+
 ## [1.1.1](https://github.com/akina-se/rebecca-ai/compare/v1.1.0...v1.1.1) (2026-07-01)
 
 
