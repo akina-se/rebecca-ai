@@ -259,6 +259,9 @@ const generateEmbedding = async (text) => {
         const response = await ai.models.embedContent({
             model: config.gemini.embeddingModel,
             contents: text,
+            config: {
+                outputDimensionality: 768
+            }
         });
         return response.embeddings[0].values;
     } catch (e) {
@@ -319,10 +322,10 @@ const analyzeImageCaption = async (imageBuffer: Buffer, mimeType: string) => {
                         mimeType: mimeType
                     }
                 },
-                `この画像に写っている状況、被写体の表情、および感情を詳細に描写する説明文（キャプション）を1〜2文の短いテキストで出力してください。`
+                `この画像に写っている状況、被写体の表情、および感情を説明するテキスト（キャプション）を生成してください。ベクトル検索のクエリとして使用するため、具体的なキーワード（場所、服の色、表情、シチュエーション）を豊富に含めた自然な日本語にしてください。途中で途切れないように、必ず完全な文章（句点で終わる）で出力してください。`
             ],
             config: {
-                maxOutputTokens: 200
+                maxOutputTokens: 500
             }
         });
         return response.text.trim();
