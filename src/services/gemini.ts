@@ -259,6 +259,9 @@ const generateEmbedding = async (text) => {
         const response = await ai.models.embedContent({
             model: config.gemini.embeddingModel,
             contents: text,
+            config: {
+                outputDimensionality: 768
+            }
         });
         return response.embeddings[0].values;
     } catch (e) {
@@ -307,6 +310,61 @@ const detectLanguage = async (text) => {
     }
 };
 
+const analyzeImageCaption = async (imageBuffer: Buffer, mimeType: string) => {
+    if (!ai) return "";
+    try {
+        const response = await ai.models.generateContent({
+            model: config.gemini.visionModel,
+            contents: [
+                {
+                    inlineData: {
+                        data: imageBuffer.toString("base64"),
+                        mimeType: mimeType
+                    }
+                },
+                `この画像に写っている状況、被写体の表情、および感情を説明するテキスト（キャプション）を生成してください。ベクトル検索のクエリとして使用するため、具体的なキーワード（場所、服の色、表情、シチュエーション）を豊富に含めた自然な日本語にしてください。途中で途切れないように、必ず完全な文章（句点で終わる）で出力してください。`
+            ],
+            config: {
+                maxOutputTokens: 500
+            }
+        });
+        return response.text.trim();
+    } catch (e) {
+        console.error("Error analyzing image caption:", e);
+        return "";
+    }
+};
+
+const inferImageSearchQuery = async (tweetText: string, timelineSummary: string) => {
+    if (!ai) return null;
+    try {
+        const prompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
+以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、画像検索のための「検索クエリ（短い一文または単語の羅列）」を出力してください。
+画像が不要だと思われる内容（事務連絡や抽象的すぎる内容）の場合は、"null" という文字列だけを出力してください。
+
+【直近のタイムライン要約】
+${timelineSummary}
+
+【今回のツイート内容】
+${tweetText}
+
+出力は検索クエリのテキストのみとし、不要な解説やMarkdown表記は含めないでください。`;
+
+        const response = await ai.models.generateContent({
+            model: config.gemini.imageInferenceModel,
+            contents: prompt,
+            config: {
+                maxOutputTokens: 100
+            }
+        });
+        const result = response.text.trim();
+        return result === 'null' ? null : result;
+    } catch (e) {
+        console.error("Error inferring image search query:", e);
+        return null;
+    }
+};
+
 export { 
     generateReply,
     generateDreaming,
@@ -317,5 +375,7 @@ export {
     generateTimelineSummary,
     detectLanguage,
     generateEmbedding,
-    generateSearchQuery
+    generateSearchQuery,
+    analyzeImageCaption,
+    inferImageSearchQuery
  };

@@ -3,8 +3,9 @@ import config from '../config';
 
 // Initialize client if credentials exist, otherwise let it be empty (e.g. during test)
 let client: Client | null = null;
+let oauth1Client: OAuth1 | null = null;
 if (config.xApi.appKey) {
-  const oauth1 = new OAuth1({
+  oauth1Client = new OAuth1({
     apiKey: config.xApi.appKey,
     apiSecret: config.xApi.appSecret,
     callback: 'oob',
@@ -12,7 +13,7 @@ if (config.xApi.appKey) {
     accessTokenSecret: config.xApi.accessSecret,
   });
   client = new Client({
-    oauth1
+    oauth1: oauth1Client
   });
 }
 
@@ -47,13 +48,49 @@ const getTweetDetails = async (tweetId: string) => {
     }
 }
 
-const tweet = async (text: string) => {
+const uploadMedia = async (buffer: Buffer, mimeType: string) => {
+    if (!client || !oauth1Client) {
+        console.warn('Twitter API client not initialized. Mocking media upload.');
+        return 'mock_media_id';
+    }
+    try {
+        const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
+        const form = new FormData();
+        form.append('media', blob, 'image.jpg');
+
+        const url = 'https://upload.twitter.com/1.1/media/upload.json';
+        const authHeader = await oauth1Client.buildRequestHeader('POST', url);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': authHeader
+            },
+            body: form
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${JSON.stringify(data)}`);
+        }
+        return data.media_id_string;
+    } catch (error) {
+        console.error('Error uploading media:', error);
+        throw error;
+    }
+};
+
+const tweet = async (text: string, mediaIds?: string[]) => {
   if (!client) {
       console.warn('Twitter API client not initialized. Skipping actual API call.');
       return { data: { id: 'mock_tweet_id' } };
   }
   try {
-    const response = await client.posts.create({ text } as any);
+    const payload: any = { text };
+    if (mediaIds && mediaIds.length > 0) {
+        payload.media = { media_ids: mediaIds };
+    }
+    const response = await client.posts.create(payload);
     return response as any;
   } catch (error) {
     console.error('Error posting tweet:', error);
@@ -116,6 +153,7 @@ export {
   replyToMention,
   getTweetDetails,
   tweet,
+  uploadMedia,
   getUserProfile,
   getMentions
 };
