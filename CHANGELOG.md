@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0](https://github.com/akina-se/rebecca-ai/compare/v1.2.0...v1.3.0) (2026-07-09)
+
+
+### Features
+
+* complete vector search migration and fix X API upload ([1300d86](https://github.com/akina-se/rebecca-ai/commit/1300d86f492722787d67b75cfa8cc2173db4616d))
+* constrain image tags and inference keywords to a predefined list for better matching ([525ab8d](https://github.com/akina-se/rebecca-ai/commit/525ab8d44a805caf9aa5252a35bd98100663e94d))
+* implement proactive image attachment ([#26](https://github.com/akina-se/rebecca-ai/issues/26)) ([b316aa3](https://github.com/akina-se/rebecca-ai/commit/b316aa3a6a3f37888b103a64d1da9cfa8c22bd1b))
+* implement proactive image attachment ([#26](https://github.com/akina-se/rebecca-ai/issues/26)) ([c1b9f96](https://github.com/akina-se/rebecca-ai/commit/c1b9f96ea35df8995f718313d71a13db485ddc4a))
+
+
+### Bug Fixes
+
+* add favicon.ico to resolve 404 ([22a5bf2](https://github.com/akina-se/rebecca-ai/commit/22a5bf24bb065ab47c5aabc4ccd0d8f3313a65e9))
+* add retry logic and rate limit delay for bulk upload ([9339602](https://github.com/akina-se/rebecca-ai/commit/9339602205963cfc56dabaea73595fb3cf4b80c4))
+* skip firestore save on empty tags to allow retry ([421d46d](https://github.com/akina-se/rebecca-ai/commit/421d46d1ab393a417cd5136539b0c24e8f2d9dbc))
+* update default gemini models to available 3.x series ([ffe5e89](https://github.com/akina-se/rebecca-ai/commit/ffe5e893761d64cdb6f888b6f778c877259041b1))
+* use config for storage bucket and update .env.example ([b576d09](https://github.com/akina-se/rebecca-ai/commit/b576d094489c9d79eed56ec06898e6a1ae614305))
+
 ## [1.2.0](https://github.com/akina-se/rebecca-ai/compare/v1.1.1...v1.2.0) (2026-07-08)
 
 
