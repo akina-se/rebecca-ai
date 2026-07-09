@@ -22,6 +22,7 @@ When operating this bot on X (Twitter), you MUST explicitly state in the account
 - **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory (RAG) efficiently without losing detail.
 - **Dynamic Context Injection**: Dynamically alters the AI's prompt based on the time of day (morning/late night), user absence duration, and specific keywords like "overtime" or "boss".
 - **Automatic Language Separation**: Detects the user's input language and switches entirely to an English system prompt (featuring English slang) for English-speaking users, preventing unnatural code-switching.
+- **Proactive Image Attachment**: Automatically analyzes uploaded images with Gemini Vision, converts captions to vector embeddings, and uses Firestore Semantic Vector Search (KNN) to intelligently attach them to proactive timeline posts based on inferred context and search queries.
 - **Intentional Delay**: Introduces a random 1-3 minute delay before replying to simulate human behavior.
 - **Strict Rate Limiting**: Multi-tiered dynamic limit management (Global Monthly, Global Daily, Dynamic User Allocation) to prevent unexpected API billing explosions for both X API and GCP.
 
@@ -29,11 +30,12 @@ When operating this bot on X (Twitter), you MUST explicitly state in the account
 
 - **Language**: TypeScript / Node.js (Express)
 - **AI Models**:
-  - Main Conversation: `gemini-3.1-flash-lite`
+  - Main Conversation & Inference: `gemini-3.1-flash-lite`
+  - Image Recognition (Vision): `gemini-3.5-flash`
   - Language Detection & Safety Audit: `gemma-4-31b-it`
   - RAG Vectorization: `text-embedding-004`
-- **Infrastructure (GCP)**: Cloud Run, Cloud Tasks, Cloud Scheduler, Cloud Firestore
-- **SNS Integration**: X API v2 (`twitter-api-v2`)
+- **Infrastructure (GCP)**: Cloud Run, Cloud Tasks, Cloud Scheduler, Cloud Firestore, Cloud Storage (GCS)
+- **SNS Integration**: X API v2 (via `@xdevplatform/xdk`)
 
 ## Architecture
 
@@ -90,6 +92,7 @@ GCP_PROJECT_ID=your-gcp-project-id
 GCP_LOCATION=asia-northeast1
 GCP_TASK_QUEUE_NAME=rebecca-reply-queue
 WORKER_URL=https://your-cloud-run-service-url.a.run.app
+IMAGE_BUCKET_NAME=rebecca-ai-gal-images
 
 # X API
 X_API_KEY=
@@ -105,6 +108,8 @@ GEMINI_MODEL=gemini-3.1-flash-lite
 GEMINI_JUDGE_MODEL=gemma-4-31b-it
 GEMINI_LANGUAGE_MODEL=gemma-4-31b-it
 GEMINI_EMBEDDING_MODEL=text-embedding-004
+GEMINI_VISION_MODEL=gemini-3.5-flash
+GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
 
 # Rate Limits
 GLOBAL_DAILY_LIMIT=45

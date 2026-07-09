@@ -138,6 +138,13 @@ describe('gemini.ts', () => {
             expect(result.pass).toBe(false);
             expect(result.reason).toBe('Audit API Error');
         });
+
+        it('should handle markdown code block without language', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: '```\n{"pass":true}\n```' });
+            const result = await gemini.auditEvolutionPrompt('test prompt');
+            expect(result).toEqual({ pass: true });
+        });
     });
 
     describe('generateTimelineSummary', () => {
@@ -201,6 +208,45 @@ describe('gemini.ts', () => {
             mockGenerateContent.mockRejectedValueOnce(new Error('Error'));
             const result = await gemini.generateSearchQuery('context', 'input');
             expect(result).toBe('input');
+        });
+    });
+
+    describe('analyzeImageCaption', () => {
+        it('should return caption successfully', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'A nice view' });
+            const result = await gemini.analyzeImageCaption(Buffer.from('test'), 'image/jpeg');
+            expect(result).toBe('A nice view');
+        });
+
+        it('should return empty string on error', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockRejectedValueOnce(new Error('Error'));
+            const result = await gemini.analyzeImageCaption(Buffer.from('test'), 'image/jpeg');
+            expect(result).toBe('');
+        });
+    });
+
+    describe('inferImageSearchQuery', () => {
+        it('should return search query successfully', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'coffee' });
+            const result = await gemini.inferImageSearchQuery('tweet text', 'timeline');
+            expect(result).toBe('coffee');
+        });
+
+        it('should return null if it outputs null', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'null' });
+            const result = await gemini.inferImageSearchQuery('tweet text', 'timeline');
+            expect(result).toBeNull();
+        });
+
+        it('should return null on error', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockRejectedValueOnce(new Error('Error'));
+            const result = await gemini.inferImageSearchQuery('tweet text', 'timeline');
+            expect(result).toBeNull();
         });
     });
 
