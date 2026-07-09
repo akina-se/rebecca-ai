@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/akina-se/rebecca-ai/compare/v1.3.0...v1.3.1) (2026-07-09)
+
+
+### Bug Fixes
+
+* correct favicon (hotfix) ([c8e99b0](https://github.com/akina-se/rebecca-ai/commit/c8e99b013f5a9cef49e177fb79199aba31c49b7f))
+* use correct favicon.png and remove rejected favicon.ico ([926f527](https://github.com/akina-se/rebecca-ai/commit/926f527166e341b253d4e69b4d254b80306cd789))
+
 ## [1.3.0](https://github.com/akina-se/rebecca-ai/compare/v1.2.0...v1.3.0) (2026-07-09)
 
 
