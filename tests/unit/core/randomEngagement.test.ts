@@ -3,11 +3,13 @@ import * as firestore from '../../../src/services/firestore';
 import * as gemini from '../../../src/services/gemini';
 import { runRandomEngagementBatch } from '../../../src/core/randomEngagement';
 import { checkAndIncrementRateLimits } from '../../../src/core/rateLimiter';
+import * as imageUtils from '../../../src/utils/image';
 
 jest.mock('../../../src/services/xApi');
 jest.mock('../../../src/services/firestore');
 jest.mock('../../../src/services/gemini');
 jest.mock('../../../src/core/rateLimiter');
+jest.mock('../../../src/utils/image');
 jest.mock('../../../src/config', () => ({
   __esModule: true,
   default: {
@@ -128,14 +130,15 @@ describe('Random Engagement Batch', () => {
                 media: [{ type: 'photo', url: 'http://example.com/photo.jpg' }]
             }
         });
-        (gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('a nice photo');
+        (imageUtils.downloadImage as jest.Mock).mockResolvedValue(Buffer.from('fakeimage'));
         (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({});
         (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
+        (gemini.analyzeImageCaption as jest.Mock).mockResolvedValue('a nice photo');
         (gemini.generateReply as jest.Mock).mockResolvedValue('@media_user cool photo!'); 
 
         await runRandomEngagementBatch();
 
-        expect(gemini.inferImageSearchQuery).toHaveBeenCalled();
+        expect(gemini.analyzeImageCaption).toHaveBeenCalled();
         expect(xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!', { quote_tweet_id: 't3' });
     });
 });
