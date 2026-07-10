@@ -306,4 +306,45 @@ describe('firestore.ts', () => {
             expect(firestoreInstance.set).toHaveBeenCalledWith(expect.objectContaining({ last_mention_id: '123' }), { merge: true });
         });
     });
+
+    describe('Follower and List Interactions', () => {
+        it('hasProcessedFollower should return true if processed', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true });
+            expect(await firestoreService.hasProcessedFollower('u1')).toBe(true);
+        });
+
+        it('hasProcessedFollower should return false if not processed', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: false });
+            expect(await firestoreService.hasProcessedFollower('u2')).toBe(false);
+        });
+
+        it('markFollowerProcessed should set data', async () => {
+            await firestoreService.markFollowerProcessed('u3');
+            expect(firestoreInstance.set).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u3' }));
+        });
+
+        it('getLastListInteraction should return date if exists', async () => {
+            const date = new Date();
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({ lastInteractionAt: { toDate: () => date } }) });
+            expect(await firestoreService.getLastListInteraction('u4')).toEqual(date);
+        });
+
+        it('getLastListInteraction should return null if not exists', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: false });
+            expect(await firestoreService.getLastListInteraction('u5')).toBeNull();
+        });
+
+        it('updateLastListInteraction should update timestamp', async () => {
+            await firestoreService.updateLastListInteraction('u6');
+            expect(firestoreInstance.set).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u6' }), { merge: true });
+        });
+    });
+
+    describe('Image Vector Search Fallbacks', () => {
+        it('searchImageByVector should return null on error', async () => {
+            firestoreInstance.get.mockRejectedValueOnce(new Error('Test error'));
+            const res = await firestoreService.searchImageByVector('cat');
+            expect(res).toBeNull();
+        });
+    });
 });
