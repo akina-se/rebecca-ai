@@ -17,7 +17,7 @@ describe('memory.ts', () => {
         });
 
         it('should correctly slice the last N pairs (normal case)', () => {
-            const buffer = Array.from({ length: 30 }).map((_, i) => ({ role: i % 2 === 0 ? 'user' : 'model', content: `msg${i}` }));
+            const buffer = Array.from({ length: 30 }).map((_, i) => ({ role: (i % 2 === 0 ? 'user' : 'model') as 'user' | 'model', content: `msg${i}` }));
             // limit = 10, should return last 20 elements
             const result = getWorkingMemory(buffer, 10);
             expect(result.length).toBe(20);
@@ -44,14 +44,14 @@ describe('memory.ts', () => {
 
     describe('processDreamingForUser', () => {
         it('should return early if episodic buffer is empty (boundary case)', async () => {
-            await processDreamingForUser('user1', { episodicBuffer: [] });
+            await processDreamingForUser('user1', { episodicBuffer: [] } as unknown as any);
             expect(gemini.generateDreaming).not.toHaveBeenCalled();
         });
 
         it('should generate and update core profile (normal case)', async () => {
             (gemini.generateDreaming as jest.Mock).mockResolvedValueOnce({ attributes: ['cool'] });
             
-            await processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] });
+            await processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
             
             expect(gemini.generateDreaming).toHaveBeenCalled();
             expect(firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] });
@@ -61,7 +61,7 @@ describe('memory.ts', () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             (gemini.generateDreaming as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
             
-            await processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] });
+            await processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
             
             expect(firestore.updateCoreProfile).not.toHaveBeenCalled();
             expect(consoleSpy).toHaveBeenCalledWith('Dreaming failed for user: user1', expect.any(Error));
