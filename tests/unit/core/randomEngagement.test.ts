@@ -113,8 +113,29 @@ describe('Random Engagement Batch', () => {
         expect(xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention', { quote_tweet_id: 't2' });
     });
 
-    it('should throw error if underlying api throws', async () => {
-        (xApi.getListMembers as jest.Mock).mockRejectedValue(new Error('api err'));
-        await expect(runRandomEngagementBatch()).rejects.toThrow('api err');
+    it('should handle tweets with attached media and analyze them', async () => {
+        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [{ id: 'u3', username: 'media_user' }] });
+        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
+        (xApi.getUserProfile as jest.Mock).mockResolvedValue({ data: { description: '' } });
+        (xApi.getUserTweets as jest.Mock).mockResolvedValue({ 
+            data: [{ 
+                id: 't3', 
+                text: 'look at this', 
+                attachments: { media_keys: ['media1'] } 
+            }],
+            includes: {
+                media: [{ type: 'photo', url: 'http://example.com/photo.jpg' }]
+            }
+        });
+        (gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('a nice photo');
+        (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({});
+        (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
+        (gemini.generateReply as jest.Mock).mockResolvedValue('@media_user cool photo!'); 
+
+        await runRandomEngagementBatch();
+
+        expect(gemini.inferImageSearchQuery).toHaveBeenCalled();
+        expect(xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!', { quote_tweet_id: 't3' });
     });
 });
