@@ -51,12 +51,23 @@ async function createList() {
             return;
         }
 
-        const listId = data.data.id;
+        const listId = String(data.data.id);
+        if (!/^\d+$/.test(listId)) {
+            console.error('Invalid list ID received:', listId);
+            return;
+        }
         console.log(`Successfully created list. ID: ${listId}`);
 
         // Append to .env
         const envPath = path.resolve(__dirname, '../.env');
-        let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+        let envContent = '';
+        try {
+            envContent = fs.readFileSync(envPath, 'utf8');
+        } catch (e: unknown) {
+            if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: string }).code !== 'ENOENT') {
+                throw e;
+            }
+        }
         
         if (envContent.includes('X_TARGET_LIST_ID=')) {
             envContent = envContent.replace(/X_TARGET_LIST_ID=.*/, `X_TARGET_LIST_ID=${listId}`);
