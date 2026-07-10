@@ -13,6 +13,7 @@ export interface UserCoreProfile {
 export interface ConversationLogEntry {
     role: 'user' | 'model';
     content: string;
+    timestamp?: string; // ISO string
 }
 
 /**
