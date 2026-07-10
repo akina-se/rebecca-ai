@@ -16,7 +16,8 @@
     "batch:evolution": "npx ts-node scripts/run-evolution.ts",
     "batch:news": "npx ts-node scripts/run-news.ts",
     "simulate": "npx ts-node scripts/simulate.ts",
-    "tool:upload-images": "npx ts-node scripts/upload-images.ts"
+    "tool:upload-images": "npx ts-node scripts/upload-images.ts",
+    "tool:get-lists": "ts-node scripts/get-lists.ts"
   },
   "keywords": [],
   "author": "",
