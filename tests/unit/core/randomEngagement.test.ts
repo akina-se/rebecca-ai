@@ -42,6 +42,10 @@ describe('Random Engagement Batch', () => {
             data: { description: 'I love games.' }
         });
 
+        (xApi.getUserTweets as jest.Mock).mockResolvedValue({
+            data: [{ id: 'tweet123', text: 'Playing games!' }]
+        });
+
         (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({ attributes: [], preferences: ['games'] });
         (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
         (gemini.generateReply as jest.Mock).mockResolvedValue('Hey @target_user, playing games again?');
@@ -51,7 +55,7 @@ describe('Random Engagement Batch', () => {
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
         
-        expect(xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?');
+        expect(xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?', { quote_tweet_id: 'tweet123' });
         expect(firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
     });
 
@@ -99,13 +103,14 @@ describe('Random Engagement Batch', () => {
         (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
         (xApi.getUserProfile as jest.Mock).mockResolvedValue({ data: { description: '' } });
+        (xApi.getUserTweets as jest.Mock).mockResolvedValue({ data: [{ id: 't2', text: 'hi' }] });
         (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({});
         (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
         (gemini.generateReply as jest.Mock).mockResolvedValue('Hello without mention'); // missing @target2
 
         await runRandomEngagementBatch();
 
-        expect(xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention');
+        expect(xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention', { quote_tweet_id: 't2' });
     });
 
     it('should throw error if underlying api throws', async () => {

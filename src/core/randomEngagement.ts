@@ -57,10 +57,42 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
         const profileAnalysis = await gemini.analyzeUserProfile(description);
         console.log("Profile Analysis:", profileAnalysis);
 
-        const lang = await gemini.detectLanguage(description);
+        let tweetContext = '';
+        let targetTweetId: string | undefined = undefined;
+        try {
+            const recentTweets = await xApi.getUserTweets(targetUser.id, 5);
+            if (recentTweets.data && recentTweets.data.length > 0) {
+                const latestTweet = recentTweets.data[0];
+                targetTweetId = latestTweet.id;
+                tweetContext += `\n【直近の投稿内容】\n${latestTweet.text}`;
+                
+                const mediaKeys = latestTweet.attachments?.media_keys;
+                if (mediaKeys && mediaKeys.length > 0 && recentTweets.includes?.media) {
+                    const { downloadImage } = await import('../utils/image');
+                    for (const media of recentTweets.includes.media) {
+                        if (media.type === 'photo' && media.url) {
+                            const { buffer, mimeType } = await downloadImage(media.url);
+                            const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
+                            if (imageCaption) {
+                                tweetContext += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch(e) {
+            console.error('Failed to fetch recent tweets for random engagement:', e);
+        }
+
+        if (!targetTweetId) {
+            console.log(`User ${targetUser.id} has no recent organic tweets to engage with. Skipping...`);
+            return { status: 'skipped', reason: 'No valid tweets to quote' };
+        }
+
+        const lang = await gemini.detectLanguage(description + tweetContext);
 
         const systemPrompt = getBasePrompt('random_engagement', lang);
-        const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n\n上記を踏まえて、ターゲットユーザーに対して不意打ちでメンション（話しかけ）を行ってください。`;
+        const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最新の投稿に対して不意打ちで引用リポスト（話しかけ）を行ってください。`;
 
         const generatedText = await gemini.generateReply(systemPrompt, [], userInput);
 
@@ -71,7 +103,7 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
 
         console.log(`Generated Engagement Text:\n${finalText}`);
 
-        await xApi.tweet(finalText);
+        await xApi.tweet(finalText, { quote_tweet_id: targetTweetId });
 
         await firestore.updateLastListInteraction(targetUser.id);
 
