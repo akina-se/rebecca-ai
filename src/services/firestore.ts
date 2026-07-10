@@ -1,23 +1,55 @@
 import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';
 import config from '../config';
+import { 
+    FirestoreUser, 
+    ConversationLogEntry, 
+    UserCoreProfile, 
+    RawConversationLog, 
+    ImageDoc, 
+    ImageDocWithId,
+    ProcessedFollower,
+    ListInteraction
+} from '../types';
 
+/**
+ * Firestore client instance using the configured GCP project ID.
+ */
 const firestore = new Firestore({
   projectId: config.gcp.projectId,
-  // Let it use application default credentials locally or in GCP
 });
 
-const getUserDoc = async (userId) => {
+/**
+ * Retrieves a user document from Firestore by user ID.
+ * 
+ * @param userId - The ID of the user.
+ * @returns A promise that resolves to the user data or null if not found.
+ */
+const getUserDoc = async (userId: string): Promise<FirestoreUser | null> => {
   const docRef = firestore.collection('users').doc(userId);
   const doc = await docRef.get();
-  return doc.exists ? doc.data() : null;
+  return doc.exists ? (doc.data() as FirestoreUser) : null;
 };
 
-const updateUserDoc = async (userId, data) => {
+/**
+ * Updates an existing user document with the provided data.
+ * 
+ * @param userId - The ID of the user.
+ * @param data - Partial user data to merge into the document.
+ * @returns A promise that resolves when the update completes.
+ */
+const updateUserDoc = async (userId: string, data: Partial<FirestoreUser>): Promise<void> => {
   const docRef = firestore.collection('users').doc(userId);
   await docRef.set(data, { merge: true });
 };
 
-const appendEpisodicBuffer = async (userId, logEntry) => {
+/**
+ * Appends a conversation log entry to the user's episodic buffer.
+ * 
+ * @param userId - The ID of the user.
+ * @param logEntry - The conversation log entry to append.
+ * @returns A promise that resolves when the append completes.
+ */
+const appendEpisodicBuffer = async (userId: string, logEntry: ConversationLogEntry): Promise<void> => {
   const docRef = firestore.collection('users').doc(userId);
   await docRef.set({
     episodicBuffer: FieldValue.arrayUnion(logEntry),
@@ -25,108 +57,192 @@ const appendEpisodicBuffer = async (userId, logEntry) => {
   }, { merge: true });
 };
 
-const updateCoreProfile = async (userId, profileData) => {
+/**
+ * Updates a user's core profile and clears their episodic buffer.
+ * 
+ * @param userId - The ID of the user.
+ * @param profileData - The new core profile data.
+ * @returns A promise that resolves when the update completes.
+ */
+const updateCoreProfile = async (userId: string, profileData: UserCoreProfile): Promise<void> => {
   const docRef = firestore.collection('users').doc(userId);
   await docRef.set({
     coreProfile: profileData,
-    episodicBuffer: [] // Flush episodic buffer after dreaming
+    episodicBuffer: []
   }, { merge: true });
 };
 
-const incrementGlobalRateLimit = async (type, timeKey) => {
+/**
+ * Increments the global rate limit counter for a specific type and time key.
+ * 
+ * @param type - The type of rate limit.
+ * @param timeKey - The specific time key for the limit.
+ * @returns A promise that resolves when the increment completes.
+ */
+const incrementGlobalRateLimit = async (type: string, timeKey: string): Promise<void> => {
     const docRef = firestore.collection('rate_limits').doc(`global_${type}_${timeKey}`);
     await docRef.set({
         count: FieldValue.increment(1)
     }, { merge: true });
 };
 
-const getGlobalRateLimit = async (type, timeKey) => {
+/**
+ * Retrieves the current global rate limit count for a specific type and time key.
+ * 
+ * @param type - The type of rate limit.
+ * @param timeKey - The specific time key for the limit.
+ * @returns A promise that resolves to the current count.
+ */
+const getGlobalRateLimit = async (type: string, timeKey: string): Promise<number> => {
     const docRef = firestore.collection('rate_limits').doc(`global_${type}_${timeKey}`);
     const doc = await docRef.get();
-    return doc.exists ? doc.data().count : 0;
+    return doc.exists ? (doc.data()?.count || 0) : 0;
 };
 
-const incrementUserDailyLimit = async (userId, dateStr) => {
+/**
+ * Increments the daily rate limit counter for a specific user and date.
+ * 
+ * @param userId - The ID of the user.
+ * @param dateStr - The date string for the limit.
+ * @returns A promise that resolves when the increment completes.
+ */
+const incrementUserDailyLimit = async (userId: string, dateStr: string): Promise<void> => {
     const docRef = firestore.collection('rate_limits').doc(`user_daily_${userId}_${dateStr}`);
     await docRef.set({
         count: FieldValue.increment(1)
     }, { merge: true });
 };
 
-const getUserDailyLimit = async (userId, dateStr) => {
+/**
+ * Retrieves the daily rate limit count for a specific user and date.
+ * 
+ * @param userId - The ID of the user.
+ * @param dateStr - The date string for the limit.
+ * @returns A promise that resolves to the current count.
+ */
+const getUserDailyLimit = async (userId: string, dateStr: string): Promise<number> => {
     const docRef = firestore.collection('rate_limits').doc(`user_daily_${userId}_${dateStr}`);
     const doc = await docRef.get();
-    return doc.exists ? doc.data().count : 0;
+    return doc.exists ? (doc.data()?.count || 0) : 0;
 };
 
-const incrementUserMinuteLimit = async (userId, timeKey) => {
+/**
+ * Increments the minute-based rate limit counter for a specific user and time key.
+ * 
+ * @param userId - The ID of the user.
+ * @param timeKey - The specific time key for the limit.
+ * @returns A promise that resolves when the increment completes.
+ */
+const incrementUserMinuteLimit = async (userId: string, timeKey: string): Promise<void> => {
     const docRef = firestore.collection('rate_limits').doc(`user_minute_${userId}_${timeKey}`);
     await docRef.set({
         count: FieldValue.increment(1)
     }, { merge: true });
 };
 
-const getUserMinuteLimit = async (userId, timeKey) => {
+/**
+ * Retrieves the minute-based rate limit count for a specific user and time key.
+ * 
+ * @param userId - The ID of the user.
+ * @param timeKey - The specific time key for the limit.
+ * @returns A promise that resolves to the current count.
+ */
+const getUserMinuteLimit = async (userId: string, timeKey: string): Promise<number> => {
     const docRef = firestore.collection('rate_limits').doc(`user_minute_${userId}_${timeKey}`);
     const doc = await docRef.get();
-    return doc.exists ? doc.data().count : 0;
+    return doc.exists ? (doc.data()?.count || 0) : 0;
 };
 
-const getAllUsers = async () => {
+/**
+ * Retrieves all registered users from the database.
+ * 
+ * @returns A promise that resolves to an array of user data including their IDs.
+ */
+const getAllUsers = async (): Promise<(FirestoreUser & { id: string })[]> => {
     const snapshot = await firestore.collection('users').get();
-    const users = [];
-    snapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
+    const users: (FirestoreUser & { id: string })[] = [];
+    snapshot.forEach(doc => users.push({ id: doc.id, ...(doc.data() as FirestoreUser) }));
     return users;
 };
 
-const getDailyActiveUsersCount = async (dateStr) => {
+/**
+ * Retrieves the daily active users (DAU) count for a specific date.
+ * 
+ * @param dateStr - The date string to check.
+ * @returns A promise that resolves to the DAU count. Defaults to 1 if not found.
+ */
+const getDailyActiveUsersCount = async (dateStr: string): Promise<number> => {
     const docRef = firestore.collection('system_stats').doc(`dau_${dateStr}`);
     const doc = await docRef.get();
-    return doc.exists ? doc.data().count : 1; // Default to 1 to avoid div by zero
+    return doc.exists ? (doc.data()?.count || 1) : 1;
 };
 
-const saveRawConversationLog = async (userId, userText, aiText) => {
-    // Save as uncompressed raw log for prompt improvement and analysis
+/**
+ * Saves a raw conversation log entry for future analysis.
+ * Logs expire automatically after 30 days.
+ * 
+ * @param userId - The ID of the user involved in the conversation.
+ * @param userText - The user's input text.
+ * @param aiText - The AI's response text.
+ * @returns A promise that resolves when the log is saved.
+ */
+const saveRawConversationLog = async (userId: string, userText: string, aiText: string): Promise<void> => {
     const logRef = firestore.collection('conversation_logs').doc();
     const now = new Date();
     
-    // Calculate retention (TTL)
     const expireAt = new Date(now);
     expireAt.setDate(expireAt.getDate() + 30);
 
-    await logRef.set({
+    const log: RawConversationLog = {
         userId,
         userText,
         aiText,
         timestamp: now.toISOString(),
         expireAt: Timestamp.fromDate(expireAt)
-    });
+    };
+    await logRef.set(log);
 };
 
-const getRecentConversationLogs = async (days = 7) => {
+/**
+ * Retrieves recent conversation logs up to a specified number of days.
+ * 
+ * @param days - The number of days to look back. Defaults to 7.
+ * @returns A promise that resolves to an array of raw conversation logs.
+ */
+const getRecentConversationLogs = async (days = 7): Promise<RawConversationLog[]> => {
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - days);
     const sinceIso = sinceDate.toISOString();
 
-    // Fetch up to 1000 latest logs (considering token limits and API processing time)
     const snapshot = await firestore.collection('conversation_logs')
         .where('timestamp', '>=', sinceIso)
         .orderBy('timestamp', 'desc')
         .limit(1000)
         .get();
 
-    const logs = [];
-    snapshot.forEach(doc => logs.push(doc.data()));
+    const logs: RawConversationLog[] = [];
+    snapshot.forEach(doc => logs.push(doc.data() as RawConversationLog));
     return logs;
 };
 
-const getExtendedPrompt = async () => {
+/**
+ * Retrieves the extended system persona prompt.
+ * 
+ * @returns A promise that resolves to the extended prompt text.
+ */
+const getExtendedPrompt = async (): Promise<string> => {
     const docRef = firestore.collection('system').doc('persona');
     const doc = await docRef.get();
-    return doc.exists ? doc.data().extended_prompt || '' : '';
+    return doc.exists ? (doc.data()?.extended_prompt || '') : '';
 };
 
-const saveExtendedPrompt = async (promptText) => {
+/**
+ * Saves the extended system persona prompt.
+ * 
+ * @param promptText - The new extended prompt text.
+ * @returns A promise that resolves when the update completes.
+ */
+const saveExtendedPrompt = async (promptText: string): Promise<void> => {
     const docRef = firestore.collection('system').doc('persona');
     await docRef.set({
         extended_prompt: promptText,
@@ -134,13 +250,24 @@ const saveExtendedPrompt = async (promptText) => {
     }, { merge: true });
 };
 
-const getTimelineSummary = async () => {
+/**
+ * Retrieves the summarized history of timeline events.
+ * 
+ * @returns A promise that resolves to the timeline summary text.
+ */
+const getTimelineSummary = async (): Promise<string> => {
     const docRef = firestore.collection('system').doc('persona');
     const doc = await docRef.get();
-    return doc.exists ? doc.data().timeline_summary || '' : '';
+    return doc.exists ? (doc.data()?.timeline_summary || '') : '';
 };
 
-const saveTimelineSummary = async (summaryText) => {
+/**
+ * Saves the summarized history of timeline events.
+ * 
+ * @param summaryText - The new timeline summary text.
+ * @returns A promise that resolves when the update completes.
+ */
+const saveTimelineSummary = async (summaryText: string): Promise<void> => {
     const docRef = firestore.collection('system').doc('persona');
     await docRef.set({
         timeline_summary: summaryText,
@@ -148,10 +275,15 @@ const saveTimelineSummary = async (summaryText) => {
     }, { merge: true });
 };
 
-const saveTimelinePost = async (text) => {
+/**
+ * Saves a timeline post to the history collection with a 30-day expiration.
+ * 
+ * @param text - The content of the timeline post.
+ * @returns A promise that resolves when the post is saved.
+ */
+const saveTimelinePost = async (text: string): Promise<void> => {
     const ref = firestore.collection('timeline_history').doc();
     const now = new Date();
-    // TTL for 30 days
     const expireAt = new Date(now);
     expireAt.setDate(expireAt.getDate() + 30);
     
@@ -162,18 +294,32 @@ const saveTimelinePost = async (text) => {
     });
 };
 
-const getRecentTimelinePosts = async (limit = 3) => {
+/**
+ * Retrieves the most recent timeline posts.
+ * 
+ * @param limit - The maximum number of posts to retrieve. Defaults to 3.
+ * @returns A promise that resolves to an array of recent timeline post texts.
+ */
+const getRecentTimelinePosts = async (limit = 3): Promise<string[]> => {
     const snapshot = await firestore.collection('timeline_history')
         .orderBy('timestamp', 'desc')
         .limit(limit)
         .get();
     
-    const posts = [];
+    const posts: string[] = [];
     snapshot.forEach(doc => posts.push(doc.data().text));
-    return posts.reverse(); // Revert to chronological order
+    return posts.reverse();
 };
 
-const saveRagMemory = async (userId, text, embedding) => {
+/**
+ * Saves a RAG (Retrieval-Augmented Generation) memory entry, keeping total entries within configured limits.
+ * 
+ * @param userId - The ID of the user associated with the memory.
+ * @param text - The content of the memory.
+ * @param embedding - The vector embedding of the memory content.
+ * @returns A promise that resolves when the memory is saved.
+ */
+const saveRagMemory = async (userId: string, text: string, embedding: number[]): Promise<void> => {
     const memRef = firestore.collection('rag_memories').doc();
     const now = new Date();
     await memRef.set({
@@ -183,7 +329,6 @@ const saveRagMemory = async (userId, text, embedding) => {
         timestamp: now.toISOString()
     });
 
-    // Upper limit (cap) management
     const maxMemories = config.rag.maxMemories;
     const snapshot = await firestore.collection('rag_memories')
         .where('userId', '==', userId)
@@ -200,7 +345,15 @@ const saveRagMemory = async (userId, text, embedding) => {
     }
 };
 
-const findRagMemories = async (userId, queryVector, limit = 3) => {
+/**
+ * Finds RAG memories related to a specific user using vector search.
+ * 
+ * @param userId - The ID of the user.
+ * @param queryVector - The embedding vector to search against.
+ * @param limit - The maximum number of memories to return. Defaults to 3.
+ * @returns A promise that resolves to an array of memory texts.
+ */
+const findRagMemories = async (userId: string, queryVector: number[], limit = 3): Promise<string[]> => {
     try {
         const snapshot = await firestore.collection('rag_memories')
             .where('userId', '==', userId)
@@ -210,23 +363,33 @@ const findRagMemories = async (userId, queryVector, limit = 3) => {
             })
             .get();
             
-        const memories = [];
+        const memories: string[] = [];
         snapshot.forEach(doc => memories.push(doc.data().text));
         return memories;
     } catch (e) {
         console.error('Error during vector search (findNearest):', e);
-        // Return empty array to handle errors like missing indexes gracefully
         return [];
     }
 };
 
-const getLastMentionId = async () => {
+/**
+ * Retrieves the last processed mention ID from the system state.
+ * 
+ * @returns A promise that resolves to the mention ID or null if not found.
+ */
+const getLastMentionId = async (): Promise<string | null> => {
     const docRef = firestore.collection('system').doc('x_api_state');
     const doc = await docRef.get();
-    return doc.exists ? doc.data().last_mention_id || null : null;
+    return doc.exists ? (doc.data()?.last_mention_id || null) : null;
 };
 
-const setLastMentionId = async (mentionId: string) => {
+/**
+ * Updates the last processed mention ID in the system state.
+ * 
+ * @param mentionId - The new mention ID to set.
+ * @returns A promise that resolves when the update completes.
+ */
+const setLastMentionId = async (mentionId: string): Promise<void> => {
     const docRef = firestore.collection('system').doc('x_api_state');
     await docRef.set({
         last_mention_id: mentionId,
@@ -234,7 +397,16 @@ const setLastMentionId = async (mentionId: string) => {
     }, { merge: true });
 };
 
-const saveImageMetadata = async (hash: string, url: string, caption: string, embedding: number[]) => {
+/**
+ * Saves image metadata including its vector embedding.
+ * 
+ * @param hash - The unique hash identifying the image.
+ * @param url - The URL of the image.
+ * @param caption - The caption describing the image.
+ * @param embedding - The vector embedding of the image caption.
+ * @returns A promise that resolves when the metadata is saved.
+ */
+const saveImageMetadata = async (hash: string, url: string, caption: string, embedding: number[]): Promise<void> => {
     const docRef = firestore.collection('images').doc(hash);
     await docRef.set({
         url,
@@ -245,13 +417,25 @@ const saveImageMetadata = async (hash: string, url: string, caption: string, emb
     });
 };
 
-const getImageByHash = async (hash: string) => {
+/**
+ * Retrieves image metadata by its unique hash.
+ * 
+ * @param hash - The hash identifier of the image.
+ * @returns A promise that resolves to the image document or null if not found.
+ */
+const getImageByHash = async (hash: string): Promise<ImageDoc | null> => {
     const docRef = firestore.collection('images').doc(hash);
     const doc = await docRef.get();
-    return doc.exists ? doc.data() : null;
+    return doc.exists ? (doc.data() as ImageDoc) : null;
 };
 
-const findImageByVector = async (queryVector: number[]) => {
+/**
+ * Finds a suitable image by comparing its vector embedding and respecting cooldown periods.
+ * 
+ * @param queryVector - The embedding vector to search against.
+ * @returns A promise that resolves to the chosen image document with its ID or null if none found.
+ */
+const findImageByVector = async (queryVector: number[]): Promise<ImageDocWithId | null> => {
     try {
         const snapshot = await firestore.collection('images')
             .findNearest('embedding', FieldValue.vector(queryVector), {
@@ -263,13 +447,13 @@ const findImageByVector = async (queryVector: number[]) => {
         if (snapshot.empty) return null;
 
         const now = new Date();
-        let bestImage = null;
+        let bestImage: ImageDocWithId | null = null;
 
-        // Filter by cooldown
         const cooldownMs = config.images.cooldownDays * 24 * 60 * 60 * 1000;
-        const availableImages = [];
+        const availableImages: ImageDocWithId[] = [];
+        
         for (const doc of snapshot.docs) {
-            const data = doc.data();
+            const data = doc.data() as ImageDoc;
             const lastUsed = data.lastUsedAt ? data.lastUsedAt.toDate() : null;
             if (!lastUsed || (now.getTime() - lastUsed.getTime()) > cooldownMs) {
                 availableImages.push({ id: doc.id, ...data });
@@ -277,7 +461,6 @@ const findImageByVector = async (queryVector: number[]) => {
         }
 
         if (availableImages.length > 0) {
-            // Pick a random one from available to avoid always picking the same first one
             const randomIndex = Math.floor(Math.random() * availableImages.length);
             bestImage = availableImages[randomIndex];
         }
@@ -289,11 +472,73 @@ const findImageByVector = async (queryVector: number[]) => {
     }
 };
 
-const updateImageLastUsed = async (hash: string) => {
+/**
+ * Updates the last used timestamp and increments the usage count of an image.
+ * 
+ * @param hash - The unique hash identifying the image.
+ * @returns A promise that resolves when the update completes.
+ */
+const updateImageLastUsed = async (hash: string): Promise<void> => {
     const docRef = firestore.collection('images').doc(hash);
     await docRef.set({
         lastUsedAt: FieldValue.serverTimestamp(),
         useCount: FieldValue.increment(1)
+    }, { merge: true });
+};
+
+/**
+ * Checks if a follower has already been processed by the system.
+ * 
+ * @param userId - The ID of the follower.
+ * @returns A promise that resolves to a boolean indicating if they are processed.
+ */
+const hasProcessedFollower = async (userId: string): Promise<boolean> => {
+    const docRef = firestore.collection('processed_followers').doc(userId);
+    const doc = await docRef.get();
+    return doc.exists;
+};
+
+/**
+ * Marks a follower as processed in the system.
+ * 
+ * @param userId - The ID of the follower.
+ * @returns A promise that resolves when the update completes.
+ */
+const markFollowerProcessed = async (userId: string): Promise<void> => {
+    const docRef = firestore.collection('processed_followers').doc(userId);
+    await docRef.set({
+        userId,
+        timestamp: new Date().toISOString()
+    } as ProcessedFollower);
+};
+
+/**
+ * Retrieves the timestamp of the last list interaction for a user.
+ * 
+ * @param userId - The ID of the user.
+ * @returns A promise that resolves to the timestamp or null if not found.
+ */
+const getLastListInteraction = async (userId: string): Promise<Date | null> => {
+    const docRef = firestore.collection('list_interaction_history').doc(userId);
+    const doc = await docRef.get();
+    if (doc.exists) {
+        const data = doc.data() as ListInteraction;
+        return data.lastInteractionAt ? data.lastInteractionAt.toDate() : null;
+    }
+    return null;
+};
+
+/**
+ * Updates the timestamp of the last list interaction for a user.
+ * 
+ * @param userId - The ID of the user.
+ * @returns A promise that resolves when the update completes.
+ */
+const updateLastListInteraction = async (userId: string): Promise<void> => {
+    const docRef = firestore.collection('list_interaction_history').doc(userId);
+    await docRef.set({
+        userId,
+        lastInteractionAt: FieldValue.serverTimestamp()
     }, { merge: true });
 };
 
@@ -326,5 +571,9 @@ export {
   saveImageMetadata,
   getImageByHash,
   findImageByVector,
-  updateImageLastUsed
+  updateImageLastUsed,
+  hasProcessedFollower,
+  markFollowerProcessed,
+  getLastListInteraction,
+  updateLastListInteraction
  };
