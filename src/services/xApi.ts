@@ -1,6 +1,13 @@
 import { Client, OAuth1 } from '@xdevplatform/xdk';
 import config from '../config';
-import { XApiMentionResponse, XApiCreateResponse, XApiUser, XApiFollowersResponse, XApiListMembersResponse } from '../types';
+import type { 
+    XApiCreateResponse, 
+    XApiMentionResponse, 
+    XApiUser, 
+    XApiFollowersResponse,
+    XApiListMembersResponse,
+    XApiTweetDetailsResponse
+} from '../types';
 
 /**
  * X API client instance.
@@ -55,14 +62,14 @@ const replyToMention = async (tweetId: string, text: string): Promise<XApiCreate
  * @param tweetId - The ID of the tweet.
  * @returns A promise resolving to the tweet data object.
  */
-const getTweetDetails = async (tweetId: string): Promise<{ data: Record<string, unknown>, includes?: unknown }> => {
-    if (!client) return { data: {} };
+const getTweetDetails = async (tweetId: string): Promise<XApiTweetDetailsResponse> => {
+    if (!client) return { };
     try {
         const response = await client.posts.getById(tweetId, {
             expansions: ['attachments.media_keys'],
             'media.fields': ['url', 'type']
         } as Parameters<typeof client.posts.getById>[1]);
-        return response as { data: Record<string, unknown>, includes?: unknown };
+        return response as unknown as XApiTweetDetailsResponse;
     } catch (error) {
         console.error('Error getting tweet details:', error);
         throw error;
@@ -288,7 +295,7 @@ const getListMembers = async (listId: string): Promise<XApiListMembersResponse> 
  * @param maxResults - The maximum number of tweets to retrieve (default 5).
  * @returns A promise resolving to the user's tweets data.
  */
-const getUserTweets = async (userId: string, maxResults: number = 5): Promise<{ data: Record<string, unknown>[], includes?: unknown }> => {
+const getUserTweets = async (userId: string, maxResults: number = 5): Promise<XApiMentionResponse> => {
     if (!client) return { data: [] };
     try {
         const response = await client.users.getPosts(userId, {
@@ -297,7 +304,7 @@ const getUserTweets = async (userId: string, maxResults: number = 5): Promise<{ 
             expansions: ['attachments.media_keys'],
             'media.fields': ['url', 'type']
         } as Parameters<typeof client.users.getPosts>[1]);
-        return response as { data: Record<string, unknown>[], includes?: unknown };
+        return response as unknown as XApiMentionResponse;
     } catch (error) {
         console.error('Error getting user tweets:', error);
         throw error;
