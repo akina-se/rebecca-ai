@@ -10,6 +10,7 @@ import * as firestore from './services/firestore';
 import * as gemini from './services/gemini';
 import * as xApi from './services/xApi';
 import * as tasks from './services/tasks';
+import { downloadImage } from './utils/image';
 
 const app = express();
 app.use(express.json());
@@ -154,11 +155,21 @@ app.post('/worker/reply', async (req, res) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const attachments = tweetDetails?.data?.attachments as any;
             const mediaKeys = attachments?.media_keys;
-            const mediaIncludes = tweetDetails.includes?.media;
-            
-            const { analyzeTweetImages } = await import('./utils/image');
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            processedText += await analyzeTweetImages(mediaKeys, mediaIncludes as any[], gemini);
+            const mediaIncludes = tweetDetails.includes?.media || [];
+
+            const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
+            if (hasMedia) {
+                for (const media of mediaIncludes) {
+                    if (media.type !== 'photo' || !media.url) continue;
+
+                    const { buffer, mimeType } = await downloadImage(media.url);
+                    const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
+                    
+                    if (imageCaption) {
+                        processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
+                    }
+                }
+            }
         } catch (e) {
             console.error('Failed to process mention image', e);
         }
