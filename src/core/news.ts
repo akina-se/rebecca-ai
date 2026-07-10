@@ -99,7 +99,7 @@ const runProactiveNewsPostBatch = async () => {
             }
         }
 
-        await xApi.tweet(postText, mediaIds);
+        await xApi.tweet(postText, { mediaIds });
         
         await firestore.saveTimelinePost(postText);
 
