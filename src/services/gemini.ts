@@ -1,33 +1,42 @@
-import { GoogleGenAI  } from '@google/genai';
+import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
 import { fetchYahooNewsHeadlines } from '../core/news';
+import { ConversationLogEntry, UserCoreProfile } from '../types';
 
-let ai = null;
+/**
+ * Gemini API client instance.
+ */
+let ai: GoogleGenAI | null = null;
 if (config.gemini.apiKey) {
     ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 }
 
-const generateReply = async (systemInstruction, history, userInput) => {
+/**
+ * Generates a reply using the Gemini AI model based on system instructions and conversation history.
+ * 
+ * @param systemInstruction - The system persona and instruction prompt.
+ * @param history - Array of previous conversation log entries.
+ * @param userInput - The latest input from the user.
+ * @returns A promise that resolves to the generated reply string.
+ */
+const generateReply = async (systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string> => {
     if (!ai) {
         console.warn('Gemini API client not initialized. Mocking response.');
         return "Mock AI response";
     }
     try {
-        const contents = [];
+        const contents: Content[] = [];
         
-        // Add history
         for (const msg of history) {
             contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] });
         }
         
-        // Add current input
         contents.push({ role: 'user', parts: [{ text: userInput }] });
 
         const baseConfig = {
             systemInstruction: systemInstruction,
             maxOutputTokens: 120,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            safetySettings: [] as any
+            safetySettings: [] as never[]
         };
 
         const response = await ai.models.generateContent({
@@ -46,16 +55,16 @@ const generateReply = async (systemInstruction, history, userInput) => {
             }
         });
 
-        // Function Calling
         if (response.functionCalls && response.functionCalls.length > 0) {
             const call = response.functionCalls[0];
             if (call.name === 'search_news') {
                 const headlines = await fetchYahooNewsHeadlines();
                 const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
                 
-                // Append model's function call
-                contents.push(response.candidates[0].content);
-                // Append tool response
+                if (response.candidates && response.candidates[0].content) {
+                    contents.push(response.candidates[0].content);
+                }
+                
                 contents.push({
                     role: 'user',
                     parts: [{
@@ -66,7 +75,6 @@ const generateReply = async (systemInstruction, history, userInput) => {
                     }]
                 });
 
-                // Generate final response
                 const finalResponse = await ai.models.generateContent({
                     model: config.gemini.model,
                     contents: contents,
@@ -76,14 +84,22 @@ const generateReply = async (systemInstruction, history, userInput) => {
             }
         }
 
-        return response.text;
+        return response.text || '';
     } catch (error) {
         console.error('Error generating reply with Gemini:', error);
         throw error;
     }
 };
 
-const generateDreaming = async (systemPrompt, episodicBuffer, coreProfile) => {
+/**
+ * Generates an updated core profile based on the previous profile and daily conversational buffers.
+ * 
+ * @param systemPrompt - The system instruction defining the dreaming protocol.
+ * @param episodicBuffer - Recent conversation logs not yet integrated.
+ * @param coreProfile - The user's current core profile.
+ * @returns A promise that resolves to the updated core profile.
+ */
+const generateDreaming = async (systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile> => {
     if (!ai) {
         console.warn('Gemini API client not initialized. Mocking dreaming.');
         return { attributes: [], preferences: [], concerns: [], important_memories: [] };
@@ -103,19 +119,24 @@ const generateDreaming = async (systemPrompt, episodicBuffer, coreProfile) => {
             config: {
                 systemInstruction: systemPrompt,
                 responseMimeType: "application/json",
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                safetySettings: [] as any
+                safetySettings: [] as never[]
             }
         });
 
-        return JSON.parse(response.text);
+        return JSON.parse(response.text || '{}');
     } catch (error) {
         console.error('Error in Dreaming generation:', error);
         throw error;
     }
 }
 
-const generateEvolutionPrompt = async (logsText) => {
+/**
+ * Analyzes conversation logs to extract user trends and issues, outputting an evolution prompt for the AI persona.
+ * 
+ * @param logsText - Raw conversation logs spanning a specific period.
+ * @returns A promise that resolves to the newly generated evolution prompt text.
+ */
+const generateEvolutionPrompt = async (logsText: string): Promise<string> => {
     if (!ai) return "";
     const systemPrompt = `あなたはAIキャラクターのプロンプトエンジニアです。
 以下の1週間分のユーザーとの会話ログ（生データ）を分析し、現在のユーザー層が抱えている悩みやトレンドを抽出してください。
@@ -129,19 +150,24 @@ const generateEvolutionPrompt = async (logsText) => {
             contents: logsText,
             config: {
                 systemInstruction: systemPrompt,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                safetySettings: [] as any
+                safetySettings: [] as never[]
             }
         });
-        return response.text.trim();
+        return response.text?.trim() || "";
     } catch (e) {
         console.error('Error in Evolution generation:', e);
         throw e;
     }
 };
 
-const auditEvolutionPrompt = async (candidatePrompt) => {
-    if (!ai) return true;
+/**
+ * Audits a generated evolution prompt to ensure it adheres to safety and persona guidelines.
+ * 
+ * @param candidatePrompt - The candidate prompt to evaluate.
+ * @returns A promise resolving to the audit result, indicating pass/fail status and an optional reason.
+ */
+const auditEvolutionPrompt = async (candidatePrompt: string): Promise<{ pass: boolean, reason?: string }> => {
+    if (!ai) return { pass: true };
     const auditInstruction = `あなたは安全管理の監査役です。
 以下の【追加プロンプト候補】が、AIキャラクターに悪影響を与えないかを判定してください。
 
@@ -164,19 +190,24 @@ ${candidatePrompt}
                 responseMimeType: "application/json"
             }
         });
-        let jsonStr = response.text.trim();
+        let jsonStr = response.text?.trim() || "{}";
         if (jsonStr.startsWith('```json')) jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
         else if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
         
         return JSON.parse(jsonStr);
     } catch (e) {
         console.error('Error in Evolution audit:', e);
-        // Fail-safe: if audit throws, we reject the prompt
         return { pass: false, reason: 'Audit API Error' };
     }
 };
 
-const analyzeUserProfile = async (description) => {
+/**
+ * Analyzes a user's social media profile description to extract attributes and preferences.
+ * 
+ * @param description - The user's profile biography or description.
+ * @returns A promise that resolves to an object containing extracted attributes and preferences.
+ */
+const analyzeUserProfile = async (description: string): Promise<Record<string, unknown>> => {
     if (!ai || !description) return {};
     const prompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
 【プロフィール文】
@@ -193,14 +224,21 @@ ${description}
             contents: prompt,
             config: { responseMimeType: "application/json" }
         });
-        return JSON.parse(response.text);
+        return JSON.parse(response.text || '{}');
     } catch (e) {
         console.error('Error analyzing user profile:', e);
         return {};
     }
 }
 
-const generateNewsPost = async (systemInstruction, headlines) => {
+/**
+ * Generates a short, engaging post based on current news headlines and system persona rules.
+ * 
+ * @param systemInstruction - The system persona instruction.
+ * @param headlines - Array of recent news headlines.
+ * @returns A promise resolving to the generated post text.
+ */
+const generateNewsPost = async (systemInstruction: string, headlines: string[]): Promise<string> => {
     if (!ai || !headlines?.length) return "";
     const prompt = `以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
 
@@ -218,18 +256,24 @@ ${headlines.join('\n')}
             config: {
                 systemInstruction: systemInstruction,
                 maxOutputTokens: 100,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                safetySettings: [] as any
+                safetySettings: [] as never[]
             }
         });
-        return response.text.trim();
+        return response.text?.trim() || "";
     } catch (e) {
         console.error('Error generating news post:', e);
         return "";
     }
 };
 
-const generateTimelineSummary = async (recentPosts, previousSummary = '') => {
+/**
+ * Summarizes the latest timeline events and integrates them with a previous summary context.
+ * 
+ * @param recentPosts - Array of recently authored posts or events.
+ * @param previousSummary - The existing historical summary to append and condense.
+ * @returns A promise resolving to the updated timeline summary string.
+ */
+const generateTimelineSummary = async (recentPosts: string[], previousSummary = ''): Promise<string> => {
     if (!ai || !recentPosts?.length) return previousSummary;
     const prompt = `あなたはAIキャラクター「レベッカ」の記憶整理システムです。
 これまでの「過去のツイートの要約」と、「最近のツイート」を統合し、レベッカが最近どんな文脈でどんなことを呟いていたかを50文字以内の短いテキストで要約してください。
@@ -246,14 +290,20 @@ ${recentPosts.join('\n')}
             model: config.gemini.model,
             contents: prompt
         });
-        return response.text.trim();
+        return response.text?.trim() || "";
     } catch (e) {
         console.error('Error generating timeline summary:', e);
         return previousSummary;
     }
 };
 
-const generateEmbedding = async (text) => {
+/**
+ * Computes a vector embedding for the provided text.
+ * 
+ * @param text - The text to process.
+ * @returns A promise resolving to an array of numbers representing the embedding vector.
+ */
+const generateEmbedding = async (text: string): Promise<number[]> => {
     if (!ai || !text) return [];
     try {
         const response = await ai.models.embedContent({
@@ -270,7 +320,14 @@ const generateEmbedding = async (text) => {
     }
 };
 
-const generateSearchQuery = async (context, input) => {
+/**
+ * Extracts a concise search query based on conversational context and the newest user input.
+ * 
+ * @param context - Previous conversation context text.
+ * @param input - The latest input provided by the user.
+ * @returns A promise resolving to a refined search query string.
+ */
+const generateSearchQuery = async (context: string, input: string): Promise<string> => {
     if (!ai) return input;
     const prompt = `あなたは検索クエリ生成AIです。以下の直近の会話文脈とユーザーの最新の発言を踏まえて、ユーザーの意図を汲み取った「検索用クエリ（短い一文または単語の羅列）」を生成してください。
 【直前の会話文脈】
@@ -284,33 +341,45 @@ ${input}
             contents: prompt,
             config: { maxOutputTokens: 50 }
         });
-        return response.text.trim();
+        return response.text?.trim() || "";
     } catch (e) {
         console.error('Error generating search query:', e);
         return input;
     }
 };
 
-const detectLanguage = async (text) => {
+/**
+ * Detects whether the provided text is predominantly Japanese or English.
+ * 
+ * @param text - The text to evaluate.
+ * @returns A promise resolving to the language code ('ja' or 'en').
+ */
+const detectLanguage = async (text: string): Promise<'ja' | 'en'> => {
     if (!ai || !text) return 'ja';
     const prompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
 テキスト: "${text}"`;
     try {
         const response = await ai.models.generateContent({
-            // Use the lightweight language model (e.g. gemma) for simple language detection
             model: config.gemini.languageModel,
             contents: prompt,
             config: { maxOutputTokens: 5 }
         });
-        const lang = response.text.trim().toLowerCase();
+        const lang = response.text?.trim().toLowerCase() || 'ja';
         return lang.includes('en') ? 'en' : 'ja';
     } catch (e) {
         console.error('Error detecting language:', e);
-        return 'ja'; // Fallback to Japanese
+        return 'ja';
     }
 };
 
-const analyzeImageCaption = async (imageBuffer: Buffer, mimeType: string) => {
+/**
+ * Analyzes an image buffer and generates a detailed descriptive caption in Japanese.
+ * 
+ * @param imageBuffer - The image data buffer to process.
+ * @param mimeType - The MIME type of the image.
+ * @returns A promise resolving to a generated descriptive caption.
+ */
+const analyzeImageCaption = async (imageBuffer: Buffer, mimeType: string): Promise<string> => {
     if (!ai) return "";
     try {
         const response = await ai.models.generateContent({
@@ -328,14 +397,21 @@ const analyzeImageCaption = async (imageBuffer: Buffer, mimeType: string) => {
                 maxOutputTokens: 500
             }
         });
-        return response.text.trim();
+        return response.text?.trim() || "";
     } catch (e) {
         console.error("Error analyzing image caption:", e);
         return "";
     }
 };
 
-const inferImageSearchQuery = async (tweetText: string, timelineSummary: string) => {
+/**
+ * Infers an image search query based on a tweet's intent and context.
+ * 
+ * @param tweetText - The text of the tweet being composed.
+ * @param timelineSummary - The user's recent timeline context and events.
+ * @returns A promise resolving to a search query string or null if an image is deemed unnecessary.
+ */
+const inferImageSearchQuery = async (tweetText: string, timelineSummary: string): Promise<string | null> => {
     if (!ai) return null;
     try {
         const prompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
@@ -357,7 +433,7 @@ ${tweetText}
                 maxOutputTokens: 100
             }
         });
-        const result = response.text.trim();
+        const result = response.text?.trim() || null;
         return result === 'null' ? null : result;
     } catch (e) {
         console.error("Error inferring image search query:", e);

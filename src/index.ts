@@ -13,11 +13,18 @@ import * as tasks from './services/tasks';
 
 const app = express();
 app.use(express.json());
-// Serve static files (Terms of Service, Privacy Policy)
 import path from 'path';
+
+/**
+ * Serves static files such as Terms of Service and Privacy Policy.
+ */
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Core logic for mentions polling
+/**
+ * Polls the X API for new mentions and enqueues tasks to reply to them.
+ *
+ * @returns {Promise<{count: number, newestId?: string}>} An object containing the count of new mentions and the ID of the newest mention.
+ */
 const pollMentions = async () => {
     try {
         console.log("Polling mentions from X API...");
@@ -35,10 +42,10 @@ const pollMentions = async () => {
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
-            const tweetObj = tweet as Record<string, unknown>;
+            const tweetObj = tweet as unknown as Record<string, unknown>;
             const authorObj = tweetObj.author as Record<string, string> | undefined;
             const userObj = tweetObj.user as Record<string, string> | undefined;
-            const authorId = tweet.author_id || tweet.authorId || authorObj?.id || userObj?.id || tweetObj.user_id;
+            const authorId = tweet.author_id || authorObj?.id || userObj?.id || tweetObj.user_id;
 
             // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
@@ -83,7 +90,10 @@ const pollMentions = async () => {
     }
 };
 
-// Endpoint to be triggered by Cloud Scheduler or similar services
+/**
+ * Express endpoint to trigger the mentions polling batch process.
+ * Typically invoked by Cloud Scheduler or similar services.
+ */
 app.get('/batch/mentions', async (req, res) => {
     try {
         const result = await pollMentions();
@@ -94,7 +104,10 @@ app.get('/batch/mentions', async (req, res) => {
     }
 });
 
-// Worker to process reply
+/**
+ * Express endpoint for the worker to process and generate replies.
+ * Acknowledges Cloud Tasks and processes the reply asynchronously.
+ */
 app.post('/worker/reply', async (req, res) => {
     res.status(200).send('OK'); // Acknowledge Cloud Tasks
 
@@ -140,7 +153,7 @@ app.post('/worker/reply', async (req, res) => {
         const timelineSummary = await firestore.getTimelineSummary();
         
         let ragMemories = [];
-        const query = await gemini.generateSearchQuery(text, workingMemory);
+        const query = await gemini.generateSearchQuery(workingMemory.map(m => `${m.role}: ${m.content}`).join('\n'), text);
         if (query) {
             const queryEmb = await gemini.generateEmbedding(query);
             ragMemories = await firestore.findRagMemories(authorId, queryEmb);
@@ -174,9 +187,11 @@ app.post('/worker/reply', async (req, res) => {
     }
 });
 
-// Batch process for Dreaming (Memory Consolidation)
+/**
+ * Express endpoint to trigger the global dreaming batch process (memory consolidation).
+ * Typically invoked by Cloud Scheduler.
+ */
 app.get('/batch/dreaming', async (req, res) => {
-    // Triggered by Cloud Scheduler
     res.status(200).send('Batch started');
     try {
         await runGlobalDreamingBatch();
@@ -186,9 +201,11 @@ app.get('/batch/dreaming', async (req, res) => {
     }
 });
 
-// Batch process for Evolution (Trend Analysis)
+/**
+ * Express endpoint to trigger the global evolution batch process (trend analysis).
+ * Typically invoked by Cloud Scheduler (e.g., Sunday 5AM).
+ */
 app.get('/batch/evolution', async (req, res) => {
-    // Triggered by Cloud Scheduler (e.g. Sunday 5AM)
     res.status(200).send('Evolution Batch started');
     try {
         await runGlobalEvolutionBatch();
@@ -198,7 +215,9 @@ app.get('/batch/evolution', async (req, res) => {
     }
 });
 
-// News Periodic Post Batch Endpoint
+/**
+ * Express endpoint to trigger the proactive news posting batch process.
+ */
 app.get('/batch/news-post', async (req, res) => {
     try {
         const { runProactiveNewsPostBatch } = await import('./core/news');
@@ -206,7 +225,35 @@ app.get('/batch/news-post', async (req, res) => {
         res.json(result);
     } catch (e) {
         console.error('Failed to run news post batch:', e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: (e as Error).message });
+    }
+});
+
+/**
+ * Express endpoint to trigger the stealth onboarding batch process.
+ */
+app.get('/batch/stealth-onboarding', async (req, res) => {
+    try {
+        const { runStealthOnboardingBatch } = await import('./core/onboarding');
+        const result = await runStealthOnboardingBatch();
+        res.json(result);
+    } catch (e) {
+        console.error('Failed to run stealth onboarding batch:', e);
+        res.status(500).json({ error: (e as Error).message });
+    }
+});
+
+/**
+ * Express endpoint to trigger the random engagement batch process.
+ */
+app.get('/batch/random-engagement', async (req, res) => {
+    try {
+        const { runRandomEngagementBatch } = await import('./core/randomEngagement');
+        const result = await runRandomEngagementBatch();
+        res.json(result);
+    } catch (e) {
+        console.error('Failed to run random engagement batch:', e);
+        res.status(500).json({ error: (e as Error).message });
     }
 });
 
