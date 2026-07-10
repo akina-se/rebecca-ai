@@ -67,18 +67,10 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
                 tweetContext += `\n【直近の投稿内容】\n${latestTweet.text}`;
                 
                 const mediaKeys = latestTweet.attachments?.media_keys;
-                if (mediaKeys && mediaKeys.length > 0 && recentTweets.includes?.media) {
-                    const { downloadImage } = await import('../utils/image');
-                    for (const media of recentTweets.includes.media) {
-                        if (media.type === 'photo' && media.url) {
-                            const { buffer, mimeType } = await downloadImage(media.url);
-                            const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
-                            if (imageCaption) {
-                                tweetContext += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
-                            }
-                        }
-                    }
-                }
+                const mediaIncludes = recentTweets.includes?.media;
+                const { analyzeTweetImages } = await import('../utils/image');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                tweetContext += await analyzeTweetImages(mediaKeys, mediaIncludes as any[], gemini);
             }
         } catch(e) {
             console.error('Failed to fetch recent tweets for random engagement:', e);

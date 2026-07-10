@@ -151,20 +151,14 @@ app.post('/worker/reply', async (req, res) => {
         let processedText = text;
         try {
             const tweetDetails = await xApi.getTweetDetails(tweetId);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const attachments = tweetDetails?.data?.attachments as any;
             const mediaKeys = attachments?.media_keys;
-            if (mediaKeys && mediaKeys.length > 0 && tweetDetails.includes?.media) {
-                const { downloadImage } = await import('./utils/image');
-                for (const media of tweetDetails.includes.media) {
-                    if (media.type === 'photo' && media.url) {
-                        const { buffer, mimeType } = await downloadImage(media.url);
-                        const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
-                        if (imageCaption) {
-                            processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
-                        }
-                    }
-                }
-            }
+            const mediaIncludes = tweetDetails.includes?.media;
+            
+            const { analyzeTweetImages } = await import('./utils/image');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            processedText += await analyzeTweetImages(mediaKeys, mediaIncludes as any[], gemini);
         } catch (e) {
             console.error('Failed to process mention image', e);
         }
