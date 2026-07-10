@@ -118,8 +118,8 @@ describe('firestore.ts', () => {
         });
 
         it('updateUserDoc should set merge true', async () => {
-            await firestoreService.updateUserDoc('user1', { foo: 'bar' });
-            expect(firestoreInstance.set).toHaveBeenCalledWith({ foo: 'bar' }, { merge: true });
+            await firestoreService.updateUserDoc('user1', { episodicBuffer: [] });
+            expect(firestoreInstance.set).toHaveBeenCalledWith({ episodicBuffer: [] }, { merge: true });
         });
 
         it('getAllUsers should return array of users', async () => {
