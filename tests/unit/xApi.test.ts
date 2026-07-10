@@ -206,7 +206,7 @@ describe('xApi.ts', () => {
             
             expect(await api.replyToMention('123', 'Hi')).toEqual({ data: { id: 'mock_tweet_id', text: 'Hi' } });
             expect(await api.tweet('Test')).toEqual({ data: { id: 'mock_tweet_id', text: 'Test' } });
-            expect(await api.getTweetDetails('123')).toEqual({ data: {} });
+            expect(await api.getTweetDetails('123')).toEqual({ });
             expect(await api.getUserProfile('user1')).toEqual({ data: { id: 'user1', name: 'Dummy', username: 'dummy', description: 'ダミーのプロフィール文です。仕事に疲れています。' } });
             expect(await api.getMentions()).toEqual({ data: [], meta: { resultCount: 0 } });
             
