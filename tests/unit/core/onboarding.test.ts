@@ -63,4 +63,35 @@ describe('Stealth Onboarding Batch', () => {
         expect(result.processed).toBe(0);
         expect(xApi.addListMember).not.toHaveBeenCalled();
     });
+    it('should return failed if myUserId is not set', async () => {
+        const originalId = require('../../../src/config').default.xApi.myUserId;
+        require('../../../src/config').default.xApi.myUserId = '';
+        const result = await runStealthOnboardingBatch();
+        expect(result.status).toBe('failed');
+        require('../../../src/config').default.xApi.myUserId = originalId;
+    });
+
+    it('should return failed if targetListId is not set', async () => {
+        const originalList = require('../../../src/config').default.xApi.targetListId;
+        require('../../../src/config').default.xApi.targetListId = '';
+        const result = await runStealthOnboardingBatch();
+        expect(result.status).toBe('failed');
+        require('../../../src/config').default.xApi.targetListId = originalList;
+    });
+
+    it('should not mark follower as processed if addListMember fails', async () => {
+        (xApi.getFollowers as jest.Mock).mockResolvedValue({ data: [{ id: 'user3', username: 'smith' }] });
+        (firestore.hasProcessedFollower as jest.Mock).mockResolvedValue(false);
+        (xApi.addListMember as jest.Mock).mockResolvedValue(false); // fails!
+
+        const result = await runStealthOnboardingBatch();
+
+        expect(result.processed).toBe(0);
+        expect(firestore.markFollowerProcessed).not.toHaveBeenCalled();
+    });
+
+    it('should throw error if underlying api throws', async () => {
+        (xApi.getFollowers as jest.Mock).mockRejectedValue(new Error('api error'));
+        await expect(runStealthOnboardingBatch()).rejects.toThrow('api error');
+    });
 });
