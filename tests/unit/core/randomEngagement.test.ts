@@ -13,7 +13,9 @@ jest.mock('../../../src/config', () => ({
   default: {
     gcp: { projectId: 'test' },
     xApi: { targetListId: 'list_abc' },
-    limits: {}
+    limits: {},
+    images: { bucketName: 'test-bucket' },
+    gemini: { apiKey: 'test-key' }
   }
 }));
 
@@ -68,5 +70,46 @@ describe('Random Engagement Batch', () => {
         expect(result.status).toBe('success');
         expect(result.processedUser).toBeUndefined();
         expect(xApi.tweet).not.toHaveBeenCalled();
+    });
+    it('should return failed if targetListId is not set', async () => {
+        const originalList = require('../../../src/config').default.xApi.targetListId;
+        require('../../../src/config').default.xApi.targetListId = '';
+        const result = await runRandomEngagementBatch();
+        expect(result.status).toBe('failed');
+        require('../../../src/config').default.xApi.targetListId = originalList;
+    });
+
+    it('should return success if list is empty', async () => {
+        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [] });
+        const result = await runRandomEngagementBatch();
+        expect(result.status).toBe('success');
+    });
+
+    it('should return skipped if rate limit hit', async () => {
+        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [{ id: 'u1', username: 'u1' }] });
+        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: false, reason: 'limit' });
+        
+        const result = await runRandomEngagementBatch();
+        expect(result.status).toBe('skipped');
+    });
+
+    it('should prepend username if not included in generated text', async () => {
+        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [{ id: 'u2', username: 'target2' }] });
+        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
+        (xApi.getUserProfile as jest.Mock).mockResolvedValue({ data: { description: '' } });
+        (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({});
+        (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
+        (gemini.generateReply as jest.Mock).mockResolvedValue('Hello without mention'); // missing @target2
+
+        await runRandomEngagementBatch();
+
+        expect(xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention');
+    });
+
+    it('should throw error if underlying api throws', async () => {
+        (xApi.getListMembers as jest.Mock).mockRejectedValue(new Error('api err'));
+        await expect(runRandomEngagementBatch()).rejects.toThrow('api err');
     });
 });
