@@ -116,6 +116,11 @@ export interface ListInteraction {
     lastInteractionAt: Timestamp;
 }
 
+export interface XApiMedia {
+    type: string;
+    url?: string;
+}
+
 /**
  * Represents a tweet returned from the X API.
  */
@@ -127,6 +132,7 @@ export interface XApiTweet {
     in_reply_to_user_id?: string;
     referenced_tweets?: Array<{ type: string; id: string }>;
     conversation_id?: string;
+    attachments?: { media_keys?: string[] };
 }
 
 /**
@@ -140,15 +146,28 @@ export interface XApiUser {
 }
 
 /**
- * Represents the response from the X API when fetching mentions.
+ * Represents the response from the X API when fetching tweets (mentions or user timeline).
  */
 export interface XApiMentionResponse {
     data?: XApiTweet[];
+    includes?: {
+        media?: XApiMedia[];
+    };
     meta?: {
         resultCount: number;
         oldest_id?: string;
         newest_id?: string;
         next_token?: string;
+    };
+}
+
+/**
+ * Represents the response from the X API when fetching tweet details.
+ */
+export interface XApiTweetDetailsResponse {
+    data?: XApiTweet;
+    includes?: {
+        media?: XApiMedia[];
     };
 }
 

@@ -64,13 +64,11 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
             const recentTweets = await xApi.getUserTweets(targetUser.id, 5);
             if (recentTweets.data && recentTweets.data.length > 0) {
                 const latestTweet = recentTweets.data[0];
-                targetTweetId = latestTweet.id as string;
-                tweetContext += `\n【直近の投稿内容】\n${latestTweet.text as string}`;
+                targetTweetId = latestTweet.id;
+                tweetContext += `\n【直近の投稿内容】\n${latestTweet.text}`;
                 
-                const attachments = latestTweet.attachments as { media_keys?: string[] } | undefined;
-                const mediaKeys = attachments?.media_keys;
-                const includes = recentTweets.includes as { media?: { type: string, url?: string }[] } | undefined;
-                const mediaIncludes = includes?.media || [];
+                const mediaKeys = latestTweet.attachments?.media_keys;
+                const mediaIncludes = recentTweets.includes?.media || [];
                 
                 const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
                 if (hasMedia) {
