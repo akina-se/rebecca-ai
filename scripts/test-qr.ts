@@ -75,7 +75,7 @@ const run = async () => {
         const tweetRes = await xApi.tweet(finalText, { quote_tweet_id: targetTweetId });
         console.log("Success! Tweet ID:", tweetRes?.data?.id);
         
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Test failed:", e);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         console.error("API Error Data:", JSON.stringify((e as any).data, null, 2));
