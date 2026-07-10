@@ -55,14 +55,14 @@ const replyToMention = async (tweetId: string, text: string): Promise<XApiCreate
  * @param tweetId - The ID of the tweet.
  * @returns A promise resolving to the tweet data object.
  */
-const getTweetDetails = async (tweetId: string): Promise<{ data: Record<string, unknown> } | null> => {
+const getTweetDetails = async (tweetId: string): Promise<{ data: Record<string, unknown>, includes?: any } | null> => {
     if (!client) return { data: {} };
     try {
         const response = await client.posts.getById(tweetId, {
             expansions: ['attachments.media_keys'],
-            'media.fields': ['url']
+            'media.fields': ['url', 'type']
         } as Parameters<typeof client.posts.getById>[1]);
-        return response as { data: Record<string, unknown> };
+        return response as { data: Record<string, unknown>, includes?: any };
     } catch (error) {
         console.error('Error getting tweet details:', error);
         throw error;
@@ -109,21 +109,24 @@ const uploadMedia = async (buffer: Buffer, mimeType: string) => {
 };
 
 /**
- * Publishes a new tweet optionally attaching media files.
+ * Publishes a new tweet optionally attaching media files or quoting another tweet.
  * 
  * @param text - The content of the tweet.
- * @param mediaIds - Optional array of uploaded media IDs to attach.
+ * @param options - Optional parameters for the tweet (e.g., mediaIds, quote_tweet_id).
  * @returns A promise resolving to the created post data.
  */
-const tweet = async (text: string, mediaIds?: string[]): Promise<XApiCreateResponse> => {
+const tweet = async (text: string, options?: { mediaIds?: string[], quote_tweet_id?: string }): Promise<XApiCreateResponse> => {
   if (!client) {
       console.warn('Twitter API client not initialized. Skipping actual API call.');
       return { data: { id: 'mock_tweet_id', text } };
   }
   try {
     const payload: Record<string, unknown> = { text };
-    if (mediaIds && mediaIds.length > 0) {
-        payload.media = { media_ids: mediaIds };
+    if (options?.mediaIds && options.mediaIds.length > 0) {
+        payload.media = { media_ids: options.mediaIds };
+    }
+    if (options?.quote_tweet_id) {
+        payload.quote_tweet_id = options.quote_tweet_id;
     }
     const response = await client.posts.create(payload as Parameters<typeof client.posts.create>[0]);
     return response as unknown as XApiCreateResponse;
@@ -278,6 +281,29 @@ const getListMembers = async (listId: string): Promise<XApiListMembersResponse> 
     }
 };
 
+/**
+ * Retrieves the recent tweets of a user.
+ * 
+ * @param userId - The ID of the user.
+ * @param maxResults - The maximum number of tweets to retrieve (default 5).
+ * @returns A promise resolving to the user's tweets data.
+ */
+const getUserTweets = async (userId: string, maxResults: number = 5): Promise<{ data: any[], includes?: any }> => {
+    if (!client) return { data: [] };
+    try {
+        const response = await client.users.getPosts(userId, {
+            max_results: maxResults,
+            exclude: ['retweets', 'replies'],
+            expansions: ['attachments.media_keys'],
+            'media.fields': ['url', 'type']
+        } as Parameters<typeof client.users.getPosts>[1]);
+        return response as { data: any[], includes?: any };
+    } catch (error) {
+        console.error('Error getting user tweets:', error);
+        throw error;
+    }
+};
+
 export { 
   replyToMention,
   getTweetDetails,
@@ -288,5 +314,6 @@ export {
   getFollowers,
   addListMember,
   getListMembers,
+  getUserTweets,
   cachedNumericMyUserId
 };

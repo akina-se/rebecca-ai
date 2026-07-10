@@ -42,6 +42,10 @@ jest.mock('../../src/services/gemini', () => ({
 jest.mock('../../src/services/xApi', () => ({
     replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
     getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
+    getFollowers: jest.fn(),
+    addListMember: jest.fn(),
+    getListMembers: jest.fn(),
+    getTweetDetails: jest.fn().mockResolvedValue({ data: { text: '' }, includes: { media: [] } }),
     tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
     getUserProfile: jest.fn().mockResolvedValue({ data: { description: 'bio' } }),
 }));

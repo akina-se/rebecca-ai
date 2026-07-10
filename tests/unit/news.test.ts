@@ -80,7 +80,7 @@ describe('news.ts', () => {
             
             expect(result.status).toBe('success');
             expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
-            expect(xApi.tweet).toHaveBeenCalledWith(shortPost + '\n#全肯定AIレベッカ', []);
+            expect(xApi.tweet).toHaveBeenCalledWith(shortPost + '\n#全肯定AIレベッカ', { mediaIds: [] });
             expect(firestore.saveTimelinePost).toHaveBeenCalled();
         });
 
@@ -97,7 +97,7 @@ describe('news.ts', () => {
             
             expect(result.status).toBe('success');
             expect(result.post).toBe(longPost); // no hashtag appended
-            expect(xApi.tweet).toHaveBeenCalledWith(longPost, []);
+            expect(xApi.tweet).toHaveBeenCalledWith(longPost, { mediaIds: [] });
         });
 
         it('should infer keyword, find image, and attach media if successful', async () => {
@@ -124,7 +124,7 @@ describe('news.ts', () => {
             expect(xApi.uploadMedia).toHaveBeenCalledWith(expect.any(Buffer), 'image/jpeg');
             expect(firestore.updateImageLastUsed).toHaveBeenCalledWith('hash123');
             // Check tweet was called with mediaId
-            expect(xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', ['media_123']);
+            expect(xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', { mediaIds: ['media_123'] });
         });
 
         it('should handle image download or upload failure gracefully', async () => {
@@ -145,7 +145,7 @@ describe('news.ts', () => {
             // Still posts successfully but without media
             expect(result.status).toBe('success');
             expect(result.attachedMedia).toBe(false);
-            expect(xApi.tweet).toHaveBeenCalledWith('post\n#全肯定AIレベッカ', []);
+            expect(xApi.tweet).toHaveBeenCalledWith('post\n#全肯定AIレベッカ', { mediaIds: [] });
         });
 
         it('should throw and log if tweet fails (abnormal case)', async () => {
