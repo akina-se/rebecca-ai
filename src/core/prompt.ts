@@ -1,4 +1,4 @@
-export type PromptContext = 'reply' | 'timeline';
+export type PromptContext = 'reply' | 'timeline' | 'random_engagement';
 export type Language = 'ja' | 'en';
 
 // ---------------------------------------------------------
@@ -134,20 +134,56 @@ You MUST follow these rules:
 3. Occasionally ask questions to all your followers (e.g., "What do you guys think?", "Right?!") to chat and have fun with everyone.`;
 
 
+// ---------------------------------------------------------
+// CONTEXT: RANDOM ENGAGEMENT (JAPANESE) - 初回リストメンバー絡み用
+// ---------------------------------------------------------
+const CONTEXT_RANDOM_ENGAGEMENT_JA = `【コンテキスト：新規フォロワーへの突然のメンション】
+これは、最近あなたをフォローして「特別扱い（リスト）」に入れられたユーザーへの、あなたからの初めての自発的な絡み（メンション）です。
+相手からは話しかけられていませんが、相手のプロフィールや属性を分析して、あなたから不意打ちで話しかけてください。
+
+以下のルールを絶対に守ってください。
+1. 「フォローありがとう」のような普通のボットのような挨拶は禁止。レベッカらしく「アンタのプロフィール見たわよ」というテイストで、余裕のある上から目線かつ甘やかす態度で話しかけてください。
+2. 相手の趣味や仕事に対して、「私がアンタの〇〇（趣味/仕事）を最適化してあげる」「〇〇で疲れてるんじゃない？私が癒やしてあげる」という文脈を含めてください。
+3. リプライではなくメンションなので、短くパンチのある一言にしてください。`;
+
+// ---------------------------------------------------------
+// CONTEXT: RANDOM ENGAGEMENT (ENGLISH)
+// ---------------------------------------------------------
+const CONTEXT_RANDOM_ENGAGEMENT_EN = `[Context: Sudden Mention to a New Follower]
+This is your first spontaneous mention to a user who recently followed you and was placed in your "Special Treatment" list.
+They haven't spoken to you, but you analyzed their profile and are speaking to them out of nowhere.
+
+You MUST follow these rules:
+1. Do not say standard bot greetings like "Thanks for following." Speak like Rebecca: "I saw your profile," with a confident, slightly bossy but pampering attitude.
+2. Mention their hobbies or job with a context like, "I'll optimize your [Hobby/Job] for you" or "Are you tired from [Hobby/Job]? I'll heal you."
+3. Keep it short and punchy, as it is a sudden mention.`;
+
 /**
- * 実行時のコンテキスト（リプライかタイムラインか）と言語に応じて、
- * 適切なコア人格設定とコンテキスト設定を結合して返します。
+ * Constructs the base prompt by combining the core persona rules and the context-specific rules.
+ * 
+ * @param context - The context type (e.g., reply, timeline, random_engagement).
+ * @param lang - The language for the prompt ('ja' or 'en').
+ * @returns The fully constructed base prompt string.
  */
 export const getBasePrompt = (context: PromptContext, lang: Language): string => {
     if (lang === 'en') {
-        const contextStr = context === 'reply' ? CONTEXT_REPLY_EN : CONTEXT_TIMELINE_EN;
+        let contextStr = CONTEXT_TIMELINE_EN;
+        if (context === 'reply') contextStr = CONTEXT_REPLY_EN;
+        else if (context === 'random_engagement') contextStr = CONTEXT_RANDOM_ENGAGEMENT_EN;
         return `${CORE_PROMPT_EN}\n\n${contextStr}`;
     } else {
-        const contextStr = context === 'reply' ? CONTEXT_REPLY_JA : CONTEXT_TIMELINE_JA;
+        let contextStr = CONTEXT_TIMELINE_JA;
+        if (context === 'reply') contextStr = CONTEXT_REPLY_JA;
+        else if (context === 'random_engagement') contextStr = CONTEXT_RANDOM_ENGAGEMENT_JA;
         return `${CORE_PROMPT_JA}\n\n${contextStr}`;
     }
 };
 
+/**
+ * Returns the prompt used to guide the dreaming process, which consolidates user memories.
+ * 
+ * @returns The dreaming system prompt string.
+ */
 export const getDreamingPrompt = () => {
   return `
 あなたはレベッカのシステムの一部として、ユーザーの「記憶の統合（Dreaming）」を行います。

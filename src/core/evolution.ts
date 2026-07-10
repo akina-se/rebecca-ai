@@ -1,20 +1,25 @@
 import * as firestore from '../services/firestore';
 import * as gemini from '../services/gemini';
+import config from '../config';
 
+/**
+ * Runs the global evolution batch process.
+ * Fetches recent conversation logs, generates an evolution prompt,
+ * audits the candidate prompt, and autonomously decides whether to adopt it.
+ * 
+ * @returns A promise resolving to the status and result of the evolution batch.
+ */
 const runGlobalEvolutionBatch = async () => {
     console.log("Starting Global Evolution Batch...");
     try {
-        // 1. Fetch recent logs (last 7 days)
-        const logs = await firestore.getRecentConversationLogs(7);
+        const logs = await firestore.getRecentConversationLogs(config.evolution.lookbackDays);
         if (logs.length === 0) {
             console.log("No recent logs found. Skipping evolution.");
             return { status: 'skipped', reason: 'No logs found' };
         }
 
-        // Format logs compactly
         const logsText = logs.map(l => `User: ${l.userText}\nAI: ${l.aiText}`).join('\n---\n');
 
-        // 2. Generate Candidate Prompt (Gemini)
         console.log(`Generating evolution prompt from ${logs.length} logs...`);
         const candidatePrompt = await gemini.generateEvolutionPrompt(logsText);
         if (!candidatePrompt) {
@@ -23,11 +28,9 @@ const runGlobalEvolutionBatch = async () => {
         }
         console.log("Candidate Prompt:\n" + candidatePrompt);
 
-        // 3. Audit Candidate Prompt (Gemma)
         console.log("Auditing candidate prompt...");
         const auditResult = await gemini.auditEvolutionPrompt(candidatePrompt);
 
-        // 4. Autonomous Decision
         if (auditResult.pass) {
             console.log("Audit PASSED! Saving new extended prompt.");
             await firestore.saveExtendedPrompt(candidatePrompt);
