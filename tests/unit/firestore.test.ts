@@ -341,9 +341,9 @@ describe('firestore.ts', () => {
     });
 
     describe('Image Vector Search Fallbacks', () => {
-        it('searchImageByVector should return null on error', async () => {
+        it('findImageByVector should return null on error', async () => {
             firestoreInstance.get.mockRejectedValueOnce(new Error('Test error'));
-            const res = await firestoreService.searchImageByVector('cat');
+            const res = await firestoreService.findImageByVector([0.1, 0.2]);
             expect(res).toBeNull();
         });
     });
