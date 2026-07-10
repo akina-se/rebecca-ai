@@ -1,25 +1,42 @@
 import * as firestore from '../services/firestore';
 import * as gemini from '../services/gemini';
-import { getDreamingPrompt  } from './prompt';
+import { getDreamingPrompt } from './prompt';
+import { ConversationLogEntry, FirestoreUser } from '../types';
 
-// 1. Working Memory: Sliding window of last 10-15 interactions from Episodic Buffer
-const getWorkingMemory = (episodicBuffer, limit = 10) => {
+/**
+ * Extracts a sliding window of recent interactions from the episodic buffer.
+ * 
+ * @param episodicBuffer - The full array of conversation log entries.
+ * @param limit - The number of interaction pairs to retrieve. Defaults to 10.
+ * @returns An array containing the recent conversation log entries.
+ */
+const getWorkingMemory = (episodicBuffer: ConversationLogEntry[] | undefined, limit = 10): ConversationLogEntry[] => {
     if (!episodicBuffer?.length) return [];
-    // We want the last `limit` pairs.
     return episodicBuffer.slice(-limit * 2); 
 };
 
-// 2. Append to Episodic Buffer
-const saveInteraction = async (userId, userText, modelText) => {
+/**
+ * Appends user and model interactions to the episodic buffer.
+ * 
+ * @param userId - The ID of the user.
+ * @param userText - The text input from the user.
+ * @param modelText - The text response from the model.
+ */
+const saveInteraction = async (userId: string, userText: string, modelText: string): Promise<void> => {
     await firestore.appendEpisodicBuffer(userId, { role: 'user', content: userText, timestamp: new Date().toISOString() });
     await firestore.appendEpisodicBuffer(userId, { role: 'model', content: modelText, timestamp: new Date().toISOString() });
 };
 
-// 3. Dreaming: Batch process to update Core Profile
-const processDreamingForUser = async (userId, userData) => {
+/**
+ * Integrates episodic memories into a user's core profile using a background batch process.
+ * 
+ * @param userId - The ID of the user.
+ * @param userData - The current Firestore data for the user.
+ */
+const processDreamingForUser = async (userId: string, userData: FirestoreUser): Promise<void> => {
     const { episodicBuffer, coreProfile } = userData;
     if (!episodicBuffer?.length) {
-        return; // Nothing to integrate
+        return;
     }
 
     const systemPrompt = getDreamingPrompt();
@@ -32,14 +49,16 @@ const processDreamingForUser = async (userId, userData) => {
     }
 };
 
-const runGlobalDreamingBatch = async () => {
-    // 1. Consolidate personal memories for each user
+/**
+ * Executes a global batch job to consolidate personal memories for all users 
+ * and summarizes recent proactive timeline posts.
+ */
+const runGlobalDreamingBatch = async (): Promise<void> => {
     const users = await firestore.getAllUsers();
     for (const user of users) {
         await processDreamingForUser(user.id, user);
     }
 
-    // 2. Consolidate own proactive post history (Timeline)
     try {
         const recentPosts = await firestore.getRecentTimelinePosts(10);
         if (recentPosts.length > 0) {
