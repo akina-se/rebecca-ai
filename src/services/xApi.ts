@@ -55,14 +55,14 @@ const replyToMention = async (tweetId: string, text: string): Promise<XApiCreate
  * @param tweetId - The ID of the tweet.
  * @returns A promise resolving to the tweet data object.
  */
-const getTweetDetails = async (tweetId: string): Promise<{ data: Record<string, unknown>, includes?: any } | null> => {
+const getTweetDetails = async (tweetId: string): Promise<{ data: Record<string, unknown>, includes?: unknown }> => {
     if (!client) return { data: {} };
     try {
         const response = await client.posts.getById(tweetId, {
             expansions: ['attachments.media_keys'],
             'media.fields': ['url', 'type']
         } as Parameters<typeof client.posts.getById>[1]);
-        return response as { data: Record<string, unknown>, includes?: any };
+        return response as { data: Record<string, unknown>, includes?: unknown };
     } catch (error) {
         console.error('Error getting tweet details:', error);
         throw error;
@@ -288,7 +288,7 @@ const getListMembers = async (listId: string): Promise<XApiListMembersResponse> 
  * @param maxResults - The maximum number of tweets to retrieve (default 5).
  * @returns A promise resolving to the user's tweets data.
  */
-const getUserTweets = async (userId: string, maxResults: number = 5): Promise<{ data: any[], includes?: any }> => {
+const getUserTweets = async (userId: string, maxResults: number = 5): Promise<{ data: Record<string, unknown>[], includes?: unknown }> => {
     if (!client) return { data: [] };
     try {
         const response = await client.users.getPosts(userId, {
@@ -297,7 +297,7 @@ const getUserTweets = async (userId: string, maxResults: number = 5): Promise<{ 
             expansions: ['attachments.media_keys'],
             'media.fields': ['url', 'type']
         } as Parameters<typeof client.users.getPosts>[1]);
-        return response as { data: any[], includes?: any };
+        return response as { data: Record<string, unknown>[], includes?: unknown };
     } catch (error) {
         console.error('Error getting user tweets:', error);
         throw error;
