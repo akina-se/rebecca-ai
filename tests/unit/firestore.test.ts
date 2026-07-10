@@ -299,6 +299,9 @@ describe('firestore.ts', () => {
             firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({ last_mention_id: '123' }) });
             expect(await firestoreService.getLastMentionId()).toBe('123');
 
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({}) });
+            expect(await firestoreService.getLastMentionId()).toBeNull();
+
             firestoreInstance.get.mockResolvedValueOnce({ exists: false });
             expect(await firestoreService.getLastMentionId()).toBeNull();
 
@@ -327,6 +330,11 @@ describe('firestore.ts', () => {
             const date = new Date();
             firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({ lastInteractionAt: { toDate: () => date } }) });
             expect(await firestoreService.getLastListInteraction('u4')).toEqual(date);
+        });
+
+        it('getLastListInteraction should return null if data lacks lastInteractionAt', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({}) });
+            expect(await firestoreService.getLastListInteraction('u4_null')).toBeNull();
         });
 
         it('getLastListInteraction should return null if not exists', async () => {
