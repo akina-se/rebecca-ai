@@ -152,10 +152,8 @@ app.post('/worker/reply', async (req, res) => {
         let processedText = text;
         try {
             const tweetDetails = await xApi.getTweetDetails(tweetId);
-            const attachments = tweetDetails?.data?.attachments as { media_keys?: string[] } | undefined;
-            const mediaKeys = attachments?.media_keys;
-            const includes = tweetDetails.includes as { media?: { type: string, url?: string }[] } | undefined;
-            const mediaIncludes = includes?.media || [];
+            const mediaKeys = tweetDetails?.data?.attachments?.media_keys;
+            const mediaIncludes = tweetDetails.includes?.media || [];
 
             const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
             if (hasMedia) {
