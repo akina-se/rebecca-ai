@@ -315,4 +315,31 @@ describe('xApi.ts', () => {
             global.fetch = originalFetch;
         });
     });
+
+    describe('getUserTweets', () => {
+        it('should return user tweets successfully', async () => {
+            const api = getXApiModule();
+            if (!mockClientInstance.users.getPosts) mockClientInstance.users.getPosts = jest.fn();
+            mockClientInstance.users.getPosts.mockResolvedValueOnce({ data: [{ id: 'tweet1', text: 'Hello' }], includes: { media: [] } });
+            
+            const result = await api.getUserTweets('123', 5);
+            expect(result.data).toEqual([{ id: 'tweet1', text: 'Hello' }]);
+        });
+
+        it('should return empty if client not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; 
+            const api = getXApiModule();
+            const result = await api.getUserTweets('123', 5);
+            expect(result.data).toEqual([]);
+            config.xApi.appKey = originalAppKey;
+        });
+
+        it('should throw error on API failure', async () => {
+            const api = getXApiModule();
+            if (!mockClientInstance.users.getPosts) mockClientInstance.users.getPosts = jest.fn();
+            mockClientInstance.users.getPosts.mockRejectedValueOnce(new Error('api error'));
+            await expect(api.getUserTweets('123')).rejects.toThrow('api error');
+        });
+    });
 });
