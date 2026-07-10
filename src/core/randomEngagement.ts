@@ -4,6 +4,7 @@ import * as gemini from '../services/gemini';
 import config from '../config';
 import { getBasePrompt } from './prompt';
 import { checkAndIncrementRateLimits } from './rateLimiter';
+import { downloadImage } from '../utils/image';
 
 /**
  * Executes a background job to randomly engage with a user from the target list.
@@ -67,10 +68,21 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
                 tweetContext += `\n【直近の投稿内容】\n${latestTweet.text}`;
                 
                 const mediaKeys = latestTweet.attachments?.media_keys;
-                const mediaIncludes = recentTweets.includes?.media;
-                const { analyzeTweetImages } = await import('../utils/image');
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                tweetContext += await analyzeTweetImages(mediaKeys, mediaIncludes as any[], gemini);
+                const mediaIncludes = recentTweets.includes?.media || [];
+                
+                const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
+                if (hasMedia) {
+                    for (const media of mediaIncludes) {
+                        if (media.type !== 'photo' || !media.url) continue;
+
+                        const { buffer, mimeType } = await downloadImage(media.url);
+                        const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
+                        
+                        if (imageCaption) {
+                            tweetContext += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
+                        }
+                    }
+                }
             }
         } catch(e) {
             console.error('Failed to fetch recent tweets for random engagement:', e);
