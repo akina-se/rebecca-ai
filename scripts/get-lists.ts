@@ -52,7 +52,7 @@ async function getLists() {
         if (!data.data || data.data.length === 0) {
             console.log('No lists found.');
         } else {
-            data.data.forEach((list: any) => {
+            data.data.forEach((list: { name: string; id: string }) => {
                 console.log(`- Name: ${list.name}\n  ID: ${list.id}\n`);
             });
         }
