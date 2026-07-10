@@ -31,7 +31,7 @@ When operating this bot on X (Twitter), you MUST explicitly state in the account
 - **Language**: TypeScript / Node.js (Express)
 - **AI Models**:
   - Main Conversation & Inference: `gemini-3.1-flash-lite`
-  - Image Recognition (Vision): `gemini-3.5-flash`
+  - Image Recognition (Vision): `gemini-3.1-flash-lite`
   - Language Detection & Safety Audit: `gemma-4-31b-it`
   - RAG Vectorization: `text-embedding-004`
 - **Infrastructure (GCP)**: Cloud Run, Cloud Tasks, Cloud Scheduler, Cloud Firestore, Cloud Storage (GCS)
@@ -108,7 +108,7 @@ GEMINI_MODEL=gemini-3.1-flash-lite
 GEMINI_JUDGE_MODEL=gemma-4-31b-it
 GEMINI_LANGUAGE_MODEL=gemma-4-31b-it
 GEMINI_EMBEDDING_MODEL=text-embedding-004
-GEMINI_VISION_MODEL=gemini-3.5-flash
+GEMINI_VISION_MODEL=gemini-3.1-flash-lite
 GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
 
 # Rate Limits
