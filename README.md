@@ -85,7 +85,9 @@ Create a `.env` file in the project root and configure the following variables:
 ```env
 # Server
 PORT=8080
-POLLING_INTERVAL_MINUTES=0 # Polling interval in minutes when webhooks are unavailable
+
+# Security for Batch Endpoints
+BATCH_SECRET_KEY=your-secret-key-for-local-or-fallback-auth
 
 # GCP
 GCP_PROJECT_ID=your-gcp-project-id
@@ -134,6 +136,9 @@ npm run chat
 # Manually trigger Batches
 npm run batch:evolution
 npm run batch:news
+
+# Setup Cloud Scheduler for automatic batches
+npm run setup:scheduler
 ```
 
 ### 4. Deployment

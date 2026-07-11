@@ -11,6 +11,7 @@
     "test": "jest tests/unit tests/integration",
     "start": "node dist/index.js",
     "deploy": "npx ts-node scripts/deploy.ts",
+    "setup:scheduler": "npx ts-node scripts/setup-scheduler.ts",
     "chat": "npx ts-node scripts/chat.ts",
     "test:eval": "jest tests/eval",
     "batch:evolution": "npx ts-node scripts/run-evolution.ts",
@@ -32,7 +33,8 @@
     "@google/genai": "^2.10.0",
     "@xdevplatform/xdk": "^0.5.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "google-auth-library": "^10.9.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
