@@ -1,16 +1,9 @@
 import express from 'express';
 import config from './config';
-import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
+import { runGlobalDreamingBatch  } from './core/memory';
 import { runGlobalEvolutionBatch  } from './core/evolution';
-
-
-import { buildSystemPrompt  } from './core/contextInjector';
-import { checkAndIncrementRateLimits  } from './core/rateLimiter';
-import * as firestore from './services/firestore';
-import * as gemini from './services/gemini';
-import * as xApi from './services/xApi';
-import * as tasks from './services/tasks';
-import { downloadImage } from './utils/image';
+import { pollMentions } from './core/mentions';
+import { processReplyTask } from './core/reply';
 
 const app = express();
 app.use(express.json());
@@ -32,75 +25,7 @@ app.use('/batch', batchRateLimiter, batchAuth);
  */
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-/**
- * Polls the X API for new mentions and enqueues tasks to reply to them.
- *
- * @returns {Promise<{count: number, newestId?: string}>} An object containing the count of new mentions and the ID of the newest mention.
- */
-const pollMentions = async () => {
-    try {
-        console.log("Polling mentions from X API...");
-        const sinceId = await firestore.getLastMentionId();
-        const mentionsRes = await xApi.getMentions(sinceId || undefined);
-        
-        if (!mentionsRes.data || mentionsRes.data.length === 0) {
-            console.log("No new mentions found.");
-            return { count: 0 };
-        }
 
-        console.log(`Found ${mentionsRes.data.length} new mentions.`);
-        let newestId = sinceId;
-
-        for (const tweet of mentionsRes.data) {
-            const tweetId = tweet.id;
-            const text = tweet.text;
-            const tweetObj = tweet as unknown as Record<string, unknown>;
-            const authorObj = tweetObj.author as Record<string, string> | undefined;
-            const userObj = tweetObj.user as Record<string, string> | undefined;
-            const authorId = tweet.author_id || authorObj?.id || userObj?.id || tweetObj.user_id;
-
-            // Update newestId
-            if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
-                newestId = tweetId;
-            }
-
-            if (!authorId) {
-                console.warn(`Could not determine author ID for tweet ${tweetId}. Tweet object:`, JSON.stringify(tweet));
-                continue;
-            }
-
-            // Ignore self-mentions
-            if (authorId === config.xApi.myUserId) {
-                console.log(`Ignoring self-mention ${tweetId}`);
-                continue;
-            }
-
-            try {
-                // Enqueue with intentional delay (60 to 180 seconds)
-                const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-                await tasks.enqueueReplyTask({
-                    tweetId,
-                    text,
-                    authorId
-                }, delaySeconds);
-                console.log(`Enqueued mention ${tweetId} from ${authorId}`);
-            } catch (e) {
-                console.error(`Failed to enqueue task for mention ${tweetId}`, e);
-            }
-        }
-
-        // Save the newest mention ID to avoid fetching them again
-        if (newestId && newestId !== sinceId) {
-            await firestore.setLastMentionId(newestId);
-            console.log(`Updated last_mention_id to ${newestId}`);
-        }
-
-        return { count: mentionsRes.data.length, newestId };
-    } catch (error) {
-        console.error("Error during pollMentions:", error);
-        throw error;
-    }
-};
 
 /**
  * Express endpoint to trigger the mentions polling batch process.
@@ -129,98 +54,11 @@ app.post('/worker/reply', async (req, res) => {
     }
 
     try {
-        // 1. Rate Limit Check
-        const rateLimit = await checkAndIncrementRateLimits(authorId);
-        if (!rateLimit.allowed) {
-            console.log(`Rate limit exceeded for user ${authorId.replace(/[\r\n]/g, '')}, reason: ${rateLimit.reason.replace(/[\r\n]/g, '')}`);
-            // Return 200 so Cloud Tasks doesn't retry a rate-limited request
+        const result = await processReplyTask(tweetId, text, authorId);
+        if (result.status === 'rate_limited') {
             res.status(200).send('Rate limited, skipping');
             return;
         }
-
-        // 2. Fetch User Data & Memory
-        let userData = await firestore.getUserDoc(authorId);
-        let isFirstTime = false;
-        if (!userData) {
-            userData = { episodicBuffer: [], coreProfile: {} };
-            isFirstTime = true;
-        }
-
-        if (isFirstTime) {
-            try {
-                // Analyze the user's X profile only on their first interaction to create the initial coreProfile
-                const profileRes = await xApi.getUserProfile(authorId);
-                const desc = profileRes?.data?.description;
-                if (desc) {
-                    const parsedProfile = await gemini.analyzeUserProfile(desc);
-                    userData.coreProfile = parsedProfile;
-                    // Inject a single history log hinting that the profile has been read
-                    userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
-                }
-            } catch(e) {
-                console.error("Failed to fetch/analyze user profile on first time", e);
-            }
-        }
-
-        const workingMemory = getWorkingMemory(userData.episodicBuffer);
-
-        let processedText = text;
-        try {
-            const tweetDetails = await xApi.getTweetDetails(tweetId);
-            const mediaKeys = tweetDetails?.data?.attachments?.media_keys;
-            const mediaIncludes = tweetDetails.includes?.media || [];
-
-            const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
-            if (hasMedia) {
-                for (const media of mediaIncludes) {
-                    if (media.type !== 'photo' || !media.url) continue;
-
-                    const { buffer, mimeType } = await downloadImage(media.url);
-                    const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
-                    
-                    if (imageCaption) {
-                        processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Failed to process mention image', e);
-        }
-
-        // 3. RAG Retrieval & Context Injection (Build prompt)
-        const extendedPrompt = await firestore.getExtendedPrompt();
-        const timelineSummary = await firestore.getTimelineSummary();
-        
-        let ragMemories = [];
-        const query = await gemini.generateSearchQuery(workingMemory.map(m => `${m.role}: ${m.content}`).join('\n'), processedText);
-        if (query) {
-            const queryEmb = await gemini.generateEmbedding(query);
-            ragMemories = await firestore.findRagMemories(authorId, queryEmb);
-        }
-
-        const lang = await gemini.detectLanguage(processedText);
-        const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
-
-        // 4. Generate AI Reply
-        const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, processedText);
-
-        // 5. Post to X
-        await xApi.replyToMention(tweetId, aiResponseText);
-
-        // 6. Save Interaction to Memory (Working Memory / Episodic Buffer)
-        await saveInteraction(authorId, processedText, aiResponseText);
-
-        // 6.5. Save RAG Memory (Long-term Episodic Vector)
-        const combinedText = `User: ${processedText}\nRebecca: ${aiResponseText}`;
-        const memoryVector = await gemini.generateEmbedding(combinedText);
-        if (memoryVector && memoryVector.length > 0) {
-            await firestore.saveRagMemory(authorId, combinedText, memoryVector);
-        }
-
-        // 7. Save Raw Log for Analysis
-        await firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
-
-        console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
         
         // Acknowledge Cloud Tasks AFTER processing is complete
         res.status(200).send('OK');
