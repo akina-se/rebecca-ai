@@ -1,4 +1,4 @@
-import * as firestore from '../services/firestore';
+import { AppDependencies } from '../types';
 import config from '../config';
 import { getJSTDate  } from '../utils/time';
 
@@ -34,11 +34,12 @@ const getJSTMinuteString = () => {
 
 /**
  * Checks if a user is within acceptable rate limits and increments their usage counters if allowed.
+ * Uses atomic transactions to prevent race conditions and efficiently maintain dynamic DAU-based limits.
  * 
  * @param userId - The ID of the user.
  * @returns A promise resolving to an object indicating if the request is allowed and an optional reason if denied.
  */
-const checkAndIncrementRateLimits = async (userId: string): Promise<{ allowed: boolean; reason?: string }> => {
+const checkAndIncrementRateLimits = async (deps: AppDependencies, userId: string): Promise<{ allowed: boolean; reason?: string }> => {
     const dateStr = getJSTDateString();
     const monthStr = getJSTMonthString();
     const minuteStr = getJSTMinuteString();
@@ -46,34 +47,15 @@ const checkAndIncrementRateLimits = async (userId: string): Promise<{ allowed: b
     const globalDailyLimit = config.limits.globalDailyLimit || 45;
     const spamMinuteLimit = config.limits.spamMinuteLimit || 3;
 
-    const userMinute = await firestore.getUserMinuteLimit(userId, minuteStr);
-    if (userMinute >= spamMinuteLimit) {
-        return { allowed: false, reason: 'user_minute_spam' };
-    }
-
-    const globalDaily = await firestore.getGlobalRateLimit('daily', dateStr);
-    if (globalDaily >= globalDailyLimit) {
-        return { allowed: false, reason: 'global_daily' };
-    }
-
-    const userDaily = await firestore.getUserDailyLimit(userId, dateStr);
-    const dau = await firestore.getDailyActiveUsersCount(dateStr);
-    
-    let dynamicUserLimit = Math.floor(globalDailyLimit / dau);
-    if (dynamicUserLimit < 3) dynamicUserLimit = 3;
-
-    if (userDaily >= dynamicUserLimit) {
-        return { allowed: false, reason: 'user_daily' };
-    }
-
-    await firestore.incrementGlobalRateLimit('monthly', monthStr);
-    await firestore.incrementGlobalRateLimit('daily', dateStr);
-    await firestore.incrementUserDailyLimit(userId, dateStr);
-    await firestore.incrementUserMinuteLimit(userId, minuteStr);
-    
-    return { allowed: true };
+    return deps.firestore.checkAndConsumeRateLimit(
+        userId,
+        dateStr,
+        monthStr,
+        minuteStr,
+        { globalDaily: globalDailyLimit, spamMinute: spamMinuteLimit }
+    );
 };
 
 export { 
     checkAndIncrementRateLimits
- };
+};

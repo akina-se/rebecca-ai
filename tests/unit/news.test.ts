@@ -1,165 +1,110 @@
-import { runProactiveNewsPostBatch, fetchYahooNewsHeadlines } from '../../src/core/news';
-import * as firestore from '../../src/services/firestore';
-import * as gemini from '../../src/services/gemini';
-import * as xApi from '../../src/services/xApi';
-import * as storage from '../../src/services/storage';
+import { runProactiveNewsPostBatch } from '../../src/core/news';
+import { createMockDeps } from './core/testUtils';
 
-jest.mock('../../src/services/firestore');
-jest.mock('../../src/services/gemini');
-jest.mock('../../src/services/xApi');
-jest.mock('../../src/services/storage');
+describe('runProactiveNewsPostBatch', () => {
+    let deps: any;
 
-describe('news.ts', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        global.fetch = jest.fn();
+        deps = createMockDeps();
     });
 
-    describe('fetchYahooNewsHeadlines', () => {
-        it('should fetch and parse RSS titles (normal case)', async () => {
-            const mockRss = `
-                <rss>
-                    <channel>
-                        <title>Yahoo!ニュース・トピックス - 主要</title>
-                        <item><title>Important News 1</title></item>
-                        <item><title>Important News 2</title></item>
-                        <item><title>Yahoo! JAPAN</title></item>
-                    </channel>
-                </rss>
-            `;
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce(mockRss)
-            });
+    it('should skip if no headlines are fetched', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue([]);
 
-            const headlines = await fetchYahooNewsHeadlines();
-            
-            // Should exclude the main title and 'Yahoo! JAPAN'
-            expect(headlines).toEqual(['Important News 1', 'Important News 2']);
-        });
-
-        it('should return empty array on fetch error (abnormal case)', async () => {
-            (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-            
-            const headlines = await fetchYahooNewsHeadlines();
-            expect(headlines).toEqual([]);
-        });
+        const result = await runProactiveNewsPostBatch(deps);
+        expect(result).toEqual({ status: 'skipped', reason: 'No headlines' });
+        expect(deps.gemini.generateNewsPost).not.toHaveBeenCalled();
     });
 
-    describe('runProactiveNewsPostBatch', () => {
-        it('should skip if no headlines are fetched (boundary case)', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<rss></rss>')
-            });
+    it('should fail if generation fails', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        deps.gemini.generateNewsPost.mockResolvedValue('');
 
-            const result = await runProactiveNewsPostBatch();
-            expect(result).toEqual({ status: 'skipped', reason: 'No headlines' });
-            expect(gemini.generateNewsPost).not.toHaveBeenCalled();
+        const result = await runProactiveNewsPostBatch(deps);
+        expect(result).toEqual({ status: 'failed', reason: 'Generation failed' });
+        expect(deps.gemini.inferImageSearchQuery).not.toHaveBeenCalled();
+        expect(deps.xApi.tweet).not.toHaveBeenCalled();
+    });
+
+    it('should append hashtag if total length <= 140', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        
+        const shortPost = 'A short news post.'; // 18 chars
+        deps.gemini.generateNewsPost.mockResolvedValue(shortPost);
+
+        const result = await runProactiveNewsPostBatch(deps);
+        
+        expect(result.status).toBe('success');
+        expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith(shortPost + '\n#全肯定AIレベッカ', { mediaIds: [] });
+        expect(deps.firestore.saveTimelinePost).toHaveBeenCalled();
+    });
+
+    it('should omit hashtag if total length > 140', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        
+        const longPost = 'A'.repeat(135); 
+        deps.gemini.generateNewsPost.mockResolvedValue(longPost);
+
+        const result = await runProactiveNewsPostBatch(deps);
+        
+        expect(result.status).toBe('success');
+        expect(result.post).toBe(longPost); 
+        expect(deps.xApi.tweet).toHaveBeenCalledWith(longPost, { mediaIds: [] });
+    });
+
+    it('should infer keyword, find image, and attach media if successful', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        const text = 'A post about coffee';
+        deps.gemini.generateNewsPost.mockResolvedValue(text);
+        deps.firestore.getTimelineSummary.mockResolvedValue('summary');
+        deps.gemini.inferImageSearchQuery.mockResolvedValue('coffee');
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
+        deps.firestore.findImageByVector.mockResolvedValue({
+            id: 'hash123',
+            url: 'gs://bucket/images/hash123.jpg'
         });
+        deps.storage.downloadImage.mockResolvedValue(Buffer.from('image'));
+        deps.xApi.uploadMedia.mockResolvedValue('media_123');
 
-        it('should fail if generation fails (abnormal case)', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
-            });
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('');
+        const result = await runProactiveNewsPostBatch(deps);
 
-            const result = await runProactiveNewsPostBatch();
-            expect(result).toEqual({ status: 'failed', reason: 'Generation failed' });
-            expect(gemini.inferImageSearchQuery).not.toHaveBeenCalled();
-            expect(xApi.tweet).not.toHaveBeenCalled();
+        expect(result.status).toBe('success');
+        expect(result.attachedMedia).toBe(true);
+        expect(deps.storage.downloadImage).toHaveBeenCalledWith('gs://bucket/images/hash123.jpg');
+        expect(deps.xApi.uploadMedia).toHaveBeenCalledWith(expect.any(Buffer), 'image/jpeg');
+        expect(deps.firestore.updateImageLastUsed).toHaveBeenCalledWith('hash123');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', { mediaIds: ['media_123'] });
+    });
+
+    it('should handle image download or upload failure gracefully', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        deps.gemini.generateNewsPost.mockResolvedValue('post');
+        deps.gemini.inferImageSearchQuery.mockResolvedValue('coffee');
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
+        deps.firestore.findImageByVector.mockResolvedValue({
+            id: 'hash123',
+            url: 'gs://bucket/images/hash123.jpg'
         });
+        deps.storage.downloadImage.mockRejectedValue(new Error('GCS Error'));
 
-        it('should append hashtag if total length <= 140 (normal case)', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
-            });
-            
-            const shortPost = 'A short news post.'; // 18 chars
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce(shortPost);
+        const result = await runProactiveNewsPostBatch(deps);
 
-            const result = await runProactiveNewsPostBatch();
-            
-            expect(result.status).toBe('success');
-            expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
-            expect(xApi.tweet).toHaveBeenCalledWith(shortPost + '\n#全肯定AIレベッカ', { mediaIds: [] });
-            expect(firestore.saveTimelinePost).toHaveBeenCalled();
-        });
+        expect(result.status).toBe('success');
+        expect(result.attachedMedia).toBe(false);
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('post\n#全肯定AIレベッカ', { mediaIds: [] });
+    });
 
-        it('should omit hashtag if total length > 140 (boundary case)', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
-            });
-            
-            // 135 chars + hashtag (12 chars) = 147 > 140
-            const longPost = 'A'.repeat(135); 
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce(longPost);
+    it('should throw and log if tweet fails', async () => {
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        deps.gemini.generateNewsPost.mockResolvedValue('text');
+        deps.xApi.tweet.mockRejectedValue(new Error('Twitter API down'));
 
-            const result = await runProactiveNewsPostBatch();
-            
-            expect(result.status).toBe('success');
-            expect(result.post).toBe(longPost); // no hashtag appended
-            expect(xApi.tweet).toHaveBeenCalledWith(longPost, { mediaIds: [] });
-        });
-
-        it('should infer keyword, find image, and attach media if successful', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
-            });
-            const text = 'A post about coffee';
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce(text);
-            (firestore.getTimelineSummary as jest.Mock).mockResolvedValueOnce('summary');
-            (gemini.inferImageSearchQuery as jest.Mock).mockResolvedValueOnce('coffee');
-            (gemini.generateEmbedding as jest.Mock).mockResolvedValueOnce([0.1, 0.2]);
-            (firestore.findImageByVector as jest.Mock).mockResolvedValueOnce({
-                id: 'hash123',
-                url: 'gs://bucket/images/hash123.jpg'
-            });
-            (storage.downloadImage as jest.Mock).mockResolvedValueOnce(Buffer.from('image'));
-            (xApi.uploadMedia as jest.Mock).mockResolvedValueOnce('media_123');
-
-            const result = await runProactiveNewsPostBatch();
-
-            expect(result.status).toBe('success');
-            expect(result.attachedMedia).toBe(true);
-            expect(storage.downloadImage).toHaveBeenCalledWith('gs://bucket/images/hash123.jpg');
-            expect(xApi.uploadMedia).toHaveBeenCalledWith(expect.any(Buffer), 'image/jpeg');
-            expect(firestore.updateImageLastUsed).toHaveBeenCalledWith('hash123');
-            // Check tweet was called with mediaId
-            expect(xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', { mediaIds: ['media_123'] });
-        });
-
-        it('should handle image download or upload failure gracefully', async () => {
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
-            });
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('post');
-            (gemini.inferImageSearchQuery as jest.Mock).mockResolvedValueOnce('coffee');
-            (gemini.generateEmbedding as jest.Mock).mockResolvedValueOnce([0.1, 0.2]);
-            (firestore.findImageByVector as jest.Mock).mockResolvedValueOnce({
-                id: 'hash123',
-                url: 'gs://bucket/images/hash123.jpg'
-            });
-            (storage.downloadImage as jest.Mock).mockRejectedValueOnce(new Error('GCS Error'));
-
-            const result = await runProactiveNewsPostBatch();
-
-            // Still posts successfully but without media
-            expect(result.status).toBe('success');
-            expect(result.attachedMedia).toBe(false);
-            expect(xApi.tweet).toHaveBeenCalledWith('post\n#全肯定AIレベッカ', { mediaIds: [] });
-        });
-
-        it('should throw and log if tweet fails (abnormal case)', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-            (global.fetch as jest.Mock).mockResolvedValueOnce({
-                text: jest.fn().mockResolvedValueOnce('<title>News 1</title>')
-            });
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('text');
-            (xApi.tweet as jest.Mock).mockRejectedValueOnce(new Error('Twitter API down'));
-
-            await expect(runProactiveNewsPostBatch()).rejects.toThrow('Twitter API down');
-            
-            expect(consoleSpy).toHaveBeenCalledWith('Error in runProactiveNewsPostBatch:', expect.any(Error));
-            consoleSpy.mockRestore();
-        });
+        await expect(runProactiveNewsPostBatch(deps)).rejects.toThrow('Twitter API down');
+        
+        expect(consoleSpy).toHaveBeenCalledWith('Error in runProactiveNewsPostBatch:', expect.any(Error));
+        consoleSpy.mockRestore();
     });
 });

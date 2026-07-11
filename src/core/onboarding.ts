@@ -1,5 +1,4 @@
-import * as xApi from '../services/xApi';
-import * as firestore from '../services/firestore';
+import { AppDependencies } from '../types';
 import config from '../config';
 
 /**
@@ -7,10 +6,10 @@ import config from '../config';
  * 
  * @returns A promise resolving to an object containing the status and the count of processed users.
  */
-const runStealthOnboardingBatch = async (): Promise<{ status: string; processed: number; reason?: string }> => {
+const runStealthOnboardingBatch = async (deps: AppDependencies): Promise<{ status: string; processed: number; reason?: string }> => {
     console.log("Starting Stealth Onboarding Batch...");
     try {
-        const myUserId = config.xApi.myUserId || xApi.cachedNumericMyUserId;
+        const myUserId = config.xApi.myUserId || deps.xApi.cachedNumericMyUserId;
         if (!myUserId) {
             console.error('X_MY_USER_ID is not set and could not be resolved.');
             return { status: 'failed', processed: 0, reason: 'Missing X_MY_USER_ID' };
@@ -27,7 +26,7 @@ const runStealthOnboardingBatch = async (): Promise<{ status: string; processed:
         let keepFetching = true;
 
         while (keepFetching) {
-            const followersResp = await xApi.getFollowers(myUserId, nextToken);
+            const followersResp = await deps.xApi.getFollowers(myUserId, nextToken);
             const followers = followersResp.data || [];
             
             if (followers.length === 0) {
@@ -36,7 +35,7 @@ const runStealthOnboardingBatch = async (): Promise<{ status: string; processed:
             }
 
             for (const follower of followers) {
-                const hasProcessed = await firestore.hasProcessedFollower(follower.id);
+                const hasProcessed = await deps.firestore.hasProcessedFollower(follower.id);
                 if (hasProcessed) {
                     console.log(`Reached already processed follower: ${follower.username}. Stopping fetch.`);
                     keepFetching = false;
@@ -44,9 +43,9 @@ const runStealthOnboardingBatch = async (): Promise<{ status: string; processed:
                 }
 
                 console.log(`New follower detected: ${follower.username} (${follower.id})`);
-                const added = await xApi.addListMember(targetListId, follower.id);
+                const added = await deps.xApi.addListMember(targetListId, follower.id);
                 if (added) {
-                    await firestore.markFollowerProcessed(follower.id);
+                    await deps.firestore.markFollowerProcessed(follower.id);
                     console.log(`Successfully onboarded (added to list): ${follower.username}`);
                     processedCount++;
                 } else {
