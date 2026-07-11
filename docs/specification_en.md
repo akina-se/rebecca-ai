@@ -7,6 +7,8 @@ This system is built with a highly scalable, fully serverless architecture that 
 
 - **Cloud Provider**: Google Cloud Platform (GCP)
 - **Main Processing / API Endpoints**: Cloud Run (Node.js / Express) *Uses polling and scheduled batches instead of Webhooks due to X API Free Tier limitations.*
+  - **Routing Separation**: Routes are completely separated into `batchRoutes` (for scheduled execution) and `workerRoutes` (for Cloud Tasks workers).
+  - **Design Pattern**: Dependency Injection (DI) is used. Core logic does not depend directly on the infrastructure layer (e.g., Firestore, APIs) and instead accesses them via interfaces (`AppDependencies`).
 - **Asynchronous Queue (Delayed Execution)**: Cloud Tasks
 - **Database**: Firestore (NoSQL)
 - **Image Storage**: Cloud Storage (GCS)
@@ -50,7 +52,7 @@ Rebecca is designed as a state-of-the-art personal AI developed by Gemitech.
 6. **Proactive News Post**
    - Fetches news feeds, generates a Gyaru-perspective opinion, attaches a contextually relevant image, and spontaneously posts it to the timeline.
 7. **Dynamic Rate Limit**
-   - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits.
+   - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions and centralized Express middleware (`express-rate-limit`).
 
 ## 4. Database Schema & Data Types (Firestore)
 
