@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { OAuth2Client } from 'google-auth-library';
+import crypto from 'crypto';
 import config from '../config';
 
 const client = new OAuth2Client();
@@ -37,8 +38,17 @@ export const batchAuth = async (req: Request, res: Response, next: NextFunction)
 
         // 2. Shared Secret Fallback (for local testing or alternative trigger)
         const secretHeader = req.headers['x-batch-secret'];
-        if (config.batchSecret && secretHeader === config.batchSecret) {
-            return next();
+        if (config.batchSecret && typeof secretHeader === 'string') {
+            try {
+                const providedBuffer = Buffer.from(secretHeader, 'utf8');
+                const expectedBuffer = Buffer.from(config.batchSecret, 'utf8');
+                // Ensure buffers are of the same length before comparing to prevent error
+                if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
+                    return next();
+                }
+            } catch (err) {
+                console.warn('Error during secret comparison', err);
+            }
         }
 
         console.warn('Unauthorized attempt to access batch endpoint.');
