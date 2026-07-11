@@ -7,10 +7,16 @@ import { checkAndIncrementRateLimits } from './rateLimiter';
 import { downloadImage } from '../utils/image';
 
 /**
- * Executes a background job to randomly engage with a user from the target list.
- * Analyzes the user's profile and generates a spontaneous mention.
+ * Executes a background job to randomly engage with a user from the "Special Treatment" list.
  * 
- * @returns A promise resolving to an object indicating the status of the operation and the processed user.
+ * Due to X API Free Tier limitations regarding Quote Tweets and Native Replies, 
+ * this function instead fetches the user's recent timeline to build context,
+ * analyzes their profile, and generates a standalone tweet containing an @mention
+ * that naturally responds to their recent activities.
+ * 
+ * @returns {Promise<{ status: string; processedUser?: string; reason?: string }>} 
+ *          A promise resolving to an object indicating the status of the operation, 
+ *          the username of the engaged user (if any), and the reason (if skipped or failed).
  */
 const runRandomEngagementBatch = async (): Promise<{ status: string; processedUser?: string; reason?: string }> => {
     console.log("Starting Random Engagement Batch...");
@@ -90,13 +96,13 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
 
         if (!targetTweetId) {
             console.log(`User ${targetUser.id} has no recent organic tweets to engage with. Skipping...`);
-            return { status: 'skipped', reason: 'No valid tweets to quote' };
+            return { status: 'skipped', reason: 'No valid tweets to engage with' };
         }
 
         const lang = await gemini.detectLanguage(description + tweetContext);
 
         const systemPrompt = getBasePrompt('random_engagement', lang);
-        const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最新の投稿に対して不意打ちで引用リポスト（話しかけ）を行ってください。`;
+        const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
 
         const generatedText = await gemini.generateReply(systemPrompt, [], userInput);
 
@@ -107,7 +113,7 @@ const runRandomEngagementBatch = async (): Promise<{ status: string; processedUs
 
         console.log(`Generated Engagement Text:\n${finalText}`);
 
-        await xApi.tweet(finalText, { quote_tweet_id: targetTweetId });
+        await xApi.tweet(finalText);
 
         await firestore.updateLastListInteraction(targetUser.id);
 
