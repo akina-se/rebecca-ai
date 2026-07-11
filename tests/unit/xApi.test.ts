@@ -16,7 +16,11 @@ jest.mock('../../src/config', () => ({
 
 jest.mock('@xdevplatform/xdk', () => {
     return {
-        OAuth1: jest.fn(),
+        OAuth1: class {
+            async buildRequestHeader() {
+                return 'mocked_auth_header';
+            }
+        },
         Client: jest.fn().mockImplementation(() => {
             return {
                 posts: {
@@ -200,13 +204,142 @@ describe('xApi.ts', () => {
             config.xApi.appKey = ''; // trigger !client condition
             const api = getXApiModule();
             
-            expect(await api.replyToMention('123', 'Hi')).toEqual({ data: { id: 'mock_tweet_id' } });
-            expect(await api.tweet('Test')).toEqual({ data: { id: 'mock_tweet_id' } });
-            expect(await api.getTweetDetails('123')).toEqual({ data: null });
-            expect(await api.getUserProfile('user1')).toEqual({ data: { description: 'ダミーのプロフィール文です。仕事に疲れています。' } });
+            expect(await api.replyToMention('123', 'Hi')).toEqual({ data: { id: 'mock_tweet_id', text: 'Hi' } });
+            expect(await api.tweet('Test')).toEqual({ data: { id: 'mock_tweet_id', text: 'Test' } });
+            expect(await api.getTweetDetails('123')).toEqual({ });
+            expect(await api.getUserProfile('user1')).toEqual({ data: { id: 'user1', name: 'Dummy', username: 'dummy', description: 'ダミーのプロフィール文です。仕事に疲れています。' } });
             expect(await api.getMentions()).toEqual({ data: [], meta: { resultCount: 0 } });
             
             config.xApi.appKey = originalAppKey;
+    });
+    });
+
+    describe('uploadMedia', () => {
+        it('should return mock_media_id when client not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; // trigger !client condition
+            const api = getXApiModule();
+            const result = await api.uploadMedia(Buffer.from('test'), 'image/jpeg');
+            expect(result).toBe('mock_media_id');
+            config.xApi.appKey = originalAppKey;
+        });
+
+        it('should throw error when fetch fails', async () => {
+            const api = getXApiModule();
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockRejectedValue(new Error('fetch error'));
+            await expect(api.uploadMedia(Buffer.from('test'), 'image/jpeg')).rejects.toThrow('fetch error');
+            global.fetch = originalFetch;
+        });
+    });
+
+    describe('getFollowers', () => {
+        it('should return followers successfully', async () => {
+            const api = getXApiModule();
+            // Since users.getFollowers doesn't exist on mock instance yet, we must add it
+            if (!mockClientInstance.users.getFollowers) mockClientInstance.users.getFollowers = jest.fn();
+            mockClientInstance.users.getFollowers.mockResolvedValueOnce({ data: [{ id: 'user1' }], meta: { resultCount: 1 } });
+            const result = await api.getFollowers('123');
+            expect(result.data).toEqual([{ id: 'user1' }]);
+        });
+
+        it('should return empty if client not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; 
+            const api = getXApiModule();
+            const result = await api.getFollowers('123');
+            expect(result.data).toEqual([]);
+            config.xApi.appKey = originalAppKey;
+        });
+
+        it('should throw on error', async () => {
+            const api = getXApiModule();
+            if (!mockClientInstance.users.getFollowers) mockClientInstance.users.getFollowers = jest.fn();
+            mockClientInstance.users.getFollowers.mockRejectedValueOnce(new Error('err'));
+            await expect(api.getFollowers('123')).rejects.toThrow('err');
+        });
+    });
+
+    describe('addListMember', () => {
+        it('should add member successfully', async () => {
+            const api = getXApiModule();
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockResolvedValue({ ok: true });
+            const result = await api.addListMember('list1', 'user1');
+            expect(result).toBe(true);
+            global.fetch = originalFetch;
+        });
+
+        it('should throw error if fetch not ok', async () => {
+            const api = getXApiModule();
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'failed' }) });
+            await expect(api.addListMember('list1', 'user1')).rejects.toThrow(/Failed to add list member/);
+            global.fetch = originalFetch;
+        });
+        
+        it('should return false if oauth client not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; 
+            const api = getXApiModule();
+            const result = await api.addListMember('list1', 'user1');
+            expect(result).toBe(false);
+            config.xApi.appKey = originalAppKey;
+        });
+    });
+
+    describe('getListMembers', () => {
+        it('should get members successfully', async () => {
+            const api = getXApiModule();
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: [{ id: 'u1' }] }) });
+            const result = await api.getListMembers('list1');
+            expect(result.data).toEqual([{ id: 'u1' }]);
+            global.fetch = originalFetch;
+        });
+
+        it('should return empty if client not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; 
+            const api = getXApiModule();
+            const result = await api.getListMembers('list1');
+            expect(result.data).toEqual([]);
+            config.xApi.appKey = originalAppKey;
+        });
+
+        it('should throw error if fetch not ok', async () => {
+            const api = getXApiModule();
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'failed' }) });
+            await expect(api.getListMembers('list1')).rejects.toThrow(/Failed to get list members/);
+            global.fetch = originalFetch;
+        });
+    });
+
+    describe('getUserTweets', () => {
+        it('should return user tweets successfully', async () => {
+            const api = getXApiModule();
+            if (!mockClientInstance.users.getPosts) mockClientInstance.users.getPosts = jest.fn();
+            mockClientInstance.users.getPosts.mockResolvedValueOnce({ data: [{ id: 'tweet1', text: 'Hello' }], includes: { media: [] } });
+            
+            const result = await api.getUserTweets('123', 5);
+            expect(result.data).toEqual([{ id: 'tweet1', text: 'Hello' }]);
+        });
+
+        it('should return empty if client not initialized', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; 
+            const api = getXApiModule();
+            const result = await api.getUserTweets('123', 5);
+            expect(result.data).toEqual([]);
+            config.xApi.appKey = originalAppKey;
+        });
+
+        it('should throw error on API failure', async () => {
+            const api = getXApiModule();
+            if (!mockClientInstance.users.getPosts) mockClientInstance.users.getPosts = jest.fn();
+            mockClientInstance.users.getPosts.mockRejectedValueOnce(new Error('api error'));
+            await expect(api.getUserTweets('123')).rejects.toThrow('api error');
         });
     });
 });
