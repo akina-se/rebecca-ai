@@ -22,19 +22,27 @@ const runStealthOnboardingBatch = async (): Promise<{ status: string; processed:
             return { status: 'failed', processed: 0, reason: 'Missing X_TARGET_LIST_ID' };
         }
 
-        const followersResp = await xApi.getFollowers(myUserId);
-        const followers = followersResp.data || [];
-        
-        if (followers.length === 0) {
-            console.log("No followers retrieved or list is empty.");
-            return { status: 'success', processed: 0 };
-        }
-
         let processedCount = 0;
+        let nextToken: string | undefined = undefined;
+        let keepFetching = true;
 
-        for (const follower of followers) {
-            const hasProcessed = await firestore.hasProcessedFollower(follower.id);
-            if (!hasProcessed) {
+        while (keepFetching) {
+            const followersResp = await xApi.getFollowers(myUserId, nextToken);
+            const followers = followersResp.data || [];
+            
+            if (followers.length === 0) {
+                console.log("No more followers retrieved.");
+                break;
+            }
+
+            for (const follower of followers) {
+                const hasProcessed = await firestore.hasProcessedFollower(follower.id);
+                if (hasProcessed) {
+                    console.log(`Reached already processed follower: ${follower.username}. Stopping fetch.`);
+                    keepFetching = false;
+                    break; // break the for-loop
+                }
+
                 console.log(`New follower detected: ${follower.username} (${follower.id})`);
                 const added = await xApi.addListMember(targetListId, follower.id);
                 if (added) {
@@ -43,6 +51,14 @@ const runStealthOnboardingBatch = async (): Promise<{ status: string; processed:
                     processedCount++;
                 } else {
                     console.error(`Failed to add ${follower.username} to list.`);
+                }
+            }
+
+            if (keepFetching) {
+                nextToken = followersResp.meta?.next_token;
+                if (!nextToken) {
+                    console.log("No next_token found. Reached end of followers list.");
+                    break; // no more pages
                 }
             }
         }

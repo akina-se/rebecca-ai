@@ -15,6 +15,10 @@ import { downloadImage } from './utils/image';
 const app = express();
 app.use(express.json());
 import path from 'path';
+import { batchAuth } from './middleware/batchAuth';
+
+// Secure all /batch endpoints
+app.use('/batch', batchAuth);
 
 /**
  * Serves static files such as Terms of Service and Privacy Policy.
@@ -285,15 +289,6 @@ const PORT = config.port;
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
-        
-        // For periodic execution in environments like local (where Cloud Scheduler is unavailable)
-        // Only active if POLLING_INTERVAL_MINUTES=60 or similar is set in .env
-        if (config.pollingIntervalMinutes > 0) {
-            console.log(`Internal polling enabled: every ${config.pollingIntervalMinutes} minutes.`);
-            setInterval(() => {
-                pollMentions().catch(e => console.error("Internal polling error:", e));
-            }, config.pollingIntervalMinutes * 60 * 1000);
-        }
     });
 }
 
