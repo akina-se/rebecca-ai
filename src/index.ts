@@ -112,7 +112,7 @@ app.get('/batch/mentions', async (req, res) => {
         res.status(200).json({ status: 'Mentions Polling Batch completed', result });
     } catch (error) {
         console.error('Mentions Polling Batch failed:', error);
-        res.status(500).send('Mentions Polling Batch failed');
+        res.status(500).json({ error: (error as Error).message });
     }
 });
 
@@ -227,12 +227,13 @@ app.post('/worker/reply', async (req, res) => {
  * Typically invoked by Cloud Scheduler.
  */
 app.get('/batch/dreaming', async (req, res) => {
-    res.status(200).send('Batch started');
     try {
         await runGlobalDreamingBatch();
         console.log('Global Dreaming Batch completed successfully.');
+        res.status(200).json({ status: 'Global Dreaming Batch completed successfully.' });
     } catch (error) {
         console.error('Global Dreaming Batch failed:', error);
+        res.status(500).json({ error: (error as Error).message });
     }
 });
 
@@ -241,12 +242,13 @@ app.get('/batch/dreaming', async (req, res) => {
  * Typically invoked by Cloud Scheduler (e.g., Sunday 5AM).
  */
 app.get('/batch/evolution', async (req, res) => {
-    res.status(200).send('Evolution Batch started');
     try {
         await runGlobalEvolutionBatch();
         console.log('Global Evolution Batch completed successfully.');
+        res.status(200).json({ status: 'Global Evolution Batch completed successfully.' });
     } catch (error) {
         console.error('Global Evolution Batch failed:', error);
+        res.status(500).json({ error: (error as Error).message });
     }
 });
 
@@ -257,7 +259,7 @@ app.get('/batch/news-post', async (req, res) => {
     try {
         const { runProactiveNewsPostBatch } = await import('./core/news');
         const result = await runProactiveNewsPostBatch();
-        res.json(result);
+        res.status(200).json(result);
     } catch (e) {
         console.error('Failed to run news post batch:', e);
         res.status(500).json({ error: (e as Error).message });
@@ -271,7 +273,7 @@ app.get('/batch/stealth-onboarding', async (req, res) => {
     try {
         const { runStealthOnboardingBatch } = await import('./core/onboarding');
         const result = await runStealthOnboardingBatch();
-        res.json(result);
+        res.status(200).json(result);
     } catch (e) {
         console.error('Failed to run stealth onboarding batch:', e);
         res.status(500).json({ error: (e as Error).message });
@@ -285,7 +287,7 @@ app.get('/batch/random-engagement', async (req, res) => {
     try {
         const { runRandomEngagementBatch } = await import('./core/randomEngagement');
         const result = await runRandomEngagementBatch();
-        res.json(result);
+        res.status(200).json(result);
     } catch (e) {
         console.error('Failed to run random engagement batch:', e);
         res.status(500).json({ error: (e as Error).message });
