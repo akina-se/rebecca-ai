@@ -12,13 +12,15 @@ const client = new OAuth2Client();
  */
 export const batchAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const authHeader = req.headers.authorization;
+        let isAuthenticated = false;
+
+        // Try OIDC Token Verification (Cloud Scheduler)
+        const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
+        const tokenMatch = authHeader.match(/^Bearer\s+(.*)$/i);
         
-        // 1. OIDC Token Verification (Cloud Scheduler)
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            const token = authHeader.split(' ')[1];
+        if (tokenMatch) {
+            const token = tokenMatch[1];
             try {
-                // The audience defaults to the Cloud Run service URL, which we can set via config.gcp.workerUrl
                 const expectedAudience = config.gcp.workerUrl || undefined;
                 const ticket = await client.verifyIdToken({
                     idToken: token,
@@ -26,29 +28,31 @@ export const batchAuth = async (req: Request, res: Response, next: NextFunction)
                 });
                 const payload = ticket.getPayload();
                 
-                // Optional: Verify that the issuer is Google
                 if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
-                    return next();
+                    isAuthenticated = true;
                 }
             } catch (e) {
                 console.warn('OIDC token verification failed:', e);
-                // Fall back to shared secret check if configured
             }
         }
 
-        // 2. Shared Secret Fallback (for local testing or alternative trigger)
-        const secretHeader = req.headers['x-batch-secret'];
-        if (config.batchSecret && typeof secretHeader === 'string') {
+        // Shared Secret Fallback (for local testing or alternative trigger)
+        const secretHeader = typeof req.headers['x-batch-secret'] === 'string' ? req.headers['x-batch-secret'] : '';
+        if (!isAuthenticated && config.batchSecret && secretHeader) {
             try {
                 const providedBuffer = Buffer.from(secretHeader, 'utf8');
                 const expectedBuffer = Buffer.from(config.batchSecret, 'utf8');
-                // Ensure buffers are of the same length before comparing to prevent error
+                
                 if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
-                    return next();
+                    isAuthenticated = true;
                 }
             } catch (err) {
                 console.warn('Error during secret comparison', err);
             }
+        }
+
+        if (isAuthenticated) {
+            return next();
         }
 
         console.warn('Unauthorized attempt to access batch endpoint.');
