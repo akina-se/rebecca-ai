@@ -212,14 +212,20 @@ const getMentions = async (sinceId?: string): Promise<XApiMentionResponse> => {
  * Retrieves the followers for a specified user ID.
  * 
  * @param userId - The ID of the user.
+ * @param paginationToken - Optional token for pagination.
  * @returns A promise resolving to the followers data object.
  */
-const getFollowers = async (userId: string): Promise<XApiFollowersResponse> => {
+const getFollowers = async (userId: string, paginationToken?: string): Promise<XApiFollowersResponse> => {
     if (!client) return { data: [], meta: { resultCount: 0 } };
     try {
-        const response = await client.users.getFollowers(userId, {
-            max_results: 10
-        });
+        const params: Record<string, unknown> = {
+            max_results: config.xApi.followersMaxResults || 1000
+        };
+        if (paginationToken) {
+            params.pagination_token = paginationToken;
+        }
+        
+        const response = await client.users.getFollowers(userId, params as Parameters<typeof client.users.getFollowers>[1]);
         return response as unknown as XApiFollowersResponse;
     } catch (error) {
         console.error('Error getting followers:', error);
