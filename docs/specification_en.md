@@ -131,9 +131,9 @@ Tracks random engagement history for list members.
 1. Endpoint triggered as a scheduled batch.
 2. Fetches the members of the "Special Treatment" list (`getListMembers`).
 3. Shuffles the members and checks `list_interaction_history` to select **one user who has never been engaged with before**.
-4. Retrieves their profile description via X API and has Gemini analyze it (hobbies, traits).
-5. Builds a surprise `random_engagement` context prompt based on the analysis and generates a mention text.
-6. Posts the mention to X and records the user in `list_interaction_history` (ensuring this happens only once per user).
+4. Retrieves their profile description and **most recent tweets (including analyzing attached images via Gemini Vision)** via X API, and has Gemini analyze their overall context (hobbies, traits, recent activities).
+5. Builds a surprise `random_engagement` context prompt based on the analysis and recent timeline, then generates a mention text.
+6. To bypass X API Free Tier limitations on Quote Tweets/Replies, posts the generated text as a **standalone new tweet** with an @mention, and records the user in `list_interaction_history` (ensuring this happens only once per user).
 
 ### 5.4 Dreaming Flow (Memory Consolidation)
 1. Triggered daily at 3:00 AM by Cloud Scheduler.
