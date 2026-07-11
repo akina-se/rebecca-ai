@@ -17,7 +17,7 @@ try {
     // Basic gcloud deploy command for Cloud Run
     const args = ['run', 'deploy', serviceName, '--source', '.', '--region', region, '--project', projectId, '--allow-unauthenticated'];
     console.log(`Running: gcloud ${args.join(' ')}`);
-    execFileSync('gcloud', args, { stdio: 'inherit' });
+    execFileSync('gcloud', args, { stdio: 'inherit', shell: true });
     console.log('Deployment successful!');
 } catch {
     console.error('Deployment failed. Make sure gcloud is installed and authenticated.');
