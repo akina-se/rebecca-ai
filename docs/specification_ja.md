@@ -7,6 +7,8 @@
 
 - **クラウドプロバイダ**: Google Cloud Platform (GCP)
 - **メイン処理・APIエンドポイント**: Cloud Run (Node.js / Express) ※X API Free枠の制限によりWebhookではなくポーリング（定期取得）や定期バッチ処理を採用
+  - **ルーティング**: `batchRoutes`（定期実行用）と `workerRoutes`（Cloud Tasksワーカー用）に完全分離。
+  - **設計手法**: 依存性の注入（DI）を採用。コアロジックはインフラ層（Firestoreや各種API）に直接依存せず、インターフェース（`AppDependencies`）を介して実行される。
 - **非同期キュー (遅延実行)**: Cloud Tasks
 - **データベース**: Firestore (NoSQL)
 - **画像ストレージ**: Cloud Storage (GCS)
