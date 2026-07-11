@@ -21,6 +21,13 @@ jest.mock('../../../src/config', () => ({
   }
 }));
 
+/**
+ * Unit tests for the Random Engagement Batch.
+ * 
+ * Verifies that the system can randomly select an eligible user from the "Special Treatment" list,
+ * fetch their recent tweets and profile, analyze any attached images, and generate a 
+ * standalone @mention tweet (due to X API Free Tier limitations on Quote Tweets).
+ */
 describe('Random Engagement Batch', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -57,7 +64,9 @@ describe('Random Engagement Batch', () => {
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
         
-        expect(xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?', { quote_tweet_id: 'tweet123' });
+        expect(xApi.tweet).toHaveBeenCalledWith(
+            'Hey @target_user, playing games again?'
+        );
         expect(firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
     });
 
@@ -77,6 +86,7 @@ describe('Random Engagement Batch', () => {
         expect(result.processedUser).toBeUndefined();
         expect(xApi.tweet).not.toHaveBeenCalled();
     });
+    
     it('should return failed if targetListId is not set', async () => {
         const originalList = require('../../../src/config').default.xApi.targetListId;
         require('../../../src/config').default.xApi.targetListId = '';
@@ -112,7 +122,9 @@ describe('Random Engagement Batch', () => {
 
         await runRandomEngagementBatch();
 
-        expect(xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention', { quote_tweet_id: 't2' });
+        expect(xApi.tweet).toHaveBeenCalledWith(
+            '@target2\nHello without mention'
+        );
     });
 
     it('should handle tweets with attached media and analyze them', async () => {
@@ -139,6 +151,8 @@ describe('Random Engagement Batch', () => {
         await runRandomEngagementBatch();
 
         expect(gemini.analyzeImageCaption).toHaveBeenCalled();
-        expect(xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!', { quote_tweet_id: 't3' });
+        expect(xApi.tweet).toHaveBeenCalledWith(
+            '@media_user cool photo!'
+        );
     });
 });
