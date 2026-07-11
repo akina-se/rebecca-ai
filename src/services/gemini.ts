@@ -1,6 +1,6 @@
 import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
-import { fetchYahooNewsHeadlines } from '../core/news';
+import { fetchYahooNewsHeadlines } from '../utils/newsFetcher';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 
 /**
