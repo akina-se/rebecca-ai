@@ -72,7 +72,7 @@ describe('batchAuth Middleware', () => {
     it('should handle internal errors gracefully', async () => {
         mockReq.headers = { authorization: 'Bearer valid_token' };
         
-        const mockVerifyIdToken = jest.fn().mockImplementation(() => {
+        (OAuth2Client.prototype.verifyIdToken as jest.Mock) = jest.fn().mockImplementation(() => {
             throw new Error('Unexpected error'); // Thrown outside of try-catch or something we force
         });
         // We will make getter throw an unhandled exception to trigger 500
