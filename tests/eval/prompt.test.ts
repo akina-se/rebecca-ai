@@ -87,7 +87,7 @@ describe('LLM as a Judge: Prompt Evaluation', () => {
         // 1. Generate Rebecca's response
         const userData = { episodicBuffer: [] }; // Mock empty memory
         const lang: Language = (tc.lang as Language) || 'ja';
-        const systemPrompt = buildSystemPrompt('reply', userData, tc.input, '', '', [], lang);
+        const systemPrompt = buildSystemPrompt('reply', userData as unknown as any, tc.input, '', '', [], lang);
         const reply = await gemini.generateReply(systemPrompt, [], tc.input);
 
         // 2. Evaluate with Judge

@@ -10,14 +10,22 @@ import * as firestore from './services/firestore';
 import * as gemini from './services/gemini';
 import * as xApi from './services/xApi';
 import * as tasks from './services/tasks';
+import { downloadImage } from './utils/image';
 
 const app = express();
 app.use(express.json());
-// Serve static files (Terms of Service, Privacy Policy)
 import path from 'path';
+
+/**
+ * Serves static files such as Terms of Service and Privacy Policy.
+ */
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Core logic for mentions polling
+/**
+ * Polls the X API for new mentions and enqueues tasks to reply to them.
+ *
+ * @returns {Promise<{count: number, newestId?: string}>} An object containing the count of new mentions and the ID of the newest mention.
+ */
 const pollMentions = async () => {
     try {
         console.log("Polling mentions from X API...");
@@ -35,10 +43,10 @@ const pollMentions = async () => {
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
-            const tweetObj = tweet as Record<string, unknown>;
+            const tweetObj = tweet as unknown as Record<string, unknown>;
             const authorObj = tweetObj.author as Record<string, string> | undefined;
             const userObj = tweetObj.user as Record<string, string> | undefined;
-            const authorId = tweet.author_id || tweet.authorId || authorObj?.id || userObj?.id || tweetObj.user_id;
+            const authorId = tweet.author_id || authorObj?.id || userObj?.id || tweetObj.user_id;
 
             // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
@@ -83,7 +91,10 @@ const pollMentions = async () => {
     }
 };
 
-// Endpoint to be triggered by Cloud Scheduler or similar services
+/**
+ * Express endpoint to trigger the mentions polling batch process.
+ * Typically invoked by Cloud Scheduler or similar services.
+ */
 app.get('/batch/mentions', async (req, res) => {
     try {
         const result = await pollMentions();
@@ -94,7 +105,10 @@ app.get('/batch/mentions', async (req, res) => {
     }
 });
 
-// Worker to process reply
+/**
+ * Express endpoint for the worker to process and generate replies.
+ * Acknowledges Cloud Tasks and processes the reply asynchronously.
+ */
 app.post('/worker/reply', async (req, res) => {
     res.status(200).send('OK'); // Acknowledge Cloud Tasks
 
@@ -135,38 +149,61 @@ app.post('/worker/reply', async (req, res) => {
 
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
+        let processedText = text;
+        try {
+            const tweetDetails = await xApi.getTweetDetails(tweetId);
+            const mediaKeys = tweetDetails?.data?.attachments?.media_keys;
+            const mediaIncludes = tweetDetails.includes?.media || [];
+
+            const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
+            if (hasMedia) {
+                for (const media of mediaIncludes) {
+                    if (media.type !== 'photo' || !media.url) continue;
+
+                    const { buffer, mimeType } = await downloadImage(media.url);
+                    const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
+                    
+                    if (imageCaption) {
+                        processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Failed to process mention image', e);
+        }
+
         // 3. RAG Retrieval & Context Injection (Build prompt)
         const extendedPrompt = await firestore.getExtendedPrompt();
         const timelineSummary = await firestore.getTimelineSummary();
         
         let ragMemories = [];
-        const query = await gemini.generateSearchQuery(text, workingMemory);
+        const query = await gemini.generateSearchQuery(workingMemory.map(m => `${m.role}: ${m.content}`).join('\n'), processedText);
         if (query) {
             const queryEmb = await gemini.generateEmbedding(query);
             ragMemories = await firestore.findRagMemories(authorId, queryEmb);
         }
 
-        const lang = await gemini.detectLanguage(text);
-        const systemPrompt = buildSystemPrompt('reply', userData, text, extendedPrompt, timelineSummary, ragMemories, lang);
+        const lang = await gemini.detectLanguage(processedText);
+        const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
 
         // 4. Generate AI Reply
-        const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, text);
+        const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, processedText);
 
         // 5. Post to X
         await xApi.replyToMention(tweetId, aiResponseText);
 
         // 6. Save Interaction to Memory (Working Memory / Episodic Buffer)
-        await saveInteraction(authorId, text, aiResponseText);
+        await saveInteraction(authorId, processedText, aiResponseText);
 
         // 6.5. Save RAG Memory (Long-term Episodic Vector)
-        const combinedText = `User: ${text}\nRebecca: ${aiResponseText}`;
+        const combinedText = `User: ${processedText}\nRebecca: ${aiResponseText}`;
         const memoryVector = await gemini.generateEmbedding(combinedText);
         if (memoryVector && memoryVector.length > 0) {
             await firestore.saveRagMemory(authorId, combinedText, memoryVector);
         }
 
         // 7. Save Raw Log for Analysis
-        await firestore.saveRawConversationLog(authorId, text, aiResponseText);
+        await firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
 
         console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
     } catch (error) {
@@ -174,9 +211,11 @@ app.post('/worker/reply', async (req, res) => {
     }
 });
 
-// Batch process for Dreaming (Memory Consolidation)
+/**
+ * Express endpoint to trigger the global dreaming batch process (memory consolidation).
+ * Typically invoked by Cloud Scheduler.
+ */
 app.get('/batch/dreaming', async (req, res) => {
-    // Triggered by Cloud Scheduler
     res.status(200).send('Batch started');
     try {
         await runGlobalDreamingBatch();
@@ -186,9 +225,11 @@ app.get('/batch/dreaming', async (req, res) => {
     }
 });
 
-// Batch process for Evolution (Trend Analysis)
+/**
+ * Express endpoint to trigger the global evolution batch process (trend analysis).
+ * Typically invoked by Cloud Scheduler (e.g., Sunday 5AM).
+ */
 app.get('/batch/evolution', async (req, res) => {
-    // Triggered by Cloud Scheduler (e.g. Sunday 5AM)
     res.status(200).send('Evolution Batch started');
     try {
         await runGlobalEvolutionBatch();
@@ -198,7 +239,9 @@ app.get('/batch/evolution', async (req, res) => {
     }
 });
 
-// News Periodic Post Batch Endpoint
+/**
+ * Express endpoint to trigger the proactive news posting batch process.
+ */
 app.get('/batch/news-post', async (req, res) => {
     try {
         const { runProactiveNewsPostBatch } = await import('./core/news');
@@ -206,7 +249,35 @@ app.get('/batch/news-post', async (req, res) => {
         res.json(result);
     } catch (e) {
         console.error('Failed to run news post batch:', e);
-        res.status(500).json({ error: e.message });
+        res.status(500).json({ error: (e as Error).message });
+    }
+});
+
+/**
+ * Express endpoint to trigger the stealth onboarding batch process.
+ */
+app.get('/batch/stealth-onboarding', async (req, res) => {
+    try {
+        const { runStealthOnboardingBatch } = await import('./core/onboarding');
+        const result = await runStealthOnboardingBatch();
+        res.json(result);
+    } catch (e) {
+        console.error('Failed to run stealth onboarding batch:', e);
+        res.status(500).json({ error: (e as Error).message });
+    }
+});
+
+/**
+ * Express endpoint to trigger the random engagement batch process.
+ */
+app.get('/batch/random-engagement', async (req, res) => {
+    try {
+        const { runRandomEngagementBatch } = await import('./core/randomEngagement');
+        const result = await runRandomEngagementBatch();
+        res.json(result);
+    } catch (e) {
+        console.error('Failed to run random engagement batch:', e);
+        res.status(500).json({ error: (e as Error).message });
     }
 });
 
