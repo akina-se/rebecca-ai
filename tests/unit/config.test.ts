@@ -16,8 +16,9 @@ describe('Config', () => {
         delete process.env.GLOBAL_DAILY_LIMIT;
         delete process.env.GLOBAL_MINUTE_LIMIT;
         delete process.env.SPAM_MINUTE_LIMIT;
-        delete process.env.POLLING_INTERVAL_MINUTES;
         delete process.env.EVOLUTION_LOOKBACK_DAYS;
+        delete process.env.BATCH_SECRET_KEY;
+        delete process.env.X_FOLLOWERS_MAX_RESULTS;
 
         const config = require('../../src/config/index').default;
 
@@ -32,8 +33,9 @@ describe('Config', () => {
         expect(Number(config.limits.globalDailyLimit)).toBe(45);
         expect(Number(config.limits.globalMinuteLimit)).toBe(5);
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);
-        expect(Number(config.pollingIntervalMinutes)).toBe(0);
         expect(Number(config.evolution.lookbackDays)).toBe(7);
+        expect(Number(config.xApi.followersMaxResults)).toBe(1000);
+        expect(config.batchSecret).toBeUndefined();
     });
 
     it('should use env vars when provided', () => {
@@ -48,8 +50,9 @@ describe('Config', () => {
         process.env.GLOBAL_DAILY_LIMIT = '100';
         process.env.GLOBAL_MINUTE_LIMIT = '10';
         process.env.SPAM_MINUTE_LIMIT = '5';
-        process.env.POLLING_INTERVAL_MINUTES = '60';
         process.env.EVOLUTION_LOOKBACK_DAYS = '14';
+        process.env.BATCH_SECRET_KEY = 'my-secret';
+        process.env.X_FOLLOWERS_MAX_RESULTS = '500';
 
         const config = require('../../src/config/index').default;
 
@@ -64,7 +67,8 @@ describe('Config', () => {
         expect(Number(config.limits.globalDailyLimit)).toBe(100);
         expect(Number(config.limits.globalMinuteLimit)).toBe(10);
         expect(Number(config.limits.spamMinuteLimit)).toBe(5);
-        expect(Number(config.pollingIntervalMinutes)).toBe(60);
         expect(Number(config.evolution.lookbackDays)).toBe(14);
+        expect(Number(config.xApi.followersMaxResults)).toBe(500);
+        expect(config.batchSecret).toBe('my-secret');
     });
 });
