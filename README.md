@@ -154,8 +154,10 @@ npm run deploy
 - **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
 
 ## Directory Structure
-- `src/index.ts` : Application entry point
+- `src/index.ts` : Application entry point with Dependency Injection setup
 - `src/core/` : Core domain logic (Memory management, Context injection, Evolution audit)
+- `src/routes/` : Express route definitions (`batchRoutes.ts`, `workerRoutes.ts`)
+- `src/middleware/` : Authentication and Rate Limiting middlewares
 - `src/services/` : External service integrations (Firestore, Gemini, X, Cloud Tasks)
 - `src/config/` : Configuration and environment variables
 - `tests/` : Unit and integration tests
