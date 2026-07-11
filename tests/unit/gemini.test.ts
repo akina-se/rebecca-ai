@@ -19,7 +19,7 @@ jest.mock('@google/genai', () => {
     };
 });
 
-jest.mock('../../src/core/news', () => ({
+jest.mock('../../src/utils/newsFetcher', () => ({
     fetchYahooNewsHeadlines: jest.fn()
 }));
 
@@ -41,13 +41,13 @@ describe('gemini.ts', () => {
     });
 
     const getGeminiModule = () => {
-        let module: any;
-        let newsModule: any;
+        let gemini: any;
+        let newsFetcher: any;
         jest.isolateModules(() => {
-            module = require('../../src/services/gemini');
-            newsModule = require('../../src/core/news');
+            gemini = require('../../src/services/gemini');
+            newsFetcher = require('../../src/utils/newsFetcher');
         });
-        return { gemini: module, news: newsModule };
+        return { gemini, news: newsFetcher };
     };
 
     describe('generateReply', () => {

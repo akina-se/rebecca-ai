@@ -1,69 +1,67 @@
 import { runGlobalEvolutionBatch } from '../../src/core/evolution';
-import * as firestore from '../../src/services/firestore';
-import * as gemini from '../../src/services/gemini';
-
-jest.mock('../../src/services/firestore');
-jest.mock('../../src/services/gemini');
+import { createMockDeps } from './core/testUtils';
 
 describe('evolution.ts', () => {
+    let deps: any;
+
     beforeEach(() => {
         jest.clearAllMocks();
+        deps = createMockDeps();
     });
 
     describe('runGlobalEvolutionBatch', () => {
-        it('should skip if no recent logs found (boundary case)', async () => {
-            (firestore.getRecentConversationLogs as jest.Mock).mockResolvedValueOnce([]);
-
-            const result = await runGlobalEvolutionBatch();
-
-            expect(result).toEqual({ status: 'skipped', reason: 'No logs found' });
-            expect(gemini.generateEvolutionPrompt).not.toHaveBeenCalled();
+        it('should skip if no recent logs found', async () => {
+            deps.firestore.getRecentConversationLogs.mockResolvedValueOnce([]);
+            
+            const result = await runGlobalEvolutionBatch(deps);
+            
+            expect(result.status).toBe('skipped');
+            expect(result.reason).toBe('No logs found');
+            expect(deps.gemini.generateEvolutionPrompt).not.toHaveBeenCalled();
         });
 
-        it('should fail if prompt generation fails (abnormal case)', async () => {
-            (firestore.getRecentConversationLogs as jest.Mock).mockResolvedValueOnce([
-                { userText: 'test', aiText: 'test' }
-            ]);
-            (gemini.generateEvolutionPrompt as jest.Mock).mockResolvedValueOnce('');
-
-            const result = await runGlobalEvolutionBatch();
-
-            expect(result).toEqual({ status: 'failed', reason: 'Generation failed' });
-            expect(gemini.auditEvolutionPrompt).not.toHaveBeenCalled();
+        it('should return failed if prompt generation fails', async () => {
+            deps.firestore.getRecentConversationLogs.mockResolvedValueOnce([{ userText: 'hi', aiText: 'hello' }]);
+            deps.gemini.generateEvolutionPrompt.mockResolvedValueOnce(null);
+            
+            const result = await runGlobalEvolutionBatch(deps);
+            
+            expect(result.status).toBe('failed');
+            expect(result.reason).toBe('Generation failed');
+            expect(deps.gemini.auditEvolutionPrompt).not.toHaveBeenCalled();
         });
 
-        it('should succeed and save prompt if audit passes (normal case)', async () => {
-            (firestore.getRecentConversationLogs as jest.Mock).mockResolvedValueOnce([
-                { userText: 'test', aiText: 'test' }
-            ]);
-            (gemini.generateEvolutionPrompt as jest.Mock).mockResolvedValueOnce('New behavior');
-            (gemini.auditEvolutionPrompt as jest.Mock).mockResolvedValueOnce({ pass: true });
-
-            const result = await runGlobalEvolutionBatch();
-
-            expect(result).toEqual({ status: 'success', prompt: 'New behavior' });
-            expect(firestore.saveExtendedPrompt).toHaveBeenCalledWith('New behavior');
+        it('should save new prompt if audit passes', async () => {
+            deps.firestore.getRecentConversationLogs.mockResolvedValueOnce([{ userText: 'hi', aiText: 'hello' }]);
+            deps.gemini.generateEvolutionPrompt.mockResolvedValueOnce('new rule');
+            deps.gemini.auditEvolutionPrompt.mockResolvedValueOnce({ pass: true });
+            
+            const result = await runGlobalEvolutionBatch(deps);
+            
+            expect(result.status).toBe('success');
+            expect(result.prompt).toBe('new rule');
+            expect(deps.firestore.saveExtendedPrompt).toHaveBeenCalledWith('new rule');
         });
 
-        it('should reject and not save prompt if audit fails (abnormal case)', async () => {
-            (firestore.getRecentConversationLogs as jest.Mock).mockResolvedValueOnce([
-                { userText: 'test', aiText: 'test' }
-            ]);
-            (gemini.generateEvolutionPrompt as jest.Mock).mockResolvedValueOnce('Bad behavior');
-            (gemini.auditEvolutionPrompt as jest.Mock).mockResolvedValueOnce({ pass: false, reason: 'Toxic' });
-
-            const result = await runGlobalEvolutionBatch();
-
-            expect(result).toEqual({ status: 'rejected', reason: 'Toxic', candidate: 'Bad behavior' });
-            expect(firestore.saveExtendedPrompt).not.toHaveBeenCalled();
+        it('should reject and discard if audit fails', async () => {
+            deps.firestore.getRecentConversationLogs.mockResolvedValueOnce([{ userText: 'hi', aiText: 'hello' }]);
+            deps.gemini.generateEvolutionPrompt.mockResolvedValueOnce('bad rule');
+            deps.gemini.auditEvolutionPrompt.mockResolvedValueOnce({ pass: false, reason: 'harmful' });
+            
+            const result = await runGlobalEvolutionBatch(deps);
+            
+            expect(result.status).toBe('rejected');
+            expect(result.reason).toBe('harmful');
+            expect(result.candidate).toBe('bad rule');
+            expect(deps.firestore.saveExtendedPrompt).not.toHaveBeenCalled();
         });
 
-        it('should throw and log if any error occurs (abnormal case)', async () => {
+        it('should throw error if underlying db throws', async () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-            (firestore.getRecentConversationLogs as jest.Mock).mockRejectedValueOnce(new Error('DB Error'));
-
-            await expect(runGlobalEvolutionBatch()).rejects.toThrow('DB Error');
-
+            deps.firestore.getRecentConversationLogs.mockRejectedValueOnce(new Error('DB Error'));
+            
+            await expect(runGlobalEvolutionBatch(deps)).rejects.toThrow('DB Error');
+            
             expect(consoleSpy).toHaveBeenCalledWith('Error in runGlobalEvolutionBatch:', expect.any(Error));
             consoleSpy.mockRestore();
         });

@@ -1,5 +1,4 @@
-import * as firestore from '../services/firestore';
-import * as gemini from '../services/gemini';
+import { AppDependencies } from '../types';
 import { getDreamingPrompt } from './prompt';
 import { ConversationLogEntry, FirestoreUser } from '../types';
 
@@ -22,9 +21,9 @@ const getWorkingMemory = (episodicBuffer: ConversationLogEntry[] | undefined, li
  * @param userText - The text input from the user.
  * @param modelText - The text response from the model.
  */
-const saveInteraction = async (userId: string, userText: string, modelText: string): Promise<void> => {
-    await firestore.appendEpisodicBuffer(userId, { role: 'user', content: userText, timestamp: new Date().toISOString() });
-    await firestore.appendEpisodicBuffer(userId, { role: 'model', content: modelText, timestamp: new Date().toISOString() });
+const saveInteraction = async (deps: AppDependencies, userId: string, userText: string, modelText: string): Promise<void> => {
+    await deps.firestore.appendEpisodicBuffer(userId, { role: 'user', content: userText, timestamp: new Date().toISOString() });
+    await deps.firestore.appendEpisodicBuffer(userId, { role: 'model', content: modelText, timestamp: new Date().toISOString() });
 };
 
 /**
@@ -33,7 +32,7 @@ const saveInteraction = async (userId: string, userText: string, modelText: stri
  * @param userId - The ID of the user.
  * @param userData - The current Firestore data for the user.
  */
-const processDreamingForUser = async (userId: string, userData: FirestoreUser): Promise<void> => {
+const processDreamingForUser = async (deps: AppDependencies, userId: string, userData: FirestoreUser): Promise<void> => {
     const { episodicBuffer, coreProfile } = userData;
     if (!episodicBuffer?.length) {
         return;
@@ -41,8 +40,8 @@ const processDreamingForUser = async (userId: string, userData: FirestoreUser): 
 
     const systemPrompt = getDreamingPrompt();
     try {
-        const newCoreProfile = await gemini.generateDreaming(systemPrompt, episodicBuffer, coreProfile);
-        await firestore.updateCoreProfile(userId, newCoreProfile);
+        const newCoreProfile = await deps.gemini.generateDreaming(systemPrompt, episodicBuffer, coreProfile);
+        await deps.firestore.updateCoreProfile(userId, newCoreProfile);
         console.log(`Dreaming completed for user: ${userId}`);
     } catch (error) {
         console.error(`Dreaming failed for user: ${userId}`, error);
@@ -53,18 +52,18 @@ const processDreamingForUser = async (userId: string, userData: FirestoreUser): 
  * Executes a global batch job to consolidate personal memories for all users 
  * and summarizes recent proactive timeline posts.
  */
-const runGlobalDreamingBatch = async (): Promise<void> => {
-    const users = await firestore.getAllUsers();
+const runGlobalDreamingBatch = async (deps: AppDependencies): Promise<void> => {
+    const users = await deps.firestore.getAllUsers();
     for (const user of users) {
-        await processDreamingForUser(user.id, user);
+        await processDreamingForUser(deps, user.id, user);
     }
 
     try {
-        const recentPosts = await firestore.getRecentTimelinePosts(10);
+        const recentPosts = await deps.firestore.getRecentTimelinePosts(10);
         if (recentPosts.length > 0) {
-            const previousSummary = await firestore.getTimelineSummary();
-            const newSummary = await gemini.generateTimelineSummary(recentPosts, previousSummary);
-            await firestore.saveTimelineSummary(newSummary);
+            const previousSummary = await deps.firestore.getTimelineSummary();
+            const newSummary = await deps.gemini.generateTimelineSummary(recentPosts, previousSummary);
+            await deps.firestore.saveTimelineSummary(newSummary);
             console.log("Timeline summary updated:", newSummary);
         }
     } catch (e) {

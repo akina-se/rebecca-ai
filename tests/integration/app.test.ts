@@ -10,13 +10,9 @@ jest.mock('../../src/services/firestore', () => ({
     getUserDoc: jest.fn().mockResolvedValue({ episodicBuffer: [], coreProfile: {} }),
     updateUserDoc: jest.fn().mockResolvedValue(undefined),
     appendEpisodicBuffer: jest.fn().mockResolvedValue(undefined),
-    getGlobalRateLimit: jest.fn().mockResolvedValue(0),
-    getUserDailyLimit: jest.fn().mockResolvedValue(0),
-    getUserMinuteLimit: jest.fn().mockResolvedValue(0),
-    getDailyActiveUsersCount: jest.fn().mockResolvedValue(1),
-    incrementGlobalRateLimit: jest.fn().mockResolvedValue(undefined),
-    incrementUserDailyLimit: jest.fn().mockResolvedValue(undefined),
-    incrementUserMinuteLimit: jest.fn().mockResolvedValue(undefined),
+    checkAndConsumeRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
+    hasProcessedMention: jest.fn().mockResolvedValue(false),
+    markMentionProcessed: jest.fn().mockResolvedValue(undefined),
     getExtendedPrompt: jest.fn().mockResolvedValue(''),
     getTimelineSummary: jest.fn().mockResolvedValue(''),
     saveRawConversationLog: jest.fn().mockResolvedValue(undefined),
@@ -89,7 +85,7 @@ describe('Integration Tests', () => {
             });
             const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
-            expect(response.body.result.count).toBe(0);
+            expect(response.body.count).toBe(0);
         });
 
         it('should skip mention with no authorId', async () => {
@@ -112,12 +108,13 @@ describe('Integration Tests', () => {
 
             const response = await request(app)
                 .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
                 .send(payload);
             
             expect(response.status).toBe(200);
             
             // Check if rate limits were checked
-            expect(firestore.getGlobalRateLimit).toHaveBeenCalled();
+            expect(firestore.checkAndConsumeRateLimit).toHaveBeenCalled();
             // Check if user was fetched
             expect(firestore.getUserDoc).toHaveBeenCalledWith('user_1');
             // Check if reply was generated
@@ -137,6 +134,7 @@ describe('Integration Tests', () => {
             (gemini.detectLanguage as jest.Mock).mockResolvedValueOnce('en');
             const response = await request(app)
                 .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
                 .send(payload);
             
             expect(response.status).toBe(200);
@@ -158,7 +156,10 @@ describe('Integration Tests', () => {
             (gemini.analyzeUserProfile as jest.Mock).mockResolvedValueOnce({ attributes: ['test'] });
 
             const payload = { tweetId: 'new', text: 'hello', authorId: 'new_user' };
-            const response = await request(app).post('/worker/reply').send(payload);
+            const response = await request(app)
+                .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
+                .send(payload);
             
             expect(response.status).toBe(200);
             expect(firestore.getUserDoc).toHaveBeenCalledWith('new_user');
@@ -166,8 +167,7 @@ describe('Integration Tests', () => {
         });
 
         it('should block if rate limit is exceeded', async () => {
-            // Mock rate limit exceeded
-            (firestore.getGlobalRateLimit as jest.Mock).mockResolvedValueOnce(1000); // Exceed default 140
+            (firestore.checkAndConsumeRateLimit as jest.Mock).mockResolvedValueOnce({ allowed: false, reason: 'global_daily' }); // Blocked
 
             const payload = {
                 tweetId: '12345',
@@ -177,6 +177,7 @@ describe('Integration Tests', () => {
 
             const response = await request(app)
                 .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
                 .send(payload);
             
             expect(response.status).toBe(200); // Worker still acks
