@@ -121,16 +121,20 @@ app.get('/batch/mentions', async (req, res) => {
  * Acknowledges Cloud Tasks and processes the reply asynchronously.
  */
 app.post('/worker/reply', async (req, res) => {
-    res.status(200).send('OK'); // Acknowledge Cloud Tasks
-
     const { tweetId, text, authorId } = req.body;
-    if (!tweetId || !authorId) return;
+    if (!tweetId || !authorId) {
+        // Bad request, don't retry
+        res.status(400).send('Missing tweetId or authorId');
+        return;
+    }
 
     try {
         // 1. Rate Limit Check
         const rateLimit = await checkAndIncrementRateLimits(authorId);
         if (!rateLimit.allowed) {
             console.log(`Rate limit exceeded for user ${authorId.replace(/[\r\n]/g, '')}, reason: ${rateLimit.reason.replace(/[\r\n]/g, '')}`);
+            // Return 200 so Cloud Tasks doesn't retry a rate-limited request
+            res.status(200).send('Rate limited, skipping');
             return;
         }
 
@@ -217,8 +221,13 @@ app.post('/worker/reply', async (req, res) => {
         await firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
 
         console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
+        
+        // Acknowledge Cloud Tasks AFTER processing is complete
+        res.status(200).send('OK');
     } catch (error) {
         console.error('Error processing reply in worker:', error);
+        // Return 500 so Cloud Tasks can retry the job
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
