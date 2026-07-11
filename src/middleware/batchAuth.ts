@@ -16,30 +16,30 @@ export const batchAuth = async (req: Request, res: Response, next: NextFunction)
 
         // Try OIDC Token Verification (Cloud Scheduler)
         const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
-        const tokenMatch = authHeader.match(/^Bearer\s+(.*)$/i);
-        
-        if (tokenMatch) {
-            const token = tokenMatch[1];
-            try {
-                const expectedAudience = config.gcp.workerUrl || undefined;
-                const ticket = await client.verifyIdToken({
-                    idToken: token,
-                    audience: expectedAudience,
-                });
-                const payload = ticket.getPayload();
-                
-                if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
-                    isAuthenticated = true;
-                }
-            } catch (e) {
+        const parts = authHeader.split(' ');
+        const token = (parts.length === 2 && parts[0].toLowerCase() === 'bearer') ? parts[1] : '';
+
+        try {
+            const expectedAudience = config.gcp.workerUrl || undefined;
+            const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: expectedAudience,
+            });
+            const payload = ticket.getPayload();
+            
+            if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
+                isAuthenticated = true;
+            }
+        } catch (e) {
+            if (token) {
                 console.warn('OIDC token verification failed:', e);
             }
         }
 
         // Shared Secret Fallback (for local testing or alternative trigger)
-        const secretHeader = typeof req.headers['x-batch-secret'] === 'string' ? req.headers['x-batch-secret'] : '';
-        if (!isAuthenticated && config.batchSecret && secretHeader) {
+        if (!isAuthenticated && config.batchSecret) {
             try {
+                const secretHeader = typeof req.headers['x-batch-secret'] === 'string' ? req.headers['x-batch-secret'] : '';
                 const providedBuffer = Buffer.from(secretHeader, 'utf8');
                 const expectedBuffer = Buffer.from(config.batchSecret, 'utf8');
                 
