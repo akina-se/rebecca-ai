@@ -60,6 +60,10 @@ describe('Integration Tests', () => {
     });
 
     describe('GET /batch/mentions', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+
         it('should fetch mentions and enqueue tasks', async () => {
             (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
                 data: [
@@ -68,7 +72,7 @@ describe('Integration Tests', () => {
                 meta: { resultCount: 1 }
             });
 
-            const response = await request(app).get('/batch/mentions');
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             
             expect(response.status).toBe(200);
             expect(xApi.getMentions).toHaveBeenCalled();
@@ -83,7 +87,7 @@ describe('Integration Tests', () => {
                 data: [],
                 meta: { resultCount: 0 }
             });
-            const response = await request(app).get('/batch/mentions');
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
             expect(response.body.result.count).toBe(0);
         });
@@ -93,7 +97,7 @@ describe('Integration Tests', () => {
                 data: [{ id: '123', text: 'hi' }], // no authorId
                 meta: { resultCount: 1 }
             });
-            const response = await request(app).get('/batch/mentions');
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
     });
@@ -181,27 +185,59 @@ describe('Integration Tests', () => {
     });
 
     describe('GET /batch/dreaming', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
         it('should return 200', async () => {
             const memory = require('../../src/core/memory');
             memory.runGlobalDreamingBatch = jest.fn().mockResolvedValue(undefined);
-            const response = await request(app).get('/batch/dreaming');
+            const response = await request(app).get('/batch/dreaming').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
     });
 
     describe('GET /batch/evolution', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
         it('should return 200', async () => {
             const evolution = require('../../src/core/evolution');
             evolution.runGlobalEvolutionBatch = jest.fn().mockResolvedValue(undefined);
-            const response = await request(app).get('/batch/evolution');
+            const response = await request(app).get('/batch/evolution').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
     });
 
     describe('GET /batch/news-post', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
         it('should return 200', async () => {
-            const response = await request(app).get('/batch/news-post');
+            const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         }, 15000); // Increased timeout for external RSS fetch
+    });
+    describe('GET /batch/stealth-onboarding', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should return 200', async () => {
+            const onboarding = require('../../src/core/onboarding');
+            onboarding.runStealthOnboardingBatch = jest.fn().mockResolvedValue({ status: 'success', processed: 0 });
+            const response = await request(app).get('/batch/stealth-onboarding').set('x-batch-secret', 'test_secret');
+            expect(response.status).toBe(200);
+        });
+    });
+
+    describe('GET /batch/random-engagement', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should return 200', async () => {
+            const randomEngagement = require('../../src/core/randomEngagement');
+            randomEngagement.runRandomEngagementBatch = jest.fn().mockResolvedValue({ status: 'success' });
+            const response = await request(app).get('/batch/random-engagement').set('x-batch-secret', 'test_secret');
+            expect(response.status).toBe(200);
+        });
     });
 });
