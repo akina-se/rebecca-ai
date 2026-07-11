@@ -4,6 +4,12 @@ import * as xApi from '../services/xApi';
 import * as storage from '../services/storage';
 import { getBasePrompt } from './prompt';
 
+/**
+ * Fetches recent news headlines from Yahoo News RSS feeds.
+ * Randomly selects a category and retrieves up to 5 headlines.
+ * 
+ * @returns A promise resolving to an array of headline strings.
+ */
 const fetchYahooNewsHeadlines = async () => {
     try {
         const categories = ['top-picks', 'domestic', 'entertainment', 'it', 'sports'];
@@ -13,20 +19,17 @@ const fetchYahooNewsHeadlines = async () => {
         const response = await fetch(url);
         const text = await response.text();
         
-        // Extract titles from RSS using simple regex (to avoid adding dependencies)
         const titleRegex = /<title>(.*?)<\/title>/g;
         let match;
         const headlines = [];
         
         while ((match = titleRegex.exec(text)) !== null) {
             const title = match[1];
-            // Remove noise like Yahoo News site names
             if (title !== 'Yahoo!ニュース・トピックス - 主要' && !title.includes('Yahoo!')) {
                 headlines.push(title);
             }
         }
         
-        // Return top 5 items
         return headlines.slice(0, 5);
     } catch (e) {
         console.error("Failed to fetch news", e);
@@ -34,6 +37,13 @@ const fetchYahooNewsHeadlines = async () => {
     }
 };
 
+/**
+ * Executes a batch job to proactively post a news-related tweet.
+ * It fetches headlines, generates a post, infers a relevant image,
+ * and posts it to the configured X (Twitter) account.
+ * 
+ * @returns A promise resolving to an object indicating the status of the operation.
+ */
 const runProactiveNewsPostBatch = async () => {
     console.log("Starting Proactive News Post Batch...");
     try {
@@ -45,7 +55,6 @@ const runProactiveNewsPostBatch = async () => {
 
         console.log("Fetched headlines:\n", headlines.join('\n'));
 
-        // Generate tweet
         const systemInstruction = getBasePrompt('timeline', 'ja');
         let postText = await gemini.generateNewsPost(systemInstruction, headlines);
         if (!postText) {
@@ -53,7 +62,6 @@ const runProactiveNewsPostBatch = async () => {
             return { status: 'failed', reason: 'Generation failed' };
         }
 
-        // Tagging feature: Append a hashtag only if character limits allow
         const hashtag = "\n#全肯定AIレベッカ";
         if (postText.length + hashtag.length <= 140) {
             postText += hashtag;
@@ -61,7 +69,6 @@ const runProactiveNewsPostBatch = async () => {
 
         console.log("Generated Post:", postText);
 
-        // 2-step: Infer keyword based on the generated text and recent timeline
         const timelineSummary = await firestore.getTimelineSummary();
         const searchQuery = await gemini.inferImageSearchQuery(postText, timelineSummary);
         
@@ -73,14 +80,11 @@ const runProactiveNewsPostBatch = async () => {
             if (bestImage) {
                 console.log(`Found matching image: ${bestImage.url}`);
                 try {
-                    // Download from GCS privately
                     const buffer = await storage.downloadImage(bestImage.url);
-                    // Determine mimetype from extension (defaulting to jpeg if unknown)
                     let mimeType = 'image/jpeg';
                     if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
                     else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
                     
-                    // Upload to X
                     const mediaId = await xApi.uploadMedia(buffer, mimeType);
                     if (mediaId && mediaId !== 'mock_media_id') {
                         mediaIds.push(mediaId);
@@ -95,10 +99,8 @@ const runProactiveNewsPostBatch = async () => {
             }
         }
 
-        // Post to X
-        await xApi.tweet(postText, mediaIds);
+        await xApi.tweet(postText, { mediaIds });
         
-        // Save history to Firestore
         await firestore.saveTimelinePost(postText);
 
         return { status: 'success', post: postText, attachedMedia: mediaIds.length > 0 };

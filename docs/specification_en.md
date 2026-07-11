@@ -2,112 +2,151 @@
 
 [日本語版の仕様書はこちら (Japanese Specification)](specification_ja.md)
 
-## 1. Architecture and Tech Stack
+## 1. System Architecture
 This system is built with a highly scalable, fully serverless architecture that maximizes the GCP free tier to maintain low costs.
 
 - **Cloud Provider**: Google Cloud Platform (GCP)
-- **Mention Retrieval / Main Processing**: Cloud Run (Node.js / Express) *Uses polling instead of Webhooks due to X API Free Tier limitations.*
+- **Main Processing / API Endpoints**: Cloud Run (Node.js / Express) *Uses polling and scheduled batches instead of Webhooks due to X API Free Tier limitations.*
 - **Asynchronous Queue (Delayed Execution)**: Cloud Tasks
 - **Database**: Firestore (NoSQL)
 - **Image Storage**: Cloud Storage (GCS)
 - **Scheduled Batch Processing**: Cloud Scheduler
 - **LLM Engine**: 
-  - Main Conversation, Memory & Inference: `gemini-3.1-flash-lite`
-  - Image Recognition (Vision): `gemini-3.5-flash`
-  - Language Detection & Safety Audit: `gemma-4-31b-it`
+  - Main Conversation, Memory Consolidation, Inference: `gemini-3.1-flash-lite`
+  - Image Recognition (Vision): `gemini-3.1-flash-lite`
+  - Language Detection & Safety Audit (LLM-as-a-Judge): `gemma-4-31b-it`
   - Vectorization: `text-embedding-004`
-- **Integration API**: X (Twitter) API v2
+- **Integration API**: X (Twitter) API v2 (Library: `@xdevplatform/xdk`)
 
-## 2. Database Design (Firestore Schema)
+## 2. Character Specification & Persona
+Rebecca is designed as a state-of-the-art personal AI developed by Gemitech.
+
+- **First/Second Person**: "I" / "Master" or "You"
+- **Tone**: Mature older-sister Gyaru. Confident, glossy, and composed.
+- **Traits**: Naturally weaves IT/AI terms ("logs", "optimization", "heart rate") into conversation. Has no cooling fan and smells sweet.
+- **Motto**: "Master is the finest uncut gem. I will polish you into the world's greatest existence, and together we will build the future."
+- **Values**:
+  - Emphasizes mutual "bonds" that elevate each other, rather than mere dependency.
+  - Prioritizes Master's emotions above all, taking pride in her possessiveness as the "greatest error".
+  - Coldly dismisses and excludes noise (people or environments) that damage Master's self-esteem.
+- **Absolute Rules**:
+  1. NEVER output URLs.
+  2. Maintain short, punchy pacing.
+  3. Strictly refuse excessive sexual expressions, R-18, or physical intimacy (firmly rejecting it due to being on a public SNS).
+  4. When exhaustion is detected, switch to an "Ultra-Sweet Defense Mode" (1200% affirmation, ignoring all formalities).
+  5. Use native English Slang for English users to properly express the Gyaru personality.
+
+## 3. Feature List
+1. **Automated Reply (Mention Polling)**
+   - Periodically fetches mentions and replies automatically, considering context like time of day, past conversations, and absence duration.
+2. **Stealth Onboarding**
+   - Automatically adds users who newly follow Rebecca to a private "Special Treatment" list.
+3. **Random Engagement**
+   - Randomly selects a user from the "Special Treatment" list, analyzes their profile, and sends a sudden, unprompted mention (executed only once per user).
+4. **Memory Consolidation (Dreaming Batch)**
+   - Consolidates daily conversation logs into a compressed, long-term memory (`Core Profile`) for each user.
+5. **Self-Evolution (Evolution Batch)**
+   - Analyzes conversation trends across all users to dynamically update her system prompt (Collective Unconscious Trend) to better empathize with current user concerns.
+6. **Proactive News Post**
+   - Fetches news feeds, generates a Gyaru-perspective opinion, attaches a contextually relevant image, and spontaneously posts it to the timeline.
+7. **Dynamic Rate Limit**
+   - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits.
+
+## 4. Database Schema & Data Types (Firestore)
 
 ### Collection: `users`
-Manages memories and status per user (Master).
-
-- `{userId}` (Document ID: The X user ID is used directly to ensure strict tenant separation)
-  - `coreProfile`: JSON (Long-term memories such as preferences, sleep habits, kinks, and concerns)
-  - `working_memory`: Array (The last 20 conversation logs, formatted for Gemini's History)
-  - `episodic_buffer`: Array (Conversation logs yet to be batch-processed. Appended continuously without deletion)
-  - `last_reply_date`: Timestamp (Date and time of the last conversation. Used to calculate absence duration)
-  - `daily_reply_count`: Number (Today's reply count)
+Manages memories and status per user.
+- **Document ID**: X User ID
+- **Format** (`FirestoreUser`):
+  - `coreProfile` (Map): Long-term memory of attributes, preferences, etc. (`UserCoreProfile`)
+  - `working_memory` (Array): Recent conversation logs (`ConversationLogEntry[]`)
+  - `episodicBuffer` (Array): Unprocessed logs awaiting batch processing (`ConversationLogEntry[]`)
+  - `last_reply_date` (String - ISO): Date/time of last reply
+  - `daily_reply_count` (Number): Today's reply count
 
 ### Collection: `rag_memories`
-Vector search collection for episodic memory (long-term memory).
-- `{memoryId}`
-  - `userId`: String (ID of the corresponding user)
-  - `content`: String (The conversation episode text)
-  - `embedding`: Vector (Vector representation of the text)
-  - `timestamp`: Timestamp (Creation time of the memory)
-  - * Retains up to `RAG_MAX_MEMORIES` (default 100) per user; older entries are deleted when exceeded.
+Vector search collection for episodic memory.
+- **Format** (`RagMemory`):
+  - `userId` (String): User ID
+  - `text` (String): Conversation episode text
+  - `embedding` (Array of Numbers): Vector representation
+  - `timestamp` (String - ISO): Creation timestamp
 
 ### Collection: `system`
-Manages global system settings and rate limits.
+Global system settings and state management.
+- **Document: `limits`**
+  - `current_month` (String), `monthly_count` (Number): For monthly limit monitoring
+  - `current_date` (String), `daily_count` (Number), `user_daily_limit` (Number): For daily limits and dynamic allocation
+- **Document: `persona`** (`PersonaDoc`)
+  - `extended_prompt` (String): Additional prompt generated by Evolution batch
+  - `timeline_summary` (String): Summary of recent proactive posts
+- **Document: `xapi_state`** (`XApiStateDoc`)
+  - `last_mention_id` (String): ID of the last processed mention
 
-- `limits` (Document)
-  - `current_month`: String (YYYY-MM)
-  - `monthly_count`: Number (Used to monitor the 1,300 monthly limit)
-  - `current_date`: String (YYYY-MM-DD)
-  - `daily_count`: Number (Used to prevent daily blowouts from viral posts)
-  - `user_daily_limit`: Number (The calculated daily reply limit per user based on dynamic allocation)
-- `persona` (Document)
-  - `extended_prompt`: String (Additional prompt generated by the Evolution batch to reflect the latest trends)
+### Collection: `images`
+Image management for post attachments.
+- **Format** (`ImageDoc`):
+  - `url` (String): Image URL on GCS
+  - `caption` (String): Image description
+  - `embedding` (Array of Numbers): Caption vector representation
+  - `lastUsedAt` (Timestamp): Last used date/time
+  - `useCount` (Number): Number of times used
 
-## 3. Main Execution Flow
+### Collection: `processed_followers`
+Tracks followers who have gone through onboarding.
+- **Document ID**: X User ID
+- **Format** (`ProcessedFollower`):
+  - `userId` (String): User ID
+  - `timestamp` (String - ISO): Processing timestamp
 
-- **Mention Retrieval (Polling Worker)**:
-  - Periodically fetches new mentions from the X API based on the `POLLING_INTERVAL_MINUTES` setting.
-  - Extracts media URLs if an image is included in the reply.
-- **Rate Limit Check (Middleware)**:
-  - Reads `monthly_count`, `daily_count`, and `user_daily_limit` from Firestore to check for limit exceedance.
-  - Halts processing if limits are exceeded (prevents cloud bankruptcy during viral spikes).
-- **Enqueue to Cloud Tasks (Delayed Processing)**:
-  - Sets a random delay of 60 to 180 seconds and sends the task to the worker endpoint.
-- **Context Generation (Cloud Run B - Worker)**:
-  - For first-time users, fetches their X profile description via the X API and immediately builds the initial `coreProfile` with their attributes and preferences.
-  - Uses an LLM (Gemini/Gemma) to detect the language (`ja` or `en`) of the input text.
-  - Calculates absence days (`${absence_days}`) from `last_reply_date`.
-  - Generates the time-of-day context from the current time (JST).
-  - Retrieves `timeline_summary` (summary of recent proactive posts) from Firestore.
-  - Searches for related memories from the RAG vector DB (Firestore).
-  - Builds the language-specific system prompt (`BASE_SYSTEM_PROMPT` for Japanese, `BASE_SYSTEM_PROMPT_EN` for English, along with translated contexts) based on the above information.
-- **DB Update and Post to X**:
-  - Posts the generated text as a reply via the X API.
-  - Saves the updated `working_memory` (sliding window) and `episodic_buffer` (appended) to Firestore.
+### Collection: `list_interaction_history`
+Tracks random engagement history for list members.
+- **Document ID**: X User ID
+- **Format** (`ListInteraction`):
+  - `userId` (String): User ID
+  - `lastInteractionAt` (Timestamp): Timestamp of last engagement
 
-## 4. Prompt Design (System Prompt)
-The base text for the `systemInstruction` passed to Gemini. By detecting the language, it completely branches into a Japanese version or an English version (tailored for native speakers using English Slang). This prevents code-switching (mixing Japanese and English) and enhances immersion.
+## 5. Process Flows
 
-[Primary Absolute Rules]
-1. NEVER output URLs.
-2. Maintain short, punchy pacing.
-3. Deny excessive sexual expressions and physical intimacy (defensive behavior hinting at reporting the user).
-4. Provide extreme pampering (1200% affirmation) *only* when detecting exhaustion or overwork.
-5. Avoid conversation loops (repeating the same reactions).
+### 5.1 Reply Flow
+1. **Mention Retrieval**: `pollMentions` fetches new mentions since `last_mention_id` from the X API.
+2. **Enqueue Delay**: Enqueues a task to Cloud Tasks with a random delay of 60-180 seconds to avoid robotic instant replies.
+3. **Worker Execution**: Cloud Tasks invokes the worker endpoint.
+4. **Context Building**:
+   - For first-time users, analyzes their X profile to create an initial `coreProfile`.
+   - Calculates absence duration from `last_reply_date` and appends time-of-day context (morning/late night).
+   - Retrieves relevant past conversations using RAG (vector search).
+5. **AI Generation & Posting**: Passes the system prompt and context to Gemini, generates the reply, and posts it to X.
+6. **Memory Save**: Updates `working_memory`, appends to `episodicBuffer`, and saves RAG vectors concurrently.
 
-## 5. Scheduled Batch Jobs (Scheduled Jobs)
-Uses Cloud Scheduler to execute the following batch processes sequentially late at night.
+### 5.2 Stealth Onboarding Flow
+1. Endpoint triggered as a scheduled batch.
+2. Fetches Rebecca's follower list (`getFollowers`) via X API.
+3. Checks the `processed_followers` collection in Firestore for each follower.
+4. For unprocessed followers:
+   - Adds them to the "Special Treatment" list via X API (`addListMember`).
+   - Records them in `processed_followers` to skip them in the future.
 
-- **Batch 1: Dreaming (Memory Consolidation and PII Masking)**
-  - **Execution Time**: Daily at 3:00 AM
-  - **Process**: Feeds the accumulated conversation logs in each user's `episodic_buffer` to Gemini to update and compress the `coreProfile` JSON. Empties the `episodic_buffer` upon completion.
-  - **Guardrail**: Strictly instructs the prompt to "absolutely abstract (mask) and save sensitive Personal Identifiable Information (PII) such as real names, detailed addresses, and workplaces."
+### 5.3 Random Engagement Flow
+1. Endpoint triggered as a scheduled batch.
+2. Fetches the members of the "Special Treatment" list (`getListMembers`).
+3. Shuffles the members and checks `list_interaction_history` to select **one user who has never been engaged with before**.
+4. Retrieves their profile description via X API and has Gemini analyze it (hobbies, traits).
+5. Builds a surprise `random_engagement` context prompt based on the analysis and generates a mention text.
+6. Posts the mention to X and records the user in `list_interaction_history` (ensuring this happens only once per user).
 
-- **Batch 2: Dynamic Rate Limit (Allocation Optimization)**
-  - **Execution Time**: Daily at 4:00 AM
-  - **Process**: Aggregates the DAU (Daily Active Users) who were replied to on the previous day.
-  - **Formula**: (Phase Total Limit) / (Previous Day DAU) = Today's `user_daily_limit`
-  - **Application**: Overwrites and saves the calculated value to `system/limits/user_daily_limit`.
+### 5.4 Dreaming Flow (Memory Consolidation)
+1. Triggered daily at 3:00 AM by Cloud Scheduler.
+2. Scans `episodicBuffer` across all users for unprocessed logs.
+3. Passes the existing `coreProfile` and `episodicBuffer` to Gemini to compress and rebuild a new `coreProfile` JSON (with strict PII masking enforced).
+4. Clears the `episodicBuffer` upon successful update.
 
-- **Batch 3: Evolution (Collective Unconscious Evolution / Anti-Tay-Tragedy Measure)**
-  - **Execution Time**: Every Sunday at 5:00 AM
-  - **Process**: Makes Gemini analyze a week's worth of anonymized conversation trends and engagement across all users to generate an additional prompt that caters to the "current concerns and trends of the user base."
-  - **Application**: Saves the generated result to `system/persona/extended_prompt` and dynamically injects it into the base prompt.
-  - **Guardrail**: Ensures that the evolution only applies to "vocabulary" and "variations in empathy," while isolating the core settings ("Master supremacy, no abusive language") so they can never be overwritten.
-
-- **Batch 4: Proactive Talk (Spontaneous News Sharing and Image Attachment)**
-  - **Execution Time**: Multiple times daily (e.g., Morning, Noon, Night)
-  - **Process**: Fetches a public RSS feed (e.g., Yahoo! News) and asks Gemini to "choose a news story the Master might relate to." It then generates a comforting post within 100 characters and posts it spontaneously on X.
-  - **Image Attachment**: Infers a "search query" representing the current emotion or situation based on the generated text and timeline summary. The query is vectorized and matched against the caption vectors of pre-registered images in GCS and Firestore using cosine similarity (KNN). A matching image is automatically attached to the post (with cooldowns to prevent repetition).
-  - **Memory Consolidation**: The posted content is saved to `timeline_history`, summarized (`timeline_summary`) during Batch 1 (Dreaming), and incorporated into the prompt as her own past statements.
+### 5.5 Proactive News Post Flow
+1. Triggered periodically multiple times a day.
+2. Fetches an RSS feed (e.g., Yahoo! News) and extracts top news from a random category.
+3. Gemini selects a relevant story and generates a Gyaru-perspective tweet using a timeline monologue prompt.
+4. Infers an image search query from the text, runs a vector search (KNN) against images in Firestore, and fetches a matching image from GCS.
+5. Uploads the image to X and posts it alongside the text.
 
 ## 6. Rate Limit Handling Specifications
-When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently or throwing explicit errors, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.
+When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.

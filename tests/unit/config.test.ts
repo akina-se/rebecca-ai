@@ -17,6 +17,7 @@ describe('Config', () => {
         delete process.env.GLOBAL_MINUTE_LIMIT;
         delete process.env.SPAM_MINUTE_LIMIT;
         delete process.env.POLLING_INTERVAL_MINUTES;
+        delete process.env.EVOLUTION_LOOKBACK_DAYS;
 
         const config = require('../../src/config/index').default;
 
@@ -32,6 +33,7 @@ describe('Config', () => {
         expect(Number(config.limits.globalMinuteLimit)).toBe(5);
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);
         expect(Number(config.pollingIntervalMinutes)).toBe(0);
+        expect(Number(config.evolution.lookbackDays)).toBe(7);
     });
 
     it('should use env vars when provided', () => {
@@ -47,6 +49,7 @@ describe('Config', () => {
         process.env.GLOBAL_MINUTE_LIMIT = '10';
         process.env.SPAM_MINUTE_LIMIT = '5';
         process.env.POLLING_INTERVAL_MINUTES = '60';
+        process.env.EVOLUTION_LOOKBACK_DAYS = '14';
 
         const config = require('../../src/config/index').default;
 
@@ -62,5 +65,6 @@ describe('Config', () => {
         expect(Number(config.limits.globalMinuteLimit)).toBe(10);
         expect(Number(config.limits.spamMinuteLimit)).toBe(5);
         expect(Number(config.pollingIntervalMinutes)).toBe(60);
+        expect(Number(config.evolution.lookbackDays)).toBe(14);
     });
 });

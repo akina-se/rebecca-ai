@@ -297,7 +297,7 @@ describe('gemini.ts', () => {
             expect(await gemini.generateReply('sys', [], 'test')).toBe('Mock AI response');
             expect(await gemini.generateDreaming('sys', [], {})).toEqual({ attributes: [], preferences: [], concerns: [], important_memories: [] });
             expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
-            expect(await gemini.auditEvolutionPrompt('cand')).toBe(true);
+            expect(await gemini.auditEvolutionPrompt('cand')).toEqual({ pass: true });
             expect(await gemini.analyzeUserProfile('desc')).toEqual({});
             expect(await gemini.generateNewsPost(['news'])).toBe('');
             expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');

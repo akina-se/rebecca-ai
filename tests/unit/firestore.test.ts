@@ -118,8 +118,8 @@ describe('firestore.ts', () => {
         });
 
         it('updateUserDoc should set merge true', async () => {
-            await firestoreService.updateUserDoc('user1', { foo: 'bar' });
-            expect(firestoreInstance.set).toHaveBeenCalledWith({ foo: 'bar' }, { merge: true });
+            await firestoreService.updateUserDoc('user1', { episodicBuffer: [] });
+            expect(firestoreInstance.set).toHaveBeenCalledWith({ episodicBuffer: [] }, { merge: true });
         });
 
         it('getAllUsers should return array of users', async () => {
@@ -299,11 +299,60 @@ describe('firestore.ts', () => {
             firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({ last_mention_id: '123' }) });
             expect(await firestoreService.getLastMentionId()).toBe('123');
 
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({}) });
+            expect(await firestoreService.getLastMentionId()).toBeNull();
+
             firestoreInstance.get.mockResolvedValueOnce({ exists: false });
             expect(await firestoreService.getLastMentionId()).toBeNull();
 
             await firestoreService.setLastMentionId('123');
             expect(firestoreInstance.set).toHaveBeenCalledWith(expect.objectContaining({ last_mention_id: '123' }), { merge: true });
+        });
+    });
+
+    describe('Follower and List Interactions', () => {
+        it('hasProcessedFollower should return true if processed', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true });
+            expect(await firestoreService.hasProcessedFollower('u1')).toBe(true);
+        });
+
+        it('hasProcessedFollower should return false if not processed', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: false });
+            expect(await firestoreService.hasProcessedFollower('u2')).toBe(false);
+        });
+
+        it('markFollowerProcessed should set data', async () => {
+            await firestoreService.markFollowerProcessed('u3');
+            expect(firestoreInstance.set).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u3' }));
+        });
+
+        it('getLastListInteraction should return date if exists', async () => {
+            const date = new Date();
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({ lastInteractionAt: { toDate: () => date } }) });
+            expect(await firestoreService.getLastListInteraction('u4')).toEqual(date);
+        });
+
+        it('getLastListInteraction should return null if data lacks lastInteractionAt', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: true, data: () => ({}) });
+            expect(await firestoreService.getLastListInteraction('u4_null')).toBeNull();
+        });
+
+        it('getLastListInteraction should return null if not exists', async () => {
+            firestoreInstance.get.mockResolvedValueOnce({ exists: false });
+            expect(await firestoreService.getLastListInteraction('u5')).toBeNull();
+        });
+
+        it('updateLastListInteraction should update timestamp', async () => {
+            await firestoreService.updateLastListInteraction('u6');
+            expect(firestoreInstance.set).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u6' }), { merge: true });
+        });
+    });
+
+    describe('Image Vector Search Fallbacks', () => {
+        it('findImageByVector should return null on error', async () => {
+            firestoreInstance.get.mockRejectedValueOnce(new Error('Test error'));
+            const res = await firestoreService.findImageByVector([0.1, 0.2]);
+            expect(res).toBeNull();
         });
     });
 });

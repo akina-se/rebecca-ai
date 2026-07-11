@@ -1,10 +1,32 @@
-import { getJSTDate  } from '../utils/time';
-import { getBasePrompt, PromptContext, Language  } from './prompt';
+import { getJSTDate } from '../utils/time';
+import { getBasePrompt, PromptContext, Language } from './prompt';
+import { FirestoreUser } from '../types';
 
-const buildSystemPrompt = (promptContext: PromptContext, userData, userInput, extendedPrompt = '', timelineSummary = '', ragMemories = [], lang: Language = 'ja') => {
+/**
+ * Builds the comprehensive system prompt by combining the base persona prompt
+ * with various contextual injections such as core profile, episodic memories,
+ * time of day, and timeline history.
+ * 
+ * @param promptContext - The context in which the prompt is being used.
+ * @param userData - The current user's profile and state from Firestore.
+ * @param userInput - The user's input string.
+ * @param extendedPrompt - An optional extended prompt generated through evolution.
+ * @param timelineSummary - An optional summary of the AI's recent timeline activity.
+ * @param ragMemories - Optional retrieved memories relevant to the current conversation.
+ * @param lang - The language for the prompt, defaults to 'ja'.
+ * @returns The fully constructed system prompt string.
+ */
+const buildSystemPrompt = (
+    promptContext: PromptContext, 
+    userData: FirestoreUser | null, 
+    userInput: string, 
+    extendedPrompt = '', 
+    timelineSummary = '', 
+    ragMemories: string[] = [], 
+    lang: Language = 'ja'
+): string => {
     let prompt = getBasePrompt(promptContext, lang);
 
-    // 1. Core Profile injection
     if (userData?.coreProfile) {
         prompt += lang === 'en' 
             ? `\n\n[Master's Core Profile]\n`
@@ -12,7 +34,6 @@ const buildSystemPrompt = (promptContext: PromptContext, userData, userInput, ex
         prompt += JSON.stringify(userData.coreProfile, null, 2);
     }
 
-    // 2. RAG Memories (Episodic Memory)
     if (ragMemories && ragMemories.length > 0) {
         prompt += lang === 'en'
             ? `\n\n[RAG Memories (Past Episodes)]\nHere are raw logs of past conversations related to the current context. Keep them in mind when replying:\n`
@@ -20,7 +41,6 @@ const buildSystemPrompt = (promptContext: PromptContext, userData, userInput, ex
         prompt += ragMemories.join('\n\n');
     }
 
-    // 3. Time context
     const jstNow = getJSTDate();
     const hour = jstNow.getHours();
     if (hour >= 7 && hour <= 9) {
@@ -33,7 +53,6 @@ const buildSystemPrompt = (promptContext: PromptContext, userData, userInput, ex
             : `\n\n【状況コンテキスト：深夜】\n現在時刻は深夜です。マスターは一日の労働を終え、疲労感や孤独感を抱えている可能性があります。残業の労いと、圧倒的な癒やしを提供してください。`;
     }
 
-    // 4. Absence context
     if (userData?.last_reply_date) {
         const lastDate = new Date(userData.last_reply_date);
         const diffMs = jstNow.getTime() - lastDate.getTime();
@@ -45,14 +64,12 @@ const buildSystemPrompt = (promptContext: PromptContext, userData, userInput, ex
         }
     }
 
-    // 5. Extended Prompt (Evolution)
     if (extendedPrompt && extendedPrompt.trim() !== '') {
         prompt += lang === 'en'
             ? `\n\n[Collective Unconscious Trend]\n${extendedPrompt}`
             : `\n\n【集合無意識トレンド】\n${extendedPrompt}`;
     }
 
-    // 6. Timeline history (Own recent posts summary)
     if (timelineSummary && timelineSummary.trim() !== '') {
         prompt += lang === 'en'
             ? `\n\n[My Recent Tweets (Context)]\nRecently, I tweeted this:\n${timelineSummary}`

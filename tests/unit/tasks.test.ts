@@ -17,7 +17,6 @@ jest.mock('@google-cloud/tasks', () => {
 });
 
 describe('Cloud Tasks Service', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let originalConfig: any;
 
     beforeEach(() => {
