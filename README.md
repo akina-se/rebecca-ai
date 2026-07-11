@@ -137,8 +137,9 @@ npm run chat
 npm run batch:evolution
 npm run batch:news
 
-# Setup Cloud Scheduler for automatic batches
+# Setup Cloud Scheduler and Cloud Tasks for automatic batches and async replies
 npm run setup:scheduler
+npm run setup:tasks
 ```
 
 ### 4. Deployment

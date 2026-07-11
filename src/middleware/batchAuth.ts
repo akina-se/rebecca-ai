@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { OAuth2Client } from 'google-auth-library';
-import crypto from 'crypto';
 import config from '../config';
-
-const client = new OAuth2Client();
+import { verifyServerToServerAuth } from './authUtils';
 
 /**
  * Middleware to authenticate requests to /batch endpoints.
@@ -12,44 +9,12 @@ const client = new OAuth2Client();
  */
 export const batchAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        let isAuthenticated = false;
-
-        // Try OIDC Token Verification (Cloud Scheduler)
-        const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
-        const parts = authHeader.split(' ');
-        const token = (parts.length === 2 && parts[0].toLowerCase() === 'bearer') ? parts[1] : '';
-
-        try {
-            const expectedAudience = config.gcp.workerUrl || undefined;
-            const ticket = await client.verifyIdToken({
-                idToken: token,
-                audience: expectedAudience,
-            });
-            const payload = ticket.getPayload();
-            
-            if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
-                isAuthenticated = true;
-            }
-        } catch (e) {
-            if (token) {
-                console.warn('OIDC token verification failed:', e);
-            }
-        }
-
-        // Shared Secret Fallback (for local testing or alternative trigger)
-        if (!isAuthenticated && config.batchSecret) {
-            try {
-                const secretHeader = typeof req.headers['x-batch-secret'] === 'string' ? req.headers['x-batch-secret'] : '';
-                const providedBuffer = Buffer.from(secretHeader, 'utf8');
-                const expectedBuffer = Buffer.from(config.batchSecret, 'utf8');
-                
-                if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
-                    isAuthenticated = true;
-                }
-            } catch (err) {
-                console.warn('Error during secret comparison', err);
-            }
-        }
+        const isAuthenticated = await verifyServerToServerAuth(
+            req,
+            config.gcp.workerUrl || undefined,
+            config.batchSecret,
+            'x-batch-secret'
+        );
 
         if (isAuthenticated) {
             return next();
