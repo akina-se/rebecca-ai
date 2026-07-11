@@ -70,8 +70,8 @@ export default {
    * Global rate limiting configurations.
    */
   limits: {
-    globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '45', 10),
-    globalMinuteLimit: parseInt(process.env.GLOBAL_MINUTE_LIMIT || '5', 10),
+    globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '500', 10),
+    globalMinuteLimit: parseInt(process.env.GLOBAL_MINUTE_LIMIT || '15', 10),
     spamMinuteLimit: parseInt(process.env.SPAM_MINUTE_LIMIT || '3', 10),
   },
 
