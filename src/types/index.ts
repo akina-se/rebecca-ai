@@ -152,12 +152,12 @@ export interface XApiMedia {
 export interface XApiTweet {
     id: string;
     text: string;
-    author_id?: string;
-    created_at?: string;
-    in_reply_to_user_id?: string;
-    referenced_tweets?: Array<{ type: string; id: string }>;
-    conversation_id?: string;
-    attachments?: { media_keys?: string[] };
+    authorId?: string;
+    createdAt?: string;
+    inReplyToUserId?: string;
+    referencedTweets?: Array<{ type: string; id: string }>;
+    conversationId?: string;
+    attachments?: { mediaKeys?: string[] };
 }
 
 /**
