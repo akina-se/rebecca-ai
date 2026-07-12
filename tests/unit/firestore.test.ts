@@ -14,6 +14,14 @@ jest.mock('@google-cloud/firestore', () => {
         batch: jest.fn().mockReturnValue({
             delete: jest.fn(),
             commit: jest.fn()
+        }),
+        runTransaction: jest.fn(async (callback) => {
+            const mTransaction = {
+                get: jest.fn(),
+                set: jest.fn(),
+                update: jest.fn()
+            };
+            return callback(mTransaction);
         })
     };
     return {
@@ -353,6 +361,113 @@ describe('firestore.ts', () => {
             firestoreInstance.get.mockRejectedValueOnce(new Error('Test error'));
             const res = await firestoreService.findImageByVector([0.1, 0.2]);
             expect(res).toBeNull();
+        });
+    });
+
+    describe('checkAndConsumeRateLimit', () => {
+        it('should allow and consume rate limit if below limits', async () => {
+            firestoreInstance.runTransaction.mockImplementation(async (callback: any) => {
+                const mTransaction = {
+                    get: jest.fn((docRef) => {
+                        return { exists: false, data: () => undefined, ref: docRef };
+                    }),
+                    set: jest.fn(),
+                    update: jest.fn()
+                };
+                return callback(mTransaction);
+            });
+
+            const limits = { globalDaily: 10, spamMinute: 2 };
+            const result = await firestoreService.checkAndConsumeRateLimit('u1', '2023-10-27', '2023-10', '2023-10-27T10:00', limits);
+            
+            expect(result.allowed).toBe(true);
+        });
+
+        it('should block if user minute spam limit exceeded', async () => {
+            firestoreInstance.runTransaction.mockImplementation(async (callback: any) => {
+                const mTransaction = {
+                    get: jest.fn()
+                        .mockResolvedValueOnce({ exists: false, data: () => undefined, ref: {} }) // globalDoc
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ lastMinute: '2023-10-27T10:00', minute: 2 }), ref: {} }) // userDoc
+                        .mockResolvedValueOnce({ exists: false, data: () => undefined, ref: {} }), // dauDoc
+                    set: jest.fn(),
+                    update: jest.fn()
+                };
+                return callback(mTransaction);
+            });
+
+            const limits = { globalDaily: 10, spamMinute: 2 };
+            const result = await firestoreService.checkAndConsumeRateLimit('u1', '2023-10-27', '2023-10', '2023-10-27T10:00', limits);
+            
+            expect(result.allowed).toBe(false);
+            expect(result.reason).toBe('user_minute_spam');
+        });
+
+        it('should block if global daily limit exceeded', async () => {
+            firestoreInstance.runTransaction.mockImplementation(async (callback: any) => {
+                const mTransaction = {
+                    get: jest.fn()
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 15, date: '2023-10-27' }), ref: {} }) // globalDoc
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 1, lastDate: '2023-10-27' }), ref: {} }) // userDoc
+                        .mockResolvedValueOnce({ exists: false, data: () => undefined, ref: {} }), // dauDoc
+                    set: jest.fn(),
+                    update: jest.fn()
+                };
+                return callback(mTransaction);
+            });
+
+            const limits = { globalDaily: 10, spamMinute: 2 };
+            const result = await firestoreService.checkAndConsumeRateLimit('u1', '2023-10-27', '2023-10', '2023-10-27T10:00', limits);
+            
+            expect(result.allowed).toBe(false);
+            expect(result.reason).toBe('global_daily');
+        });
+
+        it('should block if dynamic user daily limit exceeded', async () => {
+            firestoreInstance.runTransaction.mockImplementation(async (callback: any) => {
+                const mTransaction = {
+                    get: jest.fn()
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 50 }), ref: {} }) // globalDoc
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 6, lastDate: '2023-10-27' }), ref: {} }) // userDoc
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ count: 20 }), ref: {} }), // dauDoc
+                    set: jest.fn(),
+                    update: jest.fn()
+                };
+                return callback(mTransaction);
+            });
+
+            const limits = { globalDaily: 100, spamMinute: 2 }; // active=20, global=100 -> dynamic limit = 5. User has 6.
+            const result = await firestoreService.checkAndConsumeRateLimit('u1', '2023-10-27', '2023-10', '2023-10-27T10:00', limits);
+            
+            expect(result.allowed).toBe(false);
+            expect(result.reason).toBe('user_daily');
+        });
+        
+        it('should correctly increment existing data in transaction', async () => {
+            let mTransaction: any;
+            firestoreInstance.runTransaction.mockImplementation(async (callback: any) => {
+                mTransaction = {
+                    get: jest.fn()
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 5 }), ref: {} }) // globalDoc
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 1, lastDate: '2023-10-27', minute: 1, lastMinute: '2023-10-27T10:00' }), ref: {} }) // userDoc
+                        .mockResolvedValueOnce({ exists: true, data: () => ({ count: 20 }), ref: {} }), // dauDoc
+                    set: jest.fn(),
+                    update: jest.fn()
+                };
+                return callback(mTransaction);
+            });
+
+            const limits = { globalDaily: 100, spamMinute: 2 };
+            const result = await firestoreService.checkAndConsumeRateLimit('u1', '2023-10-27', '2023-10', '2023-10-27T10:00', limits);
+            
+            expect(result.allowed).toBe(true);
+            expect(mTransaction.set).toHaveBeenCalledTimes(2); // user and global
+        });
+        
+        it('should gracefully handle transaction errors', async () => {
+            firestoreInstance.runTransaction.mockRejectedValueOnce(new Error('Transaction Failed'));
+            const limits = { globalDaily: 10, spamMinute: 2 };
+            await expect(firestoreService.checkAndConsumeRateLimit('u1', '2023-10-27', '2023-10', '2023-10-27T10:00', limits)).rejects.toThrow('Transaction Failed');
         });
     });
 });
