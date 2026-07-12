@@ -24,7 +24,7 @@ export const verifyServerToServerAuth = async (
     const parts = authHeader.split(' ');
     const token = (parts.length === 2 && parts[0].toLowerCase() === 'bearer') ? parts[1] : '';
 
-    if (token) {
+    if (token && expectedAudience) {
         try {
             const ticket = await client.verifyIdToken({
                 idToken: token,
