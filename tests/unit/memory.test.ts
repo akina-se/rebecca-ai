@@ -1,5 +1,4 @@
 import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch, processDreamingForUser } from '../../src/core/memory';
-import { getDreamingPrompt } from '../../src/core/prompt';
 import { createMockDeps } from './core/testUtils';
 
 jest.mock('../../src/core/prompt');

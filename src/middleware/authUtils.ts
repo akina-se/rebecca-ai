@@ -1,7 +1,6 @@
 import { Request } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
-import config from '../config';
 
 const client = new OAuth2Client();
 
