@@ -52,7 +52,7 @@ Rebecca is designed as a state-of-the-art personal AI developed by Gemitech.
 6. **Proactive News Post**
    - Fetches news feeds, generates a Gyaru-perspective opinion, attaches a contextually relevant image, and spontaneously posts it to the timeline.
 7. **Dynamic Rate Limit**
-   - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions and centralized Express middleware (`express-rate-limit`).
+   - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions.
 
 ## 4. Database Schema & Data Types (Firestore)
 

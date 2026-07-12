@@ -115,8 +115,12 @@ GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
 
 # Rate Limits
 GLOBAL_DAILY_LIMIT=500
-GLOBAL_MINUTE_LIMIT=15
 SPAM_MINUTE_LIMIT=3
+
+# Auth Configuration
+BATCH_SECRET_KEY=your_secret_key_here
+OIDC_EXPECTED_AUDIENCE=https://your-cloud-run-service-url.a.run.app
+OIDC_EXPECTED_ISSUER=https://accounts.google.com
 ```
 
 ### 3. Local Execution & Testing
