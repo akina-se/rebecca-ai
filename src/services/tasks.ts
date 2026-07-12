@@ -55,6 +55,10 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
                 'Content-Type': 'application/json',
             },
             body: Buffer.from(JSON.stringify(payload)).toString('base64'),
+            oidcToken: {
+                serviceAccountEmail: config.gcp.serviceAccountEmail || `${project}@appspot.gserviceaccount.com`,
+                audience: config.gcp.workerUrl
+            }
         },
     };
 
