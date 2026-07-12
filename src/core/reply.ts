@@ -12,14 +12,14 @@ const sanitizeForLog = (value: unknown): string => {
  * Processes a reply task, fetching necessary context, calling the AI model, and posting the reply.
  */
 export const processReplyTask = async (deps: AppDependencies, tweetId: string, text: string, authorId: string) => {
-    // 1. Idempotency Check
+    // Prevent duplicate processing of the same mention
     const alreadyProcessed = await deps.firestore.hasProcessedMention(tweetId);
     if (alreadyProcessed) {
         console.log(`Mention ${sanitizeForLog(tweetId)} already processed. Skipping.`);
         return { status: 'already_processed' };
     }
 
-    // 2. Rate Limit Check (Domain level: per X user & Global LLM budget)
+    // Enforce rate limits to prevent abuse and manage LLM API budget
     const rateLimit = await checkAndIncrementRateLimits(deps, authorId);
     if (!rateLimit.allowed) {
         console.log(`Rate limit exceeded for user ${sanitizeForLog(authorId)}, reason: ${sanitizeForLog(rateLimit.reason)}`);
@@ -73,7 +73,7 @@ export const processReplyTask = async (deps: AppDependencies, tweetId: string, t
         console.error('Failed to process mention image', e);
     }
 
-    // 3. RAG Retrieval & Context Injection (Build prompt)
+    // Retrieve relevant past memories and inject context to build the system prompt
     const extendedPrompt = await deps.firestore.getExtendedPrompt();
     const timelineSummary = await deps.firestore.getTimelineSummary();
     
@@ -87,26 +87,26 @@ export const processReplyTask = async (deps: AppDependencies, tweetId: string, t
     const lang = await deps.gemini.detectLanguage(processedText);
     const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
 
-    // 4. Generate AI Reply
+    // Generate the AI response based on the contextualized prompt
     const aiResponseText = await deps.gemini.generateReply(systemPrompt, workingMemory, processedText);
 
-    // 5. Post to X
+    // Publish the generated reply back to the user on X
     await deps.xApi.replyToMention(tweetId, aiResponseText);
     
-    // 5.5 Mark as processed for idempotency
+    // Record the mention as processed to ensure idempotency
     await deps.firestore.markMentionProcessed(tweetId);
 
-    // 6. Save Interaction to Memory (Working Memory / Episodic Buffer)
+    // Persist the conversation history in the user's episodic buffer
     await saveInteraction(deps, authorId, processedText, aiResponseText);
 
-    // 6.5. Save RAG Memory (Long-term Episodic Vector)
+    // Store a vectorized representation of the interaction for long-term retrieval
     const combinedText = `User: ${processedText}\nRebecca: ${aiResponseText}`;
     const memoryVector = await deps.gemini.generateEmbedding(combinedText);
     if (memoryVector && memoryVector.length > 0) {
         await deps.firestore.saveRagMemory(authorId, combinedText, memoryVector);
     }
 
-    // 7. Save Raw Log for Analysis
+    // Preserve the raw logs for future analysis or model evolution
     await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
 
     console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
