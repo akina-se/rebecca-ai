@@ -30,8 +30,8 @@ describe('Config', () => {
         expect(config.gemini.judgeModel).toBe('gemma-4-31b-it');
         expect(config.gemini.languageModel).toBe('gemma-4-31b-it');
         expect(Number(config.rag.maxMemories)).toBe(100);
-        expect(Number(config.limits.globalDailyLimit)).toBe(45);
-        expect(Number(config.limits.globalMinuteLimit)).toBe(5);
+        expect(Number(config.limits.globalDailyLimit)).toBe(500);
+        expect(Number(config.limits.globalMinuteLimit)).toBe(15);
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);
         expect(Number(config.evolution.lookbackDays)).toBe(7);
         expect(Number(config.xApi.followersMaxResults)).toBe(1000);
