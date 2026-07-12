@@ -213,18 +213,18 @@ const checkAndConsumeRateLimit = async (
         // Reset minute count if the minute string has changed
         const userMinuteCount = userData.lastMinute === minuteStr ? (userData.minute || 0) : 0;
 
-        // 1. Check Spam Minute Limit
+        // Check Spam Minute Limit
         if (userMinuteCount >= limits.spamMinute) {
             return { allowed: false, reason: 'user_minute_spam' };
         }
 
-        // 2. Check Global Daily Limit
+        // Check Global Daily Limit
         const globalDailyCount = globalData?.daily || 0;
         if (globalDailyCount >= limits.globalDaily) {
             return { allowed: false, reason: 'global_daily' };
         }
 
-        // 3. Dynamic User Daily Limit
+        // Calculate Dynamic User Daily Limit based on active user count
         // If this is the first action by this user today, we consider them a new DAU for calculation
         const userDailyCount = userData?.daily || 0;
         const isNewDau = userDailyCount === 0;

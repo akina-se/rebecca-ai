@@ -27,15 +27,14 @@ export const batchRateLimiter = rateLimit({
 /**
  * Rate limiting for Cloud Tasks worker endpoints.
  * 
- * Note from Google Senior Engineer perspective: 
  * Cloud Tasks inherently manages the dispatch rate via queue configurations (maxDispatchesPerSecond).
  * Applying strict IP-based rate limits here can lead to a "retry storm" where Cloud Tasks 
  * continually retries blocked requests, overwhelming the network layer.
  * Furthermore, worker traffic usually comes from a small pool of Google internal IPs, 
  * so IP-based limiting is likely to cause false positives.
  * 
- * Therefore, we either omit the rate limit entirely, or set an exceptionally high fallback limit.
- * We choose to set a very high fallback limit just to prevent catastrophic infinite loops.
+ * Therefore, we set an exceptionally high fallback limit acting as a circuit breaker 
+ * for catastrophic infinite loops, rather than a strict rate limiter.
  */
 export const workerRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
