@@ -21,16 +21,12 @@ export const verifyServerToServerAuth = async (
 ): Promise<boolean> => {
     // Try OIDC Token Verification (Cloud Scheduler / Cloud Tasks)
     const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
-    const parts = authHeader.split(' ');
-    const token = (parts.length === 2 && parts[0].toLowerCase() === 'bearer') ? parts[1] : '';
+    const token = authHeader.replace(/^bearer\s+/i, '').trim();
 
     if (expectedAudience) {
         try {
-            if (!token) {
-                throw new Error('No OIDC token provided in Authorization header');
-            }
             const ticket = await client.verifyIdToken({
-                idToken: token,
+                idToken: token, // Pass token directly, even if empty. Let library handle validation.
                 audience: expectedAudience,
             });
             const payload = ticket.getPayload();
@@ -39,19 +35,17 @@ export const verifyServerToServerAuth = async (
                 return true;
             }
         } catch (e) {
-            console.warn('OIDC token verification failed:', e);
+            console.warn('OIDC token verification failed:', (e as Error).message);
         }
     }
 
     // Shared Secret Fallback (for local testing or alternative trigger)
     if (fallbackSecret) {
         try {
-            const secretHeader = typeof req.headers[secretHeaderName.toLowerCase()] === 'string' ? req.headers[secretHeaderName.toLowerCase()] : '';
-            if (!secretHeader) {
-                throw new Error('No secret header provided');
-            }
+            const secretHeader = typeof req.headers[secretHeaderName.toLowerCase()] === 'string' ? req.headers[secretHeaderName.toLowerCase()] as string : '';
             
-            const providedBuffer = Buffer.from(secretHeader as string, 'utf8');
+            // Perform comparison regardless of whether secretHeader is empty or not
+            const providedBuffer = Buffer.from(secretHeader, 'utf8');
             const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
             
             if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
