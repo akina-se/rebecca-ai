@@ -88,7 +88,14 @@ export const processReplyTask = async (deps: AppDependencies, tweetId: string, t
     const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
 
     // Generate the AI response based on the contextualized prompt
-    const aiResponseText = await deps.gemini.generateReply(systemPrompt, workingMemory, processedText);
+    let aiResponseText = await deps.gemini.generateReply(systemPrompt, workingMemory, processedText);
+    console.log(`Generated AI Reply for tweet ${tweetId}: ${aiResponseText}`);
+
+    // Fallback: X API limits Japanese text effectively to 140 characters.
+    if (aiResponseText.length > 138) {
+        aiResponseText = aiResponseText.substring(0, 137) + '…';
+        console.log(`Truncated AI Reply to 138 characters: ${aiResponseText}`);
+    }
 
     // Publish the generated reply back to the user on X
     await deps.xApi.replyToMention(tweetId, aiResponseText);

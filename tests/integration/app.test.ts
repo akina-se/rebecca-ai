@@ -64,7 +64,7 @@ describe('Integration Tests', () => {
         it('should fetch mentions and enqueue tasks', async () => {
             (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
                 data: [
-                    { id: '12345', text: '@rebecca_ai Hello', author_id: 'user_1' }
+                    { id: '12345', text: '@rebecca_ai Hello', authorId: 'user_1' }
                 ],
                 meta: { resultCount: 1 }
             });
@@ -161,9 +161,10 @@ describe('Integration Tests', () => {
 
         it('should process reply task with image attachment', async () => {
             (xApi.getTweetDetails as jest.Mock).mockResolvedValueOnce({
-                data: { text: 'hello image', attachments: { media_keys: ['media_1'] } },
+                data: { text: 'hello image', attachments: { mediaKeys: ['media_1'] } },
                 includes: { media: [{ media_key: 'media_1', type: 'photo', url: 'https://example.com/image.jpg' }] }
             });
+            const originalFetch = global.fetch;
             global.fetch = jest.fn().mockResolvedValueOnce({
                 ok: true,
                 arrayBuffer: jest.fn().mockResolvedValueOnce(new ArrayBuffer(8)),
@@ -173,6 +174,7 @@ describe('Integration Tests', () => {
             const payload = { tweetId: 'with_image', text: 'hello image', authorId: 'user_1' };
             const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
             
+            global.fetch = originalFetch; // Restore fetch
             expect(response.status).toBe(200);
             expect(gemini.generateReply).toHaveBeenCalled();
         });
@@ -258,7 +260,14 @@ describe('Integration Tests', () => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
         it('should return 200', async () => {
+            const originalFetch = global.fetch;
+            global.fetch = jest.fn().mockResolvedValue({
+                text: jest.fn().mockResolvedValue('<rss><channel><item><title>Test News</title><link>http://example.com</link><description>Test</description></item></channel></rss>')
+            }) as any;
+            
             const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
+            
+            global.fetch = originalFetch;
             expect(response.status).toBe(200);
         }, 15000); // Increased timeout for external RSS fetch
     });
