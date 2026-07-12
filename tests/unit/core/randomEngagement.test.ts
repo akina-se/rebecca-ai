@@ -117,7 +117,7 @@ describe('Random Engagement Batch', () => {
             data: [{ 
                 id: 't3', 
                 text: 'look at this', 
-                attachments: { media_keys: ['media1'] } 
+                attachments: { mediaKeys: ['media1'] } 
             }],
             includes: {
                 media: [{ type: 'photo', url: 'http://example.com/photo.jpg' }]
