@@ -24,8 +24,11 @@ export const verifyServerToServerAuth = async (
     const parts = authHeader.split(' ');
     const token = (parts.length === 2 && parts[0].toLowerCase() === 'bearer') ? parts[1] : '';
 
-    if (token && expectedAudience) {
+    if (expectedAudience) {
         try {
+            if (!token) {
+                throw new Error('No OIDC token provided in Authorization header');
+            }
             const ticket = await client.verifyIdToken({
                 idToken: token,
                 audience: expectedAudience,
@@ -44,13 +47,15 @@ export const verifyServerToServerAuth = async (
     if (fallbackSecret) {
         try {
             const secretHeader = typeof req.headers[secretHeaderName.toLowerCase()] === 'string' ? req.headers[secretHeaderName.toLowerCase()] : '';
-            if (secretHeader) {
-                const providedBuffer = Buffer.from(secretHeader as string, 'utf8');
-                const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
-                
-                if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
-                    return true;
-                }
+            if (!secretHeader) {
+                throw new Error('No secret header provided');
+            }
+            
+            const providedBuffer = Buffer.from(secretHeader as string, 'utf8');
+            const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
+            
+            if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
+                return true;
             }
         } catch (err) {
             console.warn('Error during secret comparison', err);
