@@ -24,6 +24,7 @@ const deps: AppDependencies = {
 import path from 'path';
 
 const app = express();
+app.set('trust proxy', 1); // Trust the first proxy (e.g. Google Cloud Run) to fix express-rate-limit errors
 app.use(express.json());
 
 // Serve static files such as Terms of Service and Privacy Policy
