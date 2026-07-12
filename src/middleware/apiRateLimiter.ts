@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import config from '../config';
 
 /**
  * Rate limiting for public endpoints (e.g., static files, potential future webhooks).
@@ -6,7 +7,7 @@ import rateLimit from 'express-rate-limit';
  */
 export const publicRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
+    max: config.limits.publicIpRateLimit, // Limit each IP to configured requests per window
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests from this IP, please try again later.' }
