@@ -33,6 +33,7 @@ jest.mock('../../src/services/gemini', () => ({
     generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
     inferImageSearchQuery: jest.fn().mockResolvedValue(null),
+    analyzeImageCaption: jest.fn().mockResolvedValue('Mock image caption')
 }));
 
 jest.mock('../../src/services/xApi', () => ({
@@ -148,6 +149,49 @@ describe('Integration Tests', () => {
 
             // Check if reply was posted
             expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');
+        });
+
+        it('should skip if mention already processed', async () => {
+            (firestore.hasProcessedMention as jest.Mock).mockResolvedValueOnce(true);
+            const payload = { tweetId: 'dup', text: 'hello', authorId: 'user_1' };
+            const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
+            expect(response.status).toBe(200);
+            expect(gemini.generateReply).not.toHaveBeenCalled();
+        });
+
+        it('should process reply task with image attachment', async () => {
+            (xApi.getTweetDetails as jest.Mock).mockResolvedValueOnce({
+                data: { text: 'hello image', attachments: { media_keys: ['media_1'] } },
+                includes: { media: [{ media_key: 'media_1', type: 'photo', url: 'https://example.com/image.jpg' }] }
+            });
+            global.fetch = jest.fn().mockResolvedValueOnce({
+                ok: true,
+                arrayBuffer: jest.fn().mockResolvedValueOnce(new ArrayBuffer(8)),
+                headers: { get: jest.fn().mockReturnValue('image/jpeg') }
+            }) as any;
+
+            const payload = { tweetId: 'with_image', text: 'hello image', authorId: 'user_1' };
+            const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
+            
+            expect(response.status).toBe(200);
+            expect(gemini.generateReply).toHaveBeenCalled();
+        });
+
+        it('should handle errors when analyzing user profile gracefully', async () => {
+            (firestore.getUserDoc as jest.Mock).mockResolvedValueOnce(null);
+            (xApi.getUserProfile as jest.Mock).mockResolvedValueOnce({ data: { description: 'bio' } });
+            (gemini.analyzeUserProfile as jest.Mock).mockRejectedValueOnce(new Error('Analysis failed'));
+
+            const payload = { tweetId: 'err_profile', text: 'hello', authorId: 'user_1' };
+            const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
+            
+            expect(response.status).toBe(200);
+            expect(gemini.generateReply).toHaveBeenCalled(); // Should continue processing
+        });
+
+        it('should block unauthorized access to worker', async () => {
+            const response = await request(app).post('/worker/reply').send({});
+            expect(response.status).toBe(401);
         });
 
         it('should initialize new user profile on first interaction', async () => {
