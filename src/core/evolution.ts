@@ -1,5 +1,4 @@
-import * as firestore from '../services/firestore';
-import * as gemini from '../services/gemini';
+import { AppDependencies } from '../types';
 import config from '../config';
 
 /**
@@ -9,10 +8,10 @@ import config from '../config';
  * 
  * @returns A promise resolving to the status and result of the evolution batch.
  */
-const runGlobalEvolutionBatch = async () => {
+const runGlobalEvolutionBatch = async (deps: AppDependencies) => {
     console.log("Starting Global Evolution Batch...");
     try {
-        const logs = await firestore.getRecentConversationLogs(config.evolution.lookbackDays);
+        const logs = await deps.firestore.getRecentConversationLogs(config.evolution.lookbackDays);
         if (logs.length === 0) {
             console.log("No recent logs found. Skipping evolution.");
             return { status: 'skipped', reason: 'No logs found' };
@@ -21,7 +20,7 @@ const runGlobalEvolutionBatch = async () => {
         const logsText = logs.map(l => `User: ${l.userText}\nAI: ${l.aiText}`).join('\n---\n');
 
         console.log(`Generating evolution prompt from ${logs.length} logs...`);
-        const candidatePrompt = await gemini.generateEvolutionPrompt(logsText);
+        const candidatePrompt = await deps.gemini.generateEvolutionPrompt(logsText);
         if (!candidatePrompt) {
             console.log("Failed to generate candidate prompt.");
             return { status: 'failed', reason: 'Generation failed' };
@@ -29,11 +28,11 @@ const runGlobalEvolutionBatch = async () => {
         console.log("Candidate Prompt:\n" + candidatePrompt);
 
         console.log("Auditing candidate prompt...");
-        const auditResult = await gemini.auditEvolutionPrompt(candidatePrompt);
+        const auditResult = await deps.gemini.auditEvolutionPrompt(candidatePrompt);
 
         if (auditResult.pass) {
             console.log("Audit PASSED! Saving new extended prompt.");
-            await firestore.saveExtendedPrompt(candidatePrompt);
+            await deps.firestore.saveExtendedPrompt(candidatePrompt);
             return { status: 'success', prompt: candidatePrompt };
         } else {
             console.log(`Audit FAILED. Reason: ${auditResult.reason}`);

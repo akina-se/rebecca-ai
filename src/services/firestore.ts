@@ -154,6 +154,18 @@ const getUserMinuteLimit = async (userId: string, timeKey: string): Promise<numb
 };
 
 /**
+ * Retrieves the daily active users (DAU) count for a specific date.
+ * 
+ * @param dateStr - The date string to check.
+ * @returns A promise that resolves to the DAU count. Defaults to 1 if not found.
+ */
+const getDailyActiveUsersCount = async (dateStr: string): Promise<number> => {
+    const docRef = firestore.collection('system_stats').doc(`dau_${dateStr}`);
+    const doc = await docRef.get();
+    return doc.exists ? (doc.data()?.count || 1) : 1;
+};
+
+/**
  * Retrieves all registered users from the database.
  * 
  * @returns A promise that resolves to an array of user data including their IDs.
@@ -166,15 +178,80 @@ const getAllUsers = async (): Promise<(FirestoreUser & { id: string })[]> => {
 };
 
 /**
- * Retrieves the daily active users (DAU) count for a specific date.
+ * Transactionally checks and consumes rate limits for a user.
+ * Combines global daily limits, user daily limits (dynamic based on DAU), and spam minute limits.
  * 
- * @param dateStr - The date string to check.
- * @returns A promise that resolves to the DAU count. Defaults to 1 if not found.
+ * @param userId - The ID of the user.
+ * @param dateStr - The current date string (YYYY-MM-DD).
+ * @param monthStr - The current month string (YYYY-MM).
+ * @param minuteStr - The current minute string (YYYY-MM-DDTHH:mm).
+ * @param limits - Configuration object containing maximum limits.
+ * @returns A promise resolving to { allowed: true } or { allowed: false, reason: string }.
  */
-const getDailyActiveUsersCount = async (dateStr: string): Promise<number> => {
-    const docRef = firestore.collection('system_stats').doc(`dau_${dateStr}`);
-    const doc = await docRef.get();
-    return doc.exists ? (doc.data()?.count || 1) : 1;
+const checkAndConsumeRateLimit = async (
+    userId: string,
+    dateStr: string,
+    monthStr: string,
+    minuteStr: string,
+    limits: { globalDaily: number; spamMinute: number }
+): Promise<{ allowed: boolean; reason?: string }> => {
+    const globalDocRef = firestore.collection('rate_limits').doc(`global_${dateStr}`);
+    const userDocRef = firestore.collection('rate_limits').doc(`user_${userId}_${dateStr}`);
+    const dauDocRef = firestore.collection('system_stats').doc(`dau_${dateStr}`);
+
+    return firestore.runTransaction(async (t) => {
+        const [globalDoc, userDoc, dauDoc] = await Promise.all([
+            t.get(globalDocRef),
+            t.get(userDocRef),
+            t.get(dauDocRef)
+        ]);
+
+        const globalData = globalDoc.exists ? globalDoc.data() : { daily: 0 };
+        const userData = userDoc.exists ? userDoc.data() : { daily: 0, minute: 0, lastMinute: minuteStr };
+        let dauCount = dauDoc.exists ? (dauDoc.data()?.count || 1) : 1;
+
+        // Reset minute count if the minute string has changed
+        const userMinuteCount = userData.lastMinute === minuteStr ? (userData.minute || 0) : 0;
+
+        // Check Spam Minute Limit
+        if (userMinuteCount >= limits.spamMinute) {
+            return { allowed: false, reason: 'user_minute_spam' };
+        }
+
+        // Check Global Daily Limit
+        const globalDailyCount = globalData?.daily || 0;
+        if (globalDailyCount >= limits.globalDaily) {
+            return { allowed: false, reason: 'global_daily' };
+        }
+
+        // Calculate Dynamic User Daily Limit based on active user count
+        // If this is the first action by this user today, we consider them a new DAU for calculation
+        const userDailyCount = userData?.daily || 0;
+        const isNewDau = userDailyCount === 0;
+        if (isNewDau) {
+            dauCount += 1;
+        }
+
+        let dynamicUserLimit = Math.floor(limits.globalDaily / dauCount);
+        if (dynamicUserLimit < 3) dynamicUserLimit = 3;
+
+        if (userDailyCount >= dynamicUserLimit) {
+            return { allowed: false, reason: 'user_daily' };
+        }
+
+        // Consume quotas
+        t.set(globalDocRef, { daily: globalDailyCount + 1 }, { merge: true });
+        t.set(userDocRef, { daily: userDailyCount + 1, minute: userMinuteCount + 1, lastMinute: minuteStr }, { merge: true });
+        
+        if (isNewDau) {
+            t.set(dauDocRef, { count: dauCount }, { merge: true });
+        }
+
+        // We also increment monthly globally (could be non-transactional but kept here for simplicity if needed,
+        // though monthly is less race-condition prone. We'll leave it out of this strict transaction and let rateLimiter handle it if we want).
+
+        return { allowed: true };
+    });
 };
 
 /**
@@ -373,6 +450,29 @@ const findRagMemories = async (userId: string, queryVector: number[], limit = 3)
 };
 
 /**
+ * Checks if a specific mention (tweet) has already been processed to ensure idempotency.
+ * 
+ * @param tweetId - The ID of the tweet.
+ * @returns A promise resolving to true if already processed, false otherwise.
+ */
+const hasProcessedMention = async (tweetId: string): Promise<boolean> => {
+    const docRef = firestore.collection('processed_mentions').doc(tweetId);
+    const doc = await docRef.get();
+    return doc.exists;
+};
+
+/**
+ * Marks a specific mention (tweet) as processed to prevent duplicate processing.
+ * 
+ * @param tweetId - The ID of the tweet.
+ * @returns A promise that resolves when the write completes.
+ */
+const markMentionProcessed = async (tweetId: string): Promise<void> => {
+    const docRef = firestore.collection('processed_mentions').doc(tweetId);
+    await docRef.set({ processedAt: FieldValue.serverTimestamp() });
+};
+
+/**
  * Retrieves the last processed mention ID from the system state.
  * 
  * @returns A promise that resolves to the mention ID or null if not found.
@@ -423,10 +523,10 @@ const saveImageMetadata = async (hash: string, url: string, caption: string, emb
  * @param hash - The hash identifier of the image.
  * @returns A promise that resolves to the image document or null if not found.
  */
-const getImageByHash = async (hash: string): Promise<ImageDoc | null> => {
+const getImageByHash = async (hash: string): Promise<ImageDocWithId | null> => {
     const docRef = firestore.collection('images').doc(hash);
     const doc = await docRef.get();
-    return doc.exists ? (doc.data() as ImageDoc) : null;
+    return doc.exists ? { id: doc.id, ...(doc.data() as ImageDoc) } : null;
 };
 
 /**
@@ -554,6 +654,7 @@ export {
   getUserDailyLimit,
   incrementUserMinuteLimit,
   getUserMinuteLimit,
+  checkAndConsumeRateLimit,
   getAllUsers,
   getDailyActiveUsersCount,
   saveRawConversationLog,
@@ -568,6 +669,8 @@ export {
   findRagMemories,
   getLastMentionId,
   setLastMentionId,
+  hasProcessedMention,
+  markMentionProcessed,
   saveImageMetadata,
   getImageByHash,
   findImageByVector,

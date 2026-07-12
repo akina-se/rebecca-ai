@@ -1,6 +1,30 @@
 import { Timestamp } from '@google-cloud/firestore';
 
 /**
+ * Service Interfaces (Dependency Inversion)
+ * These interfaces define the contracts that the Infrastructure layer must fulfill.
+ * The Core Domain relies ONLY on these interfaces, completely decoupling it from specific implementations.
+ */
+
+export * from './interfaces';
+import {
+    IFirestoreService,
+    IGeminiService,
+    IXApiService,
+    ITasksService,
+    IStorageService,
+    INewsFetcherService
+} from './interfaces';
+
+export interface AppDependencies {
+    firestore: IFirestoreService;
+    gemini: IGeminiService;
+    xApi: IXApiService;
+    tasks: ITasksService;
+    storage: IStorageService;
+    newsFetcher: INewsFetcherService;
+}
+/**
  * Represents the core profile of a user.
  */
 export interface UserCoreProfile {
@@ -20,6 +44,7 @@ export interface ConversationLogEntry {
  * Represents a user document as stored in Firestore.
  */
 export interface FirestoreUser {
+    id?: string;
     coreProfile: UserCoreProfile;
     working_memory?: ConversationLogEntry[];
     episodicBuffer: ConversationLogEntry[];

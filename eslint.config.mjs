@@ -21,6 +21,6 @@ export default tseslint.config(
     }
   },
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'artifacts/**', 'jest.config.js']
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'artifacts/**', 'jest.config.js', 'backend/**', 'frontend/**', 'scratch/**']
   }
 );

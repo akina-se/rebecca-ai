@@ -10,6 +10,11 @@ export default {
   port: process.env.PORT || 8080,
 
   /**
+   * Secret key for batch endpoints when not using OIDC.
+   */
+  batchSecret: process.env.BATCH_SECRET_KEY,
+
+  /**
    * Google Cloud Platform configuration.
    */
   gcp: {
@@ -27,9 +32,9 @@ export default {
     appSecret: process.env.X_API_SECRET,
     accessToken: process.env.X_ACCESS_TOKEN,
     accessSecret: process.env.X_ACCESS_SECRET,
-    bearerToken: process.env.X_BEARER_TOKEN,
     myUserId: process.env.X_MY_USER_ID,
     targetListId: process.env.X_TARGET_LIST_ID,
+    followersMaxResults: parseInt(process.env.X_FOLLOWERS_MAX_RESULTS || '1000', 10),
   },
 
   /**
@@ -64,9 +69,9 @@ export default {
    * Global rate limiting configurations.
    */
   limits: {
-    globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '45', 10),
-    globalMinuteLimit: parseInt(process.env.GLOBAL_MINUTE_LIMIT || '5', 10),
+    globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '500', 10),
     spamMinuteLimit: parseInt(process.env.SPAM_MINUTE_LIMIT || '3', 10),
+    publicIpRateLimit: parseInt(process.env.PUBLIC_IP_RATE_LIMIT || '100', 10),
   },
 
   /**
@@ -75,9 +80,4 @@ export default {
   evolution: {
     lookbackDays: parseInt(process.env.EVOLUTION_LOOKBACK_DAYS || '7', 10),
   },
-
-  /**
-   * Interval for internal polling in minutes. Set to 0 to disable.
-   */
-  pollingIntervalMinutes: parseInt(process.env.POLLING_INTERVAL_MINUTES || '0', 10),
 };

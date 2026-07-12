@@ -1,299 +1,44 @@
 import express from 'express';
 import config from './config';
-import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch  } from './core/memory';
-import { runGlobalEvolutionBatch  } from './core/evolution';
+import * as firestoreService from './services/firestore';
+import * as geminiService from './services/gemini';
+import * as xApiService from './services/xApi';
+import * as tasksService from './services/tasks';
+import * as storageService from './services/storage';
+import * as newsFetcherUtility from './utils/newsFetcher';
+import { AppDependencies } from './types';
 
+import { createBatchRoutes } from './routes/batchRoutes';
+import { createWorkerRoutes } from './routes/workerRoutes';
+import { publicRateLimiter, batchRateLimiter, workerRateLimiter } from './middleware/apiRateLimiter';
 
-import { buildSystemPrompt  } from './core/contextInjector';
-import { checkAndIncrementRateLimits  } from './core/rateLimiter';
-import * as firestore from './services/firestore';
-import * as gemini from './services/gemini';
-import * as xApi from './services/xApi';
-import * as tasks from './services/tasks';
-import { downloadImage } from './utils/image';
+const deps: AppDependencies = {
+    firestore: firestoreService,
+    gemini: geminiService,
+    xApi: xApiService,
+    tasks: tasksService,
+    storage: storageService,
+    newsFetcher: newsFetcherUtility
+};
+
+import path from 'path';
 
 const app = express();
 app.use(express.json());
-import path from 'path';
 
-/**
- * Serves static files such as Terms of Service and Privacy Policy.
- */
+// Serve static files such as Terms of Service and Privacy Policy
+// Apply public rate limiter to static files or any other public entry points
+app.use(publicRateLimiter);
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-/**
- * Polls the X API for new mentions and enqueues tasks to reply to them.
- *
- * @returns {Promise<{count: number, newestId?: string}>} An object containing the count of new mentions and the ID of the newest mention.
- */
-const pollMentions = async () => {
-    try {
-        console.log("Polling mentions from X API...");
-        const sinceId = await firestore.getLastMentionId();
-        const mentionsRes = await xApi.getMentions(sinceId || undefined);
-        
-        if (!mentionsRes.data || mentionsRes.data.length === 0) {
-            console.log("No new mentions found.");
-            return { count: 0 };
-        }
-
-        console.log(`Found ${mentionsRes.data.length} new mentions.`);
-        let newestId = sinceId;
-
-        for (const tweet of mentionsRes.data) {
-            const tweetId = tweet.id;
-            const text = tweet.text;
-            const tweetObj = tweet as unknown as Record<string, unknown>;
-            const authorObj = tweetObj.author as Record<string, string> | undefined;
-            const userObj = tweetObj.user as Record<string, string> | undefined;
-            const authorId = tweet.author_id || authorObj?.id || userObj?.id || tweetObj.user_id;
-
-            // Update newestId
-            if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
-                newestId = tweetId;
-            }
-
-            if (!authorId) {
-                console.warn(`Could not determine author ID for tweet ${tweetId}. Tweet object:`, JSON.stringify(tweet));
-                continue;
-            }
-
-            // Ignore self-mentions
-            if (authorId === config.xApi.myUserId) {
-                console.log(`Ignoring self-mention ${tweetId}`);
-                continue;
-            }
-
-            try {
-                // Enqueue with intentional delay (60 to 180 seconds)
-                const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-                await tasks.enqueueReplyTask({
-                    tweetId,
-                    text,
-                    authorId
-                }, delaySeconds);
-                console.log(`Enqueued mention ${tweetId} from ${authorId}`);
-            } catch (e) {
-                console.error(`Failed to enqueue task for mention ${tweetId}`, e);
-            }
-        }
-
-        // Save the newest mention ID to avoid fetching them again
-        if (newestId && newestId !== sinceId) {
-            await firestore.setLastMentionId(newestId);
-            console.log(`Updated last_mention_id to ${newestId}`);
-        }
-
-        return { count: mentionsRes.data.length, newestId };
-    } catch (error) {
-        console.error("Error during pollMentions:", error);
-        throw error;
-    }
-};
-
-/**
- * Express endpoint to trigger the mentions polling batch process.
- * Typically invoked by Cloud Scheduler or similar services.
- */
-app.get('/batch/mentions', async (req, res) => {
-    try {
-        const result = await pollMentions();
-        res.status(200).json({ status: 'Mentions Polling Batch completed', result });
-    } catch (error) {
-        console.error('Mentions Polling Batch failed:', error);
-        res.status(500).send('Mentions Polling Batch failed');
-    }
-});
-
-/**
- * Express endpoint for the worker to process and generate replies.
- * Acknowledges Cloud Tasks and processes the reply asynchronously.
- */
-app.post('/worker/reply', async (req, res) => {
-    res.status(200).send('OK'); // Acknowledge Cloud Tasks
-
-    const { tweetId, text, authorId } = req.body;
-    if (!tweetId || !authorId) return;
-
-    try {
-        // 1. Rate Limit Check
-        const rateLimit = await checkAndIncrementRateLimits(authorId);
-        if (!rateLimit.allowed) {
-            console.log(`Rate limit exceeded for user ${authorId.replace(/[\r\n]/g, '')}, reason: ${rateLimit.reason.replace(/[\r\n]/g, '')}`);
-            return;
-        }
-
-        // 2. Fetch User Data & Memory
-        let userData = await firestore.getUserDoc(authorId);
-        let isFirstTime = false;
-        if (!userData) {
-            userData = { episodicBuffer: [], coreProfile: {} };
-            isFirstTime = true;
-        }
-
-        if (isFirstTime) {
-            try {
-                // Analyze the user's X profile only on their first interaction to create the initial coreProfile
-                const profileRes = await xApi.getUserProfile(authorId);
-                const desc = profileRes?.data?.description;
-                if (desc) {
-                    const parsedProfile = await gemini.analyzeUserProfile(desc);
-                    userData.coreProfile = parsedProfile;
-                    // Inject a single history log hinting that the profile has been read
-                    userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
-                }
-            } catch(e) {
-                console.error("Failed to fetch/analyze user profile on first time", e);
-            }
-        }
-
-        const workingMemory = getWorkingMemory(userData.episodicBuffer);
-
-        let processedText = text;
-        try {
-            const tweetDetails = await xApi.getTweetDetails(tweetId);
-            const mediaKeys = tweetDetails?.data?.attachments?.media_keys;
-            const mediaIncludes = tweetDetails.includes?.media || [];
-
-            const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
-            if (hasMedia) {
-                for (const media of mediaIncludes) {
-                    if (media.type !== 'photo' || !media.url) continue;
-
-                    const { buffer, mimeType } = await downloadImage(media.url);
-                    const imageCaption = await gemini.analyzeImageCaption(buffer, mimeType);
-                    
-                    if (imageCaption) {
-                        processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Failed to process mention image', e);
-        }
-
-        // 3. RAG Retrieval & Context Injection (Build prompt)
-        const extendedPrompt = await firestore.getExtendedPrompt();
-        const timelineSummary = await firestore.getTimelineSummary();
-        
-        let ragMemories = [];
-        const query = await gemini.generateSearchQuery(workingMemory.map(m => `${m.role}: ${m.content}`).join('\n'), processedText);
-        if (query) {
-            const queryEmb = await gemini.generateEmbedding(query);
-            ragMemories = await firestore.findRagMemories(authorId, queryEmb);
-        }
-
-        const lang = await gemini.detectLanguage(processedText);
-        const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
-
-        // 4. Generate AI Reply
-        const aiResponseText = await gemini.generateReply(systemPrompt, workingMemory, processedText);
-
-        // 5. Post to X
-        await xApi.replyToMention(tweetId, aiResponseText);
-
-        // 6. Save Interaction to Memory (Working Memory / Episodic Buffer)
-        await saveInteraction(authorId, processedText, aiResponseText);
-
-        // 6.5. Save RAG Memory (Long-term Episodic Vector)
-        const combinedText = `User: ${processedText}\nRebecca: ${aiResponseText}`;
-        const memoryVector = await gemini.generateEmbedding(combinedText);
-        if (memoryVector && memoryVector.length > 0) {
-            await firestore.saveRagMemory(authorId, combinedText, memoryVector);
-        }
-
-        // 7. Save Raw Log for Analysis
-        await firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
-
-        console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
-    } catch (error) {
-        console.error('Error processing reply in worker:', error);
-    }
-});
-
-/**
- * Express endpoint to trigger the global dreaming batch process (memory consolidation).
- * Typically invoked by Cloud Scheduler.
- */
-app.get('/batch/dreaming', async (req, res) => {
-    res.status(200).send('Batch started');
-    try {
-        await runGlobalDreamingBatch();
-        console.log('Global Dreaming Batch completed successfully.');
-    } catch (error) {
-        console.error('Global Dreaming Batch failed:', error);
-    }
-});
-
-/**
- * Express endpoint to trigger the global evolution batch process (trend analysis).
- * Typically invoked by Cloud Scheduler (e.g., Sunday 5AM).
- */
-app.get('/batch/evolution', async (req, res) => {
-    res.status(200).send('Evolution Batch started');
-    try {
-        await runGlobalEvolutionBatch();
-        console.log('Global Evolution Batch completed successfully.');
-    } catch (error) {
-        console.error('Global Evolution Batch failed:', error);
-    }
-});
-
-/**
- * Express endpoint to trigger the proactive news posting batch process.
- */
-app.get('/batch/news-post', async (req, res) => {
-    try {
-        const { runProactiveNewsPostBatch } = await import('./core/news');
-        const result = await runProactiveNewsPostBatch();
-        res.json(result);
-    } catch (e) {
-        console.error('Failed to run news post batch:', e);
-        res.status(500).json({ error: (e as Error).message });
-    }
-});
-
-/**
- * Express endpoint to trigger the stealth onboarding batch process.
- */
-app.get('/batch/stealth-onboarding', async (req, res) => {
-    try {
-        const { runStealthOnboardingBatch } = await import('./core/onboarding');
-        const result = await runStealthOnboardingBatch();
-        res.json(result);
-    } catch (e) {
-        console.error('Failed to run stealth onboarding batch:', e);
-        res.status(500).json({ error: (e as Error).message });
-    }
-});
-
-/**
- * Express endpoint to trigger the random engagement batch process.
- */
-app.get('/batch/random-engagement', async (req, res) => {
-    try {
-        const { runRandomEngagementBatch } = await import('./core/randomEngagement');
-        const result = await runRandomEngagementBatch();
-        res.json(result);
-    } catch (e) {
-        console.error('Failed to run random engagement batch:', e);
-        res.status(500).json({ error: (e as Error).message });
-    }
-});
+// Mount routes with specific rate limiters
+app.use('/batch', batchRateLimiter, createBatchRoutes(deps));
+app.use('/worker', workerRateLimiter, createWorkerRoutes(deps));
 
 const PORT = config.port;
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
-        
-        // For periodic execution in environments like local (where Cloud Scheduler is unavailable)
-        // Only active if POLLING_INTERVAL_MINUTES=60 or similar is set in .env
-        if (config.pollingIntervalMinutes > 0) {
-            console.log(`Internal polling enabled: every ${config.pollingIntervalMinutes} minutes.`);
-            setInterval(() => {
-                pollMentions().catch(e => console.error("Internal polling error:", e));
-            }, config.pollingIntervalMinutes * 60 * 1000);
-        }
     });
 }
 
