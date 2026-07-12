@@ -36,7 +36,7 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
     try {
         const args = [
             'scheduler', 'jobs', 'create', 'http', job.name,
-            '--schedule', job.schedule,
+            '--schedule', `"${job.schedule}"`,
             '--uri', job.url,
             '--http-method', 'GET',
             '--location', region,
@@ -64,7 +64,7 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
             console.log(`Job ${job.name} might already exist. Attempting to update...`);
             const updateArgs = [
                 'scheduler', 'jobs', 'update', 'http', job.name,
-                '--schedule', job.schedule,
+                '--schedule', `"${job.schedule}"`,
                 '--uri', job.url,
                 '--location', region,
                 '--project', projectId
