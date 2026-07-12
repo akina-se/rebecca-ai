@@ -85,7 +85,9 @@ Create a `.env` file in the project root and configure the following variables:
 ```env
 # Server
 PORT=8080
-POLLING_INTERVAL_MINUTES=0 # Polling interval in minutes when webhooks are unavailable
+
+# Security for Batch Endpoints
+BATCH_SECRET_KEY=your-secret-key-for-local-or-fallback-auth
 
 # GCP
 GCP_PROJECT_ID=your-gcp-project-id
@@ -99,7 +101,6 @@ X_API_KEY=
 X_API_SECRET=
 X_ACCESS_TOKEN=
 X_ACCESS_SECRET=
-X_BEARER_TOKEN=
 X_MY_USER_ID=your-bot-twitter-user-id
 
 # Gemini API Models
@@ -112,9 +113,14 @@ GEMINI_VISION_MODEL=gemini-3.1-flash-lite
 GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
 
 # Rate Limits
-GLOBAL_DAILY_LIMIT=45
-GLOBAL_MINUTE_LIMIT=5
+GLOBAL_DAILY_LIMIT=500
 SPAM_MINUTE_LIMIT=3
+PUBLIC_IP_RATE_LIMIT=100
+
+# Auth Configuration
+BATCH_SECRET_KEY=your_secret_key_here
+OIDC_EXPECTED_AUDIENCE=https://your-cloud-run-service-url.a.run.app
+OIDC_EXPECTED_ISSUER=https://accounts.google.com
 ```
 
 ### 3. Local Execution & Testing
@@ -134,6 +140,10 @@ npm run chat
 # Manually trigger Batches
 npm run batch:evolution
 npm run batch:news
+
+# Setup Cloud Scheduler and Cloud Tasks for automatic batches and async replies
+npm run setup:scheduler
+npm run setup:tasks
 ```
 
 ### 4. Deployment
@@ -148,8 +158,10 @@ npm run deploy
 - **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
 
 ## Directory Structure
-- `src/index.ts` : Application entry point
+- `src/index.ts` : Application entry point with Dependency Injection setup
 - `src/core/` : Core domain logic (Memory management, Context injection, Evolution audit)
+- `src/routes/` : Express route definitions (`batchRoutes.ts`, `workerRoutes.ts`)
+- `src/middleware/` : Authentication and Rate Limiting middlewares
 - `src/services/` : External service integrations (Firestore, Gemini, X, Cloud Tasks)
 - `src/config/` : Configuration and environment variables
 - `tests/` : Unit and integration tests

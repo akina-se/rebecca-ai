@@ -1,138 +1,119 @@
-import * as xApi from '../../../src/services/xApi';
-import * as firestore from '../../../src/services/firestore';
-import * as gemini from '../../../src/services/gemini';
 import { runRandomEngagementBatch } from '../../../src/core/randomEngagement';
 import { checkAndIncrementRateLimits } from '../../../src/core/rateLimiter';
-import * as imageUtils from '../../../src/utils/image';
+import { downloadImage } from '../../../src/utils/image';
+import { createMockDeps } from './testUtils';
 
-jest.mock('../../../src/services/xApi');
-jest.mock('../../../src/services/firestore');
-jest.mock('../../../src/services/gemini');
 jest.mock('../../../src/core/rateLimiter');
 jest.mock('../../../src/utils/image');
-jest.mock('../../../src/config', () => ({
-  __esModule: true,
-  default: {
-    gcp: { projectId: 'test' },
-    xApi: { targetListId: 'list_abc' },
-    limits: {},
-    images: { bucketName: 'test-bucket' },
-    gemini: { apiKey: 'test-key' }
-  }
-}));
 
-/**
- * Unit tests for the Random Engagement Batch.
- * 
- * Verifies that the system can randomly select an eligible user from the "Special Treatment" list,
- * fetch their recent tweets and profile, analyze any attached images, and generate a 
- * standalone @mention tweet (due to X API Free Tier limitations on Quote Tweets).
- */
 describe('Random Engagement Batch', () => {
+    let deps: any;
+
     beforeEach(() => {
         jest.clearAllMocks();
+        deps = createMockDeps();
+        
+        // Setup default config values
+        require('../../../src/config').default.xApi.targetListId = 'test-list-id';
     });
 
     it('should engage with a random eligible user', async () => {
-        (xApi.getListMembers as jest.Mock).mockResolvedValue({
+        deps.xApi.getListMembers.mockResolvedValue({
             data: [
                 { id: 'user1', username: 'already_engaged' },
                 { id: 'user2', username: 'target_user' }
             ]
         });
 
-        (firestore.getLastListInteraction as jest.Mock).mockImplementation(async (id) => {
+        // user1 is engaged, user2 is not
+        deps.firestore.getLastListInteraction.mockImplementation(async (id: string) => {
             return id === 'user1' ? new Date() : null;
         });
 
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
 
-        (xApi.getUserProfile as jest.Mock).mockResolvedValue({
+        deps.xApi.getUserProfile.mockResolvedValue({
             data: { description: 'I love games.' }
         });
 
-        (xApi.getUserTweets as jest.Mock).mockResolvedValue({
+        deps.xApi.getUserTweets.mockResolvedValue({
             data: [{ id: 'tweet123', text: 'Playing games!' }]
         });
 
-        (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({ attributes: [], preferences: ['games'] });
-        (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
-        (gemini.generateReply as jest.Mock).mockResolvedValue('Hey @target_user, playing games again?');
+        deps.gemini.analyzeUserProfile.mockResolvedValue({ attributes: [], preferences: ['games'] });
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateReply.mockResolvedValue('Hey @target_user, playing games again?');
 
-        const result = await runRandomEngagementBatch();
+        const result = await runRandomEngagementBatch(deps);
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
         
-        expect(xApi.tweet).toHaveBeenCalledWith(
-            'Hey @target_user, playing games again?'
-        );
-        expect(firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?');
+        expect(deps.firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
     });
 
     it('should skip if all users have already been engaged', async () => {
-        (xApi.getListMembers as jest.Mock).mockResolvedValue({
+        deps.xApi.getListMembers.mockResolvedValue({
             data: [
                 { id: 'user1', username: 'user1' },
                 { id: 'user2', username: 'user2' }
             ]
         });
 
-        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(new Date()); // All engaged
+        deps.firestore.getLastListInteraction.mockResolvedValue(new Date()); // All engaged
 
-        const result = await runRandomEngagementBatch();
+        const result = await runRandomEngagementBatch(deps);
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBeUndefined();
-        expect(xApi.tweet).not.toHaveBeenCalled();
+        expect(deps.xApi.tweet).not.toHaveBeenCalled();
     });
     
     it('should return failed if targetListId is not set', async () => {
         const originalList = require('../../../src/config').default.xApi.targetListId;
         require('../../../src/config').default.xApi.targetListId = '';
-        const result = await runRandomEngagementBatch();
+        const result = await runRandomEngagementBatch(deps);
         expect(result.status).toBe('failed');
         require('../../../src/config').default.xApi.targetListId = originalList;
     });
 
     it('should return success if list is empty', async () => {
-        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [] });
-        const result = await runRandomEngagementBatch();
+        deps.xApi.getListMembers.mockResolvedValue({ data: [] });
+        const result = await runRandomEngagementBatch(deps);
         expect(result.status).toBe('success');
     });
 
     it('should return skipped if rate limit hit', async () => {
-        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [{ id: 'u1', username: 'u1' }] });
-        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
+        deps.xApi.getListMembers.mockResolvedValue({ data: [{ id: 'u1', username: 'u1' }] });
+        deps.firestore.getLastListInteraction.mockResolvedValue(null);
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: false, reason: 'limit' });
         
-        const result = await runRandomEngagementBatch();
+        const result = await runRandomEngagementBatch(deps);
         expect(result.status).toBe('skipped');
     });
 
     it('should prepend username if not included in generated text', async () => {
-        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [{ id: 'u2', username: 'target2' }] });
-        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
+        deps.xApi.getListMembers.mockResolvedValue({ data: [{ id: 'u2', username: 'target2' }] });
+        deps.firestore.getLastListInteraction.mockResolvedValue(null);
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
-        (xApi.getUserProfile as jest.Mock).mockResolvedValue({ data: { description: '' } });
-        (xApi.getUserTweets as jest.Mock).mockResolvedValue({ data: [{ id: 't2', text: 'hi' }] });
-        (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({});
-        (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
-        (gemini.generateReply as jest.Mock).mockResolvedValue('Hello without mention'); // missing @target2
+        deps.xApi.getUserProfile.mockResolvedValue({ data: { description: '' } });
+        deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't2', text: 'hi' }] });
+        deps.gemini.analyzeUserProfile.mockResolvedValue({});
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateReply.mockResolvedValue('Hello without mention'); // missing @target2
 
-        await runRandomEngagementBatch();
+        await runRandomEngagementBatch(deps);
 
-        expect(xApi.tweet).toHaveBeenCalledWith(
-            '@target2\nHello without mention'
-        );
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention');
     });
 
     it('should handle tweets with attached media and analyze them', async () => {
-        (xApi.getListMembers as jest.Mock).mockResolvedValue({ data: [{ id: 'u3', username: 'media_user' }] });
-        (firestore.getLastListInteraction as jest.Mock).mockResolvedValue(null);
+        deps.xApi.getListMembers.mockResolvedValue({ data: [{ id: 'u3', username: 'media_user' }] });
+        deps.firestore.getLastListInteraction.mockResolvedValue(null);
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
-        (xApi.getUserProfile as jest.Mock).mockResolvedValue({ data: { description: '' } });
-        (xApi.getUserTweets as jest.Mock).mockResolvedValue({ 
+        deps.xApi.getUserProfile.mockResolvedValue({ data: { description: '' } });
+        deps.xApi.getUserTweets.mockResolvedValue({ 
             data: [{ 
                 id: 't3', 
                 text: 'look at this', 
@@ -142,17 +123,15 @@ describe('Random Engagement Batch', () => {
                 media: [{ type: 'photo', url: 'http://example.com/photo.jpg' }]
             }
         });
-        (imageUtils.downloadImage as jest.Mock).mockResolvedValue(Buffer.from('fakeimage'));
-        (gemini.analyzeUserProfile as jest.Mock).mockResolvedValue({});
-        (gemini.detectLanguage as jest.Mock).mockResolvedValue('ja');
-        (gemini.analyzeImageCaption as jest.Mock).mockResolvedValue('a nice photo');
-        (gemini.generateReply as jest.Mock).mockResolvedValue('@media_user cool photo!'); 
+        (downloadImage as jest.Mock).mockResolvedValue({ buffer: Buffer.from('fakeimage'), mimeType: 'image/jpeg' });
+        deps.gemini.analyzeUserProfile.mockResolvedValue({});
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.analyzeImageCaption.mockResolvedValue('a nice photo');
+        deps.gemini.generateReply.mockResolvedValue('@media_user cool photo!'); 
 
-        await runRandomEngagementBatch();
+        await runRandomEngagementBatch(deps);
 
-        expect(gemini.analyzeImageCaption).toHaveBeenCalled();
-        expect(xApi.tweet).toHaveBeenCalledWith(
-            '@media_user cool photo!'
-        );
+        expect(deps.gemini.analyzeImageCaption).toHaveBeenCalled();
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!');
     });
 });
