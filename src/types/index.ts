@@ -44,6 +44,7 @@ export interface ConversationLogEntry {
  * Represents a user document as stored in Firestore.
  */
 export interface FirestoreUser {
+    id?: string;
     coreProfile: UserCoreProfile;
     working_memory?: ConversationLogEntry[];
     episodicBuffer: ConversationLogEntry[];

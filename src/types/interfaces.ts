@@ -1,5 +1,4 @@
-import { Timestamp } from '@google-cloud/firestore';
-
+import type { FirestoreUser, UserCoreProfile, ImageDocWithId, RawConversationLog, ConversationLogEntry, XApiMentionResponse, XApiTweetDetailsResponse, XApiFollowersResponse, XApiListMembersResponse, XApiCreateResponse, XApiUser } from './index';
 /**
  * Firestore Service Interface
  * 
@@ -7,10 +6,10 @@ import { Timestamp } from '@google-cloud/firestore';
  * Responsible for managing user profiles, conversation logs, rate limits, timeline summaries, and RAG memories.
  */
 export interface IFirestoreService {
-    getUserDoc(userId: string): Promise<any>;
-    updateUserDoc(userId: string, data: Partial<any>): Promise<void>;
-    appendEpisodicBuffer(userId: string, log: any): Promise<void>;
-    updateCoreProfile(userId: string, profile: any): Promise<void>;
+    getUserDoc(userId: string): Promise<FirestoreUser | null>;
+    updateUserDoc(userId: string, data: Partial<FirestoreUser>): Promise<void>;
+    appendEpisodicBuffer(userId: string, log: ConversationLogEntry): Promise<void>;
+    updateCoreProfile(userId: string, profile: UserCoreProfile): Promise<void>;
     checkAndConsumeRateLimit(
         userId: string,
         dateStr: string,
@@ -19,10 +18,10 @@ export interface IFirestoreService {
         limits: { globalDaily: number; spamMinute: number }
     ): Promise<{ allowed: boolean; reason?: string }>;
     
-    getAllUsers(): Promise<any[]>;
+    getAllUsers(): Promise<FirestoreUser[]>;
     
     saveRawConversationLog(userId: string, userText: string, aiText: string): Promise<void>;
-    getRecentConversationLogs(limit?: number, days?: number, somethingElse?: any): Promise<any[]>;
+    getRecentConversationLogs(limit?: number, days?: number, somethingElse?: unknown): Promise<RawConversationLog[]>;
     
     getExtendedPrompt(): Promise<string>;
     saveExtendedPrompt(promptText: string): Promise<void>;
@@ -30,7 +29,7 @@ export interface IFirestoreService {
     saveTimelineSummary(summaryText: string): Promise<void>;
     
     saveTimelinePost(text: string): Promise<void>;
-    getRecentTimelinePosts(limit?: number): Promise<any[]>;
+    getRecentTimelinePosts(limit?: number): Promise<string[]>;
     
     saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
     findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;
@@ -42,8 +41,8 @@ export interface IFirestoreService {
     markMentionProcessed(tweetId: string): Promise<void>;
     
     saveImageMetadata(hash: string, url: string, description: string, vector: number[]): Promise<void>;
-    getImageByHash(hash: string): Promise<any | null>;
-    findImageByVector(queryVector: number[]): Promise<any | null>;
+    getImageByHash(hash: string): Promise<ImageDocWithId | null>;
+    findImageByVector(queryVector: number[]): Promise<ImageDocWithId | null>;
     updateImageLastUsed(hash: string): Promise<void>;
     
     hasProcessedFollower(followerId: string): Promise<boolean>;
@@ -59,11 +58,11 @@ export interface IFirestoreService {
  * Responsible for generating text replies, dreaming (memory consolidation), evolution prompts, embeddings, and image analysis.
  */
 export interface IGeminiService {
-    generateReply(systemInstruction: string, history: any[], userInput: string): Promise<string>;
-    generateDreaming(systemPrompt: string, episodicBuffer: any[], coreProfile: any): Promise<any>;
+    generateReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string>;
+    generateDreaming(systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile>;
     generateEvolutionPrompt(logsText: string): Promise<string>;
     auditEvolutionPrompt(candidatePrompt: string): Promise<{ pass: boolean; reason?: string; }>;
-    analyzeUserProfile(description: string): Promise<any>;
+    analyzeUserProfile(description: string): Promise<UserCoreProfile>;
     generateNewsPost(systemInstruction: string, headlines: string[]): Promise<string>;
     generateTimelineSummary(recentPosts: string[], previousSummary?: string): Promise<string>;
     detectLanguage(text: string): Promise<'ja' | 'en'>;
@@ -80,16 +79,16 @@ export interface IGeminiService {
  * Responsible for fetching mentions, posting tweets, uploading media, managing lists, and retrieving user profiles.
  */
 export interface IXApiService {
-    replyToMention(tweetId: string, text: string, mediaIds?: string[]): Promise<any>;
-    getTweetDetails(tweetId: string): Promise<any>;
-    tweet(text: string, options?: { mediaIds?: string[]; quote_tweet_id?: string; }): Promise<any>;
+    replyToMention(tweetId: string, text: string, mediaIds?: string[]): Promise<XApiCreateResponse>;
+    getTweetDetails(tweetId: string): Promise<XApiTweetDetailsResponse>;
+    tweet(text: string, options?: { mediaIds?: string[]; quote_tweet_id?: string; }): Promise<XApiCreateResponse>;
     uploadMedia(buffer: Buffer, mimeType: string): Promise<string | null>;
-    getUserProfile(userId: string): Promise<any>;
-    getMentions(sinceId?: string): Promise<{ data?: any[]; meta?: any }>;
-    getFollowers(userId: string, paginationToken?: string): Promise<{ data?: any[], meta?: any }>;
+    getUserProfile(userId: string): Promise<{ data: XApiUser } | null>;
+    getMentions(sinceId?: string): Promise<XApiMentionResponse>;
+    getFollowers(userId: string, paginationToken?: string): Promise<XApiFollowersResponse>;
     addListMember(listId: string, userId: string): Promise<boolean>;
-    getListMembers(listId: string): Promise<{ data?: any[]; meta?: any }>;
-    getUserTweets(userId: string, maxResults?: number): Promise<{ data?: any[]; meta?: any; includes?: any }>;
+    getListMembers(listId: string): Promise<XApiListMembersResponse>;
+    getUserTweets(userId: string, maxResults?: number): Promise<XApiMentionResponse>;
     cachedNumericMyUserId: string | null;
 }
 
@@ -100,7 +99,7 @@ export interface IXApiService {
  * Responsible for enqueuing worker tasks such as reply generation to ensure resilient background processing.
  */
 export interface ITasksService {
-    enqueueReplyTask(payload: any, delaySeconds?: number): Promise<any>;
+    enqueueReplyTask(payload: Record<string, unknown>, delaySeconds?: number): Promise<unknown>;
 }
 
 /**
