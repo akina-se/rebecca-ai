@@ -48,7 +48,7 @@ async function getLists() {
             return;
         }
 
-        console.log(`\n=== Owned Lists for User ID: ${myUserId} ===\n`);
+        console.log('\n=== Owned Lists ===\n');
         if (!data.data || data.data.length === 0) {
             console.log('No lists found.');
         } else {
