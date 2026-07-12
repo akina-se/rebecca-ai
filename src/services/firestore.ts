@@ -211,7 +211,7 @@ const checkAndConsumeRateLimit = async (
         let dauCount = dauDoc.exists ? (dauDoc.data()?.count || 1) : 1;
 
         // Reset minute count if the minute string has changed
-        let userMinuteCount = userData.lastMinute === minuteStr ? (userData.minute || 0) : 0;
+        const userMinuteCount = userData.lastMinute === minuteStr ? (userData.minute || 0) : 0;
 
         // 1. Check Spam Minute Limit
         if (userMinuteCount >= limits.spamMinute) {
@@ -523,10 +523,10 @@ const saveImageMetadata = async (hash: string, url: string, caption: string, emb
  * @param hash - The hash identifier of the image.
  * @returns A promise that resolves to the image document or null if not found.
  */
-const getImageByHash = async (hash: string): Promise<ImageDoc | null> => {
+const getImageByHash = async (hash: string): Promise<ImageDocWithId | null> => {
     const docRef = firestore.collection('images').doc(hash);
     const doc = await docRef.get();
-    return doc.exists ? (doc.data() as ImageDoc) : null;
+    return doc.exists ? { id: doc.id, ...(doc.data() as ImageDoc) } : null;
 };
 
 /**

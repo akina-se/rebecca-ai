@@ -4,6 +4,10 @@ import { getWorkingMemory, saveInteraction } from './memory';
 import { buildSystemPrompt } from './contextInjector';
 import { downloadImage } from '../utils/image';
 
+const sanitizeForLog = (value: unknown): string => {
+    return String(value).replace(/[\r\n\u2028\u2029]/g, '');
+};
+
 /**
  * Processes a reply task, fetching necessary context, calling the AI model, and posting the reply.
  */
@@ -11,14 +15,14 @@ export const processReplyTask = async (deps: AppDependencies, tweetId: string, t
     // 1. Idempotency Check
     const alreadyProcessed = await deps.firestore.hasProcessedMention(tweetId);
     if (alreadyProcessed) {
-        console.log(`Mention ${tweetId} already processed. Skipping.`);
+        console.log(`Mention ${sanitizeForLog(tweetId)} already processed. Skipping.`);
         return { status: 'already_processed' };
     }
 
     // 2. Rate Limit Check (Domain level: per X user & Global LLM budget)
     const rateLimit = await checkAndIncrementRateLimits(deps, authorId);
     if (!rateLimit.allowed) {
-        console.log(`Rate limit exceeded for user ${authorId}, reason: ${rateLimit.reason}`);
+        console.log(`Rate limit exceeded for user ${sanitizeForLog(authorId)}, reason: ${sanitizeForLog(rateLimit.reason)}`);
         return { status: 'rate_limited', reason: rateLimit.reason };
     }
     let userData = await deps.firestore.getUserDoc(authorId);
@@ -105,6 +109,6 @@ export const processReplyTask = async (deps: AppDependencies, tweetId: string, t
     // 7. Save Raw Log for Analysis
     await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
 
-    console.log(`Successfully replied to tweet ${tweetId.replace(/[\r\n]/g, '')} by user ${authorId.replace(/[\r\n]/g, '')}`);
+    console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
     return { status: 'success' };
 };
