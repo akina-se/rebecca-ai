@@ -22,6 +22,7 @@ export default {
     location: process.env.GCP_LOCATION || 'asia-northeast1',
     queueName: process.env.GCP_TASK_QUEUE_NAME || 'rebecca-reply-queue',
     workerUrl: process.env.WORKER_URL,
+    serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL,
   },
 
   /**
