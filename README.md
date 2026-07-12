@@ -101,7 +101,6 @@ X_API_KEY=
 X_API_SECRET=
 X_ACCESS_TOKEN=
 X_ACCESS_SECRET=
-X_BEARER_TOKEN=
 X_MY_USER_ID=your-bot-twitter-user-id
 
 # Gemini API Models
