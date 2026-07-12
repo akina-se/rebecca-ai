@@ -23,10 +23,7 @@ export const pollMentions = async (deps: AppDependencies) => {
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
-            const tweetObj = tweet as unknown as Record<string, unknown>;
-            const authorObj = tweetObj.author as Record<string, string> | undefined;
-            const userObj = tweetObj.user as Record<string, string> | undefined;
-            const authorId = tweet.author_id || authorObj?.id || userObj?.id || tweetObj.user_id;
+            const authorId = tweet.authorId;
 
             // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
