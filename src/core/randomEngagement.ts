@@ -71,7 +71,7 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
                 targetTweetId = latestTweet.id;
                 tweetContext += `\n【直近の投稿内容】\n${latestTweet.text}`;
                 
-                const mediaKeys = latestTweet.attachments?.media_keys;
+                const mediaKeys = latestTweet.attachments?.mediaKeys;
                 const mediaIncludes = recentTweets.includes?.media || [];
                 
                 const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;

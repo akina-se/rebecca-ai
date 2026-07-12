@@ -53,7 +53,7 @@ export const processReplyTask = async (deps: AppDependencies, tweetId: string, t
     let processedText = text;
     try {
         const tweetDetails = await deps.xApi.getTweetDetails(tweetId);
-        const mediaKeys = tweetDetails?.data?.attachments?.media_keys;
+        const mediaKeys = tweetDetails?.data?.attachments?.mediaKeys;
         const mediaIncludes = tweetDetails.includes?.media || [];
 
         const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
