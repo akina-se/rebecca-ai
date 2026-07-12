@@ -241,6 +241,19 @@ describe('xApi.ts', () => {
             mockClientInstance.users.getFollowers.mockResolvedValueOnce({ data: [{ id: 'user1' }], meta: { resultCount: 1 } });
             const result = await api.getFollowers('123');
             expect(result.data).toEqual([{ id: 'user1' }]);
+            expect(mockClientInstance.users.getFollowers).toHaveBeenCalledWith('123', expect.objectContaining({ max_results: 1000 }));
+        });
+
+        it('should pass paginationToken if provided', async () => {
+            const api = getXApiModule();
+            if (!mockClientInstance.users.getFollowers) mockClientInstance.users.getFollowers = jest.fn();
+            mockClientInstance.users.getFollowers.mockResolvedValueOnce({ data: [{ id: 'user2' }], meta: { resultCount: 1 } });
+            const result = await api.getFollowers('123', 'token_123');
+            expect(result.data).toEqual([{ id: 'user2' }]);
+            expect(mockClientInstance.users.getFollowers).toHaveBeenCalledWith('123', expect.objectContaining({
+                max_results: 1000,
+                pagination_token: 'token_123'
+            }));
         });
 
         it('should return empty if client not initialized', async () => {

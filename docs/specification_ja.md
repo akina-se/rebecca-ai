@@ -7,6 +7,8 @@
 
 - **クラウドプロバイダ**: Google Cloud Platform (GCP)
 - **メイン処理・APIエンドポイント**: Cloud Run (Node.js / Express) ※X API Free枠の制限によりWebhookではなくポーリング（定期取得）や定期バッチ処理を採用
+  - **ルーティング**: `batchRoutes`（定期実行用）と `workerRoutes`（Cloud Tasksワーカー用）に完全分離。
+  - **設計手法**: 依存性の注入（DI）を採用。コアロジックはインフラ層（Firestoreや各種API）に直接依存せず、インターフェース（`AppDependencies`）を介して実行される。
 - **非同期キュー (遅延実行)**: Cloud Tasks
 - **データベース**: Firestore (NoSQL)
 - **画像ストレージ**: Cloud Storage (GCS)
@@ -50,7 +52,7 @@
 6. **ニュース自発投稿機能 (Proactive News Post)**
    - ニュースを取得し、ギャル視点での意見と、文脈に合った画像を添付してタイムラインに自発的に投稿する。
 7. **ダイナミックレートリミット (Dynamic Rate Limit)**
-   - APIの制限を超えないよう、DAU（デイリーアクティブユーザー）に応じてユーザー1人あたりの1日の返信上限を動的に変動させる。
+   - API制限を超過しないよう、Daily Active Users (DAU) に応じて1ユーザーあたりの1日の返信上限を動的に変動。Firestoreのトランザクションを用いて堅牢に管理します。
 
 ## 4. データベース設計とデータ種別 (Firestore Schema & Types)
 

@@ -10,13 +10,9 @@ jest.mock('../../src/services/firestore', () => ({
     getUserDoc: jest.fn().mockResolvedValue({ episodicBuffer: [], coreProfile: {} }),
     updateUserDoc: jest.fn().mockResolvedValue(undefined),
     appendEpisodicBuffer: jest.fn().mockResolvedValue(undefined),
-    getGlobalRateLimit: jest.fn().mockResolvedValue(0),
-    getUserDailyLimit: jest.fn().mockResolvedValue(0),
-    getUserMinuteLimit: jest.fn().mockResolvedValue(0),
-    getDailyActiveUsersCount: jest.fn().mockResolvedValue(1),
-    incrementGlobalRateLimit: jest.fn().mockResolvedValue(undefined),
-    incrementUserDailyLimit: jest.fn().mockResolvedValue(undefined),
-    incrementUserMinuteLimit: jest.fn().mockResolvedValue(undefined),
+    checkAndConsumeRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
+    hasProcessedMention: jest.fn().mockResolvedValue(false),
+    markMentionProcessed: jest.fn().mockResolvedValue(undefined),
     getExtendedPrompt: jest.fn().mockResolvedValue(''),
     getTimelineSummary: jest.fn().mockResolvedValue(''),
     saveRawConversationLog: jest.fn().mockResolvedValue(undefined),
@@ -37,6 +33,7 @@ jest.mock('../../src/services/gemini', () => ({
     generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
     inferImageSearchQuery: jest.fn().mockResolvedValue(null),
+    analyzeImageCaption: jest.fn().mockResolvedValue('Mock image caption')
 }));
 
 jest.mock('../../src/services/xApi', () => ({
@@ -60,6 +57,10 @@ describe('Integration Tests', () => {
     });
 
     describe('GET /batch/mentions', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+
         it('should fetch mentions and enqueue tasks', async () => {
             (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
                 data: [
@@ -68,7 +69,7 @@ describe('Integration Tests', () => {
                 meta: { resultCount: 1 }
             });
 
-            const response = await request(app).get('/batch/mentions');
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             
             expect(response.status).toBe(200);
             expect(xApi.getMentions).toHaveBeenCalled();
@@ -83,9 +84,9 @@ describe('Integration Tests', () => {
                 data: [],
                 meta: { resultCount: 0 }
             });
-            const response = await request(app).get('/batch/mentions');
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
-            expect(response.body.result.count).toBe(0);
+            expect(response.body.count).toBe(0);
         });
 
         it('should skip mention with no authorId', async () => {
@@ -93,7 +94,7 @@ describe('Integration Tests', () => {
                 data: [{ id: '123', text: 'hi' }], // no authorId
                 meta: { resultCount: 1 }
             });
-            const response = await request(app).get('/batch/mentions');
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
     });
@@ -108,12 +109,13 @@ describe('Integration Tests', () => {
 
             const response = await request(app)
                 .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
                 .send(payload);
             
             expect(response.status).toBe(200);
             
             // Check if rate limits were checked
-            expect(firestore.getGlobalRateLimit).toHaveBeenCalled();
+            expect(firestore.checkAndConsumeRateLimit).toHaveBeenCalled();
             // Check if user was fetched
             expect(firestore.getUserDoc).toHaveBeenCalledWith('user_1');
             // Check if reply was generated
@@ -133,6 +135,7 @@ describe('Integration Tests', () => {
             (gemini.detectLanguage as jest.Mock).mockResolvedValueOnce('en');
             const response = await request(app)
                 .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
                 .send(payload);
             
             expect(response.status).toBe(200);
@@ -148,13 +151,59 @@ describe('Integration Tests', () => {
             expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');
         });
 
+        it('should skip if mention already processed', async () => {
+            (firestore.hasProcessedMention as jest.Mock).mockResolvedValueOnce(true);
+            const payload = { tweetId: 'dup', text: 'hello', authorId: 'user_1' };
+            const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
+            expect(response.status).toBe(200);
+            expect(gemini.generateReply).not.toHaveBeenCalled();
+        });
+
+        it('should process reply task with image attachment', async () => {
+            (xApi.getTweetDetails as jest.Mock).mockResolvedValueOnce({
+                data: { text: 'hello image', attachments: { media_keys: ['media_1'] } },
+                includes: { media: [{ media_key: 'media_1', type: 'photo', url: 'https://example.com/image.jpg' }] }
+            });
+            global.fetch = jest.fn().mockResolvedValueOnce({
+                ok: true,
+                arrayBuffer: jest.fn().mockResolvedValueOnce(new ArrayBuffer(8)),
+                headers: { get: jest.fn().mockReturnValue('image/jpeg') }
+            }) as any;
+
+            const payload = { tweetId: 'with_image', text: 'hello image', authorId: 'user_1' };
+            const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
+            
+            expect(response.status).toBe(200);
+            expect(gemini.generateReply).toHaveBeenCalled();
+        });
+
+        it('should handle errors when analyzing user profile gracefully', async () => {
+            (firestore.getUserDoc as jest.Mock).mockResolvedValueOnce(null);
+            (xApi.getUserProfile as jest.Mock).mockResolvedValueOnce({ data: { description: 'bio' } });
+            (gemini.analyzeUserProfile as jest.Mock).mockRejectedValueOnce(new Error('Analysis failed'));
+
+            const payload = { tweetId: 'err_profile', text: 'hello', authorId: 'user_1' };
+            const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
+            
+            expect(response.status).toBe(200);
+            expect(gemini.generateReply).toHaveBeenCalled(); // Should continue processing
+        });
+
+        it('should block unauthorized access to worker', async () => {
+            const response = await request(app).post('/worker/reply').send({});
+            expect(response.status).toBe(401);
+        });
+
         it('should initialize new user profile on first interaction', async () => {
             (firestore.getUserDoc as jest.Mock).mockResolvedValueOnce(null);
             (xApi.getUserProfile as jest.Mock).mockResolvedValueOnce({ data: { description: 'bio' } });
             (gemini.analyzeUserProfile as jest.Mock).mockResolvedValueOnce({ attributes: ['test'] });
 
             const payload = { tweetId: 'new', text: 'hello', authorId: 'new_user' };
-            const response = await request(app).post('/worker/reply').send(payload);
+            const response = await request(app)
+                .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
+                .send(payload);
             
             expect(response.status).toBe(200);
             expect(firestore.getUserDoc).toHaveBeenCalledWith('new_user');
@@ -162,8 +211,7 @@ describe('Integration Tests', () => {
         });
 
         it('should block if rate limit is exceeded', async () => {
-            // Mock rate limit exceeded
-            (firestore.getGlobalRateLimit as jest.Mock).mockResolvedValueOnce(1000); // Exceed default 140
+            (firestore.checkAndConsumeRateLimit as jest.Mock).mockResolvedValueOnce({ allowed: false, reason: 'global_daily' }); // Blocked
 
             const payload = {
                 tweetId: '12345',
@@ -173,6 +221,7 @@ describe('Integration Tests', () => {
 
             const response = await request(app)
                 .post('/worker/reply')
+                .set('x-worker-secret', 'test_secret')
                 .send(payload);
             
             expect(response.status).toBe(200); // Worker still acks
@@ -181,27 +230,59 @@ describe('Integration Tests', () => {
     });
 
     describe('GET /batch/dreaming', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
         it('should return 200', async () => {
             const memory = require('../../src/core/memory');
             memory.runGlobalDreamingBatch = jest.fn().mockResolvedValue(undefined);
-            const response = await request(app).get('/batch/dreaming');
+            const response = await request(app).get('/batch/dreaming').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
     });
 
     describe('GET /batch/evolution', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
         it('should return 200', async () => {
             const evolution = require('../../src/core/evolution');
             evolution.runGlobalEvolutionBatch = jest.fn().mockResolvedValue(undefined);
-            const response = await request(app).get('/batch/evolution');
+            const response = await request(app).get('/batch/evolution').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
     });
 
     describe('GET /batch/news-post', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
         it('should return 200', async () => {
-            const response = await request(app).get('/batch/news-post');
+            const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         }, 15000); // Increased timeout for external RSS fetch
+    });
+    describe('GET /batch/stealth-onboarding', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should return 200', async () => {
+            const onboarding = require('../../src/core/onboarding');
+            onboarding.runStealthOnboardingBatch = jest.fn().mockResolvedValue({ status: 'success', processed: 0 });
+            const response = await request(app).get('/batch/stealth-onboarding').set('x-batch-secret', 'test_secret');
+            expect(response.status).toBe(200);
+        });
+    });
+
+    describe('GET /batch/random-engagement', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should return 200', async () => {
+            const randomEngagement = require('../../src/core/randomEngagement');
+            randomEngagement.runRandomEngagementBatch = jest.fn().mockResolvedValue({ status: 'success' });
+            const response = await request(app).get('/batch/random-engagement').set('x-batch-secret', 'test_secret');
+            expect(response.status).toBe(200);
+        });
     });
 });
