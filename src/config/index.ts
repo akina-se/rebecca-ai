@@ -32,7 +32,6 @@ export default {
     appSecret: process.env.X_API_SECRET,
     accessToken: process.env.X_ACCESS_TOKEN,
     accessSecret: process.env.X_ACCESS_SECRET,
-    bearerToken: process.env.X_BEARER_TOKEN,
     myUserId: process.env.X_MY_USER_ID,
     targetListId: process.env.X_TARGET_LIST_ID,
     followersMaxResults: parseInt(process.env.X_FOLLOWERS_MAX_RESULTS || '1000', 10),
