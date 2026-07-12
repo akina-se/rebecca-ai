@@ -29,6 +29,21 @@ const jobs = [
         name: 'rebecca-random-engagement',
         schedule: '0 */2 * * *', // Every 2 hours
         url: `${serviceUrl}/batch/random-engagement`
+    },
+    {
+        name: 'rebecca-dreaming-batch',
+        schedule: '0 * * * *', // Every hour (at minute 0)
+        url: `${serviceUrl}/batch/dreaming`
+    },
+    {
+        name: 'rebecca-evolution-batch',
+        schedule: '0 5 * * *', // Every day at 05:00 UTC
+        url: `${serviceUrl}/batch/evolution`
+    },
+    {
+        name: 'rebecca-news-batch',
+        schedule: '0 */6 * * *', // Every 6 hours
+        url: `${serviceUrl}/batch/news-post`
     }
 ];
 
