@@ -116,6 +116,7 @@ GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
 # Rate Limits
 GLOBAL_DAILY_LIMIT=500
 SPAM_MINUTE_LIMIT=3
+PUBLIC_IP_RATE_LIMIT=100
 
 # Auth Configuration
 BATCH_SECRET_KEY=your_secret_key_here
