@@ -2,10 +2,27 @@
     <div class="block-header" style="margin-top: 0;"><h2><span class="material-icons">group</span> User Relations</h2><input type="text" class="form-control" placeholder="Search users..." style="width: 250px; padding: 0.5rem; border-radius: 20px;"></div>
     
     <div class="bulk-actions-bar glass-panel" id="user-bulk-bar">
-        <label class="checkbox-container"><input type="checkbox" class="select-all"> <span style="margin-left: 8px;">Select All</span></label>
+        <label class="checkbox-container"><input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()"> <span style="margin-left: 8px;">Select All</span></label>
         <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
-        <span class="bulk-text" style="color: var(--text-muted); font-style: italic;">Select items to perform actions</span>
-        <button class="btn bulk-btn" style="display: none; padding: 4px 8px; font-size: 0.8rem; border-color: rgba(255,255,255,0.3);" (click)="mockAlert('Dropdown Menu: Block Selected, Unblock Selected, etc.')"><span class="material-icons" style="font-size: 1rem">manage_accounts</span> Update Status <span class="material-icons" style="font-size: 1rem">expand_more</span></button>
+        <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
+            {{ selectedUsers.size > 0 ? selectedUsers.size + ' users selected' : 'Select users to perform actions' }}
+        </span>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isBlocking || isUnblocking"
+            style="min-width: 110px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="executeBulkBlock()">
+            <span class="material-icons" [class.spinning]="isBlocking" style="font-size: 1rem">{{ isBlocking ? 'sync' : 'block' }}</span> 
+            {{ isBlocking ? 'Blocking...' : 'Block' }}
+        </button>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isBlocking || isUnblocking"
+            style="min-width: 120px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: white; background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="executeBulkUnblock()">
+            <span class="material-icons" [class.spinning]="isUnblocking" style="font-size: 1rem">{{ isUnblocking ? 'sync' : 'lock_open' }}</span> 
+            {{ isUnblocking ? 'Unblocking...' : 'Unblock' }}
+        </button>
     </div>
     
     <table class="data-table glass-panel" style="border-radius: 0;">
@@ -19,7 +36,7 @@
         </tr></thead>
         <tbody>
             <tr class="clickable" (click)="openUserDrawer('@user_alpha_99')">
-                <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox"></label></td>
+                <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has('@user_alpha_99')" (change)="toggleSelection('@user_alpha_99', $event)"></label></td>
                 <td style="font-weight: 500;">&#64;user_alpha_99</td>
                 <td>42</td>
                 <td style="color: var(--text-muted)">2026-07-11 10:15</td>
@@ -27,7 +44,7 @@
                 <td><span class="badge">Active</span></td>
             </tr>
             <tr class="clickable" (click)="openUserDrawer('@rebecca_oshi')">
-                <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox"></label></td>
+                <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has('@rebecca_oshi')" (change)="toggleSelection('@rebecca_oshi', $event)"></label></td>
                 <td style="font-weight: 500;">&#64;rebecca_oshi</td>
                 <td>132</td>
                 <td style="color: var(--text-muted)">2026-07-10 22:30</td>
@@ -35,7 +52,7 @@
                 <td><span class="badge">Active</span></td>
             </tr>
             <tr class="clickable" style="opacity: 0.6;" (click)="openUserDrawer('@spam_bot_001')">
-                <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox"></label></td>
+                <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has('@spam_bot_001')" (change)="toggleSelection('@spam_bot_001', $event)"></label></td>
                 <td style="font-weight: 500; text-decoration: line-through;">&#64;spam_bot_001</td>
                 <td>0</td>
                 <td style="color: var(--text-muted)">2026-06-01 10:00</td>

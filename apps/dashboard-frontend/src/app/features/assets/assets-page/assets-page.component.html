@@ -16,7 +16,7 @@
         <button class="btn bulk-btn" 
             [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
             [disabled]="isDeletingBulk || isRetryingBulk"
-            style="padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            style="min-width: 110px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
             (click)="executeBulkDelete()">
             <span class="material-icons" [class.spinning]="isDeletingBulk" style="font-size: 1rem">{{ isDeletingBulk ? 'sync' : 'delete' }}</span> 
             {{ isDeletingBulk ? 'Deleting...' : 'Delete' }}
@@ -24,7 +24,7 @@
         <button class="btn bulk-btn" 
             [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
             [disabled]="isDeletingBulk || isRetryingBulk"
-            style="padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: white; background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            style="min-width: 130px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: white; background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
             (click)="executeBulkRetry()">
             <span class="material-icons" [class.spinning]="isRetryingBulk" style="font-size: 1rem">{{ isRetryingBulk ? 'sync' : 'autorenew' }}</span> 
             {{ isRetryingBulk ? 'Retrying...' : 'Retry AI Gen' }}
