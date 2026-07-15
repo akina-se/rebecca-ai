@@ -9,6 +9,7 @@ import { DatePickerPopoverComponent } from '../../../shared/components/molecules
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { PostDrawerComponent } from '../../../shared/components/organisms/post-drawer/post-drawer.component';
 import { UserDrawerComponent } from '../../../shared/components/organisms/user-drawer/user-drawer.component';
+import { ActionHelperService } from '../../../shared/services/action-helper.service';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { RankingModalComponent } from '../../../shared/components/organisms/ranking-modal/ranking-modal.component';
 
@@ -35,7 +36,9 @@ export class DashboardPageComponent implements OnInit {
   // Modal State
   isRankingModalOpen = false;
   rankingModalTitle = '';
-  rankingModalLabel = '';
+  rankingModalColLabel = '';
+  rankingModalColMetric = '';
+  rankingModalType: 'post' | 'user' = 'post';
 
   // Drawer State
   isDrawerOpen = false;
@@ -52,7 +55,7 @@ export class DashboardPageComponent implements OnInit {
   selectAll = false;
   selectedRows = new Set<string>();
   timelinePosts = [
-    { id: '1', time: '2026-07-11 12:00', text: '今日は暑いね！水分補給しっかりしてね🥤', impressions: '3,402', status: 'Success', hasMedia: true },
+    { id: '1', time: '2026-07-11 12:00', text: '今日は暑いね！水分補給しっかりしてね', impressions: '3,402', status: 'Success', hasMedia: true },
     { id: '2', time: '2026-07-10 18:00', text: '水星の魔女、最新話見た！？展開が熱すぎる…', impressions: '5,120', status: 'Success', hasMedia: true },
   ];
 
@@ -116,15 +119,20 @@ export class DashboardPageComponent implements OnInit {
   openRankingModal(type: 'posts' | 'users') {
     if (type === 'posts') {
       this.rankingModalTitle = 'Top Posts by Impressions';
-      this.rankingModalLabel = 'Post';
+      this.rankingModalColLabel = 'Post';
+      this.rankingModalColMetric = 'Impressions';
+      this.rankingModalType = 'post';
     } else {
       this.rankingModalTitle = 'Top Engaged Users';
-      this.rankingModalLabel = 'User ID';
+      this.rankingModalColLabel = 'User ID';
+      this.rankingModalColMetric = 'Interactions';
+      this.rankingModalType = 'user';
     }
     this.isRankingModalOpen = true;
   }
 
   openPostDrawer(id: string) {
+    if ((window.getSelection()?.toString() || '').trim().length > 0) return;
     this.drawerType = 'post';
     this.selectedItemId = id;
     this.drawerTitle = 'Post Details';
@@ -133,6 +141,7 @@ export class DashboardPageComponent implements OnInit {
   }
 
   openUserDrawer(id: string) {
+    if ((window.getSelection()?.toString() || '').trim().length > 0) return;
     this.drawerType = 'user';
     this.selectedItemId = id;
     this.drawerTitle = 'User Profile';
@@ -162,13 +171,26 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
-  executeBulkDelete() {
-    this.toastService.show(`Executing batch delete for ${this.selectedRows.size} posts...`, 'info');
-    setTimeout(() => {
-      this.toastService.show('Posts deleted successfully.', 'success');
-      this.selectedRows.clear();
-      this.selectAll = false;
-    }, 1500);
+  isDeleting = false;
+  isArchiving = false;
+  actionHelper = inject(ActionHelperService);
+
+  async executeBulkDelete() {
+    if (this.selectedRows.size === 0) return;
+    this.isDeleting = true;
+    await this.actionHelper.executeMockAction(`Successfully deleted ${this.selectedRows.size} posts`);
+    this.isDeleting = false;
+    this.selectedRows.clear();
+    this.selectAll = false;
+  }
+
+  async executeBulkArchive() {
+    if (this.selectedRows.size === 0) return;
+    this.isArchiving = true;
+    await this.actionHelper.executeMockAction(`Successfully archived ${this.selectedRows.size} posts`);
+    this.isArchiving = false;
+    this.selectedRows.clear();
+    this.selectAll = false;
   }
 
   mockAlert(msg: string) {

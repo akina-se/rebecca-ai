@@ -24,7 +24,7 @@ export class MockDashboardRepository implements DashboardRepository {
   getTopPosts(period: string): Observable<PostLeaderboard[]> {
     return of([
       { id: '1', time: '2026-07-10 18:00', snippet: '水星の魔女、最新話見た！？...', impressions: 5120, hasMedia: true },
-      { id: '2', time: '2026-07-09 08:00', snippet: 'おはよう！今日も1日頑張ろうね✨', impressions: 4800, hasMedia: false },
+      { id: '2', time: '2026-07-09 08:00', snippet: 'おはよう！今日も1日頑張ろうね', impressions: 4800, hasMedia: false },
       { id: '3', time: '2026-07-08 12:00', snippet: '夏コミ行く人いるー？', impressions: 3950, hasMedia: true }
     ]);
   }

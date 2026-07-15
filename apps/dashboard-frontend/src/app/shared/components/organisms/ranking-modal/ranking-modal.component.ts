@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 /** A single entry in the leaderboard. */
 export interface RankingEntry {
+  id?: string;
   rank: number;
   label: string;
   value: number | string;
@@ -34,18 +35,21 @@ export class RankingModalComponent {
   @Input() colMetric = 'Impressions';
   /** Emitted when the modal requests to close. */
   @Output() close = new EventEmitter<void>();
+  /** Emitted when a row is clicked. */
+  @Output() rowClick = new EventEmitter<string>();
 
   currentPage = 1;
   readonly pageSize = 10;
 
   /** Mock leaderboard data – replaced with real API data post-MVP. */
   readonly allEntries: RankingEntry[] = Array.from({ length: 30 }, (_, i) => ({
+    id: i < 2 ? `p${i + 1}` : `mock_id_${i}`,
     rank: i + 1,
     label: i < 2
-      ? ['今日は暑いね！水分補給しっかりしてね🥤', '水星の魔女、最新話見た！展開が熱すぎる…'][i]
+      ? ['今日は暑いね！水分補給しっかりしてね', '水星の魔女、最新話見た！展開が熱すぎる…'][i]
       : `サンプルポスト #${i + 1} — ダッシュボードモックデータ`,
     value: Math.floor(10000 / (i + 1)).toLocaleString(),
-    badge: i < 3 ? ['🥇', '🥈', '🥉'][i] : undefined,
+    badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
   }));
 
   get totalPages(): number {
@@ -70,6 +74,14 @@ export class RankingModalComponent {
   onClose(): void {
     this.currentPage = 1;
     this.close.emit();
+  }
+
+  onRowClick(entry: RankingEntry): void {
+    if ((window.getSelection()?.toString() || '').trim().length > 0) return;
+    if (entry.id) {
+      this.rowClick.emit(entry.id);
+      this.onClose();
+    }
   }
 
   onBackdropClick(event: MouseEvent): void {
