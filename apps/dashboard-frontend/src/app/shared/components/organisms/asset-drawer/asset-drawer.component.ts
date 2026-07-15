@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 /** Data shape for a single image asset shown in the drawer. */
 export interface AssetDrawerData {
@@ -21,7 +22,7 @@ export interface AssetDrawerData {
 @Component({
   selector: 'app-asset-drawer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './asset-drawer.component.html',
   styleUrls: ['./asset-drawer.component.css'],
 })
@@ -30,9 +31,10 @@ export class AssetDrawerComponent {
   @Output() openLightbox = new EventEmitter<string>();
 
   isDeleting = false;
+  isSaving = false;
 
   /** Mock asset data – replaced by real API data post-MVP. */
-  readonly mockAsset: AssetDrawerData = {
+  mockAsset: AssetDrawerData = {
     id: 'rebecca_summer_01',
     name: 'rebecca_summer_01',
     caption: 'Rebecca in a summer dress, smiling with a parasol on a sunny beach.',
@@ -47,6 +49,13 @@ export class AssetDrawerComponent {
 
   onViewFullSize(): void {
     this.openLightbox.emit(this.displayAsset.url);
+  }
+
+  onSave(): void {
+    this.isSaving = true;
+    setTimeout(() => {
+      this.isSaving = false;
+    }, 1500);
   }
 
   onDelete(): void {

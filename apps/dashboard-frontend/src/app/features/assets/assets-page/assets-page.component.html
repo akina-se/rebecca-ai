@@ -15,15 +15,19 @@
         </span>
         <button class="btn bulk-btn" 
             [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isDeletingBulk || isRetryingBulk"
             style="padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
-            (click)="mockAlert('Mock: Executing batch delete for selected assets...')">
-            <span class="material-icons" style="font-size: 1rem">delete</span> Delete
+            (click)="executeBulkDelete()">
+            <span class="material-icons" [class.spinning]="isDeletingBulk" style="font-size: 1rem">{{ isDeletingBulk ? 'sync' : 'delete' }}</span> 
+            {{ isDeletingBulk ? 'Deleting...' : 'Delete' }}
         </button>
         <button class="btn bulk-btn" 
             [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isDeletingBulk || isRetryingBulk"
             style="padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: white; background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
-            (click)="mockAlert('Mock: Retrying AI generation for failed assets...')">
-            <span class="material-icons" style="font-size: 1rem">autorenew</span> Retry AI Gen
+            (click)="executeBulkRetry()">
+            <span class="material-icons" [class.spinning]="isRetryingBulk" style="font-size: 1rem">{{ isRetryingBulk ? 'sync' : 'autorenew' }}</span> 
+            {{ isRetryingBulk ? 'Retrying...' : 'Retry AI Gen' }}
         </button>
     </div>
     

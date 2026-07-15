@@ -83,6 +83,36 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
+  shiftDate(target: 'posts' | 'users', direction: -1 | 1) {
+    const isPosts = target === 'posts';
+    const mode = isPosts ? this.topPostsMode : this.topUsersMode;
+    let currentDate = isPosts ? this.topPostsDate : this.topUsersDate;
+    
+    if (mode === 'monthly') {
+      const months = ['May 2026', 'June 2026', 'July 2026'];
+      let idx = months.indexOf(currentDate);
+      if (idx === -1) idx = 2;
+      let newIdx = idx + direction;
+      if (newIdx < 0) newIdx = 0;
+      if (newIdx > 2) newIdx = 2;
+      currentDate = months[newIdx];
+    } else if (mode === 'yearly') {
+      const years = ['2024', '2025', '2026'];
+      let idx = years.indexOf(currentDate);
+      if (idx === -1) idx = 2;
+      let newIdx = idx + direction;
+      if (newIdx < 0) newIdx = 0;
+      if (newIdx > 2) newIdx = 2;
+      currentDate = years[newIdx];
+    }
+    
+    if (isPosts) {
+      this.topPostsDate = currentDate;
+    } else {
+      this.topUsersDate = currentDate;
+    }
+  }
+
   openRankingModal(type: 'posts' | 'users') {
     if (type === 'posts') {
       this.rankingModalTitle = 'Top Posts by Impressions';
