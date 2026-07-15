@@ -1,0 +1,231 @@
+/* ============================================================
+   Modal backdrop
+   ============================================================ */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ============================================================
+   Modal container
+   ============================================================ */
+.modal-container {
+    width: min(860px, calc(100vw - 48px));
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+    overflow: hidden;
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid var(--border-highlight);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border-highlight);
+    background: rgba(138, 43, 226, 0.08);
+    flex-shrink: 0;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.modal-title .material-icons {
+    color: var(--color-primary);
+    font-size: 1.4rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+}
+
+/* ============================================================
+   Body / Table
+   ============================================================ */
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-track { background: transparent; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ranking-table thead tr {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.ranking-table th {
+    padding: 12px 20px;
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ranking-table td {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.ranking-table tbody tr {
+    transition: background 0.15s;
+}
+
+.ranking-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ranking-table tbody tr.podium {
+    background: rgba(138, 43, 226, 0.06);
+}
+
+.ranking-table tbody tr.podium:hover {
+    background: rgba(138, 43, 226, 0.1);
+}
+
+/* Columns */
+.rank-col   { width: 70px; }
+.metric-col { width: 130px; text-align: right; }
+
+.rank-cell {
+    text-align: center;
+}
+
+.rank-badge {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.rank-number {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.label-cell {
+    max-width: 500px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.metric-cell {
+    text-align: right;
+    font-weight: 600;
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Footer / Pagination
+   ============================================================ */
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px 28px;
+    border-top: 1px solid var(--border-highlight);
+    background: rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.page-btn:hover:not([disabled]) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(138, 43, 226, 0.1);
+}
+
+.page-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    font-weight: 700;
+}
+
+.page-btn[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.page-btn .material-icons {
+    font-size: 1.1rem;
+}
+
+.page-info {
+    margin-left: 12px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}

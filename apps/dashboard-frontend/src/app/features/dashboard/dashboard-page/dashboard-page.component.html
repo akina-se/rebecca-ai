@@ -1,0 +1,214 @@
+<div class="view-section active">
+            
+    <div class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
+        <span class="material-icons">warning</span>
+        <span><strong>Action Required:</strong> 2 assets failed to generate AI captions. Interaction required to resolve pipeline blocks.</span>
+        <a routerLink="/assets">Review Assets &rarr;</a>
+    </div>
+
+    <!-- Block 1: KPI Overview -->
+    <div class="block-header" style="margin-top: 0;">
+        <h2><span class="material-icons">query_stats</span> Performance Overview</h2>
+        <!-- Date Picker Scoped ONLY to the KPIs -->
+        <app-dropdown 
+            [options]="['Last 7 Days', 'Last 30 Days', 'Year to Date']" 
+            [selectedOption]="'Last 30 Days'"
+            (selectionChange)="mockAlert('Filter KPIs by: ' + $event)">
+        </app-dropdown>
+    </div>
+    
+    <div class="kpi-grid">
+        <div class="card glass-panel">
+            <div class="card-title"><span class="material-icons">people</span> Followers</div>
+            <div class="card-value">1,248</div>
+            <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_up</span> +12% vs previous period</div>
+            <svg class="sparkline" viewBox="0 0 100 20">
+                <polyline fill="none" stroke="var(--success)" points="0,18 20,15 40,16 60,10 80,5 100,2" />
+            </svg>
+        </div>
+        <div class="card glass-panel">
+            <div class="card-title"><span class="material-icons">favorite</span> Engagement Rate</div>
+            <div class="card-value">4.2%</div>
+            <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_up</span> +0.5% vs previous period</div>
+            <svg class="sparkline" viewBox="0 0 100 20">
+                <polyline fill="none" stroke="var(--success)" points="0,15 20,18 40,12 60,8 80,10 100,5" />
+            </svg>
+        </div>
+        <div class="card glass-panel">
+            <div class="card-title"><span class="material-icons">chat</span> Daily Active Users</div>
+            <div class="card-value">45</div>
+            <div class="card-trend negative"><span class="material-icons" style="font-size: 1rem">trending_down</span> -2% vs previous period</div>
+            <svg class="sparkline" viewBox="0 0 100 20">
+                <polyline fill="none" stroke="var(--danger)" points="0,5 20,4 40,10 60,8 80,15 100,18" />
+            </svg>
+        </div>
+        <div class="card glass-panel">
+            <div class="card-title"><span class="material-icons">api</span> API Calls</div>
+            <div class="card-value">3,142</div>
+            <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> Steady (31% of quota)</div>
+            <svg class="sparkline" viewBox="0 0 100 20">
+                <polyline fill="none" stroke="#feca57" points="0,10 20,12 40,9 60,11 80,10 100,10" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Block 2: Rankings -->
+    <div class="block-header">
+        <h2><span class="material-icons">leaderboard</span> Leaderboards</h2>
+    </div>
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <!-- Top Posts -->
+        <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
+            <div class="table-header-container glass-panel">
+                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">emoji_events</span> Top Posts by Impressions</div>
+                <div class="ranking-tabs">
+                    <button class="rank-tab" [class.active]="topPostsMode === 'all-time'" (click)="setMode('posts', 'all-time')">All-Time</button>
+                    <button class="rank-tab" [class.active]="topPostsMode === 'yearly'" (click)="setMode('posts', 'yearly')">Yearly</button>
+                    <button class="rank-tab" [class.active]="topPostsMode === 'monthly'" (click)="setMode('posts', 'monthly')">Monthly</button>
+                    <app-date-picker-popover 
+                        [mode]="topPostsMode"
+                        [currentText]="topPostsDate"
+                        [hasNext]="false"
+                        (pick)="topPostsDate = $event; mockAlert('Changed Date to: ' + $event)">
+                    </app-date-picker-popover>
+                </div>
+            </div>
+            <table class="data-table glass-panel">
+                <thead><tr><th>Time</th><th>Post Snippet</th><th><span class="material-icons">visibility</span></th></tr></thead>
+                <tbody>
+                    <tr class="clickable" (click)="openPostDrawer('p1')">
+                        <td style="color: var(--text-muted)">2026-07-10 18:00</td>
+                        <td><div style="display: flex; align-items: center; gap: 8px;">水星の魔女、最新話見た！？... <span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span></div></td><td>5,120</td>
+                    </tr>
+                    <tr class="clickable" (click)="openPostDrawer('p2')">
+                        <td style="color: var(--text-muted)">2026-07-09 08:00</td>
+                        <td>おはよう！今日も1日頑張ろうね✨</td><td>4,800</td>
+                    </tr>
+                    <tr class="clickable" (click)="openPostDrawer('p3')">
+                        <td style="color: var(--text-muted)">2026-07-08 12:00</td>
+                        <td><div style="display: flex; align-items: center; gap: 8px;">夏コミ行く人いるー？ <span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span></div></td><td>3,950</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="table-footer-btn glass-panel" (click)="openRankingModal('posts')">View Full Ranking &rarr;</div>
+        </div>
+        
+        <!-- Top Users -->
+        <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
+            <div class="table-header-container glass-panel">
+                <div class="table-title"><span class="material-icons" style="color: var(--danger);">local_fire_department</span> Top Engaged Users</div>
+                <div class="ranking-tabs">
+                    <button class="rank-tab" [class.active]="topUsersMode === 'all-time'" (click)="setMode('users', 'all-time')">All-Time</button>
+                    <button class="rank-tab" [class.active]="topUsersMode === 'yearly'" (click)="setMode('users', 'yearly')">Yearly</button>
+                    <button class="rank-tab" [class.active]="topUsersMode === 'monthly'" (click)="setMode('users', 'monthly')">Monthly</button>
+                    <app-date-picker-popover 
+                        [mode]="topUsersMode"
+                        [currentText]="topUsersDate"
+                        [hasNext]="false"
+                        (pick)="topUsersDate = $event; mockAlert('Changed Date to: ' + $event)">
+                    </app-date-picker-popover>
+                </div>
+            </div>
+            <table class="data-table glass-panel">
+                <thead><tr><th>User ID</th><th>Interactions</th></tr></thead>
+                <tbody>
+                    <tr class="clickable" (click)="openUserDrawer('@gundam_fan_88')"><td>&#64;gundam_fan_88</td><td>156</td></tr>
+                    <tr class="clickable" (click)="openUserDrawer('@rebecca_oshi')"><td>&#64;rebecca_oshi</td><td>132</td></tr>
+                    <tr class="clickable" (click)="openUserDrawer('@tech_geek_tokyo')"><td>&#64;tech_geek_tokyo</td><td>89</td></tr>
+                </tbody>
+            </table>
+            <div class="table-footer-btn glass-panel" (click)="openRankingModal('users')">View Full Ranking &rarr;</div>
+        </div>
+    </div>
+
+    <!-- Block 3: Timeline Log -->
+    <div class="block-header" style="margin-top: 3rem;">
+        <h2><span class="material-icons">history</span> Timeline Post History</h2>
+        <input type="text" class="form-control" placeholder="Search logs..." style="width: 250px; padding: 0.5rem; border-radius: 20px;">
+    </div>
+    
+    <div class="bulk-actions-bar glass-panel" id="timeline-bulk-bar">
+        <label class="checkbox-container">
+            <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()"> 
+            <span style="margin-left: 8px;">Select All</span>
+        </label>
+        <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
+        <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
+            {{ selectedRows.size > 0 ? selectedRows.size + ' items selected' : 'Select items to perform actions' }}
+        </span>
+        <!-- Always reserve button space to prevent height shift -->
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedRows.size > 0 ? 'visible' : 'hidden'"
+            style="padding: 4px 12px; font-size: 0.8rem; border: 1px solid var(--danger); color: var(--danger); border-radius: 20px; background: rgba(255,71,87,0.1); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;"
+            (click)="executeBulkDelete()">
+            <span class="material-icons" style="font-size: 1rem;">delete</span> Delete from X
+        </button>
+    </div>
+    
+    <table class="data-table glass-panel" style="border-radius: 0;">
+        <thead><tr>
+            <th style="width: 40px;"></th>
+            <th>Time <span class="material-icons">arrow_downward</span></th>
+            <th>Media</th>
+            <th>Post Content</th>
+            <th>Impressions <span class="material-icons">unfold_more</span></th>
+            <th>Status</th>
+        </tr></thead>
+        <tbody>
+            <tr class="clickable" *ngFor="let post of timelinePosts" (click)="openPostDrawer(post.id)">
+                <td (click)="$event.stopPropagation()">
+                    <label class="checkbox-container">
+                        <input type="checkbox" class="row-checkbox" [checked]="selectedRows.has(post.id)" (change)="toggleRowSelection(post.id, $event)">
+                    </label>
+                </td>
+                <td style="color: var(--text-muted)">{{ post.time }}</td>
+                <td>
+                    <div *ngIf="post.hasMedia" (click)="$event.stopPropagation(); openLightbox()" style="width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border-color);">
+                        <span class="material-icons" style="font-size: 1.2rem; color: var(--color-primary)">image</span>
+                    </div>
+                </td>
+                <td>{{ post.text }}</td>
+                <td>{{ post.impressions }}</td>
+                <td><span class="badge">{{ post.status }}</span></td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px;">
+        <span>Showing 1-10 of 450 posts</span>
+        <div class="pagination-controls">
+            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn" (click)="mockAlert('Mock: Load page 2')">2</button>
+            <button class="page-btn" (click)="mockAlert('Mock: Load page 3')">3</button>
+            <span>...</span>
+            <button class="page-btn" (click)="mockAlert('Mock: Load next page')"><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
+        </div>
+    </div>
+</div>
+
+<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
+    <!-- Post Detail Drawer -->
+    <div style="padding: 20px;" *ngIf="drawerType === 'post'">
+        <app-post-drawer 
+            [postId]="selectedItemId"
+            (openLightbox)="openLightbox($event)">
+        </app-post-drawer>
+    </div>
+    <!-- User Profile Drawer -->
+    <div style="padding: 20px;" *ngIf="drawerType === 'user'">
+        <app-user-drawer [userId]="selectedItemId"></app-user-drawer>
+    </div>
+</app-right-drawer>
+
+<app-lightbox 
+    [isOpen]="isLightboxOpen" 
+    [imageUrl]="lightboxImageUrl" 
+    (close)="isLightboxOpen = false">
+</app-lightbox>
+
+<app-ranking-modal
+    [isOpen]="isRankingModalOpen"
+    [title]="rankingModalTitle"
+    [colLabel]="rankingModalLabel"
+    (close)="isRankingModalOpen = false">
+</app-ranking-modal>

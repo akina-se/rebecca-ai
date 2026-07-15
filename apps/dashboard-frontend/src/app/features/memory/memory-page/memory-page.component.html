@@ -1,0 +1,38 @@
+<div class="view-section active">
+        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2><span class="material-icons">dns</span> System Memory Layers</h2>
+            <button class="btn btn-primary" (click)="forceDreaming()" [disabled]="isDreaming" style="display: flex; align-items: center; gap: 8px; width: 185px; justify-content: center; overflow: hidden; white-space: nowrap;">
+                <span class="material-icons" [class.spinning]="isDreaming" style="flex-shrink:0;">{{ isDreaming ? 'sync' : 'auto_awesome' }}</span>
+                {{ isDreaming ? 'Processing...' : 'Force Dreaming' }}
+            </button>
+        </div>
+    <table class="data-table glass-panel" style="border-radius: 12px;">
+        <thead><tr><th>Layer <span class="material-icons">arrow_upward</span></th><th>Description</th><th>Last Updated <span class="material-icons">unfold_more</span></th></tr></thead>
+        <tbody>
+            <tr class="clickable" (click)="openDrawer(0, 'Level 0: Base Persona', 'dns')">
+                <td><span class="badge" style="background: rgba(255,255,255,0.1); color: #ddd;">Level 0</span> Base Persona</td>
+                <td>Core system prompt (Codebase)</td>
+                <td style="color: var(--text-muted)">System Deploy</td>
+            </tr>
+            <tr class="clickable" (click)="openDrawer(1, 'Level 1: Episodic Buffer', 'chat')">
+                <td><span class="badge">Level 1</span> Episodic Buffer</td>
+                <td>Recent short-term user interactions (Raw Logs)</td>
+                <td>10 mins ago</td>
+            </tr>
+            <tr class="clickable" (click)="openDrawer(2, 'Level 2: User Core Profile', 'person')">
+                <td><span class="badge">Level 2</span> User Core Profile</td>
+                <td>Synthesized Long-Term Memory (Dreaming JSON)</td>
+                <td>2 hours ago</td>
+            </tr>
+            <tr class="clickable" (click)="openDrawer(3, 'Level 3: Global Timeline Summary', 'public')">
+                <td><span class="badge">Level 3</span> Global Timeline Summary</td>
+                <td>System-wide context summary of recent posts</td>
+                <td>1 hour ago</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
+    <app-memory-drawer [level]="drawerLevel"></app-memory-drawer>
+</app-right-drawer>

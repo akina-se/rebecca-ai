@@ -1,0 +1,53 @@
+<div class="drawer-content">
+
+    <!-- Image Preview -->
+    <div class="asset-preview glass-panel">
+        <img [src]="displayAsset.url" alt="Asset Preview" class="preview-img">
+        <button class="btn btn-primary enlarge-btn" (click)="onViewFullSize()">
+            <span class="material-icons">zoom_in</span>
+        </button>
+    </div>
+
+    <!-- Asset Details -->
+    <div class="glass-panel stat-box">
+        <div class="timeline-stat">
+            <div class="stat-label">Asset Name</div>
+            <div class="stat-value" style="word-break: break-all;">{{ displayAsset.name }}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="timeline-stat">
+            <div class="stat-label">Generated Caption</div>
+            <div class="stat-value caption-text">{{ displayAsset.caption }}</div>
+        </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-grid">
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon">bar_chart</span>
+            <div class="metric-info">
+                <div class="metric-title">Use Count</div>
+                <div class="metric-value">{{ displayAsset.useCount }}</div>
+            </div>
+        </div>
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon" style="color: var(--warning);">schedule</span>
+            <div class="metric-info">
+                <div class="metric-title">Last Used</div>
+                <div class="metric-value">{{ formatDate(displayAsset.lastUsedAt) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-buttons">
+        <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 12px;" (click)="onViewFullSize()">
+            <span class="material-icons">fullscreen</span> View Full Size
+        </button>
+        <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);" 
+            (click)="onDelete()" [disabled]="isDeleting">
+            <span class="material-icons" [class.spinning]="isDeleting">{{ isDeleting ? 'sync' : 'delete' }}</span> 
+            {{ isDeleting ? 'Deleting...' : 'Delete Asset' }}
+        </button>
+    </div>
+</div>

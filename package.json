@@ -1,13 +1,21 @@
 {
   "name": "rebecca-ai-gal-monorepo",
+  "version": "1.4.0",
+  "description": "",
+  "author": "AKINA",
+  "license": "MIT",
   "private": true,
   "workspaces": [
-    "backend",
-    "frontend"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
-    "start": "npm run start --workspace=backend",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "latest"
   }
 }

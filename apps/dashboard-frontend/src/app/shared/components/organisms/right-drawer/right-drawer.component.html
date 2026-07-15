@@ -1,0 +1,10 @@
+<div class="drawer-overlay" [class.open]="isOpen" (click)="close()"></div>
+<div class="drawer right-drawer glass-panel" [class.open]="isOpen">
+    <div class="drawer-header">
+        <h3 style="display: flex; align-items: center; gap: 8px;"><span class="material-icons">{{ icon }}</span> {{ title }}</h3>
+        <button class="close-btn" (click)="close()"><span class="material-icons">close</span></button>
+    </div>
+    <div class="drawer-body">
+        <ng-content></ng-content>
+    </div>
+</div>

@@ -1,0 +1,78 @@
+<div class="drawer-content">
+
+    <!-- Profile Header -->
+    <div class="glass-panel profile-box">
+        <div class="profile-header">
+            <div class="avatar-placeholder">
+                <span class="material-icons">person</span>
+            </div>
+            <div class="profile-info">
+                <div class="profile-name">{{ mockUser.name }}</div>
+                <div class="profile-handle">{{ userId || mockUser.handle }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-grid">
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon">forum</span>
+            <div class="metric-info">
+                <div class="metric-title">Interactions</div>
+                <div class="metric-value">{{ mockUser.interactions }}</div>
+            </div>
+        </div>
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon" style="color: #ff4757;">favorite</span>
+            <div class="metric-info">
+                <div class="metric-title">Affinity</div>
+                <div class="metric-value">{{ mockUser.affinityScore }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- First/Last Seen -->
+    <div class="glass-panel stat-box">
+        <div class="timeline-stat">
+            <div class="stat-label">First Seen</div>
+            <div class="stat-value">{{ mockUser.firstSeen }}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="timeline-stat">
+            <div class="stat-label">Last Seen</div>
+            <div class="stat-value">{{ mockUser.lastSeen }}</div>
+        </div>
+    </div>
+
+    <!-- Chat History -->
+    <div>
+        <div class="section-label">
+            <span class="material-icons" style="font-size: 1rem;">chat</span>
+            Past Interactions
+        </div>
+        <div class="chat-history">
+            <div class="chat-bubble user" *ngFor="let msg of mockUser.chatHistory">
+                <ng-container *ngIf="msg.from === 'user'">
+                    <div class="bubble-content user-bubble">{{ msg.text }}</div>
+                    <div class="bubble-time">{{ msg.time }}</div>
+                </ng-container>
+                <ng-container *ngIf="msg.from === 'rebecca'">
+                    <div class="bubble-rebecca-wrapper">
+                        <div class="rebecca-icon">R</div>
+                        <div>
+                            <div class="bubble-content rebecca-bubble">{{ msg.text }}</div>
+                            <div class="bubble-time">{{ msg.time }}</div>
+                        </div>
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-buttons">
+        <button class="btn btn-outline" style="width: 100%; justify-content: center;">
+            <span class="material-icons">open_in_new</span> View on X
+        </button>
+    </div>
+</div>
