@@ -13,14 +13,14 @@
         <div class="timeline-stat" style="display: block;">
             <div class="stat-label" style="margin-bottom: 8px;">Asset Name</div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="text" class="form-control" [(ngModel)]="mockAsset.name" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: white;">
+                <input type="text" class="form-control" [(ngModel)]="mockAsset.name" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
                 <span style="color: var(--text-muted); font-weight: 500;">.png</span>
             </div>
         </div>
         <div class="divider"></div>
         <div class="timeline-stat" style="display: block;">
             <div class="stat-label" style="margin-bottom: 8px;">Generated Caption</div>
-            <textarea class="form-control" [(ngModel)]="mockAsset.caption" style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: white; resize: vertical;"></textarea>
+            <textarea class="form-control" [(ngModel)]="mockAsset.caption" style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main); resize: vertical;"></textarea>
         </div>
         <div style="margin-top: 16px;">
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" (click)="onSave()" [disabled]="isSaving">

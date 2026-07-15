@@ -73,7 +73,7 @@
             class="btn" 
             [disabled]="isDeleting"
             [style.opacity]="isDeleting ? '0.6' : '1'"
-            style="width: 100%; justify-content: center; background: rgba(255, 71, 87, 0.15); border: 1px solid #ff4757; color: #ff4757; border-radius: 8px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
+            style="width: 100%; justify-content: center; background: rgba(255, 71, 87, 0.15); border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
             (click)="onDeletePost()">
             <span class="material-icons" *ngIf="!isDeleting">delete</span>
             <span *ngIf="!isDeleting">Delete Post</span>
