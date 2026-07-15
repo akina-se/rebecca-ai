@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AssetDrawerComponent } from '../../../shared/components/organisms/asset-drawer/asset-drawer.component';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
+import { ActionHelperService } from '../../../shared/services/action-helper.service';
+import { inject } from '@angular/core';
 
 @Component({
   selector: 'app-assets-page',
@@ -72,23 +74,21 @@ export class AssetsPageComponent {
     }
   }
 
-  executeBulkDelete() {
+  actionHelper = inject(ActionHelperService);
+
+  async executeBulkDelete() {
     this.isDeletingBulk = true;
-    setTimeout(() => {
-      this.mockAlert('Batch delete completed.');
-      this.isDeletingBulk = false;
-      this.selectedAssets.clear();
-      this.selectAll = false;
-    }, 1500);
+    await this.actionHelper.executeMockAction(`Successfully deleted ${this.selectedAssets.size} assets`);
+    this.isDeletingBulk = false;
+    this.selectedAssets.clear();
+    this.selectAll = false;
   }
 
-  executeBulkRetry() {
+  async executeBulkRetry() {
     this.isRetryingBulk = true;
-    setTimeout(() => {
-      this.mockAlert('Retry AI generation completed.');
-      this.isRetryingBulk = false;
-      this.selectedAssets.clear();
-      this.selectAll = false;
-    }, 1500);
+    await this.actionHelper.executeMockAction(`Successfully queued retry for ${this.selectedAssets.size} assets`);
+    this.isRetryingBulk = false;
+    this.selectedAssets.clear();
+    this.selectAll = false;
   }
 }

@@ -42,24 +42,6 @@ export class DatePickerPopoverComponent {
    */
   toggle(navEl: HTMLElement): void {
     if (this.mode === 'all-time') return;
-
-    if (!this.isOpen) {
-      const rect = navEl.getBoundingClientRect();
-      const popoverWidth = 160;
-      let left = rect.left + rect.width / 2 - popoverWidth / 2;
-
-      // Clamp to viewport edges with 8px padding.
-      left = Math.max(8, Math.min(left, window.innerWidth - popoverWidth - 8));
-
-      this.popoverStyle = {
-        position: 'fixed',
-        top: `${rect.bottom + 8}px`,
-        left: `${left}px`,
-        width: `${popoverWidth}px`,
-        zIndex: '9999'
-      };
-    }
-
     this.isOpen = !this.isOpen;
     this.cdr.markForCheck();
   }

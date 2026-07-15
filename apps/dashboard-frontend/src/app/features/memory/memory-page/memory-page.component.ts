@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ToastService } from '../../../shared/services/toast.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { MemoryDrawerComponent } from '../../../shared/components/organisms/memory-drawer/memory-drawer.component';
+import { ActionHelperService } from '../../../shared/services/action-helper.service';
 
 @Component({
   selector: 'app-memory-page',
@@ -36,15 +37,13 @@ export class MemoryPageComponent implements OnInit {
     this.toastService.show(msg, 'info');
   }
 
+  actionHelper = inject(ActionHelperService);
+
   async forceDreaming() {
     if (this.isDreaming) return;
     
     this.isDreaming = true;
-    this.toastService.show('Started background batch processing for Force Dreaming...', 'info');
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
+    await this.actionHelper.executeMockAction('Force Dreaming completed successfully. Memory aligned.');
     this.isDreaming = false;
-    this.toastService.show('Force Dreaming completed successfully. Memory aligned.', 'success');
   }
 }
