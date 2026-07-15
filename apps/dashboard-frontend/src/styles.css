@@ -20,6 +20,12 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
+/* Custom Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary-glow); }
+
 body { 
     background-color: var(--bg-base); 
     background-image: radial-gradient(circle at 15% 50%, rgba(155, 89, 182, 0.05), transparent 25%), radial-gradient(circle at 85% 30%, rgba(155, 89, 182, 0.03), transparent 25%);
@@ -87,8 +93,11 @@ body {
 .sparkline { width: 100%; height: 40px; margin-top: 10px; opacity: 0.8; }
 .sparkline polyline { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 
-.btn { background-color: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; backdrop-filter: blur(4px); }
+.btn { background-color: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; backdrop-filter: blur(4px); position: relative; overflow: hidden; }
 .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+.btn:active { transform: scale(0.96); }
+.btn::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 150%; background: radial-gradient(circle, rgba(255,255,255,0.4) 10%, transparent 40%); opacity: 0; transform: translate(-50%, -50%) scale(0.5); transition: opacity 0.4s, transform 0s; pointer-events: none; }
+.btn:active::after { opacity: 1; transform: translate(-50%, -50%) scale(1); transition: 0s; }
 .btn-primary { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: white; border: none; box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3); }
 .btn-primary:hover { box-shadow: 0 6px 20px rgba(155, 89, 182, 0.5); }
 .btn-secondary { background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border-color); }
@@ -108,13 +117,21 @@ body {
 
 .data-table { width: 100%; border-collapse: collapse; border-radius: 0; overflow: hidden; border: 1px solid var(--border-color); border-bottom: none; border-top: none; }
 .data-table th, .data-table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
-.data-table th { color: var(--text-muted); font-weight: 500; background-color: rgba(0,0,0,0.2); font-size: 0.75rem; text-transform: uppercase; cursor: pointer; user-select: none; }
+.data-table th { color: var(--text-muted); font-weight: 500; background-color: rgba(20, 15, 25, 0.95); backdrop-filter: blur(10px); font-size: 0.75rem; text-transform: uppercase; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 5; box-shadow: 0 1px 0 var(--border-color); }
 .data-table th:hover { color: var(--text-main); }
+.data-table tr.clickable td:first-child { position: relative; }
+.data-table tr.clickable td:first-child::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 3px; background: var(--color-primary); opacity: 0; transition: opacity 0.2s; box-shadow: 0 0 8px var(--color-primary-glow); }
 .data-table tr.clickable:hover td { background-color: var(--bg-surface-hover); cursor: pointer; }
+.data-table tr.clickable:hover td:first-child::before { opacity: 1; }
 
 /* Custom Checkbox */
-.checkbox-container { display: flex; align-items: center; cursor: pointer; }
-.checkbox-container input { cursor: pointer; width: 16px; height: 16px; accent-color: var(--color-primary); }
+.checkbox-container { display: flex; align-items: center; cursor: pointer; position: relative; user-select: none; }
+.checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+.checkmark { width: 18px; height: 18px; background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-right: 8px; }
+.checkbox-container:hover input ~ .checkmark { border-color: var(--color-primary-glow); }
+.checkbox-container input:checked ~ .checkmark { background-color: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 0 8px var(--color-primary-glow); }
+.checkmark::after { content: ""; display: none; width: 4px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
+.checkbox-container input:checked ~ .checkmark::after { display: block; }
 
 .badge { padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; background-color: rgba(155, 89, 182, 0.2); color: var(--text-main); border: 1px solid rgba(155, 89, 182, 0.3); }
 
@@ -160,7 +177,8 @@ body {
 .close-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
 .form-group { margin-bottom: 1.5rem; }
 .form-label { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
-.form-control { width: 100%; background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; transition: 0.2s; }
+.form-control { width: 100%; background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; transition: all 0.2s; }
+.form-control:hover { border-color: rgba(255,255,255,0.15); }
 .form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2); }
 textarea.form-control { resize: vertical; min-height: 120px; line-height: 1.5; }
 

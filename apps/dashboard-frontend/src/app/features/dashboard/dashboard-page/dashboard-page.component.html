@@ -1,4 +1,20 @@
 <div class="view-section active">
+    
+    <!-- Shared SVG Gradients -->
+    <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+        <linearGradient id="spark-success" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="var(--success)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--success)" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="spark-danger" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="var(--danger)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--danger)" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="spark-warning" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="var(--warning)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--warning)" stop-opacity="0"/>
+        </linearGradient>
+    </svg>
             
     <div class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
         <span class="material-icons">warning</span>
@@ -23,6 +39,7 @@
             <div class="card-value">1,248</div>
             <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_up</span> +12% vs previous period</div>
             <svg class="sparkline" viewBox="0 0 100 20">
+                <polygon fill="url(#spark-success)" points="0,20 0,18 20,15 40,16 60,10 80,5 100,2 100,20" />
                 <polyline fill="none" stroke="var(--success)" points="0,18 20,15 40,16 60,10 80,5 100,2" />
             </svg>
         </div>
@@ -31,6 +48,7 @@
             <div class="card-value">4.2%</div>
             <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_up</span> +0.5% vs previous period</div>
             <svg class="sparkline" viewBox="0 0 100 20">
+                <polygon fill="url(#spark-success)" points="0,20 0,15 20,18 40,12 60,8 80,10 100,5 100,20" />
                 <polyline fill="none" stroke="var(--success)" points="0,15 20,18 40,12 60,8 80,10 100,5" />
             </svg>
         </div>
@@ -39,6 +57,7 @@
             <div class="card-value">45</div>
             <div class="card-trend negative"><span class="material-icons" style="font-size: 1rem">trending_down</span> -2% vs previous period</div>
             <svg class="sparkline" viewBox="0 0 100 20">
+                <polygon fill="url(#spark-danger)" points="0,20 0,5 20,4 40,10 60,8 80,15 100,18 100,20" />
                 <polyline fill="none" stroke="var(--danger)" points="0,5 20,4 40,10 60,8 80,15 100,18" />
             </svg>
         </div>
@@ -47,7 +66,8 @@
             <div class="card-value">3,142</div>
             <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> Steady (31% of quota)</div>
             <svg class="sparkline" viewBox="0 0 100 20">
-                <polyline fill="none" stroke="#feca57" points="0,10 20,12 40,9 60,11 80,10 100,10" />
+                <polygon fill="url(#spark-warning)" points="0,20 0,10 20,12 40,9 60,11 80,10 100,10 100,20" />
+                <polyline fill="none" stroke="var(--warning)" points="0,10 20,12 40,9 60,11 80,10 100,10" />
             </svg>
         </div>
     </div>
@@ -133,7 +153,8 @@
     
     <div class="bulk-actions-bar glass-panel" id="timeline-bulk-bar">
         <label class="checkbox-container">
-            <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()"> 
+            <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()">
+            <span class="checkmark"></span>
             <span style="margin-left: 8px;">Select All</span>
         </label>
         <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
@@ -163,8 +184,9 @@
         <tbody>
             <tr class="clickable" *ngFor="let post of timelinePosts" (click)="openPostDrawer(post.id)">
                 <td (click)="$event.stopPropagation()">
-                    <label class="checkbox-container">
+                    <label class="checkbox-container" (click)="$event.stopPropagation()">
                         <input type="checkbox" class="row-checkbox" [checked]="selectedRows.has(post.id)" (change)="toggleRowSelection(post.id, $event)">
+                        <span class="checkmark"></span>
                     </label>
                 </td>
                 <td style="color: var(--text-muted)">{{ post.time }}</td>
