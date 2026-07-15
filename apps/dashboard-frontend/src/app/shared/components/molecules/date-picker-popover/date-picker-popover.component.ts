@@ -40,11 +40,11 @@ export class DatePickerPopoverComponent {
    * so the popover always renders below the trigger even inside overflow:hidden
    * parent containers.
    */
-  toggle(): void {
+  toggle(navEl: HTMLElement): void {
     if (this.mode === 'all-time') return;
 
     if (!this.isOpen) {
-      const rect: DOMRect = (this.eRef.nativeElement as HTMLElement).getBoundingClientRect();
+      const rect = navEl.getBoundingClientRect();
       const popoverWidth = 160;
       let left = rect.left + rect.width / 2 - popoverWidth / 2;
 
@@ -52,9 +52,11 @@ export class DatePickerPopoverComponent {
       left = Math.max(8, Math.min(left, window.innerWidth - popoverWidth - 8));
 
       this.popoverStyle = {
+        position: 'fixed',
         top: `${rect.bottom + 8}px`,
         left: `${left}px`,
         width: `${popoverWidth}px`,
+        zIndex: '9999'
       };
     }
 

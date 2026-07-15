@@ -56,6 +56,9 @@ export class AssetsPageComponent {
     }
   }
 
+  isDeletingBulk = false;
+  isRetryingBulk = false;
+
   toggleSelection(id: string, event: Event) {
     event.stopPropagation();
     if (this.selectedAssets.has(id)) {
@@ -67,5 +70,25 @@ export class AssetsPageComponent {
         this.selectAll = true;
       }
     }
+  }
+
+  executeBulkDelete() {
+    this.isDeletingBulk = true;
+    setTimeout(() => {
+      this.mockAlert('Batch delete completed.');
+      this.isDeletingBulk = false;
+      this.selectedAssets.clear();
+      this.selectAll = false;
+    }, 1500);
+  }
+
+  executeBulkRetry() {
+    this.isRetryingBulk = true;
+    setTimeout(() => {
+      this.mockAlert('Retry AI generation completed.');
+      this.isRetryingBulk = false;
+      this.selectedAssets.clear();
+      this.selectAll = false;
+    }, 1500);
   }
 }

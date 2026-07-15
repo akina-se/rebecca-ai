@@ -18,7 +18,7 @@
             <th>Status</th>
         </tr></thead>
         <tbody>
-            <tr class="clickable" (click)="mockAlert('Open User Drawer: @user_alpha_99')">
+            <tr class="clickable" (click)="openUserDrawer('@user_alpha_99')">
                 <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox"></label></td>
                 <td style="font-weight: 500;">&#64;user_alpha_99</td>
                 <td>42</td>
@@ -26,7 +26,7 @@
                 <td>12 entries</td>
                 <td><span class="badge">Active</span></td>
             </tr>
-            <tr class="clickable" (click)="mockAlert('Open User Drawer: @rebecca_oshi')">
+            <tr class="clickable" (click)="openUserDrawer('@rebecca_oshi')">
                 <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox"></label></td>
                 <td style="font-weight: 500;">&#64;rebecca_oshi</td>
                 <td>132</td>
@@ -34,7 +34,7 @@
                 <td>45 entries</td>
                 <td><span class="badge">Active</span></td>
             </tr>
-            <tr class="clickable" style="opacity: 0.6;" (click)="mockAlert('Open User Drawer: @spam_bot_001')">
+            <tr class="clickable" style="opacity: 0.6;" (click)="openUserDrawer('@spam_bot_001')">
                 <td (click)="$event.stopPropagation()"><label class="checkbox-container"><input type="checkbox" class="row-checkbox"></label></td>
                 <td style="font-weight: 500; text-decoration: line-through;">&#64;spam_bot_001</td>
                 <td>0</td>
@@ -53,4 +53,11 @@
             <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
         </div>
     </div>
+    </div>
 </div>
+
+<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
+    <div style="padding: 20px;">
+        <app-user-drawer [userId]="selectedUserId"></app-user-drawer>
+    </div>
+</app-right-drawer>

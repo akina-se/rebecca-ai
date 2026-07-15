@@ -15,18 +15,11 @@
 
     <!-- Metrics -->
     <div class="metrics-grid">
-        <div class="glass-panel metric-box">
+        <div class="glass-panel metric-box" style="grid-column: span 2;">
             <span class="material-icons metric-icon">forum</span>
             <div class="metric-info">
                 <div class="metric-title">Interactions</div>
                 <div class="metric-value">{{ mockUser.interactions }}</div>
-            </div>
-        </div>
-        <div class="glass-panel metric-box">
-            <span class="material-icons metric-icon" style="color: #ff4757;">favorite</span>
-            <div class="metric-info">
-                <div class="metric-title">Affinity</div>
-                <div class="metric-value">{{ mockUser.affinityScore }}</div>
             </div>
         </div>
     </div>
@@ -51,14 +44,14 @@
             Past Interactions
         </div>
         <div class="chat-history">
-            <div class="chat-bubble user" *ngFor="let msg of mockUser.chatHistory">
+            <div class="chat-bubble user" *ngFor="let msg of mockUser.chatHistory" [class.user]="msg.from === 'user'">
                 <ng-container *ngIf="msg.from === 'user'">
                     <div class="bubble-content user-bubble">{{ msg.text }}</div>
-                    <div class="bubble-time">{{ msg.time }}</div>
+                    <div class="bubble-time" style="text-align: right;">{{ msg.time }}</div>
                 </ng-container>
                 <ng-container *ngIf="msg.from === 'rebecca'">
                     <div class="bubble-rebecca-wrapper">
-                        <div class="rebecca-icon">R</div>
+                        <img src="rebecca_icon.png" alt="Rebecca" class="rebecca-icon">
                         <div>
                             <div class="bubble-content rebecca-bubble">{{ msg.text }}</div>
                             <div class="bubble-time">{{ msg.time }}</div>

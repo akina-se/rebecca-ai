@@ -5,7 +5,7 @@ import * as firestore from '../src/services/firestore';
 import { analyzeImageCaption, generateEmbedding } from '../src/services/gemini';
 import * as storage from '../src/services/storage';
 
-const IMAGES_DIR = path.join(process.cwd(), '../../images');
+const IMAGES_DIR = path.join(process.cwd(), './images');
 
 const getMimeType = (ext: string) => {
     if (ext === '.png') return 'image/png';

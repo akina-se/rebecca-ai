@@ -68,7 +68,9 @@
                     <app-date-picker-popover 
                         [mode]="topPostsMode"
                         [currentText]="topPostsDate"
-                        [hasNext]="false"
+                        [hasNext]="topPostsDate !== 'July 2026' && topPostsDate !== '2026' && topPostsDate !== 'All-Time'"
+                        (previous)="shiftDate('posts', -1)"
+                        (next)="shiftDate('posts', 1)"
                         (pick)="topPostsDate = $event; mockAlert('Changed Date to: ' + $event)">
                     </app-date-picker-popover>
                 </div>
@@ -104,7 +106,9 @@
                     <app-date-picker-popover 
                         [mode]="topUsersMode"
                         [currentText]="topUsersDate"
-                        [hasNext]="false"
+                        [hasNext]="topUsersDate !== 'July 2026' && topUsersDate !== '2026' && topUsersDate !== 'All-Time'"
+                        (previous)="shiftDate('users', -1)"
+                        (next)="shiftDate('users', 1)"
                         (pick)="topUsersDate = $event; mockAlert('Changed Date to: ' + $event)">
                     </app-date-picker-popover>
                 </div>
