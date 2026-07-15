@@ -181,18 +181,3 @@ textarea.form-control { resize: vertical; min-height: 120px; line-height: 1.5; }
 .center-modal { border: 1px solid var(--border-highlight); border-radius: 16px; width: 90%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
 .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-radius: 16px 16px 0 0; }
 .modal-body { padding: 0; overflow-y: auto; flex: 1; }
-
-/* AI Copilot Panel */
-.ai-drawer { width: 450px; border-left: 1px solid var(--color-primary); z-index: 150; background: rgba(20, 15, 25, 0.85); box-shadow: -10px 0 50px rgba(155, 89, 182, 0.15); }
-.ai-message { display: flex; gap: 12px; margin-bottom: 1.5rem; }
-.ai-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); flex-shrink: 0; box-shadow: 0 0 10px var(--color-primary-glow); object-fit: cover; object-position: center; display: block; margin: 0; padding: 0; }
-.ai-content { background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 0 12px 12px 12px; border: 1px solid rgba(155, 89, 182, 0.3); font-size: 0.9rem; line-height: 1.5; color: #e6e6e6; }
-
-.action-chip { background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.4); color: #d7bde2; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; display: inline-block; margin-right: 8px; margin-bottom: 8px; transition: all 0.2s; }
-.action-chip:hover { background: rgba(155, 89, 182, 0.25); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2); }
-
-.chat-input-container { padding: 1.2rem; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.3); display: flex; gap: 10px; }
-.chat-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: white; border-radius: 24px; padding: 0.8rem 1.2rem; font-size: 0.9rem; transition: 0.2s; }
-.chat-input:focus { outline: none; border-color: var(--color-primary); background: rgba(0,0,0,0.4); }
-.send-btn { background: none; border: none; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.5rem; transition: 0.2s; }
-.send-btn:hover { transform: scale(1.1); text-shadow: 0 0 10px var(--color-primary-glow); }
