@@ -1,8 +1,11 @@
-<div class="drawer-overlay" [class.open]="isOpen" (click)="close()"></div>
-<div class="drawer right-drawer glass-panel" [class.open]="isOpen">
-    <div class="drawer-header">
+<div class="drawer-overlay" [class.open]="isOpen" (click)="close()" tabindex="0" (keyup.enter)="close()" (keyup.space)="close()"></div>
+<div class="drawer right-drawer glass-panel" [class.open]="isOpen" [class.shifted]="isAiDrawerOpen">
+    <div class="drawer-header" style="background: transparent;">
         <h3 style="display: flex; align-items: center; gap: 8px;"><span class="material-icons">{{ icon }}</span> {{ title }}</h3>
-        <button class="close-btn" (click)="close()"><span class="material-icons">close</span></button>
+        <div style="display: flex; gap: 10px;">
+            <button class="sparkle-btn" (click)="openAiCopilot()"><span class="material-icons" style="font-size: 1.1rem;">auto_awesome</span> Analyze</button>
+            <button class="close-btn" (click)="close()"><span class="material-icons">close</span></button>
+        </div>
     </div>
     <div class="drawer-body">
         <ng-content></ng-content>

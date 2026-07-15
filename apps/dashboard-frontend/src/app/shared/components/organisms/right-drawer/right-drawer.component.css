@@ -28,3 +28,15 @@
 .right-drawer.open {
     right: 0;
 }
+
+.right-drawer.shifted {
+    right: 450px;
+    border-right: 1px solid var(--border-highlight);
+    box-shadow: none;
+}
+
+@media (max-width: 1300px) {
+    .right-drawer.shifted {
+        right: 0;
+    }
+}

@@ -7,7 +7,7 @@
 .close-btn:hover { background: rgba(255,255,255,0.1); color: white; }
 
 /* AI Copilot Panel */
-.ai-drawer { width: 450px; border-left: 1px solid var(--color-primary); z-index: 150; background: rgba(20, 15, 25, 0.85); box-shadow: -10px 0 50px rgba(155, 89, 182, 0.15); }
+.ai-drawer { width: 450px; border-left: 1px solid var(--color-primary); z-index: 1060; background: rgba(20, 15, 25, 0.85); box-shadow: -10px 0 50px rgba(155, 89, 182, 0.15); }
 .ai-message { display: flex; gap: 12px; margin-bottom: 1.5rem; }
 .ai-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-weight: bold; font-family: sans-serif; box-shadow: 0 0 10px var(--color-primary-glow); }
 .ai-content { background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 0 12px 12px 12px; border: 1px solid rgba(155, 89, 182, 0.3); font-size: 0.9rem; line-height: 1.5; color: #e6e6e6; }
