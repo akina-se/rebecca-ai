@@ -35,6 +35,7 @@ export class AssetDrawerComponent {
 
   isDeleting = false;
   isSaving = false;
+  isRegenerating = false;
 
   /** Mock asset data – replaced by real API data post-MVP. */
   mockAsset: AssetDrawerData = {
@@ -60,6 +61,13 @@ export class AssetDrawerComponent {
     this.isSaving = true;
     await this.actionHelper.executeMockAction(`Successfully saved asset ${this.displayAsset.id}`);
     this.isSaving = false;
+  }
+
+  async onRegenerate(): Promise<void> {
+    this.isRegenerating = true;
+    await this.actionHelper.executeMockAction(`Successfully regenerated caption for asset ${this.displayAsset.id}`);
+    this.mockAsset.caption = 'AI Regenerated: ' + this.mockAsset.caption;
+    this.isRegenerating = false;
   }
 
   async onDelete(): Promise<void> {
