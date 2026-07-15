@@ -7,13 +7,39 @@
 .close-btn:hover { background: rgba(255,255,255,0.1); color: white; }
 
 /* AI Copilot Panel */
-.ai-drawer { width: 450px; border-left: 1px solid var(--color-primary); z-index: 1060; background: rgba(20, 15, 25, 0.85); box-shadow: -10px 0 50px rgba(155, 89, 182, 0.15); }
-.ai-message { display: flex; gap: 12px; margin-bottom: 1.5rem; }
-.ai-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-weight: bold; font-family: sans-serif; box-shadow: 0 0 10px var(--color-primary-glow); }
+.ai-drawer { 
+    width: 450px; 
+    border-left: 1px solid var(--color-primary); 
+    z-index: 1060; 
+    background: linear-gradient(135deg, #09090b, #1a0b2e, #09090b, #110524);
+    background-size: 300% 300%;
+    animation: ambientMindscape 15s ease infinite;
+    box-shadow: -10px 0 50px rgba(155, 89, 182, 0.15); 
+}
+
+@keyframes ambientMindscape {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.ai-message { display: flex; gap: 12px; margin-bottom: 1.5rem; animation: slideUpFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(12px); }
+.ai-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; font-weight: bold; font-family: sans-serif; box-shadow: 0 0 10px var(--color-primary-glow); animation: breathGlow 4s ease-in-out infinite; }
 .ai-content { background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 0 12px 12px 12px; border: 1px solid rgba(155, 89, 182, 0.3); font-size: 0.9rem; line-height: 1.5; color: #e6e6e6; }
 
-.action-chip { background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.4); color: #d7bde2; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; display: inline-block; margin-right: 8px; margin-bottom: 8px; transition: all 0.2s; }
+@keyframes breathGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.7), 0 0 35px rgba(168, 85, 247, 0.3); }
+}
+
+@keyframes slideUpFadeIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.action-chip { position: relative; overflow: hidden; background: rgba(155, 89, 182, 0.1); border: 1px solid rgba(155, 89, 182, 0.4); color: #d7bde2; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; display: inline-block; margin-right: 8px; margin-bottom: 8px; transition: all 0.2s; }
+.action-chip::before { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent); transform: skewX(-20deg); transition: none; }
 .action-chip:hover { background: rgba(155, 89, 182, 0.25); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2); }
+.action-chip:hover::before { left: 200%; transition: left 0.6s ease-in-out; }
 
 .chat-input-container { padding: 1.2rem; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.3); display: flex; gap: 10px; }
 .chat-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: white; border-radius: 24px; padding: 0.8rem 1.2rem; font-size: 0.9rem; transition: 0.2s; }
