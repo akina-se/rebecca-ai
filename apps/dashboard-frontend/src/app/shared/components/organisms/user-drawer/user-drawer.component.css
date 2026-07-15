@@ -187,7 +187,7 @@
     height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-    color: #fff;
+    color: var(--text-main);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -259,7 +259,7 @@
 }
 
 .tag-close:hover {
-    color: #ff4757;
+    color: var(--danger);
 }
 
 .tag-input {

@@ -18,7 +18,7 @@
         <button class="btn bulk-btn" 
             [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
             [disabled]="isBlocking || isUnblocking"
-            style="min-width: 120px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: white; background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            style="min-width: 120px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: var(--text-main); background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
             (click)="executeBulkUnblock()">
             <span class="material-icons" [class.spinning]="isUnblocking" style="font-size: 1rem">{{ isUnblocking ? 'sync' : 'lock_open' }}</span> 
             {{ isUnblocking ? 'Unblocking...' : 'Unblock' }}
