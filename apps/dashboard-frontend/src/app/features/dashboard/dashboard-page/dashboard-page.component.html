@@ -84,7 +84,7 @@
                     </tr>
                     <tr class="clickable" (click)="openPostDrawer('p2')">
                         <td style="color: var(--text-muted)">2026-07-09 08:00</td>
-                        <td>おはよう！今日も1日頑張ろうね✨</td><td>4,800</td>
+                        <td>おはよう！今日も1日頑張ろうね</td><td>4,800</td>
                     </tr>
                     <tr class="clickable" (click)="openPostDrawer('p3')">
                         <td style="color: var(--text-muted)">2026-07-08 12:00</td>
@@ -143,9 +143,11 @@
         <!-- Always reserve button space to prevent height shift -->
         <button class="btn bulk-btn" 
             [style.visibility]="selectedRows.size > 0 ? 'visible' : 'hidden'"
-            style="padding: 4px 12px; font-size: 0.8rem; border: 1px solid var(--danger); color: var(--danger); border-radius: 20px; background: rgba(255,71,87,0.1); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;"
+            [disabled]="isDeleting"
+            style="min-width: 140px; justify-content: center; padding: 4px 12px; font-size: 0.8rem; border: 1px solid var(--danger); color: var(--danger); border-radius: 20px; background: rgba(255,71,87,0.1); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;"
             (click)="executeBulkDelete()">
-            <span class="material-icons" style="font-size: 1rem;">delete</span> Delete from X
+            <span class="material-icons" [class.spinning]="isDeleting" style="font-size: 1rem;">{{ isDeleting ? 'sync' : 'delete' }}</span> 
+            {{ isDeleting ? 'Deleting...' : 'Delete from X' }}
         </button>
     </div>
     
@@ -213,6 +215,8 @@
 <app-ranking-modal
     [isOpen]="isRankingModalOpen"
     [title]="rankingModalTitle"
-    [colLabel]="rankingModalLabel"
-    (close)="isRankingModalOpen = false">
+    [colLabel]="rankingModalColLabel"
+    [colMetric]="rankingModalColMetric"
+    (close)="isRankingModalOpen = false"
+    (rowClick)="rankingModalType === 'post' ? openPostDrawer($event) : openUserDrawer($event)">
 </app-ranking-modal>

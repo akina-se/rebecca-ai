@@ -1,6 +1,8 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DrawerService } from '../../../../core/services/drawer.service';
+import { ActionHelperService } from '../../../services/action-helper.service';
 
 /** Data shape for a single image asset shown in the drawer. */
 export interface AssetDrawerData {
@@ -27,6 +29,7 @@ export interface AssetDrawerData {
   styleUrls: ['./asset-drawer.component.css'],
 })
 export class AssetDrawerComponent {
+  drawerService = inject(DrawerService);
   @Input() assetId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
 
@@ -51,19 +54,18 @@ export class AssetDrawerComponent {
     this.openLightbox.emit(this.displayAsset.url);
   }
 
-  onSave(): void {
+  actionHelper = inject(ActionHelperService);
+
+  async onSave(): Promise<void> {
     this.isSaving = true;
-    setTimeout(() => {
-      this.isSaving = false;
-    }, 1500);
+    await this.actionHelper.executeMockAction(`Successfully saved asset ${this.displayAsset.id}`);
+    this.isSaving = false;
   }
 
-  onDelete(): void {
+  async onDelete(): Promise<void> {
     this.isDeleting = true;
-    // Simulates an async API call; replaced with real service injection post-MVP.
-    setTimeout(() => {
-      this.isDeleting = false;
-    }, 2000);
+    await this.actionHelper.executeMockAction(`Successfully deleted asset ${this.displayAsset.id}`);
+    this.isDeleting = false;
   }
 
   formatDate(iso: string | null): string {
@@ -71,5 +73,9 @@ export class AssetDrawerComponent {
     return new Date(iso).toLocaleDateString('ja-JP', {
       year: 'numeric', month: 'short', day: 'numeric',
     });
+  }
+
+  openAiCopilot(): void {
+    this.drawerService.open();
   }
 }

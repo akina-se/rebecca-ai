@@ -124,11 +124,20 @@
 }
 
 .ranking-table tbody tr {
-    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
 }
 
-.ranking-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+.ranking-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.ranking-table tbody tr.clickable {
+    cursor: pointer;
+}
+
+.ranking-table tbody tr.clickable:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .ranking-table tbody tr.podium {
@@ -148,9 +157,14 @@
 }
 
 .rank-badge {
-    font-size: 1.4rem;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+.rank-1st .material-icons { color: #fbbf24; font-size: 1.6rem; text-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+.rank-2nd .material-icons { color: #94a3b8; font-size: 1.6rem; text-shadow: 0 0 10px rgba(148, 163, 184, 0.4); }
+.rank-3rd .material-icons { color: #b45309; font-size: 1.6rem; text-shadow: 0 0 10px rgba(180, 83, 9, 0.4); }
 
 .rank-number {
     font-weight: 600;

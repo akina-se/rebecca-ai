@@ -23,9 +23,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let entry of pagedEntries" [class.podium]="entry.rank <= 3">
+                    <tr *ngFor="let entry of pagedEntries" [class.podium]="entry.rank <= 3" class="clickable" (click)="onRowClick(entry)">
                         <td class="rank-cell">
-                            <span *ngIf="entry.badge" class="rank-badge">{{ entry.badge }}</span>
+                            <div *ngIf="entry.badge" class="rank-badge" [ngClass]="'rank-' + entry.badge">
+                                <span class="material-icons">emoji_events</span>
+                            </div>
                             <span *ngIf="!entry.badge" class="rank-number">{{ entry.rank }}</span>
                         </td>
                         <td class="label-cell">{{ entry.label }}</td>
