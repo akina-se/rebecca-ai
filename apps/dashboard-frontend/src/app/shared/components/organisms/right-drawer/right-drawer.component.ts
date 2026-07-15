@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DrawerService } from '../../../core/services/drawer.service';
+import { DrawerService } from '../../../../core/services/drawer.service';
 
 @Component({
   selector: 'app-right-drawer',
