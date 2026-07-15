@@ -37,6 +37,69 @@
         </div>
     </div>
 
+    <!-- Core Profile -->
+    <div>
+        <div class="section-label">
+            <span class="material-icons" style="font-size: 1rem;">person</span>
+            Long-term Profile
+        </div>
+        
+        <div class="profile-editor">
+            <!-- Attributes -->
+            <div class="profile-category">
+                <div class="category-label">Attributes</div>
+                <div class="tags-container">
+                    <div class="profile-tag" *ngFor="let item of parsedProfile['attributes']; let i = index">
+                        {{ item }}
+                        <span class="material-icons tag-close" (click)="removeTag('attributes', i)">close</span>
+                    </div>
+                    <input type="text" class="tag-input" placeholder="Add attribute..." (keydown.enter)="addTag('attributes', $event)" (blur)="addTag('attributes', $event)">
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div class="profile-category">
+                <div class="category-label">Preferences</div>
+                <div class="tags-container">
+                    <div class="profile-tag" *ngFor="let item of parsedProfile['preferences']; let i = index">
+                        {{ item }}
+                        <span class="material-icons tag-close" (click)="removeTag('preferences', i)">close</span>
+                    </div>
+                    <input type="text" class="tag-input" placeholder="Add preference..." (keydown.enter)="addTag('preferences', $event)" (blur)="addTag('preferences', $event)">
+                </div>
+            </div>
+
+            <!-- Concerns -->
+            <div class="profile-category">
+                <div class="category-label">Concerns / Stress</div>
+                <div class="tags-container">
+                    <div class="profile-tag" *ngFor="let item of parsedProfile['concerns']; let i = index">
+                        {{ item }}
+                        <span class="material-icons tag-close" (click)="removeTag('concerns', i)">close</span>
+                    </div>
+                    <input type="text" class="tag-input" placeholder="Add concern..." (keydown.enter)="addTag('concerns', $event)" (blur)="addTag('concerns', $event)">
+                </div>
+            </div>
+
+            <!-- Important Memories -->
+            <div class="profile-category">
+                <div class="category-label">Important Memories</div>
+                <div class="tags-container">
+                    <div class="profile-tag" *ngFor="let item of parsedProfile['important_memories']; let i = index">
+                        {{ item }}
+                        <span class="material-icons tag-close" (click)="removeTag('important_memories', i)">close</span>
+                    </div>
+                    <input type="text" class="tag-input" placeholder="Add memory..." (keydown.enter)="addTag('important_memories', $event)" (blur)="addTag('important_memories', $event)">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 20px; margin-top: 10px;" (click)="onSaveProfile()" [disabled]="isSavingProfile">
+            <span class="material-icons" [class.spinning]="isSavingProfile">{{ isSavingProfile ? 'sync' : 'save' }}</span>
+            {{ isSavingProfile ? 'Saving...' : 'Save Profile' }}
+        </button>
+    </div>
+
     <!-- Chat History -->
     <div>
         <div class="section-label">
@@ -64,8 +127,13 @@
 
     <!-- Actions -->
     <div class="action-buttons">
-        <button class="btn btn-outline" style="width: 100%; justify-content: center;">
+        <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 12px;">
             <span class="material-icons">open_in_new</span> View on X
+        </button>
+        <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);"
+            (click)="onBlockUser()" [disabled]="isActionLoading">
+            <span class="material-icons" [class.spinning]="isActionLoading">{{ isActionLoading ? 'sync' : 'block' }}</span> 
+            {{ isActionLoading ? 'Processing...' : (isBlocked ? 'Unblock User' : 'Block User') }}
         </button>
     </div>
 </div>

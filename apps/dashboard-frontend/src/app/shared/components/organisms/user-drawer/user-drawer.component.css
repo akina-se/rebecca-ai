@@ -201,3 +201,85 @@
 .action-buttons {
     margin-top: 10px;
 }
+
+/* Profile Editor (Chips UI) */
+.profile-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.profile-category {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.category-label {
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.profile-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(138, 43, 226, 0.2);
+    border: 1px solid rgba(138, 43, 226, 0.4);
+    color: var(--text-main);
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.profile-tag:hover {
+    background: rgba(138, 43, 226, 0.4);
+}
+
+.tag-close {
+    font-size: 1rem;
+    cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    transition: color 0.2s;
+}
+
+.tag-close:hover {
+    color: #ff4757;
+}
+
+.tag-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-main);
+    padding: 4px;
+    font-size: 0.85rem;
+    min-width: 120px;
+    flex-grow: 1;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.tag-input:focus {
+    outline: none;
+    border-bottom-color: var(--color-primary);
+}
+
+.tag-input::placeholder {
+    color: rgba(255,255,255,0.3);
+}
