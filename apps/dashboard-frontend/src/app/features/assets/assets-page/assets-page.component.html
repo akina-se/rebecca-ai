@@ -1,0 +1,84 @@
+<div class="view-section active">
+    <div class="block-header" style="margin-top: 0;">
+        <h2><span class="material-icons">collections</span> Assets Library</h2>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" class="form-control" placeholder="Search assets..." style="width: 250px; padding: 0.5rem; border-radius: 20px;">
+            <button class="btn btn-primary" (click)="mockAlert('Mock: Open Asset Upload Modal (Supports Multiple Files)')"><span class="material-icons">upload_file</span> Upload Asset</button>
+        </div>
+    </div>
+    
+    <div class="bulk-actions-bar glass-panel" id="asset-bulk-bar" style="margin-bottom: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+        <label class="checkbox-container"><input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()"> <span style="margin-left: 8px;">Select All</span></label>
+        <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
+        <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
+            {{ selectedAssets.size > 0 ? selectedAssets.size + ' items selected' : 'Select items to perform actions' }}
+        </span>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
+            style="padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="mockAlert('Mock: Executing batch delete for selected assets...')">
+            <span class="material-icons" style="font-size: 1rem">delete</span> Delete
+        </button>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
+            style="padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: white; background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="mockAlert('Mock: Retrying AI generation for failed assets...')">
+            <span class="material-icons" style="font-size: 1rem">autorenew</span> Retry AI Gen
+        </button>
+    </div>
+    
+    <div class="asset-grid">
+        <div class="asset-card glass-panel" (click)="openAssetDrawer('rebecca_summer_01')">
+            <div class="asset-checkbox-wrapper" (click)="$event.stopPropagation()">
+                <input type="checkbox" class="asset-checkbox row-checkbox" [checked]="selectedAssets.has('rebecca_summer_01')" (change)="toggleSelection('rebecca_summer_01', $event)">
+            </div>
+            <div class="asset-thumb"><span class="material-icons" style="font-size: 3rem; opacity: 0.5;">image</span></div>
+            <div class="asset-info">
+                <div style="font-weight: 500;">rebecca_summer_01.png</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px;">
+                    <span>Used: 3x</span><span style="color: var(--success)">Ready</span>
+                </div>
+            </div>
+        </div>
+        <div class="asset-card glass-panel" style="border-color: rgba(255, 71, 87, 0.5); box-shadow: 0 0 15px rgba(255, 71, 87, 0.1);" (click)="openAssetDrawer('beach_bg_02')">
+            <div class="asset-checkbox-wrapper" (click)="$event.stopPropagation()">
+                <input type="checkbox" class="asset-checkbox row-checkbox" [checked]="selectedAssets.has('beach_bg_02')" (change)="toggleSelection('beach_bg_02', $event)">
+            </div>
+            <div class="asset-thumb" style="background: rgba(255, 71, 87, 0.05);"><span class="material-icons" style="font-size: 3rem; color: var(--danger);">broken_image</span></div>
+            <div class="asset-info">
+                <div style="font-weight: 500;">beach_bg_02.jpg</div>
+                <div style="font-size: 0.75rem; color: var(--danger); display: flex; justify-content: space-between; margin-top: 6px;">
+                    <span>Caption Failed</span><span class="material-icons" style="font-size: 1rem">error</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="pagination glass-panel" style="border-radius: 12px;">
+        <span>Showing 1-24 of 156 assets</span>
+        <div class="pagination-controls">
+            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <span>...</span>
+            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
+        </div>
+    </div>
+</div>
+
+<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
+    <div style="padding: 20px;">
+        <app-asset-drawer 
+            [assetId]="selectedAssetId"
+            (openLightbox)="openLightbox($event)">
+        </app-asset-drawer>
+    </div>
+</app-right-drawer>
+
+<app-lightbox 
+    [isOpen]="isLightboxOpen" 
+    [imageUrl]="lightboxImageUrl" 
+    (close)="isLightboxOpen = false">
+</app-lightbox>
+

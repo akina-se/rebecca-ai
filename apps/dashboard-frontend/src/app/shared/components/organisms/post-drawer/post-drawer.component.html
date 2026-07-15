@@ -1,0 +1,85 @@
+<div class="drawer-content">
+
+    <!-- Post Text Content -->
+    <div class="glass-panel content-box">
+        <div class="stat-label" style="margin-bottom: 10px;">Post Content</div>
+        <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-main);">
+            {{ mockPost.text }}
+        </div>
+        <div style="margin-top: 12px; color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+            <span class="material-icons" style="font-size: 0.9rem;">schedule</span>
+            {{ mockPost.time }}
+        </div>
+    </div>
+
+    <!-- Attached Media -->
+    <div *ngIf="mockPost.mediaUrls && mockPost.mediaUrls.length > 0">
+        <div class="stat-label" style="margin-bottom: 10px;">
+            <span class="material-icons" style="font-size: 1rem; vertical-align: middle; margin-right: 4px;">photo_library</span>
+            Attached Media ({{ mockPost.mediaUrls.length }})
+        </div>
+        <div class="media-grid">
+            <div 
+                class="media-thumbnail glass-panel"
+                *ngFor="let url of mockPost.mediaUrls; let i = index"
+                (click)="onOpenLightbox(url)"
+                title="Click to expand">
+                <img [src]="url" [alt]="'Media ' + (i + 1)" loading="lazy">
+                <div class="media-overlay">
+                    <span class="material-icons">zoom_in</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid">
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon">visibility</span>
+            <div class="metric-info">
+                <div class="metric-title">Impressions</div>
+                <div class="metric-value">{{ mockPost.impressions }}</div>
+            </div>
+        </div>
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon" style="color: #ff4757;">favorite</span>
+            <div class="metric-info">
+                <div class="metric-title">Likes</div>
+                <div class="metric-value">{{ mockPost.likes }}</div>
+            </div>
+        </div>
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon" style="color: #2ed573;">repeat</span>
+            <div class="metric-info">
+                <div class="metric-title">Retweets</div>
+                <div class="metric-value">{{ mockPost.retweets }}</div>
+            </div>
+        </div>
+        <div class="glass-panel metric-box">
+            <span class="material-icons metric-icon" style="color: #1e90ff;">chat_bubble</span>
+            <div class="metric-info">
+                <div class="metric-title">Replies</div>
+                <div class="metric-value">{{ mockPost.replies }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 10px;">
+            <span class="material-icons">open_in_new</span> View on X
+        </button>
+        <button 
+            class="btn" 
+            [disabled]="isDeleting"
+            [style.opacity]="isDeleting ? '0.6' : '1'"
+            style="width: 100%; justify-content: center; background: rgba(255, 71, 87, 0.15); border: 1px solid #ff4757; color: #ff4757; border-radius: 8px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
+            (click)="onDeletePost()">
+            <span class="material-icons" *ngIf="!isDeleting">delete</span>
+            <span *ngIf="!isDeleting">Delete Post</span>
+            <!-- Loading state -->
+            <span *ngIf="isDeleting" class="spinner"></span>
+            <span *ngIf="isDeleting">Deleting...</span>
+        </button>
+    </div>
+</div>

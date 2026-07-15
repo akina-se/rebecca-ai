@@ -1,0 +1,17 @@
+<div class="view-section active">
+    <div class="block-header" style="margin-top: 0;"><h2><span class="material-icons">tune</span> System Settings</h2></div>
+    <div class="glass-panel" style="max-width: 600px; padding: 2rem; border-radius: 12px;">
+        <div class="form-group">
+            <label class="form-label"><span class="material-icons">language</span> Application Language</label>
+            <select class="form-control" style="width: 100%; max-width: 350px;"><option>English (US)</option><option selected>日本語 (JA)</option></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><span class="material-icons">schedule</span> Timezone for Charts</label>
+            <select class="form-control" style="width: 100%; max-width: 350px;"><option selected>Asia/Tokyo (UTC+9)</option><option>UTC</option></select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label"><span class="material-icons">gavel</span> Legal</label>
+            <button class="btn" style="width: fit-content;" (click)="mockAlert('View OSS Licenses')">Open Source Licenses</button>
+        </div>
+    </div>
+</div>
