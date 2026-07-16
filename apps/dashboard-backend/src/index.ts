@@ -3,7 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import { DIContainer } from './di/container';
+import { Firestore } from '@google-cloud/firestore';
+import { initializeStatsModule } from './features/stats';
 
 // Load environment variables
 dotenv.config();
@@ -18,18 +19,23 @@ app.use(express.json());
 
 // Rate Limiting (Basic protection for BFF)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use(limiter);
 
-// Setup Dependency Injection Container
-const container = new DIContainer();
+// 1. Initialize Shared Infrastructure (Core)
+const firestore = new Firestore({
+  projectId: process.env.GCP_PROJECT_ID,
+});
 
-// API Routes
-app.use('/api/v1/dashboard', container.dashboardRouter);
+// 2. Initialize Features (Modules)
+const statsRouter = initializeStatsModule(firestore);
+
+// 3. Mount Routes
+app.use('/api/v1/dashboard/stats', statsRouter);
 
 // Healthcheck endpoint
 app.get('/health', (req, res) => {
@@ -39,5 +45,5 @@ app.get('/health', (req, res) => {
 // Start Server
 app.listen(port, () => {
   console.log(`🚀 Dashboard BFF is running on port ${port}`);
-  console.log(`Architectural note: Running with strict DI (Clean Architecture). Infrastructure is decoupled.`);
+  console.log(`Architectural note: Running with Feature-Driven Architecture (Vertical Slicing) + DI.`);
 });
