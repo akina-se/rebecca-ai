@@ -42,14 +42,21 @@ When operating this bot on X (Twitter), you MUST explicitly state in the account
 ```mermaid
 graph TD
     User([User on X]) -- "@Mention" --> XAPI[X API]
+    Admin([Admin UI]) -- "REST" --> DashboardBFF[Cloud Run: Dashboard BFF]
     XAPI -- "Webhook / Polling" --> Webhook[Cloud Run: Receiver]
     
     subgraph GCP [Serverless Backend]
         Webhook -- "Enqueue (1-3 min delay)" --> Tasks[Cloud Tasks]
         Tasks -- "Execute Worker" --> Worker[Cloud Run: Worker]
         
-        Worker <--> DB[(Firestore: Memory & RAG)]
+        DashboardBFF <-->|gRPC| Worker
+        
+        Worker -->|Write| DB[(Firestore: Master)]
         Worker <--> LLM[Gemini API]
+        
+        DB -.->|Firestore Triggers| CQRS[Cloud Functions: CQRS Aggregator]
+        CQRS -->|Update| ReadDB[(Firestore: Read Models)]
+        DashboardBFF -->|Read| ReadDB
     end
     
     Worker -- "Generate & Reply" --> XAPI
@@ -158,14 +165,10 @@ npm run deploy
 - **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
 
 ## Directory Structure
-- `src/index.ts` : Application entry point with Dependency Injection setup
-- `src/core/` : Core domain logic (Memory management, Context injection, Evolution audit)
-- `src/routes/` : Express route definitions (`batchRoutes.ts`, `workerRoutes.ts`)
-- `src/middleware/` : Authentication and Rate Limiting middlewares
-- `src/services/` : External service integrations (Firestore, Gemini, X, Cloud Tasks)
-- `src/config/` : Configuration and environment variables
-- `tests/` : Unit and integration tests
-- `scripts/` : Deployment and utility scripts
+- `apps/bot-backend/` : Core bot logic and X API integration
+- `apps/dashboard-backend/` : Backend-For-Frontend (BFF) for the Admin Dashboard (CQRS ready)
+- `apps/dashboard-frontend/` : Angular-based Admin Dashboard UI
+- `packages/` : Shared libraries (`@rebecca/types`, `@rebecca/db`)
 
 ---
 ## License
