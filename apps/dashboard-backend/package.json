@@ -1,0 +1,42 @@
+{
+  "name": "dashboard-backend",
+  "version": "1.0.0",
+  "description": "Backend-for-Frontend (BFF) for the Admin Dashboard",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev src/index.ts",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "rebecca",
+    "dashboard",
+    "bff"
+  ],
+  "author": "AKINA",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/firestore": "^8.6.0",
+    "@rebecca/db": "*",
+    "@rebecca/types": "*",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.0.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.5.0"
+  }
+}
