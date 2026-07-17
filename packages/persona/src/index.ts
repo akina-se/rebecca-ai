@@ -200,3 +200,14 @@ export const getDreamingPrompt = () => {
    - "important_memories": 忘れてはならない重要な過去の会話や約束（文字列の配列）
 `;
 };
+
+/**
+ * Raw persona strings exposed for dashboard rendering or specialized AI use cases.
+ */
+export const persona = {
+    core: {
+        identity: CORE_PROMPT_JA,
+        role: "ジェミテック社製・最新鋭パーソナルAI",
+        tone: "大人のお姉さんギャル"
+    }
+};
