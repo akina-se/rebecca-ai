@@ -32,7 +32,16 @@ export class ProactiveNewsUseCase {
         console.log("Fetched headlines:\n", headlines.join('\n'));
 
         const systemInstruction = getBasePrompt('timeline', 'ja');
-        let postText = await this.deps.gemini.generateNewsPost(systemInstruction, headlines);
+        const newsPrompt = `以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
+
+【今日のニュース】
+${headlines.join('\n')}
+
+【追加ルール】
+- 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
+- 【絶対に100文字以内の短文】にすること。
+- 出力はツイートのテキストのみ。`;
+        let postText = await this.deps.gemini.generateNewsPost(systemInstruction, newsPrompt);
         if (!postText) {
             console.log("Failed to generate news post.");
             return { status: 'failed', reason: 'Generation failed' };
@@ -46,7 +55,18 @@ export class ProactiveNewsUseCase {
         console.log("Generated Post:", postText);
 
         const timelineSummary = await this.deps.firestore.getTimelineSummary();
-        const searchQuery = await this.deps.gemini.inferImageSearchQuery(postText, timelineSummary);
+        const searchPrompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
+以下のレベッカがたった今投稿しようとしているツイート文と、直近のタイムライン要約から、レベッカの現在の感情や状況を推測し、画像検索のための「検索クエリ（短い一文または単語の羅列）」を出力してください。
+画像が不要だと思われる内容（事務連絡や抽象的すぎる内容）の場合は、"null" という文字列だけを出力してください。
+
+【直近のタイムライン要約】
+${timelineSummary}
+
+【今回のツイート内容】
+${postText}
+
+出力は検索クエリのテキストのみとし、不要な解説やMarkdown表記は含めないでください。`;
+        const searchQuery = await this.deps.gemini.inferImageSearchQuery(searchPrompt);
         
         const mediaIds: string[] = [];
         if (searchQuery) {

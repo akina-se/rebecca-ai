@@ -57,7 +57,16 @@ export class ReplyTaskUseCase {
                 const profileRes = await deps.xApi.getUserProfile(authorId);
                 const desc = profileRes?.data?.description;
                 if (desc) {
-                    const parsedProfile = await deps.gemini.analyzeUserProfile(desc);
+                    const profilePrompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
+【プロフィール文】
+${desc}
+
+出力フォーマット（必ずJSONのみ）:
+{
+  "attributes": ["社会人", "エンジニア"など],
+  "preferences": ["ゲーム", "酒"など]
+}`;
+                    const parsedProfile = await deps.gemini.analyzeUserProfile(profilePrompt);
                     userData.coreProfile = parsedProfile;
                     // Inject a single history log hinting that the profile has been read
                     userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
@@ -81,7 +90,8 @@ export class ReplyTaskUseCase {
                     if (media.type !== 'photo' || !media.url) continue;
 
                     const { buffer, mimeType } = await downloadImage(media.url);
-                    const imageCaption = await deps.gemini.analyzeImageCaption(buffer, mimeType);
+                    const captionPrompt = `この画像に写っている状況、被写体の表情、および感情を説明するテキスト（キャプション）を生成してください。ベクトル検索のクエリとして使用するため、具体的なキーワード（場所、服の色、表情、シチュエーション）を豊富に含めた自然な日本語にしてください。途中で途切れないように、必ず完全な文章（句点で終わる）で出力してください。`;
+                    const imageCaption = await deps.gemini.analyzeImageCaption(buffer, mimeType, captionPrompt);
                     
                     if (imageCaption) {
                         processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
@@ -97,13 +107,22 @@ export class ReplyTaskUseCase {
         const timelineSummary = await deps.firestore.getTimelineSummary();
         
         let ragMemories: string[] = [];
-        const query = await deps.gemini.generateSearchQuery(workingMemory.map(m => `${m.role}: ${m.content}`).join('\n'), processedText);
+        const searchContext = workingMemory.map(m => `${m.role}: ${m.content}`).join('\n');
+        const searchPrompt = `あなたは検索クエリ生成AIです。以下の直近の会話文脈とユーザーの最新の発言を踏まえて、ユーザーの意図を汲み取った「検索用クエリ（短い一文または単語の羅列）」を生成してください。
+【直前の会話文脈】
+${searchContext}
+【ユーザーの最新の発言】
+${processedText}
+出力は検索クエリのみとし、不要な解説は含めないでください。`;
+        const query = await deps.gemini.generateSearchQuery(searchPrompt);
         if (query) {
             const queryEmb = await deps.gemini.generateEmbedding(query);
             ragMemories = await deps.firestore.findRagMemories(authorId, queryEmb);
         }
 
-        const lang = await deps.gemini.detectLanguage(processedText);
+        const detectPrompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
+テキスト: "${processedText}"`;
+        const lang = await deps.gemini.detectLanguage(detectPrompt);
         const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
 
         // Generate the AI response based on the contextualized prompt

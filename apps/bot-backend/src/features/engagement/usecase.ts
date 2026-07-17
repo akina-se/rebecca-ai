@@ -69,7 +69,16 @@ export class RandomEngagementUseCase {
         const profileResp = await this.deps.xApi.getUserProfile(targetUser.id);
         const description = profileResp.data.description || '';
         
-        const profileAnalysis = await this.deps.gemini.analyzeUserProfile(description);
+        const profilePrompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
+【プロフィール文】
+${description}
+
+出力フォーマット（必ずJSONのみ）:
+{
+  "attributes": ["社会人", "エンジニア"など],
+  "preferences": ["ゲーム", "酒"など]
+}`;
+        const profileAnalysis = await this.deps.gemini.analyzeUserProfile(profilePrompt);
         console.log("Profile Analysis:", profileAnalysis);
 
         let tweetContext = '';
@@ -90,7 +99,8 @@ export class RandomEngagementUseCase {
                         if (media.type !== 'photo' || !media.url) continue;
 
                         const { buffer, mimeType } = await downloadImage(media.url);
-                        const imageCaption = await this.deps.gemini.analyzeImageCaption(buffer, mimeType);
+                        const captionPrompt = `この画像に写っている状況、被写体の表情、および感情を説明するテキスト（キャプション）を生成してください。ベクトル検索のクエリとして使用するため、具体的なキーワード（場所、服の色、表情、シチュエーション）を豊富に含めた自然な日本語にしてください。途中で途切れないように、必ず完全な文章（句点で終わる）で出力してください。`;
+                        const imageCaption = await this.deps.gemini.analyzeImageCaption(buffer, mimeType, captionPrompt);
                         
                         if (imageCaption) {
                             tweetContext += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
@@ -107,7 +117,9 @@ export class RandomEngagementUseCase {
             return { status: 'skipped', reason: 'No valid tweets to engage with' };
         }
 
-        const lang = await this.deps.gemini.detectLanguage(description + tweetContext);
+        const detectPrompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
+テキスト: "${description + tweetContext}"`;
+        const lang = await this.deps.gemini.detectLanguage(detectPrompt);
 
         const systemPrompt = getBasePrompt('random_engagement', lang);
         const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
