@@ -1,4 +1,4 @@
-import { runStealthOnboardingBatch } from '../../../src/core/onboarding';
+import { StealthOnboardingUseCase } from '../../../src/features/onboarding/usecase';
 import { createMockDeps } from './testUtils';
 
 // We can still mock config globally since it's not DI'ed yet
@@ -39,7 +39,7 @@ describe('Stealth Onboarding Batch', () => {
         deps.xApi.addListMember.mockResolvedValue(true);
 
         // Execute
-        const result = await runStealthOnboardingBatch(deps);
+        const result = await new StealthOnboardingUseCase(deps).execute();
 
         // Verify
         expect(result.status).toBe('success');
@@ -59,7 +59,7 @@ describe('Stealth Onboarding Batch', () => {
     it('should return successfully with 0 processed if there are no followers', async () => {
         deps.xApi.getFollowers.mockResolvedValue({ data: [] });
 
-        const result = await runStealthOnboardingBatch(deps);
+        const result = await new StealthOnboardingUseCase(deps).execute();
 
         expect(result.status).toBe('success');
         expect(result.processed).toBe(0);
@@ -69,7 +69,7 @@ describe('Stealth Onboarding Batch', () => {
         const originalId = require('../../../src/config').default.xApi.myUserId;
         require('../../../src/config').default.xApi.myUserId = '';
         deps.xApi.cachedNumericMyUserId = undefined;
-        const result = await runStealthOnboardingBatch(deps);
+        const result = await new StealthOnboardingUseCase(deps).execute();
         expect(result.status).toBe('failed');
         require('../../../src/config').default.xApi.myUserId = originalId;
     });
@@ -77,7 +77,7 @@ describe('Stealth Onboarding Batch', () => {
     it('should return failed if targetListId is not set', async () => {
         const originalList = require('../../../src/config').default.xApi.targetListId;
         require('../../../src/config').default.xApi.targetListId = '';
-        const result = await runStealthOnboardingBatch(deps);
+        const result = await new StealthOnboardingUseCase(deps).execute();
         expect(result.status).toBe('failed');
         require('../../../src/config').default.xApi.targetListId = originalList;
     });
@@ -87,7 +87,7 @@ describe('Stealth Onboarding Batch', () => {
         deps.firestore.hasProcessedFollower.mockResolvedValue(false);
         deps.xApi.addListMember.mockResolvedValue(false); // fails!
 
-        const result = await runStealthOnboardingBatch(deps);
+        const result = await new StealthOnboardingUseCase(deps).execute();
 
         expect(result.processed).toBe(0);
         expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalled();
@@ -95,6 +95,6 @@ describe('Stealth Onboarding Batch', () => {
 
     it('should throw error if underlying api throws', async () => {
         deps.xApi.getFollowers.mockRejectedValue(new Error('api error'));
-        await expect(runStealthOnboardingBatch(deps)).rejects.toThrow('api error');
+        await expect(new StealthOnboardingUseCase(deps).execute()).rejects.toThrow('api error');
     });
 });

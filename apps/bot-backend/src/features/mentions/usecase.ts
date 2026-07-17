@@ -1,16 +1,30 @@
-import config from '../config';
-import { AppDependencies } from '../types';
+import config from '../../config';
+import { AppDependencies } from '../../types';
 
 /**
- * Polls the X API for new mentions and enqueues tasks to reply to them.
- *
- * @returns {Promise<{count: number, newestId?: string}>} An object containing the count of new mentions and the ID of the newest mention.
+ * UseCase for polling new mentions and dispatching reply tasks.
+ * Encapsulates the core business logic independent of external frameworks.
  */
-export const pollMentions = async (deps: AppDependencies) => {
-    try {
+export class PollMentionsUseCase {
+    /**
+     * Initializes the PollMentionsUseCase.
+     * @param deps Application dependencies including repositories and external APIs.
+     */
+    constructor(
+        private deps: AppDependencies
+    ) {}
+
+    /**
+     * Executes the polling of mentions, enqueues replies for new mentions, 
+     * and updates the last processed mention ID.
+     * @returns A promise resolving to an object containing the count of processed mentions and optionally the newest mention ID.
+     */
+    async execute(): Promise<{ count: number, newestId?: string }> {
         console.log("Polling mentions from X API...");
-        const sinceId = await deps.firestore.getLastMentionId();
-        const mentionsRes = await deps.xApi.getMentions(sinceId || undefined);
+        const sinceId = await this.deps.firestore.getLastMentionId();
+        
+        // Ensure we pass undefined instead of null to the platform repo
+        const mentionsRes = await this.deps.xApi.getMentions(sinceId || undefined);
         
         if (!mentionsRes.data || mentionsRes.data.length === 0) {
             console.log("No new mentions found.");
@@ -25,7 +39,6 @@ export const pollMentions = async (deps: AppDependencies) => {
             const text = tweet.text;
             const authorId = tweet.authorId;
 
-            // Update newestId
             if (!newestId || BigInt(tweetId) > BigInt(newestId)) {
                 newestId = tweetId;
             }
@@ -35,16 +48,15 @@ export const pollMentions = async (deps: AppDependencies) => {
                 continue;
             }
 
-            // Ignore self-mentions
             if (authorId === config.xApi.myUserId) {
                 console.log(`Ignoring self-mention ${tweetId}`);
                 continue;
             }
 
             try {
-                // Enqueue with intentional delay (60 to 180 seconds)
+                // Enqueue with intentional delay (60 to 180 seconds) to seem more human-like
                 const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
-                await deps.tasks.enqueueReplyTask({
+                await this.deps.tasks.enqueueReplyTask({
                     tweetId,
                     text,
                     authorId
@@ -55,15 +67,11 @@ export const pollMentions = async (deps: AppDependencies) => {
             }
         }
 
-        // Save the newest mention ID to avoid fetching them again
         if (newestId && newestId !== sinceId) {
-            await deps.firestore.setLastMentionId(newestId);
+            await this.deps.firestore.setLastMentionId(newestId);
             console.log(`Updated last_mention_id to ${newestId}`);
         }
 
-        return { count: mentionsRes.data.length, newestId };
-    } catch (error) {
-        console.error("Error during pollMentions:", error);
-        throw error;
+        return { count: mentionsRes.data.length, newestId: newestId || undefined };
     }
-};
+}

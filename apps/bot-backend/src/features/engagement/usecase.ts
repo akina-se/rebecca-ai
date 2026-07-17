@@ -1,22 +1,32 @@
-import { AppDependencies } from '../types';
-import config from '../config';
-import { getBasePrompt } from './prompt';
-import { checkAndIncrementRateLimits } from './rateLimiter';
-import { downloadImage } from '../utils/image';
+import { AppDependencies } from '../../types';
+import config from '../../config';
+import { getBasePrompt } from '@rebecca/persona';
+import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
+import { downloadImage } from '../../utils/image';
 
 /**
- * Executes a background job to randomly engage with a user from the "Special Treatment" list.
- * 
- * Due to X API Free Tier limitations regarding Quote Tweets and Native Replies, 
- * this function instead fetches the user's recent timeline to build context,
- * analyzes their profile, and generates a standalone tweet containing an @mention
- * that naturally responds to their recent activities.
- * 
- * @returns {Promise<{ status: string; processedUser?: string; reason?: string }>} 
- *          A promise resolving to an object indicating the status of the operation, 
- *          the username of the engaged user (if any), and the reason (if skipped or failed).
+ * Use case for running the random engagement background job.
+ * It randomly selects a user from a target list and initiates an interaction.
  */
-const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status: string; processedUser?: string; reason?: string }> => {
+export class RandomEngagementUseCase {
+    /**
+     * Creates an instance of RandomEngagementUseCase.
+     * @param deps - The application dependencies required to execute engagement.
+     */
+    constructor(private deps: AppDependencies) {}
+
+    /**
+     * Executes a background job to randomly engage with a user from the "Special Treatment" list.
+     * 
+     * Due to X API Free Tier limitations regarding Quote Tweets and Native Replies, 
+     * this function instead fetches the user's recent timeline to build context,
+     * analyzes their profile, and generates a standalone tweet containing an @mention
+     * that naturally responds to their recent activities.
+     * 
+     * @returns A promise resolving to an object indicating the status of the operation, 
+     *          the username of the engaged user (if any), and the reason (if skipped or failed).
+     */
+    async execute(): Promise<{ status: string; processedUser?: string; reason?: string }> {
     console.log("Starting Random Engagement Batch...");
     try {
         const targetListId = config.xApi.targetListId;
@@ -24,7 +34,7 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
             return { status: 'failed', reason: 'Missing X_TARGET_LIST_ID' };
         }
 
-        const membersResp = await deps.xApi.getListMembers(targetListId);
+        const membersResp = await this.deps.xApi.getListMembers(targetListId);
         const members = membersResp.data || [];
         
         if (members.length === 0) {
@@ -36,7 +46,7 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
         let targetUser = null;
 
         for (const user of shuffled) {
-            const lastInteraction = await deps.firestore.getLastListInteraction(user.id);
+            const lastInteraction = await this.deps.firestore.getLastListInteraction(user.id);
             if (!lastInteraction) {
                 targetUser = user;
                 break;
@@ -50,22 +60,22 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
 
         console.log(`Targeting user for random engagement: @${targetUser.username} (${targetUser.id})`);
 
-        const rateLimitResult = await checkAndIncrementRateLimits(deps, targetUser.id);
+        const rateLimitResult = await checkAndIncrementRateLimits(this.deps, targetUser.id);
         if (!rateLimitResult.allowed) {
             console.warn(`Rate limit hit for ${targetUser.id}: ${rateLimitResult.reason}`);
             return { status: 'skipped', reason: 'rate_limited' };
         }
 
-        const profileResp = await deps.xApi.getUserProfile(targetUser.id);
+        const profileResp = await this.deps.xApi.getUserProfile(targetUser.id);
         const description = profileResp.data.description || '';
         
-        const profileAnalysis = await deps.gemini.analyzeUserProfile(description);
+        const profileAnalysis = await this.deps.gemini.analyzeUserProfile(description);
         console.log("Profile Analysis:", profileAnalysis);
 
         let tweetContext = '';
         let targetTweetId: string | undefined = undefined;
         try {
-            const recentTweets = await deps.xApi.getUserTweets(targetUser.id, 5);
+            const recentTweets = await this.deps.xApi.getUserTweets(targetUser.id, 5);
             if (recentTweets.data && recentTweets.data.length > 0) {
                 const latestTweet = recentTweets.data[0];
                 targetTweetId = latestTweet.id;
@@ -80,7 +90,7 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
                         if (media.type !== 'photo' || !media.url) continue;
 
                         const { buffer, mimeType } = await downloadImage(media.url);
-                        const imageCaption = await deps.gemini.analyzeImageCaption(buffer, mimeType);
+                        const imageCaption = await this.deps.gemini.analyzeImageCaption(buffer, mimeType);
                         
                         if (imageCaption) {
                             tweetContext += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
@@ -97,12 +107,12 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
             return { status: 'skipped', reason: 'No valid tweets to engage with' };
         }
 
-        const lang = await deps.gemini.detectLanguage(description + tweetContext);
+        const lang = await this.deps.gemini.detectLanguage(description + tweetContext);
 
         const systemPrompt = getBasePrompt('random_engagement', lang);
         const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
 
-        const generatedText = await deps.gemini.generateReply(systemPrompt, [], userInput);
+        const generatedText = await this.deps.gemini.generateReply(systemPrompt, [], userInput);
 
         let finalText = generatedText;
         if (!finalText.includes(`@${targetUser.username}`)) {
@@ -111,9 +121,9 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
 
         console.log(`Generated Engagement Text:\n${finalText}`);
 
-        await deps.xApi.tweet(finalText);
+        await this.deps.xApi.tweet(finalText);
 
-        await deps.firestore.updateLastListInteraction(targetUser.id);
+        await this.deps.firestore.updateLastListInteraction(targetUser.id);
 
         return { status: 'success', processedUser: targetUser.username };
     } catch (e) {
@@ -122,6 +132,4 @@ const runRandomEngagementBatch = async (deps: AppDependencies): Promise<{ status
     }
 };
 
-export {
-    runRandomEngagementBatch
-};
+}

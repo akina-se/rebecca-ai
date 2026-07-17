@@ -1,5 +1,5 @@
 import { AppDependencies } from '../types';
-import { getDreamingPrompt } from './prompt';
+import { getDreamingPrompt } from '@rebecca/persona';
 import { ConversationLogEntry, FirestoreUser } from '../types';
 
 /**
@@ -26,54 +26,7 @@ const saveInteraction = async (deps: AppDependencies, userId: string, userText: 
     await deps.firestore.appendEpisodicBuffer(userId, { role: 'model', content: modelText, timestamp: new Date().toISOString() });
 };
 
-/**
- * Integrates episodic memories into a user's core profile using a background batch process.
- * 
- * @param userId - The ID of the user.
- * @param userData - The current Firestore data for the user.
- */
-const processDreamingForUser = async (deps: AppDependencies, userId: string, userData: FirestoreUser): Promise<void> => {
-    const { episodicBuffer, coreProfile } = userData;
-    if (!episodicBuffer?.length) {
-        return;
-    }
-
-    const systemPrompt = getDreamingPrompt();
-    try {
-        const newCoreProfile = await deps.gemini.generateDreaming(systemPrompt, episodicBuffer, coreProfile);
-        await deps.firestore.updateCoreProfile(userId, newCoreProfile);
-        console.log(`Dreaming completed for user: ${userId}`);
-    } catch (error) {
-        console.error(`Dreaming failed for user: ${userId}`, error);
-    }
-};
-
-/**
- * Executes a global batch job to consolidate personal memories for all users 
- * and summarizes recent proactive timeline posts.
- */
-const runGlobalDreamingBatch = async (deps: AppDependencies): Promise<void> => {
-    const users = await deps.firestore.getAllUsers();
-    for (const user of users) {
-        await processDreamingForUser(deps, user.id, user);
-    }
-
-    try {
-        const recentPosts = await deps.firestore.getRecentTimelinePosts(10);
-        if (recentPosts.length > 0) {
-            const previousSummary = await deps.firestore.getTimelineSummary();
-            const newSummary = await deps.gemini.generateTimelineSummary(recentPosts, previousSummary);
-            await deps.firestore.saveTimelineSummary(newSummary);
-            console.log("Timeline summary updated:", newSummary);
-        }
-    } catch (e) {
-        console.error("Failed to summarize timeline", e);
-    }
-};
-
 export { 
     getWorkingMemory,
-    saveInteraction,
-    runGlobalDreamingBatch,
-    processDreamingForUser
- };
+    saveInteraction
+};

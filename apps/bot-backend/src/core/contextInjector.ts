@@ -1,5 +1,5 @@
 import { getJSTDate } from '../utils/time';
-import { getBasePrompt, PromptContext, Language } from './prompt';
+import { getBasePrompt, PromptContext, Language } from '@rebecca/persona';
 import { FirestoreUser } from '../types';
 
 /**
