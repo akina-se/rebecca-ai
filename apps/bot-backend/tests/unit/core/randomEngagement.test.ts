@@ -1,4 +1,4 @@
-import { runRandomEngagementBatch } from '../../../src/core/randomEngagement';
+import { RandomEngagementUseCase } from '../../../src/features/engagement/usecase';
 import { checkAndIncrementRateLimits } from '../../../src/core/rateLimiter';
 import { downloadImage } from '../../../src/utils/image';
 import { createMockDeps } from './testUtils';
@@ -44,7 +44,7 @@ describe('Random Engagement Batch', () => {
         deps.gemini.detectLanguage.mockResolvedValue('ja');
         deps.gemini.generateReply.mockResolvedValue('Hey @target_user, playing games again?');
 
-        const result = await runRandomEngagementBatch(deps);
+        const result = await new RandomEngagementUseCase(deps).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
@@ -63,7 +63,7 @@ describe('Random Engagement Batch', () => {
 
         deps.firestore.getLastListInteraction.mockResolvedValue(new Date()); // All engaged
 
-        const result = await runRandomEngagementBatch(deps);
+        const result = await new RandomEngagementUseCase(deps).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBeUndefined();
@@ -73,14 +73,14 @@ describe('Random Engagement Batch', () => {
     it('should return failed if targetListId is not set', async () => {
         const originalList = require('../../../src/config').default.xApi.targetListId;
         require('../../../src/config').default.xApi.targetListId = '';
-        const result = await runRandomEngagementBatch(deps);
+        const result = await new RandomEngagementUseCase(deps).execute();
         expect(result.status).toBe('failed');
         require('../../../src/config').default.xApi.targetListId = originalList;
     });
 
     it('should return success if list is empty', async () => {
         deps.xApi.getListMembers.mockResolvedValue({ data: [] });
-        const result = await runRandomEngagementBatch(deps);
+        const result = await new RandomEngagementUseCase(deps).execute();
         expect(result.status).toBe('success');
     });
 
@@ -89,7 +89,7 @@ describe('Random Engagement Batch', () => {
         deps.firestore.getLastListInteraction.mockResolvedValue(null);
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: false, reason: 'limit' });
         
-        const result = await runRandomEngagementBatch(deps);
+        const result = await new RandomEngagementUseCase(deps).execute();
         expect(result.status).toBe('skipped');
     });
 
@@ -103,7 +103,7 @@ describe('Random Engagement Batch', () => {
         deps.gemini.detectLanguage.mockResolvedValue('ja');
         deps.gemini.generateReply.mockResolvedValue('Hello without mention'); // missing @target2
 
-        await runRandomEngagementBatch(deps);
+        await new RandomEngagementUseCase(deps).execute();
 
         expect(deps.xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention');
     });
@@ -129,7 +129,7 @@ describe('Random Engagement Batch', () => {
         deps.gemini.analyzeImageCaption.mockResolvedValue('a nice photo');
         deps.gemini.generateReply.mockResolvedValue('@media_user cool photo!'); 
 
-        await runRandomEngagementBatch(deps);
+        await new RandomEngagementUseCase(deps).execute();
 
         expect(deps.gemini.analyzeImageCaption).toHaveBeenCalled();
         expect(deps.xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!');

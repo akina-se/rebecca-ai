@@ -1,7 +1,6 @@
-import { getWorkingMemory, saveInteraction, runGlobalDreamingBatch, processDreamingForUser } from '../../src/core/memory';
+import { getWorkingMemory, saveInteraction } from '../../src/core/memory';
+import { GlobalDreamingUseCase } from '../../src/features/dreaming/usecase';
 import { createMockDeps } from './core/testUtils';
-
-jest.mock('../../src/core/prompt');
 
 describe('Memory Module', () => {
     let deps: any;
@@ -13,7 +12,7 @@ describe('Memory Module', () => {
 
     describe('getWorkingMemory', () => {
         it('should return empty array if episodicBuffer is missing or empty (boundary case)', () => {
-            expect(getWorkingMemory(undefined)).toEqual([]);
+            expect(getWorkingMemory(undefined as any)).toEqual([]);
             expect(getWorkingMemory([])).toEqual([]);
         });
 
@@ -46,74 +45,82 @@ describe('Memory Module', () => {
         });
     });
 
-    describe('processDreamingForUser', () => {
-        it('should return early if episodic buffer is empty (boundary case)', async () => {
-            await processDreamingForUser(deps, 'user1', { episodicBuffer: [] } as unknown as any);
-            expect(deps.gemini.generateDreaming).not.toHaveBeenCalled();
+    describe('GlobalDreamingUseCase', () => {
+        let useCase: GlobalDreamingUseCase;
+
+        beforeEach(() => {
+            useCase = new GlobalDreamingUseCase(deps);
         });
 
-        it('should generate and update core profile (normal case)', async () => {
-            deps.gemini.generateDreaming.mockResolvedValueOnce({ attributes: ['cool'] });
-            
-            await processDreamingForUser(deps, 'user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
-            
-            expect(deps.gemini.generateDreaming).toHaveBeenCalled();
-            expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] });
+        describe('processDreamingForUser', () => {
+            it('should return early if episodic buffer is empty (boundary case)', async () => {
+                await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [] } as unknown as any);
+                expect(deps.gemini.generateDreaming).not.toHaveBeenCalled();
+            });
+
+            it('should generate and update core profile (normal case)', async () => {
+                deps.gemini.generateDreaming.mockResolvedValueOnce({ attributes: ['cool'] });
+                
+                await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
+                
+                expect(deps.gemini.generateDreaming).toHaveBeenCalled();
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] });
+            });
+
+            it('should catch and log error if generateDreaming fails (abnormal case)', async () => {
+                const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+                deps.gemini.generateDreaming.mockRejectedValueOnce(new Error('API Error'));
+                
+                await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
+                
+                expect(deps.firestore.updateCoreProfile).not.toHaveBeenCalled();
+                expect(consoleSpy).toHaveBeenCalledWith('Dreaming failed for user: user1', expect.any(Error));
+                
+                consoleSpy.mockRestore();
+            });
         });
 
-        it('should catch and log error if generateDreaming fails (abnormal case)', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-            deps.gemini.generateDreaming.mockRejectedValueOnce(new Error('API Error'));
-            
-            await processDreamingForUser(deps, 'user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
-            
-            expect(deps.firestore.updateCoreProfile).not.toHaveBeenCalled();
-            expect(consoleSpy).toHaveBeenCalledWith('Dreaming failed for user: user1', expect.any(Error));
-            
-            consoleSpy.mockRestore();
-        });
-    });
+        describe('execute', () => {
+            it('should process all users and update timeline summary if there are recent posts', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([
+                    { id: 'u1', episodicBuffer: [{}] },
+                    { id: 'u2', episodicBuffer: [] } // will skip dreaming
+                ]);
+                deps.firestore.getRecentTimelinePosts.mockResolvedValue(['post1', 'post2']);
+                deps.firestore.getTimelineSummary.mockResolvedValue('old_summary');
+                deps.gemini.generateTimelineSummary.mockResolvedValue('new_summary');
+                
+                deps.gemini.generateDreaming.mockResolvedValue({});
 
-    describe('runGlobalDreamingBatch', () => {
-        it('should process all users and update timeline summary if there are recent posts', async () => {
-            deps.firestore.getAllUsers.mockResolvedValue([
-                { id: 'u1', episodicBuffer: [{}] },
-                { id: 'u2', episodicBuffer: [] } // will skip dreaming
-            ]);
-            deps.firestore.getRecentTimelinePosts.mockResolvedValue(['post1', 'post2']);
-            deps.firestore.getTimelineSummary.mockResolvedValue('old_summary');
-            deps.gemini.generateTimelineSummary.mockResolvedValue('new_summary');
-            
-            deps.gemini.generateDreaming.mockResolvedValue({});
+                await useCase.execute();
 
-            await runGlobalDreamingBatch(deps);
+                expect(deps.firestore.getAllUsers).toHaveBeenCalled();
+                expect(deps.gemini.generateDreaming).toHaveBeenCalledTimes(1); // Only for u1
+                
+                expect(deps.gemini.generateTimelineSummary).toHaveBeenCalledWith(['post1', 'post2'], 'old_summary');
+                expect(deps.firestore.saveTimelineSummary).toHaveBeenCalledWith('new_summary');
+            });
 
-            expect(deps.firestore.getAllUsers).toHaveBeenCalled();
-            expect(deps.gemini.generateDreaming).toHaveBeenCalledTimes(1); // Only for u1
-            
-            expect(deps.gemini.generateTimelineSummary).toHaveBeenCalledWith(['post1', 'post2'], 'old_summary');
-            expect(deps.firestore.saveTimelineSummary).toHaveBeenCalledWith('new_summary');
-        });
+            it('should skip timeline summary if no recent posts', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([]);
+                deps.firestore.getRecentTimelinePosts.mockResolvedValue([]);
 
-        it('should skip timeline summary if no recent posts', async () => {
-            deps.firestore.getAllUsers.mockResolvedValue([]);
-            deps.firestore.getRecentTimelinePosts.mockResolvedValue([]);
+                await useCase.execute();
 
-            await runGlobalDreamingBatch(deps);
+                expect(deps.gemini.generateTimelineSummary).not.toHaveBeenCalled();
+                expect(deps.firestore.saveTimelineSummary).not.toHaveBeenCalled();
+            });
 
-            expect(deps.gemini.generateTimelineSummary).not.toHaveBeenCalled();
-            expect(deps.firestore.saveTimelineSummary).not.toHaveBeenCalled();
-        });
+            it('should catch error if timeline summary fails', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([]);
+                deps.firestore.getRecentTimelinePosts.mockRejectedValue(new Error('Timeline fetch error'));
+                const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
 
-        it('should catch error if timeline summary fails', async () => {
-            deps.firestore.getAllUsers.mockResolvedValue([]);
-            deps.firestore.getRecentTimelinePosts.mockRejectedValue(new Error('Timeline fetch error'));
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+                await useCase.execute();
 
-            await runGlobalDreamingBatch(deps);
-
-            expect(consoleSpy).toHaveBeenCalledWith("Failed to summarize timeline", expect.any(Error));
-            consoleSpy.mockRestore();
+                expect(consoleSpy).toHaveBeenCalledWith("Failed to summarize timeline", expect.any(Error));
+                consoleSpy.mockRestore();
+            });
         });
     });
 });

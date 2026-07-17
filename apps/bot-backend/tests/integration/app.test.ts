@@ -11,6 +11,14 @@ jest.mock('../../src/services/firestore', () => ({
     updateUserDoc: jest.fn().mockResolvedValue(undefined),
     appendEpisodicBuffer: jest.fn().mockResolvedValue(undefined),
     checkAndConsumeRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
+    getAllUsers: jest.fn().mockResolvedValue([]),
+    getRecentTimelinePosts: jest.fn().mockResolvedValue([]),
+    getRecentConversationLogs: jest.fn().mockResolvedValue([]),
+    saveExtendedPrompt: jest.fn().mockResolvedValue(undefined),
+    hasProcessedFollower: jest.fn().mockResolvedValue(false),
+    markFollowerProcessed: jest.fn().mockResolvedValue(undefined),
+    getLastListInteraction: jest.fn().mockResolvedValue(null),
+    updateLastListInteraction: jest.fn().mockResolvedValue(undefined),
     hasProcessedMention: jest.fn().mockResolvedValue(false),
     markMentionProcessed: jest.fn().mockResolvedValue(undefined),
     getExtendedPrompt: jest.fn().mockResolvedValue(''),
@@ -32,16 +40,20 @@ jest.mock('../../src/services/gemini', () => ({
     detectLanguage: jest.fn().mockResolvedValue('ja'),
     generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
-    inferImageSearchQuery: jest.fn().mockResolvedValue(null),
+    inferImageSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
+    generateEvolutionPrompt: jest.fn().mockResolvedValue('Mock Prompt'),
+    auditEvolutionPrompt: jest.fn().mockResolvedValue({ isSafe: true }),
+    generateTimelineSummary: jest.fn().mockResolvedValue('Mock Summary'),
+    generateDreaming: jest.fn().mockResolvedValue({}),
     analyzeImageCaption: jest.fn().mockResolvedValue('Mock image caption')
 }));
 
 jest.mock('../../src/services/xApi', () => ({
     replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
     getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
-    getFollowers: jest.fn(),
-    addListMember: jest.fn(),
-    getListMembers: jest.fn(),
+    getFollowers: jest.fn().mockResolvedValue({ data: [] }),
+    addListMember: jest.fn().mockResolvedValue(undefined),
+    getListMembers: jest.fn().mockResolvedValue({ data: [] }),
     getTweetDetails: jest.fn().mockResolvedValue({ data: { text: '' }, includes: { media: [] } }),
     tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
     getUserProfile: jest.fn().mockResolvedValue({ data: { description: 'bio' } }),
@@ -235,11 +247,19 @@ describe('Integration Tests', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
-        it('should return 200', async () => {
-            const memory = require('../../src/core/memory');
-            memory.runGlobalDreamingBatch = jest.fn().mockResolvedValue(undefined);
+        it('should process dreaming successfully', async () => {
+            (firestore.getAllUsers as jest.Mock).mockResolvedValueOnce([{ id: 'user1' }]);
+            (firestore.getUserDoc as jest.Mock).mockResolvedValueOnce({ episodicBuffer: ['test'], coreProfile: {} });
+            (gemini.generateDreaming as jest.Mock).mockResolvedValueOnce({ preferences: ['test'] });
+            (gemini.generateTimelineSummary as jest.Mock).mockResolvedValueOnce('Mock Summary');
+            
             const response = await request(app).get('/batch/dreaming').set('x-batch-secret', 'test_secret');
+            
             expect(response.status).toBe(200);
+            expect(firestore.getAllUsers).toHaveBeenCalled();
+            expect(gemini.generateDreaming).toHaveBeenCalled();
+            expect(firestore.updateUserDoc).toHaveBeenCalled();
+            expect(gemini.generateTimelineSummary).toHaveBeenCalled();
         });
     });
 
@@ -247,11 +267,18 @@ describe('Integration Tests', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
-        it('should return 200', async () => {
-            const evolution = require('../../src/core/evolution');
-            evolution.runGlobalEvolutionBatch = jest.fn().mockResolvedValue(undefined);
+        it('should process evolution successfully when audit passes', async () => {
+            (firestore.getRecentConversationLogs as jest.Mock).mockResolvedValueOnce([{ userText: 'hello', aiText: 'hi' }]);
+            (gemini.generateEvolutionPrompt as jest.Mock).mockResolvedValueOnce('New Prompt');
+            (gemini.auditEvolutionPrompt as jest.Mock).mockResolvedValueOnce({ pass: true });
+            
             const response = await request(app).get('/batch/evolution').set('x-batch-secret', 'test_secret');
+            
             expect(response.status).toBe(200);
+            expect(firestore.getRecentConversationLogs).toHaveBeenCalled();
+            expect(gemini.generateEvolutionPrompt).toHaveBeenCalled();
+            expect(gemini.auditEvolutionPrompt).toHaveBeenCalled();
+            expect(firestore.saveExtendedPrompt).toHaveBeenCalledWith('New Prompt');
         });
     });
 
@@ -259,27 +286,39 @@ describe('Integration Tests', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
-        it('should return 200', async () => {
+        it('should process news-post successfully', async () => {
             const originalFetch = global.fetch;
             global.fetch = jest.fn().mockResolvedValue({
                 text: jest.fn().mockResolvedValue('<rss><channel><item><title>Test News</title><link>http://example.com</link><description>Test</description></item></channel></rss>')
             }) as any;
+            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('Mock News Post');
+            (xApi.tweet as jest.Mock).mockResolvedValueOnce({ data: { id: 'mock_tweet_id' } });
             
             const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
             
             global.fetch = originalFetch;
             expect(response.status).toBe(200);
-        }, 15000); // Increased timeout for external RSS fetch
+            expect(gemini.generateNewsPost).toHaveBeenCalled();
+            expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock News Post'), expect.any(Object));
+        }, 15000);
     });
+
     describe('GET /batch/stealth-onboarding', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
-        it('should return 200', async () => {
-            const onboarding = require('../../src/core/onboarding');
-            onboarding.runStealthOnboardingBatch = jest.fn().mockResolvedValue({ status: 'success', processed: 0 });
+        it('should process stealth onboarding successfully', async () => {
+            (xApi.getFollowers as jest.Mock).mockResolvedValueOnce({ data: [{ id: 'follower_1', username: 'test', description: 'bio' }] });
+            (firestore.hasProcessedFollower as jest.Mock).mockResolvedValueOnce(false);
+            (gemini.analyzeUserProfile as jest.Mock).mockResolvedValueOnce({ attributes: ['tech'] });
+            
             const response = await request(app).get('/batch/stealth-onboarding').set('x-batch-secret', 'test_secret');
+            
             expect(response.status).toBe(200);
+            expect(xApi.getFollowers).toHaveBeenCalled();
+            expect(gemini.analyzeUserProfile).toHaveBeenCalled();
+            expect(xApi.addListMember).toHaveBeenCalledWith(expect.any(String), 'follower_1');
+            expect(firestore.markFollowerProcessed).toHaveBeenCalledWith('follower_1');
         });
     });
 
@@ -287,11 +326,17 @@ describe('Integration Tests', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
-        it('should return 200', async () => {
-            const randomEngagement = require('../../src/core/randomEngagement');
-            randomEngagement.runRandomEngagementBatch = jest.fn().mockResolvedValue({ status: 'success' });
+        it('should process random engagement successfully', async () => {
+            (xApi.getListMembers as jest.Mock).mockResolvedValueOnce({ data: [{ id: 'target_1', username: 'target_user' }] });
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({ data: [], meta: { resultCount: 0 } }); // mock get user tweets (reusing getMentions mock shape for simplicity here)
+            (gemini.generateReply as jest.Mock).mockResolvedValueOnce('Mock Engagement Reply');
+            
             const response = await request(app).get('/batch/random-engagement').set('x-batch-secret', 'test_secret');
+            
             expect(response.status).toBe(200);
+            expect(xApi.getListMembers).toHaveBeenCalled();
+            // xApi.tweet is used for engagement (replying to target)
+            expect(xApi.tweet).toHaveBeenCalled();
         });
     });
 });

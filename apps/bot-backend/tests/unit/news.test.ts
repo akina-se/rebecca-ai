@@ -1,4 +1,4 @@
-import { runProactiveNewsPostBatch } from '../../src/core/news';
+import { ProactiveNewsUseCase } from '../../src/features/news/usecase';
 import { createMockDeps } from './core/testUtils';
 
 describe('runProactiveNewsPostBatch', () => {
@@ -12,7 +12,7 @@ describe('runProactiveNewsPostBatch', () => {
     it('should skip if no headlines are fetched', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue([]);
 
-        const result = await runProactiveNewsPostBatch(deps);
+        const result = await new ProactiveNewsUseCase(deps).execute();
         expect(result).toEqual({ status: 'skipped', reason: 'No headlines' });
         expect(deps.gemini.generateNewsPost).not.toHaveBeenCalled();
     });
@@ -21,7 +21,7 @@ describe('runProactiveNewsPostBatch', () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
         deps.gemini.generateNewsPost.mockResolvedValue('');
 
-        const result = await runProactiveNewsPostBatch(deps);
+        const result = await new ProactiveNewsUseCase(deps).execute();
         expect(result).toEqual({ status: 'failed', reason: 'Generation failed' });
         expect(deps.gemini.inferImageSearchQuery).not.toHaveBeenCalled();
         expect(deps.xApi.tweet).not.toHaveBeenCalled();
@@ -33,7 +33,7 @@ describe('runProactiveNewsPostBatch', () => {
         const shortPost = 'A short news post.'; // 18 chars
         deps.gemini.generateNewsPost.mockResolvedValue(shortPost);
 
-        const result = await runProactiveNewsPostBatch(deps);
+        const result = await new ProactiveNewsUseCase(deps).execute();
         
         expect(result.status).toBe('success');
         expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
@@ -47,7 +47,7 @@ describe('runProactiveNewsPostBatch', () => {
         const longPost = 'A'.repeat(135); 
         deps.gemini.generateNewsPost.mockResolvedValue(longPost);
 
-        const result = await runProactiveNewsPostBatch(deps);
+        const result = await new ProactiveNewsUseCase(deps).execute();
         
         expect(result.status).toBe('success');
         expect(result.post).toBe(longPost); 
@@ -68,7 +68,7 @@ describe('runProactiveNewsPostBatch', () => {
         deps.storage.downloadImage.mockResolvedValue(Buffer.from('image'));
         deps.xApi.uploadMedia.mockResolvedValue('media_123');
 
-        const result = await runProactiveNewsPostBatch(deps);
+        const result = await new ProactiveNewsUseCase(deps).execute();
 
         expect(result.status).toBe('success');
         expect(result.attachedMedia).toBe(true);
@@ -89,7 +89,7 @@ describe('runProactiveNewsPostBatch', () => {
         });
         deps.storage.downloadImage.mockRejectedValue(new Error('GCS Error'));
 
-        const result = await runProactiveNewsPostBatch(deps);
+        const result = await new ProactiveNewsUseCase(deps).execute();
 
         expect(result.status).toBe('success');
         expect(result.attachedMedia).toBe(false);
@@ -102,7 +102,7 @@ describe('runProactiveNewsPostBatch', () => {
         deps.gemini.generateNewsPost.mockResolvedValue('text');
         deps.xApi.tweet.mockRejectedValue(new Error('Twitter API down'));
 
-        await expect(runProactiveNewsPostBatch(deps)).rejects.toThrow('Twitter API down');
+        await expect(new ProactiveNewsUseCase(deps).execute()).rejects.toThrow('Twitter API down');
         
         expect(consoleSpy).toHaveBeenCalledWith('Error in runProactiveNewsPostBatch:', expect.any(Error));
         consoleSpy.mockRestore();

@@ -1,5 +1,5 @@
-import { AppDependencies } from '../types';
-import { getBasePrompt } from './prompt';
+import { AppDependencies } from '../../types';
+import { getBasePrompt } from '@rebecca/persona';
 
 
 
@@ -10,10 +10,20 @@ import { getBasePrompt } from './prompt';
  * 
  * @returns A promise resolving to an object indicating the status of the operation.
  */
-const runProactiveNewsPostBatch = async (deps: AppDependencies) => {
+export class ProactiveNewsUseCase {
+    /**
+     * Initializes the ProactiveNewsUseCase.
+     * @param deps Application dependencies including repositories, APIs, and AI services.
+     */
+    constructor(private deps: AppDependencies) {}
+    /**
+     * Executes the process to fetch headlines, generate a post, attach an image, and tweet.
+     * @returns A promise resolving to an object indicating the status of the operation, the post content, and whether media was attached.
+     */
+    async execute(): Promise<any> {
     console.log("Starting Proactive News Post Batch...");
     try {
-        const headlines = await deps.newsFetcher.fetchYahooNewsHeadlines();
+        const headlines = await this.deps.newsFetcher.fetchYahooNewsHeadlines();
         if (headlines.length === 0) {
             console.log("No headlines fetched, skipping.");
             return { status: 'skipped', reason: 'No headlines' };
@@ -22,7 +32,7 @@ const runProactiveNewsPostBatch = async (deps: AppDependencies) => {
         console.log("Fetched headlines:\n", headlines.join('\n'));
 
         const systemInstruction = getBasePrompt('timeline', 'ja');
-        let postText = await deps.gemini.generateNewsPost(systemInstruction, headlines);
+        let postText = await this.deps.gemini.generateNewsPost(systemInstruction, headlines);
         if (!postText) {
             console.log("Failed to generate news post.");
             return { status: 'failed', reason: 'Generation failed' };
@@ -35,26 +45,26 @@ const runProactiveNewsPostBatch = async (deps: AppDependencies) => {
 
         console.log("Generated Post:", postText);
 
-        const timelineSummary = await deps.firestore.getTimelineSummary();
-        const searchQuery = await deps.gemini.inferImageSearchQuery(postText, timelineSummary);
+        const timelineSummary = await this.deps.firestore.getTimelineSummary();
+        const searchQuery = await this.deps.gemini.inferImageSearchQuery(postText, timelineSummary);
         
         const mediaIds: string[] = [];
         if (searchQuery) {
             console.log(`Inferred image search query: ${searchQuery}`);
-            const queryVector = await deps.gemini.generateEmbedding(searchQuery);
-            const bestImage = queryVector.length > 0 ? await deps.firestore.findImageByVector(queryVector) : null;
+            const queryVector = await this.deps.gemini.generateEmbedding(searchQuery);
+            const bestImage = queryVector.length > 0 ? await this.deps.firestore.findImageByVector(queryVector) : null;
             if (bestImage) {
                 console.log(`Found matching image: ${bestImage.url}`);
                 try {
-                    const buffer = await deps.storage.downloadImage(bestImage.url);
+                    const buffer = await this.deps.storage.downloadImage(bestImage.url);
                     let mimeType = 'image/jpeg';
                     if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
                     else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
                     
-                    const mediaId = await deps.xApi.uploadMedia(buffer, mimeType);
+                    const mediaId = await this.deps.xApi.uploadMedia(buffer, mimeType);
                     if (mediaId && mediaId !== 'mock_media_id') {
                         mediaIds.push(mediaId);
-                        await deps.firestore.updateImageLastUsed(bestImage.id);
+                        await this.deps.firestore.updateImageLastUsed(bestImage.id);
                         console.log(`Attached media ID: ${mediaId}`);
                     }
                 } catch (e) {
@@ -65,9 +75,9 @@ const runProactiveNewsPostBatch = async (deps: AppDependencies) => {
             }
         }
 
-        await deps.xApi.tweet(postText, { mediaIds });
+        await this.deps.xApi.tweet(postText, { mediaIds });
         
-        await deps.firestore.saveTimelinePost(postText);
+        await this.deps.firestore.saveTimelinePost(postText);
 
         return { status: 'success', post: postText, attachedMedia: mediaIds.length > 0 };
     } catch (e) {
@@ -76,6 +86,4 @@ const runProactiveNewsPostBatch = async (deps: AppDependencies) => {
     }
 };
 
-export { 
-    runProactiveNewsPostBatch,
- };
+}
