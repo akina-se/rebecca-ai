@@ -4,3 +4,5 @@ coverage
 tsconfig.tsbuildinfo
 .turbo
 .eslintcache
+.env
+.env.local

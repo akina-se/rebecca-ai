@@ -32,7 +32,7 @@ jobs:
         run: npm run lint
 
       - name: Check Licenses
-        run: npm run license-check
+        run: npm run license-check --workspace=bot-backend
 
       - name: Build TypeScript
         run: npm run build
@@ -65,6 +65,6 @@ jobs:
         run: npm ci
 
       - name: Run LLM Eval Tests
-        run: npm run test:eval
+        run: npm run test:eval --workspace=bot-backend
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

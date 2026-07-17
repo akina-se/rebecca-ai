@@ -11,7 +11,10 @@
     "test": "ng test",
     "ng": "ng",
     "start": "ng serve",
-    "watch": "ng build --watch --configuration development"
+    "watch": "ng build --watch --configuration development",
+    "license-check": "license-checker --summary --onlyAllow \"MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC-BY-4.0;BlueOak-1.0.0;CC-BY-3.0;CC0-1.0;Unlicense;UNLICENSED;0BSD\"",
+    "secret-check": "secretlint \"**/*\"",
+    "audit:fix": "npm audit fix"
   },
   "private": true,
   "dependencies": {
@@ -44,6 +47,6 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.5.2",
-    "typescript-eslint": "^8.46.4"
+    "typescript-eslint": "^8.63.0"
   }
 }
