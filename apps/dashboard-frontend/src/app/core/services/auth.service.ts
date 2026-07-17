@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, User, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithPopup, GoogleAuthProvider, User, signOut, onAuthStateChanged, connectAuthEmulator } from 'firebase/auth';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable } from 'rxjs';
 
@@ -18,11 +18,14 @@ export class AuthService {
     const app = !getApps().length ? initializeApp(environment.firebase) : getApp();
     this.auth = getAuth(app);
     
+    if (!environment.production && (environment as any).useEmulators) {
+      connectAuthEmulator(this.auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    }
+    
     this.initPromise = new Promise<void>((resolve) => {
       const unsubscribe = onAuthStateChanged(this.auth, (user) => {
         this.currentUserSubject.next(user);
         resolve();
-        // keep listener active for future changes
       });
     });
   }
