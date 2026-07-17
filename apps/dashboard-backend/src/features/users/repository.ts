@@ -51,6 +51,33 @@ export class UsersRepository {
     }
 
     const data = doc.data() as any;
+    
+    // Fetch conversation logs from Firestore and sort in-memory to prevent composite index requirements
+    const chatLogsSnap = await this.collections.conversationLogs
+      .where('userId', '==', rawId)
+      .get();
+      
+    const sortedDocs = chatLogsSnap.docs.sort((a, b) => {
+      const tA = a.data().timestamp || '';
+      const tB = b.data().timestamp || '';
+      return tA.localeCompare(tB);
+    });
+
+    const chatHistory = [];
+    for (const logDoc of sortedDocs) {
+      const logData = logDoc.data();
+      chatHistory.push({
+        from: 'user' as const,
+        text: logData.userText || '',
+        time: logData.timestamp || ''
+      });
+      chatHistory.push({
+        from: 'rebecca' as const,
+        text: logData.aiText || '',
+        time: logData.timestamp || ''
+      });
+    }
+
     return {
       handle: `@${rawId}`,
       name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : 'Unknown',
@@ -59,7 +86,7 @@ export class UsersRepository {
       firstSeen: data.first_seen_date || 'N/A',
       lastSeen: data.last_reply_date || 'N/A',
       coreProfile: JSON.stringify(data.coreProfile || {}),
-      chatHistory: [], // Real chat history would come from conversationLogs collection
+      chatHistory,
       status: (data.status as 'Active' | 'Blocked' | 'Muted') || 'Active'
     };
   }
