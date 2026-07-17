@@ -4,7 +4,14 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { Firestore } from '@google-cloud/firestore';
-import { initializeStatsModule } from './features/stats';
+
+// Modules
+import { initializeAuthModule } from './features/auth';
+import { initializeCopilotModule } from './features/copilot';
+import { initializeTimelineModule } from './features/timeline';
+import { initializeUsersModule } from './features/users';
+import { initializeSystemMemoryModule } from './features/system-memory';
+import { initializeAssetsModule } from './features/assets';
 
 // Load environment variables
 dotenv.config();
@@ -32,10 +39,21 @@ const firestore = new Firestore({
 });
 
 // 2. Initialize Features (Modules)
-const statsRouter = initializeStatsModule(firestore);
+const authRouter = initializeAuthModule();
+const copilotRouter = initializeCopilotModule();
+const timelineRouter = initializeTimelineModule(firestore);
+const usersRouter = initializeUsersModule(firestore);
+const systemMemoryRouter = initializeSystemMemoryModule(firestore);
+const assetsRouter = initializeAssetsModule(firestore);
 
 // 3. Mount Routes
-app.use('/api/v1/dashboard/stats', statsRouter);
+app.use('/api/v1/dashboard/auth', authRouter);
+app.use('/api/v1/dashboard/copilot', copilotRouter);
+// Note: Timeline handles /metrics and /posts
+app.use('/api/v1/dashboard', timelineRouter);
+app.use('/api/v1/dashboard/users', usersRouter);
+app.use('/api/v1/dashboard/memory', systemMemoryRouter);
+app.use('/api/v1/dashboard/images', assetsRouter); // Matches HTML prototype / API Spec
 
 // Healthcheck endpoint
 app.get('/health', (req, res) => {
