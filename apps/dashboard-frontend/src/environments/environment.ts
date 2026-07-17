@@ -8,5 +8,7 @@ export const environment = {
     messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
     appId: "YOUR_APP_ID"
   },
-  useEmulators: true
+  useEmulators: true,
+  useMock: true,
+  apiUrl: 'http://localhost:8081/api/v1/dashboard'
 };
