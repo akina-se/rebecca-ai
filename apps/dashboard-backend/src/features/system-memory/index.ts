@@ -4,6 +4,12 @@ import { SystemMemoryRepository } from './repository';
 import { SystemMemoryUseCase } from './usecase';
 import { SystemMemoryController } from './controller';
 
+/**
+ * Initializes the system memory feature module, setting up dependencies and routes.
+ * 
+ * @param firestore - The Firestore instance used for database operations.
+ * @returns An Express Router configured with the system memory routes.
+ */
 export function initializeSystemMemoryModule(firestore: Firestore): Router {
   const router = Router();
   

@@ -4,6 +4,12 @@ import { UsersRepository } from './repository';
 import { UsersUseCase } from './usecase';
 import { UsersController } from './controller';
 
+/**
+ * Initializes the users feature module, setting up dependencies and routes.
+ * 
+ * @param firestore - The Firestore instance used for database operations.
+ * @returns An Express Router configured with the users routes.
+ */
 export function initializeUsersModule(firestore: Firestore): Router {
   const router = Router();
   

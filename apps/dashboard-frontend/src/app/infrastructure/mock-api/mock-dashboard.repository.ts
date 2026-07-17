@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '../../core/models/dashboard.model';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
 
 @Injectable({
   providedIn: 'root'

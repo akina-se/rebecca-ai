@@ -2,7 +2,7 @@ import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '../../../core/models/dashboard.model';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DropdownComponent } from '../../../shared/components/molecules/dropdown/dropdown.component';
 import { DatePickerPopoverComponent } from '../../../shared/components/molecules/date-picker-popover/date-picker-popover.component';

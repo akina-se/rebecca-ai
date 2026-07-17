@@ -33,12 +33,12 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// 1. Initialize Shared Infrastructure (Core)
+// Initialize Shared Infrastructure (Core)
 const firestore = new Firestore({
   projectId: process.env.GCP_PROJECT_ID,
 });
 
-// 2. Initialize Features (Modules)
+// Initialize Features (Modules)
 const authRouter = initializeAuthModule();
 const copilotRouter = initializeCopilotModule();
 const timelineRouter = initializeTimelineModule(firestore);
@@ -46,7 +46,7 @@ const usersRouter = initializeUsersModule(firestore);
 const systemMemoryRouter = initializeSystemMemoryModule(firestore);
 const assetsRouter = initializeAssetsModule(firestore);
 
-// 3. Mount Routes
+// Mount Routes
 app.use('/api/v1/dashboard/auth', authRouter);
 app.use('/api/v1/dashboard/copilot', copilotRouter);
 // Note: Timeline handles /metrics and /posts
@@ -62,6 +62,6 @@ app.get('/health', (req, res) => {
 
 // Start Server
 app.listen(port, () => {
-  console.log(`🚀 Dashboard BFF is running on port ${port}`);
+  console.log(`Dashboard BFF is running on port ${port}`);
   console.log(`Architectural note: Running with Feature-Driven Architecture (Vertical Slicing) + DI.`);
 });

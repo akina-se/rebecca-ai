@@ -1,6 +1,17 @@
 import { Request, Response } from 'express';
 
+/**
+ * Controller for handling authentication-related requests.
+ */
 export class AuthController {
+  /**
+   * Retrieves the current authenticated user's details.
+   * Fallback to a mock email if IAP header is missing (for local development).
+   * 
+   * @param req - The Express Request object.
+   * @param res - The Express Response object.
+   * @returns void
+   */
   public getMe(req: Request, res: Response): void {
     // IAP normally injects 'x-goog-authenticated-user-email' header
     // e.g., 'accounts.google.com:admin@example.com'

@@ -3,13 +3,26 @@ import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { persona } from '@rebecca/persona';
 
+/**
+ * Repository class for managing and loading system memory layers from Firestore and local static sources.
+ */
 export class SystemMemoryRepository {
   private collections;
 
+  /**
+   * Creates an instance of SystemMemoryRepository.
+   * 
+   * @param firestore - The Firestore instance.
+   */
   constructor(private firestore: Firestore) {
     this.collections = getCollections(firestore);
   }
 
+  /**
+   * Retrieves the metadata for the different layers of the system memory.
+   * 
+   * @returns A promise that resolves to an array of memory layers.
+   */
   async getLayers(): Promise<MemoryLayer[]> {
     return [
       {
@@ -36,6 +49,11 @@ export class SystemMemoryRepository {
     ];
   }
 
+  /**
+   * Retrieves the core memory content (Layer 0) loaded from the persona configuration.
+   * 
+   * @returns A promise that resolves to the core memory content.
+   */
   async getCoreMemory(): Promise<MemoryContent> {
     // In a real system, Layer 0 is loaded from the `@rebecca/persona` package,
     // which serves as the immutable foundational instruction set.
@@ -47,6 +65,11 @@ export class SystemMemoryRepository {
     };
   }
 
+  /**
+   * Retrieves the global memory content (Layer 2) from Firestore.
+   * 
+   * @returns A promise that resolves to the global memory content.
+   */
   async getGlobalMemory(): Promise<MemoryContent> {
     // Layer 2 from Firestore
     const doc = await this.collections.system.doc('persona').get();
@@ -59,6 +82,12 @@ export class SystemMemoryRepository {
     };
   }
 
+  /**
+   * Updates the global memory timeline summary in Firestore.
+   * 
+   * @param content - The new summary content.
+   * @returns A promise that resolves when the update is complete.
+   */
   async updateGlobalMemory(content: string): Promise<void> {
     // Manual override of global memory
     await this.collections.system.doc('persona').set(
@@ -67,6 +96,12 @@ export class SystemMemoryRepository {
     );
   }
 
+  /**
+   * Triggers the dreaming process asynchronously by sending a task to Google Cloud Tasks.
+   * Falls back to a local HTTP call if running in a non-production environment where Cloud Tasks is unavailable.
+   * 
+   * @returns A promise that resolves when the trigger process is completed or fallback is registered.
+   */
   async triggerDreaming(): Promise<void> {
     // Kick off the GCP-controlled dreaming process using Cloud Tasks.
     // This allows the process to run entirely asynchronously in the background.
