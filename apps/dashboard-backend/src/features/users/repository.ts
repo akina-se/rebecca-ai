@@ -31,14 +31,14 @@ export class UsersRepository {
       return null;
     }
 
-    const data = doc.data()!;
+    const data = doc.data() as any;
     return {
       handle: `@${rawId}`,
       name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : 'Unknown',
       interactions: data.daily_reply_count || 0,
-      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : null, // Assuming it's a number 0-100 in DB, null if missing
-      firstSeen: data.first_seen_date || null,
-      lastSeen: data.last_reply_date || null,
+      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A',
+      firstSeen: data.first_seen_date || 'N/A',
+      lastSeen: data.last_reply_date || 'N/A',
       coreProfile: JSON.stringify(data.coreProfile || {}),
       chatHistory: [], // Real chat history would come from conversationLogs collection
       status: (data.status as 'Active' | 'Blocked' | 'Muted') || 'Active'

@@ -44,8 +44,8 @@ export class TimelineRepository {
   }
 
   async getMetrics(): Promise<KpiMetrics> {
-    const doc = await this.collections.system.doc('stats').get();
-    const data = doc.data() || {};
+    const doc = await this.collections.systemStats.doc('global').get();
+    const data = (doc.data() || {}) as any;
     
     return {
       followers: data.total_followers || 0,
@@ -60,13 +60,13 @@ export class TimelineRepository {
   }
 
   async getPosts(): Promise<PostLeaderboard[]> {
-    const snapshot = await this.collections.timeline
+    const snapshot = await this.collections.timelineHistory
       .orderBy('impressions', 'desc')
       .limit(50)
       .get();
 
     return snapshot.docs.map(doc => {
-      const data = doc.data();
+      const data = doc.data() as any;
       return {
         id: doc.id,
         time: data.created_at || new Date().toISOString(),
@@ -77,13 +77,11 @@ export class TimelineRepository {
     });
   }
 
-  async getPostById(id: string): Promise<PostDetail> {
-    const doc = await this.collections.timeline.doc(id).get();
-    if (!doc.exists) {
-      throw new Error('Post not found');
-    }
+  async getPostById(id: string): Promise<PostDetail | null> {
+    const doc = await this.collections.timelineHistory.doc(id).get();
+    if (!doc.exists) return null;
     
-    const data = doc.data()!;
+    const data = doc.data() as any;
     const rawMediaUrls: string[] = data.media_urls || [];
     
     // Resolve GCS paths to secure 15-minute Signed URLs
@@ -103,7 +101,7 @@ export class TimelineRepository {
   async deletePosts(ids: string[]): Promise<void> {
     const batch = this.firestore.batch();
     for (const id of ids) {
-      batch.delete(this.collections.timeline.doc(id));
+      batch.delete(this.collections.timelineHistory.doc(id));
     }
     await batch.commit();
   }

@@ -12,7 +12,7 @@ export class TimelineUseCase {
     return this.repo.getPosts();
   }
 
-  async getPostById(id: string): Promise<PostDetail> {
+  async getPostById(id: string): Promise<PostDetail | null> {
     return this.repo.getPostById(id);
   }
 
