@@ -10,9 +10,10 @@ if (!admin.apps.length) {
  * Middleware to verify Firebase Authentication JWT tokens.
  * Protects dashboard endpoints from unauthorized access.
  * 
- * @param req Express Request object
- * @param res Express Response object
- * @param next Express Next function
+ * @param req - Express Request object
+ * @param res - Express Response object
+ * @param next - Express Next function
+ * @returns A promise that resolves when the verification process is complete.
  */
 export const verifyAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   // Allow OPTIONS requests for CORS

@@ -2,15 +2,28 @@ import { Firestore } from '@google-cloud/firestore';
 import { UserDetail, UserLeaderboard } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 
+/**
+ * Repository class for managing user profile details, interactions, and statuses in Firestore.
+ */
 export class UsersRepository {
   private collections;
   private firestore: Firestore;
 
+  /**
+   * Creates an instance of UsersRepository.
+   * 
+   * @param firestore - The Firestore instance.
+   */
   constructor(firestore: Firestore) {
     this.firestore = firestore;
     this.collections = getCollections(firestore);
   }
 
+  /**
+   * Retrieves the top users ordered by daily reply count descending, limited to 10 users.
+   * 
+   * @returns A promise that resolves to an array of user leaderboard entries.
+   */
   async getAll(): Promise<UserLeaderboard[]> {
     const snapshot = await this.collections.users.orderBy('daily_reply_count', 'desc').limit(10).get();
     
@@ -23,6 +36,12 @@ export class UsersRepository {
     });
   }
 
+  /**
+   * Retrieves detailed user profile and status by their user ID.
+   * 
+   * @param id - The user ID/handle to look up.
+   * @returns A promise that resolves to the detailed user information, or null if the user does not exist.
+   */
   async getById(id: string): Promise<UserDetail | null> {
     const rawId = id.replace('@', '');
     const doc = await this.collections.users.doc(rawId).get();
@@ -45,6 +64,13 @@ export class UsersRepository {
     };
   }
 
+  /**
+   * Updates a user's core memory profile in Firestore.
+   * 
+   * @param id - The user ID/handle to update.
+   * @param coreProfileJson - The JSON string representing the user's core profile.
+   * @returns A promise that resolves when the update is complete.
+   */
   async updateMemory(id: string, coreProfileJson: string): Promise<void> {
     const rawId = id.replace('@', '');
     try {
@@ -58,6 +84,13 @@ export class UsersRepository {
     }
   }
 
+  /**
+   * Updates status for multiple users in a bulk operation.
+   * 
+   * @param ids - The array of user IDs/handles to update.
+   * @param status - The new status (Active, Blocked, Muted) to apply.
+   * @returns A promise that resolves when the batch write is complete.
+   */
   async updateStatusBulk(ids: string[], status: string): Promise<void> {
     const batch = this.firestore.batch();
     for (const id of ids) {

@@ -4,10 +4,18 @@ import { KpiMetrics, PostLeaderboard, PostDetail } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { config } from '../../config';
 
+/**
+ * Repository class for retrieving timeline history, leaderboard posts, and system KPI metrics from Firestore.
+ */
 export class TimelineRepository {
   private collections;
   private storage: Storage;
 
+  /**
+   * Creates an instance of TimelineRepository.
+   * 
+   * @param firestore - The Firestore instance.
+   */
   constructor(private firestore: Firestore) {
     this.collections = getCollections(firestore);
     this.storage = new Storage();
@@ -16,6 +24,9 @@ export class TimelineRepository {
   /**
    * Generates a signed URL for a given GCS object path.
    * The URL is valid for 15 minutes.
+   * 
+   * @param gcsPath - The GCS path (e.g. gs://bucket/object).
+   * @returns A promise that resolves to the signed HTTP URL, or the original path if not a GCS path.
    */
   private async getSignedUrl(gcsPath: string): Promise<string> {
     if (!gcsPath || !gcsPath.startsWith('gs://')) {
@@ -28,13 +39,13 @@ export class TimelineRepository {
       const objectName = gcsPath.replace(`gs://${bucketName}/`, '');
       
       const [url] = await this.storage
-        .bucket(bucketName)
-        .file(objectName)
-        .getSignedUrl({
-          version: 'v4',
-          action: 'read',
-          expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-        });
+         .bucket(bucketName)
+         .file(objectName)
+         .getSignedUrl({
+           version: 'v4',
+           action: 'read',
+           expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+         });
       
       return url;
     } catch (e) {
@@ -43,6 +54,11 @@ export class TimelineRepository {
     }
   }
 
+  /**
+   * Retrieves global system KPI metrics.
+   * 
+   * @returns A promise that resolves to the global KPI metrics.
+   */
   async getMetrics(): Promise<KpiMetrics> {
     const doc = await this.collections.systemStats.doc('global').get();
     const data = (doc.data() || {}) as any;
@@ -59,6 +75,11 @@ export class TimelineRepository {
     };
   }
 
+  /**
+   * Retrieves leaderboard posts ordered by impressions descending, limited to 50 posts.
+   * 
+   * @returns A promise that resolves to an array of leaderboard posts.
+   */
   async getPosts(): Promise<PostLeaderboard[]> {
     const snapshot = await this.collections.timelineHistory
       .orderBy('impressions', 'desc')
@@ -77,6 +98,12 @@ export class TimelineRepository {
     });
   }
 
+  /**
+   * Retrieves detailed post information by ID, resolving any GCS media URLs.
+   * 
+   * @param id - The ID of the post to retrieve.
+   * @returns A promise that resolves to the post details, or null if the post was not found.
+   */
   async getPostById(id: string): Promise<PostDetail | null> {
     const doc = await this.collections.timelineHistory.doc(id).get();
     if (!doc.exists) return null;
@@ -98,6 +125,12 @@ export class TimelineRepository {
     };
   }
 
+  /**
+   * Deletes multiple posts by their IDs.
+   * 
+   * @param ids - The array of post IDs to delete.
+   * @returns A promise that resolves when the deletion is complete.
+   */
   async deletePosts(ids: string[]): Promise<void> {
     const batch = this.firestore.batch();
     for (const id of ids) {

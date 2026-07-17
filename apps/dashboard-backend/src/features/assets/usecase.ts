@@ -9,16 +9,39 @@ const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
  * UseCase for managing and processing Assets (images).
  */
 export class AssetsUseCase {
+  /**
+   * Creates an instance of AssetsUseCase.
+   * 
+   * @param repo - The repository instance for database operations.
+   */
   constructor(private repo: AssetsRepository) {}
 
+  /**
+   * Retrieves all assets.
+   * 
+   * @returns A promise that resolves to an array of Assets.
+   */
   async getAllAssets(): Promise<Asset[]> {
     return this.repo.getAll();
   }
 
+  /**
+   * Updates an asset with partial data.
+   * 
+   * @param id - The ID of the asset to update.
+   * @param updates - The partial asset fields to update.
+   * @returns A promise that resolves when the update is complete.
+   */
   async updateAsset(id: string, updates: Partial<Asset>): Promise<void> {
     await this.repo.update(id, updates);
   }
 
+  /**
+   * Deletes multiple assets.
+   * 
+   * @param ids - The array of asset IDs to delete.
+   * @returns A promise that resolves when the deletion is complete.
+   */
   async deleteAssets(ids: string[]): Promise<void> {
     await this.repo.deleteMany(ids);
   }

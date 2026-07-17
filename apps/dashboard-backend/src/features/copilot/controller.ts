@@ -1,9 +1,24 @@
 import { Request, Response } from 'express';
 import { CopilotUseCase } from './usecase';
 
+/**
+ * Controller for handling Copilot-related requests.
+ */
 export class CopilotController {
+  /**
+   * Creates an instance of CopilotController.
+   * 
+   * @param useCase - The copilot use case instance.
+   */
   constructor(private useCase: CopilotUseCase) {}
 
+  /**
+   * Handles Copilot chat interactions.
+   * 
+   * @param req - The Express Request object containing message and context.
+   * @param res - The Express Response object.
+   * @returns A promise that resolves when the response is sent.
+   */
   async chat(req: Request, res: Response): Promise<void> {
     const { message, currentContext } = req.body;
     if (!message) {

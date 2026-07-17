@@ -4,6 +4,12 @@ import { AssetsRepository } from './repository';
 import { AssetsUseCase } from './usecase';
 import { AssetsController } from './controller';
 
+/**
+ * Initializes the assets feature module, setting up dependencies and routes.
+ * 
+ * @param firestore - The Firestore instance used for database operations.
+ * @returns An Express Router configured with the assets routes.
+ */
 export function initializeAssetsModule(firestore: Firestore): Router {
   const router = Router();
   

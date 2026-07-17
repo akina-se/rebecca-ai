@@ -2,15 +2,28 @@ import { Firestore } from '@google-cloud/firestore';
 import { Asset } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 
+/**
+ * Repository class for managing Asset (image) data persistence in Firestore.
+ */
 export class AssetsRepository {
   private collections;
   private firestore: Firestore;
 
+  /**
+   * Creates an instance of AssetsRepository.
+   * 
+   * @param firestore - The Firestore instance.
+   */
   constructor(firestore: Firestore) {
     this.firestore = firestore;
     this.collections = getCollections(firestore);
   }
 
+  /**
+   * Retrieves all assets. Falls back to mock data if the collection is empty.
+   * 
+   * @returns A promise that resolves to an array of Assets.
+   */
   async getAll(): Promise<Asset[]> {
     const snapshot = await this.collections.images.get();
     
@@ -46,6 +59,13 @@ export class AssetsRepository {
     });
   }
 
+  /**
+   * Updates an asset's fields in the database.
+   * 
+   * @param id - The ID of the asset to update.
+   * @param updates - The partial asset fields to update.
+   * @returns A promise that resolves when the update is complete.
+   */
   async update(id: string, updates: Partial<Asset>): Promise<void> {
     const dbUpdates: any = {};
     if (updates.caption !== undefined) dbUpdates.caption = updates.caption;
@@ -56,6 +76,12 @@ export class AssetsRepository {
     await this.collections.images.doc(id).set(dbUpdates, { merge: true });
   }
 
+  /**
+   * Deletes multiple assets by their IDs.
+   * 
+   * @param ids - The array of asset IDs to delete.
+   * @returns A promise that resolves when the deletion is complete.
+   */
   async deleteMany(ids: string[]): Promise<void> {
     const batch = this.firestore.batch();
     for (const id of ids) {

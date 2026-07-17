@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '../models/dashboard.model';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
 
 export interface DashboardRepository {
   getKpiMetrics(period: string): Observable<KpiMetrics>;
