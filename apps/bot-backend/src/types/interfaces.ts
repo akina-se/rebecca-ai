@@ -76,21 +76,17 @@ export interface IFirestoreService {
  */
 export interface IGeminiService {
   generateReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string>;
-  generateDreaming(
-    systemPrompt: string,
-    episodicBuffer: ConversationLogEntry[],
-    coreProfile: UserCoreProfile,
-  ): Promise<UserCoreProfile>;
-  generateEvolutionPrompt(logsText: string): Promise<string>;
-  auditEvolutionPrompt(candidatePrompt: string): Promise<{ pass: boolean; reason?: string }>;
-  analyzeUserProfile(description: string): Promise<UserCoreProfile>;
-  generateNewsPost(systemInstruction: string, headlines: string[]): Promise<string>;
-  generateTimelineSummary(recentPosts: string[], previousSummary?: string): Promise<string>;
-  detectLanguage(text: string): Promise<'ja' | 'en'>;
+  generateDreaming(systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile>;
+  generateEvolutionPrompt(prompt: string): Promise<string>;
+  auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;
+  analyzeUserProfile(prompt: string): Promise<UserCoreProfile>;
+  generateNewsPost(systemInstruction: string, prompt: string): Promise<string>;
+  generateTimelineSummary(prompt: string): Promise<string>;
+  detectLanguage(prompt: string): Promise<'ja' | 'en'>;
   generateEmbedding(text: string): Promise<number[]>;
-  generateSearchQuery(context: string, input: string): Promise<string>;
-  analyzeImageCaption(imageBuffer: Buffer, mimeType: string): Promise<string>;
-  inferImageSearchQuery(tweetText: string, timelineSummary: string): Promise<string | null>;
+  generateSearchQuery(prompt: string): Promise<string>;
+  analyzeImageCaption(imageBuffer: Buffer, mimeType: string, prompt: string): Promise<string>;
+  inferImageSearchQuery(prompt: string): Promise<string | null>;
 }
 
 // ---------------------------------------------------------------------------
