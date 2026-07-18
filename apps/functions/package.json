@@ -7,11 +7,16 @@
     "lint": "eslint .",
     "build": "tsc",
     "build:watch": "tsc --watch",
+    "dev": "tsc --watch",
+    "test": "echo \"No tests defined for functions\"",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "license-check": "license-checker --summary --onlyAllow \"MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC-BY-4.0;BlueOak-1.0.0;CC-BY-3.0;CC0-1.0;Unlicense;0BSD\"",
+    "secret-check": "secretlint \"**/*\"",
+    "audit:fix": "npm audit fix"
   },
   "engines": {
     "node": "18"
