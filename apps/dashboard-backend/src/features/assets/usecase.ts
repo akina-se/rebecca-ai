@@ -1,5 +1,5 @@
 import { AssetsRepository } from './repository';
-import { Asset } from '@rebecca/types';
+import { Asset, AssetStatus } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
 import { config } from '../../config';
 
@@ -72,11 +72,11 @@ export class AssetsUseCase {
         
         await this.repo.update(asset.id, { 
           caption, 
-          status: 'Ready' 
+          status: AssetStatus.SUCCESS 
         });
       } catch (e) {
         console.error(`Failed to generate caption for asset ${asset.id}`, e);
-        await this.repo.update(asset.id, { status: 'Caption Failed' });
+        await this.repo.update(asset.id, { status: AssetStatus.FAILED });
       }
     }
   }

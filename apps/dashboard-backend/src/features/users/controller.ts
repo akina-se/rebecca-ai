@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UsersUseCase } from './usecase';
+import { UserStatus } from '@rebecca/types';
 
 /**
  * Controller for handling user management requests.
@@ -20,8 +21,12 @@ export class UsersController {
    * @returns A promise that resolves when the response is sent.
    */
   async getAll(req: Request, res: Response): Promise<void> {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+    const startAfterId = req.query.startAfterId as string;
+    const sortBy = req.query.sortBy as string;
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc';
     try {
-      const users = await this.useCase.getAllUsers();
+      const users = await this.useCase.getAllUsers({ limit, startAfterId, sortBy, sortOrder });
       res.json(users);
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch users' });
@@ -76,7 +81,21 @@ export class UsersController {
       res.status(400).json({ error: 'Invalid parameters' });
       return;
     }
-    await this.useCase.bulkUpdateStatus(ids, status);
+    
+    let userStatus: UserStatus;
+    const upper = status.toUpperCase();
+    if (upper === 'ACTIVE') {
+      userStatus = UserStatus.ACTIVE;
+    } else if (upper === 'BLOCKED') {
+      userStatus = UserStatus.BLOCKED;
+    } else if (upper === 'MUTED') {
+      userStatus = UserStatus.MUTED;
+    } else {
+      res.status(400).json({ error: 'Invalid status value' });
+      return;
+    }
+
+    await this.useCase.bulkUpdateStatus(ids, userStatus);
     res.json({ success: true });
   }
 }

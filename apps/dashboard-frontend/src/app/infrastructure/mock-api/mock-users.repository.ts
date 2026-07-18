@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { UsersRepository } from '../../core/ports/users.repository';
-import { UserDetail, ChatMessage } from '@rebecca/types';
+import { UserDetail, ChatMessage, UserStatus } from '@rebecca/types';
 
 @Injectable({
   providedIn: 'root'
@@ -16,7 +16,7 @@ export class MockUsersRepository implements UsersRepository {
       firstSeen: '2025-08-01',
       lastSeen: '2026-07-10',
       coreProfile: '{\n  "attributes": ["student", "tokyo"],\n  "preferences": ["anime", "programming"],\n  "concerns": ["exams"],\n  "important_memories": ["promised to go to comiket"]\n}',
-      status: 'ACTIVE',
+      status: UserStatus.ACTIVE,
       chatHistory: this.generateMockHistory('@rebecca_oshi')
     },
     {
@@ -27,7 +27,7 @@ export class MockUsersRepository implements UsersRepository {
       firstSeen: '2026-01-15',
       lastSeen: '2026-07-09',
       coreProfile: '{\n  "attributes": ["engineer", "adult"],\n  "preferences": ["ai", "tech"],\n  "concerns": ["burnout"],\n  "important_memories": []\n}',
-      status: 'ACTIVE',
+      status: UserStatus.ACTIVE,
       chatHistory: this.generateMockHistory('@tech_geek_tokyo')
     },
     {
@@ -38,7 +38,7 @@ export class MockUsersRepository implements UsersRepository {
       firstSeen: '2026-05-01',
       lastSeen: '2026-07-11',
       coreProfile: '{\n  "attributes": ["gamer"],\n  "preferences": ["gaming"],\n  "concerns": [],\n  "important_memories": []\n}',
-      status: 'ACTIVE',
+      status: UserStatus.ACTIVE,
       chatHistory: this.generateMockHistory('@user_alpha_99')
     },
     {
@@ -49,7 +49,7 @@ export class MockUsersRepository implements UsersRepository {
       firstSeen: '2026-06-01',
       lastSeen: '2026-06-01',
       coreProfile: '{}',
-      status: 'BLOCKED',
+      status: UserStatus.BLOCKED,
       chatHistory: []
     }
   ];
@@ -109,10 +109,10 @@ export class MockUsersRepository implements UsersRepository {
     return of({ success: true });
   }
 
-  bulkUpdateStatus(ids: string[], status: string): Observable<any> {
+  bulkUpdateStatus(ids: string[], status: UserStatus): Observable<any> {
     this.users.forEach(u => {
       if (ids.includes(u.handle)) {
-        u.status = status as any;
+        u.status = status;
       }
     });
     return of({ success: true });

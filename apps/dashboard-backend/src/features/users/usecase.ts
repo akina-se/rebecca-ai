@@ -1,5 +1,5 @@
 import { UsersRepository } from './repository';
-import { UserDetail, UserLeaderboard } from '@rebecca/types';
+import { UserDetail, UserLeaderboard, UserStatus } from '@rebecca/types';
 
 /**
  * Use case class for orchestrating user management operations.
@@ -13,12 +13,12 @@ export class UsersUseCase {
   constructor(private repo: UsersRepository) {}
 
   /**
-   * Retrieves all users.
+   * Retrieves all users, supporting pagination, custom ordering, and returning detailed user objects.
    * 
-   * @returns A promise that resolves to an array of user leaderboard entries.
+   * @returns A promise that resolves to an array of user details.
    */
-  async getAllUsers(): Promise<UserLeaderboard[]> {
-    return this.repo.getAll();
+  async getAllUsers(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<UserDetail[]> {
+    return this.repo.getAll(params);
   }
 
   /**
@@ -49,7 +49,7 @@ export class UsersUseCase {
    * @param status - The new status (Active, Blocked, Muted) to apply.
    * @returns A promise that resolves when the update is complete.
    */
-  async bulkUpdateStatus(ids: string[], status: string): Promise<void> {
+  async bulkUpdateStatus(ids: string[], status: UserStatus): Promise<void> {
     await this.repo.updateStatusBulk(ids, status);
   }
 }

@@ -341,7 +341,7 @@ export interface CopilotResponse {
   reply: string;
   actionRequired?: {
     type: 'BLOCK_USER' | 'DELETE_POST' | 'UPDATE_MEMORY';
-    payload: any;
+    payload: unknown;
     description: string;
   };
   suggestionChips: string[];
