@@ -3,6 +3,13 @@ import { getBasePrompt } from '@rebecca/persona';
 
 
 
+export interface NewsResult {
+    status: 'skipped' | 'success';
+    reason?: string;
+    post?: string;
+    attachedMedia?: boolean;
+}
+
 /**
  * Executes a batch job to proactively post a news-related tweet.
  * It fetches headlines, generates a post, infers a relevant image,
@@ -20,7 +27,7 @@ export class ProactiveNewsUseCase {
      * Executes the process to fetch headlines, generate a post, attach an image, and tweet.
      * @returns A promise resolving to an object indicating the status of the operation, the post content, and whether media was attached.
      */
-    async execute(): Promise<any> {
+    async execute(): Promise<NewsResult> {
     console.log("Starting Proactive News Post Batch...");
     try {
         const headlines = await this.deps.newsFetcher.fetchYahooNewsHeadlines();

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { DropdownComponent } from '../../../shared/components/molecules/dropdown/dropdown.component';
+import { SettingsService } from '../../../core/services/settings.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -9,13 +10,34 @@ import { DropdownComponent } from '../../../shared/components/molecules/dropdown
   styleUrl: './settings-page.component.css'
 })
 export class SettingsPageComponent {
-  langOptions = ['English (US)', '日本語 (JA)'];
-  selectedLang = '日本語 (JA)';
+  private settingsService = inject(SettingsService);
 
-  tzOptions = ['Asia/Tokyo (UTC+9)', 'UTC'];
-  selectedTz = 'Asia/Tokyo (UTC+9)';
+  langOptions = this.settingsService.languageOptions.map(o => o.label);
+  
+  get selectedLang(): string {
+    const active = this.settingsService.selectedLang();
+    return this.settingsService.languageOptions.find(o => o.value === active)?.label || '日本語 (JA)';
+  }
+
+  set selectedLang(label: string) {
+    const value = this.settingsService.languageOptions.find(o => o.label === label)?.value || 'ja';
+    this.settingsService.setLanguage(value);
+  }
+
+  tzOptions = this.settingsService.timezoneOptions.map(o => o.label);
+
+  get selectedTz(): string {
+    const active = this.settingsService.selectedTz();
+    return this.settingsService.timezoneOptions.find(o => o.value === active)?.label || 'Asia/Tokyo (UTC+9)';
+  }
+
+  set selectedTz(label: string) {
+    const value = this.settingsService.timezoneOptions.find(o => o.label === label)?.value || 'Asia/Tokyo';
+    this.settingsService.setTimezone(value);
+  }
 
   mockAlert(msg: string) {
     alert(msg);
   }
 }
+

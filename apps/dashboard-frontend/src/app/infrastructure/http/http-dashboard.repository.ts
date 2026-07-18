@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpDashboardRepository implements DashboardRepository {
   private http = inject(HttpClient);
-  private baseUrl = (environment as any).apiUrl || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
 
   /**
    * Fetches global KPI metrics from the backend.
@@ -22,7 +22,8 @@ export class HttpDashboardRepository implements DashboardRepository {
    * @returns Observable of KPI metrics.
    */
   getKpiMetrics(period: string): Observable<KpiMetrics> {
-    return this.http.get<KpiMetrics>(`${this.baseUrl}/metrics`);
+    const params = new HttpParams().set('period', period);
+    return this.http.get<KpiMetrics>(`${this.baseUrl}/metrics`, { params });
   }
 
   /**

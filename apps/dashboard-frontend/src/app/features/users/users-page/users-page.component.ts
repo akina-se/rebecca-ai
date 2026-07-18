@@ -19,7 +19,7 @@ export class UsersPageComponent {
   drawerIcon = '';
 
   mockUsers = ['@user_alpha_99', '@rebecca_oshi', '@spam_bot_001'];
-  selectedUsers: Set<string> = new Set();
+  selectedUsers = new Set<string>();
   selectAll = false;
 
   isBlocking = false;

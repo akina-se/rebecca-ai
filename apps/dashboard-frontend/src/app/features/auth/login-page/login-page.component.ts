@@ -22,8 +22,8 @@ export class LoginPageComponent {
     try {
       await this.authService.loginWithGoogle();
       this.router.navigate(['/dashboard']);
-    } catch (err: any) {
-      this.error = err.message || 'Authentication failed. Please try again.';
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : 'Authentication failed. Please try again.';
       console.error(err);
     } finally {
       this.isLoading = false;

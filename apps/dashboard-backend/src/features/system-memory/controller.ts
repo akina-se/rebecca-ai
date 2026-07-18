@@ -24,6 +24,7 @@ export class SystemMemoryController {
       const layers = await this.useCase.getLayers();
       res.json(layers);
     } catch (err) {
+      console.error('Failed to fetch memory layers:', err);
       res.status(500).json({ error: 'Failed to fetch memory layers' });
     }
   }
@@ -40,6 +41,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getCoreMemory();
       res.json(content);
     } catch (err) {
+      console.error('Failed to fetch core memory:', err);
       res.status(500).json({ error: 'Failed to fetch core memory' });
     }
   }
@@ -56,6 +58,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getGlobalMemory();
       res.json(content);
     } catch (err) {
+      console.error('Failed to fetch global memory:', err);
       res.status(500).json({ error: 'Failed to fetch global memory' });
     }
   }

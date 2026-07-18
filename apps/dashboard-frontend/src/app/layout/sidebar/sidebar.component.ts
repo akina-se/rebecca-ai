@@ -8,4 +8,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent { }
+export class SidebarComponent {
+  readonly brandName = 'Rebecca AI';
+}

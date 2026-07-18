@@ -6,8 +6,8 @@ export interface MemoryRepository {
   getLayers(): Observable<MemoryLayer[]>;
   getCoreMemory(): Observable<MemoryContent>;
   getGlobalMemory(): Observable<MemoryContent>;
-  updateGlobalMemory(content: string): Observable<any>;
-  triggerDreaming(): Observable<any>;
+  updateGlobalMemory(content: string): Observable<unknown>;
+  triggerDreaming(): Observable<unknown>;
 }
 
 export const MEMORY_REPOSITORY = new InjectionToken<MemoryRepository>('MemoryRepository');

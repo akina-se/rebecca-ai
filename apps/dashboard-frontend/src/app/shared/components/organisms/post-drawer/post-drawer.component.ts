@@ -1,7 +1,19 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ActionHelperService } from '../../../services/action-helper.service';
+
+interface PostMockModel {
+  id: string;
+  time: string;
+  text: string;
+  impressions: string;
+  status: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  mediaUrls: string[];
+}
 
 @Component({
   selector: 'app-post-drawer',
@@ -10,14 +22,14 @@ import { ActionHelperService } from '../../../services/action-helper.service';
   templateUrl: './post-drawer.component.html',
   styleUrls: ['./post-drawer.component.css']
 })
-export class PostDrawerComponent {
+export class PostDrawerComponent implements OnChanges {
   drawerService = inject(DrawerService);
   @Input() postId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
 
   isDeleting = false;
 
-  mockPost: any = {};
+  mockPost: PostMockModel = { id: '', time: '', text: '', impressions: '', status: '', likes: 0, retweets: 0, replies: 0, mediaUrls: [] };
 
   ngOnChanges() {
     if (this.postId === '1') {

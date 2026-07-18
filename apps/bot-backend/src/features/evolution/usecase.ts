@@ -1,6 +1,13 @@
 import { AppDependencies } from '../../types';
 import config from '../../config';
 
+export interface EvolutionResult {
+    status: 'skipped' | 'failed' | 'success' | 'rejected';
+    reason?: string;
+    prompt?: string;
+    candidate?: string;
+}
+
 /**
  * Use case for running the global evolution batch process.
  * It periodically updates the AI's persona based on recent interactions.
@@ -19,7 +26,7 @@ export class GlobalEvolutionUseCase {
      * 
      * @returns A promise resolving to an object containing the status and result of the evolution batch.
      */
-    async execute(): Promise<any> {
+    async execute(): Promise<EvolutionResult> {
     console.log("Starting Global Evolution Batch...");
     try {
         const logs = await this.deps.firestore.getRecentConversationLogs(config.evolution.lookbackDays);

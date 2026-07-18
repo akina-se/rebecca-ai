@@ -1,5 +1,6 @@
 import { TimelineRepository } from './repository';
-import { KpiMetrics, PostLeaderboard, PostDetail } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert } from '@rebecca/types';
+import { deleteTweetViaGrpc } from '../../core/grpcClient';
 
 /**
  * Use case class for orchestrating timeline and metrics-related operations.
@@ -41,19 +42,32 @@ export class TimelineUseCase {
   }
 
   /**
-   * Deletes multiple posts by their IDs.
+   * Deletes multiple posts by their IDs, coordinating database removal and X API tweet deletion via gRPC.
    * 
    * @param ids - The array of post IDs to delete.
    * @returns A promise that resolves when the deletion is complete.
    */
   async deletePosts(ids: string[]): Promise<void> {
     await this.repo.deletePosts(ids);
+    
+    // Call bot-backend via gRPC to delete the tweets on X
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          console.log(`Triggering gRPC deleteTweet for X ID: ${id}`);
+          const response = await deleteTweetViaGrpc(id);
+          console.log(`gRPC deleteTweet response for ${id}:`, response);
+        } catch (err) {
+          console.error(`Failed to delete tweet ${id} via gRPC:`, err);
+        }
+      })
+    );
   }
 
   /**
    * Retrieves dynamically aggregated active warnings.
    */
-  async getAlerts(): Promise<any[]> {
+  async getAlerts(): Promise<SystemAlert[]> {
     return this.repo.getAlerts();
   }
 }

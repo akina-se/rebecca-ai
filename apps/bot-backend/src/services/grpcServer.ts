@@ -13,22 +13,43 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   oneofs: true,
 });
 
-const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as any;
+interface TweetDeleteRequest {
+  tweet_id: string;
+}
+
+interface TweetDeleteResponse {
+  success: boolean;
+  message: string;
+}
+
+interface ProtoGrpcType extends grpc.GrpcObject {
+  tweets: {
+    TweetService: {
+      service: grpc.ServiceDefinition<grpc.UntypedServiceImplementation>;
+    };
+  };
+}
+
+const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as unknown as ProtoGrpcType;
 const tweetsPackage = protoDescriptor.tweets;
 
 export function startGrpcServer(): grpc.Server {
   const server = new grpc.Server();
   
   server.addService(tweetsPackage.TweetService.service, {
-    deleteTweet: async (call: any, callback: any) => {
+    deleteTweet: async (
+      call: grpc.ServerUnaryCall<TweetDeleteRequest, TweetDeleteResponse>,
+      callback: grpc.sendUnaryData<TweetDeleteResponse>
+    ) => {
       const tweetId = call.request.tweet_id;
       console.log(`gRPC server received delete request for tweet: ${tweetId}`);
       try {
         await deleteTweet(tweetId);
         callback(null, { success: true, message: 'Tweet successfully deleted' });
-      } catch (err: any) {
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
         console.error(`gRPC error deleting tweet ${tweetId}:`, err);
-        callback(null, { success: false, message: err.message || 'Unknown error' });
+        callback(null, { success: false, message });
       }
     }
   });
@@ -39,8 +60,9 @@ export function startGrpcServer(): grpc.Server {
       console.error('Failed to bind gRPC server:', err);
       return;
     }
-    console.log(`gRPC server running at ${port}`);
+    console.log(`gRPC server running at ${port} (bound to port ${portNumber})`);
   });
   
   return server;
 }
+

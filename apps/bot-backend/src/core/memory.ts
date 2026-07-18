@@ -1,6 +1,5 @@
 import { AppDependencies } from '../types';
-import { getDreamingPrompt } from '@rebecca/persona';
-import { ConversationLogEntry, FirestoreUser } from '../types';
+import { ConversationLogEntry } from '../types';
 
 /**
  * Extracts a sliding window of recent interactions from the episodic buffer.

@@ -24,6 +24,7 @@ export class TimelineController {
       const metrics = await this.useCase.getMetrics();
       res.json(metrics);
     } catch (err) {
+      console.error('Failed to fetch metrics:', err);
       res.status(500).json({ error: 'Failed to fetch metrics' });
     }
   }
@@ -45,6 +46,7 @@ export class TimelineController {
       const posts = await this.useCase.getPosts({ limit, startAfterId, sortBy, sortOrder });
       res.json(posts);
     } catch (err) {
+      console.error('Failed to fetch posts:', err);
       res.status(500).json({ error: 'Failed to fetch posts' });
     }
   }
@@ -62,6 +64,7 @@ export class TimelineController {
       const post = await this.useCase.getPostById(id as string);
       res.json(post);
     } catch (err) {
+      console.error('Failed to fetch post details:', err);
       res.status(500).json({ error: 'Failed to fetch post details' });
     }
   }
@@ -95,6 +98,7 @@ export class TimelineController {
       const alerts = await this.useCase.getAlerts();
       res.json(alerts);
     } catch (err) {
+      console.error('Failed to fetch alerts:', err);
       res.status(500).json({ error: 'Failed to fetch alerts' });
     }
   }

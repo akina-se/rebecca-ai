@@ -323,11 +323,12 @@ const deleteTweet = async (tweetId: string): Promise<boolean> => {
         return true;
     }
     try {
-        if (typeof (client.posts as any).destroy === 'function') {
-            await (client.posts as any).destroy(tweetId);
+        const postsObj = client.posts as unknown as Record<string, unknown>;
+        if (typeof postsObj['destroy'] === 'function') {
+            await (postsObj['destroy'] as (id: string) => Promise<unknown>)(tweetId);
             return true;
-        } else if (typeof (client.posts as any).delete === 'function') {
-            await (client.posts as any).delete(tweetId);
+        } else if (typeof postsObj['delete'] === 'function') {
+            await (postsObj['delete'] as (id: string) => Promise<unknown>)(tweetId);
             return true;
         } else if (oauth1Client) {
             const url = `https://api.twitter.com/2/tweets/${tweetId}`;

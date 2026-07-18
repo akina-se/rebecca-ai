@@ -18,12 +18,12 @@ export class AuthService {
     const app = !getApps().length ? initializeApp(environment.firebase) : getApp();
     this.auth = getAuth(app);
     
-    if (!environment.production && (environment as any).useEmulators) {
+    if (!environment.production && (environment as Record<string, unknown>)['useEmulators']) {
       connectAuthEmulator(this.auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     }
     
     this.initPromise = new Promise<void>((resolve) => {
-      const unsubscribe = onAuthStateChanged(this.auth, (user) => {
+      onAuthStateChanged(this.auth, (user) => {
         this.currentUserSubject.next(user);
         resolve();
       });

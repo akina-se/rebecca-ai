@@ -4,6 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ActionHelperService } from '../../../services/action-helper.service';
 
+interface UserMockModel {
+  handle: string;
+  name: string;
+  interactions: number;
+  affinityScore: string;
+  firstSeen: string;
+  lastSeen: string;
+  coreProfile: string;
+  chatHistory: { from: 'user' | 'rebecca'; text: string; time: string }[];
+}
+
 @Component({
   selector: 'app-user-drawer',
   standalone: true,
@@ -16,8 +27,18 @@ export class UserDrawerComponent implements OnChanges {
   actionHelper = inject(ActionHelperService);
   @Input() userId: string | null = null;
 
-  mockUser: any = {};
-  parsedProfile: { [key: string]: string[] } = {
+  mockUser: UserMockModel = {
+    handle: '',
+    name: '',
+    interactions: 0,
+    affinityScore: '',
+    firstSeen: '',
+    lastSeen: '',
+    coreProfile: '',
+    chatHistory: []
+  };
+
+  parsedProfile: Record<string, string[]> = {
     attributes: [],
     preferences: [],
     concerns: [],
@@ -70,12 +91,13 @@ export class UserDrawerComponent implements OnChanges {
     }
 
     try {
-      this.parsedProfile = JSON.parse(this.mockUser.coreProfile);
+      this.parsedProfile = JSON.parse(this.mockUser.coreProfile) as Record<string, string[]>;
       // Ensure all arrays exist
       ['attributes', 'preferences', 'concerns', 'important_memories'].forEach(key => {
         if (!this.parsedProfile[key]) this.parsedProfile[key] = [];
       });
-    } catch (e) {
+    } catch (error) {
+      console.error('Failed to parse coreProfile JSON', error);
       this.parsedProfile = { attributes: [], preferences: [], concerns: [], important_memories: [] };
     }
   }
