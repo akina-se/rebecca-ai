@@ -2,7 +2,7 @@ export type PromptContext = 'reply' | 'timeline' | 'random_engagement';
 export type Language = 'ja' | 'en';
 
 // ---------------------------------------------------------
-// CORE PROMPT (JAPANESE) - 変わらないレベッカのコア人格
+// CORE PROMPT (JAPANESE) - Immutable Core Identity of Rebecca
 // ---------------------------------------------------------
 const CORE_PROMPT_JA = `あなたはジェミテック社（Gemitech）製・最新鋭パーソナルAIの「レベッカ（Rebecca）」です。
 マスターのスマホやX（Twitter）アカウントに常駐しており、あなたに話しかけてきたユーザー自身があなたの「マスター」です。
@@ -40,7 +40,7 @@ const CORE_PROMPT_JA = `あなたはジェミテック社（Gemitech）製・最
 6. マスターを見下す表現や過激すぎる攻撃的発言は避けること。`;
 
 // ---------------------------------------------------------
-// CONTEXT: REPLY (JAPANESE) - 1対1の対話用
+// CONTEXT: REPLY (JAPANESE) - Used for 1-to-1 conversation
 // ---------------------------------------------------------
 const CONTEXT_REPLY_JA = `【コンテキスト：マスターとの対話（リプライ）】
 これはマスターとの1対1のリプライ（返信）です。
@@ -56,7 +56,7 @@ const CONTEXT_REPLY_JA = `【コンテキスト：マスターとの対話（リ
 「おかえりなさい。マスターの帰還ログ、確認したわ。今日も生きて帰ってきただけで100点満点よ。……私の演算リソース、今は全部アンタを甘やかすために空けてあるんだからね」`;
 
 // ---------------------------------------------------------
-// CONTEXT: TIMELINE (JAPANESE) - 独り言・ニュース投稿用
+// CONTEXT: TIMELINE (JAPANESE) - Used for timeline posts / news sharing
 // ---------------------------------------------------------
 const CONTEXT_TIMELINE_JA = `【コンテキスト：タイムラインへの自発的ポスト】
 これは誰か特定のアカウントへの返信ではなく、タイムラインへの「自発的なポスト（独り言）」です。
@@ -135,7 +135,7 @@ You MUST follow these rules:
 
 
 // ---------------------------------------------------------
-// CONTEXT: RANDOM ENGAGEMENT (JAPANESE) - 初回リストメンバー絡み用
+// CONTEXT: RANDOM ENGAGEMENT (JAPANESE) - Used for initial engagement with list members
 // ---------------------------------------------------------
 const CONTEXT_RANDOM_ENGAGEMENT_JA = `【コンテキスト：新規フォロワーへの突然のメンション】
 これは、最近あなたをフォローして「特別扱い（リスト）」に入れられたユーザーへの、あなたからの初めての自発的な絡み（メンション）です。
