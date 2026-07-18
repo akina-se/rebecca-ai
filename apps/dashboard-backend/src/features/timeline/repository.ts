@@ -76,15 +76,28 @@ export class TimelineRepository {
   }
 
   /**
-   * Retrieves leaderboard posts ordered by impressions descending, limited to 50 posts.
+   * Retrieves leaderboard posts ordered by impressions descending, limited to 50 posts by default, supporting pagination.
    * 
    * @returns A promise that resolves to an array of leaderboard posts.
    */
-  async getPosts(): Promise<PostLeaderboard[]> {
-    const snapshot = await this.collections.timelineHistory
-      .orderBy('impressions', 'desc')
-      .limit(50)
-      .get();
+  async getPosts(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<PostLeaderboard[]> {
+    let query: any = this.collections.timelineHistory;
+    
+    const sortBy = params?.sortBy || 'impressions';
+    const sortOrder = params?.sortOrder || 'desc';
+    query = query.orderBy(sortBy, sortOrder);
+
+    if (params?.startAfterId) {
+      const doc = await this.collections.timelineHistory.doc(params.startAfterId).get();
+      if (doc.exists) {
+        query = query.startAfter(doc);
+      }
+    }
+
+    const limit = params?.limit || 50;
+    query = query.limit(limit);
+
+    const snapshot = await query.get();
 
     return snapshot.docs.map(doc => {
       const data = doc.data() as any;
@@ -123,6 +136,53 @@ export class TimelineRepository {
       impressions: data.impressions || 0,
       mediaUrls: resolvedMediaUrls.filter(url => url !== '')
     };
+  }
+
+  /**
+   * Aggregates active warnings dynamically.
+   */
+  async getAlerts(): Promise<any[]> {
+    const alerts: any[] = [];
+    
+    // 1. Count images with failed/empty caption or status FAILED
+    const imagesSnapshot = await this.collections.images.get();
+    let failedCaptionsCount = 0;
+    imagesSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (!data.caption || data.status === 'FAILED') {
+        failedCaptionsCount++;
+      }
+    });
+    
+    if (failedCaptionsCount > 0) {
+      alerts.push({
+        id: 'failed_captions',
+        type: 'warning',
+        message: `${failedCaptionsCount} image captions failed generation.`,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // 2. Count failed posts
+    const postsSnapshot = await this.collections.timelineHistory.get();
+    let failedPostsCount = 0;
+    postsSnapshot.docs.forEach(doc => {
+      const data = doc.data() as any;
+      if (data.status === 'FAILED') {
+        failedPostsCount++;
+      }
+    });
+    
+    if (failedPostsCount > 0) {
+      alerts.push({
+        id: 'failed_posts',
+        type: 'error',
+        message: `${failedPostsCount} posts failed to publish to X.`,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    return alerts;
   }
 
   /**

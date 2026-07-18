@@ -34,6 +34,8 @@
     "@google-cloud/storage": "^7.21.0",
     "@google-cloud/tasks": "^6.2.3",
     "@google/genai": "^2.10.0",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@rebecca/db": "*",
     "@rebecca/persona": "*",
     "@rebecca/types": "*",

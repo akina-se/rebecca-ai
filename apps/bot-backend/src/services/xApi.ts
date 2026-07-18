@@ -317,6 +317,40 @@ const getUserTweets = async (userId: string, maxResults: number = 5): Promise<XA
     }
 };
 
+const deleteTweet = async (tweetId: string): Promise<boolean> => {
+    if (!client) {
+        console.warn('Twitter API client not initialized. Mocking tweet deletion.');
+        return true;
+    }
+    try {
+        if (typeof (client.posts as any).destroy === 'function') {
+            await (client.posts as any).destroy(tweetId);
+            return true;
+        } else if (typeof (client.posts as any).delete === 'function') {
+            await (client.posts as any).delete(tweetId);
+            return true;
+        } else if (oauth1Client) {
+            const url = `https://api.twitter.com/2/tweets/${tweetId}`;
+            const authHeader = await oauth1Client.buildRequestHeader('DELETE', url);
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': authHeader,
+                }
+            });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(`Failed to delete tweet: ${JSON.stringify(errData)}`);
+            }
+            return true;
+        }
+        throw new Error('No client or oauth1Client available to delete tweet');
+    } catch (error) {
+        console.error('Error deleting tweet:', error);
+        throw error;
+    }
+};
+
 export { 
   replyToMention,
   getTweetDetails,
@@ -328,5 +362,7 @@ export {
   addListMember,
   getListMembers,
   getUserTweets,
+  deleteTweet,
   cachedNumericMyUserId
 };
+
