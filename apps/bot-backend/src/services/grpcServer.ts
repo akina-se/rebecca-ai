@@ -22,7 +22,7 @@ interface TweetDeleteResponse {
   message: string;
 }
 
-interface ProtoGrpcType extends grpc.GrpcObject {
+interface ProtoGrpcType {
   tweets: {
     TweetService: {
       service: grpc.ServiceDefinition<grpc.UntypedServiceImplementation>;

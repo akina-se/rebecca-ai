@@ -117,7 +117,7 @@ export class SystemMemoryRepository {
       const parent = client.queuePath(project, location, queue);
       const task = {
         httpRequest: {
-          httpMethod: 'POST',
+          httpMethod: 'POST' as const,
           url: `${botUrl}/internal/evolution/trigger`,
         },
       };

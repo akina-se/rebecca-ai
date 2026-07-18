@@ -4,7 +4,7 @@ import { getBasePrompt } from '@rebecca/persona';
 
 
 export interface NewsResult {
-    status: 'skipped' | 'success';
+    status: 'skipped' | 'success' | 'failed';
     reason?: string;
     post?: string;
     attachedMedia?: boolean;

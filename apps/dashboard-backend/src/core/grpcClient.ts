@@ -19,7 +19,7 @@ interface TweetServiceClient extends grpc.Client {
   ): void;
 }
 
-interface ProtoGrpcType extends grpc.GrpcObject {
+interface ProtoGrpcType {
   tweets: {
     TweetService: new (address: string, credentials: grpc.ChannelCredentials) => TweetServiceClient;
   };
