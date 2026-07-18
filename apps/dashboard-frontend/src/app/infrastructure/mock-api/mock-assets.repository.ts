@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { AssetsRepository } from '../../core/ports/assets.repository';
-import { Asset } from '@rebecca/types';
+import { Asset, AssetStatus } from '@rebecca/types';
 
 @Injectable({
   providedIn: 'root'
@@ -13,21 +13,21 @@ export class MockAssetsRepository implements AssetsRepository {
       filename: 'rebecca_summer_01.png',
       caption: 'レベッカが海辺で浮き輪を持っているイラスト。笑顔で楽しそうな表情。',
       usedCount: 3,
-      status: 'SUCCESS'
+      status: AssetStatus.SUCCESS
     },
     {
       id: '2',
       filename: 'beach_bg_02.jpg',
       caption: '',
       usedCount: 0,
-      status: 'FAILED'
+      status: AssetStatus.FAILED
     },
     {
       id: '3',
       filename: 'character_rebecca_idle.png',
       caption: '立ち絵用のレベッカの全身像。制服を着用している。',
       usedCount: 15,
-      status: 'SUCCESS'
+      status: AssetStatus.SUCCESS
     }
   ];
 
@@ -54,7 +54,7 @@ export class MockAssetsRepository implements AssetsRepository {
       filename: file.name,
       caption: 'AI-generated caption for ' + file.name,
       usedCount: 0,
-      status: 'SUCCESS'
+      status: AssetStatus.SUCCESS
     };
     this.assets.push(newAsset);
     return of({ success: true, asset: newAsset });
@@ -77,7 +77,7 @@ export class MockAssetsRepository implements AssetsRepository {
     this.assets.forEach(a => {
       if (ids.includes(a.id)) {
         a.caption = 'Regenerated Japanese caption for ' + a.filename;
-        a.status = 'SUCCESS';
+        a.status = AssetStatus.SUCCESS;
       }
     });
     return of({ success: true });

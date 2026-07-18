@@ -1,5 +1,5 @@
 import { Firestore } from '@google-cloud/firestore';
-import { Asset } from '@rebecca/types';
+import { Asset, AssetStatus } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 
 /**
@@ -35,14 +35,14 @@ export class AssetsRepository {
           filename: 'rebecca_summer_01.png',
           caption: 'レベッカが海辺で浮き輪を持っているイラスト。笑顔で楽しそうな表情。',
           usedCount: 3,
-          status: 'Ready'
+          status: AssetStatus.SUCCESS
         },
         {
           id: '2',
           filename: 'beach_bg_02.jpg',
           caption: '',
           usedCount: 0,
-          status: 'Caption Failed'
+          status: AssetStatus.FAILED
         }
       ];
     }
@@ -54,7 +54,7 @@ export class AssetsRepository {
         filename: data.url.split('/').pop() || data.url, // Extract filename from URL
         caption: data.caption || '',
         usedCount: data.useCount || 0,
-        status: data.caption ? 'Ready' : 'Caption Failed' // Simple inferred status
+        status: data.caption ? AssetStatus.SUCCESS : AssetStatus.FAILED // Simple inferred status
       };
     });
   }

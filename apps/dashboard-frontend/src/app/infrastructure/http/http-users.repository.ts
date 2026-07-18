@@ -47,12 +47,12 @@ export class HttpUsersRepository implements UsersRepository {
   }
 
   private mapStatus(status: any): UserStatus {
-    if (!status) return 'ACTIVE';
+    if (!status) return UserStatus.ACTIVE;
     const s = String(status).toUpperCase();
-    if (s === 'ACTIVE') return 'ACTIVE';
-    if (s === 'BLOCKED') return 'BLOCKED';
-    if (s === 'MUTED') return 'MUTED';
-    return 'ACTIVE';
+    if (s === 'ACTIVE') return UserStatus.ACTIVE;
+    if (s === 'BLOCKED') return UserStatus.BLOCKED;
+    if (s === 'MUTED') return UserStatus.MUTED;
+    return UserStatus.ACTIVE;
   }
 
   private mapStatusToBackend(status: string): string {

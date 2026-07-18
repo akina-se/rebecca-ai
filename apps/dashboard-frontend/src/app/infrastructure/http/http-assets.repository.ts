@@ -29,12 +29,12 @@ export class HttpAssetsRepository implements AssetsRepository {
   }
 
   private mapStatus(status: any): AssetStatus {
-    if (!status) return 'PENDING';
+    if (!status) return AssetStatus.PENDING;
     const s = String(status).toUpperCase();
-    if (s === 'READY' || s === 'SUCCESS') return 'SUCCESS';
-    if (s === 'CAPTION FAILED' || s === 'FAILED') return 'FAILED';
-    if (s === 'PROCESSING') return 'PROCESSING';
-    return 'PENDING';
+    if (s === 'READY' || s === 'SUCCESS') return AssetStatus.SUCCESS;
+    if (s === 'CAPTION FAILED' || s === 'FAILED') return AssetStatus.FAILED;
+    if (s === 'PROCESSING') return AssetStatus.PROCESSING;
+    return AssetStatus.PENDING;
   }
 
   upload(file: File): Observable<any> {

@@ -48,12 +48,12 @@ export class UsersRepository {
       const data = doc.data();
       const rawId = doc.id;
       
-      let status: UserStatus = 'ACTIVE';
+      let status: UserStatus = UserStatus.ACTIVE;
       if (data.status) {
         const s = data.status.toUpperCase();
-        if (s === 'ACTIVE' || s === 'BLOCKED' || s === 'MUTED') {
-          status = s;
-        }
+        if (s === 'ACTIVE') status = UserStatus.ACTIVE;
+        else if (s === 'BLOCKED') status = UserStatus.BLOCKED;
+        else if (s === 'MUTED') status = UserStatus.MUTED;
       }
 
       users.push({
@@ -126,12 +126,12 @@ export class UsersRepository {
       });
     }
 
-    let status: UserStatus = 'ACTIVE';
+    let status: UserStatus = UserStatus.ACTIVE;
     if (data.status) {
       const s = data.status.toUpperCase();
-      if (s === 'ACTIVE' || s === 'BLOCKED' || s === 'MUTED') {
-        status = s;
-      }
+      if (s === 'ACTIVE') status = UserStatus.ACTIVE;
+      else if (s === 'BLOCKED') status = UserStatus.BLOCKED;
+      else if (s === 'MUTED') status = UserStatus.MUTED;
     }
 
     return {
@@ -174,7 +174,7 @@ export class UsersRepository {
    * @param status - The new status (Active, Blocked, Muted) to apply.
    * @returns A promise that resolves when the batch write is complete.
    */
-  async updateStatusBulk(ids: string[], status: string): Promise<void> {
+  async updateStatusBulk(ids: string[], status: UserStatus): Promise<void> {
     const batch = this.firestore.batch();
     for (const id of ids) {
       const rawId = id.replace('@', '');
