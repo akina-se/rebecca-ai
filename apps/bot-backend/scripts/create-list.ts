@@ -30,8 +30,8 @@ async function createList() {
         const body = JSON.stringify({
             name: "特別扱い",
             description: "Rebecca's Special Treatment List",
-            private: false // X API v2: private can be set, but let's just make it public or private depending on user needs. Actually, "こっそり感" (stealth) means it's better to be private. 
-            // Wait, the user said "リスト追加は相手に分かったりするの？であればこっそり感あっていいよね" meaning they want it to notify the user. If it's private, they aren't notified. Let's make it public so they get a notification. 
+            private: false // X API v2: private can be set, but let's just make it public or private depending on user needs. Actually, "stealthy feeling" means it's better to be private. 
+            // Wait, the user asked if the list addition is noticed by the target. If private, they aren't notified. Let's make it public so they get a notification. 
         });
 
         const authHeader = await oauth1Client.buildRequestHeader('POST', url);

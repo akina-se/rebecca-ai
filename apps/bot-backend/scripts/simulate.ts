@@ -103,7 +103,7 @@ const runSimulation = async () => {
             episodicBuffer.push({ role: 'model', content: rebeccaText });
             reportMd += `**Rebecca:** ${rebeccaText}\n\n`;
 
-            // レートリミット対策ディレイ
+            // Delay for rate limit avoidance
             await sleep(4500);
         }
     }
