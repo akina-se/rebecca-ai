@@ -27,6 +27,24 @@ export interface ConversationLogEntry {
   timestamp?: string;
 }
 
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  BLOCKED = 'BLOCKED',
+  MUTED = 'MUTED',
+}
+export enum PostStatus {
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+  PENDING = 'PENDING',
+}
+export enum AssetStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+}
+
+
 /**
  * Represents a user document as stored in Firestore.
  * The `id` field mirrors the Firestore document ID and is populated on read.
@@ -39,6 +57,7 @@ export interface FirestoreUser {
   /** ISO 8601 date string (YYYY-MM-DD) */
   last_reply_date?: string;
   daily_reply_count?: number;
+  status?: UserStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +97,7 @@ export interface TimelinePost {
   timestamp: string;
   /** ISO 8601 datetime string (TTL expiry) */
   expireAt: string;
+  status?: PostStatus;
 }
 
 /** Rate-limit tracking document for a user within a time window. */
@@ -121,7 +141,9 @@ export interface ImageDoc {
   /** ISO 8601 datetime string, or null if never used */
   lastUsedAt: string | null;
   useCount: number;
+  status?: AssetStatus;
 }
+
 
 /** Extends `ImageDoc` with the Firestore document ID. */
 export interface ImageDocWithId extends ImageDoc {
@@ -231,3 +253,107 @@ export interface XApiCreateResponse {
     text: string;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Dashboard BFF & Frontend Shared Models (DTOs)
+// ---------------------------------------------------------------------------
+
+export interface KpiMetrics {
+  followers: number;
+  followersTrend: number;
+  engagementRate: number;
+  engagementTrend: number;
+  dailyActiveUsers: number;
+  dauTrend: number;
+  apiCalls: number;
+  apiTrendStatus: string;
+}
+
+export interface PostLeaderboard {
+  id: string;
+  time: string;
+  snippet: string;
+  impressions: number;
+  hasMedia: boolean;
+}
+
+export interface PostDetail {
+  id: string;
+  time: string;
+  content: string;
+  impressions: number;
+  mediaUrls: string[];
+}
+
+export interface UserLeaderboard {
+  userId: string;
+  interactions: number;
+}
+
+export interface ChatMessage {
+  from: 'user' | 'rebecca';
+  text: string;
+  time: string;
+}
+
+export interface UserDetail {
+  handle: string;
+  name: string;
+  interactions: number;
+  affinityScore: string;
+  firstSeen: string;
+  lastSeen: string;
+  coreProfile: string; // JSON string
+  chatHistory: ChatMessage[];
+  status: UserStatus;
+}
+
+export interface MemoryLayer {
+  level: number;
+  name: string;
+  description: string;
+  lastUpdated: string;
+  isReadOnly: boolean;
+}
+
+export interface MemoryContent {
+  level: number;
+  name: string;
+  content: string;
+  isReadOnly: boolean;
+}
+
+export interface Asset {
+  id: string;
+  filename: string;
+  caption: string;
+  usedCount: number;
+  status: AssetStatus;
+  url?: string;
+}
+
+export interface CopilotRequest {
+  message: string;
+  currentContext: string;
+}
+
+export interface CopilotResponse {
+  reply: string;
+  actionRequired?: {
+    type: 'BLOCK_USER' | 'DELETE_POST' | 'UPDATE_MEMORY';
+    payload: any;
+    description: string;
+  };
+  suggestionChips: string[];
+}
+
+export interface SystemAlert {
+  id: string;
+  type: 'info' | 'warning' | 'error';
+  message: string;
+  timestamp?: string;
+  link?: string;
+  linkText?: string;
+}
+
+

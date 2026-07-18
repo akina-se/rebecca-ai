@@ -2,7 +2,7 @@ import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DropdownComponent } from '../../../shared/components/molecules/dropdown/dropdown.component';
 import { DatePickerPopoverComponent } from '../../../shared/components/molecules/date-picker-popover/date-picker-popover.component';
@@ -24,6 +24,7 @@ export class DashboardPageComponent implements OnInit {
   kpiMetrics?: KpiMetrics;
   topPosts: PostLeaderboard[] = [];
   topUsers: UserLeaderboard[] = [];
+  systemAlerts: SystemAlert[] = [];
 
   toastService = inject(ToastService);
 
@@ -63,8 +64,43 @@ export class DashboardPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.dashboardRepo.getKpiMetrics('monthly').subscribe(metrics => this.kpiMetrics = metrics);
-    this.dashboardRepo.getTopPosts('monthly').subscribe(posts => this.topPosts = posts);
-    this.dashboardRepo.getTopUsers('monthly').subscribe(users => this.topUsers = users);
+    this.loadTopPosts();
+    this.loadTopUsers();
+    this.dashboardRepo.getAlerts().subscribe(alerts => this.systemAlerts = alerts);
+  }
+
+  loadTopPosts() {
+    const isoDate = this.getIsoDate(this.topPostsDate);
+    this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(posts => this.topPosts = posts);
+  }
+
+  loadTopUsers() {
+    const isoDate = this.getIsoDate(this.topUsersDate);
+    this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(users => this.topUsers = users);
+  }
+
+  getIsoDate(dateStr: string): string {
+    const months: { [key: string]: string } = {
+      'January': '01', 'February': '02', 'March': '03', 'April': '04',
+      'May': '05', 'June': '06', 'July': '07', 'August': '08',
+      'September': '09', 'October': '10', 'November': '11', 'December': '12'
+    };
+    
+    if (dateStr === 'All-Time') {
+      return '';
+    }
+    
+    const parts = dateStr.split(' ');
+    if (parts.length === 2) {
+      const monthName = parts[0];
+      const year = parts[1];
+      const monthNum = months[monthName];
+      if (monthNum) {
+        return `${year}-${monthNum}`;
+      }
+    }
+    
+    return dateStr; // just year or as-is
   }
 
   openLightbox(imageUrl: string = '') {
@@ -78,11 +114,13 @@ export class DashboardPageComponent implements OnInit {
       if (mode === 'monthly') this.topPostsDate = 'July 2026';
       if (mode === 'yearly') this.topPostsDate = '2026';
       if (mode === 'all-time') this.topPostsDate = 'All-Time';
+      this.loadTopPosts();
     } else {
       this.topUsersMode = mode;
       if (mode === 'monthly') this.topUsersDate = 'July 2026';
       if (mode === 'yearly') this.topUsersDate = '2026';
       if (mode === 'all-time') this.topUsersDate = 'All-Time';
+      this.loadTopUsers();
     }
   }
 
@@ -111,8 +149,10 @@ export class DashboardPageComponent implements OnInit {
     
     if (isPosts) {
       this.topPostsDate = currentDate;
+      this.loadTopPosts();
     } else {
       this.topUsersDate = currentDate;
+      this.loadTopUsers();
     }
   }
 

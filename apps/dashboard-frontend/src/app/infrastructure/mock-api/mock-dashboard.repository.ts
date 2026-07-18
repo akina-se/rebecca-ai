@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
 
 @Injectable({
   providedIn: 'root'
@@ -21,7 +21,7 @@ export class MockDashboardRepository implements DashboardRepository {
     });
   }
 
-  getTopPosts(period: string): Observable<PostLeaderboard[]> {
+  getTopPosts(period: string, date?: string): Observable<PostLeaderboard[]> {
     return of([
       { id: '1', time: '2026-07-10 18:00', snippet: '水星の魔女、最新話見た！？...', impressions: 5120, hasMedia: true },
       { id: '2', time: '2026-07-09 08:00', snippet: 'おはよう！今日も1日頑張ろうね', impressions: 4800, hasMedia: false },
@@ -29,11 +29,23 @@ export class MockDashboardRepository implements DashboardRepository {
     ]);
   }
 
-  getTopUsers(period: string): Observable<UserLeaderboard[]> {
+  getTopUsers(period: string, date?: string): Observable<UserLeaderboard[]> {
     return of([
       { userId: '@gundam_fan_88', interactions: 156 },
       { userId: '@rebecca_oshi', interactions: 132 },
       { userId: '@tech_geek_tokyo', interactions: 89 }
+    ]);
+  }
+
+  getAlerts(): Observable<SystemAlert[]> {
+    return of([
+      {
+        id: 'assets-caption-failed',
+        type: 'warning',
+        message: '2 assets failed to generate AI captions. Interaction required to resolve pipeline blocks.',
+        link: '/assets',
+        linkText: 'Review Assets'
+      }
     ]);
   }
 }

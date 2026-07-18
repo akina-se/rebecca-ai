@@ -11,6 +11,7 @@ import { AppDependencies } from './types';
 import { createBatchRoutes } from './routes/batchRoutes';
 import { createWorkerRoutes } from './routes/workerRoutes';
 import { publicRateLimiter, batchRateLimiter, workerRateLimiter } from './middleware/apiRateLimiter';
+import { startGrpcServer } from './services/grpcServer';
 
 const deps: AppDependencies = {
     firestore: firestoreService,
@@ -41,6 +42,8 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
     });
+    startGrpcServer();
 }
 
 export default app;
+

@@ -21,6 +21,7 @@ export function initializeTimelineModule(firestore: Firestore): Router {
   router.get('/posts', controller.getPosts.bind(controller));
   router.delete('/posts', controller.deletePosts.bind(controller));
   router.get('/posts/:id', controller.getPostById.bind(controller));
+  router.get('/alerts', controller.getAlerts.bind(controller));
 
   return router;
 }

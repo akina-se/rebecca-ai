@@ -15,11 +15,12 @@
             <stop offset="100%" stop-color="var(--warning)" stop-opacity="0"/>
         </linearGradient>
     </svg>
-            
-    <div class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
-        <span class="material-icons">warning</span>
-        <span><strong>Action Required:</strong> 2 assets failed to generate AI captions. Interaction required to resolve pipeline blocks.</span>
-        <a routerLink="/assets">Review Assets &rarr;</a>
+    <div *ngIf="systemAlerts && systemAlerts.length > 0">
+        <div *ngFor="let alert of systemAlerts" class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
+            <span class="material-icons">{{ alert.type === 'warning' ? 'warning' : alert.type === 'error' ? 'error' : 'info' }}</span>
+            <span><strong>{{ alert.type === 'warning' ? 'Action Required:' : alert.type === 'error' ? 'Error:' : 'Info:' }}</strong> {{ alert.message }}</span>
+            <a *ngIf="alert.link" [routerLink]="alert.link">{{ alert.linkText || 'Review' }} &rarr;</a>
+        </div>
     </div>
 
     <!-- Block 1: KPI Overview -->

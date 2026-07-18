@@ -37,7 +37,12 @@ export class TimelineController {
    */
   async getPosts(req: Request, res: Response): Promise<void> {
     try {
-      const posts = await this.useCase.getPosts();
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const startAfterId = req.query.startAfterId as string | undefined;
+      const sortBy = req.query.sortBy as string | undefined;
+      const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
+      
+      const posts = await this.useCase.getPosts({ limit, startAfterId, sortBy, sortOrder });
       res.json(posts);
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch posts' });
@@ -76,5 +81,21 @@ export class TimelineController {
     }
     await this.useCase.deletePosts(ids);
     res.json({ success: true });
+  }
+
+  /**
+   * Retrieves active system alerts.
+   * 
+   * @param req - The Express Request object.
+   * @param res - The Express Response object.
+   * @returns A promise that resolves when the response is sent.
+   */
+  async getAlerts(req: Request, res: Response): Promise<void> {
+    try {
+      const alerts = await this.useCase.getAlerts();
+      res.json(alerts);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch alerts' });
+    }
   }
 }

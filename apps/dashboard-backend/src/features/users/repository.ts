@@ -1,5 +1,5 @@
 import { Firestore } from '@google-cloud/firestore';
-import { UserDetail, UserLeaderboard } from '@rebecca/types';
+import { UserDetail, UserLeaderboard, UserStatus } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 
 /**
@@ -20,20 +20,55 @@ export class UsersRepository {
   }
 
   /**
-   * Retrieves the top users ordered by daily reply count descending, limited to 10 users.
+   * Retrieves users, supporting pagination, custom ordering, and returning detailed user objects.
    * 
-   * @returns A promise that resolves to an array of user leaderboard entries.
+   * @returns A promise that resolves to an array of user details.
    */
-  async getAll(): Promise<UserLeaderboard[]> {
-    const snapshot = await this.collections.users.orderBy('daily_reply_count', 'desc').limit(10).get();
+  async getAll(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<UserDetail[]> {
+    let query: any = this.collections.users;
     
-    return snapshot.docs.map(doc => {
+    const sortBy = params?.sortBy || 'daily_reply_count';
+    const sortOrder = params?.sortOrder || 'desc';
+    query = query.orderBy(sortBy, sortOrder);
+
+    if (params?.startAfterId) {
+      const doc = await this.collections.users.doc(params.startAfterId.replace('@', '')).get();
+      if (doc.exists) {
+        query = query.startAfter(doc);
+      }
+    }
+
+    const limit = params?.limit || 50;
+    query = query.limit(limit);
+
+    const snapshot = await query.get();
+    
+    const users: UserDetail[] = [];
+    for (const doc of snapshot.docs) {
       const data = doc.data();
-      return {
-        userId: `@${doc.id}`,
-        interactions: data.daily_reply_count || 0
-      };
-    });
+      const rawId = doc.id;
+      
+      let status: UserStatus = 'ACTIVE';
+      if (data.status) {
+        const s = data.status.toUpperCase();
+        if (s === 'ACTIVE' || s === 'BLOCKED' || s === 'MUTED') {
+          status = s;
+        }
+      }
+
+      users.push({
+        handle: `@${rawId}`,
+        name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : 'Unknown',
+        interactions: data.daily_reply_count || 0,
+        affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A',
+        firstSeen: data.first_seen_date || 'N/A',
+        lastSeen: data.last_reply_date || 'N/A',
+        coreProfile: JSON.stringify(data.coreProfile || {}),
+        chatHistory: [], // Load on-demand via getById to keep list query fast
+        status
+      });
+    }
+    return users;
   }
 
   /**
@@ -42,7 +77,7 @@ export class UsersRepository {
    * @param id - The user ID/handle to look up.
    * @returns A promise that resolves to the detailed user information, or null if the user does not exist.
    */
-  async getById(id: string): Promise<UserDetail | null> {
+  async getById(id: string, beforeTimestamp?: string, limit?: number): Promise<UserDetail | null> {
     const rawId = id.replace('@', '');
     const doc = await this.collections.users.doc(rawId).get();
     
@@ -57,11 +92,24 @@ export class UsersRepository {
       .where('userId', '==', rawId)
       .get();
       
-    const sortedDocs = chatLogsSnap.docs.sort((a, b) => {
+    let sortedDocs = chatLogsSnap.docs.sort((a, b) => {
       const tA = a.data().timestamp || '';
       const tB = b.data().timestamp || '';
       return tA.localeCompare(tB);
     });
+
+    if (beforeTimestamp) {
+      sortedDocs = sortedDocs.filter(d => {
+        const ts = d.data().timestamp || '';
+        return ts < beforeTimestamp;
+      });
+    }
+
+    if (limit) {
+      // 1 doc contains userText & aiText (2 ChatMessages)
+      const docLimit = Math.ceil(limit / 2);
+      sortedDocs = sortedDocs.slice(-docLimit);
+    }
 
     const chatHistory = [];
     for (const logDoc of sortedDocs) {
@@ -78,6 +126,14 @@ export class UsersRepository {
       });
     }
 
+    let status: UserStatus = 'ACTIVE';
+    if (data.status) {
+      const s = data.status.toUpperCase();
+      if (s === 'ACTIVE' || s === 'BLOCKED' || s === 'MUTED') {
+        status = s;
+      }
+    }
+
     return {
       handle: `@${rawId}`,
       name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : 'Unknown',
@@ -87,7 +143,7 @@ export class UsersRepository {
       lastSeen: data.last_reply_date || 'N/A',
       coreProfile: JSON.stringify(data.coreProfile || {}),
       chatHistory,
-      status: (data.status as 'Active' | 'Blocked' | 'Muted') || 'Active'
+      status
     };
   }
 

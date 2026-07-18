@@ -26,8 +26,8 @@ export class TimelineUseCase {
    * 
    * @returns A promise that resolves to an array of leaderboard posts.
    */
-  async getPosts(): Promise<PostLeaderboard[]> {
-    return this.repo.getPosts();
+  async getPosts(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<PostLeaderboard[]> {
+    return this.repo.getPosts(params);
   }
 
   /**
@@ -48,5 +48,12 @@ export class TimelineUseCase {
    */
   async deletePosts(ids: string[]): Promise<void> {
     await this.repo.deletePosts(ids);
+  }
+
+  /**
+   * Retrieves dynamically aggregated active warnings.
+   */
+  async getAlerts(): Promise<any[]> {
+    return this.repo.getAlerts();
   }
 }

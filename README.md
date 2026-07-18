@@ -165,10 +165,21 @@ npm run deploy
 - **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
 
 ## Directory Structure
-- `apps/bot-backend/` : Core bot logic and X API integration
-- `apps/dashboard-backend/` : Backend-For-Frontend (BFF) for the Admin Dashboard (CQRS ready)
-- `apps/dashboard-frontend/` : Angular-based Admin Dashboard UI
-- `packages/` : Shared libraries (`@rebecca/types`, `@rebecca/db`)
+- `apps/bot-backend/` : Core bot logic and X API integration (Cloud Run)
+- `apps/dashboard-backend/` : Backend-For-Frontend (BFF) for the Admin Dashboard (CQRS ready) (Cloud Run)
+- `apps/dashboard-frontend/` : Angular-based Admin Dashboard UI (Firebase Hosting)
+- `apps/functions/` : Cloud Functions for Firebase (Firestore Triggers for Data Aggregation/KPIs)
+- `packages/` : Shared libraries (`@rebecca/types`, `@rebecca/db`, `@rebecca/persona`)
+
+## Firestore Database Schema
+The database uses `@rebecca/db` as the single source of truth for collections:
+- `users`: Core profile and interaction counts. Updated via Firebase Functions.
+- `conversation_logs`: Raw timeline of bot interactions (30-day TTL). Triggers DAU aggregation.
+- `timeline_history`: Record of standalone proactive posts.
+- `rag_memories`: Vector-embedded user memory fragments.
+- `images`: Image assets, generated captions, and vector embeddings.
+- `system_stats`: Aggregated KPI data (e.g. `dau_YYYY-MM-DD`).
+- `rate_limits`: Scalable API rate limit counters.
 
 ---
 ## License

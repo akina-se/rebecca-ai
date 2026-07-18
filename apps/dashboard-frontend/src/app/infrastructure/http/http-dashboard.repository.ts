@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -31,17 +31,28 @@ export class HttpDashboardRepository implements DashboardRepository {
    * @param period The time period filter.
    * @returns Observable list of top posts.
    */
-  getTopPosts(period: string): Observable<PostLeaderboard[]> {
-    return this.http.get<PostLeaderboard[]>(`${this.baseUrl}/posts`);
+  getTopPosts(period: string, date?: string): Observable<PostLeaderboard[]> {
+    let params = new HttpParams().set('period', period);
+    if (date) {
+      params = params.set('date', date);
+    }
+    return this.http.get<PostLeaderboard[]>(`${this.baseUrl}/posts`, { params });
+  }
+
+  getTopUsers(period: string, date?: string): Observable<UserLeaderboard[]> {
+    let params = new HttpParams().set('period', period);
+    if (date) {
+      params = params.set('date', date);
+    }
+    return this.http.get<UserLeaderboard[]>(`${this.baseUrl}/users`, { params });
   }
 
   /**
-   * Fetches the top engaged users from the backend.
+   * Fetches active system alerts from the backend.
    * 
-   * @param period The time period filter.
-   * @returns Observable list of top users.
+   * @returns Observable list of system alerts.
    */
-  getTopUsers(period: string): Observable<UserLeaderboard[]> {
-    return this.http.get<UserLeaderboard[]>(`${this.baseUrl}/users`);
+  getAlerts(): Observable<SystemAlert[]> {
+    return this.http.get<SystemAlert[]>(`${this.baseUrl}/alerts`);
   }
 }

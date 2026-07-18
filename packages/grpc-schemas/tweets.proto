@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package tweets;
+
+service TweetService {
+  rpc DeleteTweet (DeleteTweetRequest) returns (DeleteTweetResponse);
+}
+
+message DeleteTweetRequest {
+  string tweet_id = 1;
+}
+
+message DeleteTweetResponse {
+  bool success = 1;
+  string message = 2;
+}
