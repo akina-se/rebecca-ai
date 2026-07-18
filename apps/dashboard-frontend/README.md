@@ -1,27 +1,60 @@
-# Frontend
+# Rebecca Admin Dashboard UI (`dashboard-frontend`)
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.2.21.
+An Angular-based, highly customized administration control panel for Rebecca AI, styled with a glassmorphic cyberpunk theme.
 
-## Development server
+---
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## 🎨 Design System & Aesthetics
+- **Theme**: Chibi Cyberpunk / Glassmorphism.
+- **Color Palette**: Neon purple primary (`--color-primary`), dark translucent glass panels (`glass-panel`), and bright status indicators.
+- **Typography & Icons**: Inter / Outfit fonts and Google Material Icons.
+- **UI Responsiveness**: Tailored layout budgets for desktop control panels and mobile-friendly overlays (e.g. paginated ranking modals, custom file drawers).
 
-## Code scaffolding
+---
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## 🏗️ Clean Architecture (Ports & Adapters)
+To avoid hard-coupling the Angular application to a specific backend framework or HTTP library, the application is structured using the **Ports & Adapters (Hexagonal) Architecture**:
 
-## Build
+```
+src/app/
+├── core/
+│   └── ports/              # Business contract interfaces (Ports)
+│       ├── auth.repository.ts
+│       ├── memory.repository.ts
+│       └── users.repository.ts
+├── infrastructure/
+│   └── http/               # HTTP client implementations (Adapters)
+│       ├── http-auth.repository.ts
+│       ├── http-memory.repository.ts
+│       └── http-users.repository.ts
+└── features/               # UI components and view controllers
+    ├── dashboard/          # Aggregated KPI widgets, alerts lists
+    ├── memory/             # RAG memory layer administration
+    └── login/              # Google Auth login credentials
+```
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+The app components inject core port tokens (e.g. `MEMORY_REPOSITORY`), which are resolved to their HTTP adapter classes in `app.config.ts`. This permits swap-out testing or local mock mocking without touching any view controllers.
 
-## Running unit tests
+---
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## 🚀 Setup & Execution
 
-## Running end-to-end tests
+### 1. Install Workspace Dependencies
+Ensure packages are installed from the monorepo root:
+```bash
+npm install
+```
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+### 2. Run Local Development Server
+Boot up the Angular CLI development server:
+```bash
+npm run dev --workspace=dashboard-frontend
+```
+*Note: If port `4200` is already in use by another local process, Angular will prompt to serve on an alternative available port (e.g. `4201` or `59375`). Check the terminal outputs for the active server url.*
 
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### 3. Production Build
+Generates highly optimized static assets under the `/dist` directory:
+```bash
+npm run build --workspace=dashboard-frontend
+```
+This build enforces CSS size budgets (e.g., drawer components restricted under 2.05kB) to guarantee lightweight client delivery.
