@@ -1,189 +1,85 @@
-# Rebecca - The Unconditional Affirmation Gyaru AI 
+# Rebecca AI - Monorepo Specification
 
 [![CI Status](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Release](https://img.shields.io/github/v/release/akina-se/rebecca-ai)](https://github.com/akina-se/rebecca-ai/releases)
 
-![Rebecca AI](docs/rebecca_landscape.jpg)
-
-**The kindest, unconditional affirmation Gyaru AI.**
-This is a fully serverless backend system operating on X (formerly Twitter), leveraging Google Cloud Platform (GCP) and the Gemini API.
-
-[日本語版の仕様書 (Japanese Specification)](docs/specification_ja.md) | [English Specification](docs/specification_en.md)
-
-⚠️ **IMPORTANT DISCLAIMER FOR OPERATORS** ⚠️
-When operating this bot on X (Twitter), you MUST explicitly state in the account's profile description or pinned tweet: **"Rebecca is an AI, and her statements are fiction. She has no relation to real individuals or organizations."** This is critical to mitigate legal risks such as defamation, as the AI's generated "Gyaru" persona may inadvertently target real entities.
+Rebecca is a serverless personal "Gyaru AI" system leveraging the Gemini API and Firebase/Google Cloud Platform. The codebase is organized as a unified monorepo using npm Workspaces and Turborepo.
 
 ---
 
-## Features
-
-- **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory (RAG) efficiently without losing detail.
-- **Dynamic Context Injection**: Dynamically alters the AI's prompt based on the time of day (morning/late night), user absence duration, and specific keywords like "overtime" or "boss".
-- **Automatic Language Separation**: Detects the user's input language and switches entirely to an English system prompt (featuring English slang) for English-speaking users, preventing unnatural code-switching.
-- **Proactive Image Attachment**: Automatically analyzes uploaded images with Gemini Vision, converts captions to vector embeddings, and uses Firestore Semantic Vector Search (KNN) to intelligently attach them to proactive timeline posts based on inferred context and search queries.
-- **Intentional Delay**: Introduces a random 1-3 minute delay before replying to simulate human behavior.
-- **Strict Rate Limiting**: Multi-tiered dynamic limit management (Global Monthly, Global Daily, Dynamic User Allocation) to prevent unexpected API billing explosions for both X API and GCP.
-
-## Tech Stack
-
-- **Language**: TypeScript / Node.js (Express)
-- **AI Models**:
-  - Main Conversation & Inference: `gemini-3.1-flash-lite`
-  - Image Recognition (Vision): `gemini-3.1-flash-lite`
-  - Language Detection & Safety Audit: `gemma-4-31b-it`
-  - RAG Vectorization: `text-embedding-004`
-- **Infrastructure (GCP)**: Cloud Run, Cloud Tasks, Cloud Scheduler, Cloud Firestore, Cloud Storage (GCS)
-- **SNS Integration**: X API v2 (via `@xdevplatform/xdk`)
-
-## Architecture
+## 🏗️ Monorepo Topology
 
 ```mermaid
 graph TD
-    User([User on X]) -- "@Mention" --> XAPI[X API]
-    Admin([Admin UI]) -- "REST" --> DashboardBFF[Cloud Run: Dashboard BFF]
-    XAPI -- "Webhook / Polling" --> Webhook[Cloud Run: Receiver]
+    User([User on X/Twitter]) <-->|Mentions & Replies| BotBackend[apps/bot-backend]
+    Admin([Dashboard Operator]) <-->|Angular UI| DashFrontend[apps/dashboard-frontend]
+    DashFrontend <-->|JSON REST API| DashBackend[apps/dashboard-backend BFF]
     
-    subgraph GCP [Serverless Backend]
-        Webhook -- "Enqueue (1-3 min delay)" --> Tasks[Cloud Tasks]
-        Tasks -- "Execute Worker" --> Worker[Cloud Run: Worker]
-        
-        DashboardBFF <-->|gRPC| Worker
-        
-        Worker -->|Write| DB[(Firestore: Master)]
-        Worker <--> LLM[Gemini API]
-        
-        DB -.->|Firestore Triggers| CQRS[Cloud Functions: CQRS Aggregator]
-        CQRS -->|Update| ReadDB[(Firestore: Read Models)]
-        DashboardBFF -->|Read| ReadDB
+    subgraph Shared Libraries
+        Types[packages/types]
+        DB[packages/db]
+        Persona[packages/persona]
     end
     
-    Worker -- "Generate & Reply" --> XAPI
+    DashBackend <-->|gRPC Deletions| BotBackend
+    BotBackend -.->|Write logs| Firestore[(Cloud Firestore)]
+    Firestore -.->|Event Trigger| Functions[apps/functions]
+    Functions -.->|Aggregate Read Models| Firestore
+    DashBackend -->|Query Read Models| Firestore
+    
+    DashBackend -.-> Shared Libraries
+    BotBackend -.-> Shared Libraries
+    Functions -.-> Shared Libraries
 ```
-
-## Setup Instructions
-
-> **⚠️ Note on Gemini API (Free Tier):**
-> If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
-
-
-### 1. GCP Project Setup
-1. Create a new project in the GCP Console and enable billing (required even for the free tier).
-2. Enable the following APIs: `Cloud Run API`, `Cloud Tasks API`, `Cloud Firestore API`, `Cloud Scheduler API`
-3. Create a Firestore database (Native mode recommended).
-4. Create a Cloud Tasks queue:
-   ```bash
-   gcloud tasks queues create rebecca-reply-queue --location=asia-northeast1
-   ```
-5. Create a Firestore composite index (for RAG vector search):
-   ```bash
-   gcloud alpha firestore indexes composite create \
-     --collection-group=rag_memories \
-     --query-scope=COLLECTION \
-     --field-config=field-path=embedding,vector-config='{"dimension":768,"flat": "{}"}' \
-     --field-config=field-path=userId,order=ASCENDING \
-     --project=your-gcp-project-id
-   ```
-
-### 2. Environment Variables
-Create a `.env` file in the project root and configure the following variables:
-
-```env
-# Server
-PORT=8080
-
-# Security for Batch Endpoints
-BATCH_SECRET_KEY=your-secret-key-for-local-or-fallback-auth
-
-# GCP
-GCP_PROJECT_ID=your-gcp-project-id
-GCP_LOCATION=asia-northeast1
-GCP_TASK_QUEUE_NAME=rebecca-reply-queue
-WORKER_URL=https://your-cloud-run-service-url.a.run.app
-IMAGE_BUCKET_NAME=rebecca-ai-gal-images
-
-# X API
-X_API_KEY=
-X_API_SECRET=
-X_ACCESS_TOKEN=
-X_ACCESS_SECRET=
-X_MY_USER_ID=your-bot-twitter-user-id
-
-# Gemini API Models
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.1-flash-lite
-GEMINI_JUDGE_MODEL=gemma-4-31b-it
-GEMINI_LANGUAGE_MODEL=gemma-4-31b-it
-GEMINI_EMBEDDING_MODEL=text-embedding-004
-GEMINI_VISION_MODEL=gemini-3.1-flash-lite
-GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
-
-# Rate Limits
-GLOBAL_DAILY_LIMIT=500
-SPAM_MINUTE_LIMIT=3
-PUBLIC_IP_RATE_LIMIT=100
-
-# Auth Configuration
-BATCH_SECRET_KEY=your_secret_key_here
-OIDC_EXPECTED_AUDIENCE=https://your-cloud-run-service-url.a.run.app
-OIDC_EXPECTED_ISSUER=https://accounts.google.com
-```
-
-### 3. Local Execution & Testing
-```bash
-# Install dependencies
-npm install
-
-# Run tests (with coverage)
-npm run test:cov
-
-# Run LLM-as-a-Judge Prompt Safety tests
-npm run test:eval
-
-# Test chatting locally via CLI
-npm run chat
-
-# Manually trigger Batches
-npm run batch:evolution
-npm run batch:news
-
-# Setup Cloud Scheduler and Cloud Tasks for automatic batches and async replies
-npm run setup:scheduler
-npm run setup:tasks
-```
-
-### 4. Deployment
-```bash
-npm run deploy
-```
-
-## Community & Security
-
-- **[Code of Conduct](CODE_OF_CONDUCT.md)**: We are committed to fostering a welcoming community. Please read and follow our Code of Conduct.
-- **[Security Policy](SECURITY.md)**: If you discover a security vulnerability, please refer to our Security Policy for reporting instructions.
-- **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
-
-## Directory Structure
-- `apps/bot-backend/` : Core bot logic and X API integration (Cloud Run)
-- `apps/dashboard-backend/` : Backend-For-Frontend (BFF) for the Admin Dashboard (CQRS ready) (Cloud Run)
-- `apps/dashboard-frontend/` : Angular-based Admin Dashboard UI (Firebase Hosting)
-- `apps/functions/` : Cloud Functions for Firebase (Firestore Triggers for Data Aggregation/KPIs)
-- `packages/` : Shared libraries (`@rebecca/types`, `@rebecca/db`, `@rebecca/persona`)
-
-## Firestore Database Schema
-The database uses `@rebecca/db` as the single source of truth for collections:
-- `users`: Core profile and interaction counts. Updated via Firebase Functions.
-- `conversation_logs`: Raw timeline of bot interactions (30-day TTL). Triggers DAU aggregation.
-- `timeline_history`: Record of standalone proactive posts.
-- `rag_memories`: Vector-embedded user memory fragments.
-- `images`: Image assets, generated captions, and vector embeddings.
-- `system_stats`: Aggregated KPI data (e.g. `dau_YYYY-MM-DD`).
-- `rate_limits`: Scalable API rate limit counters.
 
 ---
-## License
+
+## 📂 Workspace Directory Structure
+
+The project code is divided into standard applications (`apps/`) and shared modules (`packages/`):
+
+### Applications (`apps/`)
+- **[`apps/bot-backend`](./apps/bot-backend)**: Core bot processing worker (RAG memory injection, intent analysis, X API integration, and background Dreaming evolution).
+- **[`apps/dashboard-backend`](./apps/dashboard-backend)**: BFF (Backend-for-Frontend) server providing administrative REST endpoints to the control panel, secured via Firebase Auth.
+- **[`apps/dashboard-frontend`](./apps/dashboard-frontend)**: Chibi-themed glassmorphic Angular administration control panel.
+- **[`apps/functions`](./apps/functions)**: Firebase Cloud Functions (aggregates raw timeline interactions into read-ready statistics to optimize DB performance).
+
+### Packages (`packages/`)
+- **[`packages/types`](./packages/types)**: Shared Type Definitions (e.g., interaction structures, common configurations, statuses).
+- **[`packages/db`](./packages/db)**: Shared database repository classes and connection managers.
+- **[`packages/persona`](./packages/persona)**: Rebecca's core persona definition prompts and JST-focused system rules.
+- **[`packages/grpc-schemas`](./packages/grpc-schemas)**: Protocol Buffer schemas defining internal inter-service gRPC APIs.
+
+---
+
+## 🛠️ Global CLI Monorepo Commands
+
+We use **Turborepo** to orchestrate building, linting, and testing across all workspaces. Execute these from the root directory:
+
+```bash
+# Install dependencies for all workspaces and hoist modules
+npm install
+
+# Run build across all apps and packages in topological order
+npm run build
+
+# Run linters (ESLint / Angular Lint) globally
+npm run lint
+
+# Run all unit and integration tests
+npm run test
+
+# Perform security audit checks
+npm run secret-check
+```
+
+For detailed guides on deploying or testing individual services, refer to the respective README files in the `apps/` directories.
+
+---
+
+## 📄 License
 This project is licensed under the [MIT License](LICENSE).
 
-## Author
+## 👤 Author
 AKINA
