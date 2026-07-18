@@ -9,12 +9,12 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./lightbox.component.css']
 })
 export class LightboxComponent {
-  @Input() isOpen: boolean = false;
-  @Input() imageUrl: string = '';
+  @Input() isOpen = false;
+  @Input() imageUrl = '';
   @Output() close = new EventEmitter<void>();
 
-  @HostListener('document:keydown.escape', ['$event'])
-  onKeydownHandler(event: KeyboardEvent) {
+  @HostListener('document:keydown.escape')
+  onKeydownHandler() {
     if (this.isOpen) {
       this.closeLightbox();
     }

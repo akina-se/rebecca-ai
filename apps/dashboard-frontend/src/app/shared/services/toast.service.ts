@@ -40,5 +40,5 @@ export class ToastService {
     this.toasts.update(t => t.filter(toast => toast.id !== id));
   }
 
-  constructor() { }
+
 }

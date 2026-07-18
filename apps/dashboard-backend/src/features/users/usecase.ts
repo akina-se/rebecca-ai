@@ -1,5 +1,5 @@
 import { UsersRepository } from './repository';
-import { UserDetail, UserLeaderboard, UserStatus } from '@rebecca/types';
+import { UserDetail, UserStatus } from '@rebecca/types';
 
 /**
  * Use case class for orchestrating user management operations.

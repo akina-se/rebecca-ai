@@ -20,9 +20,9 @@ import { CommonModule, NgStyle } from '@angular/common';
   styleUrls: ['./date-picker-popover.component.css'],
 })
 export class DatePickerPopoverComponent {
-  @Input() currentText: string = 'July 2026';
+  @Input() currentText = 'July 2026';
   @Input() mode: 'monthly' | 'yearly' | 'all-time' = 'monthly';
-  @Input() hasNext: boolean = true;
+  @Input() hasNext = true;
   @Output() previous = new EventEmitter<void>();
   @Output() next = new EventEmitter<void>();
   @Output() pick = new EventEmitter<string>();
@@ -30,7 +30,7 @@ export class DatePickerPopoverComponent {
   isOpen = false;
 
   /** Fixed-position coordinates for the popover (computed on open). */
-  popoverStyle: { [key: string]: string } = {};
+  popoverStyle: Record<string, string> = {};
 
   constructor(private eRef: ElementRef, private cdr: ChangeDetectorRef) {}
 
@@ -43,6 +43,15 @@ export class DatePickerPopoverComponent {
   toggle(navEl: HTMLElement): void {
     if (this.mode === 'all-time') return;
     this.isOpen = !this.isOpen;
+    if (this.isOpen && navEl) {
+      const rect = navEl.getBoundingClientRect();
+      this.popoverStyle = {
+        position: 'fixed',
+        top: `${rect.bottom + window.scrollY + 4}px`,
+        left: `${rect.left + window.scrollX}px`,
+        zIndex: '999999'
+      };
+    }
     this.cdr.markForCheck();
   }
 

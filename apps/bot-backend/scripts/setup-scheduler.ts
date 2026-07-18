@@ -73,10 +73,10 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
         console.log(`Creating job: ${job.name} -> ${job.schedule}`);
         execFileSync('gcloud', args, { stdio: 'inherit', shell: true });
         console.log(`✅ Successfully created ${job.name}`);
-    } catch (_e) {
+    } catch (err) {
         // If it already exists, update it instead
         try {
-            console.log(`Job ${job.name} might already exist. Attempting to update...`);
+            console.log(`Job ${job.name} might already exist. Attempting to update...`, err);
             const updateArgs = [
                 'scheduler', 'jobs', 'update', 'http', job.name,
                 '--schedule', `"${job.schedule}"`,
@@ -94,8 +94,8 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
 
             execFileSync('gcloud', updateArgs, { stdio: 'inherit', shell: true });
             console.log(`✅ Successfully updated ${job.name}`);
-        } catch (_updateError) {
-            console.error(`❌ Failed to create or update job ${job.name}.`);
+        } catch (updateError) {
+            console.error(`❌ Failed to create or update job ${job.name}.`, updateError);
         }
     }
 };

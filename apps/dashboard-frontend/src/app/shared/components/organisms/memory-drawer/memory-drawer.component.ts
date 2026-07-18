@@ -35,7 +35,7 @@ import { ActionHelperService } from '../../../services/action-helper.service';
 })
 export class MemoryDrawerComponent {
   actionHelper = inject(ActionHelperService);
-  @Input() level: number = 0;
+  @Input() level = 0;
 
   mockCorePrompt = "You are Rebecca, a sassy but highly competent AI assistant.\n\nStrict directives:\n1. Never break character.\n2. Prioritize user safety.\n3. Be concise.";
   mockExtendedPrompt = "If the user mentions anime, always reference Gundam.";

@@ -5,13 +5,21 @@ import { UsersRepository } from '../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Repository implementation that makes real HTTP requests to the users BFF endpoints.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class HttpUsersRepository implements UsersRepository {
   private http = inject(HttpClient);
-  private baseUrl = (environment as any).apiUrl || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
 
+  /**
+   * Fetches all user details from the backend.
+   * 
+   * @returns Observable list of users.
+   */
   getAll(): Observable<UserDetail[]> {
     return this.http.get<UserDetail[]>(`${this.baseUrl}/users`).pipe(
       map(users => users.map(user => ({
@@ -21,6 +29,14 @@ export class HttpUsersRepository implements UsersRepository {
     );
   }
 
+  /**
+   * Fetches a specific user profile and status by ID, supporting conversation beforeTimestamp pagination.
+   * 
+   * @param id - The user ID/handle to look up.
+   * @param beforeTimestamp - Optional filter for chat logs.
+   * @param limit - Optional limit for chat logs.
+   * @returns Observable of user detail.
+   */
   getById(id: string, beforeTimestamp?: string, limit?: number): Observable<UserDetail> {
     let params = new HttpParams();
     if (beforeTimestamp) {
@@ -37,16 +53,36 @@ export class HttpUsersRepository implements UsersRepository {
     );
   }
 
-  updateMemory(id: string, coreProfile: string): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/users/${encodeURIComponent(id)}/memory`, { coreProfile });
+  /**
+   * Updates a user's core personality memory on the backend.
+   * 
+   * @param id - The user ID/handle to update.
+   * @param coreProfile - The JSON string representing the new memory.
+   * @returns Observable resolving when update completes.
+   */
+  updateMemory(id: string, coreProfile: string): Observable<unknown> {
+    return this.http.put<unknown>(`${this.baseUrl}/users/${encodeURIComponent(id)}/memory`, { coreProfile });
   }
 
-  bulkUpdateStatus(ids: string[], status: string): Observable<any> {
+  /**
+   * Updates the status of multiple users in a bulk operation.
+   * 
+   * @param ids - The array of user IDs/handles to update.
+   * @param status - The new status (Active, Blocked, Muted) to apply.
+   * @returns Observable resolving when bulk update completes.
+   */
+  bulkUpdateStatus(ids: string[], status: string): Observable<unknown> {
     const backendStatus = this.mapStatusToBackend(status);
-    return this.http.put<any>(`${this.baseUrl}/users/status`, { ids, status: backendStatus });
+    return this.http.put<unknown>(`${this.baseUrl}/users/status`, { ids, status: backendStatus });
   }
 
-  private mapStatus(status: any): UserStatus {
+  /**
+   * Helper to map status values to strictly-typed UserStatus enum.
+   * 
+   * @param status - The raw status input.
+   * @returns The resolved UserStatus.
+   */
+  private mapStatus(status: unknown): UserStatus {
     if (!status) return UserStatus.ACTIVE;
     const s = String(status).toUpperCase();
     if (s === 'ACTIVE') return UserStatus.ACTIVE;
@@ -55,6 +91,12 @@ export class HttpUsersRepository implements UsersRepository {
     return UserStatus.ACTIVE;
   }
 
+  /**
+   * Helper to serialize enum to expected backend format.
+   * 
+   * @param status - The status string.
+   * @returns The backend string representation.
+   */
   private mapStatusToBackend(status: string): string {
     const s = status.toUpperCase();
     if (s === 'ACTIVE') return 'Active';

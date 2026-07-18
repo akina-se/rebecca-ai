@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 })
 export class DropdownComponent {
   @Input() options: string[] = [];
-  @Input() selectedOption: string = '';
+  @Input() selectedOption = '';
   @Input() icon?: string;
   @Output() selectionChange = new EventEmitter<string>();
 

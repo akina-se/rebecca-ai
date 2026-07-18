@@ -1,6 +1,18 @@
-import { Firestore } from '@google-cloud/firestore';
-import { UserDetail, UserLeaderboard, UserStatus } from '@rebecca/types';
+import { Firestore, Query } from '@google-cloud/firestore';
+import { UserDetail, UserStatus } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
+
+interface UserDoc {
+  status?: string;
+  daily_reply_count?: number;
+  affinity_score?: number;
+  first_seen_date?: string;
+  last_reply_date?: string;
+  coreProfile?: {
+    name?: string;
+    [key: string]: unknown;
+  };
+}
 
 /**
  * Repository class for managing user profile details, interactions, and statuses in Firestore.
@@ -25,7 +37,7 @@ export class UsersRepository {
    * @returns A promise that resolves to an array of user details.
    */
   async getAll(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<UserDetail[]> {
-    let query: any = this.collections.users;
+    let query: Query = this.collections.users;
     
     const sortBy = params?.sortBy || 'daily_reply_count';
     const sortOrder = params?.sortOrder || 'desc';
@@ -45,7 +57,7 @@ export class UsersRepository {
     
     const users: UserDetail[] = [];
     for (const doc of snapshot.docs) {
-      const data = doc.data();
+      const data = doc.data() as UserDoc;
       const rawId = doc.id;
       
       let status: UserStatus = UserStatus.ACTIVE;
@@ -64,10 +76,11 @@ export class UsersRepository {
         firstSeen: data.first_seen_date || 'N/A',
         lastSeen: data.last_reply_date || 'N/A',
         coreProfile: JSON.stringify(data.coreProfile || {}),
-        chatHistory: [], // Load on-demand via getById to keep list query fast
+        chatHistory: [], // chat history is loaded on demand for individual drawer
         status
       });
     }
+
     return users;
   }
 
@@ -85,7 +98,7 @@ export class UsersRepository {
       return null;
     }
 
-    const data = doc.data() as any;
+    const data = doc.data() as UserDoc;
     
     // Fetch conversation logs from Firestore and sort in-memory to prevent composite index requirements
     const chatLogsSnap = await this.collections.conversationLogs
@@ -98,17 +111,17 @@ export class UsersRepository {
       return tA.localeCompare(tB);
     });
 
+    // Handle beforeTimestamp pagination filter
     if (beforeTimestamp) {
       sortedDocs = sortedDocs.filter(d => {
-        const ts = d.data().timestamp || '';
-        return ts < beforeTimestamp;
+        const t = d.data().timestamp || '';
+        return t < beforeTimestamp;
       });
     }
 
+    // Handle limit filter
     if (limit) {
-      // 1 doc contains userText & aiText (2 ChatMessages)
-      const docLimit = Math.ceil(limit / 2);
-      sortedDocs = sortedDocs.slice(-docLimit);
+      sortedDocs = sortedDocs.slice(-limit);
     }
 
     const chatHistory = [];
@@ -170,7 +183,7 @@ export class UsersRepository {
   /**
    * Updates status for multiple users in a bulk operation.
    * 
-   * @param ids - The array of user IDs/handles to update.
+   * @param id - The array of user IDs/handles to update.
    * @param status - The new status (Active, Blocked, Muted) to apply.
    * @returns A promise that resolves when the batch write is complete.
    */
@@ -183,4 +196,3 @@ export class UsersRepository {
     await batch.commit();
   }
 }
-

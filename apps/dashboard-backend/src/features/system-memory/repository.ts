@@ -1,4 +1,5 @@
 import { Firestore } from '@google-cloud/firestore';
+import { CloudTasksClient } from '@google-cloud/tasks';
 import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { persona } from '@rebecca/persona';
@@ -105,7 +106,6 @@ export class SystemMemoryRepository {
   async triggerDreaming(): Promise<void> {
     // Kick off the GCP-controlled dreaming process using Cloud Tasks.
     // This allows the process to run entirely asynchronously in the background.
-    const { CloudTasksClient } = require('@google-cloud/tasks');
     const client = new CloudTasksClient();
 
     const project = process.env.GOOGLE_CLOUD_PROJECT || 'rebecca-ai-project';
@@ -130,11 +130,9 @@ export class SystemMemoryRepository {
       console.error('Failed to trigger dreaming via Cloud Tasks', e);
       // Fallback for local development if Cloud Tasks is not available
       if (process.env.NODE_ENV !== 'production') {
-        try {
-          console.log(`[Local fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
-          // Note: using fetch locally as a fallback
-          // fetch(`${botUrl}/internal/evolution/trigger`, { method: 'POST' }).catch(console.error);
-        } catch (err) {}
+        console.log(`[Local fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
+        // Note: using fetch locally as a fallback
+        // fetch(`${botUrl}/internal/evolution/trigger`, { method: 'POST' }).catch(console.error);
       }
     }
   }

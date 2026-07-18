@@ -5,13 +5,22 @@ import { AssetsRepository } from '../../core/ports/assets.repository';
 import { Asset, AssetStatus } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Repository implementation that makes real HTTP requests to the assets BFF backend.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class HttpAssetsRepository implements AssetsRepository {
   private http = inject(HttpClient);
-  private baseUrl = (environment as any).apiUrl || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
 
+  /**
+   * Retrieves assets, supporting pagination, search, and status filters.
+   * 
+   * @param params - The query parameters.
+   * @returns Observable of assets list.
+   */
   getAll(params?: { limit?: number; startAfterId?: string; search?: string; status?: string; }): Observable<Asset[]> {
     let httpParams = new HttpParams();
     if (params) {
@@ -28,7 +37,13 @@ export class HttpAssetsRepository implements AssetsRepository {
     );
   }
 
-  private mapStatus(status: any): AssetStatus {
+  /**
+   * Helper to map status values to strictly-typed AssetStatus enum.
+   * 
+   * @param status - The raw status input.
+   * @returns The resolved AssetStatus.
+   */
+  private mapStatus(status: unknown): AssetStatus {
     if (!status) return AssetStatus.PENDING;
     const s = String(status).toUpperCase();
     if (s === 'READY' || s === 'SUCCESS') return AssetStatus.SUCCESS;
@@ -37,21 +52,46 @@ export class HttpAssetsRepository implements AssetsRepository {
     return AssetStatus.PENDING;
   }
 
-  upload(file: File): Observable<any> {
+  /**
+   * Uploads an image asset to the server.
+   * 
+   * @param file - The file to upload.
+   * @returns Observable resolving when upload completes.
+   */
+  upload(file: File): Observable<unknown> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post<any>(`${this.baseUrl}/images`, formData);
+    return this.http.post<unknown>(`${this.baseUrl}/images`, formData);
   }
 
-  update(id: string, updates: Partial<Asset>): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/images/${id}`, updates);
+  /**
+   * Updates an existing asset with new property values.
+   * 
+   * @param id - The ID of the asset to update.
+   * @param updates - The partial updates to apply.
+   * @returns Observable resolving when update completes.
+   */
+  update(id: string, updates: Partial<Asset>): Observable<unknown> {
+    return this.http.put<unknown>(`${this.baseUrl}/images/${id}`, updates);
   }
 
-  deleteMany(ids: string[]): Observable<any> {
-    return this.http.delete<any>(`${this.baseUrl}/images`, { body: { ids } });
+  /**
+   * Deletes multiple assets by their IDs.
+   * 
+   * @param ids - The array of asset IDs to delete.
+   * @returns Observable resolving when deletion completes.
+   */
+  deleteMany(ids: string[]): Observable<unknown> {
+    return this.http.delete<unknown>(`${this.baseUrl}/images`, { body: { ids } });
   }
 
-  regenerateCaptions(ids: string[]): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/images/regenerate-captions`, { ids });
+  /**
+   * Triggers recaptioning for multiple assets.
+   * 
+   * @param ids - The array of asset IDs to regenerate captions for.
+   * @returns Observable resolving when recaptioning starts.
+   */
+  regenerateCaptions(ids: string[]): Observable<unknown> {
+    return this.http.post<unknown>(`${this.baseUrl}/images/regenerate-captions`, { ids });
   }
 }

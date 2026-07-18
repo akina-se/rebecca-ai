@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../../../shared/services/toast.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
@@ -12,7 +12,7 @@ import { ActionHelperService } from '../../../shared/services/action-helper.serv
   templateUrl: './memory-page.component.html',
   styleUrls: ['./memory-page.component.css']
 })
-export class MemoryPageComponent implements OnInit {
+export class MemoryPageComponent {
   toastService = inject(ToastService);
   isDreaming = false;
   
@@ -20,11 +20,6 @@ export class MemoryPageComponent implements OnInit {
   drawerLevel = 0;
   drawerTitle = '';
   drawerIcon = 'dns';
-
-  constructor() {}
-
-  ngOnInit() {
-  }
 
   openDrawer(level: number, title: string, icon: string) {
     this.drawerLevel = level;

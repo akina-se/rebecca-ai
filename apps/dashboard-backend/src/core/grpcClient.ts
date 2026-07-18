@@ -12,7 +12,20 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   oneofs: true,
 });
 
-const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as any;
+interface TweetServiceClient extends grpc.Client {
+  deleteTweet(
+    request: { tweet_id: string },
+    callback: (error: grpc.ServiceError | null, response: { success: boolean; message: string }) => void
+  ): void;
+}
+
+interface ProtoGrpcType extends grpc.GrpcObject {
+  tweets: {
+    TweetService: new (address: string, credentials: grpc.ChannelCredentials) => TweetServiceClient;
+  };
+}
+
+const protoDescriptor = grpc.loadPackageDefinition(packageDefinition) as unknown as ProtoGrpcType;
 const tweetsPackage = protoDescriptor.tweets;
 
 const botGrpcUrl = process.env.BOT_GRPC_URL || 'localhost:50051';
@@ -29,7 +42,7 @@ const client = new tweetsPackage.TweetService(
  */
 export function deleteTweetViaGrpc(tweetId: string): Promise<{ success: boolean; message: string }> {
   return new Promise((resolve, reject) => {
-    client.deleteTweet({ tweet_id: tweetId }, (err: any, response: any) => {
+    client.deleteTweet({ tweet_id: tweetId }, (err, response) => {
       if (err) {
         console.error('gRPC client error calling deleteTweet:', err);
         return reject(err);
@@ -38,3 +51,4 @@ export function deleteTweetViaGrpc(tweetId: string): Promise<{ success: boolean;
     });
   });
 }
+

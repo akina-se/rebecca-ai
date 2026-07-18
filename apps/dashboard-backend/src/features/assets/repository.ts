@@ -67,7 +67,7 @@ export class AssetsRepository {
    * @returns A promise that resolves when the update is complete.
    */
   async update(id: string, updates: Partial<Asset>): Promise<void> {
-    const dbUpdates: any = {};
+    const dbUpdates: Record<string, unknown> = {};
     if (updates.caption !== undefined) dbUpdates.caption = updates.caption;
     if (updates.usedCount !== undefined) dbUpdates.useCount = updates.usedCount;
     

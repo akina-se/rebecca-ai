@@ -24,6 +24,7 @@ export class AssetsController {
       const assets = await this.useCase.getAllAssets();
       res.json(assets);
     } catch (err) {
+      console.error('Failed to fetch assets:', err);
       res.status(500).json({ error: 'Failed to fetch assets' });
     }
   }

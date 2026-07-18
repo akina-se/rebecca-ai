@@ -1,8 +1,27 @@
-import { Firestore } from '@google-cloud/firestore';
+import { Firestore, Query } from '@google-cloud/firestore';
 import { Storage } from '@google-cloud/storage';
-import { KpiMetrics, PostLeaderboard, PostDetail } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { config } from '../../config';
+
+interface GlobalStatsDoc {
+  total_followers?: number;
+  followers_trend?: number;
+  avg_engagement_rate?: number;
+  engagement_trend?: number;
+  dau?: number;
+  dau_trend?: number;
+  api_calls_today?: number;
+  api_trend_status?: string;
+}
+
+interface TimelinePostDoc {
+  created_at?: string;
+  content?: string;
+  impressions?: number;
+  media_urls?: string[];
+  status?: string;
+}
 
 /**
  * Repository class for retrieving timeline history, leaderboard posts, and system KPI metrics from Firestore.
@@ -61,7 +80,7 @@ export class TimelineRepository {
    */
   async getMetrics(): Promise<KpiMetrics> {
     const doc = await this.collections.systemStats.doc('global').get();
-    const data = (doc.data() || {}) as any;
+    const data = (doc.data() || {}) as GlobalStatsDoc;
     
     return {
       followers: data.total_followers || 0,
@@ -81,7 +100,7 @@ export class TimelineRepository {
    * @returns A promise that resolves to an array of leaderboard posts.
    */
   async getPosts(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<PostLeaderboard[]> {
-    let query: any = this.collections.timelineHistory;
+    let query: Query = this.collections.timelineHistory;
     
     const sortBy = params?.sortBy || 'impressions';
     const sortOrder = params?.sortOrder || 'desc';
@@ -99,8 +118,8 @@ export class TimelineRepository {
 
     const snapshot = await query.get();
 
-    return snapshot.docs.map((doc: any) => {
-      const data = doc.data() as any;
+    return snapshot.docs.map(doc => {
+      const data = doc.data() as TimelinePostDoc;
       return {
         id: doc.id,
         time: data.created_at || new Date().toISOString(),
@@ -121,7 +140,7 @@ export class TimelineRepository {
     const doc = await this.collections.timelineHistory.doc(id).get();
     if (!doc.exists) return null;
     
-    const data = doc.data() as any;
+    const data = doc.data() as TimelinePostDoc;
     const rawMediaUrls: string[] = data.media_urls || [];
     
     // Resolve GCS paths to secure 15-minute Signed URLs
@@ -141,8 +160,8 @@ export class TimelineRepository {
   /**
    * Aggregates active warnings dynamically.
    */
-  async getAlerts(): Promise<any[]> {
-    const alerts: any[] = [];
+  async getAlerts(): Promise<SystemAlert[]> {
+    const alerts: SystemAlert[] = [];
     
     // 1. Count images with failed/empty caption or status FAILED
     const imagesSnapshot = await this.collections.images.get();
@@ -167,7 +186,7 @@ export class TimelineRepository {
     const postsSnapshot = await this.collections.timelineHistory.get();
     let failedPostsCount = 0;
     postsSnapshot.docs.forEach(doc => {
-      const data = doc.data() as any;
+      const data = doc.data() as TimelinePostDoc;
       if (data.status === 'FAILED') {
         failedPostsCount++;
       }

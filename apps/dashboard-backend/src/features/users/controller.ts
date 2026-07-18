@@ -29,6 +29,7 @@ export class UsersController {
       const users = await this.useCase.getAllUsers({ limit, startAfterId, sortBy, sortOrder });
       res.json(users);
     } catch (err) {
+      console.error('Failed to fetch users:', err);
       res.status(500).json({ error: 'Failed to fetch users' });
     }
   }
@@ -50,6 +51,7 @@ export class UsersController {
       }
       res.json(user);
     } catch (err) {
+      console.error('Failed to fetch user details:', err);
       res.status(500).json({ error: 'Failed to fetch user details' });
     }
   }

@@ -5,30 +5,59 @@ import { MemoryRepository } from '../../core/ports/memory.repository';
 import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Repository implementation that makes real HTTP requests to the system memory BFF endpoints.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class HttpMemoryRepository implements MemoryRepository {
   private http = inject(HttpClient);
-  private baseUrl = (environment as any).apiUrl || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
 
+  /**
+   * Fetches the hierarchy of memory layers from the backend.
+   * 
+   * @returns Observable of memory layers.
+   */
   getLayers(): Observable<MemoryLayer[]> {
     return this.http.get<MemoryLayer[]>(`${this.baseUrl}/memory/layers`);
   }
 
+  /**
+   * Fetches the core AI memory from the backend.
+   * 
+   * @returns Observable of core memory content.
+   */
   getCoreMemory(): Observable<MemoryContent> {
     return this.http.get<MemoryContent>(`${this.baseUrl}/memory/core`);
   }
 
+  /**
+   * Fetches the global personality memory from the backend.
+   * 
+   * @returns Observable of global memory content.
+   */
   getGlobalMemory(): Observable<MemoryContent> {
     return this.http.get<MemoryContent>(`${this.baseUrl}/memory/global`);
   }
 
-  updateGlobalMemory(content: string): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/memory/global`, { content });
+  /**
+   * Updates the global personality memory content on the backend.
+   * 
+   * @param content - The new text content.
+   * @returns Observable resolving when update completes.
+   */
+  updateGlobalMemory(content: string): Observable<unknown> {
+    return this.http.put<unknown>(`${this.baseUrl}/memory/global`, { content });
   }
 
-  triggerDreaming(): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/memory/force-dreaming`, {});
+  /**
+   * Triggers the Force Dreaming batch job on the backend.
+   * 
+   * @returns Observable resolving when dreaming completes.
+   */
+  triggerDreaming(): Observable<unknown> {
+    return this.http.post<unknown>(`${this.baseUrl}/memory/force-dreaming`, {});
   }
 }

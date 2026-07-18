@@ -30,6 +30,7 @@ export class CopilotController {
       const response = await this.useCase.processChat({ message, currentContext });
       res.json(response);
     } catch (err) {
+      console.error('Failed to process chat:', err);
       res.status(500).json({ error: 'Failed to process chat' });
     }
   }

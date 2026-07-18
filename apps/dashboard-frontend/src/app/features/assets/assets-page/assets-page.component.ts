@@ -44,7 +44,7 @@ export class AssetsPageComponent {
     this.isDrawerOpen = true;
   }
 
-  openLightbox(url: string = '') {
+  openLightbox(url = '') {
     this.lightboxImageUrl = url;
     this.isLightboxOpen = true;
   }
