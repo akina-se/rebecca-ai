@@ -1,20 +1,18 @@
-import { Component, Input, OnChanges, inject } from '@angular/core';
+import { Component, Input, OnChanges, inject, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
-import { ActionHelperService } from '../../../services/action-helper.service';
+import { ToastService } from '../../../services/toast.service';
+import { USERS_REPOSITORY, UsersRepository } from '../../../../core/ports/users.repository';
+import { UserDetail, UserStatus } from '@rebecca/types';
 
-interface UserMockModel {
-  handle: string;
-  name: string;
-  interactions: number;
-  affinityScore: string;
-  firstSeen: string;
-  lastSeen: string;
-  coreProfile: string;
-  chatHistory: { from: 'user' | 'rebecca'; text: string; time: string }[];
-}
-
+/**
+ * Component representing the User Drawer organism.
+ * 
+ * Provides a detailed view for a single user, displaying their status,
+ * statistics, and core profile. Allows administrators to view/edit profile
+ * tags and block/unblock the user.
+ */
 @Component({
   selector: 'app-user-drawer',
   standalone: true,
@@ -23,21 +21,19 @@ interface UserMockModel {
   styleUrls: ['./user-drawer.component.css']
 })
 export class UserDrawerComponent implements OnChanges {
+  /** Injected service to control drawer state and visibility. */
   drawerService = inject(DrawerService);
-  actionHelper = inject(ActionHelperService);
+  
+  /** Injected service for displaying toast notifications. */
+  toastService = inject(ToastService);
+  
+  /** The ID of the user to display details for. */
   @Input() userId: string | null = null;
 
-  mockUser: UserMockModel = {
-    handle: '',
-    name: '',
-    interactions: 0,
-    affinityScore: '',
-    firstSeen: '',
-    lastSeen: '',
-    coreProfile: '',
-    chatHistory: []
-  };
+  /** The detailed information of the loaded user. */
+  user?: UserDetail;
 
+  /** The parsed core profile of the user, organized by category. */
   parsedProfile: Record<string, string[]> = {
     attributes: [],
     preferences: [],
@@ -45,67 +41,64 @@ export class UserDrawerComponent implements OnChanges {
     important_memories: []
   };
 
+  /** Indicates if a block/unblock action is currently in progress. */
   isActionLoading = false;
+  
+  /** Indicates if the currently loaded user is blocked. */
   isBlocked = false;
+  
+  /** Indicates if a profile save operation is currently in progress. */
   isSavingProfile = false;
 
-  ngOnChanges() {
-    const defaultCoreProfile = '{\n  "attributes": ["student", "tokyo"],\n  "preferences": ["anime", "programming"],\n  "concerns": ["exams"],\n  "important_memories": ["promised to go to comiket"]\n}';
-    
-    if (this.userId === '@rebecca_oshi') {
-      this.mockUser = {
-        handle: '@rebecca_oshi', name: 'レベッカ推し', interactions: 240, affinityScore: '98%', firstSeen: '2025-08-01', lastSeen: '2026-07-10',
-        coreProfile: defaultCoreProfile,
-        chatHistory: [
-          { from: 'user', text: 'レベッカちゃんおはよう！', time: '2026-07-10 08:00' },
-          { from: 'rebecca', text: 'おはよう！今日も1日頑張ろうね', time: '2026-07-10 08:05' }
-        ]
-      };
-    } else if (this.userId === '@tech_geek_tokyo') {
-      this.mockUser = {
-        handle: '@tech_geek_tokyo', name: 'Tech Geek', interactions: 85, affinityScore: '70%', firstSeen: '2026-01-15', lastSeen: '2026-07-09',
-        coreProfile: '{\n  "attributes": ["engineer", "adult"],\n  "preferences": ["ai", "tech"],\n  "concerns": ["burnout"],\n  "important_memories": []\n}',
-        chatHistory: [
-          { from: 'user', text: '新しいAIモデルの論文読んだ？', time: '2026-07-09 10:00' },
-          { from: 'rebecca', text: '読んだよ！なかなか面白かったね', time: '2026-07-09 10:15' }
-        ]
-      };
-    } else if (this.userId === '@user_alpha_99') {
-      this.mockUser = {
-        handle: '@user_alpha_99', name: 'Alpha 99', interactions: 42, affinityScore: '45%', firstSeen: '2026-05-01', lastSeen: '2026-07-11',
-        coreProfile: '{\n  "attributes": ["gamer"],\n  "preferences": ["gaming"],\n  "concerns": [],\n  "important_memories": []\n}',
-        chatHistory: [
-          { from: 'user', text: 'よろしく', time: '2026-07-11 10:00' },
-          { from: 'rebecca', text: 'よろしくね！', time: '2026-07-11 10:05' }
-        ]
-      };
-    } else {
-      this.mockUser = {
-        handle: this.userId || '@gundam_fan_88', name: 'Gundam Fan 88', interactions: 156, affinityScore: '92%', firstSeen: '2025-10-01', lastSeen: '2026-07-11',
-        coreProfile: '{\n  "attributes": ["fan"],\n  "preferences": ["gundam", "mecha"],\n  "concerns": [],\n  "important_memories": []\n}',
-        chatHistory: [
-          { from: 'user', text: 'レベッカ、今日のガンダムの話聞いた？', time: '2026-07-11 12:00' },
-          { from: 'rebecca', text: '聞いてないよ！教えて 何かあったの？', time: '2026-07-11 12:01' }
-        ]
-      };
-    }
+  /**
+   * Initializes the user drawer component.
+   * 
+   * @param usersRepo - The injected repository for managing user data.
+   */
+  constructor(@Inject(USERS_REPOSITORY) private usersRepo: UsersRepository) {}
 
-    try {
-      this.parsedProfile = JSON.parse(this.mockUser.coreProfile) as Record<string, string[]>;
-      // Ensure all arrays exist
-      ['attributes', 'preferences', 'concerns', 'important_memories'].forEach(key => {
-        if (!this.parsedProfile[key]) this.parsedProfile[key] = [];
-      });
-    } catch (error) {
-      console.error('Failed to parse coreProfile JSON', error);
-      this.parsedProfile = { attributes: [], preferences: [], concerns: [], important_memories: [] };
-    }
+  /**
+   * Lifecycle hook that is called when any data-bound property of a directive changes.
+   * Triggers the loading of user details if a new `userId` is provided.
+   */
+  ngOnChanges() {
+    if (!this.userId) return;
+    this.usersRepo.getById(this.userId).subscribe({
+      next: (u) => {
+        this.user = u;
+        this.isBlocked = u.status === UserStatus.BLOCKED;
+        try {
+          this.parsedProfile = JSON.parse(u.coreProfile) as Record<string, string[]>;
+          ['attributes', 'preferences', 'concerns', 'important_memories'].forEach(key => {
+            if (!this.parsedProfile[key]) this.parsedProfile[key] = [];
+          });
+        } catch (error) {
+          console.error('Failed to parse coreProfile JSON', error);
+          this.parsedProfile = { attributes: [], preferences: [], concerns: [], important_memories: [] };
+        }
+      },
+      error: (err) => {
+        console.error('Failed to fetch user details:', err);
+      }
+    });
   }
 
+  /**
+   * Removes a tag from a specific profile category.
+   * 
+   * @param category - The category to remove the tag from (e.g., 'attributes').
+   * @param index - The index of the tag to remove within the category array.
+   */
   removeTag(category: string, index: number) {
     this.parsedProfile[category].splice(index, 1);
   }
 
+  /**
+   * Adds a new tag to a specific profile category based on user input.
+   * 
+   * @param category - The category to add the new tag to.
+   * @param event - The DOM event triggered by the input field.
+   */
   addTag(category: string, event: Event) {
     const input = event.target as HTMLInputElement;
     const value = input.value.trim();
@@ -115,19 +108,49 @@ export class UserDrawerComponent implements OnChanges {
     }
   }
 
+  /**
+   * Toggles the blocked status of the currently loaded user.
+   * Persists the change to the repository.
+   */
   async onBlockUser() {
+    if (!this.userId) return;
     this.isActionLoading = true;
-    const actionName = this.isBlocked ? 'unblocked' : 'blocked';
-    await this.actionHelper.executeMockAction(`Successfully ${actionName} user ${this.mockUser.name}`);
-    this.isBlocked = !this.isBlocked;
-    this.isActionLoading = false;
+    const targetStatus = this.isBlocked ? UserStatus.ACTIVE : UserStatus.BLOCKED;
+    this.usersRepo.bulkUpdateStatus([this.userId], targetStatus).subscribe({
+      next: async () => {
+        this.isBlocked = targetStatus === UserStatus.BLOCKED;
+        if (this.user) {
+          this.user.status = targetStatus;
+        }
+        this.toastService.show(`Successfully ${this.isBlocked ? 'blocked' : 'unblocked'} user ${this.userId}`, 'success');
+        this.isActionLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to update user status:', err);
+        this.isActionLoading = false;
+      }
+    });
   }
 
+  /**
+   * Saves the modified core profile of the user to the repository.
+   */
   async onSaveProfile() {
+    if (!this.userId) return;
     this.isSavingProfile = true;
-    // Simulate re-serialization
-    this.mockUser.coreProfile = JSON.stringify(this.parsedProfile, null, 2);
-    await this.actionHelper.executeMockAction(`Successfully saved core profile for ${this.mockUser.name}`);
-    this.isSavingProfile = false;
+    const updatedProfile = JSON.stringify(this.parsedProfile, null, 2);
+    this.usersRepo.updateMemory(this.userId, updatedProfile).subscribe({
+      next: async () => {
+        if (this.user) {
+          this.user.coreProfile = updatedProfile;
+        }
+        this.toastService.show(`Successfully saved core profile for ${this.userId}`, 'success');
+        this.isSavingProfile = false;
+      },
+      error: (err) => {
+        console.error('Failed to save core profile:', err);
+        this.isSavingProfile = false;
+      }
+    });
   }
 }

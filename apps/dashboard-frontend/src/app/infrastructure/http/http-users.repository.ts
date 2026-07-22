@@ -71,9 +71,8 @@ export class HttpUsersRepository implements UsersRepository {
    * @param status - The new status (Active, Blocked, Muted) to apply.
    * @returns Observable resolving when bulk update completes.
    */
-  bulkUpdateStatus(ids: string[], status: string): Observable<unknown> {
-    const backendStatus = this.mapStatusToBackend(status);
-    return this.http.put<unknown>(`${this.baseUrl}/users/status`, { ids, status: backendStatus });
+  bulkUpdateStatus(ids: string[], status: UserStatus): Observable<unknown> {
+    return this.http.put<unknown>(`${this.baseUrl}/users/status`, { ids, status });
   }
 
   /**
