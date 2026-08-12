@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { COLLECTIONS } from '@rebecca/db';
 import { RawConversationLog } from '@rebecca/types';
 
@@ -30,7 +31,7 @@ export const onConversationLogCreated = onDocumentCreated(
     batch.set(
       userRef,
       {
-        daily_reply_count: admin.firestore.FieldValue.increment(1),
+        daily_reply_count: FieldValue.increment(1),
         last_reply_date: log.timestamp || new Date().toISOString(),
       },
       { merge: true }
@@ -46,11 +47,11 @@ export const onConversationLogCreated = onDocumentCreated(
       dauRef,
       {
         date: dateStr,
-        active_users: admin.firestore.FieldValue.arrayUnion(log.userId),
+        active_users: FieldValue.arrayUnion(log.userId),
         // For simple numeric count in dashboard, we could increment a raw counter,
         // but array size is more accurate for DAU to prevent double counting same user.
         // We will increment total_interactions for the day as well.
-        total_interactions: admin.firestore.FieldValue.increment(1),
+        total_interactions: FieldValue.increment(1),
       },
       { merge: true }
     );
