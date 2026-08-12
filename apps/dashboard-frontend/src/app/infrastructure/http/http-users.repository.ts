@@ -22,8 +22,8 @@ export class HttpUsersRepository implements UsersRepository {
    */
   getAll(): Observable<UserDetail[]> {
     return this.http.get<UserDetail[]>(`${this.baseUrl}/users`).pipe(
-      map(users => users.map(user => ({
-        ...user,
+      map((users: UserDetail[]) => users.map((user: UserDetail) => ({
+        ...(user as any),
         status: this.mapStatus(user.status)
       })))
     );
@@ -46,8 +46,8 @@ export class HttpUsersRepository implements UsersRepository {
       params = params.set('limit', limit.toString());
     }
     return this.http.get<UserDetail>(`${this.baseUrl}/users/${encodeURIComponent(id)}`, { params }).pipe(
-      map(user => ({
-        ...user,
+      map((user: UserDetail) => ({
+        ...(user as any),
         status: this.mapStatus(user.status)
       }))
     );

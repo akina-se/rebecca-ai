@@ -1,4 +1,4 @@
-<div class="drawer-content">
+<div class="drawer-content" *ngIf="user">
 
     <!-- Profile Header -->
     <div class="glass-panel profile-box">
@@ -7,8 +7,8 @@
                 <span class="material-icons">person</span>
             </div>
             <div class="profile-info">
-                <div class="profile-name">{{ mockUser.name }}</div>
-                <div class="profile-handle">{{ userId || mockUser.handle }}</div>
+                <div class="profile-name">{{ user.name }}</div>
+                <div class="profile-handle">{{ userId || user.handle }}</div>
             </div>
         </div>
     </div>
@@ -19,7 +19,7 @@
             <span class="material-icons metric-icon">forum</span>
             <div class="metric-info">
                 <div class="metric-title">Interactions</div>
-                <div class="metric-value">{{ mockUser.interactions }}</div>
+                <div class="metric-value">{{ user.interactions }}</div>
             </div>
         </div>
     </div>
@@ -28,12 +28,12 @@
     <div class="glass-panel stat-box">
         <div class="timeline-stat">
             <div class="stat-label">First Seen</div>
-            <div class="stat-value">{{ mockUser.firstSeen }}</div>
+            <div class="stat-value">{{ user.firstSeen }}</div>
         </div>
         <div class="divider"></div>
         <div class="timeline-stat">
             <div class="stat-label">Last Seen</div>
-            <div class="stat-value">{{ mockUser.lastSeen }}</div>
+            <div class="stat-value">{{ user.lastSeen }}</div>
         </div>
     </div>
 
@@ -107,7 +107,7 @@
             Past Interactions
         </div>
         <div class="chat-history">
-            <div class="chat-bubble user" *ngFor="let msg of mockUser.chatHistory" [class.user]="msg.from === 'user'">
+            <div class="chat-bubble user" *ngFor="let msg of user.chatHistory" [class.user]="msg.from === 'user'">
                 <ng-container *ngIf="msg.from === 'user'">
                     <div class="bubble-content user-bubble">{{ msg.text }}</div>
                     <div class="bubble-time" style="text-align: right;">{{ msg.time }}</div>
