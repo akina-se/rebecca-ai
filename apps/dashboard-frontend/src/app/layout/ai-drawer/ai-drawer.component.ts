@@ -15,8 +15,13 @@ export class AiDrawerComponent implements OnInit {
   constructor(private drawerService: DrawerService) {}
 
   ngOnInit() {
-    this.drawerService.isOpen$.subscribe(isOpen => {
-      this.isOpen = isOpen;
+    this.drawerService.isOpen$.subscribe({
+      next: (isOpen: boolean) => {
+        this.isOpen = isOpen;
+      },
+      error: (err: any) => {
+        console.error(err);
+      }
     });
   }
 

@@ -30,7 +30,7 @@ export class HttpAssetsRepository implements AssetsRepository {
       if (params.status !== undefined) httpParams = httpParams.set('status', params.status);
     }
     return this.http.get<Asset[]>(`${this.baseUrl}/images`, { params: httpParams }).pipe(
-      map(assets => assets.map(asset => ({
+      map((assets: Asset[]) => assets.map((asset: Asset) => ({
         ...asset,
         status: this.mapStatus(asset.status)
       })))
