@@ -118,7 +118,7 @@ export class TimelineRepository {
 
     const snapshot = await query.get();
 
-    return snapshot.docs.map(doc => {
+    return snapshot.docs.map((doc: any) => {
       const data = doc.data() as TimelinePostDoc;
       return {
         id: doc.id,

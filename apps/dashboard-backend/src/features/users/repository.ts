@@ -105,7 +105,7 @@ export class UsersRepository {
       .where('userId', '==', rawId)
       .get();
       
-    let sortedDocs = chatLogsSnap.docs.sort((a, b) => {
+    let sortedDocs = chatLogsSnap.docs.sort((a: any, b: any) => {
       const tA = a.data().timestamp || '';
       const tB = b.data().timestamp || '';
       return tA.localeCompare(tB);

@@ -47,7 +47,7 @@ export class AssetsRepository {
       ];
     }
 
-    return snapshot.docs.map(doc => {
+    return snapshot.docs.map((doc: any) => {
       const data = doc.data();
       return {
         id: doc.id,
