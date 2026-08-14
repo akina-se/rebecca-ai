@@ -56,6 +56,9 @@ export enum AssetStatus {
  */
 export interface FirestoreUser {
   id?: string;
+  name?: string;
+  handle?: string;
+  avatarUrl?: string;
   coreProfile: UserCoreProfile;
   working_memory?: ConversationLogEntry[];
   episodicBuffer: ConversationLogEntry[];
@@ -63,6 +66,9 @@ export interface FirestoreUser {
   last_reply_date?: string;
   daily_reply_count?: number;
   status?: UserStatus;
+  affinityScore?: number;
+  firstSeen?: string;
+  lastSeen?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -322,6 +328,8 @@ export interface PostDetail {
 
 export interface UserLeaderboard {
   userId: string;
+  handle?: string;
+  name?: string;
   interactions: number;
 }
 

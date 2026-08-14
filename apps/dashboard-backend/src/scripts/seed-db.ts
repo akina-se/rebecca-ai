@@ -81,8 +81,8 @@ async function seedFirestore() {
     'coffee_and_code', 'shinjuku_night', 'anime_music_fan', 'figure_collector', 'cosplay_maker'
   ];
   const mockNames = [
-    "Cloud Surfer", "Anime Music Fan", "Tokyo Traveler", "Code Ninja", "Cyber Pilot",
-    "Nerd Level Max", "AI Enthusiast", "Manga Collector", "Rebecca Oshi", "Gundam Fan 88",
+    "Rebecca Oshi", "Tech Geek Tokyo", "Alpha 99", "Gundam Fan 88", "Cyber Pilot",
+    "Nerd Level Max", "AI Enthusiast", "Manga Collector", "Tokyo Traveler", "Code Ninja",
     "Neon Rider", "Digital Artist", "Pixel Pioneer", "Retro Gamer", "Synth Wave",
     "Future Vision", "Data Hacker", "Cloud Surfer", "Robot Builder", "Quantum Leap",
     "Otaku Prime", "Shibuya Stroller", "Ramen Lover JP", "Game Developer", "VR World Explorer",
@@ -90,21 +90,23 @@ async function seedFirestore() {
   ];
   for (let i = 0; i < userHandles.length; i++) {
     const handle = userHandles[i];
+    const userName = mockNames[i] || `@${handle}`;
     const daysAgo = Math.floor(Math.random() * 300);
     const firstSeenDate = new Date(Date.now() - (daysAgo + 30) * 24 * 3600000);
     const lastSeenDate = new Date(Date.now() - Math.floor(Math.random() * 5) * 24 * 3600000);
     
     mockUsers.push({
       id: handle,
-      name: mockNames[i] || `@${handle}`,
+      name: userName,
       handle: `@${handle}`,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${handle}`,
-      coreProfile: JSON.stringify({
+      coreProfile: {
+        name: userName,
         attributes: [i % 2 === 0 ? 'student' : 'engineer', i % 3 === 0 ? 'tokyo' : 'osaka'],
         preferences: [i % 2 === 0 ? 'anime' : 'gaming', i % 3 === 0 ? 'programming' : 'art'],
         concerns: i % 4 === 0 ? ['exams'] : [],
         important_memories: i % 5 === 0 ? [`promised to go to comiket ${i}`] : []
-      }, null, 2),
+      },
       episodicBuffer: [
         { role: 'user', content: 'こんにちは！最近調子どう？', timestamp: new Date(Date.now() - 3600000 * (i + 1)).toISOString() },
         { role: 'model', content: 'こんにちは！とっても元気だよ！今日は何してるの？', timestamp: new Date(Date.now() - 3300000 * (i + 1)).toISOString() }

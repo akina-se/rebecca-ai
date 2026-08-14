@@ -94,9 +94,27 @@ if (!(Get-Command firebase -ErrorAction SilentlyContinue) -and !(Test-Path "node
     Write-Host "firebase CLI not found. Running local check via npx..." -ForegroundColor Gray
 }
 
-# 3. Launch Firebase Emulators (Auth & Firestore)
+# Fast socket connection checker to avoid PowerShell Test-NetConnection ICMP/DNS latency overhead
+function Test-PortQuickly ([int]$Port) {
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $asyncResult = $tcp.BeginConnect("127.0.0.1", $Port, $null, $null)
+        $success = $asyncResult.AsyncWaitHandle.WaitOne(200, $false)
+        if ($success -and $tcp.Connected) {
+            $tcp.EndConnect($asyncResult)
+            $tcp.Close()
+            return $true
+        }
+        $tcp.Close()
+        return $false
+    } catch {
+        return $false
+    }
+}
+
+# 3. Launch Firebase Emulators (Auth, Firestore, Storage, Functions)
 Write-Host "[3/7] Starting Firebase Emulators..." -ForegroundColor Yellow
-$EmulatorCommand = "`$env:JAVA_HOME='$JdkVersionDir'; `$env:PATH='$JdkVersionDir\bin;'+`$env:PATH; npx -y firebase-tools emulators:start --project rebecca-ai-gal-local"
+$EmulatorCommand = "`$env:JAVA_HOME='$JdkVersionDir'; `$env:PATH='$JdkVersionDir\bin;'+`$env:PATH; npx -y firebase-tools emulators:start --only auth,firestore,storage,functions --project rebecca-ai-gal-local"
 
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $EmulatorCommand -WorkingDirectory $PWD
 Write-Host "-> Firebase Emulators launching in a separate terminal window..." -ForegroundColor Gray
@@ -104,23 +122,23 @@ Write-Host "-> Firebase Emulators launching in a separate terminal window..." -F
 # 4. Wait for emulators to be fully ready
 Write-Host "[4/7] Waiting for Firestore Emulator (port 8080), Auth (port 9099) & Storage (port 9199) to bind..." -ForegroundColor Yellow
 $retries = 0
-$maxRetries = 30
+$maxRetries = 60
 $ready = $false
 while ($retries -lt $maxRetries -and -not $ready) {
-    Start-Sleep -Seconds 2
-    $port8080 = Test-NetConnection -ComputerName 127.0.0.1 -Port 8080 -WarningAction SilentlyContinue
-    $port9099 = Test-NetConnection -ComputerName 127.0.0.1 -Port 9099 -WarningAction SilentlyContinue
-    $port9199 = Test-NetConnection -ComputerName 127.0.0.1 -Port 9199 -WarningAction SilentlyContinue
-    if ($port8080.TcpTestSucceeded -and $port9099.TcpTestSucceeded -and $port9199.TcpTestSucceeded) {
+    Start-Sleep -Seconds 1
+    $port8080 = Test-PortQuickly -Port 8080
+    $port9099 = Test-PortQuickly -Port 9099
+    $port9199 = Test-PortQuickly -Port 9199
+    if ($port8080 -and $port9099 -and $port9199) {
         $ready = $true
     } else {
         $retries++
-        Write-Host "   Waiting... ($retries/$maxRetries)" -ForegroundColor Gray
+        Write-Host "   Waiting... ($retries/$maxRetries s)" -ForegroundColor Gray
     }
 }
 
 if (-not $ready) {
-    Write-Host "[ERROR] Firebase Emulators failed to start or bind within time limit." -ForegroundColor Red
+    Write-Host "[ERROR] Firebase Emulators failed to start or bind within time limit ($maxRetries s)." -ForegroundColor Red
     Exit 1
 }
 Write-Host "-> Firebase Emulators are ready!" -ForegroundColor Green
