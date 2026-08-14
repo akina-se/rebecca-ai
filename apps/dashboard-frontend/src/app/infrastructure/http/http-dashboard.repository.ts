@@ -14,7 +14,7 @@ import { environment } from '../../../environments/environment';
 export class HttpDashboardRepository implements DashboardRepository {
   private http = inject(HttpClient);
   private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
-  private postsBaseUrl = this.baseUrl.replace('/dashboard', '/posts');
+  private postsBaseUrl = `${this.baseUrl}/posts`;
 
   /**
    * Fetches global KPI metrics from the backend.
