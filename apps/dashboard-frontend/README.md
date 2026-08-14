@@ -15,22 +15,42 @@ An Angular-based, highly customized administration control panel for Rebecca AI,
 ## 🏗️ Clean Architecture (Ports & Adapters)
 To avoid hard-coupling the Angular application to a specific backend framework or HTTP library, the application is structured using the **Ports & Adapters (Hexagonal) Architecture**:
 
-```
-src/app/
-├── core/
-│   └── ports/              # Business contract interfaces (Ports)
-│       ├── auth.repository.ts
-│       ├── memory.repository.ts
-│       └── users.repository.ts
-├── infrastructure/
-│   └── http/               # HTTP client implementations (Adapters)
-│       ├── http-auth.repository.ts
-│       ├── http-memory.repository.ts
-│       └── http-users.repository.ts
-└── features/               # UI components and view controllers
-    ├── dashboard/          # Aggregated KPI widgets, alerts lists
-    ├── memory/             # RAG memory layer administration
-    └── login/              # Google Auth login credentials
+```mermaid
+graph LR
+    app["src/app/"]
+    core["core/"]
+    ports["ports/<br>Business contract interfaces (Ports)"]
+    auth_repo["auth.repository.ts"]
+    memory_repo["memory.repository.ts"]
+    users_repo["users.repository.ts"]
+
+    infrastructure["infrastructure/"]
+    http["http/<br>HTTP client implementations (Adapters)"]
+    http_auth_repo["http-auth.repository.ts"]
+    http_memory_repo["http-memory.repository.ts"]
+    http_users_repo["http-users.repository.ts"]
+
+    features["features/<br>UI components and view controllers"]
+    dashboard["dashboard/<br>Aggregated KPI widgets, alerts lists"]
+    memory["memory/<br>RAG memory layer administration"]
+    login["login/<br>Google Auth login credentials"]
+
+    app --> core
+    core --> ports
+    ports --> auth_repo
+    ports --> memory_repo
+    ports --> users_repo
+
+    app --> infrastructure
+    infrastructure --> http
+    http --> http_auth_repo
+    http --> http_memory_repo
+    http --> http_users_repo
+
+    app --> features
+    features --> dashboard
+    features --> memory
+    features --> login
 ```
 
 The app components inject core port tokens (e.g. `MEMORY_REPOSITORY`), which are resolved to their HTTP adapter classes in `app.config.ts`. This permits swap-out testing or local mock mocking without touching any view controllers.
