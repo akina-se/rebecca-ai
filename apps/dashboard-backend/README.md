@@ -84,21 +84,21 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 
 | Category | HTTP Method | Path | Description |
 |---|---|---|---|
-| **Alerts** | `GET` | `/api/v1/dashboard/alerts` | Aggregates dynamic warning alerts across the system |
-| **Users** | `GET` | `/api/v1/dashboard/users` | List monitored users / leaderboard (paginated, sorted) |
-| | `PUT` | `/api/v1/dashboard/users/status` | Bulk update user statuses (Active, Blocked, Muted) |
-| | `GET` | `/api/v1/dashboard/users/{id}` | Get specific user details and paginated chat history |
-| | `PUT` | `/api/v1/dashboard/users/{id}/memory` | Update a user's memory profile (RAG attributes) |
-| **Posts** | `GET` | `/api/v1/dashboard/posts` | Paginated timeline posts with JST-aligned range filtering |
-| | `DELETE` | `/api/v1/dashboard/posts` | Bulk delete posts from Firestore & X (gRPC client) |
-| **Images** | `GET` | `/api/v1/dashboard/images` | Get paginated library image assets |
-| | `POST` | `/api/v1/dashboard/images/upload` | Upload image to GCS and generate captions via Gemini |
-| | `PUT` | `/api/v1/dashboard/images/{id}` | Update image name or caption metadata |
-| **Memory** | `GET` | `/api/v1/dashboard/memory/layers` | List system memory layers metadata (level 0, 1, 2) |
-| | `GET` | `/api/v1/dashboard/memory/core` | Get Layer 0 immutable Core Persona prompt |
-| | `GET` | `/api/v1/dashboard/memory/global` | Get Layer 2 dynamic Global summary prompt |
-| | `PUT` | `/api/v1/dashboard/memory/global` | Update Layer 2 dynamic Global summary content |
-| | `POST` | `/api/v1/dashboard/memory/force-dreaming` | Trigger asynchronous Dreaming consolidation |
+| **Alerts** | `GET` | `/api/v1/alerts` | Aggregates dynamic warning alerts across the system |
+| **Users** | `GET` | `/api/v1/users` | List monitored users / leaderboard (paginated, sorted) |
+| | `PUT` | `/api/v1/users/status` | Bulk update user statuses (Active, Blocked, Muted) |
+| | `GET` | `/api/v1/users/{id}` | Get specific user details and paginated chat history |
+| | `PUT` | `/api/v1/users/{id}/memory` | Update a user's memory profile (RAG attributes) |
+| **Posts** | `GET` | `/api/v1/posts` | Paginated timeline posts with JST-aligned range filtering |
+| | `DELETE` | `/api/v1/posts` | Bulk delete posts from Firestore & X (gRPC client) |
+| **Images** | `GET` | `/api/v1/images` | Get paginated library image assets |
+| | `POST` | `/api/v1/images/upload` | Upload image to GCS and generate captions via Gemini |
+| | `PUT` | `/api/v1/images/{id}` | Update image name or caption metadata |
+| **Memory** | `GET` | `/api/v1/memory/layers` | List system memory layers metadata (level 0, 1, 2) |
+| | `GET` | `/api/v1/memory/core` | Get Layer 0 immutable Core Persona prompt |
+| | `GET` | `/api/v1/memory/global` | Get Layer 2 dynamic Global summary prompt |
+| | `PUT` | `/api/v1/memory/global` | Update Layer 2 dynamic Global summary content |
+| | `POST` | `/api/v1/memory/force-dreaming` | Trigger asynchronous Dreaming consolidation |
 
 ---
 
