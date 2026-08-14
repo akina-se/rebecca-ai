@@ -13,11 +13,12 @@ import { UserDrawerComponent } from '../../../shared/components/organisms/user-d
 import { ActionHelperService } from '../../../shared/services/action-helper.service';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { RankingModalComponent } from '../../../shared/components/organisms/ranking-modal/ranking-modal.component';
+import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })
@@ -232,21 +233,6 @@ export class DashboardPageComponent implements OnInit {
       this.topUsersDate = currentDate;
       this.loadTopUsers();
     }
-  }
-
-  get timelinePageNumbers(): (number | string)[] {
-    const total = this.timelineTotalPages;
-    const current = this.timelinePage;
-    if (total <= 5) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-    if (current <= 3) {
-      return [1, 2, 3, 4, total];
-    }
-    if (current >= total - 2) {
-      return [1, total - 3, total - 2, total - 1, total];
-    }
-    return [1, current - 1, current, current + 1, total];
   }
 
   rankingModalEntries: any[] = [];

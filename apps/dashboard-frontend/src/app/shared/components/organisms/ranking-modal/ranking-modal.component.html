@@ -39,19 +39,12 @@
 
         <!-- Pagination -->
         <div class="modal-footer" *ngIf="totalPages > 1">
-            <button class="page-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
-                <span class="material-icons">chevron_left</span>
-            </button>
-            <button class="page-btn"
-                *ngFor="let p of pageNumbers"
-                [class.active]="p === currentPage"
-                (click)="goToPage(p)">
-                {{ p }}
-            </button>
-            <button class="page-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
-                <span class="material-icons">chevron_right</span>
-            </button>
-            <span class="page-info">Page {{ currentPage }} / {{ totalPages }}</span>
+            <app-pagination
+                [currentPage]="currentPage"
+                [totalPages]="totalPages"
+                [showTotalCount]="false"
+                (pageChange)="goToPage($event)">
+            </app-pagination>
         </div>
     </div>
 </div>

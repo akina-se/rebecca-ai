@@ -210,25 +210,15 @@
             </tr>
         </tbody>
     </table>
-    <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px;">
-        <span>Showing {{ timelineTotalItems }} posts</span>
-        <div class="pagination-controls">
-            <button class="page-btn" [disabled]="timelinePage <= 1 || isLoadingTimeline" (click)="loadTimeline(timelinePage - 1)">
-                <span class="material-icons" style="font-size: 1rem">chevron_left</span>
-            </button>
-            <ng-container *ngFor="let p of timelinePageNumbers">
-                <button *ngIf="p !== '...'" class="page-btn" [class.active]="p === timelinePage" (click)="loadTimeline(+p)">
-                    {{ p }}
-                </button>
-                <span *ngIf="p === '...'" class="page-ellipsis" style="padding: 0 4px; color: var(--text-muted);">...</span>
-            </ng-container>
-            <button class="page-btn" [disabled]="timelinePage >= timelineTotalPages || isLoadingTimeline" (click)="loadTimeline(timelinePage + 1)">
-                <span class="material-icons" style="font-size: 1rem" [class.spinning]="isLoadingTimeline">
-                    {{ isLoadingTimeline ? 'sync' : 'chevron_right' }}
-                </span>
-            </button>
-            <span class="page-info" style="margin-left: 8px; font-size: 0.85rem; color: var(--text-muted); align-self: center;">Page {{ timelinePage }} / {{ timelineTotalPages }}</span>
-        </div>
+    <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px; padding: 0.75rem 1.5rem;">
+        <app-pagination
+            [currentPage]="timelinePage"
+            [totalPages]="timelineTotalPages"
+            [totalItems]="timelineTotalItems"
+            [itemsLabel]="'posts'"
+            [isLoading]="isLoadingTimeline"
+            (pageChange)="loadTimeline($event)">
+        </app-pagination>
     </div>
 </div>
 

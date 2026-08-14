@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PaginationComponent } from '../../molecules/pagination/pagination.component';
 
 /** A single entry in the leaderboard. */
 export interface RankingEntry {
@@ -20,7 +21,7 @@ export interface RankingEntry {
 @Component({
   selector: 'app-ranking-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PaginationComponent],
   templateUrl: './ranking-modal.component.html',
   styleUrls: ['./ranking-modal.component.css'],
 })
@@ -50,10 +51,6 @@ export class RankingModalComponent {
   get pagedEntries(): RankingEntry[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.entries.slice(start, start + this.pageSize);
-  }
-
-  get pageNumbers(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
   goToPage(page: number): void {
