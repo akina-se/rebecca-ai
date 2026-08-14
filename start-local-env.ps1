@@ -7,6 +7,38 @@ Write-Host "==========================================================" -Foregro
 Write-Host "   REBECCA AI - LOCAL DEVELOPER ENVIRONMENT STARTUP       " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
+# 0. Preflight: Clean up orphaned processes on local environment ports
+Write-Host "[0/7] Performing preflight port and process check..." -ForegroundColor Yellow
+$TargetPorts = @(8080, 9099, 9199, 4000, 5001, 8081, 50051, 4200)
+$KilledAny = $false
+
+foreach ($Port in $TargetPorts) {
+    try {
+        $Connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+        if ($Connections) {
+            foreach ($Conn in $Connections) {
+                $ProcId = $Conn.OwningProcess
+                if ($ProcId -gt 4) {
+                    $Proc = Get-Process -Id $ProcId -ErrorAction SilentlyContinue
+                    if ($Proc) {
+                        Write-Host "   -> Port $Port is currently held by PID $ProcId ($($Proc.ProcessName)). Terminating lingering process..." -ForegroundColor Gray
+                        Stop-Process -Id $ProcId -Force -ErrorAction SilentlyContinue
+                        $KilledAny = $true
+                    }
+                }
+            }
+        }
+    } catch {
+        # Ignore permission/lookup warnings
+    }
+}
+if ($KilledAny) {
+    Start-Sleep -Seconds 1
+    Write-Host "-> Lingering processes cleared successfully." -ForegroundColor Green
+} else {
+    Write-Host "-> Ports are clean." -ForegroundColor Green
+}
+
 # 1. Setup local portable JDK 21 to support Firebase Emulators without system install
 Write-Host "[1/7] Ensuring local JDK 21 is available..." -ForegroundColor Yellow
 $LocalJdkDir = "$PWD\.jdk"
@@ -65,6 +97,7 @@ if (!(Get-Command firebase -ErrorAction SilentlyContinue) -and !(Test-Path "node
 # 3. Launch Firebase Emulators (Auth & Firestore)
 Write-Host "[3/7] Starting Firebase Emulators..." -ForegroundColor Yellow
 $EmulatorCommand = "`$env:JAVA_HOME='$JdkVersionDir'; `$env:PATH='$JdkVersionDir\bin;'+`$env:PATH; npx -y firebase-tools emulators:start --project rebecca-ai-gal-local"
+
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $EmulatorCommand -WorkingDirectory $PWD
 Write-Host "-> Firebase Emulators launching in a separate terminal window..." -ForegroundColor Gray
 
