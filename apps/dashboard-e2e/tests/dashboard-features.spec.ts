@@ -241,6 +241,16 @@ test.describe('Dashboard Features E2E Tests', () => {
     expect(profileName.length).toBeGreaterThan(0);
     expect(profileName).not.toBe('Unknown');
 
+    // Verify "View on X" button in User drawer triggers navigation to x.com profile
+    const userViewOnXBtn = userDrawerContent.locator('button', { hasText: 'View on X' });
+    await expect(userViewOnXBtn).toBeVisible();
+    const [userPopup] = await Promise.all([
+      page.waitForEvent('popup'),
+      userViewOnXBtn.click(),
+    ]);
+    expect(userPopup.url()).toContain('x.com/');
+    await userPopup.close();
+
     // 2. Close drawer
     const closeBtn = drawer.locator('.drawer-header .close-btn');
     await closeBtn.click();
@@ -268,6 +278,16 @@ test.describe('Dashboard Features E2E Tests', () => {
     const postDrawerContent = drawer.locator('app-post-drawer .drawer-content');
     await expect(postDrawerContent).toBeVisible({ timeout: 10000 });
     await expect(postDrawerContent.locator('.content-box')).toContainText(postSnippetPrefix);
+
+    // Verify "View on X" button in Post Details drawer triggers navigation to x.com post
+    const postViewOnXBtn = postDrawerContent.locator('button', { hasText: 'View on X' });
+    await expect(postViewOnXBtn).toBeVisible();
+    const [postPopup] = await Promise.all([
+      page.waitForEvent('popup'),
+      postViewOnXBtn.click(),
+    ]);
+    expect(postPopup.url()).toContain('x.com/i/status/');
+    await postPopup.close();
 
     // 4. Close Post Details drawer
     await closeBtn.click();
