@@ -7,12 +7,12 @@ if (!admin.apps.length) {
 }
 
 /**
- * Middleware to verify Firebase Authentication JWT tokens.
- * Protects dashboard endpoints from unauthorized access.
+ * Middleware that verifies Firebase Authentication JWT tokens.
+ * Ensures that dashboard endpoints are protected from unauthorized access by validating the authorization header.
  * 
- * @param req - Express Request object
- * @param res - Express Response object
- * @param next - Express Next function
+ * @param req - The Express Request object.
+ * @param res - The Express Response object.
+ * @param next - The Express NextFunction callback to pass control to the next middleware.
  * @returns A promise that resolves when the verification process is complete.
  */
 export const verifyAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

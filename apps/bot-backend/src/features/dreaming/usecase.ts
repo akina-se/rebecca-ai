@@ -3,22 +3,27 @@ import { getDreamingPrompt } from '@rebecca/persona';
 import { FirestoreUser } from '../../types';
 
 /**
- * Use case for executing the global dreaming process.
- * Handles background synthesis of episodic buffers into core profiles for all users,
- * as well as timeline summarization.
+ * Orchestrates the core business logic for the global dreaming process.
+ * 
+ * This use case handles the background synthesis of episodic buffers into core
+ * profiles for all registered users. It also manages the summarization of recent
+ * timeline posts to maintain up-to-date context.
  */
 export class GlobalDreamingUseCase {
     /**
-     * Creates an instance of GlobalDreamingUseCase.
-     * @param deps - The application dependencies including firestore and gemini clients.
+     * Initializes a new instance of the GlobalDreamingUseCase.
+     * 
+     * @param deps - The application dependencies, providing access to external services like Firestore and Gemini.
      */
     constructor(private deps: AppDependencies) {}
 
     /**
-     * Executes the global dreaming process.
-     * This processes the episodic buffers for all users to update their core profiles,
-     * and summarizes recent timeline posts.
-     * @returns A promise resolving to an object indicating the success status.
+     * Executes the global dreaming process across all users and timeline events.
+     * 
+     * This method retrieves all users, processes their episodic buffers to update
+     * their core profiles, and generates a new summary of recent timeline posts.
+     * 
+     * @returns A promise resolving to an object containing the execution status.
      */
     async execute(): Promise<{ status: string }> {
         const users = await this.deps.firestore.getAllUsers();
@@ -51,6 +56,16 @@ ${recentPosts.join('\n')}
         return { status: 'success' };
     }
 
+    /**
+     * Processes the dreaming synthesis for an individual user.
+     * 
+     * Consolidates the user's episodic buffer into their core profile using the Gemini model.
+     * If the episodic buffer is empty, no processing occurs.
+     * 
+     * @param userId - The unique identifier of the user to process.
+     * @param userData - The complete Firestore record associated with the user.
+     * @returns A promise that resolves when the user's dreaming process completes.
+     */
     private async processDreamingForUser(userId: string, userData: FirestoreUser): Promise<void> {
         const { episodicBuffer, coreProfile } = userData;
         if (!episodicBuffer?.length) {

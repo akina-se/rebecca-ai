@@ -5,13 +5,17 @@ import crypto from 'crypto';
 const client = new OAuth2Client();
 
 /**
- * Verifies if the request is authenticated via OIDC Token or Shared Secret fallback.
- * 
- * @param req - The Express request object.
- * @param expectedAudience - The expected audience for the OIDC token.
- * @param fallbackSecret - The fallback secret key.
- * @param secretHeaderName - The header name containing the fallback secret.
- * @returns A promise that resolves to true if authenticated, false otherwise.
+ * Authenticates server-to-server requests by verifying a Google OIDC token or a fallback shared secret.
+ *
+ * This function first attempts to validate a Bearer token as an OIDC token using the Google Auth Library.
+ * If the OIDC verification fails or the token is absent, it falls back to a timing-safe comparison of a
+ * provided shared secret against a custom HTTP header.
+ *
+ * @param req - The Express request object containing the authorization headers.
+ * @param expectedAudience - The expected audience claim for the OIDC token (typically the service URL).
+ * @param fallbackSecret - The pre-shared secret key used for fallback authentication.
+ * @param secretHeaderName - The name of the custom HTTP header that carries the fallback secret.
+ * @returns A promise that resolves to `true` if the request is successfully authenticated; otherwise `false`.
  */
 export const verifyServerToServerAuth = async (
     req: Request,

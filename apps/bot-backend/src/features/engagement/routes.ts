@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { RandomEngagementController } from './controller';
 
 /**
- * Creates and configures the Express router for random engagement operations.
+ * Constructs and configures the Express router for random engagement endpoints.
  * 
- * @param controller - The controller handling the route logic.
- * @returns A configured Express Router instance.
+ * @param controller - The controller instance responsible for handling route logic.
+ * @returns A configured Express Router instance defining the HTTP routes for engagement.
  */
 export const createRandomEngagementRouter = (controller: RandomEngagementController): Router => {
     const router = Router();

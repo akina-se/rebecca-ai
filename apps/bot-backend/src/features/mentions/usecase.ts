@@ -2,28 +2,30 @@ import config from '../../config';
 import { AppDependencies } from '../../types';
 
 /**
- * UseCase for polling new mentions and dispatching reply tasks.
- * Encapsulates the core business logic independent of external frameworks.
+ * Implements the core business logic for polling new mentions and delegating reply tasks.
+ * It coordinates fetching mentions from the platform, filtering them, and enqueuing background workers.
  */
 export class PollMentionsUseCase {
     /**
-     * Initializes the PollMentionsUseCase.
-     * @param deps Application dependencies including repositories and external APIs.
+     * Instantiates the PollMentionsUseCase with required application dependencies.
+     * 
+     * @param deps - A container holding the required repositories and external platform APIs.
      */
     constructor(
         private deps: AppDependencies
     ) {}
 
     /**
-     * Executes the polling of mentions, enqueues replies for new mentions, 
-     * and updates the last processed mention ID.
-     * @returns A promise resolving to an object containing the count of processed mentions and optionally the newest mention ID.
+     * Executes the polling workflow. Retrieves new mentions since the last recorded ID,
+     * enqueues asynchronous reply tasks, and updates the persistent high-water mark.
+     * 
+     * @returns A Promise resolving to an object containing the total count of newly processed mentions 
+     *          and the newest encountered mention ID (if any).
      */
     async execute(): Promise<{ count: number, newestId?: string }> {
         console.log("Polling mentions from X API...");
         const sinceId = await this.deps.firestore.getLastMentionId();
         
-        // Ensure we pass undefined instead of null to the platform repo
         const mentionsRes = await this.deps.xApi.getMentions(sinceId || undefined);
         
         if (!mentionsRes.data || mentionsRes.data.length === 0) {

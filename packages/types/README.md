@@ -26,3 +26,4 @@ Tracks GCS and database image processing stages.
 - `MemoryContent`: Raw content wrapper for Layer 0/1/2 summaries.
 - `RawConversationLog`: Represents Firestore document schema for interactions.
 - `SystemAlert`: Aggregated warnings displayed in the admin dashboard.
+- `PaginationMeta` & `PaginatedResponse<T>`: Standardized offset-based pagination envelopes for list APIs (e.g. users, posts).

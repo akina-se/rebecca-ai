@@ -57,10 +57,6 @@ export class AssetsUseCase {
 
     for (const asset of targetAssets) {
       try {
-        // In a real system, we'd fetch the actual image bytes from the asset URL
-        // const imageResp = await fetch(asset.url);
-        // const imageBytes = await imageResp.arrayBuffer();
-        
         const response = await ai.models.generateContent({
           model: config.gemini.model,
           contents: [

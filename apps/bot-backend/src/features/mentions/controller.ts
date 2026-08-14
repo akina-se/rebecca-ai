@@ -2,21 +2,24 @@ import { Request, Response } from 'express';
 import { PollMentionsUseCase } from './usecase';
 
 /**
- * Controller for the Mentions feature.
- * Adapts HTTP requests to UseCase invocations.
+ * Controller responsible for handling HTTP requests related to the Mentions feature.
+ * It serves as an adapter between the Express HTTP transport layer and the application's core use cases.
  */
 export class MentionsController {
     /**
-     * Initializes the MentionsController.
-     * @param useCase The use case responsible for polling mentions.
+     * Instantiates the MentionsController.
+     * 
+     * @param useCase - The primary use case for polling and processing mentions.
      */
     constructor(private useCase: PollMentionsUseCase) {}
 
     /**
-     * Handles the HTTP request to poll for new mentions.
-     * @param req The Express Request object.
-     * @param res The Express Response object.
-     * @returns A Promise that resolves when the response is sent.
+     * Handles the HTTP request to poll for new mentions from the configured platform.
+     * Invokes the polling use case and responds with the processing results.
+     * 
+     * @param req - The Express Request object.
+     * @param res - The Express Response object.
+     * @returns A Promise that resolves when the HTTP response is successfully sent.
      */
     pollMentions = async (req: Request, res: Response): Promise<void> => {
         try {

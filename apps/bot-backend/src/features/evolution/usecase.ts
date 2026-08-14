@@ -1,6 +1,9 @@
 import { AppDependencies } from '../../types';
 import config from '../../config';
 
+/**
+ * Represents the result of a global evolution execution.
+ */
 export interface EvolutionResult {
     status: 'skipped' | 'failed' | 'success' | 'rejected';
     reason?: string;
@@ -9,22 +12,27 @@ export interface EvolutionResult {
 }
 
 /**
- * Use case for running the global evolution batch process.
- * It periodically updates the AI's persona based on recent interactions.
+ * Use case responsible for orchestrating the global evolution batch process.
+ * It periodically updates the AI's persona based on recent user interactions by fetching logs,
+ * generating candidate prompts, and auditing them for safety.
  */
 export class GlobalEvolutionUseCase {
     /**
-     * Creates an instance of GlobalEvolutionUseCase.
-     * @param deps - The application dependencies required to execute evolution.
+     * Initializes a new instance of the GlobalEvolutionUseCase.
+     * 
+     * @param deps - The application dependencies required to execute the evolution process (e.g., Firestore, Gemini).
      */
     constructor(private deps: AppDependencies) {}
 
     /**
      * Executes the global evolution batch process.
-     * Fetches recent conversation logs, generates an evolution prompt,
-     * audits the candidate prompt, and autonomously decides whether to adopt it.
      * 
-     * @returns A promise resolving to an object containing the status and result of the evolution batch.
+     * This method fetches recent conversation logs, generates an evolution prompt based on those logs,
+     * audits the generated candidate prompt for safety and alignment, and autonomously decides 
+     * whether to adopt and save it.
+     * 
+     * @returns A promise that resolves to an `EvolutionResult` indicating the final status and details of the batch process.
+     * @throws Will throw an error if the underlying operations (e.g., fetching logs or saving the prompt) fail unexpectedly.
      */
     async execute(): Promise<EvolutionResult> {
     console.log("Starting Global Evolution Batch...");

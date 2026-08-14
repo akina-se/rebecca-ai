@@ -5,6 +5,10 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { Firestore } from '@google-cloud/firestore';
 
+/**
+ * Application entry point for the Dashboard Backend (BFF).
+ * Initializes and wires up all Express routes, middleware, and core services like Firestore.
+ */
 // Modules
 import { initializeAuthModule } from './features/auth';
 import { initializeCopilotModule } from './features/copilot';
@@ -41,19 +45,20 @@ const firestore = new Firestore({
 // Initialize Features (Modules)
 const authRouter = initializeAuthModule();
 const copilotRouter = initializeCopilotModule();
-const timelineRouter = initializeTimelineModule(firestore);
+const { dashboardRouter: timelineRouter, postsRouter } = initializeTimelineModule(firestore);
 const usersRouter = initializeUsersModule(firestore);
 const systemMemoryRouter = initializeSystemMemoryModule(firestore);
 const assetsRouter = initializeAssetsModule(firestore);
 
 // Mount Routes
-app.use('/api/v1/dashboard/auth', authRouter);
-app.use('/api/v1/dashboard/copilot', copilotRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/copilot', copilotRouter);
 // Note: Timeline handles /metrics and /posts
-app.use('/api/v1/dashboard', timelineRouter);
-app.use('/api/v1/dashboard/users', usersRouter);
-app.use('/api/v1/dashboard/memory', systemMemoryRouter);
-app.use('/api/v1/dashboard/images', assetsRouter); // Matches HTML prototype / API Spec
+app.use('/api/v1', timelineRouter);
+app.use('/api/v1/posts', postsRouter);
+app.use('/api/v1/users', usersRouter);
+app.use('/api/v1/memory', systemMemoryRouter);
+app.use('/api/v1/images', assetsRouter);
 
 // Healthcheck endpoint
 app.get('/health', (req, res) => {

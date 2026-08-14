@@ -2,22 +2,26 @@ import { Request, Response } from 'express';
 import { GlobalDreamingUseCase } from './usecase';
 
 /**
- * Controller for handling global dreaming HTTP requests.
- * Responsible for triggering the dreaming process which consolidates memories
- * and updates user profiles based on episodic buffers.
+ * Handles incoming HTTP requests for the global dreaming process.
+ * 
+ * The global dreaming process is a background synthesis task that consolidates
+ * short-term memory (episodic buffers) into long-term memory (core profiles)
+ * for all users in the system.
  */
 export class GlobalDreamingController {
     /**
-     * Creates an instance of GlobalDreamingController.
-     * @param useCase - The use case that orchestrates the global dreaming logic.
+     * Initializes a new instance of the GlobalDreamingController.
+     * 
+     * @param useCase - The use case responsible for orchestrating the dreaming logic.
      */
     constructor(private useCase: GlobalDreamingUseCase) {}
 
     /**
-     * Handles the incoming request to execute the dreaming process.
-     * @param req - The Express request object.
-     * @param res - The Express response object used to return the execution status.
-     * @returns A promise that resolves when the response is sent.
+     * Handles the HTTP request to execute the global dreaming process.
+     * 
+     * @param req - The Express HTTP request object.
+     * @param res - The Express HTTP response object used to return the execution status.
+     * @returns A promise that resolves when the response has been sent to the client.
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {

@@ -3,10 +3,17 @@ import { getBasePrompt } from '@rebecca/persona';
 
 
 
+/**
+ * Interface representing the result of a proactive news execution.
+ */
 export interface NewsResult {
+    /** The execution status of the news job. */
     status: 'skipped' | 'success' | 'failed';
+    /** A descriptive reason if the status is skipped or failed. */
     reason?: string;
+    /** The content of the tweet that was posted, if successful. */
     post?: string;
+    /** Indicates whether media (e.g., an image) was attached to the post. */
     attachedMedia?: boolean;
 }
 
@@ -14,8 +21,6 @@ export interface NewsResult {
  * Executes a batch job to proactively post a news-related tweet.
  * It fetches headlines, generates a post, infers a relevant image,
  * and posts it to the configured X (Twitter) account.
- * 
- * @returns A promise resolving to an object indicating the status of the operation.
  */
 export class ProactiveNewsUseCase {
     /**

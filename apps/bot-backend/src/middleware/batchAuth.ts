@@ -3,9 +3,16 @@ import config from '../config';
 import { verifyServerToServerAuth } from './authUtils';
 
 /**
- * Middleware to authenticate requests to /batch endpoints.
- * It verifies the OIDC token sent by Google Cloud Scheduler.
- * If running locally or without Cloud Scheduler, a fallback shared secret (BATCH_SECRET_KEY) can be used.
+ * Express middleware to authenticate requests to batch processing endpoints.
+ *
+ * Validates the incoming request by checking for a valid Google OIDC token (typically
+ * sent by Google Cloud Scheduler). If the token is missing or invalid, it falls back to checking
+ * a shared secret to allow for local development or alternative invocation methods.
+ *
+ * @param req - The Express request object.
+ * @param res - The Express response object used to send a 401 Unauthorized status on failure.
+ * @param next - The next middleware function in the Express pipeline.
+ * @returns A promise that resolves when the middleware completes execution.
  */
 export const batchAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {

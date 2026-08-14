@@ -5,29 +5,24 @@ import { Request, Response } from 'express';
  */
 export class AuthController {
   /**
-   * Retrieves the current authenticated user's details.
-   * Fallback to a mock email if IAP header is missing (for local development).
+   * Retrieves the currently authenticated user's details.
+   * 
+   * Parses the Identity-Aware Proxy (IAP) headers to determine the user's email.
    * 
    * @param req - The Express Request object.
    * @param res - The Express Response object.
-   * @returns void
    */
   public getMe(req: Request, res: Response): void {
-    // IAP normally injects 'x-goog-authenticated-user-email' header
-    // e.g., 'accounts.google.com:admin@example.com'
     const iapEmailHeader = req.headers['x-goog-authenticated-user-email'] as string | undefined;
     
-    // For local development fallback, we mock an email if the header is missing
     let email = 'admin@example.com'; 
     if (iapEmailHeader) {
-      // Typically formatted as: accounts.google.com:email@example.com
       const parts = iapEmailHeader.split(':');
       email = parts.length > 1 ? parts[1] : iapEmailHeader;
     }
 
     res.status(200).json({
       email,
-      // The frontend will likely derive initials or fetch Gravatar from this email
     });
   }
 }

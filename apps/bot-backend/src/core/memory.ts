@@ -16,9 +16,11 @@ const getWorkingMemory = (episodicBuffer: ConversationLogEntry[] | undefined, li
 /**
  * Appends user and model interactions to the episodic buffer.
  * 
+ * @param deps - The application dependencies including the firestore service.
  * @param userId - The ID of the user.
  * @param userText - The text input from the user.
  * @param modelText - The text response from the model.
+ * @returns A promise that resolves when both interactions have been successfully saved.
  */
 const saveInteraction = async (deps: AppDependencies, userId: string, userText: string, modelText: string): Promise<void> => {
     await deps.firestore.appendEpisodicBuffer(userId, { role: 'user', content: userText, timestamp: new Date().toISOString() });

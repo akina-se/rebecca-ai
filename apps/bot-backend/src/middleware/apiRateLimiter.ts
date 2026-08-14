@@ -2,8 +2,10 @@ import rateLimit from 'express-rate-limit';
 import config from '../config';
 
 /**
- * Rate limiting for public endpoints (e.g., static files, potential future webhooks).
- * Protects against basic DDoS and scraping.
+ * Rate limiter middleware for public-facing endpoints (e.g., static files, webhooks).
+ * 
+ * Provides foundational protection against basic DDoS attacks, brute-force attempts, and scraping
+ * by restricting the number of requests a single IP address can make within a specified window.
  */
 export const publicRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -14,8 +16,10 @@ export const publicRateLimiter = rateLimit({
 });
 
 /**
- * Rate limiting for batch endpoints triggered by Cloud Scheduler.
- * We keep this relatively low since batches run infrequently (e.g., once an hour or once a day).
+ * Rate limiter middleware for batch processing endpoints triggered by Cloud Scheduler.
+ * 
+ * Configured with a relatively low threshold since batch operations typically run infrequently
+ * (e.g., hourly or daily). This ensures that misconfigured crons or external abuse cannot spam batch operations.
  */
 export const batchRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -26,16 +30,15 @@ export const batchRateLimiter = rateLimit({
 });
 
 /**
- * Rate limiting for Cloud Tasks worker endpoints.
- * 
- * Cloud Tasks inherently manages the dispatch rate via queue configurations (maxDispatchesPerSecond).
- * Applying strict IP-based rate limits here can lead to a "retry storm" where Cloud Tasks 
- * continually retries blocked requests, overwhelming the network layer.
- * Furthermore, worker traffic usually comes from a small pool of Google internal IPs, 
- * so IP-based limiting is likely to cause false positives.
- * 
- * Therefore, we set an exceptionally high fallback limit acting as a circuit breaker 
- * for catastrophic infinite loops, rather than a strict rate limiter.
+ * Rate limiter middleware for Cloud Tasks worker endpoints.
+ *
+ * Cloud Tasks inherently manages the dispatch rate via queue configurations (e.g., `maxDispatchesPerSecond`).
+ * Applying strict IP-based rate limits here can lead to a "retry storm" where Cloud Tasks continually retries 
+ * blocked requests, overwhelming the network layer. Furthermore, worker traffic usually originates from a small 
+ * pool of internal Google IPs, making strict IP-based limiting prone to false positives.
+ *
+ * Therefore, this limiter is configured with an exceptionally high threshold, acting primarily as a circuit 
+ * breaker to prevent catastrophic infinite loops rather than as a strict traffic shaper.
  */
 export const workerRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute

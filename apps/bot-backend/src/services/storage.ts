@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Google Cloud Storage service implementation.
+ * Manages the uploading and downloading of image assets using Application Default Credentials (ADC).
+ */
+
 import { Storage } from '@google-cloud/storage';
 import config from '../config';
 
@@ -19,10 +24,12 @@ const bucket = storage.bucket(bucketName);
 /**
  * Uploads an image buffer to Google Cloud Storage privately.
  * 
- * @param hash - SHA-256 hash to use as the filename.
- * @param buffer - Image data buffer.
- * @param mimeType - MIME type of the image.
- * @returns A promise that resolves to the internal gs:// URI of the uploaded file.
+ * Generates a file path based on the provided hash and stores the image with the specified MIME type.
+ * 
+ * @param hash - A unique SHA-256 hash used as the destination filename.
+ * @param buffer - The binary image data to upload.
+ * @param mimeType - The MIME type associated with the image data (e.g., 'image/jpeg').
+ * @returns A promise resolving to the internal Google Cloud Storage URI (`gs://...`).
  */
 const uploadImage = async (hash: string, buffer: Buffer, mimeType: string): Promise<string> => {
     const filePath = `images/${hash}`;
@@ -34,10 +41,10 @@ const uploadImage = async (hash: string, buffer: Buffer, mimeType: string): Prom
 };
 
 /**
- * Downloads an image from a gs:// URI privately.
+ * Downloads an image from a private Google Cloud Storage bucket.
  * 
- * @param gsUri - The internal gs:// URI to download from.
- * @returns A promise that resolves to the downloaded image buffer.
+ * @param gsUri - The internal Google Cloud Storage URI of the file to download (`gs://...`).
+ * @returns A promise resolving to the downloaded image as a binary buffer.
  */
 const downloadImage = async (gsUri: string): Promise<Buffer> => {
     const filePath = gsUri.replace(`gs://${bucketName}/`, '');

@@ -1,8 +1,9 @@
 import { UsersRepository } from './repository';
-import { UserDetail, UserStatus } from '@rebecca/types';
+import { UserDetail, UserStatus, PaginationMeta } from '@rebecca/types';
 
 /**
- * Use case class for orchestrating user management operations.
+ * Contains business logic and orchestrates operations related to user management.
+ * Coordinates with the UsersRepository for data access.
  */
 export class UsersUseCase {
   /**
@@ -17,7 +18,7 @@ export class UsersUseCase {
    * 
    * @returns A promise that resolves to an array of user details.
    */
-  async getAllUsers(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<UserDetail[]> {
+  async getAllUsers(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: UserDetail[]; meta: PaginationMeta }> {
     return this.repo.getAll(params);
   }
 

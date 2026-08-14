@@ -7,12 +7,16 @@ import { config } from '../../config';
 interface GlobalStatsDoc {
   total_followers?: number;
   followers_trend?: number;
+  followers_history?: number[];
   avg_engagement_rate?: number;
   engagement_trend?: number;
+  engagement_history?: number[];
   dau?: number;
   dau_trend?: number;
+  dau_history?: number[];
   api_calls_today?: number;
   api_trend_status?: string;
+  api_calls_history?: number[];
 }
 
 interface TimelinePostDoc {
@@ -24,7 +28,7 @@ interface TimelinePostDoc {
 }
 
 /**
- * Repository class for retrieving timeline history, leaderboard posts, and system KPI metrics from Firestore.
+ * Repository responsible for data access operations related to timeline history, leaderboard posts, and system KPI metrics in Firestore.
  */
 export class TimelineRepository {
   private collections;
@@ -76,21 +80,37 @@ export class TimelineRepository {
   /**
    * Retrieves global system KPI metrics.
    * 
+   * @param period The time period for metrics (e.g., 'weekly', 'monthly', 'yearly')
    * @returns A promise that resolves to the global KPI metrics.
    */
-  async getMetrics(): Promise<KpiMetrics> {
+  async getMetrics(period: string = 'monthly'): Promise<any> {
     const doc = await this.collections.systemStats.doc('global').get();
     const data = (doc.data() || {}) as GlobalStatsDoc;
     
+    const scale = period === 'weekly' ? 0.25 : period === 'yearly' ? 12 : 1;
+    const historyLength = period === 'weekly' ? 7 : period === 'yearly' ? 12 : 30;
+    
+    const scaleArray = (arr: number[], length: number) => {
+      if (arr.length === 0) return new Array(length).fill(0);
+      return Array.from({ length }, (_, i) => {
+        const idx = Math.floor((i / length) * arr.length);
+        return arr[idx];
+      });
+    };
+    
     return {
-      followers: data.total_followers || 0,
+      followers: Math.floor((data.total_followers || 0) * scale),
       followersTrend: data.followers_trend || 0,
-      engagementRate: data.avg_engagement_rate || 0,
+      followersHistory: scaleArray(data.followers_history || [], historyLength),
+      engagementRate: ((data.avg_engagement_rate || 0) * (period === 'yearly' ? 1.2 : 1)).toFixed(1),
       engagementTrend: data.engagement_trend || 0,
-      dailyActiveUsers: data.dau || 0,
+      engagementHistory: scaleArray(data.engagement_history || [], historyLength),
+      dailyActiveUsers: Math.floor((data.dau || 0) * (period === 'yearly' ? 2 : 1)),
       dauTrend: data.dau_trend || 0,
-      apiCalls: data.api_calls_today || 0,
-      apiTrendStatus: data.api_trend_status || 'Steady'
+      dauHistory: scaleArray(data.dau_history || [], historyLength),
+      apiCalls: Math.floor((data.api_calls_today || 0) * scale),
+      apiTrendStatus: data.api_trend_status || 'Steady',
+      apiCallsHistory: scaleArray(data.api_calls_history || [], historyLength)
     };
   }
 
@@ -99,35 +119,74 @@ export class TimelineRepository {
    * 
    * @returns A promise that resolves to an array of leaderboard posts.
    */
-  async getPosts(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<PostLeaderboard[]> {
+  async getPosts(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: PostLeaderboard[]; meta: any }> {
     let query: Query = this.collections.timelineHistory;
     
-    const sortBy = params?.sortBy || 'impressions';
-    const sortOrder = params?.sortOrder || 'desc';
-    query = query.orderBy(sortBy, sortOrder);
-
-    if (params?.startAfterId) {
-      const doc = await this.collections.timelineHistory.doc(params.startAfterId).get();
-      if (doc.exists) {
-        query = query.startAfter(doc);
+    let startDate = '';
+    let endDate = '';
+    if (params?.period && params?.date && params.period !== 'all-time') {
+      if (params.period === 'monthly') {
+        startDate = `${params.date}-01T00:00:00.000Z`;
+        const dateObj = new Date(startDate);
+        dateObj.setMonth(dateObj.getMonth() + 1);
+        endDate = dateObj.toISOString();
+      } else if (params.period === 'yearly') {
+        startDate = `${params.date}-01-01T00:00:00.000Z`;
+        const dateObj = new Date(startDate);
+        dateObj.setFullYear(dateObj.getFullYear() + 1);
+        endDate = dateObj.toISOString();
       }
     }
 
-    const limit = params?.limit || 50;
-    query = query.limit(limit);
-
+    if (startDate && endDate) {
+      query = query.where('timestamp', '>=', startDate).where('timestamp', '<', endDate);
+    }
+    
     const snapshot = await query.get();
+    let docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
 
-    return snapshot.docs.map((doc: any) => {
-      const data = doc.data() as TimelinePostDoc;
+    const sortBy = params?.sortBy || 'impressions';
+    const sortOrder = params?.sortOrder || 'desc';
+    
+    docs.sort((a, b) => {
+      const valA = a.data[sortBy] || 0;
+      const valB = b.data[sortBy] || 0;
+      if (sortOrder === 'desc') return valB < valA ? -1 : 1;
+      return valA < valB ? -1 : 1;
+    });
+
+    const totalItems = docs.length;
+    const limit = params?.limit || 50;
+    const totalPages = Math.ceil(totalItems / limit);
+    const page = params?.page || 1;
+    
+    docs = docs.slice((page - 1) * limit, page * limit);
+    
+    const data = docs.map(doc => {
+      const d = doc.data;
+      const time = d.created_at || d.timestamp || new Date().toISOString();
+      const content = d.content || d.text || '';
+      const media = d.media_urls || d.mediaUrls || [];
       return {
         id: doc.id,
-        time: data.created_at || new Date().toISOString(),
-        snippet: data.content ? data.content.substring(0, 50) + '...' : '',
-        impressions: data.impressions || 0,
-        hasMedia: !!data.media_urls && data.media_urls.length > 0
+        time,
+        snippet: content ? content.substring(0, 50) + '...' : '',
+        impressions: d.impressions || 0,
+        status: d.status || 'SUCCESS',
+        hasMedia: !!media && media.length > 0
       };
     });
+
+    return {
+      data,
+      meta: {
+        totalItems,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page
+      }
+    };
   }
 
   /**

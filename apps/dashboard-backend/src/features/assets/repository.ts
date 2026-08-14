@@ -28,7 +28,6 @@ export class AssetsRepository {
     const snapshot = await this.collections.images.get();
     
     if (snapshot.empty) {
-      // Return mock data for UI testing if DB is empty
       return [
         {
           id: '1',
@@ -70,8 +69,6 @@ export class AssetsRepository {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.caption !== undefined) dbUpdates.caption = updates.caption;
     if (updates.usedCount !== undefined) dbUpdates.useCount = updates.usedCount;
-    
-    // We do not store "status" explicitly in ImageDoc, but we could if we wanted.
     
     await this.collections.images.doc(id).set(dbUpdates, { merge: true });
   }

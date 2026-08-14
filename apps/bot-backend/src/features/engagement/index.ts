@@ -5,10 +5,11 @@ import { AppDependencies } from '../../types';
 import { createRandomEngagementRouter } from './routes';
 
 /**
- * Bootstraps the random engagement module by assembling its use case, controller, and router.
+ * Initializes and configures the random engagement module.
+ * Bootstraps the necessary use case, controller, and router instances to expose the engagement API endpoints.
  * 
- * @param deps - The application dependencies required to instantiate the use case.
- * @returns A configured Express Router for the engagement module.
+ * @param deps - The application dependencies required to instantiate the module components.
+ * @returns A fully configured Express Router instance for the random engagement module.
  */
 export const createRandomEngagementModule = (deps: AppDependencies): Router => {
     const useCase = new RandomEngagementUseCase(deps);

@@ -22,6 +22,12 @@ const firestore = new Firestore({
   projectId: 'rebecca-ai-gal-local',
 });
 
+/**
+ * Seeds the local Firebase Authentication emulator with a dummy admin user.
+ * Deletes the user first if they already exist to avoid duplication errors.
+ * 
+ * @returns A promise that resolves when the auth seeding is complete.
+ */
 async function seedAuth() {
   console.log('Seeding Firebase Auth Emulator...');
   try {
@@ -45,6 +51,12 @@ async function seedAuth() {
   }
 }
 
+/**
+ * Seeds the local Firestore emulator with sample data for users, timeline posts, conversation logs, assets, and system stats.
+ * This populates the dashboard for local development.
+ * 
+ * @returns A promise that resolves when the Firestore seeding is complete.
+ */
 async function seedFirestore() {
   console.log('Seeding Firestore Emulator...');
   const collections = {
@@ -68,6 +80,14 @@ async function seedFirestore() {
     'otaku_prime', 'shibuya_stroller', 'ramen_lover_jp', 'game_developer', 'vr_world_explorer',
     'coffee_and_code', 'shinjuku_night', 'anime_music_fan', 'figure_collector', 'cosplay_maker'
   ];
+  const mockNames = [
+    "Cloud Surfer", "Anime Music Fan", "Tokyo Traveler", "Code Ninja", "Cyber Pilot",
+    "Nerd Level Max", "AI Enthusiast", "Manga Collector", "Rebecca Oshi", "Gundam Fan 88",
+    "Neon Rider", "Digital Artist", "Pixel Pioneer", "Retro Gamer", "Synth Wave",
+    "Future Vision", "Data Hacker", "Cloud Surfer", "Robot Builder", "Quantum Leap",
+    "Otaku Prime", "Shibuya Stroller", "Ramen Lover JP", "Game Developer", "VR World Explorer",
+    "Coffee And Code", "Shinjuku Night", "Anime Music Fan", "Figure Collector", "Cosplay Maker"
+  ];
   for (let i = 0; i < userHandles.length; i++) {
     const handle = userHandles[i];
     const daysAgo = Math.floor(Math.random() * 300);
@@ -76,7 +96,7 @@ async function seedFirestore() {
     
     mockUsers.push({
       id: handle,
-      name: `@${handle}`,
+      name: mockNames[i] || `@${handle}`,
       handle: `@${handle}`,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${handle}`,
       coreProfile: JSON.stringify({
@@ -109,9 +129,9 @@ async function seedFirestore() {
   let totalLogsCount = 0;
   for (let i = 0; i < mockUsers.length; i++) {
     const u = mockUsers[i];
-    // Generate 15 conversation log entries for each user over the past 30 days
-    for (let j = 0; j < 15; j++) {
-      const logTime = new Date(Date.now() - (j * 2 * 86400000 + i * 3600000));
+    // Generate 30 conversation log entries for each user over the past 365 days
+    for (let j = 0; j < 30; j++) {
+      const logTime = new Date(Date.now() - (j * 12 * 86400000 + i * 3600000));
       const topic = sampleTopics[j % sampleTopics.length];
       await collections.conversationLogs.add({
         userId: u.id,
@@ -123,7 +143,7 @@ async function seedFirestore() {
       totalLogsCount++;
     }
   }
-  console.log(`Seeded ${totalLogsCount} conversation logs for infinite scrolling.`);
+  console.log(`Seeded ${totalLogsCount} conversation logs for infinite scrolling and dynamic aggregations.`);
 
   // 3. Seed timeline posts (spanning 365 days across 2025 and 2026)
   const posts = [];
@@ -157,13 +177,14 @@ async function seedFirestore() {
     posts.push({
       id: `p${i}`,
       text: `${topic} (No. ${i})`,
+      content: `${topic} (No. ${i})`,
       timestamp: postDate.toISOString(),
       expireAt: new Date(postDate.getTime() + 30 * 24 * 3600000).toISOString(),
       status: 'SUCCESS',
-      impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500),
-      likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80),
-      retweets: Math.floor(20 + (120 - i) * 2),
-      replies: Math.floor(8 + (120 - i) * 1),
+      impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500 + Math.random() * 1000) + 1,
+      likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
+      retweets: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),
+      replies: Math.floor(8 + (120 - i) * 1 + Math.random() * 5),
       mediaUrls: i % 4 === 0 ? [`https://picsum.photos/seed/post${i}/600/400`] : [],
       authorId: author.id,
       authorName: author.name,
@@ -241,6 +262,11 @@ async function seedFirestore() {
   console.log('Firestore seeding completed successfully.');
 }
 
+/**
+ * Main entry point for the seed script. Orchestrates the seeding of Auth and Firestore.
+ * 
+ * @returns A promise that resolves when all seed operations have finished.
+ */
 async function run() {
   await seedAuth();
   await seedFirestore();

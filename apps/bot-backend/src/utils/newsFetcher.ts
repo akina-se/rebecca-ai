@@ -1,8 +1,10 @@
 /**
  * Fetches recent news headlines from Yahoo News RSS feeds.
- * Randomly selects a category and retrieves up to 5 headlines.
- * 
- * @returns A promise resolving to an array of headline strings.
+ *
+ * This utility randomly selects a news category (e.g., domestic, entertainment, sports)
+ * and retrieves the top headlines, excluding generic portal titles.
+ *
+ * @returns A Promise resolving to an array of up to 5 headline strings. Returns an empty array if the fetch fails.
  */
 export const fetchYahooNewsHeadlines = async (): Promise<string[]> => {
     try {

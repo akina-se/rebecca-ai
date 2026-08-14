@@ -1,3 +1,9 @@
+/**
+ * Application Entry Point.
+ * 
+ * Initializes the Express application, wires dependencies, configures middlewares,
+ * mounts routers for batch and worker operations, and starts the HTTP server.
+ */
 import express from 'express';
 import config from './config';
 import * as firestoreService from './services/firestore';

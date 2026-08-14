@@ -36,6 +36,7 @@ const getJSTMinuteString = () => {
  * Checks if a user is within acceptable rate limits and increments their usage counters if allowed.
  * Uses atomic transactions to prevent race conditions and efficiently maintain dynamic DAU-based limits.
  * 
+ * @param deps - The application dependencies including the firestore service.
  * @param userId - The ID of the user.
  * @returns A promise resolving to an object indicating if the request is allowed and an optional reason if denied.
  */

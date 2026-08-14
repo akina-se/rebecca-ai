@@ -2,10 +2,12 @@ import { Router } from 'express';
 import { GlobalDreamingController } from './controller';
 
 /**
- * Creates and configures the Express router for global dreaming operations.
+ * Configures the HTTP routing for the global dreaming module.
  * 
- * @param controller - The controller that will handle the route requests.
- * @returns A configured Express Router instance.
+ * Maps incoming HTTP endpoints to their corresponding controller actions.
+ * 
+ * @param controller - The instantiated GlobalDreamingController to handle matched routes.
+ * @returns An Express Router configured with the dreaming endpoints.
  */
 export const createGlobalDreamingRouter = (controller: GlobalDreamingController): Router => {
     const router = Router();

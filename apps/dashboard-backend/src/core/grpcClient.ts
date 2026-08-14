@@ -36,9 +36,10 @@ const client = new tweetsPackage.TweetService(
 );
 
 /**
- * Call the bot-backend gRPC server to delete a tweet by its ID.
+ * Executes a gRPC call to the bot-backend service to delete a specified tweet on the X platform.
  * 
- * @param tweetId The ID of the tweet on X.
+ * @param tweetId - The unique identifier of the tweet to be deleted.
+ * @returns A promise that resolves to an object indicating the success status and a descriptive message.
  */
 export function deleteTweetViaGrpc(tweetId: string): Promise<{ success: boolean; message: string }> {
   return new Promise((resolve, reject) => {

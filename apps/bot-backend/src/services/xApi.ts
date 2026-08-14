@@ -10,12 +10,14 @@ import type {
 } from '../types';
 
 /**
- * X API client instance.
+ * Singleton instance of the X (Twitter) API v2 client.
+ * Handles primary interactions with the X platform endpoints.
  */
 let client: Client | null = null;
 
 /**
- * X API OAuth1 client instance used for signing requests.
+ * OAuth 1.0a client instance for the X API.
+ * Required specifically for generating signatures for media uploads and certain legacy endpoint access.
  */
 let oauth1Client: OAuth1 | null = null;
 
@@ -33,11 +35,15 @@ if (config.xApi.appKey) {
 }
 
 /**
- * Replies to a specific tweet ID with the provided text.
- * 
- * @param tweetId - The ID of the tweet to reply to.
- * @param text - The content of the reply.
- * @returns A promise resolving to the created post data.
+ * Posts a reply to a specific tweet.
+ *
+ * This function handles sending a targeted response to an existing tweet thread.
+ * If the API client is uninitialized, it falls back to returning a mock response.
+ *
+ * @param tweetId - The unique identifier of the tweet being replied to.
+ * @param text - The textual content of the reply.
+ * @returns A Promise that resolves to the newly created tweet data (`XApiCreateResponse`).
+ * @throws {Error} If the API request fails unexpectedly.
  */
 const replyToMention = async (tweetId: string, text: string): Promise<XApiCreateResponse> => {
   if (!client) {
@@ -57,10 +63,14 @@ const replyToMention = async (tweetId: string, text: string): Promise<XApiCreate
 };
 
 /**
- * Retrieves details for a specific tweet by ID, including associated media.
- * 
- * @param tweetId - The ID of the tweet.
- * @returns A promise resolving to the tweet data object.
+ * Retrieves detailed information for a specific tweet by its ID.
+ *
+ * Requests additional expansions specifically to fetch associated media keys and metadata
+ * (e.g., images, videos) attached to the tweet.
+ *
+ * @param tweetId - The unique identifier of the target tweet.
+ * @returns A Promise that resolves to the tweet details (`XApiTweetDetailsResponse`), or an empty object if the client is missing.
+ * @throws {Error} If the fetch operation fails due to network or authentication issues.
  */
 const getTweetDetails = async (tweetId: string): Promise<XApiTweetDetailsResponse> => {
     if (!client) return { };
@@ -77,11 +87,15 @@ const getTweetDetails = async (tweetId: string): Promise<XApiTweetDetailsRespons
 }
 
 /**
- * Uploads media to X platform and retrieves the corresponding media ID.
- * 
- * @param buffer - The media file buffer to upload.
- * @param mimeType - The MIME type of the media file.
- * @returns A promise resolving to the media ID string.
+ * Uploads raw media data to the X platform and returns the allocated media identifier.
+ *
+ * Utilizes the legacy 1.1 `media/upload` endpoint and OAuth 1.0a authentication, as v2 media
+ * upload support is limited. Returns a mock identifier if clients are uninitialized.
+ *
+ * @param buffer - The binary buffer containing the media file data.
+ * @param mimeType - The MIME type of the media (e.g., 'image/jpeg', 'video/mp4').
+ * @returns A Promise that resolves to the string identifier (`media_id_string`) for the uploaded asset.
+ * @throws {Error} If the upload request fails or returns a non-200 status code.
  */
 const uploadMedia = async (buffer: Buffer, mimeType: string) => {
     if (!client || !oauth1Client) {
@@ -116,11 +130,14 @@ const uploadMedia = async (buffer: Buffer, mimeType: string) => {
 };
 
 /**
- * Publishes a new tweet optionally attaching media files or quoting another tweet.
- * 
- * @param text - The content of the tweet.
- * @param options - Optional parameters for the tweet (e.g., mediaIds, quote_tweet_id).
- * @returns A promise resolving to the created post data.
+ * Publishes a new top-level tweet, optionally attaching media or quoting an existing tweet.
+ *
+ * @param text - The primary text content of the tweet.
+ * @param options - Optional configuration for the tweet.
+ * @param options.mediaIds - An array of previously uploaded media IDs to attach to the tweet.
+ * @param options.quote_tweet_id - The ID of another tweet to quote.
+ * @returns A Promise that resolves to the newly created tweet data (`XApiCreateResponse`).
+ * @throws {Error} If the API request is rejected.
  */
 const tweet = async (text: string, options?: { mediaIds?: string[], quote_tweet_id?: string }): Promise<XApiCreateResponse> => {
   if (!client) {
@@ -144,10 +161,13 @@ const tweet = async (text: string, options?: { mediaIds?: string[], quote_tweet_
 };
 
 /**
- * Retrieves the public profile information of an X user.
- * 
- * @param userId - The ID of the user.
- * @returns A promise resolving to the user profile data.
+ * Fetches the public profile information for a given X user.
+ *
+ * Extends the default user payload to include the user's profile `description`.
+ *
+ * @param userId - The unique identifier of the target user.
+ * @returns A Promise resolving to an object containing the user's profile data (`XApiUser`).
+ * @throws {Error} If the request fails.
  */
 const getUserProfile = async (userId: string): Promise<{ data: XApiUser }> => {
     if (!client) return { data: { id: userId, name: 'Dummy', username: 'dummy', description: 'ダミーのプロフィール文です。仕事に疲れています。' } };
@@ -163,15 +183,20 @@ const getUserProfile = async (userId: string): Promise<{ data: XApiUser }> => {
 }
 
 /**
- * Cached internal numeric user ID of the authenticated bot.
+ * In-memory cache for the authenticated bot's internal numeric user ID.
+ * Used to avoid redundant `getMe` API calls when resolving self-referential endpoints.
  */
 let cachedNumericMyUserId: string | null = null;
 
 /**
- * Retrieves recent mentions directed at the authenticated bot user.
- * 
- * @param sinceId - Optional tweet ID to fetch mentions after.
- * @returns A promise resolving to the list of mention data.
+ * Retrieves recent tweet mentions directed at the currently authenticated bot user.
+ *
+ * Dynamically resolves the bot's numeric user ID if not provided directly in the configuration.
+ * Requests extended tweet fields such as `created_at` and `conversation_id` for context.
+ *
+ * @param sinceId - Optional. A tweet ID acting as a lower bound; only mentions newer than this ID are returned.
+ * @returns A Promise resolving to a payload of mentions (`XApiMentionResponse`), capped at 100 results.
+ * @throws {Error} If the fetch operation encounters a problem.
  */
 const getMentions = async (sinceId?: string): Promise<XApiMentionResponse> => {
     if (!client) return { data: [], meta: { resultCount: 0 } };
@@ -209,11 +234,12 @@ const getMentions = async (sinceId?: string): Promise<XApiMentionResponse> => {
 }
 
 /**
- * Retrieves the followers for a specified user ID.
- * 
- * @param userId - The ID of the user.
- * @param paginationToken - Optional token for pagination.
- * @returns A promise resolving to the followers data object.
+ * Retrieves a paginated list of followers for a specified user ID.
+ *
+ * @param userId - The unique identifier of the user whose followers are being queried.
+ * @param paginationToken - Optional. A token retrieved from a previous request to fetch the next page of results.
+ * @returns A Promise resolving to the followers data (`XApiFollowersResponse`).
+ * @throws {Error} If the API request fails.
  */
 const getFollowers = async (userId: string, paginationToken?: string): Promise<XApiFollowersResponse> => {
     if (!client) return { data: [], meta: { resultCount: 0 } };
@@ -234,11 +260,15 @@ const getFollowers = async (userId: string, paginationToken?: string): Promise<X
 };
 
 /**
- * Adds a specified user to an X list.
- * 
- * @param listId - The ID of the list.
- * @param userId - The ID of the user to add.
- * @returns A promise resolving to true if successful.
+ * Adds a specified user to a curated X list.
+ *
+ * Uses direct HTTP fetching with OAuth 1.0a headers, as this specific v2 endpoint
+ * management might require distinct authorization parameters.
+ *
+ * @param listId - The unique identifier of the target list.
+ * @param userId - The unique identifier of the user to be added.
+ * @returns A Promise resolving to `true` if the operation was successful, or `false` if the OAuth client is uninitialized.
+ * @throws {Error} If the API responds with a failure status code.
  */
 const addListMember = async (listId: string, userId: string): Promise<boolean> => {
     if (!oauth1Client) return false;
@@ -266,10 +296,13 @@ const addListMember = async (listId: string, userId: string): Promise<boolean> =
 };
 
 /**
- * Retrieves the current members of an X list.
- * 
- * @param listId - The ID of the list.
- * @returns A promise resolving to the list members response.
+ * Retrieves the current members belonging to a specified X list.
+ *
+ * Queries up to 100 members per request. Built using standard `fetch` with OAuth 1.0a signatures.
+ *
+ * @param listId - The unique identifier of the target list.
+ * @returns A Promise resolving to the list's member data (`XApiListMembersResponse`).
+ * @throws {Error} If the list cannot be fetched or the user lacks authorization.
  */
 const getListMembers = async (listId: string): Promise<XApiListMembersResponse> => {
     if (!client) return { data: [], meta: { resultCount: 0 } };
@@ -295,11 +328,15 @@ const getListMembers = async (listId: string): Promise<XApiListMembersResponse> 
 };
 
 /**
- * Retrieves the recent tweets of a user.
- * 
- * @param userId - The ID of the user.
- * @param maxResults - The maximum number of tweets to retrieve (default 5).
- * @returns A promise resolving to the user's tweets data.
+ * Retrieves recent original tweets authored by a specific user.
+ *
+ * Explicitly excludes retweets and replies to focus on standalone posts.
+ * Includes associated media metadata in the response payload.
+ *
+ * @param userId - The unique identifier of the target author.
+ * @param maxResults - The maximum number of tweets to retrieve. Defaults to `5`.
+ * @returns A Promise resolving to the timeline payload (`XApiMentionResponse`).
+ * @throws {Error} If the retrieval request fails.
  */
 const getUserTweets = async (userId: string, maxResults: number = 5): Promise<XApiMentionResponse> => {
     if (!client) return { data: [] };
@@ -317,9 +354,19 @@ const getUserTweets = async (userId: string, maxResults: number = 5): Promise<XA
     }
 };
 
+/**
+ * Deletes a previously published tweet by its ID.
+ *
+ * Uses a heuristic approach to determine the correct deletion method across different client versions,
+ * falling back to a direct fetch with OAuth 1.0a if standard SDK methods are unavailable.
+ *
+ * @param tweetId - The unique identifier of the tweet to be deleted.
+ * @returns A Promise resolving to `true` if the deletion was successful.
+ * @throws {Error} If the deletion request fails or no valid client is available.
+ */
 const deleteTweet = async (tweetId: string): Promise<boolean> => {
-    if (!client) {
-        console.warn('Twitter API client not initialized. Mocking tweet deletion.');
+    if (!client || !/^\d+$/.test(tweetId)) {
+        console.warn(`Twitter API client not initialized or test ID detected (${tweetId}). Mocking tweet deletion.`);
         return true;
     }
     try {

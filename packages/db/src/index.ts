@@ -107,10 +107,14 @@ export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
 
 /**
  * Converts a Firestore Timestamp, JavaScript Date, ISO string, or null/undefined
- * to an ISO 8601 string (or null when the input is nullish).
+ * to a standardized ISO 8601 string.
  *
- * This keeps `@rebecca/types` free of `@google-cloud/firestore` imports while
- * still letting converters translate stored Timestamps into portable strings.
+ * This utility isolates the `@rebecca/types` package from `@google-cloud/firestore` dependencies
+ * by ensuring that Firestore Timestamps are serialized into portable strings before leaving the
+ * database layer.
+ *
+ * @param value - The temporal value to convert. Can be a Firestore Timestamp, Date object, string, or nullish.
+ * @returns An ISO 8601 string representation of the date, or `null` if the input is nullish.
  */
 function toIsoString(value: Timestamp | Date | string | null | undefined): string | null {
   if (value == null) return null;
@@ -189,6 +193,16 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
       text: data['text'],
       timestamp: data['timestamp'],
       expireAt: toIsoString(data['expireAt']) ?? '',
+      status: data['status'],
+      impressions: data['impressions'],
+      likes: data['likes'],
+      retweets: data['retweets'],
+      replies: data['replies'],
+      mediaUrls: data['mediaUrls'] || data['media_urls'] || [],
+      authorId: data['authorId'],
+      authorName: data['authorName'],
+      authorHandle: data['authorHandle'],
+      authorAvatarUrl: data['authorAvatarUrl'],
     };
   },
 };
@@ -281,10 +295,15 @@ const listInteractionConverter: FirestoreDataConverter<ListInteraction> = {
 };
 
 /**
- * Generic pass-through converter for simple counter / flag documents
- * (rate_limits, system_stats, system, processed_mentions).
- * These collections contain dynamic fields (FieldValue.increment, serverTimestamp)
- * and do not map cleanly to a fixed type; callers access raw data directly.
+ * Creates a generic, pass-through FirestoreDataConverter for documents that do not require
+ * specific serialization logic.
+ *
+ * This is useful for simple counter or flag documents (e.g., rate_limits, system_stats) where
+ * the data is read and written as raw `DocumentData` and contains dynamic fields like
+ * `FieldValue.increment` or `FieldValue.serverTimestamp`.
+ *
+ * @template T - The generic type representing the shape of the document data.
+ * @returns A FirestoreDataConverter typed for `T` that performs no translation.
  */
 function makePassThroughConverter<T extends DocumentData>(): FirestoreDataConverter<T> {
   return {
@@ -319,6 +338,7 @@ const xApiStateConverter = makePassThroughConverter<XApiStateDoc>();
  * ```
  *
  * @param db - A live Firestore instance, provided by the application layer.
+ * @returns An object containing typed collection references for the database.
  */
 export function getCollections(db: Firestore) {
   return {
