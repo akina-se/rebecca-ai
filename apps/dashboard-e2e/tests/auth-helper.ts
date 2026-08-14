@@ -5,34 +5,13 @@ import { Page } from '@playwright/test';
  * base URLs may need mapping to the BFF service endpoints.
  */
 export async function setupApiRouting(page: Page) {
-  await page.route('**/api/v1**', async (route) => {
-    const request = route.request();
-    const url = new URL(request.url());
-    
-    // Route /api/v1 (with query parameters or DELETE method) to /api/v1/posts
-    if (url.pathname === '/api/v1') {
-      if (request.method() === 'DELETE' || url.searchParams.has('page') || url.searchParams.has('limit') || url.searchParams.has('period') || url.searchParams.has('sortBy') || url.searchParams.has('date')) {
-        url.pathname = '/api/v1/posts';
-        try {
-          const response = await route.fetch({ url: url.toString() });
-          await route.fulfill({ response });
-          return;
-        } catch (e) {
-          console.error('Error forwarding /api/v1 to /api/v1/posts:', e);
-        }
-      }
-    } else if (url.pathname.match(/^\/api\/v1\/p\d+$/)) {
-      url.pathname = url.pathname.replace('/api/v1/', '/api/v1/posts/');
-      try {
-        const response = await route.fetch({ url: url.toString() });
-        await route.fulfill({ response });
-        return;
-      } catch (e) {
-        console.error('Error forwarding post by ID:', e);
-      }
+  // Pass-through routing with graceful teardown error suppression
+  await page.route('**/api/v1/**', async (route) => {
+    try {
+      await route.continue();
+    } catch {
+      // Ignored if test page is closing
     }
-
-    await route.continue();
   });
 }
 
