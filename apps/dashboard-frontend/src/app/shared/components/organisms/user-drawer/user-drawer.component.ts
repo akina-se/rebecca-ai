@@ -153,4 +153,14 @@ export class UserDrawerComponent implements OnChanges {
       }
     });
   }
+
+  /**
+   * Opens the user's profile page on X (Twitter) in a new tab.
+   */
+  onViewOnX(): void {
+    const rawHandle = (this.user?.handle || this.userId || '').replace(/^@/, '').trim();
+    if (!rawHandle) return;
+    const url = `https://x.com/${encodeURIComponent(rawHandle)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
 }

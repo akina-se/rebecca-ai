@@ -90,6 +90,13 @@ export class PostDrawerComponent implements OnChanges {
     });
   }
 
+  onViewOnX(): void {
+    const tweetId = this.postData?.id || this.postId;
+    if (!tweetId) return;
+    const url = `https://x.com/i/status/${tweetId}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   openAiCopilot() {
     this.drawerService.open();
   }
