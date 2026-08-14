@@ -23,7 +23,7 @@ export class SettingsService {
   ];
 
   readonly languageOptions = [
-    { label: '日本誁E(JA)', value: 'ja' },
+    { label: '日本語 (JA)', value: 'ja' },
     { label: 'English (US)', value: 'en' }
   ];
 
