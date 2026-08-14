@@ -48,12 +48,23 @@ export class AssetsRepository {
 
     return snapshot.docs.map((doc: any) => {
       const data = doc.data();
+      let status: AssetStatus = AssetStatus.PENDING;
+      if (data.status) {
+        const s = String(data.status).toUpperCase();
+        if (s === 'SUCCESS' || s === 'READY') status = AssetStatus.SUCCESS;
+        else if (s === 'FAILED' || s === 'CAPTION FAILED') status = AssetStatus.FAILED;
+        else if (s === 'PROCESSING') status = AssetStatus.PROCESSING;
+      } else {
+        status = data.caption ? AssetStatus.SUCCESS : AssetStatus.FAILED;
+      }
+
       return {
         id: doc.id,
-        filename: data.url.split('/').pop() || data.url, // Extract filename from URL
+        filename: data.url ? (data.url.split('/').pop() || data.url) : (data.filename || doc.id),
         caption: data.caption || '',
         usedCount: data.useCount || 0,
-        status: data.caption ? AssetStatus.SUCCESS : AssetStatus.FAILED // Simple inferred status
+        status,
+        url: data.url || ''
       };
     });
   }

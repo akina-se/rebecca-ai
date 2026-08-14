@@ -199,8 +199,8 @@ export class TimelineRepository {
     const doc = await this.collections.timelineHistory.doc(id).get();
     if (!doc.exists) return null;
     
-    const data = doc.data() as TimelinePostDoc;
-    const rawMediaUrls: string[] = data.media_urls || [];
+    const data = doc.data() as any;
+    const rawMediaUrls: string[] = data.mediaUrls || data.media_urls || [];
     
     // Resolve GCS paths to secure 15-minute Signed URLs
     const resolvedMediaUrls = await Promise.all(
@@ -209,10 +209,14 @@ export class TimelineRepository {
 
     return {
       id: doc.id,
-      time: data.created_at || new Date().toISOString(),
-      content: data.content || '',
+      time: data.timestamp || data.created_at || new Date().toISOString(),
+      content: data.content || data.text || '',
       impressions: data.impressions || 0,
-      mediaUrls: resolvedMediaUrls.filter(url => url !== '')
+      mediaUrls: resolvedMediaUrls.filter(url => url !== ''),
+      status: data.status || 'SUCCESS',
+      likes: data.likes || 0,
+      retweets: data.retweets || 0,
+      replies: data.replies || 0
     };
   }
 
