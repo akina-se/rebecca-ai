@@ -5,7 +5,7 @@
         <span class="material-icons nav-btn" [class.disabled-icon]="!hasNext" (click)="onNext($event)">chevron_right</span>
     </div>
 
-    <div class="popover-menu glass-panel" *ngIf="isOpen" [ngStyle]="popoverStyle">
+    <div class="popover-menu glass-panel" *ngIf="isOpen">
         <div class="popover-header">Quick Select</div>
         <div class="popover-item" *ngFor="let opt of mockOptions"
              [class.selected]="opt === currentText"

@@ -21,11 +21,12 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     firstSeen: '2026-01-01',
     lastSeen: '2026-07-22',
     coreProfile: JSON.stringify({
-      attributes: ['ギャル好き', 'アニメファン'],
-      preferences: ['深夜アニメ'],
+      attributes: ['Gyaru lover', 'Anime fan'],
+      preferences: ['Late night anime'],
       concerns: [],
       important_memories: []
-    })
+    }),
+    chatHistory: []
   };
 
   beforeEach(async () => {
@@ -56,7 +57,7 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     expect(mockUsersRepo.getById).toHaveBeenCalledWith('user_123');
     expect(component.user).toEqual(mockUserDetail);
     expect(component.isBlocked).toBeFalse();
-    expect(component.parsedProfile['attributes']).toContain('ギャル好き');
+    expect(component.parsedProfile['attributes']).toContain('Gyaru lover');
   });
 
   it('should handle malformed coreProfile JSON gracefully', () => {
@@ -71,14 +72,14 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
 
   it('should add and remove tags from profile categories', () => {
     const input = document.createElement('input');
-    input.value = 'ゲーム好き';
+    input.value = 'Gamer';
     const fakeEvent = { target: input } as unknown as Event;
 
     component.addTag('preferences', fakeEvent);
-    expect(component.parsedProfile['preferences']).toContain('ゲーム好き');
+    expect(component.parsedProfile['preferences']).toContain('Gamer');
 
     component.removeTag('preferences', 0);
-    expect(component.parsedProfile['preferences']).not.toContain('深夜アニメ');
+    expect(component.parsedProfile['preferences']).not.toContain('Late night anime');
   });
 
   it('should toggle user status between Active and Blocked', () => {

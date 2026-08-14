@@ -1,27 +1,27 @@
-<div class="drawer-content">
+<div class="drawer-content" *ngIf="postData">
 
     <!-- Post Text Content -->
     <div class="glass-panel content-box">
         <div class="stat-label" style="margin-bottom: 10px;">Post Content</div>
         <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-main);">
-            {{ mockPost.text }}
+            {{ postData.text }}
         </div>
         <div style="margin-top: 12px; color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
             <span class="material-icons" style="font-size: 0.9rem;">schedule</span>
-            {{ mockPost.time }}
+            {{ postData.time }}
         </div>
     </div>
 
     <!-- Attached Media -->
-    <div *ngIf="mockPost.mediaUrls && mockPost.mediaUrls.length > 0">
+    <div *ngIf="postData.mediaUrls && postData.mediaUrls.length > 0">
         <div class="stat-label" style="margin-bottom: 10px;">
             <span class="material-icons" style="font-size: 1rem; vertical-align: middle; margin-right: 4px;">photo_library</span>
-            Attached Media ({{ mockPost.mediaUrls.length }})
+            Attached Media ({{ postData.mediaUrls.length }})
         </div>
         <div class="media-grid">
             <div 
                 class="media-thumbnail glass-panel"
-                *ngFor="let url of mockPost.mediaUrls; let i = index"
+                *ngFor="let url of postData.mediaUrls; let i = index"
                 (click)="onOpenLightbox(url)"
                 title="Click to expand">
                 <img [src]="url" [alt]="'Media ' + (i + 1)" loading="lazy">
@@ -38,28 +38,28 @@
             <span class="material-icons metric-icon">visibility</span>
             <div class="metric-info">
                 <div class="metric-title">Impressions</div>
-                <div class="metric-value">{{ mockPost.impressions }}</div>
+                <div class="metric-value">{{ postData.impressions }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">favorite</span>
             <div class="metric-info">
                 <div class="metric-title">Likes</div>
-                <div class="metric-value">{{ mockPost.likes }}</div>
+                <div class="metric-value">{{ postData.likes }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">repeat</span>
             <div class="metric-info">
                 <div class="metric-title">Retweets</div>
-                <div class="metric-value">{{ mockPost.retweets }}</div>
+                <div class="metric-value">{{ postData.retweets }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">chat_bubble</span>
             <div class="metric-info">
                 <div class="metric-title">Replies</div>
-                <div class="metric-value">{{ mockPost.replies }}</div>
+                <div class="metric-value">{{ postData.replies }}</div>
             </div>
         </div>
     </div>

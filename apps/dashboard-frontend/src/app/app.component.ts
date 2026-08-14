@@ -7,6 +7,10 @@ import { ToastComponent } from './shared/components/atoms/toast/toast.component'
 import { AuthService } from './core/services/auth.service';
 import { Subscription } from 'rxjs';
 
+/**
+ * The root component of the application.
+ * Manages the main layout structure and global authentication state.
+ */
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -22,6 +26,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   constructor(private authService: AuthService) {}
 
+  /**
+   * Initializes the component.
+   * Waits for the authentication service to initialize and subscribes to the current user state.
+   *
+   * @returns {Promise<void>} A promise that resolves when initialization is complete.
+   */
   async ngOnInit(): Promise<void> {
     await this.authService.waitForInit();
     this.isLoading = false;
@@ -30,6 +40,10 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Cleans up resources when the component is destroyed.
+   * Unsubscribes from the authentication state subscription.
+   */
   ngOnDestroy(): void {
     if (this.authSub) {
       this.authSub.unsubscribe();

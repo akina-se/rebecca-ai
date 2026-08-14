@@ -1,9 +1,9 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { UserDetail, UserStatus } from '@rebecca/types';
+import { UserDetail, UserStatus, PaginatedResponse } from '@rebecca/types';
 
 export interface UsersRepository {
-  getAll(): Observable<UserDetail[]>;
+  getAll(): Observable<PaginatedResponse<UserDetail>>;
   getById(id: string, beforeTimestamp?: string, limit?: number): Observable<UserDetail>;
   updateMemory(id: string, coreProfile: string): Observable<unknown>;
   bulkUpdateStatus(ids: string[], status: UserStatus): Observable<unknown>;

@@ -41,24 +41,15 @@ export class RankingModalComponent {
   currentPage = 1;
   readonly pageSize = 10;
 
-  /** Mock leaderboard data – replaced with real API data post-MVP. */
-  readonly allEntries: RankingEntry[] = Array.from({ length: 30 }, (_, i) => ({
-    id: i < 2 ? `p${i + 1}` : `mock_id_${i}`,
-    rank: i + 1,
-    label: i < 2
-      ? ['今日は暑いね！水分補給しっかりしてね', '水星の魔女、最新話見た！展開が熱すぎる…'][i]
-      : `サンプルポスト #${i + 1} — ダッシュボードモックデータ`,
-    value: Math.floor(10000 / (i + 1)).toLocaleString(),
-    badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
-  }));
+  @Input() entries: RankingEntry[] = [];
 
   get totalPages(): number {
-    return Math.ceil(this.allEntries.length / this.pageSize);
+    return Math.max(1, Math.ceil(this.entries.length / this.pageSize));
   }
 
   get pagedEntries(): RankingEntry[] {
     const start = (this.currentPage - 1) * this.pageSize;
-    return this.allEntries.slice(start, start + this.pageSize);
+    return this.entries.slice(start, start + this.pageSize);
   }
 
   get pageNumbers(): number[] {

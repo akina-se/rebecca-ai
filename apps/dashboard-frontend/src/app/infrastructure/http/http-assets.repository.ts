@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpAssetsRepository implements AssetsRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
 
   /**
    * Retrieves assets, supporting pagination, search, and status filters.
@@ -50,6 +50,12 @@ export class HttpAssetsRepository implements AssetsRepository {
     if (s === 'CAPTION FAILED' || s === 'FAILED') return AssetStatus.FAILED;
     if (s === 'PROCESSING') return AssetStatus.PROCESSING;
     return AssetStatus.PENDING;
+  }
+
+  getById(id: string): Observable<Asset> {
+    return this.http.get<Asset>(`${this.baseUrl}/images/${id}`).pipe(
+      map(asset => ({ ...asset, status: this.mapStatus(asset.status) }))
+    );
   }
 
   /**

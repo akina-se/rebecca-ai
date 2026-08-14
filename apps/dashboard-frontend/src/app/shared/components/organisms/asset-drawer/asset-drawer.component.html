@@ -1,8 +1,8 @@
-<div class="drawer-content">
+<div class="drawer-content" *ngIf="assetData">
 
     <!-- Image Preview -->
     <div class="asset-preview glass-panel">
-        <img [src]="displayAsset.url" alt="Asset Preview" class="preview-img">
+        <img [src]="assetData.url" alt="Asset Preview" class="preview-img">
         <button class="btn btn-primary enlarge-btn" (click)="onViewFullSize()">
             <span class="material-icons">zoom_in</span>
         </button>
@@ -13,7 +13,7 @@
         <div class="timeline-stat" style="display: block;">
             <div class="stat-label" style="margin-bottom: 8px;">Asset Name</div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="text" class="form-control" [(ngModel)]="mockAsset.name" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
+                <input type="text" class="form-control" [(ngModel)]="assetData.name" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
                 <span style="color: var(--text-muted); font-weight: 500;">.png</span>
             </div>
         </div>
@@ -26,7 +26,7 @@
                     {{ isRegenerating ? 'Regenerating...' : 'Regenerate' }}
                 </button>
             </div>
-            <textarea class="form-control" [(ngModel)]="mockAsset.caption" style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main); resize: vertical;"></textarea>
+            <textarea class="form-control" [(ngModel)]="assetData.caption" style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main); resize: vertical;"></textarea>
         </div>
         <div style="margin-top: 16px;">
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" (click)="onSave()" [disabled]="isSaving">
@@ -42,14 +42,14 @@
             <span class="material-icons metric-icon">bar_chart</span>
             <div class="metric-info">
                 <div class="metric-title">Use Count</div>
-                <div class="metric-value">{{ displayAsset.useCount }}</div>
+                <div class="metric-value">{{ assetData.useCount }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">schedule</span>
             <div class="metric-info">
                 <div class="metric-title">Last Used</div>
-                <div class="metric-value" style="font-size: 0.9rem; white-space: nowrap;">{{ formatDate(displayAsset.lastUsedAt) }}</div>
+                <div class="metric-value" style="font-size: 0.9rem; white-space: nowrap;">{{ formatDate(assetData.lastUsedAt) }}</div>
             </div>
         </div>
     </div>

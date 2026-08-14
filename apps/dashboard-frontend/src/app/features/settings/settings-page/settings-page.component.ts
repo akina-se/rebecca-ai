@@ -16,7 +16,7 @@ export class SettingsPageComponent {
   
   get selectedLang(): string {
     const active = this.settingsService.selectedLang();
-    return this.settingsService.languageOptions.find(o => o.value === active)?.label || '日本語 (JA)';
+    return this.settingsService.languageOptions.find(o => o.value === active)?.label || '日本誁E(JA)';
   }
 
   set selectedLang(label: string) {

@@ -36,65 +36,35 @@
     </div>
     
     <div class="asset-grid">
-        <div class="asset-card glass-panel" (click)="openAssetDrawer('rebecca_summer_01')">
+        <div class="asset-card glass-panel" *ngFor="let asset of assets" (click)="openAssetDrawer(asset.id)">
             <div class="asset-checkbox-wrapper" (click)="$event.stopPropagation()">
                 <label class="checkbox-container">
-                    <input type="checkbox" class="asset-checkbox" [checked]="selectedAssets.has('rebecca_summer_01')" (change)="toggleSelection('rebecca_summer_01', $event)">
+                    <input type="checkbox" class="asset-checkbox" [checked]="selectedAssets.has(asset.id)" (change)="toggleSelection(asset.id, $event)">
                     <span class="checkmark" style="margin: 0;"></span>
                 </label>
             </div>
-            <div class="asset-thumb"><span class="material-icons" style="font-size: 3rem; opacity: 0.5;">image</span></div>
+            <!-- If we actually have a url to an image, we can show it here instead of a material icon. For MVP, we might just show an icon or a placeholder image if url is not present -->
+            <div class="asset-thumb" [style.background-image]="asset.url ? 'url(' + asset.url + ')' : 'none'" [style.background-size]="'cover'">
+                <span class="material-icons" style="font-size: 3rem; opacity: 0.5;" *ngIf="!asset.url">image</span>
+            </div>
             <div class="asset-info">
-                <div style="font-weight: 500;">rebecca_summer_01.png</div>
+                <div style="font-weight: 500;">{{ asset.filename }}</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 6px;">
-                    <span>Used: 3x</span><span style="color: var(--success)">Ready</span>
-                </div>
-            </div>
-        </div>
-        <div class="asset-card glass-panel" style="border-color: rgba(255, 71, 87, 0.5); box-shadow: 0 0 15px rgba(255, 71, 87, 0.1);" (click)="openAssetDrawer('beach_bg_02')">
-            <div class="asset-checkbox-wrapper" (click)="$event.stopPropagation()">
-                <label class="checkbox-container">
-                    <input type="checkbox" class="asset-checkbox" 
-                           [checked]="selectedAssets.has('beach_bg_02')" 
-                           (change)="toggleSelection('beach_bg_02', $event)">
-                    <span class="checkmark" style="margin: 0;"></span>
-                </label>
-            </div>
-            <div class="asset-thumb" style="background: rgba(255, 71, 87, 0.05);"><span class="material-icons" style="font-size: 3rem; color: var(--danger);">broken_image</span></div>
-            <div class="asset-info">
-                <div style="font-weight: 500;">beach_bg_02.jpg</div>
-                <div style="font-size: 0.75rem; color: var(--danger); display: flex; justify-content: space-between; margin-top: 6px;">
-                    <span>Caption Failed</span><span class="material-icons" style="font-size: 1rem">error</span>
+                    <span>Used: 0x</span><span style="color: var(--success)">{{ asset.status || 'Ready' }}</span>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="pagination glass-panel" style="border-radius: 12px;">
-        <span>Showing 1-24 of 156 assets</span>
-        <div class="pagination-controls">
-            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
-            <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn">3</button>
-            <span>...</span>
-            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
-        </div>
+    <div *ngIf="assets.length === 0 && !isLoading" style="text-align: center; padding: 20px; color: var(--text-muted)">
+        No assets found.
+    </div>
+    <div *ngIf="isLoading" style="text-align: center; padding: 20px; color: var(--text-muted)">
+        Loading...
     </div>
 </div>
 
 <app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
     <div style="padding: 20px;">
-        <app-asset-drawer 
-            [assetId]="selectedAssetId"
-            (openLightbox)="openLightbox($event)">
-        </app-asset-drawer>
+        <app-asset-drawer [assetId]="selectedAssetId"></app-asset-drawer>
     </div>
 </app-right-drawer>
-
-<app-lightbox 
-    [isOpen]="isLightboxOpen" 
-    [imageUrl]="lightboxImageUrl" 
-    (close)="isLightboxOpen = false">
-</app-lightbox>
-

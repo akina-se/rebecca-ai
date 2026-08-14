@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -13,7 +13,8 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpDashboardRepository implements DashboardRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
+  private postsBaseUrl = this.baseUrl.replace('/dashboard', '/posts');
 
   /**
    * Fetches global KPI metrics from the backend.
@@ -32,20 +33,20 @@ export class HttpDashboardRepository implements DashboardRepository {
    * @param period The time period filter.
    * @returns Observable list of top posts.
    */
-  getTopPosts(period: string, date?: string): Observable<PostLeaderboard[]> {
+  getTopPosts(period: string, date?: string): Observable<PaginatedResponse<PostLeaderboard>> {
     let params = new HttpParams().set('period', period);
     if (date) {
       params = params.set('date', date);
     }
-    return this.http.get<PostLeaderboard[]>(`${this.baseUrl}/posts`, { params });
+    return this.http.get<PaginatedResponse<PostLeaderboard>>(`${this.postsBaseUrl}`, { params });
   }
 
-  getTopUsers(period: string, date?: string): Observable<UserLeaderboard[]> {
+  getTopUsers(period: string, date?: string): Observable<PaginatedResponse<UserLeaderboard>> {
     let params = new HttpParams().set('period', period);
     if (date) {
       params = params.set('date', date);
     }
-    return this.http.get<UserLeaderboard[]>(`${this.baseUrl}/users`, { params });
+    return this.http.get<PaginatedResponse<UserLeaderboard>>(`${this.baseUrl}/users`, { params });
   }
 
   /**
@@ -55,5 +56,21 @@ export class HttpDashboardRepository implements DashboardRepository {
    */
   getAlerts(): Observable<SystemAlert[]> {
     return this.http.get<SystemAlert[]>(`${this.baseUrl}/alerts`);
+  }
+
+  getTimelineHistory(limit: number, startAfterId?: string): Observable<PostLeaderboard[]> {
+    let params = new HttpParams().set('limit', limit.toString()).set('sortBy', 'created_at').set('sortOrder', 'desc');
+    if (startAfterId) {
+      params = params.set('startAfterId', startAfterId);
+    }
+    return this.http.get<PostLeaderboard[]>(`${this.postsBaseUrl}`, { params });
+  }
+
+  getPostById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.postsBaseUrl}/${id}`);
+  }
+
+  deletePosts(ids: string[]): Observable<void> {
+    return this.http.delete<void>(`${this.postsBaseUrl}`, { body: { ids } });
   }
 }

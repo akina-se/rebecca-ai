@@ -1,9 +1,10 @@
-import { Component, Input, Output, EventEmitter, inject, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DrawerService } from '../../../../core/services/drawer.service';
-import { ActionHelperService } from '../../../services/action-helper.service';
+import { ToastService } from '../../../services/toast.service';
+import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../../core/ports/dashboard.repository';
 
-interface PostMockModel {
+interface PostDataModel {
   id: string;
   time: string;
   text: string;
@@ -24,50 +25,73 @@ interface PostMockModel {
 })
 export class PostDrawerComponent implements OnChanges {
   drawerService = inject(DrawerService);
+  toastService = inject(ToastService);
   @Input() postId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
 
   isDeleting = false;
+  isLoading = false;
 
-  mockPost: PostMockModel = { id: '', time: '', text: '', impressions: '', status: '', likes: 0, retweets: 0, replies: 0, mediaUrls: [] };
+  postData: PostDataModel | null = null;
+
+  constructor(@Inject(DASHBOARD_REPOSITORY) private dashboardRepo: DashboardRepository) {}
 
   ngOnChanges() {
-    if (this.postId === '1') {
-      this.mockPost = {
-        id: '1', time: '2026-07-11 12:00', text: '今日は暑いね！水分補給しっかりしてね', impressions: '3,402', status: 'Success', likes: 120, retweets: 15, replies: 8, mediaUrls: ['https://picsum.photos/seed/post1a/600/400', 'https://picsum.photos/seed/post1b/600/400']
-      };
-    } else if (this.postId === 'p1') {
-      this.mockPost = {
-        id: 'p1', time: '2026-07-10 18:00', text: '水星の魔女、最新話見た！？展開が熱すぎる…', impressions: '5,120', status: 'Success', likes: 450, retweets: 120, replies: 35, mediaUrls: ['https://picsum.photos/seed/post2a/600/400']
-      };
-    } else if (this.postId === 'p2') {
-      this.mockPost = {
-        id: 'p2', time: '2026-07-09 08:00', text: 'おはよう！今日も1日頑張ろうね', impressions: '4,800', status: 'Success', likes: 300, retweets: 50, replies: 12, mediaUrls: []
-      };
-    } else if (this.postId === 'p3') {
-      this.mockPost = {
-        id: 'p3', time: '2026-07-08 12:00', text: '夏コミ行く人いるー？', impressions: '3,950', status: 'Success', likes: 250, retweets: 40, replies: 15, mediaUrls: ['https://picsum.photos/seed/post3/600/400']
-      };
-    } else {
-      this.mockPost = {
-        id: this.postId || '123', time: '2026-07-11 12:00', text: '今日は暑いね！水分補給しっかりしてね', impressions: '3,402', status: 'Success', likes: 120, retweets: 15, replies: 8, mediaUrls: ['https://picsum.photos/seed/post1a/600/400']
-      };
+    if (this.postId) {
+      this.loadPost(this.postId);
     }
+  }
+
+  loadPost(id: string) {
+    this.isLoading = true;
+    this.dashboardRepo.getPostById(id).subscribe({
+      next: (post) => {
+        // Fallback for missing properties not returned by MVP backend
+        this.postData = {
+          id: post.id,
+          time: post.time,
+          text: post.content || post.text || '',
+          impressions: post.impressions?.toString() || '0',
+          status: post.status || 'SUCCESS',
+          likes: post.likes || 0,
+          retweets: post.retweets || 0,
+          replies: post.replies || 0,
+          mediaUrls: post.mediaUrls || []
+        };
+        this.isLoading = false;
+      },
+      error: () => {
+        this.toastService.show('Failed to load post details', 'error');
+        this.isLoading = false;
+      }
+    });
   }
 
   onOpenLightbox(url: string) {
     this.openLightbox.emit(url);
   }
 
-  actionHelper = inject(ActionHelperService);
-
-  async onDeletePost() {
+  onDeletePost() {
+    if (!this.postData) return;
     this.isDeleting = true;
-    await this.actionHelper.executeMockAction(`Successfully deleted post ${this.mockPost.id}`);
-    this.isDeleting = false;
+    this.dashboardRepo.deletePosts([this.postData.id]).subscribe({
+      next: () => {
+        this.toastService.show(`Successfully deleted post`, 'success');
+        this.isDeleting = false;
+        this.drawerService.close(); // Close drawer after delete
+        // We might want to reload the timeline here, but the dashboard page does that
+        // However, we don't have an EventEmitter for that in this component, but the UI should reflect it.
+        // E2E test will check if it's gone after reload or via DB
+      },
+      error: () => {
+        this.toastService.show(`Failed to delete post`, 'error');
+        this.isDeleting = false;
+      }
+    });
   }
 
   openAiCopilot() {
     this.drawerService.open();
   }
 }
+

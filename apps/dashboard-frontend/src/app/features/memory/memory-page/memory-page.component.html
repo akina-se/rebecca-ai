@@ -1,28 +1,24 @@
 <div class="view-section active">
-        <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h2><span class="material-icons">dns</span> System Memory Layers</h2>
-            <button class="btn btn-primary" (click)="forceDreaming()" [disabled]="isDreaming" style="display: flex; align-items: center; gap: 8px; width: 185px; justify-content: center; overflow: hidden; white-space: nowrap;">
-                <span class="material-icons" [class.spinning]="isDreaming" style="flex-shrink:0;">{{ isDreaming ? 'sync' : 'auto_awesome' }}</span>
-                {{ isDreaming ? 'Processing...' : 'Force Dreaming' }}
-            </button>
-        </div>
+    <div class="view-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2><span class="material-icons">dns</span> System Memory Layers</h2>
+        <button class="btn btn-primary" (click)="forceDreaming()" [disabled]="isDreaming" style="display: flex; align-items: center; gap: 8px; width: 185px; justify-content: center; overflow: hidden; white-space: nowrap;">
+            <span class="material-icons" [class.spinning]="isDreaming" style="flex-shrink:0;">{{ isDreaming ? 'sync' : 'auto_awesome' }}</span>
+            {{ isDreaming ? 'Processing...' : 'Force Dreaming' }}
+        </button>
+    </div>
     <table class="data-table glass-panel" style="border-radius: 12px;">
         <thead><tr><th>Layer <span class="material-icons">arrow_upward</span></th><th>Description</th><th>Last Updated <span class="material-icons">unfold_more</span></th></tr></thead>
         <tbody>
-            <tr class="clickable" (click)="openDrawer(0, 'Persona Core Prompt', 'dns')">
-                <td><span class="badge" style="background: rgba(255,255,255,0.1); color: var(--text-main);">Layer 0</span> Persona Core Prompt</td>
-                <td>Core system prompt (Hardcoded)</td>
-                <td style="color: var(--text-muted)">System Deploy</td>
+            <tr class="clickable" *ngFor="let layer of layers" (click)="openDrawer(layer.level, layer.name, getIconForLayer(layer.level))">
+                <td><span class="badge" [style.background]="layer.level === 0 ? 'rgba(255,255,255,0.1)' : ''" [style.color]="layer.level === 0 ? 'var(--text-main)' : ''">Layer {{ layer.level }}</span> {{ layer.name }}</td>
+                <td>{{ layer.description }}</td>
+                <td style="color: var(--text-muted)">{{ formatDate(layer.lastUpdated) }}</td>
             </tr>
-            <tr class="clickable" (click)="openDrawer(1, 'Extended Persona Tuning', 'tune')">
-                <td><span class="badge" style="background: rgba(255,255,255,0.1); color: var(--text-main);">Layer 0</span> Extended Persona Tuning</td>
-                <td>Dynamic behavioral instructions</td>
-                <td>2 hours ago</td>
+            <tr *ngIf="layers.length === 0 && !isLoading">
+                <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted)">No memory layers found.</td>
             </tr>
-            <tr class="clickable" (click)="openDrawer(3, 'Global Timeline Summary', 'public')">
-                <td><span class="badge">Layer 0</span> Global Timeline Summary</td>
-                <td>System-wide context summary</td>
-                <td>1 hour ago</td>
+            <tr *ngIf="isLoading">
+                <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted)">Loading...</td>
             </tr>
         </tbody>
     </table>
