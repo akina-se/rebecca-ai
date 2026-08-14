@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { UsersRepository } from '../../core/ports/users.repository';
-import { UserDetail, UserStatus } from '@rebecca/types';
+import { UserDetail, UserStatus, PaginatedResponse } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -13,19 +13,22 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpUsersRepository implements UsersRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
 
   /**
    * Fetches all user details from the backend.
    * 
    * @returns Observable list of users.
    */
-  getAll(): Observable<UserDetail[]> {
-    return this.http.get<UserDetail[]>(`${this.baseUrl}/users`).pipe(
-      map((users: UserDetail[]) => users.map((user: UserDetail) => ({
-        ...(user as any),
-        status: this.mapStatus(user.status)
-      })))
+  getAll(): Observable<PaginatedResponse<UserDetail>> {
+    return this.http.get<PaginatedResponse<UserDetail>>(`${this.baseUrl}/users`).pipe(
+      map(response => ({
+        ...response,
+        data: response.data.map((user: UserDetail) => ({
+          ...(user as any),
+          status: this.mapStatus(user.status)
+        }))
+      }))
     );
   }
 

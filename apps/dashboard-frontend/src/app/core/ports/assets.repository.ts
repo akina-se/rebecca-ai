@@ -9,6 +9,7 @@ export interface AssetsRepository {
     search?: string;
     status?: string;
   }): Observable<Asset[]>;
+  getById(id: string): Observable<Asset>;
   upload(file: File): Observable<unknown>;
   update(id: string, updates: Partial<Asset>): Observable<unknown>;
   deleteMany(ids: string[]): Observable<unknown>;

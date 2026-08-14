@@ -34,14 +34,14 @@ describe('DashboardPageComponent (White-box Coverage)', () => {
 
   beforeEach(async () => {
     mockDashboardRepo = jasmine.createSpyObj('DashboardRepository', [
-      'getKpiMetrics', 'getTopPosts', 'getTopUsers', 'getPosts', 'deletePosts', 'getAlerts'
+      'getKpiMetrics', 'getTopPosts', 'getTopUsers', 'getTimelineHistory', 'deletePosts', 'getAlerts'
     ]);
     mockToastService = jasmine.createSpyObj('ToastService', ['show']);
 
     mockDashboardRepo.getKpiMetrics.and.returnValue(of(mockKpi));
-    mockDashboardRepo.getTopPosts.and.returnValue(of(mockPosts));
-    mockDashboardRepo.getTopUsers.and.returnValue(of(mockUsers));
-    mockDashboardRepo.getPosts.and.returnValue(of({ posts: mockPosts, total: 2, hasMore: false }));
+    mockDashboardRepo.getTopPosts.and.returnValue(of({ data: mockPosts, meta: {} } as any));
+    mockDashboardRepo.getTopUsers.and.returnValue(of({ data: mockUsers, meta: {} } as any));
+    mockDashboardRepo.getTimelineHistory.and.returnValue(of(mockPosts));
     mockDashboardRepo.deletePosts.and.returnValue(of(void 0));
     mockDashboardRepo.getAlerts.and.returnValue(of([]));
 
@@ -64,60 +64,55 @@ describe('DashboardPageComponent (White-box Coverage)', () => {
     expect(mockDashboardRepo.getKpiMetrics).toHaveBeenCalledWith('monthly');
     expect(mockDashboardRepo.getTopPosts).toHaveBeenCalled();
     expect(mockDashboardRepo.getTopUsers).toHaveBeenCalled();
-    expect(mockDashboardRepo.getPosts).toHaveBeenCalled();
-    expect(component.kpiMetrics()).toEqual(mockKpi);
-    expect(component.timelinePosts().length).toBe(2);
+    expect(mockDashboardRepo.getTimelineHistory).toHaveBeenCalled();
+    expect(component.kpiMetrics).toEqual(mockKpi);
+    expect(component.timelinePosts.length).toBe(2);
   });
 
   it('should load KPIs for different periods', () => {
-    component.loadKpis('Last 7 Days');
+    component.setKpiFilter('Last 7 Days');
     expect(mockDashboardRepo.getKpiMetrics).toHaveBeenCalledWith('weekly');
 
-    component.loadKpis('Year to Date');
+    component.setKpiFilter('Year to Date');
     expect(mockDashboardRepo.getKpiMetrics).toHaveBeenCalledWith('yearly');
   });
 
-  it('should handle search keyword change and reset page cursors', () => {
-    component.handleSearchChange('Rebecca AI');
-    expect(component.timelineSearch()).toBe('Rebecca AI');
-    expect(component.pageIndex()).toBe(1);
-    expect(mockDashboardRepo.getPosts).toHaveBeenCalledWith(10, undefined, 'time', 'desc', 'Rebecca AI', '', '');
-  });
-
-  it('should toggle sort column and direction', () => {
-    component.handleSortChange('impressions');
-    expect(component.sortBy()).toBe('impressions');
-    expect(component.sortOrder()).toBe('desc');
-
-    component.handleSortChange('impressions');
-    expect(component.sortOrder()).toBe('asc');
+  it('should handle search keyword change', () => {
+    component.searchQuery = 'Rebecca AI';
+    component.applyTimelineFilter();
+    expect(component.filteredTimelinePosts).toEqual([]);
+    
+    component.searchQuery = 'Hello';
+    component.applyTimelineFilter();
+    expect(component.filteredTimelinePosts.length).toBe(1);
   });
 
   it('should perform bulk delete of posts and trigger reload', () => {
-    component.handleBulkDelete(['p1', 'p2']);
+    component.selectedRows.add('p1');
+    component.selectedRows.add('p2');
+    component.executeBulkDelete();
     expect(mockDashboardRepo.deletePosts).toHaveBeenCalledWith(['p1', 'p2']);
-    expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/deleted 2 posts/i), 'success');
   });
 
   it('should open ranking modal with live API data for posts and users', () => {
     component.openRankingModal('posts');
-    expect(component.rankingModalType()).toBe('post');
-    expect(component.isRankingModalOpen()).toBeTrue();
-    expect(component.rankingModalEntries().length).toBe(2);
+    expect(component.rankingModalType).toBe('post');
+    expect(component.isRankingModalOpen).toBeTrue();
+    expect(component.rankingModalEntries.length).toBe(2);
 
     component.openRankingModal('users');
-    expect(component.rankingModalType()).toBe('user');
-    expect(component.rankingModalEntries().length).toBe(1);
+    expect(component.rankingModalType).toBe('user');
+    expect(component.rankingModalEntries.length).toBe(1);
   });
 
   it('should open post drawer and user drawer correctly', () => {
     component.openPostDrawer('p1');
-    expect(component.drawerType()).toBe('post');
-    expect(component.selectedItemId()).toBe('p1');
-    expect(component.isDrawerOpen()).toBeTrue();
+    expect(component.drawerType).toBe('post');
+    expect(component.selectedItemId).toBe('p1');
+    expect(component.isDrawerOpen).toBeTrue();
 
     component.openUserDrawer('@user1');
-    expect(component.drawerType()).toBe('user');
-    expect(component.selectedItemId()).toBe('user1');
+    expect(component.drawerType).toBe('user');
+    expect(component.selectedItemId).toBe('@user1');
   });
 });

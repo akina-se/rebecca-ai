@@ -1,10 +1,11 @@
-import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
-import { ActionHelperService } from '../../../services/action-helper.service';
+import { ToastService } from '../../../services/toast.service';
+import { ASSETS_REPOSITORY, AssetsRepository } from '../../../../core/ports/assets.repository';
+import { Asset } from '@rebecca/types';
 
-/** Data shape for a single image asset shown in the drawer. */
 export interface AssetDrawerData {
   id: string;
   name: string;
@@ -14,13 +15,6 @@ export interface AssetDrawerData {
   lastUsedAt: string | null;
 }
 
-/**
- * AssetDrawerComponent
- *
- * Organism-level drawer content for the Assets Library feature.
- * Displays a full-width image preview, asset metadata, usage statistics,
- * and action buttons with proper loading states per the ISSUE spec.
- */
 @Component({
   selector: 'app-asset-drawer',
   standalone: true,
@@ -28,52 +22,100 @@ export interface AssetDrawerData {
   templateUrl: './asset-drawer.component.html',
   styleUrls: ['./asset-drawer.component.css'],
 })
-export class AssetDrawerComponent {
+export class AssetDrawerComponent implements OnChanges {
   drawerService = inject(DrawerService);
+  toastService = inject(ToastService);
   @Input() assetId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
 
   isDeleting = false;
   isSaving = false;
   isRegenerating = false;
+  isLoading = false;
 
-  /** Mock asset data – replaced by real API data post-MVP. */
-  mockAsset: AssetDrawerData = {
-    id: 'rebecca_summer_01',
-    name: 'rebecca_summer_01',
-    caption: 'Rebecca in a summer dress, smiling with a parasol on a sunny beach.',
-    url: 'https://picsum.photos/seed/asset_summer/600/400',
-    useCount: 14,
-    lastUsedAt: '2026-07-10T09:30:00.000Z',
-  };
+  assetData: AssetDrawerData | null = null;
 
-  get displayAsset(): AssetDrawerData {
-    return this.mockAsset;
+  constructor(@Inject(ASSETS_REPOSITORY) private assetsRepo: AssetsRepository) {}
+
+  ngOnChanges() {
+    if (this.assetId) {
+      this.loadAsset(this.assetId);
+    }
+  }
+
+  loadAsset(id: string) {
+    this.isLoading = true;
+    this.assetsRepo.getById(id).subscribe({
+      next: (asset: Asset) => {
+        this.assetData = {
+          id: asset.id,
+          name: asset.filename,
+          caption: asset.caption || 'No caption',
+          url: asset.url || '',
+          useCount: 0,
+          lastUsedAt: null,
+        };
+        this.isLoading = false;
+      },
+      error: () => {
+        this.toastService.show('Failed to load asset', 'error');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  get displayAsset(): AssetDrawerData | null {
+    return this.assetData;
   }
 
   onViewFullSize(): void {
-    this.openLightbox.emit(this.displayAsset.url);
+    if (this.displayAsset) this.openLightbox.emit(this.displayAsset.url);
   }
 
-  actionHelper = inject(ActionHelperService);
-
   async onSave(): Promise<void> {
+    if (!this.displayAsset) return;
     this.isSaving = true;
-    await this.actionHelper.executeMockAction(`Successfully saved asset ${this.displayAsset.id}`);
-    this.isSaving = false;
+    this.assetsRepo.update(this.displayAsset.id, { caption: this.displayAsset.caption }).subscribe({
+      next: () => {
+        this.toastService.show(`Successfully saved asset`, 'success');
+        this.isSaving = false;
+      },
+      error: () => {
+        this.toastService.show(`Failed to save asset`, 'error');
+        this.isSaving = false;
+      }
+    });
   }
 
   async onRegenerate(): Promise<void> {
+    if (!this.displayAsset) return;
     this.isRegenerating = true;
-    await this.actionHelper.executeMockAction(`Successfully regenerated caption for asset ${this.displayAsset.id}`);
-    this.mockAsset.caption = 'AI Regenerated: ' + this.mockAsset.caption;
-    this.isRegenerating = false;
+    this.assetsRepo.regenerateCaptions([this.displayAsset.id]).subscribe({
+      next: () => {
+        this.toastService.show(`Regenerating caption for asset...`, 'info');
+        this.isRegenerating = false;
+      },
+      error: () => {
+        this.toastService.show(`Failed to regenerate caption`, 'error');
+        this.isRegenerating = false;
+      }
+    });
   }
 
   async onDelete(): Promise<void> {
+    if (!this.displayAsset) return;
     this.isDeleting = true;
-    await this.actionHelper.executeMockAction(`Successfully deleted asset ${this.displayAsset.id}`);
-    this.isDeleting = false;
+    this.assetsRepo.deleteMany([this.displayAsset.id]).subscribe({
+      next: () => {
+        this.toastService.show(`Successfully deleted asset`, 'success');
+        this.isDeleting = false;
+        this.drawerService.close();
+      },
+      error: () => {
+        this.toastService.show(`Failed to delete asset`, 'error');
+        this.isDeleting = false;
+      }
+    });
   }
 
   formatDate(iso: string | null): string {

@@ -1,5 +1,6 @@
 import { Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../core/ports/dashboard.repository';
 import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
@@ -16,7 +17,7 @@ import { RankingModalComponent } from '../../../shared/components/organisms/rank
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })
@@ -55,10 +56,12 @@ export class DashboardPageComponent implements OnInit {
   // Timeline State
   selectAll = false;
   selectedRows = new Set<string>();
-  timelinePosts = [
-    { id: '1', time: '2026-07-11 12:00', text: '今日は暑いね！水分補給しっかりしてね', impressions: '3,402', status: 'Success', hasMedia: true },
-    { id: '2', time: '2026-07-10 18:00', text: '水星の魔女、最新話見た！？展開が熱すぎる…', impressions: '5,120', status: 'Success', hasMedia: true },
-  ];
+  timelinePosts: any[] = [];
+  filteredTimelinePosts: any[] = [];
+  searchQuery = '';
+  timelineStartAfterId?: string;
+  hasMoreTimeline = true;
+  isLoadingTimeline = false;
 
   constructor(@Inject(DASHBOARD_REPOSITORY) private dashboardRepo: DashboardRepository) {}
 
@@ -66,17 +69,61 @@ export class DashboardPageComponent implements OnInit {
     this.dashboardRepo.getKpiMetrics('monthly').subscribe(metrics => this.kpiMetrics = metrics);
     this.loadTopPosts();
     this.loadTopUsers();
+    this.loadTimeline();
     this.dashboardRepo.getAlerts().subscribe(alerts => this.systemAlerts = alerts);
+  }
+
+  loadTimeline(reset = false) {
+    if (reset) {
+      this.timelineStartAfterId = undefined;
+      this.timelinePosts = [];
+      this.filteredTimelinePosts = [];
+      this.hasMoreTimeline = true;
+    }
+    if (!this.hasMoreTimeline || this.isLoadingTimeline) return;
+
+    this.isLoadingTimeline = true;
+    this.dashboardRepo.getTimelineHistory(10, this.timelineStartAfterId).subscribe(posts => {
+      if (posts.length > 0) {
+        // Map to internal format if needed, but PostLeaderboard matches mostly
+        const mapped = posts.map(p => ({
+          id: p.id,
+          time: p.time,
+          text: p.snippet,
+          impressions: p.impressions,
+          status: (p as any).status || 'SUCCESS',
+          hasMedia: p.hasMedia
+        }));
+        this.timelinePosts = [...this.timelinePosts, ...mapped];
+        this.applyTimelineFilter();
+        this.timelineStartAfterId = posts[posts.length - 1].id;
+      } else {
+        this.hasMoreTimeline = false;
+      }
+      this.isLoadingTimeline = false;
+    }, () => {
+      this.isLoadingTimeline = false;
+      this.toastService.show('Failed to load timeline', 'error');
+    });
+  }
+
+  applyTimelineFilter() {
+    if (!this.searchQuery) {
+      this.filteredTimelinePosts = [...this.timelinePosts];
+    } else {
+      const q = this.searchQuery.toLowerCase();
+      this.filteredTimelinePosts = this.timelinePosts.filter(p => p.text?.toLowerCase().includes(q));
+    }
   }
 
   loadTopPosts() {
     const isoDate = this.getIsoDate(this.topPostsDate);
-    this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(posts => this.topPosts = posts);
+    this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(response => this.topPosts = response.data);
   }
 
   loadTopUsers() {
     const isoDate = this.getIsoDate(this.topUsersDate);
-    this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(users => this.topUsers = users);
+    this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(response => this.topUsers = response.data);
   }
 
   getIsoDate(dateStr: string): string {
@@ -101,6 +148,35 @@ export class DashboardPageComponent implements OnInit {
     }
     
     return dateStr; // just year or as-is
+  }
+
+  setKpiFilter(filter: string) {
+    let mode = 'monthly';
+    if (filter === 'Last 7 Days') mode = 'weekly';
+    else if (filter === 'Last 30 Days') mode = 'monthly';
+    else if (filter === 'Year to Date') mode = 'yearly';
+    
+    this.dashboardRepo.getKpiMetrics(mode).subscribe(metrics => this.kpiMetrics = metrics);
+  }
+
+  getSparklinePoints(history: number[] = [], height = 20, width = 100): string {
+    if (!history || history.length === 0) return `0,${height} ${width},${height}`;
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = max - min || 1;
+    const step = width / (history.length - 1 || 1);
+    const points = history.map((val, i) => {
+      const x = i * step;
+      const y = height - ((val - min) / range) * (height - 2) - 1; // 1px padding top/bottom
+      return `${x},${y}`;
+    });
+    return points.join(' ');
+  }
+  
+  getSparklinePolygon(history: number[] = [], height = 20, width = 100): string {
+    if (!history || history.length === 0) return `0,${height} ${width},${height}`;
+    const polyline = this.getSparklinePoints(history, height, width);
+    return `0,${height} ${polyline} ${width},${height}`;
   }
 
   openLightbox(imageUrl = '') {
@@ -156,17 +232,33 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
+  rankingModalEntries: any[] = [];
+
   openRankingModal(type: 'posts' | 'users') {
     if (type === 'posts') {
       this.rankingModalTitle = 'Top Posts by Impressions';
       this.rankingModalColLabel = 'Post';
       this.rankingModalColMetric = 'Impressions';
       this.rankingModalType = 'post';
+      this.rankingModalEntries = this.topPosts.map((p, i) => ({
+        id: p.id,
+        rank: i + 1,
+        label: p.snippet,
+        value: p.impressions,
+        badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
+      }));
     } else {
       this.rankingModalTitle = 'Top Engaged Users';
       this.rankingModalColLabel = 'User ID';
       this.rankingModalColMetric = 'Interactions';
       this.rankingModalType = 'user';
+      this.rankingModalEntries = this.topUsers.map((u, i) => ({
+        id: u.userId,
+        rank: i + 1,
+        label: u.userId,
+        value: u.interactions,
+        badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
+      }));
     }
     this.isRankingModalOpen = true;
   }
@@ -218,10 +310,21 @@ export class DashboardPageComponent implements OnInit {
   async executeBulkDelete() {
     if (this.selectedRows.size === 0) return;
     this.isDeleting = true;
-    await this.actionHelper.executeMockAction(`Successfully deleted ${this.selectedRows.size} posts`);
-    this.isDeleting = false;
-    this.selectedRows.clear();
-    this.selectAll = false;
+    
+    const ids = Array.from(this.selectedRows);
+    this.dashboardRepo.deletePosts(ids).subscribe({
+      next: () => {
+        this.toastService.show(`Successfully deleted ${ids.length} posts`, 'success');
+        this.isDeleting = false;
+        this.selectedRows.clear();
+        this.selectAll = false;
+        this.loadTimeline(true); // reload timeline
+      },
+      error: () => {
+        this.toastService.show(`Failed to delete posts`, 'error');
+        this.isDeleting = false;
+      }
+    });
   }
 
   async executeBulkArchive() {

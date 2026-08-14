@@ -36,22 +36,10 @@ export class DatePickerPopoverComponent {
 
   /**
    * Toggles the popover open/closed.
-   * Calculates fixed-position coords from the host element's bounding rect
-   * so the popover always renders below the trigger even inside overflow:hidden
-   * parent containers.
    */
   toggle(navEl: HTMLElement): void {
     if (this.mode === 'all-time') return;
     this.isOpen = !this.isOpen;
-    if (this.isOpen && navEl) {
-      const rect = navEl.getBoundingClientRect();
-      this.popoverStyle = {
-        position: 'fixed',
-        top: `${rect.bottom + window.scrollY + 4}px`,
-        left: `${rect.left + window.scrollX}px`,
-        zIndex: '999999'
-      };
-    }
     this.cdr.markForCheck();
   }
 

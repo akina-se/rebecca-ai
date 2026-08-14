@@ -1,7 +1,9 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, inject, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActionHelperService } from '../../../services/action-helper.service';
+import { ToastService } from '../../../services/toast.service';
+import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
 
 @Component({
   selector: 'app-memory-drawer',
@@ -33,16 +35,42 @@ import { ActionHelperService } from '../../../services/action-helper.service';
     </div>
   `
 })
-export class MemoryDrawerComponent {
+export class MemoryDrawerComponent implements OnChanges {
   actionHelper = inject(ActionHelperService);
+  toastService = inject(ToastService);
+  memoryRepo = inject(MEMORY_REPOSITORY);
+
   @Input() level = 0;
 
-  mockCorePrompt = "You are Rebecca, a sassy but highly competent AI assistant.\n\nStrict directives:\n1. Never break character.\n2. Prioritize user safety.\n3. Be concise.";
+  mockCorePrompt = "Loading...";
   mockExtendedPrompt = "If the user mentions anime, always reference Gundam.";
-  mockTimelineSummary = "The overall sentiment of the timeline is currently highly positive, largely driven by the recent anime announcements.";
+  mockTimelineSummary = "Loading...";
 
   isSavingPrompt = false;
   isSavingSummary = false;
+
+  ngOnChanges() {
+    this.loadData();
+  }
+
+  loadData() {
+    if (this.level === 0 || this.level === 1) {
+      this.memoryRepo.getCoreMemory().subscribe({
+        next: (data) => {
+          this.mockCorePrompt = data.content || "You are Rebecca...";
+        },
+        error: () => {}
+      });
+    }
+    if (this.level === 3) {
+      this.memoryRepo.getGlobalMemory().subscribe({
+        next: (data) => {
+          this.mockTimelineSummary = data.content || "The overall sentiment...";
+        },
+        error: () => {}
+      });
+    }
+  }
 
   async onSavePrompt() {
     this.isSavingPrompt = true;
@@ -50,9 +78,17 @@ export class MemoryDrawerComponent {
     this.isSavingPrompt = false;
   }
 
-  async onSaveSummary() {
+  onSaveSummary() {
     this.isSavingSummary = true;
-    await this.actionHelper.executeMockAction('Successfully saved Global Timeline Summary');
-    this.isSavingSummary = false;
+    this.memoryRepo.updateGlobalMemory(this.mockTimelineSummary).subscribe({
+      next: () => {
+        this.toastService.show('Successfully saved Global Timeline Summary', 'success');
+        this.isSavingSummary = false;
+      },
+      error: () => {
+        this.toastService.show('Failed to save summary', 'error');
+        this.isSavingSummary = false;
+      }
+    });
   }
 }

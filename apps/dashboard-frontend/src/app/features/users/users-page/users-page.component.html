@@ -39,54 +39,37 @@
             <th>Status</th>
         </tr></thead>
         <tbody>
-            <tr class="clickable" (click)="openUserDrawer('@user_alpha_99')">
+            <tr class="clickable" *ngFor="let user of users" (click)="openUserDrawer(user.handle)" [style.opacity]="user.status === 'BLOCKED' ? 0.6 : 1">
                 <td (click)="$event.stopPropagation()">
                     <label class="checkbox-container" (click)="$event.stopPropagation()">
-                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has('@user_alpha_99')" (change)="toggleSelection('@user_alpha_99', $event)">
+                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has(user.handle)" (change)="toggleSelection(user.handle, $event)">
                         <span class="checkmark"></span>
                     </label>
                 </td>
-                <td style="font-weight: 500;">&#64;user_alpha_99</td>
-                <td>42</td>
-                <td style="color: var(--text-muted)">2026-07-11 10:15</td>
-                <td>12 entries</td>
-                <td><span class="badge">Active</span></td>
+                <td style="font-weight: 500;" [style.text-decoration]="user.status === 'BLOCKED' ? 'line-through' : 'none'">{{ user.handle }}</td>
+                <td>{{ user.interactions }}</td>
+                <td style="color: var(--text-muted)">{{ user.lastSeen || 'Never' }}</td>
+                <td>{{ user.coreProfile ? 'Generated' : 'Empty' }}</td>
+                <td>
+                    <span class="badge" *ngIf="user.status === 'ACTIVE'">Active</span>
+                    <span class="badge" *ngIf="user.status === 'BLOCKED'" style="background: rgba(255, 71, 87, 0.2); color: var(--danger); border-color: rgba(255, 71, 87, 0.4);">Blocked</span>
+                    <span class="badge" *ngIf="user.status === 'MUTED'" style="background: rgba(255, 159, 67, 0.2); color: var(--warning); border-color: rgba(255, 159, 67, 0.4);">Muted</span>
+                </td>
             </tr>
-            <tr class="clickable" (click)="openUserDrawer('@rebecca_oshi')">
-                <td (click)="$event.stopPropagation()">
-                    <label class="checkbox-container" (click)="$event.stopPropagation()">
-                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has('@rebecca_oshi')" (change)="toggleSelection('@rebecca_oshi', $event)">
-                        <span class="checkmark"></span>
-                    </label>
-                </td>
-                <td style="font-weight: 500;">&#64;rebecca_oshi</td>
-                <td>132</td>
-                <td style="color: var(--text-muted)">2026-07-10 22:30</td>
-                <td>45 entries</td>
-                <td><span class="badge">Active</span></td>
+            <tr *ngIf="users.length === 0 && !isLoading">
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted)">No users found.</td>
             </tr>
-            <tr class="clickable" style="opacity: 0.6;" (click)="openUserDrawer('@spam_bot_001')">
-                <td (click)="$event.stopPropagation()">
-                    <label class="checkbox-container" (click)="$event.stopPropagation()">
-                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has('@spam_bot_001')" (change)="toggleSelection('@spam_bot_001', $event)">
-                        <span class="checkmark"></span>
-                    </label>
-                </td>
-                <td style="font-weight: 500; text-decoration: line-through;">&#64;spam_bot_001</td>
-                <td>0</td>
-                <td style="color: var(--text-muted)">2026-06-01 10:00</td>
-                <td>0 entries</td>
-                <td><span class="badge" style="background: rgba(255, 71, 87, 0.2); color: var(--danger); border-color: rgba(255, 71, 87, 0.4);">Blocked</span></td>
+            <tr *ngIf="isLoading">
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted)">Loading...</td>
             </tr>
         </tbody>
     </table>
     <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px;">
-        <span>Showing 1-10 of 1,204 users</span>
+        <span>Showing {{ users.length }} users</span>
         <div class="pagination-controls">
-            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
+            <button class="page-btn" disabled><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
             <button class="page-btn active">1</button>
-            <button class="page-btn">2</button>
-            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
+            <button class="page-btn" disabled><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
         </div>
     </div>
 </div>

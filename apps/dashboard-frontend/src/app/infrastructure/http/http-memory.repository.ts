@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpMemoryRepository implements MemoryRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1/dashboard';
+  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
 
   /**
    * Fetches the hierarchy of memory layers from the backend.
