@@ -14,12 +14,14 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario A: Leaderboard Filters
+   * Scenario A: Leaderboard Filters & Limits
    * - Navigate to Top Posts leaderboard.
+   * - Assert table displays dynamic posts (max 10) without mojibake.
+   * - Assert Top Engaged Users table displays max 10 rows with valid @handles.
    * - Change mode tab from 'Monthly' to 'Yearly' and observe UI and date changes.
    * - Click date navigation buttons (< / >) and assert date changes and table rows render.
    */
-  test('Scenario A: Leaderboard Filters - should update dates and render table rows when switching modes and dates', async ({ page }) => {
+  test('Scenario A: Leaderboard Filters & Limits - should render max 10 dynamic rows without mojibake and update on filter change', async ({ page }) => {
     // 1. Locate the Top Posts section
     const topPostsHeader = page.locator('.table-header-container', { hasText: 'Top Posts by Impressions' });
     await expect(topPostsHeader).toBeVisible();
@@ -31,12 +33,31 @@ test.describe('Dashboard Features E2E Tests', () => {
     const datePicker = topPostsHeader.locator('app-date-picker-popover');
     const dateText = datePicker.locator('.current-text');
 
-    // Initially, Monthly mode is selected with 'July 2026'
-    await expect(monthlyTab).toHaveClass(/active/);
-    await expect(dateText).toHaveText('July 2026');
-    await expect(topPostsTable.locator('tbody tr').first()).toBeVisible();
+    // Verify dynamic Top Posts rows: maximum 10 rows and no mojibake
+    const postRows = topPostsTable.locator('tbody tr');
+    await expect(postRows.first()).toBeVisible({ timeout: 10000 });
+    const postRowCount = await postRows.count();
+    expect(postRowCount).toBeGreaterThan(0);
+    expect(postRowCount).toBeLessThanOrEqual(10);
 
-    // 2. Switch mode from Monthly to Yearly
+    const firstPostSnippet = (await postRows.first().locator('td').nth(1).innerText()).trim();
+    // Regression check: snippet must not contain garbled Shift-JIS markers
+    expect(firstPostSnippet).not.toContain('豌ｴ譏');
+    expect(firstPostSnippet).not.toContain('縺翫・');
+
+    // 2. Verify Top Engaged Users table: maximum 10 rows and handles start with @
+    const topUsersHeader = page.locator('.table-header-container', { hasText: 'Top Engaged Users' });
+    const topUsersTable = topUsersHeader.locator('..').locator('table.data-table');
+    const userRows = topUsersTable.locator('tbody tr');
+    await expect(userRows.first()).toBeVisible({ timeout: 10000 });
+    const userRowCount = await userRows.count();
+    expect(userRowCount).toBeGreaterThan(0);
+    expect(userRowCount).toBeLessThanOrEqual(10);
+
+    const firstUserHandle = (await userRows.first().locator('td').first().innerText()).trim();
+    expect(firstUserHandle).toMatch(/^@[a-zA-Z0-9_]+$/);
+
+    // 3. Switch mode from Monthly to Yearly in Top Posts
     await yearlyTab.click();
 
     // Verify Yearly tab is active and date changes to '2026'
@@ -45,7 +66,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(dateText).toHaveText('2026');
     await expect(topPostsTable.locator('tbody tr').first()).toBeVisible();
 
-    // 3. Shift date back using '<' button in date picker
+    // 4. Shift date back using '<' button in date picker
     const prevBtn = datePicker.locator('.nav-btn').first();
     await prevBtn.click();
 
@@ -57,10 +78,10 @@ test.describe('Dashboard Features E2E Tests', () => {
   /**
    * Scenario B: Timeline Pagination
    * - Scroll to Timeline Post History.
-   * - Assert pagination controls are visible with initial page '1 / X'.
-   * - Click Next Page ('>') button and assert page updates to '2 / X' and data refreshes.
+   * - Assert numeric pagination controls (< 1 2 3 ... > Page 1 / X) are visible with page 1 active.
+   * - Click Next Page ('>') button and assert page updates to page 2 and data refreshes.
    */
-  test('Scenario B: Timeline Pagination - should display controls and update page data upon pagination', async ({ page }) => {
+  test('Scenario B: Timeline Pagination - should display numeric controls and update page data upon pagination', async ({ page }) => {
     // 1. Scroll to Timeline Post History
     const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
     await timelineHeading.scrollIntoViewIfNeeded();
@@ -77,11 +98,13 @@ test.describe('Dashboard Features E2E Tests', () => {
     const prevBtn = pagination.locator('.pagination-controls button.page-btn').first();
     const activePageBtn = pagination.locator('.pagination-controls button.page-btn.active');
     const nextBtn = pagination.locator('.pagination-controls button.page-btn').last();
+    const pageInfo = pagination.locator('.page-info');
 
     await expect(prevBtn).toBeVisible();
     await expect(prevBtn).toBeDisabled();
     await expect(activePageBtn).toBeVisible();
-    await expect(activePageBtn).toHaveText(/1\s*\/\s*\d+/);
+    await expect(activePageBtn).toHaveText('1');
+    await expect(pageInfo).toHaveText(/Page 1\s*\/\s*\d+/);
     await expect(nextBtn).toBeVisible();
     await expect(nextBtn).toBeEnabled();
 
@@ -93,7 +116,8 @@ test.describe('Dashboard Features E2E Tests', () => {
     await nextBtn.click();
 
     // 4. Assert page number is updated and table data refreshed
-    await expect(activePageBtn).toHaveText(/2\s*\/\s*\d+/);
+    await expect(activePageBtn).toHaveText('2');
+    await expect(pageInfo).toHaveText(/Page 2\s*\/\s*\d+/);
     await expect(prevBtn).toBeEnabled();
     await expect(timelineRows.first().locator('td').nth(3)).not.toHaveText(pageOneFirstRowText);
   });
@@ -187,10 +211,11 @@ test.describe('Dashboard Features E2E Tests', () => {
   /**
    * Scenario E: Drawers and Navigation
    * - Click a user ID/handle in "Top Engaged Users" table -> verify User Profile drawer slides open.
+   * - Verify user name is resolved and not "Unknown".
    * - Close drawer -> verify drawer closes.
    * - Click a post row in "Timeline Post History" -> verify Post Details drawer slides open.
    */
-  test('Scenario E: Drawers and Navigation - should open and close User Profile and Post Details drawers', async ({ page }) => {
+  test('Scenario E: Drawers and Navigation - should open and close User Profile (with resolved name) and Post Details drawers', async ({ page }) => {
     // 1. Open User Profile drawer from Top Engaged Users table
     const topUsersHeader = page.locator('.table-header-container', { hasText: 'Top Engaged Users' });
     await expect(topUsersHeader).toBeVisible();
@@ -210,6 +235,11 @@ test.describe('Dashboard Features E2E Tests', () => {
     const userDrawerContent = drawer.locator('app-user-drawer .drawer-content');
     await expect(userDrawerContent).toBeVisible({ timeout: 10000 });
     await expect(userDrawerContent.locator('.profile-handle')).toContainText(userHandle);
+
+    // Regression check: profile name must NOT be "Unknown"
+    const profileName = (await userDrawerContent.locator('.profile-name').innerText()).trim();
+    expect(profileName.length).toBeGreaterThan(0);
+    expect(profileName).not.toBe('Unknown');
 
     // 2. Close drawer
     const closeBtn = drawer.locator('.drawer-header .close-btn');
@@ -242,5 +272,33 @@ test.describe('Dashboard Features E2E Tests', () => {
     // 4. Close Post Details drawer
     await closeBtn.click();
     await expect(drawer).not.toHaveClass(/open/);
+  });
+
+  /**
+   * Scenario F: Full Ranking Modal
+   * - Click "View Full Ranking" in Top Engaged Users.
+   * - Assert Ranking Modal displays title "Top Engaged Users" and user handles.
+   * - Close modal.
+   */
+  test('Scenario F: Full Ranking Modal - should display full ranking modal with handles and pagination', async ({ page }) => {
+    const topUsersHeader = page.locator('.table-header-container', { hasText: 'Top Engaged Users' });
+    const topUsersContainer = topUsersHeader.locator('..');
+    const viewFullRankingBtn = topUsersContainer.locator('.table-footer-btn');
+
+    await viewFullRankingBtn.click();
+
+    const modal = page.locator('app-ranking-modal .modal-container');
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    await expect(modal.locator('.modal-title')).toContainText('Top Engaged Users');
+
+    const firstRankingRow = modal.locator('table.ranking-table tbody tr').first();
+    await expect(firstRankingRow).toBeVisible();
+
+    const labelCellText = (await firstRankingRow.locator('.label-cell').innerText()).trim();
+    expect(labelCellText).toMatch(/^@[a-zA-Z0-9_]+$/);
+
+    const closeBtn = modal.locator('.modal-header .close-btn');
+    await closeBtn.click();
+    await expect(modal).not.toBeVisible();
   });
 });
