@@ -139,6 +139,13 @@ const userConverter: FirestoreDataConverter<FirestoreUser> = {
     const data = snapshot.data();
     return {
       id: snapshot.id,
+      name: data['name'],
+      handle: data['handle'],
+      avatarUrl: data['avatarUrl'],
+      status: data['status'],
+      affinityScore: data['affinityScore'],
+      firstSeen: data['firstSeen'],
+      lastSeen: data['lastSeen'],
       coreProfile: data['coreProfile'] ?? {},
       working_memory: data['working_memory'],
       episodicBuffer: data['episodicBuffer'] ?? [],

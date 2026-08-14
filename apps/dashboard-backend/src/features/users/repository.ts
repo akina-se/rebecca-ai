@@ -31,6 +31,23 @@ export class UsersRepository {
     this.collections = getCollections(firestore);
   }
 
+  private resolveUserName(rawId: string, data: any): string {
+    if (data.name && data.name !== 'Unknown') return data.name;
+    if (data.coreProfile) {
+      if (typeof data.coreProfile === 'object' && data.coreProfile.name && data.coreProfile.name !== 'Unknown') {
+        return data.coreProfile.name;
+      }
+      if (typeof data.coreProfile === 'string') {
+        try {
+          const parsed = JSON.parse(data.coreProfile);
+          if (parsed && parsed.name && parsed.name !== 'Unknown') return parsed.name;
+        } catch {}
+      }
+    }
+    const formatted = rawId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return formatted || `@${rawId}`;
+  }
+
   /**
    * Retrieves users, supporting pagination, custom ordering, and returning detailed user objects.
    * 
@@ -120,7 +137,8 @@ export class UsersRepository {
 
       return {
         handle: `@${u.id}`,
-        name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : (data.name || 'Unknown'),
+        userId: u.id,
+        name: this.resolveUserName(u.id, data),
         interactions: data._dynamicInteractions,
         affinityScore: data.affinityScore !== undefined ? `${data.affinityScore}` : (data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A'),
         firstSeen: data.firstSeen || data.first_seen_date || 'N/A',
@@ -157,7 +175,7 @@ export class UsersRepository {
       return null;
     }
 
-    const data = doc.data() as UserDoc;
+    const data = doc.data() as any;
     
     // Fetch conversation logs from Firestore and sort in-memory to prevent composite index requirements
     const chatLogsSnap = await this.collections.conversationLogs
@@ -172,7 +190,7 @@ export class UsersRepository {
 
     // Handle beforeTimestamp pagination filter
     if (beforeTimestamp) {
-      sortedDocs = sortedDocs.filter(d => {
+      sortedDocs = sortedDocs.filter((d: any) => {
         const t = d.data().timestamp || '';
         return t < beforeTimestamp;
       });
@@ -208,11 +226,11 @@ export class UsersRepository {
 
     return {
       handle: `@${rawId}`,
-      name: (data.coreProfile && typeof (data.coreProfile as any).name === 'string') ? (data.coreProfile as any).name : ((data as any).name || 'Unknown'),
-      interactions: (data as any).interactions !== undefined ? (data as any).interactions : (data.daily_reply_count || 0),
-      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : ((data as any).affinityScore !== undefined ? `${(data as any).affinityScore}` : 'N/A'),
-      firstSeen: data.first_seen_date || (data as any).firstSeen || 'N/A',
-      lastSeen: data.last_reply_date || (data as any).lastSeen || 'N/A',
+      name: this.resolveUserName(rawId, data),
+      interactions: data.interactions !== undefined ? data.interactions : (data.daily_reply_count || 0),
+      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : (data.affinityScore !== undefined ? `${data.affinityScore}` : 'N/A'),
+      firstSeen: data.first_seen_date || data.firstSeen || 'N/A',
+      lastSeen: data.last_reply_date || data.lastSeen || 'N/A',
       coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
       chatHistory,
       status
