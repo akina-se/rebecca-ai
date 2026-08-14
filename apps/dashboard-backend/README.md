@@ -8,28 +8,17 @@ The `dashboard-backend` is the Backend-for-Frontend (BFF) server for the Rebecca
 
 This service is structured using **Feature-Driven (Vertical Slicing) Architecture** combined with Dependency Injection (DI). Rather than splitting code by technical layers (e.g., all controllers in one folder, all repositories in another), the codebase is organized around domain capabilities (Features):
 
-```mermaid
-graph LR
-    src["src/"]
-    core["core/<br>Core helpers, shared utilities"]
-    middleware["middleware/<br>Express middlewares"]
-    features["features/<br>Vertical Feature Slices"]
-    assets["assets/<br>Media library management"]
-    auth["auth/<br>Admin session authentication context"]
-    system_memory["system-memory/<br>Rebecca's multi-layered system memory"]
-    timeline["timeline/<br>Timeline post audit logs and bulk deletion"]
-    users["users/<br>Monitored master users list & chat history"]
-    index["index.ts<br>Server bootstrapping and module registration"]
-
-    src --> core
-    src --> middleware
-    src --> features
-    features --> assets
-    features --> auth
-    features --> system_memory
-    features --> timeline
-    features --> users
-    src --> index
+```
+src/
+├── core/                  # Core helpers, shared utilities (e.g., timezone range utils)
+├── middleware/            # Express middlewares (JWT auth, rate limits, CORS)
+├── features/              # Vertical Feature Slices
+│   ├── assets/            # Media library management (Gemini auto-captions)
+│   ├── auth/              # Admin session authentication context
+│   ├── system-memory/     # Rebecca's multi-layered system memory (Dreaming trigger)
+│   ├── timeline/          # Timeline post audit logs and bulk deletion
+│   └── users/             # Monitored master users list & chat history
+└── index.ts               # Server bootstrapping and module registration
 ```
 
 Each feature slice contains:
