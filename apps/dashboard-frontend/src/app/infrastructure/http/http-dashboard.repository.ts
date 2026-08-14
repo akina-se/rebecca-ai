@@ -58,12 +58,13 @@ export class HttpDashboardRepository implements DashboardRepository {
     return this.http.get<SystemAlert[]>(`${this.baseUrl}/alerts`);
   }
 
-  getTimelineHistory(limit: number, startAfterId?: string): Observable<PostLeaderboard[]> {
-    let params = new HttpParams().set('limit', limit.toString()).set('sortBy', 'created_at').set('sortOrder', 'desc');
-    if (startAfterId) {
-      params = params.set('startAfterId', startAfterId);
-    }
-    return this.http.get<PostLeaderboard[]>(`${this.postsBaseUrl}`, { params });
+  getTimelineHistory(page: number, limit: number): Observable<PaginatedResponse<PostLeaderboard>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString())
+      .set('sortBy', 'created_at')
+      .set('sortOrder', 'desc');
+    return this.http.get<PaginatedResponse<PostLeaderboard>>(`${this.postsBaseUrl}`, { params });
   }
 
   getPostById(id: string): Observable<any> {

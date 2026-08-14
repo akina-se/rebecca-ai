@@ -110,15 +110,15 @@
                 <tbody>
                     <tr class="clickable" (click)="openPostDrawer('p1')">
                         <td style="color: var(--text-muted)">2026-07-10 18:00</td>
-                        <td><div style="display: flex; align-items: center; gap: 8px;">水星�E魔女、最新話見た�E�E��E.. <span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span></div></td><td>5,120</td>
+                        <td><div style="display: flex; align-items: center; gap: 8px;">豌ｴ譏溘・鬲泌･ｳ縲∵怙譁ｰ隧ｱ隕九◆・・ｼ・.. <span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span></div></td><td>5,120</td>
                     </tr>
                     <tr class="clickable" (click)="openPostDrawer('p2')">
                         <td style="color: var(--text-muted)">2026-07-09 08:00</td>
-                        <td>お�Eよう�E�今日めE日頑張ろうね</td><td>4,800</td>
+                        <td>縺翫・繧医≧・∽ｻ頑律繧・譌･鬆大ｼｵ繧阪≧縺ｭ</td><td>4,800</td>
                     </tr>
                     <tr class="clickable" (click)="openPostDrawer('p3')">
                         <td style="color: var(--text-muted)">2026-07-08 12:00</td>
-                        <td><div style="display: flex; align-items: center; gap: 8px;">夏コミ行く人ぁE��ー�E�E<span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span></div></td><td>3,950</td>
+                        <td><div style="display: flex; align-items: center; gap: 8px;">螟上さ繝溯｡後￥莠ｺ縺・ｋ繝ｼ・・<span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span></div></td><td>3,950</td>
                     </tr>
                 </tbody>
             </table>
@@ -213,12 +213,13 @@
         </tbody>
     </table>
     <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px;">
-        <span>Showing {{ timelinePosts.length }} posts</span>
+        <span>Showing {{ timelineTotalItems }} posts</span>
         <div class="pagination-controls">
-            <button class="page-btn"><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
-            <button class="page-btn active">1</button>
-            <span>...</span>
-            <button class="page-btn" [disabled]="!hasMoreTimeline || isLoadingTimeline" (click)="loadTimeline(false)">
+            <button class="page-btn" [disabled]="timelinePage <= 1 || isLoadingTimeline" (click)="loadTimeline(timelinePage - 1)">
+                <span class="material-icons" style="font-size: 1rem">chevron_left</span>
+            </button>
+            <button class="page-btn active">{{ timelinePage }} / {{ timelineTotalPages }}</button>
+            <button class="page-btn" [disabled]="timelinePage >= timelineTotalPages || isLoadingTimeline" (click)="loadTimeline(timelinePage + 1)">
                 <span class="material-icons" style="font-size: 1rem" [class.spinning]="isLoadingTimeline">
                     {{ isLoadingTimeline ? 'sync' : 'chevron_right' }}
                 </span>
