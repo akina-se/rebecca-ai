@@ -59,8 +59,10 @@ export class DashboardPageComponent implements OnInit {
   timelinePosts: any[] = [];
   filteredTimelinePosts: any[] = [];
   searchQuery = '';
-  timelineStartAfterId?: string;
-  hasMoreTimeline = true;
+  timelinePage = 1;
+  timelineTotalPages = 1;
+  timelineTotalItems = 0;
+  timelineItemsPerPage = 10;
   isLoadingTimeline = false;
 
   constructor(@Inject(DASHBOARD_REPOSITORY) private dashboardRepo: DashboardRepository) {}
@@ -73,19 +75,20 @@ export class DashboardPageComponent implements OnInit {
     this.dashboardRepo.getAlerts().subscribe(alerts => this.systemAlerts = alerts);
   }
 
-  loadTimeline(reset = false) {
-    if (reset) {
-      this.timelineStartAfterId = undefined;
-      this.timelinePosts = [];
-      this.filteredTimelinePosts = [];
-      this.hasMoreTimeline = true;
-    }
-    if (!this.hasMoreTimeline || this.isLoadingTimeline) return;
+  loadTimeline(page: number = 1) {
+    if (this.isLoadingTimeline) return;
 
     this.isLoadingTimeline = true;
-    this.dashboardRepo.getTimelineHistory(10, this.timelineStartAfterId).subscribe(posts => {
-      if (posts.length > 0) {
-        // Map to internal format if needed, but PostLeaderboard matches mostly
+    this.timelinePage = page;
+    
+    this.dashboardRepo.getTimelineHistory(this.timelinePage, this.timelineItemsPerPage).subscribe({
+      next: (response) => {
+        const posts = response.data;
+        const meta = response.meta;
+        
+        this.timelineTotalPages = meta.totalPages;
+        this.timelineTotalItems = meta.totalItems;
+
         const mapped = posts.map(p => ({
           id: p.id,
           time: p.time,
@@ -94,16 +97,15 @@ export class DashboardPageComponent implements OnInit {
           status: (p as any).status || 'SUCCESS',
           hasMedia: p.hasMedia
         }));
-        this.timelinePosts = [...this.timelinePosts, ...mapped];
+        
+        this.timelinePosts = mapped;
         this.applyTimelineFilter();
-        this.timelineStartAfterId = posts[posts.length - 1].id;
-      } else {
-        this.hasMoreTimeline = false;
+        this.isLoadingTimeline = false;
+      },
+      error: () => {
+        this.isLoadingTimeline = false;
+        this.toastService.show('Failed to load timeline', 'error');
       }
-      this.isLoadingTimeline = false;
-    }, () => {
-      this.isLoadingTimeline = false;
-      this.toastService.show('Failed to load timeline', 'error');
     });
   }
 
@@ -318,7 +320,7 @@ export class DashboardPageComponent implements OnInit {
         this.isDeleting = false;
         this.selectedRows.clear();
         this.selectAll = false;
-        this.loadTimeline(true); // reload timeline
+        this.loadTimeline(1); // reload timeline
       },
       error: () => {
         this.toastService.show(`Failed to delete posts`, 'error');

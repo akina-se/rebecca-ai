@@ -41,7 +41,7 @@ describe('DashboardPageComponent (White-box Coverage)', () => {
     mockDashboardRepo.getKpiMetrics.and.returnValue(of(mockKpi));
     mockDashboardRepo.getTopPosts.and.returnValue(of({ data: mockPosts, meta: {} } as any));
     mockDashboardRepo.getTopUsers.and.returnValue(of({ data: mockUsers, meta: {} } as any));
-    mockDashboardRepo.getTimelineHistory.and.returnValue(of(mockPosts));
+    mockDashboardRepo.getTimelineHistory.and.returnValue(of({ data: mockPosts, meta: { totalPages: 1, totalItems: 2 } } as any));
     mockDashboardRepo.deletePosts.and.returnValue(of(void 0));
     mockDashboardRepo.getAlerts.and.returnValue(of([]));
 
