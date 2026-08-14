@@ -1,16 +1,16 @@
 /**
- * FirestoreService implementation.
- *
- * This module is the single Firestore client in the bot-backend application.
- * It delegates all collection access to `@rebecca/db`'s `getCollections()` helper,
- * ensuring every read/write is routed through a strongly-typed converter.
- *
- * Rules enforced here:
- *  - No raw string collection names: all references go through `COLLECTIONS.*`.
- *  - No loose `doc.data() as SomeType` casts: converters handle shape enforcement.
- *  - FieldValue helpers (increment, arrayUnion, serverTimestamp, vector) are still
- *    imported directly from @google-cloud/firestore because they produce write-only
- *    sentinel values that must bypass the converter on write paths.
+ * @fileoverview Firestore database service implementation.
+ * 
+ * Acts as the primary data access layer for the bot-backend application.
+ * Delegates collection access to `@rebecca/db`'s `getCollections()` helper,
+ * ensuring all reads and writes are routed through strongly-typed converters.
+ * 
+ * Design rules enforced in this module:
+ *  - No raw string collection names: all references must use `COLLECTIONS.*`.
+ *  - No unchecked type assertions (e.g., `doc.data() as SomeType`): converters guarantee shape.
+ *  - Direct imports of `FieldValue` helpers (increment, arrayUnion, vector, etc.) from
+ *    `@google-cloud/firestore` are permitted because they produce write-only sentinels
+ *    that must bypass the typed converter during updates.
  */
 
 import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';

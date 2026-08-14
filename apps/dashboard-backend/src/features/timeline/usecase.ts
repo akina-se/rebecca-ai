@@ -1,9 +1,10 @@
 import { TimelineRepository } from './repository';
-import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginationMeta } from '@rebecca/types';
 import { deleteTweetViaGrpc } from '../../core/grpcClient';
 
 /**
- * Use case class for orchestrating timeline and metrics-related operations.
+ * Contains business logic and orchestrates operations related to the timeline and system metrics.
+ * Coordinates between the repository for data access and external services (like gRPC) for actions.
  */
 export class TimelineUseCase {
   /**
@@ -16,10 +17,11 @@ export class TimelineUseCase {
   /**
    * Retrieves global system KPI metrics.
    * 
+   * @param period The time period filter.
    * @returns A promise that resolves to the global KPI metrics.
    */
-  async getMetrics(): Promise<KpiMetrics> {
-    return this.repo.getMetrics();
+  async getMetrics(period: string = 'monthly'): Promise<KpiMetrics> {
+    return this.repo.getMetrics(period);
   }
 
   /**
@@ -27,7 +29,7 @@ export class TimelineUseCase {
    * 
    * @returns A promise that resolves to an array of leaderboard posts.
    */
-  async getPosts(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<PostLeaderboard[]> {
+  async getPosts(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: PostLeaderboard[]; meta: PaginationMeta }> {
     return this.repo.getPosts(params);
   }
 

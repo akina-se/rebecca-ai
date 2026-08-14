@@ -81,7 +81,6 @@ export class CopilotUseCase {
       return JSON.parse(response.text) as CopilotResponse;
     } catch (e) {
       console.error('Copilot Gemini Error:', e);
-      // Return an error code. The frontend UI is responsible for translating this into localized text.
       return {
         reply: 'ERROR_AI_PROCESSING_FAILED',
         suggestionChips: []

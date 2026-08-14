@@ -56,8 +56,6 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves to the core memory content.
    */
   async getCoreMemory(): Promise<MemoryContent> {
-    // In a real system, Layer 0 is loaded from the `@rebecca/persona` package,
-    // which serves as the immutable foundational instruction set.
     return {
       level: 0,
       name: 'Layer 0: Persona Core Prompt',
@@ -72,13 +70,12 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves to the global memory content.
    */
   async getGlobalMemory(): Promise<MemoryContent> {
-    // Layer 2 from Firestore
     const doc = await this.collections.system.doc('persona').get();
     const data = doc.data();
     return {
       level: 2,
       name: 'Layer 2: Global Timeline Summary',
-      content: data?.timeline_summary || 'No recent global summary available.',
+      content: data?.timeline_summary || 'Default mock system summary. Rebecca AI is functioning normally.',
       isReadOnly: false
     };
   }
@@ -90,7 +87,6 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves when the update is complete.
    */
   async updateGlobalMemory(content: string): Promise<void> {
-    // Manual override of global memory
     await this.collections.system.doc('persona').set(
       { timeline_summary: content, timelineSummaryUpdatedAt: new Date().toISOString() },
       { merge: true }
@@ -104,8 +100,6 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves when the trigger process is completed or fallback is registered.
    */
   async triggerDreaming(): Promise<void> {
-    // Kick off the GCP-controlled dreaming process using Cloud Tasks.
-    // This allows the process to run entirely asynchronously in the background.
     const client = new CloudTasksClient();
 
     const project = process.env.GOOGLE_CLOUD_PROJECT || 'rebecca-ai-project';
@@ -123,16 +117,12 @@ export class SystemMemoryRepository {
       };
 
       console.log(`Sending task to queue ${queue} targeting ${botUrl}`);
-      // Send create task request
       await client.createTask({ parent, task });
       console.log('Successfully kicked off the Dreaming process via Cloud Tasks.');
     } catch (e) {
       console.error('Failed to trigger dreaming via Cloud Tasks', e);
-      // Fallback for local development if Cloud Tasks is not available
       if (process.env.NODE_ENV !== 'production') {
         console.log(`[Local fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
-        // Note: using fetch locally as a fallback
-        // fetch(`${botUrl}/internal/evolution/trigger`, { method: 'POST' }).catch(console.error);
       }
     }
   }

@@ -27,16 +27,21 @@ export interface ConversationLogEntry {
   timestamp?: string;
 }
 
+/** Defines the lifecycle states for a user account within the system. */
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
   BLOCKED = 'BLOCKED',
   MUTED = 'MUTED',
 }
+
+/** Represents the delivery and processing status of a timeline post. */
 export enum PostStatus {
   SUCCESS = 'SUCCESS',
   FAILED = 'FAILED',
   PENDING = 'PENDING',
 }
+
+/** Represents the processing state of an uploaded or generated media asset. */
 export enum AssetStatus {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
@@ -98,6 +103,15 @@ export interface TimelinePost {
   /** ISO 8601 datetime string (TTL expiry) */
   expireAt: string;
   status?: PostStatus;
+  impressions?: number;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
+  mediaUrls?: string[];
+  authorId?: string;
+  authorName?: string;
+  authorHandle?: string;
+  authorAvatarUrl?: string;
 }
 
 /** Rate-limit tracking document for a user within a time window. */
@@ -258,15 +272,32 @@ export interface XApiCreateResponse {
 // Dashboard BFF & Frontend Shared Models (DTOs)
 // ---------------------------------------------------------------------------
 
+export interface PaginationMeta {
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+
+
 export interface KpiMetrics {
   followers: number;
   followersTrend: number;
+  followersHistory?: number[];
   engagementRate: number;
   engagementTrend: number;
+  engagementHistory?: number[];
   dailyActiveUsers: number;
   dauTrend: number;
+  dauHistory?: number[];
   apiCalls: number;
   apiTrendStatus: string;
+  apiCallsHistory?: number[];
 }
 
 export interface PostLeaderboard {

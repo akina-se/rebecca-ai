@@ -1,11 +1,12 @@
 import { DateTime } from 'luxon';
 
 /**
- * Calculates the start and end date-times in UTC based on Japan Standard Time (JST) boundaries from a given period type and ISO date parameter.
+ * Calculates the start and end date-times in UTC based on Japan Standard Time (JST) boundaries.
+ * This is primarily used for aggregating data across specific time periods aligned with JST.
  * 
- * @param period - The aggregation period ('monthly' | 'yearly' | 'all-time').
- * @param isoDate - The ISO-8601 date string (e.g., '2026-07' or '2026').
- * @returns An object containing the start and end ISO strings in UTC, or null if no range applies.
+ * @param period - The aggregation period. Accepted values are 'monthly', 'yearly', or 'all-time'.
+ * @param isoDate - The ISO-8601 formatted date string representing the target period (e.g., '2026-07' or '2026').
+ * @returns An object containing the start and end ISO strings in UTC, or null if the period is 'all-time', invalid, or not provided.
  */
 export function getJstDateRangeInUtc(period: string, isoDate?: string): { start: string; end: string } | null {
   if (period === 'all-time' || !isoDate) {

@@ -159,11 +159,12 @@ You MUST follow these rules:
 3. Keep it short and punchy, as it is a sudden mention.`;
 
 /**
- * Constructs the base prompt by combining the core persona rules and the context-specific rules.
+ * Constructs the base persona prompt by combining the immutable core identity rules
+ * and the specific behavioral rules required for the given conversational context.
  * 
- * @param context - The context type (e.g., reply, timeline, random_engagement).
- * @param lang - The language for the prompt ('ja' or 'en').
- * @returns The fully constructed base prompt string.
+ * @param context - The execution context defining the AI's current operational mode (e.g., 'reply', 'timeline', 'random_engagement').
+ * @param lang - The target language for the generated prompt ('ja' for Japanese, 'en' for English).
+ * @returns The fully constructed, contextualized system prompt string.
  */
 export const getBasePrompt = (context: PromptContext, lang: Language): string => {
     if (lang === 'en') {
@@ -180,9 +181,13 @@ export const getBasePrompt = (context: PromptContext, lang: Language): string =>
 };
 
 /**
- * Returns the prompt used to guide the dreaming process, which consolidates user memories.
+ * Generates the system prompt used to guide the "Dreaming" process.
  * 
- * @returns The dreaming system prompt string.
+ * The Dreaming process runs periodically to consolidate short-term memories (Episodic Buffer)
+ * and long-term profile data (Core Profile) into a new, compressed Core Profile.
+ * This prompt enforces strict data anonymization (PII masking) and JSON-only output formatting.
+ * 
+ * @returns The system prompt string configured for memory consolidation tasks.
  */
 export const getDreamingPrompt = () => {
   return `
@@ -202,7 +207,7 @@ export const getDreamingPrompt = () => {
 };
 
 /**
- * Raw persona strings exposed for dashboard rendering or specialized AI use cases.
+ * Raw persona configuration strings exposed for dashboard rendering or specialized AI use cases.
  */
 export const persona = {
     core: {

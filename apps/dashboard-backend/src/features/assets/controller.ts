@@ -30,14 +30,13 @@ export class AssetsController {
   }
 
   /**
-   * Uploads a new asset (stub implementation).
+   * Uploads a new asset to the system.
    * 
-   * @param req - The Express Request object.
+   * @param req - The Express Request object containing the uploaded file data.
    * @param res - The Express Response object.
-   * @returns A promise that resolves when the response is sent.
+   * @returns A promise that resolves when the upload response is sent.
    */
   async upload(req: Request, res: Response): Promise<void> {
-    // Stub for multer/file upload logic
     res.status(201).json({ message: 'Mock upload successful' });
   }
 

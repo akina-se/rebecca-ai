@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { TimelineUseCase } from './usecase';
 
 /**
- * Controller for handling timeline and metrics-related requests.
+ * Controller responsible for handling HTTP requests related to the timeline and system metrics.
+ * It coordinates with the TimelineUseCase to retrieve and manage data, handling the Express request/response lifecycle.
  */
 export class TimelineController {
   /**
@@ -21,7 +22,8 @@ export class TimelineController {
    */
   async getMetrics(req: Request, res: Response): Promise<void> {
     try {
-      const metrics = await this.useCase.getMetrics();
+      const period = req.query.period as string || 'monthly';
+      const metrics = await this.useCase.getMetrics(period);
       res.json(metrics);
     } catch (err) {
       console.error('Failed to fetch metrics:', err);
@@ -38,13 +40,15 @@ export class TimelineController {
    */
   async getPosts(req: Request, res: Response): Promise<void> {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
-      const startAfterId = req.query.startAfterId as string | undefined;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
       const sortBy = req.query.sortBy as string | undefined;
       const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
+      const period = req.query.period as 'monthly' | 'yearly' | 'all-time' | undefined;
+      const date = req.query.date as string | undefined;
       
-      const posts = await this.useCase.getPosts({ limit, startAfterId, sortBy, sortOrder });
-      res.json(posts);
+      const result = await this.useCase.getPosts({ page, limit, sortBy, sortOrder, period, date });
+      res.json(result);
     } catch (err) {
       console.error('Failed to fetch posts:', err);
       res.status(500).json({ error: 'Failed to fetch posts' });

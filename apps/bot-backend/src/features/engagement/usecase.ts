@@ -5,26 +5,28 @@ import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
 import { downloadImage } from '../../utils/image';
 
 /**
- * Use case for running the random engagement background job.
- * It randomly selects a user from a target list and initiates an interaction.
+ * Encapsulates the business logic for the random engagement background job.
+ * Responsible for randomly selecting a target user, analyzing their profile and recent activity,
+ * and generating a contextually relevant, AI-driven interaction.
  */
 export class RandomEngagementUseCase {
     /**
-     * Creates an instance of RandomEngagementUseCase.
-     * @param deps - The application dependencies required to execute engagement.
+     * Instantiates the RandomEngagementUseCase.
+     * 
+     * @param deps - The application dependencies required to execute the engagement workflow.
      */
     constructor(private deps: AppDependencies) {}
 
     /**
-     * Executes a background job to randomly engage with a user from the "Special Treatment" list.
+     * Executes the random engagement workflow.
      * 
-     * Due to X API Free Tier limitations regarding Quote Tweets and Native Replies, 
-     * this function instead fetches the user's recent timeline to build context,
-     * analyzes their profile, and generates a standalone tweet containing an @mention
-     * that naturally responds to their recent activities.
+     * This process retrieves a list of target users, filters for those who haven't been engaged recently,
+     * analyzes their profile and recent posts to build context, and generates a tailored response using AI.
+     * The generated message is then posted as an @mention.
      * 
-     * @returns A promise resolving to an object indicating the status of the operation, 
-     *          the username of the engaged user (if any), and the reason (if skipped or failed).
+     * @returns A promise resolving to an object detailing the operation's outcome, 
+     *          including the status, the username of the engaged user (if successful), 
+     *          and an optional reason string (if skipped or failed).
      */
     async execute(): Promise<{ status: string; processedUser?: string; reason?: string }> {
     console.log("Starting Random Engagement Batch...");

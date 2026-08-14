@@ -15,7 +15,7 @@ interface UserDoc {
 }
 
 /**
- * Repository class for managing user profile details, interactions, and statuses in Firestore.
+ * Repository responsible for data access operations related to user profiles, interactions, and statuses in Firestore.
  */
 export class UsersRepository {
   private collections;
@@ -36,30 +36,80 @@ export class UsersRepository {
    * 
    * @returns A promise that resolves to an array of user details.
    */
-  async getAll(params?: { limit?: number; startAfterId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Promise<UserDetail[]> {
-    let query: Query = this.collections.users;
-    
-    const sortBy = params?.sortBy || 'daily_reply_count';
-    const sortOrder = params?.sortOrder || 'desc';
-    query = query.orderBy(sortBy, sortOrder);
-
-    if (params?.startAfterId) {
-      const doc = await this.collections.users.doc(params.startAfterId.replace('@', '')).get();
-      if (doc.exists) {
-        query = query.startAfter(doc);
+  async getAll(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: UserDetail[]; meta: any }> {
+    let startDate = '';
+    let endDate = '';
+    if (params?.period && params?.date && params.period !== 'all-time') {
+      if (params.period === 'monthly') {
+        startDate = `${params.date}-01T00:00:00.000Z`;
+        const dateObj = new Date(startDate);
+        dateObj.setMonth(dateObj.getMonth() + 1);
+        endDate = dateObj.toISOString();
+      } else if (params.period === 'yearly') {
+        startDate = `${params.date}-01-01T00:00:00.000Z`;
+        const dateObj = new Date(startDate);
+        dateObj.setFullYear(dateObj.getFullYear() + 1);
+        endDate = dateObj.toISOString();
       }
     }
 
-    const limit = params?.limit || 50;
-    query = query.limit(limit);
+    const allUsersSnap = await this.collections.users.get();
+    let usersData = allUsersSnap.docs.map(doc => ({ id: doc.id, data: doc.data() as any }));
 
-    const snapshot = await query.get();
-    
-    const users: UserDetail[] = [];
-    for (const doc of snapshot.docs) {
-      const data = doc.data() as UserDoc;
-      const rawId = doc.id;
+    if (startDate && endDate) {
+      // 1. Query conversation_logs within the date range
+      const logsSnap = await this.collections.conversationLogs
+        .where('timestamp', '>=', startDate)
+        .where('timestamp', '<', endDate)
+        .get();
+
+      // 2. Aggregate interaction counts by userId
+      const interactionsMap: Record<string, number> = {};
+      logsSnap.docs.forEach(doc => {
+        const userId = doc.data().userId;
+        if (userId) {
+          interactionsMap[userId] = (interactionsMap[userId] || 0) + 1;
+        }
+      });
+
+      // 3. Filter out users with 0 interactions in this period and assign the calculated count
+      usersData = usersData.filter(u => interactionsMap[u.id] > 0);
+      usersData.forEach(u => {
+        u.data._dynamicInteractions = interactionsMap[u.id];
+      });
+    } else {
+      // All-time: just use their overall interactions from seed or calculate all-time
+      usersData.forEach(u => {
+        u.data._dynamicInteractions = u.data.interactions || u.data.daily_reply_count || 0;
+      });
+    }
+
+    const sortBy = params?.sortBy || 'interactions';
+    const sortOrder = params?.sortOrder || 'desc';
+
+    usersData.sort((a, b) => {
+      let valA = a.data[sortBy];
+      let valB = b.data[sortBy];
       
+      // Override if sorting by interactions
+      if (sortBy === 'interactions' || sortBy === 'daily_reply_count') {
+        valA = a.data._dynamicInteractions;
+        valB = b.data._dynamicInteractions;
+      }
+      
+      if (sortOrder === 'desc') return valB < valA ? -1 : 1;
+      return valA < valB ? -1 : 1;
+    });
+
+    const totalItems = usersData.length;
+    const limit = params?.limit || 50;
+    const totalPages = Math.ceil(totalItems / limit);
+    const page = params?.page || 1;
+    
+    usersData = usersData.slice((page - 1) * limit, page * limit);
+
+    const data = usersData.map(u => {
+      const data = u.data;
       let status: UserStatus = UserStatus.ACTIVE;
       if (data.status) {
         const s = data.status.toUpperCase();
@@ -68,20 +118,29 @@ export class UsersRepository {
         else if (s === 'MUTED') status = UserStatus.MUTED;
       }
 
-      users.push({
-        handle: `@${rawId}`,
-        name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : 'Unknown',
-        interactions: data.daily_reply_count || 0,
-        affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A',
-        firstSeen: data.first_seen_date || 'N/A',
-        lastSeen: data.last_reply_date || 'N/A',
-        coreProfile: JSON.stringify(data.coreProfile || {}),
-        chatHistory: [], // chat history is loaded on demand for individual drawer
+      return {
+        handle: `@${u.id}`,
+        name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : (data.name || 'Unknown'),
+        interactions: data._dynamicInteractions,
+        affinityScore: data.affinityScore !== undefined ? `${data.affinityScore}` : (data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A'),
+        firstSeen: data.firstSeen || data.first_seen_date || 'N/A',
+        lastSeen: data.lastSeen || data.last_reply_date || 'N/A',
+        coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
+        chatHistory: [],
         status
-      });
-    }
+      };
+    });
 
-    return users;
+    return {
+      data,
+      meta: {
+        totalItems,
+        itemCount: data.length,
+        itemsPerPage: limit,
+        totalPages,
+        currentPage: page
+      }
+    };
   }
 
   /**
@@ -149,12 +208,12 @@ export class UsersRepository {
 
     return {
       handle: `@${rawId}`,
-      name: (data.coreProfile && typeof data.coreProfile.name === 'string') ? data.coreProfile.name : 'Unknown',
-      interactions: data.daily_reply_count || 0,
-      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A',
-      firstSeen: data.first_seen_date || 'N/A',
-      lastSeen: data.last_reply_date || 'N/A',
-      coreProfile: JSON.stringify(data.coreProfile || {}),
+      name: (data.coreProfile && typeof (data.coreProfile as any).name === 'string') ? (data.coreProfile as any).name : ((data as any).name || 'Unknown'),
+      interactions: (data as any).interactions !== undefined ? (data as any).interactions : (data.daily_reply_count || 0),
+      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : ((data as any).affinityScore !== undefined ? `${(data as any).affinityScore}` : 'N/A'),
+      firstSeen: data.first_seen_date || (data as any).firstSeen || 'N/A',
+      lastSeen: data.last_reply_date || (data as any).lastSeen || 'N/A',
+      coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
       chatHistory,
       status
     };

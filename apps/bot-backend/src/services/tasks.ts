@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Google Cloud Tasks service implementation.
+ * Handles the asynchronous enqueueing of reply tasks to manage system load and processing times.
+ */
+
 import { CloudTasksClient  } from '@google-cloud/tasks';
 import config from '../config';
 
@@ -8,9 +13,12 @@ import config from '../config';
 let client = null;
 
 /**
- * Retrieves the Cloud Tasks client instance, initializing it if necessary.
+ * Retrieves the Cloud Tasks client instance.
  * 
- * @returns The active Cloud Tasks client instance or null if initialization fails.
+ * Initializes the client on the first invocation. If initialization fails
+ * (e.g., due to missing credentials), it logs a warning and returns null.
+ * 
+ * @returns The active `CloudTasksClient` instance, or `null` if initialization fails.
  */
 const getClient = () => {
     if (!client) {
@@ -24,12 +32,15 @@ const getClient = () => {
 }
 
 /**
- * Enqueues a reply task to be processed asynchronously.
+ * Enqueues a reply task to be processed asynchronously by a worker.
  * 
- * @param payload - The payload data to be sent with the task.
- * @param delaySeconds - Number of seconds to delay the task execution. Defaults to 0.
- * @returns A promise that resolves to the created task response or a mock object if configuration is missing.
- * @throws Will throw an error if the task creation fails.
+ * Constructs an HTTP POST task targeted at the configured worker URL and enqueues it
+ * in the specified Cloud Tasks queue. Includes OIDC token configuration for secure invocation.
+ * 
+ * @param payload - The arbitrary data payload to be serialized and sent to the worker.
+ * @param delaySeconds - The number of seconds to delay the task's execution. Defaults to 0 (immediate).
+ * @returns A promise resolving to the created task response, or a mock object if configuration is missing.
+ * @throws {Error} If the task creation API call fails.
  */
 const enqueueReplyTask = async (payload, delaySeconds = 0) => {
     const project = config.gcp.projectId;

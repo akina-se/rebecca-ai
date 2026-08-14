@@ -81,14 +81,13 @@ export class SystemMemoryController {
   }
 
   /**
-   * Triggers the dreaming evolution process.
+   * Triggers the asynchronous dreaming evolution process.
    * 
    * @param req - The Express Request object.
    * @param res - The Express Response object.
-   * @returns A promise that resolves when the response is sent.
+   * @returns A promise that resolves when the trigger process is acknowledged.
    */
   async triggerDreaming(req: Request, res: Response): Promise<void> {
-    // Non-blocking async trigger
     this.useCase.triggerDreaming().catch(console.error);
     res.status(202).json({ success: true, message: 'Dreaming process initiated' });
   }

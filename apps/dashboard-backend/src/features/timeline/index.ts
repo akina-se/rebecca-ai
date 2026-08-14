@@ -5,23 +5,25 @@ import { TimelineUseCase } from './usecase';
 import { TimelineController } from './controller';
 
 /**
- * Initializes the timeline feature module, setting up dependencies and routes.
+ * Initializes the timeline feature module by injecting dependencies and setting up Express routes.
  * 
- * @param firestore - The Firestore instance used for database operations.
- * @returns An Express Router configured with the timeline routes.
+ * @param firestore - The Firestore database instance used for data access.
+ * @returns An object containing configured Express routers for the dashboard and posts.
  */
-export function initializeTimelineModule(firestore: Firestore): Router {
-  const router = Router();
+export function initializeTimelineModule(firestore: Firestore): { dashboardRouter: Router, postsRouter: Router } {
+  const dashboardRouter = Router();
+  const postsRouter = Router();
   
   const repo = new TimelineRepository(firestore);
   const useCase = new TimelineUseCase(repo);
   const controller = new TimelineController(useCase);
 
-  router.get('/metrics', controller.getMetrics.bind(controller));
-  router.get('/posts', controller.getPosts.bind(controller));
-  router.delete('/posts', controller.deletePosts.bind(controller));
-  router.get('/posts/:id', controller.getPostById.bind(controller));
-  router.get('/alerts', controller.getAlerts.bind(controller));
+  dashboardRouter.get('/metrics', controller.getMetrics.bind(controller));
+  dashboardRouter.get('/alerts', controller.getAlerts.bind(controller));
 
-  return router;
+  postsRouter.get('/', controller.getPosts.bind(controller));
+  postsRouter.delete('/', controller.deletePosts.bind(controller));
+  postsRouter.get('/:id', controller.getPostById.bind(controller));
+
+  return { dashboardRouter, postsRouter };
 }

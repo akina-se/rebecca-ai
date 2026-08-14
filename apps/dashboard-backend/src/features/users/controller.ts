@@ -3,7 +3,8 @@ import { UsersUseCase } from './usecase';
 import { UserStatus } from '@rebecca/types';
 
 /**
- * Controller for handling user management requests.
+ * Controller responsible for handling HTTP requests related to user management and profiles.
+ * Interfaces with the UsersUseCase to fulfill user-related operations.
  */
 export class UsersController {
   /**
@@ -21,12 +22,14 @@ export class UsersController {
    * @returns A promise that resolves when the response is sent.
    */
   async getAll(req: Request, res: Response): Promise<void> {
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
-    const startAfterId = req.query.startAfterId as string;
-    const sortBy = req.query.sortBy as string;
-    const sortOrder = req.query.sortOrder as 'asc' | 'desc';
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const sortBy = req.query.sortBy as string | undefined;
+    const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined;
+    const period = req.query.period as 'monthly' | 'yearly' | 'all-time' | undefined;
+    const date = req.query.date as string | undefined;
     try {
-      const users = await this.useCase.getAllUsers({ limit, startAfterId, sortBy, sortOrder });
+      const users = await this.useCase.getAllUsers({ page, limit, sortBy, sortOrder, period, date });
       res.json(users);
     } catch (err) {
       console.error('Failed to fetch users:', err);

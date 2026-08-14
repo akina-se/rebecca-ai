@@ -1,10 +1,17 @@
+/**
+ * @fileoverview Gemini API service wrapper.
+ * Provides functions for generating conversational replies, analyzing user profiles,
+ * and performing various semantic NLP tasks using Google's generative AI models.
+ */
+
 import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
 import { fetchYahooNewsHeadlines } from '../utils/newsFetcher';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 
 /**
- * Gemini API client instance.
+ * Global Gemini API client instance.
+ * Initialized if a valid API key is present in the configuration.
  */
 let ai: GoogleGenAI | null = null;
 if (config.gemini.apiKey) {
@@ -12,12 +19,16 @@ if (config.gemini.apiKey) {
 }
 
 /**
- * Generates a reply using the Gemini AI model based on system instructions and conversation history.
+ * Generates a conversational reply using the Gemini AI model.
  * 
- * @param systemInstruction - The system persona and instruction prompt.
- * @param history - Array of previous conversation log entries.
- * @param userInput - The latest input from the user.
- * @returns A promise that resolves to the generated reply string.
+ * Incorporates system persona instructions, historical conversation context, and the latest user input.
+ * Includes support for tool calling, specifically fetching news headlines if requested by the model.
+ * 
+ * @param systemInstruction - The system persona and behavioral guidelines.
+ * @param history - A chronological sequence of previous conversation log entries.
+ * @param userInput - The most recent text input provided by the user.
+ * @returns A promise that resolves to the generated AI response string.
+ * @throws {Error} If the underlying Gemini API call fails.
  */
 const generateReply = async (systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string> => {
     if (!ai) {
@@ -92,12 +103,13 @@ const generateReply = async (systemInstruction: string, history: ConversationLog
 };
 
 /**
- * Generates an updated core profile based on the previous profile and daily conversational buffers.
+ * Generates an updated core profile by assimilating recent episodic memories.
  * 
- * @param systemPrompt - The system instruction defining the dreaming protocol.
- * @param episodicBuffer - Recent conversation logs not yet integrated.
- * @param coreProfile - The user's current core profile.
- * @returns A promise that resolves to the updated core profile.
+ * @param systemPrompt - The system instruction defining the profiling and dreaming protocol.
+ * @param episodicBuffer - A collection of recent conversation logs not yet integrated into the profile.
+ * @param coreProfile - The user's existing core profile data.
+ * @returns A promise that resolves to the newly synthesized core profile.
+ * @throws {Error} If generation or JSON parsing fails.
  */
 const generateDreaming = async (systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile> => {
     if (!ai) {

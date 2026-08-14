@@ -2,16 +2,13 @@ import { Router } from 'express';
 import { MentionsController } from './controller';
 
 /**
- * Configures the Express routes for the Mentions feature.
- * @param controller The MentionsController instance to handle route requests.
- * @returns An Express Router configured with mentions endpoints.
+ * Initializes and configures the Express routes for the Mentions sub-domain.
+ * 
+ * @param controller - The controller instance responsible for handling route logic.
+ * @returns A configured Express Router instance containing endpoints for mentions operations.
  */
 export const createMentionsRouter = (controller: MentionsController): Router => {
     const router = Router();
-    
-    // The authentication middleware (batchAuth) should be applied globally 
-    // to the parent router mapping this module, or passed in here.
-    // For clean architecture, we just define the routes here.
     
     router.get('/', controller.pollMentions);
     

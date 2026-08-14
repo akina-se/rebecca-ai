@@ -3,9 +3,16 @@ import config from '../config';
 import { verifyServerToServerAuth } from './authUtils';
 
 /**
- * Middleware to authenticate requests to /worker endpoints.
- * It verifies the OIDC token sent by Google Cloud Tasks.
- * If running locally or without Cloud Tasks, a fallback shared secret can be used.
+ * Express middleware to authenticate requests to worker endpoints.
+ *
+ * Validates the incoming request by verifying the Google OIDC token (typically sent by
+ * Google Cloud Tasks). For local development or alternative task invocation, it falls back
+ * to a shared secret verification approach.
+ *
+ * @param req - The Express request object.
+ * @param res - The Express response object used to return a 401 Unauthorized status on authentication failure.
+ * @param next - The next middleware function in the Express pipeline.
+ * @returns A promise that resolves when the middleware completes execution.
  */
 export const workerAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -2,21 +2,23 @@ import { Request, Response } from 'express';
 import { RandomEngagementUseCase } from './usecase';
 
 /**
- * Controller for handling random engagement HTTP requests.
- * Triggers the random engagement process to actively reach out to users.
+ * Controller responsible for handling random engagement HTTP requests.
+ * Orchestrates the execution of the random engagement process to actively interact with targeted users.
  */
 export class RandomEngagementController {
     /**
-     * Creates an instance of RandomEngagementController.
-     * @param useCase - The use case that orchestrates the random engagement logic.
+     * Instantiates the RandomEngagementController.
+     * 
+     * @param useCase - The use case that encapsulates the random engagement business logic.
      */
     constructor(private useCase: RandomEngagementUseCase) {}
 
     /**
-     * Handles the incoming request to execute the random engagement process.
-     * @param req - The Express request object.
-     * @param res - The Express response object used to return the execution status.
-     * @returns A promise that resolves when the response is sent.
+     * Handles incoming HTTP requests to trigger the random engagement process.
+     * 
+     * @param req - The Express request object containing the incoming HTTP request data.
+     * @param res - The Express response object used to return the status of the execution.
+     * @returns A promise that resolves when the HTTP response has been sent.
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
