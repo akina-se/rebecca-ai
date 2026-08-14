@@ -10,27 +10,25 @@ To prevent Firestore read limit exhaustion and ensure fast dashboard queries, we
 
 Instead of the admin panel calculating metrics (such as Daily Active Users / DAU) on-the-fly by querying thousands of raw logs, background Cloud Functions automatically aggregate these logs into summary documents as they are created.
 
-```
-                  [Bot Backend / Worker]
-                             │
-                             ▼
-                (Write raw log to Firestore)
-                             │
-                             ▼
-                [conversation_logs Collection]
-                             │
-                  (Firestore Event Trigger)
-                             │
-                             ▼
-               [Cloud Functions: onConversationLogCreated]
-                             │
-                  (Batch Aggregation Write)
-                             │
-         ┌───────────────────┴───────────────────┐
-         ▼                                       ▼
-  [users Collection]                    [system_stats Collection]
-  - Increments daily_reply_count        - Performs unique user arrayUnion
-  - Updates last_reply_date             - Increments total_interactions
+```mermaid
+graph TD
+    Bot[Bot Backend / Worker]
+    ActionWrite(Write raw log to Firestore)
+    ColLogs[conversation_logs Collection]
+    Trigger(Firestore Event Trigger)
+    Function[Cloud Functions: onConversationLogCreated]
+    BatchWrite(Batch Aggregation Write)
+    
+    ColUsers["users Collection<br/>- Increments daily_reply_count<br/>- Updates last_reply_date"]
+    ColStats["system_stats Collection<br/>- Performs unique user arrayUnion<br/>- Increments total_interactions"]
+
+    Bot --> ActionWrite
+    ActionWrite --> ColLogs
+    ColLogs --> Trigger
+    Trigger --> Function
+    Function --> BatchWrite
+    BatchWrite --> ColUsers
+    BatchWrite --> ColStats
 ```
 
 ---
