@@ -234,6 +234,21 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
+  get timelinePageNumbers(): (number | string)[] {
+    const total = this.timelineTotalPages;
+    const current = this.timelinePage;
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, total];
+    }
+    if (current >= total - 2) {
+      return [1, total - 3, total - 2, total - 1, total];
+    }
+    return [1, current - 1, current, current + 1, total];
+  }
+
   rankingModalEntries: any[] = [];
 
   openRankingModal(type: 'posts' | 'users') {
@@ -255,9 +270,9 @@ export class DashboardPageComponent implements OnInit {
       this.rankingModalColMetric = 'Interactions';
       this.rankingModalType = 'user';
       this.rankingModalEntries = this.topUsers.map((u, i) => ({
-        id: u.userId,
+        id: (u as any).handle || u.userId,
         rank: i + 1,
-        label: u.userId,
+        label: (u as any).handle || u.userId,
         value: u.interactions,
         badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
       }));
