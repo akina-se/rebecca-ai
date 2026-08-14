@@ -1,4 +1,4 @@
-﻿# Logs
+# Logs
 logs
 *.log
 npm-debug.log*
@@ -146,8 +146,13 @@ ui-debug.log
 # Angular
 .angular/
 
-# Project Specific
+# Project Build Outputs & Transpiled Code
 apps/*/dist/
 apps/*/out/
+apps/functions/lib/
 packages/*/dist/
 .jdk/
+
+# Playwright Test Reports & Artifacts
+apps/dashboard-e2e/playwright-report/
+apps/dashboard-e2e/test-results/
