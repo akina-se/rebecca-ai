@@ -314,6 +314,10 @@ export interface PostDetail {
   content: string;
   impressions: number;
   mediaUrls: string[];
+  status?: PostStatus | string;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
 }
 
 export interface UserLeaderboard {

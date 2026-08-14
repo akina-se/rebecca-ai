@@ -28,10 +28,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Rate Limiting (Basic protection for BFF)
+// Rate Limiting (Protection for BFF: 100 req/min average, burst up to 1500 per 15m)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1500,
   standardHeaders: true,
   legacyHeaders: false,
 });
