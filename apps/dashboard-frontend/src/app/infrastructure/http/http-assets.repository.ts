@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { AssetsRepository } from '../../core/ports/assets.repository';
-import { Asset, AssetStatus } from '@rebecca/types';
+import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -19,21 +19,28 @@ export class HttpAssetsRepository implements AssetsRepository {
    * Retrieves assets, supporting pagination, search, and status filters.
    * 
    * @param params - The query parameters.
-   * @returns Observable of assets list.
+   * @returns Observable of paginated assets list.
    */
-  getAll(params?: { limit?: number; startAfterId?: string; search?: string; status?: string; }): Observable<Asset[]> {
+  getAll(params?: { page?: number; limit?: number; search?: string; status?: string; }): Observable<PaginatedResponse<Asset>> {
     let httpParams = new HttpParams();
     if (params) {
+      if (params.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
       if (params.limit !== undefined) httpParams = httpParams.set('limit', params.limit.toString());
-      if (params.startAfterId !== undefined) httpParams = httpParams.set('startAfterId', params.startAfterId);
-      if (params.search !== undefined) httpParams = httpParams.set('search', params.search);
-      if (params.status !== undefined) httpParams = httpParams.set('status', params.status);
+      if (params.search !== undefined && params.search.trim().length > 0) {
+        httpParams = httpParams.set('search', params.search.trim());
+      }
+      if (params.status !== undefined && params.status.trim().length > 0) {
+        httpParams = httpParams.set('status', params.status.trim());
+      }
     }
-    return this.http.get<Asset[]>(`${this.baseUrl}/images`, { params: httpParams }).pipe(
-      map((assets: Asset[]) => assets.map((asset: Asset) => ({
-        ...asset,
-        status: this.mapStatus(asset.status)
-      })))
+    return this.http.get<PaginatedResponse<Asset>>(`${this.baseUrl}/images`, { params: httpParams }).pipe(
+      map((response: PaginatedResponse<Asset>) => ({
+        ...response,
+        data: (response.data || []).map((asset: Asset) => ({
+          ...asset,
+          status: this.mapStatus(asset.status)
+        }))
+      }))
     );
   }
 
@@ -52,6 +59,12 @@ export class HttpAssetsRepository implements AssetsRepository {
     return AssetStatus.PENDING;
   }
 
+  /**
+   * Retrieves a single asset by ID.
+   * 
+   * @param id - The ID of the asset.
+   * @returns Observable of Asset entity.
+   */
   getById(id: string): Observable<Asset> {
     return this.http.get<Asset>(`${this.baseUrl}/images/${id}`).pipe(
       map(asset => ({ ...asset, status: this.mapStatus(asset.status) }))
@@ -59,14 +72,20 @@ export class HttpAssetsRepository implements AssetsRepository {
   }
 
   /**
-   * Uploads an image asset to the server.
+   * Uploads one or multiple image files to the server using multipart/form-data.
    * 
-   * @param file - The file to upload.
+   * @param files - Single File or array of Files.
    * @returns Observable resolving when upload completes.
    */
-  upload(file: File): Observable<unknown> {
+  upload(files: File[] | File): Observable<unknown> {
     const formData = new FormData();
-    formData.append('file', file);
+    if (Array.isArray(files)) {
+      for (const f of files) {
+        formData.append('files', f, f.name);
+      }
+    } else {
+      formData.append('files', files, files.name);
+    }
     return this.http.post<unknown>(`${this.baseUrl}/images`, formData);
   }
 
