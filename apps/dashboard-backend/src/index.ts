@@ -16,6 +16,7 @@ import { initializeTimelineModule } from './features/timeline';
 import { initializeUsersModule } from './features/users';
 import { initializeSystemMemoryModule } from './features/system-memory';
 import { initializeAssetsModule } from './features/assets';
+import { initializeSettingsModule } from './features/settings';
 
 import { config } from './config';
 
@@ -48,6 +49,7 @@ const { dashboardRouter: timelineRouter, postsRouter } = initializeTimelineModul
 const usersRouter = initializeUsersModule(firestore);
 const systemMemoryRouter = initializeSystemMemoryModule(firestore);
 const assetsRouter = initializeAssetsModule(firestore);
+const settingsRouter = initializeSettingsModule(firestore);
 
 // Mount Routes
 app.use('/api/v1/auth', authRouter);
@@ -58,6 +60,7 @@ app.use('/api/v1/posts', postsRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/memory', systemMemoryRouter);
 app.use('/api/v1/images', assetsRouter);
+app.use('/api/v1/settings', settingsRouter);
 
 // Healthcheck endpoint
 app.get('/health', (req, res) => {

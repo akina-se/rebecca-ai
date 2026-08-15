@@ -49,11 +49,11 @@ export class UsersRepository {
   }
 
   /**
-   * Retrieves users, supporting pagination, custom ordering, and returning detailed user objects.
+   * Retrieves users, supporting pagination, custom ordering, search, and returning detailed user objects.
    * 
    * @returns A promise that resolves to an array of user details.
    */
-  async getAll(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: UserDetail[]; meta: any }> {
+  async getAll(params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: UserDetail[]; meta: any }> {
     let startDate = '';
     let endDate = '';
     if (params?.period && params?.date && params.period !== 'all-time') {
@@ -101,26 +101,43 @@ export class UsersRepository {
       });
     }
 
+    // Fuzzy / Substring Search filter (by handle, name, or userId)
+    if (params?.search && params.search.trim().length > 0) {
+      const q = params.search.trim().toLowerCase().replace(/^@/, '');
+      usersData = usersData.filter(u => {
+        const handle = u.id.toLowerCase();
+        const name = (u.data.name || '').toLowerCase();
+        return handle.includes(q) || name.includes(q);
+      });
+    }
+
     const sortBy = params?.sortBy || 'interactions';
     const sortOrder = params?.sortOrder || 'desc';
 
     usersData.sort((a, b) => {
-      let valA = a.data[sortBy];
-      let valB = b.data[sortBy];
+      let valA: any = a.data[sortBy];
+      let valB: any = b.data[sortBy];
       
-      // Override if sorting by interactions
       if (sortBy === 'interactions' || sortBy === 'daily_reply_count') {
-        valA = a.data._dynamicInteractions;
-        valB = b.data._dynamicInteractions;
+        valA = a.data._dynamicInteractions || 0;
+        valB = b.data._dynamicInteractions || 0;
+      } else if (sortBy === 'handle' || sortBy === 'userId' || sortBy === 'id') {
+        valA = a.id.toLowerCase();
+        valB = b.id.toLowerCase();
+        if (sortOrder === 'desc') return valB.localeCompare(valA);
+        return valA.localeCompare(valB);
+      } else if (sortBy === 'lastSeen' || sortBy === 'last_reply_date' || sortBy === 'lastInteraction') {
+        valA = new Date(a.data.lastSeen || a.data.last_reply_date || 0).getTime();
+        valB = new Date(b.data.lastSeen || b.data.last_reply_date || 0).getTime();
       }
       
-      if (sortOrder === 'desc') return valB < valA ? -1 : 1;
-      return valA < valB ? -1 : 1;
+      if (sortOrder === 'desc') return valB < valA ? -1 : valB > valA ? 1 : 0;
+      return valA < valB ? -1 : valA > valB ? 1 : 0;
     });
 
     const totalItems = usersData.length;
-    const limit = params?.limit || 50;
-    const totalPages = Math.ceil(totalItems / limit);
+    const limit = params?.limit || 30;
+    const totalPages = Math.ceil(totalItems / limit) || 1;
     const page = params?.page || 1;
     
     usersData = usersData.slice((page - 1) * limit, page * limit);
@@ -135,6 +152,14 @@ export class UsersRepository {
         else if (s === 'MUTED') status = UserStatus.MUTED;
       }
 
+      // Calculate real RAG memories status and count
+      const hasCoreProfile = !!data.coreProfile && (typeof data.coreProfile === 'object' ? Object.keys(data.coreProfile).length > 0 : String(data.coreProfile).length > 2);
+      const hasEpisodic = Array.isArray(data.episodicBuffer) && data.episodicBuffer.length > 0;
+      const importantMemoriesCount = Array.isArray(data.coreProfile?.important_memories) ? data.coreProfile.important_memories.length : 0;
+      const episodicCount = Array.isArray(data.episodicBuffer) ? data.episodicBuffer.length : 0;
+      const ragMemoriesCount = importantMemoriesCount + episodicCount || (hasCoreProfile ? 1 : 0);
+      const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
+
       return {
         handle: `@${u.id}`,
         userId: u.id,
@@ -145,7 +170,9 @@ export class UsersRepository {
         lastSeen: data.lastSeen || data.last_reply_date || 'N/A',
         coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
         chatHistory: [],
-        status
+        status,
+        ragMemoriesStatus,
+        ragMemoriesCount
       };
     });
 
@@ -224,6 +251,14 @@ export class UsersRepository {
       else if (s === 'MUTED') status = UserStatus.MUTED;
     }
 
+    // Calculate real RAG memories status and count
+    const hasCoreProfile = !!data.coreProfile && (typeof data.coreProfile === 'object' ? Object.keys(data.coreProfile).length > 0 : String(data.coreProfile).length > 2);
+    const hasEpisodic = Array.isArray(data.episodicBuffer) && data.episodicBuffer.length > 0;
+    const importantMemoriesCount = Array.isArray(data.coreProfile?.important_memories) ? data.coreProfile.important_memories.length : 0;
+    const episodicCount = Array.isArray(data.episodicBuffer) ? data.episodicBuffer.length : 0;
+    const ragMemoriesCount = importantMemoriesCount + episodicCount || (hasCoreProfile ? 1 : 0);
+    const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
+
     return {
       handle: `@${rawId}`,
       name: this.resolveUserName(rawId, data),
@@ -233,7 +268,9 @@ export class UsersRepository {
       lastSeen: data.last_reply_date || data.lastSeen || 'N/A',
       coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
       chatHistory,
-      status
+      status,
+      ragMemoriesStatus,
+      ragMemoriesCount
     };
   }
 
