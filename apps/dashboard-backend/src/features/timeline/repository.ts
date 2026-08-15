@@ -149,10 +149,19 @@ export class TimelineRepository {
     const sortOrder = params?.sortOrder || 'desc';
     
     docs.sort((a, b) => {
-      const valA = a.data[sortBy] || 0;
-      const valB = b.data[sortBy] || 0;
-      if (sortOrder === 'desc') return valB < valA ? -1 : 1;
-      return valA < valB ? -1 : 1;
+      let valA = a.data[sortBy];
+      let valB = b.data[sortBy];
+
+      if (sortBy === 'time' || sortBy === 'created_at' || sortBy === 'timestamp') {
+        valA = new Date(a.data.created_at || a.data.timestamp || 0).getTime();
+        valB = new Date(b.data.created_at || b.data.timestamp || 0).getTime();
+      } else {
+        valA = typeof valA === 'number' ? valA : 0;
+        valB = typeof valB === 'number' ? valB : 0;
+      }
+
+      if (sortOrder === 'desc') return valB < valA ? -1 : valB > valA ? 1 : 0;
+      return valA < valB ? -1 : valA > valB ? 1 : 0;
     });
 
     const totalItems = docs.length;
@@ -173,7 +182,8 @@ export class TimelineRepository {
         snippet: content ? content.substring(0, 50) + '...' : '',
         impressions: d.impressions || 0,
         status: d.status || 'SUCCESS',
-        hasMedia: !!media && media.length > 0
+        hasMedia: !!media && media.length > 0,
+        mediaUrls: media
       };
     });
 

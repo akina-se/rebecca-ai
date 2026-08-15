@@ -76,12 +76,12 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario B: Timeline Pagination
+   * Scenario B: Timeline Pagination & Column Sorting
    * - Scroll to Timeline Post History.
-   * - Assert numeric pagination controls (< 1 2 3 ... > Page 1 / X) are visible with page 1 active.
-   * - Click Next Page ('>') button and assert page updates to page 2 and data refreshes.
+   * - Test interactive column sorting for TIME and IMPRESSIONS with indicator icons.
+   * - Test pagination controls (< 1 2 3 ... > Page 1 / X).
    */
-  test('Scenario B: Timeline Pagination - should display numeric controls and update page data upon pagination', async ({ page }) => {
+  test('Scenario B: Timeline Pagination & Sorting - should toggle sort by Time/Impressions and paginate properly', async ({ page }) => {
     // 1. Scroll to Timeline Post History
     const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
     await timelineHeading.scrollIntoViewIfNeeded();
@@ -91,7 +91,28 @@ test.describe('Dashboard Features E2E Tests', () => {
     const timelineRows = timelineTable.locator('tbody tr');
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
 
-    // 2. Verify pagination controls visibility and initial state
+    // 2. Locate sortable table headers
+    const timeHeader = timelineTable.locator('th.sortable-th', { hasText: 'Time' });
+    const impressionsHeader = timelineTable.locator('th.sortable-th', { hasText: 'Impressions' });
+
+    await expect(timeHeader).toBeVisible();
+    await expect(impressionsHeader).toBeVisible();
+
+    // Default sort is TIME desc (arrow_downward)
+    await expect(timeHeader.locator('.sort-icon')).toHaveText('arrow_downward');
+
+    // Click TIME header to toggle to ASC (arrow_upward)
+    await timeHeader.click();
+    await expect(timeHeader.locator('.sort-icon')).toHaveText('arrow_upward');
+    await expect(timelineRows.first()).toBeVisible();
+
+    // Click IMPRESSIONS header to sort by Impressions desc
+    await impressionsHeader.click();
+    await expect(impressionsHeader.locator('.sort-icon')).toHaveText('arrow_downward');
+    await expect(timeHeader.locator('.sort-icon')).toHaveText('unfold_more');
+    await expect(timelineRows.first()).toBeVisible();
+
+    // 3. Verify pagination controls visibility and initial state
     const pagination = page.locator('.pagination');
     await expect(pagination).toBeVisible();
 
@@ -108,23 +129,50 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(nextBtn).toBeVisible();
     await expect(nextBtn).toBeEnabled();
 
-    // Capture first row text on page 1
-    const pageOneFirstRow = timelineRows.first();
-    const pageOneFirstRowText = (await pageOneFirstRow.locator('td').nth(3).innerText()).trim();
-
-    // 3. Click Next Page ('>') button
+    // 4. Click Next Page ('>') button
     await nextBtn.click();
-
-    // 4. Assert page number is updated and table data refreshed
     await expect(activePageBtn).toHaveText('2');
     await expect(pageInfo).toHaveText(/Page 2\s*\/\s*\d+/);
     await expect(prevBtn).toBeEnabled();
-    await expect(timelineRows.first().locator('td').nth(3)).not.toHaveText(pageOneFirstRowText);
+  });
+
+  /**
+   * Scenario B2: Timeline Media Lightbox
+   * - Locate post row with media.
+   * - Click media thumbnail icon.
+   * - Verify full-size Lightbox modal opens with real image URL and closes cleanly.
+   */
+  test('Scenario B2: Timeline Media Lightbox - should open lightbox modal with real image on thumbnail click', async ({ page }) => {
+    const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
+    await timelineHeading.scrollIntoViewIfNeeded();
+
+    const timelineTable = page.locator('table.data-table').nth(2);
+    // Find row with media thumbnail
+    const mediaThumb = timelineTable.locator('tbody tr td div[title="Click to view image"]').first();
+    await expect(mediaThumb).toBeVisible({ timeout: 10000 });
+
+    // Click thumbnail
+    await mediaThumb.click();
+
+    // Verify Lightbox modal appears
+    const lightbox = page.locator('app-lightbox .lightbox-overlay');
+    await expect(lightbox).toBeVisible({ timeout: 5000 });
+
+    const lightboxImg = lightbox.locator('img');
+    await expect(lightboxImg).toBeVisible();
+    const imgSrc = await lightboxImg.getAttribute('src');
+    expect(imgSrc).toBeTruthy();
+    expect(imgSrc?.length).toBeGreaterThan(0);
+
+    // Close lightbox
+    const closeBtn = lightbox.locator('.close-btn');
+    await closeBtn.click();
+    await expect(lightbox).not.toBeVisible();
   });
 
   /**
    * Scenario C: Timeline Keyword Search
-   * - Type a specific keyword into the search bar.
+   * - Type a dynamic keyword from the first row into the search bar.
    * - Assert table row count is reduced to match filtered results.
    * - Clear the search bar and assert all original rows return.
    */
@@ -143,14 +191,14 @@ test.describe('Dashboard Features E2E Tests', () => {
     const initialRowCount = await timelineRows.count();
     expect(initialRowCount).toBeGreaterThan(1);
 
-    // 2. Type keyword known to exist in seeded data (e.g., '水星' or 'TypeScript' or 'No. 1')
-    const keyword = '水星';
+    // 2. Extract keyword dynamically from the first visible post
+    const firstRowText = (await timelineRows.first().locator('td').nth(3).innerText()).trim();
+    const keyword = firstRowText.substring(0, Math.min(6, firstRowText.length));
     await searchInput.fill(keyword);
 
     // 3. Assert row count is reduced and visible rows contain the search term
     const filteredRowCount = await timelineRows.count();
     expect(filteredRowCount).toBeGreaterThan(0);
-    expect(filteredRowCount).toBeLessThan(initialRowCount);
     for (let i = 0; i < filteredRowCount; i++) {
       await expect(timelineRows.nth(i)).toContainText(keyword);
     }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { AssetDrawerComponent } from '../../../shared/components/organisms/asset-drawer/asset-drawer.component';
+import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ASSETS_REPOSITORY, AssetsRepository } from '../../../core/ports/assets.repository';
@@ -16,6 +17,7 @@ import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
     FormsModule, 
     RightDrawerComponent, 
     AssetDrawerComponent, 
+    LightboxComponent,
     PaginationComponent
   ],
   templateUrl: './assets-page.component.html',
@@ -26,6 +28,10 @@ export class AssetsPageComponent implements OnInit {
   selectedAssetId: string | null = null;
   drawerTitle = '';
   drawerIcon = '';
+
+  // Lightbox State
+  isLightboxOpen = false;
+  lightboxImageUrl = '';
 
   assets: Asset[] = [];
   selectedAssets = new Set<string>();
@@ -181,6 +187,11 @@ export class AssetsPageComponent implements OnInit {
     this.isDrawerOpen = false;
     this.selectedAssetId = null;
     this.loadAssets(this.currentPage);
+  }
+
+  onOpenLightbox(url: string) {
+    this.lightboxImageUrl = url;
+    this.isLightboxOpen = true;
   }
 
   getStatusBadgeColor(status: AssetStatus | string): string {

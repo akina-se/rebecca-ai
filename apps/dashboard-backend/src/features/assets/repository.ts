@@ -67,7 +67,8 @@ export class AssetsRepository {
       caption: data.caption || '',
       usedCount: data.useCount || data.usedCount || 0,
       status,
-      url: data.url || ''
+      url: data.url || '',
+      lastUsedAt: data.lastUsedAt || null
     };
   }
 

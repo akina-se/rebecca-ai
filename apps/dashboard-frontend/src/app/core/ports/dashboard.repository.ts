@@ -7,7 +7,7 @@ export interface DashboardRepository {
   getTopPosts(period: string, date?: string): Observable<PaginatedResponse<PostLeaderboard>>;
   getTopUsers(period: string, date?: string): Observable<PaginatedResponse<UserLeaderboard>>;
   getAlerts(): Observable<SystemAlert[]>;
-  getTimelineHistory(page: number, limit: number): Observable<PaginatedResponse<PostLeaderboard>>;
+  getTimelineHistory(page: number, limit: number, sortBy?: string, sortOrder?: 'asc' | 'desc'): Observable<PaginatedResponse<PostLeaderboard>>;
   getPostById(id: string): Observable<any>;
   deletePosts(ids: string[]): Observable<void>;
 }
