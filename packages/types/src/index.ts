@@ -156,6 +156,7 @@ export interface XApiStateDoc {
  */
 export interface ImageDoc {
   url: string;
+  filename?: string;
   caption: string;
   embedding: number[];
   /** ISO 8601 datetime string, or null if never used */

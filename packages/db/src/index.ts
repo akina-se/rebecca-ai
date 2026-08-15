@@ -255,10 +255,12 @@ const imageDocConverter: FirestoreDataConverter<ImageDoc> = {
     const data = snapshot.data();
     return {
       url: data['url'],
+      filename: data['filename'],
       caption: data['caption'],
       embedding: data['embedding'] as number[],
       lastUsedAt: toIsoString(data['lastUsedAt']),
       useCount: data['useCount'] ?? 0,
+      status: data['status'],
     };
   },
 };
