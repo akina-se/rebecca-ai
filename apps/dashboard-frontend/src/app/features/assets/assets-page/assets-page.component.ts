@@ -1,16 +1,23 @@
 import { Component, OnInit, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { AssetDrawerComponent } from '../../../shared/components/organisms/asset-drawer/asset-drawer.component';
-import { ActionHelperService } from '../../../shared/services/action-helper.service';
+import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ASSETS_REPOSITORY, AssetsRepository } from '../../../core/ports/assets.repository';
-import { Asset } from '@rebecca/types';
+import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 
 @Component({
   selector: 'app-assets-page',
   standalone: true,
-  imports: [CommonModule, RightDrawerComponent, AssetDrawerComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    RightDrawerComponent, 
+    AssetDrawerComponent, 
+    PaginationComponent
+  ],
   templateUrl: './assets-page.component.html',
   styleUrl: './assets-page.component.css'
 })
@@ -24,8 +31,15 @@ export class AssetsPageComponent implements OnInit {
   selectedAssets = new Set<string>();
   selectAll = false;
 
+  searchQuery = '';
+  currentPage = 1;
+  pageSize = 20;
+  totalPages = 1;
+  totalItems = 0;
+
   isDeletingBulk = false;
   isRetryingBulk = false;
+  isUploading = false;
   isLoading = false;
 
   toastService = inject(ToastService);
@@ -33,14 +47,23 @@ export class AssetsPageComponent implements OnInit {
   constructor(@Inject(ASSETS_REPOSITORY) private assetsRepo: AssetsRepository) {}
 
   ngOnInit() {
-    this.loadAssets();
+    this.loadAssets(1);
   }
 
-  loadAssets() {
+  loadAssets(page: number = 1) {
     this.isLoading = true;
-    this.assetsRepo.getAll().subscribe({
-      next: (assets) => {
-        this.assets = assets;
+    this.currentPage = page;
+    this.assetsRepo.getAll({
+      page: this.currentPage,
+      limit: this.pageSize,
+      search: this.searchQuery
+    }).subscribe({
+      next: (res: PaginatedResponse<Asset>) => {
+        this.assets = res.data || [];
+        this.totalItems = res.meta?.totalItems || this.assets.length;
+        this.totalPages = res.meta?.totalPages || Math.ceil(this.totalItems / this.pageSize) || 1;
+        this.selectedAssets.clear();
+        this.selectAll = false;
         this.isLoading = false;
       },
       error: () => {
@@ -48,6 +71,14 @@ export class AssetsPageComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  onSearchChange() {
+    this.loadAssets(1);
+  }
+
+  onPageChange(page: number) {
+    this.loadAssets(page);
   }
 
   toggleSelectAll() {
@@ -70,7 +101,33 @@ export class AssetsPageComponent implements OnInit {
     this.selectAll = this.selectedAssets.size === this.assets.length && this.assets.length > 0;
   }
 
-  actionHelper = inject(ActionHelperService);
+  triggerFileUpload(fileInput: HTMLInputElement) {
+    fileInput.click();
+  }
+
+  onFilesSelected(event: Event, fileInput: HTMLInputElement) {
+    const target = event.target as HTMLInputElement;
+    const files = target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    this.isUploading = true;
+    this.toastService.show(`Uploading ${fileList.length} image(s)...`, 'info');
+
+    this.assetsRepo.upload(fileList).subscribe({
+      next: () => {
+        this.toastService.show(`Successfully uploaded ${fileList.length} image(s) with AI caption processing.`, 'success');
+        this.isUploading = false;
+        fileInput.value = '';
+        this.loadAssets(1);
+      },
+      error: () => {
+        this.toastService.show('Failed to upload image(s)', 'error');
+        this.isUploading = false;
+        fileInput.value = '';
+      }
+    });
+  }
 
   async executeBulkDelete() {
     if (this.selectedAssets.size === 0) return;
@@ -81,7 +138,7 @@ export class AssetsPageComponent implements OnInit {
         this.selectedAssets.clear();
         this.selectAll = false;
         this.isDeletingBulk = false;
-        this.loadAssets();
+        this.loadAssets(this.currentPage);
       },
       error: () => {
         this.toastService.show('Failed to delete assets', 'error');
@@ -99,7 +156,7 @@ export class AssetsPageComponent implements OnInit {
         this.selectedAssets.clear();
         this.selectAll = false;
         this.isRetryingBulk = false;
-        // Optionally reload, or rely on local state updates if we want to be fancy.
+        this.loadAssets(this.currentPage);
       },
       error: () => {
         this.toastService.show('Failed to trigger regeneration', 'error');
@@ -116,7 +173,20 @@ export class AssetsPageComponent implements OnInit {
     this.isDrawerOpen = true;
   }
 
-  mockAlert(msg: string) {
-    this.toastService.show('Not implemented yet: ' + msg, 'info');
+  onAssetUpdated() {
+    this.loadAssets(this.currentPage);
+  }
+
+  onAssetDeleted() {
+    this.isDrawerOpen = false;
+    this.selectedAssetId = null;
+    this.loadAssets(this.currentPage);
+  }
+
+  getStatusBadgeColor(status: AssetStatus | string): string {
+    const s = String(status).toUpperCase();
+    if (s === 'SUCCESS' || s === 'READY') return 'var(--success)';
+    if (s === 'FAILED' || s === 'CAPTION FAILED') return 'var(--danger)';
+    return 'var(--warning)';
   }
 }
