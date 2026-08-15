@@ -56,7 +56,7 @@ graph TD
     Admin([Dashboard Operator]) <-->|Angular UI| DashFrontend[apps/dashboard-frontend]
     DashFrontend <-->|JSON REST API| DashBackend[apps/dashboard-backend BFF]
     
-    subgraph Shared Modules
+    subgraph SharedModules ["Shared Modules"]
         Types[packages/types]
         DB[packages/db]
         Persona[packages/persona]
@@ -69,9 +69,9 @@ graph TD
     Functions -.->|Aggregate Read Models| Firestore
     DashBackend -->|Query Dashboard Stats| Firestore
     
-    DashBackend -.-> Shared Modules
-    BotBackend -.-> Shared Modules
-    Functions -.-> Shared Modules
+    DashBackend -.-> SharedModules
+    BotBackend -.-> SharedModules
+    Functions -.-> SharedModules
 ```
 
 ### Applications (`apps/`)
