@@ -36,7 +36,8 @@
     "express-rate-limit": "^8.5.2",
     "firebase-admin": "^12.1.0",
     "helmet": "^8.0.0",
-    "luxon": "^3.7.2"
+    "luxon": "^3.7.2",
+    "multer": "^2.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -44,6 +45,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.12",
     "@types/luxon": "^3.7.2",
+    "@types/multer": "^2.2.0",
     "@types/node": "^26.1.0",
     "eslint": "^9.39.1",
     "jest": "^29.7.0",

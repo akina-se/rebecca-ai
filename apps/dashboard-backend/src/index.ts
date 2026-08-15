@@ -17,11 +17,10 @@ import { initializeUsersModule } from './features/users';
 import { initializeSystemMemoryModule } from './features/system-memory';
 import { initializeAssetsModule } from './features/assets';
 
-// Load environment variables
-dotenv.config();
+import { config } from './config';
 
 const app = express();
-const port = process.env.PORT || 8081;
+const port = config.server.port;
 
 // Middleware
 app.use(helmet());
@@ -39,7 +38,7 @@ app.use(limiter);
 
 // Initialize Shared Infrastructure (Core)
 const firestore = new Firestore({
-  projectId: process.env.GCP_PROJECT_ID,
+  projectId: config.gcp.projectId,
 });
 
 // Initialize Features (Modules)
