@@ -25,6 +25,9 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves to an array of memory layers.
    */
   async getLayers(): Promise<MemoryLayer[]> {
+    const doc = await this.collections.system.doc('persona').get();
+    const data = doc.data();
+
     return [
       {
         level: 0,
@@ -37,14 +40,14 @@ export class SystemMemoryRepository {
         level: 1,
         name: 'Layer 1: Extended Persona Tuning',
         description: 'Dynamic behavioral instructions',
-        lastUpdated: 'Auto-updated by Dreaming',
+        lastUpdated: data?.updatedAt || 'System Deploy',
         isReadOnly: false
       },
       {
         level: 2,
         name: 'Layer 2: Global Timeline Summary',
         description: 'System-wide context summary',
-        lastUpdated: 'Auto-updated by Dreaming',
+        lastUpdated: data?.timelineSummaryUpdatedAt || 'System Deploy',
         isReadOnly: false
       }
     ];
@@ -62,6 +65,35 @@ export class SystemMemoryRepository {
       content: persona.core.identity + '\n' + persona.core.role + '\n' + persona.core.tone,
       isReadOnly: true
     };
+  }
+
+  /**
+   * Retrieves the extended persona tuning memory content (Layer 1) from Firestore.
+   * 
+   * @returns A promise that resolves to the extended memory content.
+   */
+  async getExtendedMemory(): Promise<MemoryContent> {
+    const doc = await this.collections.system.doc('persona').get();
+    const data = doc.data();
+    return {
+      level: 1,
+      name: 'Layer 1: Extended Persona Tuning',
+      content: data?.extended_prompt || 'You are Rebecca, an AI virtual friend. Be helpful, engaging, and friendly.',
+      isReadOnly: false
+    };
+  }
+
+  /**
+   * Updates the extended persona tuning memory in Firestore.
+   * 
+   * @param content - The new extended prompt content.
+   * @returns A promise that resolves when the update is complete.
+   */
+  async updateExtendedMemory(content: string): Promise<void> {
+    await this.collections.system.doc('persona').set(
+      { extended_prompt: content, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
   }
 
   /**

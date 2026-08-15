@@ -47,6 +47,45 @@ export class SystemMemoryController {
   }
 
   /**
+   * Retrieves the extended memory content (Layer 1).
+   * 
+   * @param req - The Express Request object.
+   * @param res - The Express Response object.
+   * @returns A promise that resolves when the response is sent.
+   */
+  async getExtendedMemory(req: Request, res: Response): Promise<void> {
+    try {
+      const content = await this.useCase.getExtendedMemory();
+      res.json(content);
+    } catch (err) {
+      console.error('Failed to fetch extended memory:', err);
+      res.status(500).json({ error: 'Failed to fetch extended memory' });
+    }
+  }
+
+  /**
+   * Updates the extended memory content (Layer 1).
+   * 
+   * @param req - The Express Request object containing the new content in the body.
+   * @param res - The Express Response object.
+   * @returns A promise that resolves when the response is sent.
+   */
+  async updateExtendedMemory(req: Request, res: Response): Promise<void> {
+    const { content } = req.body;
+    if (typeof content !== 'string') {
+      res.status(400).json({ error: 'Content is required' });
+      return;
+    }
+    try {
+      await this.useCase.updateExtendedMemory(content);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Failed to update extended memory:', err);
+      res.status(500).json({ error: 'Failed to update extended memory' });
+    }
+  }
+
+  /**
    * Retrieves the global memory content (Layer 2).
    * 
    * @param req - The Express Request object.

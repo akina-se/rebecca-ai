@@ -34,6 +34,25 @@ export class HttpMemoryRepository implements MemoryRepository {
   }
 
   /**
+   * Fetches the extended persona tuning memory from the backend.
+   * 
+   * @returns Observable of extended memory content.
+   */
+  getExtendedMemory(): Observable<MemoryContent> {
+    return this.http.get<MemoryContent>(`${this.baseUrl}/memory/extended`);
+  }
+
+  /**
+   * Updates the extended persona tuning memory on the backend.
+   * 
+   * @param content - The new text content.
+   * @returns Observable resolving when update completes.
+   */
+  updateExtendedMemory(content: string): Observable<unknown> {
+    return this.http.put<unknown>(`${this.baseUrl}/memory/extended`, { content });
+  }
+
+  /**
    * Fetches the global personality memory from the backend.
    * 
    * @returns Observable of global memory content.
