@@ -71,7 +71,11 @@ export class MemoryPageComponent implements OnInit {
 
   formatDate(iso: string | null): string {
     if (!iso) return 'System Deploy';
-    return new Date(iso).toLocaleString('ja-JP', {
+    const parsed = new Date(iso);
+    if (isNaN(parsed.getTime())) {
+      return iso;
+    }
+    return parsed.toLocaleString('ja-JP', {
       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   }

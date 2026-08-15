@@ -1,7 +1,6 @@
 import { Component, Input, inject, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActionHelperService } from '../../../services/action-helper.service';
 import { ToastService } from '../../../services/toast.service';
 import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
 
@@ -10,25 +9,53 @@ import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
+    <!-- Layer 0: Persona Core Prompt -->
     <div *ngIf="level === 0">
       <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Persona Core Prompt</h4>
-      <textarea class="form-control" rows="15" style="width: 100%; background: rgba(0,0,0,0.5); color: var(--text-main); font-family: monospace; resize: vertical;" readonly>{{ mockCorePrompt }}</textarea>
+      <textarea 
+        class="form-control" 
+        rows="15" 
+        style="width: 100%; background: rgba(0,0,0,0.5); color: var(--text-main); font-family: monospace; resize: vertical;" 
+        [disabled]="isLoading"
+        readonly>{{ corePrompt }}</textarea>
       <div style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
           <span class="material-icons" style="font-size: 1rem;">lock</span> Hardcoded in source code (Read-only)
       </div>
     </div>
+
+    <!-- Layer 1: Extended Persona Tuning -->
     <div *ngIf="level === 1">
       <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Extended Persona Tuning</h4>
-      <textarea class="form-control" rows="15" style="width: 100%; background: rgba(0,0,0,0.5); color: var(--text-main); font-family: monospace; resize: vertical;" [(ngModel)]="mockExtendedPrompt"></textarea>
-      <button class="btn btn-primary" style="margin-top: 1rem; width: 100%; justify-content: center;" (click)="onSavePrompt()" [disabled]="isSavingPrompt">
+      <textarea 
+        class="form-control" 
+        rows="15" 
+        style="width: 100%; background: rgba(0,0,0,0.5); color: var(--text-main); font-family: monospace; resize: vertical;" 
+        [disabled]="isLoading"
+        [(ngModel)]="extendedPrompt"></textarea>
+      <button 
+        class="btn btn-primary" 
+        style="margin-top: 1rem; width: 100%; justify-content: center;" 
+        (click)="onSavePrompt()" 
+        [disabled]="isSavingPrompt || isLoading">
           <span class="material-icons" [class.spinning]="isSavingPrompt">{{ isSavingPrompt ? 'sync' : 'save' }}</span>
           {{ isSavingPrompt ? 'Saving...' : 'Save Tuning' }}
       </button>
     </div>
-    <div *ngIf="level === 3">
+
+    <!-- Layer 2: Global Timeline Summary -->
+    <div *ngIf="level === 2">
       <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Global Timeline Summary</h4>
-      <textarea class="form-control" rows="10" style="width: 100%; background: rgba(0,0,0,0.5); color: var(--text-main); resize: vertical;" [(ngModel)]="mockTimelineSummary"></textarea>
-      <button class="btn btn-primary" style="margin-top: 1rem; width: 100%; justify-content: center;" (click)="onSaveSummary()" [disabled]="isSavingSummary">
+      <textarea 
+        class="form-control" 
+        rows="10" 
+        style="width: 100%; background: rgba(0,0,0,0.5); color: var(--text-main); resize: vertical;" 
+        [disabled]="isLoading"
+        [(ngModel)]="timelineSummary"></textarea>
+      <button 
+        class="btn btn-primary" 
+        style="margin-top: 1rem; width: 100%; justify-content: center;" 
+        (click)="onSaveSummary()" 
+        [disabled]="isSavingSummary || isLoading">
           <span class="material-icons" [class.spinning]="isSavingSummary">{{ isSavingSummary ? 'sync' : 'save' }}</span>
           {{ isSavingSummary ? 'Saving...' : 'Save Summary' }}
       </button>
@@ -36,16 +63,16 @@ import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
   `
 })
 export class MemoryDrawerComponent implements OnChanges {
-  actionHelper = inject(ActionHelperService);
   toastService = inject(ToastService);
   memoryRepo = inject(MEMORY_REPOSITORY);
 
   @Input() level = 0;
 
-  mockCorePrompt = "Loading...";
-  mockExtendedPrompt = "If the user mentions anime, always reference Gundam.";
-  mockTimelineSummary = "Loading...";
+  corePrompt = 'Loading...';
+  extendedPrompt = '';
+  timelineSummary = '';
 
+  isLoading = false;
   isSavingPrompt = false;
   isSavingSummary = false;
 
@@ -54,39 +81,66 @@ export class MemoryDrawerComponent implements OnChanges {
   }
 
   loadData() {
-    if (this.level === 0 || this.level === 1) {
+    this.isLoading = true;
+    if (this.level === 0) {
       this.memoryRepo.getCoreMemory().subscribe({
         next: (data) => {
-          this.mockCorePrompt = data.content || "You are Rebecca...";
+          this.corePrompt = data.content || '';
+          this.isLoading = false;
         },
-        error: () => {}
+        error: () => {
+          this.toastService.show('Failed to load Persona Core Prompt', 'error');
+          this.isLoading = false;
+        }
       });
-    }
-    if (this.level === 3) {
+    } else if (this.level === 1) {
+      this.memoryRepo.getExtendedMemory().subscribe({
+        next: (data) => {
+          this.extendedPrompt = data.content || '';
+          this.isLoading = false;
+        },
+        error: () => {
+          this.toastService.show('Failed to load Extended Persona Tuning', 'error');
+          this.isLoading = false;
+        }
+      });
+    } else if (this.level === 2) {
       this.memoryRepo.getGlobalMemory().subscribe({
         next: (data) => {
-          this.mockTimelineSummary = data.content || "The overall sentiment...";
+          this.timelineSummary = data.content || '';
+          this.isLoading = false;
         },
-        error: () => {}
+        error: () => {
+          this.toastService.show('Failed to load Global Timeline Summary', 'error');
+          this.isLoading = false;
+        }
       });
     }
   }
 
-  async onSavePrompt() {
+  onSavePrompt() {
     this.isSavingPrompt = true;
-    await this.actionHelper.executeMockAction('Successfully saved Persona Core Prompt');
-    this.isSavingPrompt = false;
+    this.memoryRepo.updateExtendedMemory(this.extendedPrompt).subscribe({
+      next: () => {
+        this.toastService.show('Successfully saved Extended Persona Tuning', 'success');
+        this.isSavingPrompt = false;
+      },
+      error: () => {
+        this.toastService.show('Failed to save Extended Persona Tuning', 'error');
+        this.isSavingPrompt = false;
+      }
+    });
   }
 
   onSaveSummary() {
     this.isSavingSummary = true;
-    this.memoryRepo.updateGlobalMemory(this.mockTimelineSummary).subscribe({
+    this.memoryRepo.updateGlobalMemory(this.timelineSummary).subscribe({
       next: () => {
         this.toastService.show('Successfully saved Global Timeline Summary', 'success');
         this.isSavingSummary = false;
       },
       error: () => {
-        this.toastService.show('Failed to save summary', 'error');
+        this.toastService.show('Failed to save Global Timeline Summary', 'error');
         this.isSavingSummary = false;
       }
     });
