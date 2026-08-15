@@ -76,13 +76,18 @@ export class DashboardPageComponent implements OnInit {
     this.dashboardRepo.getAlerts().subscribe(alerts => this.systemAlerts = alerts);
   }
 
+  // Timeline Sort State
+  timelineSortBy: 'time' | 'impressions' = 'time';
+  timelineSortOrder: 'asc' | 'desc' = 'desc';
+
   loadTimeline(page: number = 1) {
     if (this.isLoadingTimeline) return;
 
     this.isLoadingTimeline = true;
     this.timelinePage = page;
+    const backendSortBy = this.timelineSortBy === 'time' ? 'created_at' : 'impressions';
     
-    this.dashboardRepo.getTimelineHistory(this.timelinePage, this.timelineItemsPerPage).subscribe({
+    this.dashboardRepo.getTimelineHistory(this.timelinePage, this.timelineItemsPerPage, backendSortBy, this.timelineSortOrder).subscribe({
       next: (response) => {
         const posts = response.data;
         const meta = response.meta;
@@ -95,8 +100,9 @@ export class DashboardPageComponent implements OnInit {
           time: p.time,
           text: p.snippet,
           impressions: p.impressions,
-          status: (p as any).status || 'SUCCESS',
-          hasMedia: p.hasMedia
+          status: p.status || 'SUCCESS',
+          hasMedia: p.hasMedia,
+          mediaUrls: p.mediaUrls || []
         }));
         
         this.timelinePosts = mapped;
@@ -108,6 +114,26 @@ export class DashboardPageComponent implements OnInit {
         this.toastService.show('Failed to load timeline', 'error');
       }
     });
+  }
+
+  toggleTimelineSort(column: 'time' | 'impressions') {
+    if (this.timelineSortBy === column) {
+      this.timelineSortOrder = this.timelineSortOrder === 'desc' ? 'asc' : 'desc';
+    } else {
+      this.timelineSortBy = column;
+      this.timelineSortOrder = 'desc';
+    }
+    this.loadTimeline(1);
+  }
+
+  onDatePicked(target: 'posts' | 'users', date: string) {
+    if (target === 'posts') {
+      this.topPostsDate = date;
+      this.loadTopPosts();
+    } else {
+      this.topUsersDate = date;
+      this.loadTopUsers();
+    }
   }
 
   applyTimelineFilter() {

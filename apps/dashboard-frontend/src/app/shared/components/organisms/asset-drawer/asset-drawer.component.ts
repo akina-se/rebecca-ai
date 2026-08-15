@@ -36,6 +36,8 @@ export class AssetDrawerComponent implements OnChanges {
   isLoading = false;
 
   assetData: AssetDrawerData | null = null;
+  assetBaseName = '';
+  assetExtension = '.png';
 
   constructor(@Inject(ASSETS_REPOSITORY) private assetsRepo: AssetsRepository) {}
 
@@ -49,13 +51,22 @@ export class AssetDrawerComponent implements OnChanges {
     this.isLoading = true;
     this.assetsRepo.getById(id).subscribe({
       next: (asset: Asset) => {
+        const dotIndex = (asset.filename || '').lastIndexOf('.');
+        if (dotIndex !== -1) {
+          this.assetBaseName = asset.filename.substring(0, dotIndex);
+          this.assetExtension = asset.filename.substring(dotIndex);
+        } else {
+          this.assetBaseName = asset.filename || id;
+          this.assetExtension = '.png';
+        }
+
         this.assetData = {
           id: asset.id,
           name: asset.filename,
           caption: asset.caption || '',
           url: asset.url || '',
           useCount: asset.usedCount || 0,
-          lastUsedAt: null,
+          lastUsedAt: asset.lastUsedAt || null,
         };
         this.isLoading = false;
       },
@@ -71,19 +82,32 @@ export class AssetDrawerComponent implements OnChanges {
   }
 
   onViewFullSize(): void {
-    if (this.displayAsset) this.openLightbox.emit(this.displayAsset.url);
+    if (this.displayAsset?.url) {
+      this.openLightbox.emit(this.displayAsset.url);
+    }
   }
 
   async onSave(): Promise<void> {
     if (!this.displayAsset) return;
     this.isSaving = true;
+
+    // Sanitize base name to prevent duplicate extensions if user typed .png/.jpg
+    let cleanBase = this.assetBaseName.trim();
+    if (cleanBase.toLowerCase().endsWith(this.assetExtension.toLowerCase())) {
+      cleanBase = cleanBase.substring(0, cleanBase.length - this.assetExtension.length);
+    }
+    const finalFilename = `${cleanBase}${this.assetExtension}`;
+
     this.assetsRepo.update(this.displayAsset.id, { 
       caption: this.displayAsset.caption,
-      filename: this.displayAsset.name
+      filename: finalFilename
     }).subscribe({
       next: () => {
         this.toastService.show(`Successfully saved asset`, 'success');
         this.isSaving = false;
+        if (this.assetData) {
+          this.assetData.name = finalFilename;
+        }
         this.assetUpdated.emit();
       },
       error: () => {
@@ -132,7 +156,9 @@ export class AssetDrawerComponent implements OnChanges {
 
   formatDate(iso: string | null): string {
     if (!iso) return 'Never';
-    return new Date(iso).toLocaleDateString('ja-JP', {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return 'Never';
+    return d.toLocaleDateString('ja-JP', {
       year: 'numeric', month: 'short', day: 'numeric',
     });
   }

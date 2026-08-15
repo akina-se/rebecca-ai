@@ -313,6 +313,8 @@ export interface PostLeaderboard {
   snippet: string;
   impressions: number;
   hasMedia: boolean;
+  mediaUrls?: string[];
+  status?: string;
 }
 
 export interface PostDetail {
@@ -374,6 +376,7 @@ export interface Asset {
   usedCount: number;
   status: AssetStatus;
   url?: string;
+  lastUsedAt?: string | null;
 }
 
 export interface CopilotRequest {

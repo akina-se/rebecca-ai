@@ -3,9 +3,6 @@
     <!-- Image Preview -->
     <div class="asset-preview glass-panel">
         <img [src]="assetData.url" alt="Asset Preview" class="preview-img">
-        <button class="btn btn-primary enlarge-btn" (click)="onViewFullSize()">
-            <span class="material-icons">zoom_in</span>
-        </button>
     </div>
 
     <!-- Asset Details -->
@@ -13,8 +10,8 @@
         <div class="timeline-stat" style="display: block;">
             <div class="stat-label" style="margin-bottom: 8px;">Asset Name</div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="text" class="form-control" [(ngModel)]="assetData.name" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
-                <span style="color: var(--text-muted); font-weight: 500;">.png</span>
+                <input type="text" class="form-control" [(ngModel)]="assetBaseName" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
+                <span style="color: var(--text-muted); font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; border: 1px solid var(--border-color);">{{ assetExtension }}</span>
             </div>
         </div>
         <div class="divider"></div>

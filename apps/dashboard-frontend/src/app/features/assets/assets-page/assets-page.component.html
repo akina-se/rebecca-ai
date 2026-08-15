@@ -6,10 +6,10 @@
             <input 
                 type="text" 
                 class="form-control" 
-                placeholder="Search assets (fuzzy)..." 
+                placeholder="Search by filename or caption..." 
                 [(ngModel)]="searchQuery" 
                 (ngModelChange)="onSearchChange()"
-                style="width: 260px; padding: 0.5rem 1rem; border-radius: 20px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--border-color);">
+                style="width: 280px; padding: 0.5rem 1rem; border-radius: 20px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--border-color);">
             
             <!-- Hidden Multi-file input -->
             <input 
@@ -113,8 +113,16 @@
     <div style="padding: 20px;">
         <app-asset-drawer 
             [assetId]="selectedAssetId"
+            (openLightbox)="onOpenLightbox($event)"
             (assetUpdated)="onAssetUpdated()"
             (assetDeleted)="onAssetDeleted()">
         </app-asset-drawer>
     </div>
 </app-right-drawer>
+
+<!-- Full Size Lightbox Dialog -->
+<app-lightbox 
+    [isOpen]="isLightboxOpen" 
+    [imageUrl]="lightboxImageUrl" 
+    (close)="isLightboxOpen = false">
+</app-lightbox>

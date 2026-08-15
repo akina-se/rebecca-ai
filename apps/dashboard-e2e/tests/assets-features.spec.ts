@@ -47,7 +47,7 @@ test.describe('Assets Features E2E Tests', () => {
   });
 
   test('Scenario B: Fuzzy Keyword Search - should filter assets by filename and caption', async ({ page }) => {
-    const searchInput = page.locator('input[placeholder*="Search assets"]');
+    const searchInput = page.locator('input[placeholder*="Search by filename or caption"]');
     await expect(searchInput).toBeVisible();
 
     // 1. Search for specific keyword "cyberpunk"
@@ -66,7 +66,7 @@ test.describe('Assets Features E2E Tests', () => {
     await expect(cards).toHaveCount(20, { timeout: 5000 });
   });
 
-  test('Scenario C: Asset Details Drawer - should open without 404, display details, and save manual caption edit', async ({ page }) => {
+  test('Scenario C: Asset Details Drawer - should isolate extension, display Last Used, open Lightbox, and save caption edit', async ({ page }) => {
     // 1. Click first asset card
     const firstCard = page.locator('.asset-card').first();
     await firstCard.click();
@@ -81,25 +81,49 @@ test.describe('Assets Features E2E Tests', () => {
     const errorToast = page.locator('.toast.danger, .toast.error');
     await expect(errorToast).toHaveCount(0);
 
-    // 4. Verify asset drawer contents
+    // 4. Verify filename base name and extension pill separation
     const nameInput = drawer.locator('app-asset-drawer input.form-control');
     await expect(nameInput).toBeVisible({ timeout: 5000 });
+    const nameInputValue = await nameInput.inputValue();
+    expect(nameInputValue).not.toContain('.png'); // Base name only
 
+    const extBadge = drawer.locator('app-asset-drawer .timeline-stat span', { hasText: /\.(png|jpg|jpeg|webp)/ });
+    await expect(extBadge).toBeVisible();
+
+    // 5. Verify redundant magnifier icon is removed from preview
+    const previewMagnifier = drawer.locator('app-asset-drawer .asset-preview button');
+    await expect(previewMagnifier).toHaveCount(0);
+
+    // 6. Verify Last Used metric box exists and is formatted
+    const lastUsedBox = drawer.locator('app-asset-drawer .metric-box', { hasText: 'Last Used' });
+    await expect(lastUsedBox).toBeVisible();
+
+    // 7. Verify "View Full Size" button opens full-screen Lightbox dialog
+    const viewFullSizeBtn = drawer.locator('app-asset-drawer button', { hasText: 'View Full Size' });
+    await expect(viewFullSizeBtn).toBeVisible();
+    await viewFullSizeBtn.click();
+
+    const lightbox = page.locator('app-lightbox .lightbox-overlay');
+    await expect(lightbox).toBeVisible({ timeout: 5000 });
+    const lightboxImg = lightbox.locator('img');
+    await expect(lightboxImg).toBeVisible();
+    await lightbox.locator('.close-btn').click();
+    await expect(lightbox).not.toBeVisible();
+
+    // 8. Edit caption and save
     const captionArea = drawer.locator('app-asset-drawer textarea');
     await expect(captionArea).toBeVisible();
-
-    // 5. Edit caption and save
     const editedCaption = '手動編集テスト: 新世代サイバーメカロボットのコンセプトアート';
     await captionArea.fill(editedCaption);
 
     const saveBtn = drawer.locator('app-asset-drawer button', { hasText: 'Save Changes' });
     await saveBtn.click();
 
-    // 6. Verify success toast
+    // 9. Verify success toast
     const successToast = page.locator('.toast', { hasText: 'Successfully saved asset' });
     await expect(successToast).toBeVisible({ timeout: 10000 });
 
-    // 7. Close drawer
+    // 10. Close drawer
     await drawer.locator('.drawer-header .close-btn').click();
     await expect(drawer).not.toHaveClass(/open/);
   });
