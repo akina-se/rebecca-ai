@@ -1,5 +1,14 @@
 <div class="view-section active">
-    <div class="block-header" style="margin-top: 0;"><h2><span class="material-icons">group</span> User Relations</h2><input type="text" class="form-control" placeholder="Search users..." style="width: 250px; padding: 0.5rem; border-radius: 20px;"></div>
+    <div class="block-header" style="margin-top: 0;">
+        <h2><span class="material-icons">group</span> User Relations</h2>
+        <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Search users..." 
+            [(ngModel)]="searchQuery" 
+            (ngModelChange)="onSearchChange()" 
+            style="width: 250px; padding: 0.5rem 1rem; border-radius: 20px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--border-color);">
+    </div>
     
     <div class="bulk-actions-bar glass-panel" id="user-bulk-bar">
         <label class="checkbox-container">
@@ -32,9 +41,30 @@
     <table class="data-table glass-panel" style="border-radius: 0;">
         <thead><tr>
             <th style="width: 40px;"></th>
-            <th>User ID <span class="material-icons">unfold_more</span></th>
-            <th>Interactions <span class="material-icons">arrow_downward</span></th>
-            <th>Last Interaction <span class="material-icons">unfold_more</span></th>
+            <th class="sortable-th" (click)="toggleUserSort('handle')" style="cursor: pointer; user-select: none;" title="Sort by User ID">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span [style.color]="userSortBy === 'handle' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'handle' ? '600' : 'normal'">User ID</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'handle' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'handle' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    </span>
+                </div>
+            </th>
+            <th class="sortable-th" (click)="toggleUserSort('interactions')" style="cursor: pointer; user-select: none;" title="Sort by Interactions">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span [style.color]="userSortBy === 'interactions' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'interactions' ? '600' : 'normal'">Interactions</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'interactions' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'interactions' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    </span>
+                </div>
+            </th>
+            <th class="sortable-th" (click)="toggleUserSort('lastSeen')" style="cursor: pointer; user-select: none;" title="Sort by Last Interaction">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span [style.color]="userSortBy === 'lastSeen' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'lastSeen' ? '600' : 'normal'">Last Interaction</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'lastSeen' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'lastSeen' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    </span>
+                </div>
+            </th>
             <th>RAG Memories</th>
             <th>Status</th>
         </tr></thead>
@@ -47,9 +77,16 @@
                     </label>
                 </td>
                 <td style="font-weight: 500;" [style.text-decoration]="user.status === 'BLOCKED' ? 'line-through' : 'none'">{{ user.handle }}</td>
-                <td>{{ user.interactions }}</td>
+                <td>{{ user.interactions | number }}</td>
                 <td style="color: var(--text-muted)">{{ user.lastSeen || 'Never' }}</td>
-                <td>{{ user.coreProfile ? 'Generated' : 'Empty' }}</td>
+                <td>
+                    <span class="badge" 
+                        [style.background]="user.ragMemoriesStatus === 'Generated' ? 'rgba(46, 213, 115, 0.15)' : 'rgba(255,255,255,0.05)'" 
+                        [style.color]="user.ragMemoriesStatus === 'Generated' ? 'var(--success)' : 'var(--text-muted)'"
+                        [style.borderColor]="user.ragMemoriesStatus === 'Generated' ? 'rgba(46, 213, 115, 0.3)' : 'var(--border-color)'">
+                        {{ user.ragMemoriesStatus || 'Generated' }}
+                    </span>
+                </td>
                 <td>
                     <span class="badge" *ngIf="user.status === 'ACTIVE'">Active</span>
                     <span class="badge" *ngIf="user.status === 'BLOCKED'" style="background: rgba(255, 71, 87, 0.2); color: var(--danger); border-color: rgba(255, 71, 87, 0.4);">Blocked</span>
@@ -64,13 +101,17 @@
             </tr>
         </tbody>
     </table>
-    <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px;">
-        <span>Showing {{ users.length }} users</span>
-        <div class="pagination-controls">
-            <button class="page-btn" disabled><span class="material-icons" style="font-size: 1rem">chevron_left</span></button>
-            <button class="page-btn active">1</button>
-            <button class="page-btn" disabled><span class="material-icons" style="font-size: 1rem">chevron_right</span></button>
-        </div>
+    
+    <!-- Shared Pagination Component -->
+    <div style="margin-top: 0;" *ngIf="totalPages > 1 || totalItems > 0">
+        <app-pagination
+            [currentPage]="currentPage"
+            [totalPages]="totalPages"
+            [totalItems]="totalItems"
+            itemsLabel="users"
+            [isLoading]="isLoading"
+            (pageChange)="onPageChange($event)">
+        </app-pagination>
     </div>
 </div>
 

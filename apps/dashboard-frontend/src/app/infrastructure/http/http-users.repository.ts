@@ -16,15 +16,22 @@ export class HttpUsersRepository implements UsersRepository {
   private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
 
   /**
-   * Fetches all user details from the backend.
+   * Fetches all user details from the backend supporting pagination, search, and sorting.
    * 
    * @returns Observable list of users.
    */
-  getAll(): Observable<PaginatedResponse<UserDetail>> {
-    return this.http.get<PaginatedResponse<UserDetail>>(`${this.baseUrl}/users`).pipe(
+  getAll(params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; }): Observable<PaginatedResponse<UserDetail>> {
+    let httpParams = new HttpParams();
+    if (params?.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
+    if (params?.limit !== undefined) httpParams = httpParams.set('limit', params.limit.toString());
+    if (params?.search) httpParams = httpParams.set('search', params.search);
+    if (params?.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
+    if (params?.sortOrder) httpParams = httpParams.set('sortOrder', params.sortOrder);
+
+    return this.http.get<PaginatedResponse<UserDetail>>(`${this.baseUrl}/users`, { params: httpParams }).pipe(
       map(response => ({
         ...response,
-        data: response.data.map((user: UserDetail) => ({
+        data: (response.data || []).map((user: UserDetail) => ({
           ...(user as any),
           status: this.mapStatus(user.status)
         }))

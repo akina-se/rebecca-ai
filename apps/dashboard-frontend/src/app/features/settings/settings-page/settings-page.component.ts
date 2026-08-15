@@ -28,7 +28,7 @@ export class SettingsPageComponent {
 
   get selectedTz(): string {
     const active = this.settingsService.selectedTz();
-    return this.settingsService.timezoneOptions.find(o => o.value === active)?.label || 'Asia/Tokyo (UTC+9)';
+    return this.settingsService.timezoneOptions.find(o => o.value === active)?.label || '(UTC+09:00) Tokyo, Seoul, Osaka, Kyoto (Asia/Tokyo)';
   }
 
   set selectedTz(label: string) {

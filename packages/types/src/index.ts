@@ -352,6 +352,14 @@ export interface UserDetail {
   coreProfile: string; // JSON string
   chatHistory: ChatMessage[];
   status: UserStatus;
+  ragMemoriesStatus?: string;
+  ragMemoriesCount?: number;
+}
+
+export interface SystemSettings {
+  language: string;
+  timezone: string;
+  updatedAt?: string;
 }
 
 export interface MemoryLayer {

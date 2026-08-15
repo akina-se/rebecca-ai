@@ -141,35 +141,55 @@ export class TimelineRepository {
     if (startDate && endDate) {
       query = query.where('timestamp', '>=', startDate).where('timestamp', '<', endDate);
     }
-    
-    const snapshot = await query.get();
-    let docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
 
     const sortBy = params?.sortBy || 'impressions';
     const sortOrder = params?.sortOrder || 'desc';
-    
-    docs.sort((a, b) => {
-      let valA = a.data[sortBy];
-      let valB = b.data[sortBy];
-
-      if (sortBy === 'time' || sortBy === 'created_at' || sortBy === 'timestamp') {
-        valA = new Date(a.data.created_at || a.data.timestamp || 0).getTime();
-        valB = new Date(b.data.created_at || b.data.timestamp || 0).getTime();
-      } else {
-        valA = typeof valA === 'number' ? valA : 0;
-        valB = typeof valB === 'number' ? valB : 0;
-      }
-
-      if (sortOrder === 'desc') return valB < valA ? -1 : valB > valA ? 1 : 0;
-      return valA < valB ? -1 : valA > valB ? 1 : 0;
-    });
-
-    const totalItems = docs.length;
     const limit = params?.limit || 50;
-    const totalPages = Math.ceil(totalItems / limit);
     const page = params?.page || 1;
-    
-    docs = docs.slice((page - 1) * limit, page * limit);
+
+    let totalItems = 0;
+    let docs: Array<{ id: string; data: any }> = [];
+
+    try {
+      // 1. Database-level count aggregation (Google Cloud Production standard)
+      const countSnap = await query.count().get();
+      totalItems = countSnap.data().count;
+
+      // 2. Database-level ordering and pagination
+      const sortField = (sortBy === 'time' || sortBy === 'created_at') ? 'timestamp' : sortBy;
+      const snapshot = await query
+        .orderBy(sortField, sortOrder)
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .get();
+
+      docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+    } catch (e) {
+      // Graceful fallback for multi-field unindexed filters in emulator/dev environment
+      const snapshot = await query.get();
+      docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+
+      docs.sort((a, b) => {
+        let valA = a.data[sortBy];
+        let valB = b.data[sortBy];
+
+        if (sortBy === 'time' || sortBy === 'created_at' || sortBy === 'timestamp') {
+          valA = new Date(a.data.created_at || a.data.timestamp || 0).getTime();
+          valB = new Date(b.data.created_at || b.data.timestamp || 0).getTime();
+        } else {
+          valA = typeof valA === 'number' ? valA : 0;
+          valB = typeof valB === 'number' ? valB : 0;
+        }
+
+        if (sortOrder === 'desc') return valB < valA ? -1 : valB > valA ? 1 : 0;
+        return valA < valB ? -1 : valA > valB ? 1 : 0;
+      });
+
+      totalItems = docs.length;
+      docs = docs.slice((page - 1) * limit, page * limit);
+    }
+
+    const totalPages = Math.ceil(totalItems / limit) || 1;
     
     const data = docs.map(doc => {
       const d = doc.data;

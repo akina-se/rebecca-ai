@@ -1,8 +1,9 @@
 import { Component, OnInit, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { UserDrawerComponent } from '../../../shared/components/organisms/user-drawer/user-drawer.component';
-import { ActionHelperService } from '../../../shared/services/action-helper.service';
+import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { USERS_REPOSITORY, UsersRepository } from '../../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -10,7 +11,7 @@ import { ToastService } from '../../../shared/services/toast.service';
 @Component({
   selector: 'app-users-page',
   standalone: true,
-  imports: [CommonModule, RightDrawerComponent, UserDrawerComponent],
+  imports: [CommonModule, FormsModule, RightDrawerComponent, UserDrawerComponent, PaginationComponent],
   templateUrl: './users-page.component.html',
   styleUrl: './users-page.component.css'
 })
@@ -24,6 +25,16 @@ export class UsersPageComponent implements OnInit {
   selectedUsers = new Set<string>();
   selectAll = false;
 
+  // Search & Pagination & Sorting
+  searchQuery = '';
+  currentPage = 1;
+  pageSize = 30;
+  totalPages = 1;
+  totalItems = 0;
+
+  userSortBy: 'handle' | 'interactions' | 'lastSeen' = 'interactions';
+  userSortOrder: 'asc' | 'desc' = 'desc';
+
   isBlocking = false;
   isUnblocking = false;
   isLoading = false;
@@ -33,14 +44,25 @@ export class UsersPageComponent implements OnInit {
   constructor(@Inject(USERS_REPOSITORY) private usersRepo: UsersRepository) {}
 
   ngOnInit() {
-    this.loadUsers();
+    this.loadUsers(1);
   }
 
-  loadUsers() {
+  loadUsers(page: number = 1) {
     this.isLoading = true;
-    this.usersRepo.getAll().subscribe({
+    this.currentPage = page;
+    this.usersRepo.getAll({
+      page: this.currentPage,
+      limit: this.pageSize,
+      search: this.searchQuery,
+      sortBy: this.userSortBy,
+      sortOrder: this.userSortOrder
+    }).subscribe({
       next: (response) => {
-        this.users = response.data;
+        this.users = response.data || [];
+        this.totalItems = response.meta?.totalItems || this.users.length;
+        this.totalPages = response.meta?.totalPages || Math.ceil(this.totalItems / this.pageSize) || 1;
+        this.selectedUsers.clear();
+        this.selectAll = false;
         this.isLoading = false;
       },
       error: () => {
@@ -48,6 +70,24 @@ export class UsersPageComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  onSearchChange() {
+    this.loadUsers(1);
+  }
+
+  onPageChange(page: number) {
+    this.loadUsers(page);
+  }
+
+  toggleUserSort(column: 'handle' | 'interactions' | 'lastSeen') {
+    if (this.userSortBy === column) {
+      this.userSortOrder = this.userSortOrder === 'desc' ? 'asc' : 'desc';
+    } else {
+      this.userSortBy = column;
+      this.userSortOrder = 'desc';
+    }
+    this.loadUsers(1);
   }
 
   toggleSelectAll() {

@@ -18,7 +18,7 @@ export class UsersUseCase {
    * 
    * @returns A promise that resolves to an array of user details.
    */
-  async getAllUsers(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: UserDetail[]; meta: PaginationMeta }> {
+  async getAllUsers(params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: UserDetail[]; meta: PaginationMeta }> {
     return this.repo.getAll(params);
   }
 
