@@ -5,6 +5,8 @@ import { MemoryLayer, MemoryContent } from '@rebecca/types';
 export interface MemoryRepository {
   getLayers(): Observable<MemoryLayer[]>;
   getCoreMemory(): Observable<MemoryContent>;
+  getExtendedMemory(): Observable<MemoryContent>;
+  updateExtendedMemory(content: string): Observable<unknown>;
   getGlobalMemory(): Observable<MemoryContent>;
   updateGlobalMemory(content: string): Observable<unknown>;
   triggerDreaming(): Observable<unknown>;

@@ -19,6 +19,8 @@ export function initializeSystemMemoryModule(firestore: Firestore): Router {
 
   router.get('/layers', controller.getLayers.bind(controller));
   router.get('/core', controller.getCoreMemory.bind(controller));
+  router.get('/extended', controller.getExtendedMemory.bind(controller));
+  router.put('/extended', controller.updateExtendedMemory.bind(controller));
   router.get('/global', controller.getGlobalMemory.bind(controller));
   router.put('/global', controller.updateGlobalMemory.bind(controller));
   router.post('/force-dreaming', controller.triggerDreaming.bind(controller));

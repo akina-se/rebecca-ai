@@ -31,6 +31,25 @@ export class SystemMemoryUseCase {
   }
 
   /**
+   * Retrieves the extended memory content (Layer 1).
+   * 
+   * @returns A promise that resolves to the extended memory content.
+   */
+  async getExtendedMemory(): Promise<MemoryContent> {
+    return this.repo.getExtendedMemory();
+  }
+
+  /**
+   * Updates the extended memory content (Layer 1).
+   * 
+   * @param content - The new extended memory tuning content.
+   * @returns A promise that resolves when the update is complete.
+   */
+  async updateExtendedMemory(content: string): Promise<void> {
+    await this.repo.updateExtendedMemory(content);
+  }
+
+  /**
    * Retrieves the global memory content (Layer 2).
    * 
    * @returns A promise that resolves to the global memory content.
