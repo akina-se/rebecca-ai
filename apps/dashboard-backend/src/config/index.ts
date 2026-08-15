@@ -15,7 +15,7 @@ export const config = {
   },
   /** GCP and Firebase Configuration */
   gcp: {
-    projectId: process.env.GCP_PROJECT_ID || 'rebecca-ai-project',
+    projectId: process.env.GCP_PROJECT_ID || 'rebecca-ai-gal-local',
     location: process.env.GCP_LOCATION || 'asia-northeast1',
     imageBucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
   },
@@ -23,5 +23,6 @@ export const config = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
     model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
+    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
   }
 } as const;

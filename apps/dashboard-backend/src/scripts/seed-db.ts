@@ -201,30 +201,41 @@ async function seedFirestore() {
   }
   console.log(`Seeded ${posts.length} timeline posts across 365 days.`);
 
-  // 4. Seed images (assets library)
+  // 4. Seed images (assets library - 35 assets for pagination & filter testing)
   const images = [];
-  const assetNames = [
-    'cyberpunk_street', 'chibi_sketch', 'sunset_cityscape', 'beach_background', 'anime_girl_portrait',
-    'retro_console', 'neon_tokyo', 'workspace_setup', 'mountain_lake', 'future_robot',
-    'fantasy_castle', 'pixel_art_room', 'starry_sky', 'cafe_interior', 'steampunk_gear'
+  const assetBaseNames = [
+    'cyberpunk_street', 'chibi_rebecca_sketch', 'sunset_cityscape', 'beach_resort_background', 'anime_girl_portrait',
+    'retro_arcade_console', 'neon_shibuya_night', 'developer_workspace_setup', 'hokkaido_mountain_lake', 'future_mecha_robot',
+    'fantasy_floating_castle', 'pixel_art_gaming_room', 'starry_night_sky', 'vintage_cafe_interior', 'steampunk_brass_gear',
+    'cherry_blossom_park', 'rainy_tokyo_alley', 'cozy_winter_cabin', 'synthwave_grid_horizon', 'magical_library_shelves',
+    'traditional_japanese_garden', 'autumn_leaves_temple', 'space_station_orbit', 'cat_cafe_afternoon', 'festival_fireworks_display',
+    'midnight_highway_drive', 'cyber_samurai_art', 'flower_blooming_meadow', 'crystal_cave_glow', 'hot_spring_resort',
+    'akihabara_billboards', 'lofi_study_desk', 'underwater_coral_reef', 'mountain_sunrise_peak', 'coffee_latte_art'
   ];
-  for (let i = 1; i <= 15; i++) {
-    const name = assetNames[i - 1];
+
+  for (let i = 1; i <= assetBaseNames.length; i++) {
+    const baseName = assetBaseNames[i - 1];
+    const ext = i % 3 === 0 ? 'jpg' : i % 5 === 0 ? 'webp' : 'png';
+    const filename = `${baseName}.${ext}`;
+    const isFailed = i === 3 || i === 9 || i === 21 || i === 28;
+    const caption = isFailed ? '' : `アニメ調の${baseName.replace(/_/g, ' ')}の美麗なイラスト。AI生成ビジュアル。`;
+
     images.push({
       id: `a${i}`,
+      filename: filename,
       url: `https://picsum.photos/seed/asset${i}/600/400`,
-      caption: `Caption description for ${name}`,
-      embedding: new Array(1536).fill(0.01 * i),
+      caption: caption,
+      embedding: isFailed ? [] : new Array(1536).fill(0.01 * i),
       lastUsedAt: i % 3 === 0 ? new Date(Date.now() - 3600000 * i).toISOString() : null,
       useCount: i % 3 === 0 ? i * 2 : 0,
-      status: i === 3 || i === 9 ? 'FAILED' : 'SUCCESS'
+      status: isFailed ? 'FAILED' : 'SUCCESS'
     });
   }
 
   for (const img of images) {
     const { id, ...data } = img;
     await collections.images.doc(id).set(data);
-    console.log(`Seeded asset: ${img.id}`);
+    console.log(`Seeded asset: ${img.id} (${img.filename}) [${img.status}]`);
   }
 
   // 5. Seed system configurations
