@@ -111,13 +111,19 @@ export class SettingsService {
   }
 
   /**
-   * Helper to format an ISO date string according to the selected timezone.
+   * Helper to format an ISO date string according to the selected timezone in uniform `YYYY/MM/DD HH:mm:ss` format.
    * 
    * @param dateInput - The date input string or Date object.
-   * @returns A formatted date string.
+   * @returns A formatted date string in `YYYY/MM/DD HH:mm:ss`.
    */
   formatDate(dateInput: string | Date | undefined): string {
     if (!dateInput) return 'N/A';
+    if (typeof dateInput === 'string') {
+      const trimmed = dateInput.trim();
+      if (trimmed === 'Never' || trimmed === 'N/A' || trimmed === 'System Deploy') {
+        return trimmed;
+      }
+    }
     try {
       const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
       if (isNaN(date.getTime())) return typeof dateInput === 'string' ? dateInput : 'Invalid Date';
@@ -137,7 +143,7 @@ export class SettingsService {
       const parts = formatter.formatToParts(date);
       const partMap = new Map(parts.map(p => [p.type, p.value]));
       
-      return `${partMap.get('year')}-${partMap.get('month')}-${partMap.get('day')} ${partMap.get('hour')}:${partMap.get('minute')}:${partMap.get('second')}`;
+      return `${partMap.get('year')}/${partMap.get('month')}/${partMap.get('day')} ${partMap.get('hour')}:${partMap.get('minute')}:${partMap.get('second')}`;
     } catch (e) {
       console.error('Error formatting date in timezone', e);
       return typeof dateInput === 'string' ? dateInput : 'Invalid Date';

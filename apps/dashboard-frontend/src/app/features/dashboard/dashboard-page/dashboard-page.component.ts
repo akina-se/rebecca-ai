@@ -14,11 +14,12 @@ import { ActionHelperService } from '../../../shared/services/action-helper.serv
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { RankingModalComponent } from '../../../shared/components/organisms/ranking-modal/ranking-modal.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
+import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, TzDatePipe],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })

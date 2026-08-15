@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../../core/ports/dashboard.repository';
+import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 
 interface PostDataModel {
   id: string;
@@ -19,7 +20,7 @@ interface PostDataModel {
 @Component({
   selector: 'app-post-drawer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TzDatePipe],
   templateUrl: './post-drawer.component.html',
   styleUrls: ['./post-drawer.component.css']
 })

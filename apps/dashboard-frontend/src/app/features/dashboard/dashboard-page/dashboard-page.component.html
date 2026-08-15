@@ -109,7 +109,7 @@
                 <thead><tr><th>Time</th><th>Post Snippet</th><th><span class="material-icons">visibility</span></th></tr></thead>
                 <tbody>
                     <tr class="clickable" *ngFor="let post of topPosts.slice(0, 10)" (click)="openPostDrawer(post.id)">
-                        <td style="color: var(--text-muted)">{{ post.time | date:'yyyy-MM-dd HH:mm' }}</td>
+                        <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
                         <td>
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span>{{ post.snippet }}</span>
@@ -181,7 +181,7 @@
         </button>
     </div>
     
-    <table class="data-table glass-panel" style="border-radius: 0;">
+    <table class="data-table glass-panel" id="timeline-table" style="border-radius: 0;">
         <thead><tr>
             <th style="width: 40px;"></th>
             <th class="sortable-th" (click)="toggleTimelineSort('time')" style="cursor: pointer; user-select: none;" title="Sort by Time">
@@ -212,7 +212,7 @@
                         <span class="checkmark"></span>
                     </label>
                 </td>
-                <td style="color: var(--text-muted)">{{ post.time }}</td>
+                <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
                 <td>
                     <div *ngIf="post.hasMedia" 
                          (click)="$event.stopPropagation(); openLightbox(post.mediaUrls?.[0] || 'https://picsum.photos/seed/' + post.id + '/800/600')" 

@@ -46,7 +46,7 @@
             <span class="material-icons metric-icon">schedule</span>
             <div class="metric-info">
                 <div class="metric-title">Last Used</div>
-                <div class="metric-value" style="font-size: 0.9rem; white-space: nowrap;">{{ formatDate(assetData.lastUsedAt) }}</div>
+                <div class="metric-value" style="font-size: 0.9rem; white-space: nowrap;" [title]="assetData.lastUsedAt || ''">{{ assetData.lastUsedAt | tzDate }}</div>
             </div>
         </div>
     </div>

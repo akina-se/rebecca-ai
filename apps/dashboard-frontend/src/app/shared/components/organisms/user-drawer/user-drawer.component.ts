@@ -5,6 +5,7 @@ import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
 import { USERS_REPOSITORY, UsersRepository } from '../../../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
+import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 
 /**
  * Component representing the User Drawer organism.
@@ -16,7 +17,7 @@ import { UserDetail, UserStatus } from '@rebecca/types';
 @Component({
   selector: 'app-user-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TzDatePipe],
   templateUrl: './user-drawer.component.html',
   styleUrls: ['./user-drawer.component.css']
 })

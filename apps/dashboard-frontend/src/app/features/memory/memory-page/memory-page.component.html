@@ -12,7 +12,7 @@
             <tr class="clickable" *ngFor="let layer of layers" (click)="openDrawer(layer.level, layer.name, getIconForLayer(layer.level))">
                 <td><span class="badge" [style.background]="layer.level === 0 ? 'rgba(255,255,255,0.1)' : ''" [style.color]="layer.level === 0 ? 'var(--text-main)' : ''">Layer {{ layer.level }}</span> {{ layer.name }}</td>
                 <td>{{ layer.description }}</td>
-                <td style="color: var(--text-muted)">{{ formatDate(layer.lastUpdated) }}</td>
+                <td style="color: var(--text-muted); white-space: nowrap;" [title]="layer.lastUpdated || ''">{{ layer.lastUpdated | tzDate:'System Deploy' }}</td>
             </tr>
             <tr *ngIf="layers.length === 0 && !isLoading">
                 <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted)">No memory layers found.</td>

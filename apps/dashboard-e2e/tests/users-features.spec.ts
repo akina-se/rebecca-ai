@@ -153,4 +153,52 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     await expect(page.locator('app-dropdown').nth(1).locator('.dropdown-toggle')).toContainText('Eastern Time');
   });
 
+  test('should display all timestamps in uniform YYYY/MM/DD HH:mm:ss format and update with timezone changes', async ({ page }) => {
+    // 1. Set timezone to JST (Tokyo, UTC+9)
+    await page.goto('/settings');
+    const tzDropdown = page.locator('app-dropdown').nth(1);
+    await tzDropdown.locator('.dropdown-toggle').click();
+    await expect(tzDropdown.locator('.dropdown-menu')).toBeVisible();
+    await tzDropdown.locator('.dropdown-item').filter({ hasText: 'Tokyo' }).click();
+
+    // 2. Verify User Relations timestamps format
+    await page.goto('/users');
+    const userRows = page.locator('.data-table tbody tr.clickable');
+    await expect(userRows.first()).toBeVisible({ timeout: 10000 });
+    const userDateText = await userRows.first().locator('td').nth(3).innerText();
+    
+    // Validate format YYYY/MM/DD HH:mm:ss
+    expect(userDateText).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
+    expect(userDateText).not.toContain('T');
+    expect(userDateText).not.toContain('Z');
+    expect(userDateText).not.toContain('Invalid Date');
+
+    // 3. Verify Memory Management timestamps format
+    await page.goto('/memory');
+    const memoryRows = page.locator('table.data-table tbody tr');
+    await expect(memoryRows).toHaveCount(3);
+    const layer1Date = await memoryRows.nth(1).locator('td').nth(2).innerText();
+    expect(layer1Date).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
+
+    // 4. Verify Dashboard Timeline timestamps format
+    await page.goto('/dashboard');
+    const timelineRows = page.locator('#timeline-table tbody tr.clickable');
+    await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
+    const timelineDateText = await timelineRows.first().locator('td').nth(1).innerText();
+    expect(timelineDateText).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
+
+    // 5. Change Timezone to UTC (London, UTC+0)
+    await page.goto('/settings');
+    const tzDropdown2 = page.locator('app-dropdown').nth(1);
+    await tzDropdown2.locator('.dropdown-toggle').click();
+    await expect(tzDropdown2.locator('.dropdown-menu')).toBeVisible();
+    await tzDropdown2.locator('.dropdown-item').filter({ hasText: 'London' }).click();
+
+    // 6. Verify User Relations timestamp updated according to timezone difference (9 hours difference)
+    await page.goto('/users');
+    const userDateTextUTC = await page.locator('.data-table tbody tr.clickable').first().locator('td').nth(3).innerText();
+    expect(userDateTextUTC).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
+    expect(userDateTextUTC).not.toBe(userDateText);
+  });
+
 });
