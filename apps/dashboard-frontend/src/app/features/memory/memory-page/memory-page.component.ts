@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { ToastService } from '../../../shared/services/toast.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { MemoryDrawerComponent } from '../../../shared/components/organisms/memory-drawer/memory-drawer.component';
+import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { MEMORY_REPOSITORY, MemoryRepository } from '../../../core/ports/memory.repository';
 import { MemoryLayer } from '@rebecca/types';
 
 @Component({
   selector: 'app-memory-page',
   standalone: true,
-  imports: [CommonModule, RightDrawerComponent, MemoryDrawerComponent],
+  imports: [CommonModule, RightDrawerComponent, MemoryDrawerComponent, TzDatePipe],
   templateUrl: './memory-page.component.html',
   styleUrls: ['./memory-page.component.css']
 })

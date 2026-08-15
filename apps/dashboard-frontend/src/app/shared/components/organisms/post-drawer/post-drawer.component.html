@@ -8,7 +8,7 @@
         </div>
         <div style="margin-top: 12px; color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
             <span class="material-icons" style="font-size: 0.9rem;">schedule</span>
-            {{ postData.time }}
+            <span [title]="postData.time || ''">{{ postData.time | tzDate }}</span>
         </div>
     </div>
 

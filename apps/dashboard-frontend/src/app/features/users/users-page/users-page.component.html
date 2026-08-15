@@ -78,7 +78,7 @@
                 </td>
                 <td style="font-weight: 500;" [style.text-decoration]="user.status === 'BLOCKED' ? 'line-through' : 'none'">{{ user.handle }}</td>
                 <td>{{ user.interactions | number }}</td>
-                <td style="color: var(--text-muted)">{{ user.lastSeen || 'Never' }}</td>
+                <td style="color: var(--text-muted); white-space: nowrap;" [title]="user.lastSeen || ''">{{ user.lastSeen | tzDate }}</td>
                 <td>
                     <span class="badge" 
                         [style.background]="user.ragMemoriesStatus === 'Generated' ? 'rgba(46, 213, 115, 0.15)' : 'rgba(255,255,255,0.05)'" 

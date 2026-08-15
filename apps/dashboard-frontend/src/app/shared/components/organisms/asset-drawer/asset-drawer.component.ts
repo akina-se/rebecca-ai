@@ -5,6 +5,7 @@ import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
 import { ASSETS_REPOSITORY, AssetsRepository } from '../../../../core/ports/assets.repository';
 import { Asset } from '@rebecca/types';
+import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 
 export interface AssetDrawerData {
   id: string;
@@ -18,7 +19,7 @@ export interface AssetDrawerData {
 @Component({
   selector: 'app-asset-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TzDatePipe],
   templateUrl: './asset-drawer.component.html',
   styleUrls: ['./asset-drawer.component.css'],
 })
