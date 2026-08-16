@@ -44,7 +44,7 @@ const firestore = new Firestore({
 
 // Initialize Features (Modules)
 const authRouter = initializeAuthModule();
-const copilotRouter = initializeCopilotModule();
+const copilotRouter = initializeCopilotModule(firestore);
 const { dashboardRouter: timelineRouter, postsRouter } = initializeTimelineModule(firestore);
 const usersRouter = initializeUsersModule(firestore);
 const systemMemoryRouter = initializeSystemMemoryModule(firestore);

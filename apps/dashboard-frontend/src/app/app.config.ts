@@ -15,6 +15,9 @@ import { HttpUsersRepository } from './infrastructure/http/http-users.repository
 import { MEMORY_REPOSITORY } from './core/ports/memory.repository';
 import { HttpMemoryRepository } from './infrastructure/http/http-memory.repository';
 
+import { COPILOT_REPOSITORY } from './core/ports/copilot.repository';
+import { HttpCopilotRepository } from './infrastructure/http/http-copilot.repository';
+
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
@@ -37,6 +40,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: MEMORY_REPOSITORY,
       useClass: HttpMemoryRepository
+    },
+    {
+      provide: COPILOT_REPOSITORY,
+      useClass: HttpCopilotRepository
     }
   ]
 };

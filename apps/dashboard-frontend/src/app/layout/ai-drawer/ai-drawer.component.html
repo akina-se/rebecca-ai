@@ -1,26 +1,123 @@
 <div class="drawer ai-drawer glass-panel" [class.open]="isOpen">
-    <div class="drawer-header" style="background: transparent; border-bottom: 1px solid rgba(155, 89, 182, 0.3);">
-        <h3 style="display: flex; align-items: center; gap: 8px;"><span class="material-icons" style="color: var(--color-primary);">auto_awesome</span> Rebecca</h3>
-        <button class="close-btn" (click)="close()"><span class="material-icons">close</span></button>
+  <div class="drawer-header" style="background: transparent; border-bottom: 1px solid rgba(155, 89, 182, 0.3);">
+    <h3 style="display: flex; align-items: center; gap: 8px; margin: 0; color: #fff; font-size: 1.15rem; font-weight: 700;">
+      <span class="material-icons" style="color: var(--color-primary);">auto_awesome</span> Rebecca
+    </h3>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button class="reset-btn" id="ai-reset-btn" (click)="onClearSession()" title="Reset Session" aria-label="Reset Session">
+        <span class="material-icons">refresh</span>
+      </button>
+      <button class="close-btn" id="ai-close-btn" (click)="close()" title="Close Drawer" aria-label="Close Drawer">
+        <span class="material-icons">close</span>
+      </button>
     </div>
-    <div class="drawer-body" style="padding-bottom: 0;">
-        <div style="text-align: center; color: var(--color-primary); font-size: 0.8rem; margin-bottom: 1.5rem; font-weight: 500;" id="ai-context-indicator">
-            Context: Global
-        </div>
-        <div class="ai-message">
-            <img src="rebecca_icon.png" alt="Rebecca" class="ai-avatar">
-            <div class="ai-content">
-                Hello! I am Rebecca. How can I help you manage the system today?
-            </div>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; margin-top: 1rem;">
-            <div class="action-chip">Summarize Timeline</div>
-            <div class="action-chip">Check Server Status</div>
-            <div class="action-chip">Generate Assets</div>
-        </div>
+  </div>
+
+  <div class="drawer-body" #chatScroll id="ai-messages-container">
+    <div style="text-align: center; color: var(--color-primary); font-size: 0.8rem; margin-bottom: 1.5rem; font-weight: 500;" id="ai-context-indicator">
+      Context: {{ contextService.contextBadge() }}
     </div>
-    <div class="chat-input-container">
-        <input type="text" class="chat-input" placeholder="Ask Rebecca anything...">
-        <button class="send-btn"><span class="material-icons">send</span></button>
-    </div>
+
+    @for (msg of copilotService.messages(); track msg.id || $index; let i = $index) {
+      @if (msg.role === 'model') {
+        <div class="ai-message model-row">
+          <img src="rebecca_icon.png" alt="Rebecca" class="ai-avatar">
+          <div class="ai-content model-bubble">
+            <div class="bubble-text" style="white-space: pre-wrap;">{{ msg.text }}</div>
+
+            <!-- HITL Safety Action Confirmation Card -->
+            @if (msg.actionRequired) {
+              <div class="action-card" [ngClass]="msg.actionRequired.impactLevel">
+                <div class="action-card-header">
+                  <span class="material-icons" style="font-size: 1rem;" [style.color]="msg.actionRequired.impactLevel === 'danger' ? '#f87171' : '#fbbf24'">
+                    {{ msg.actionRequired.impactLevel === 'danger' ? 'warning' : 'bolt' }}
+                  </span>
+                  <span class="action-card-title">{{ msg.actionRequired.title }}</span>
+                </div>
+                <p class="action-card-desc">{{ msg.actionRequired.description }}</p>
+
+                @if (msg.actionStatus === 'pending' || !msg.actionStatus) {
+                  <div class="action-buttons-wrap">
+                    <button 
+                      class="action-btn approve-btn" 
+                      [ngClass]="msg.actionRequired.impactLevel"
+                      (click)="onApproveAction(i, msg.actionRequired)">
+                      <span class="material-icons" style="font-size: 0.9rem;">check_circle</span>
+                      <span>実行を承認する</span>
+                    </button>
+                    <button 
+                      class="action-btn cancel-btn"
+                      (click)="onCancelAction(i)">
+                      <span>キャンセル</span>
+                    </button>
+                  </div>
+                }
+
+                @if (msg.actionStatus === 'executed') {
+                  <div class="action-status-badge executed">
+                    <span class="material-icons" style="font-size: 0.9rem;">task_alt</span>
+                    <span>実行完了（マスター承認済み）</span>
+                  </div>
+                }
+
+                @if (msg.actionStatus === 'cancelled') {
+                  <div class="action-status-badge cancelled">
+                    <span class="material-icons" style="font-size: 0.9rem;">block</span>
+                    <span>承認がキャンセルされました</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (msg.role === 'user') {
+        <div class="user-message user-row">
+          <div class="user-content user-bubble bubble-text">{{ msg.text }}</div>
+        </div>
+      }
+    }
+
+    <!-- Initial Turn Suggestion Chips (Only shown before user has sent messages, wrapped without horizontal scroll) -->
+    @if (copilotService.messages().length <= 1) {
+      <div style="display: flex; flex-wrap: wrap; margin-top: 1rem; margin-bottom: 1rem;">
+        @for (chip of contextService.suggestionChips(); track chip) {
+          <button type="button" class="action-chip" (click)="onChipClick(chip)" [disabled]="copilotService.isLoading()">{{ chip }}</button>
+        }
+      </div>
+    }
+
+    <!-- Thinking indicator -->
+    @if (copilotService.isLoading()) {
+      <div class="ai-message thinking-row">
+        <img src="rebecca_icon.png" alt="Rebecca" class="ai-avatar">
+        <div class="ai-content thinking-bubble">
+          <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="chat-input-container">
+    <input 
+      type="text" 
+      class="chat-input" 
+      id="ai-input"
+      [(ngModel)]="inputMessage" 
+      (keydown.enter)="onSendMessage()"
+      [disabled]="copilotService.isLoading()"
+      placeholder="Ask Rebecca anything...">
+    <button 
+      class="send-btn" 
+      id="ai-send-btn"
+      (click)="onSendMessage()"
+      [disabled]="!inputMessage.trim() || copilotService.isLoading()">
+      <span class="material-icons">send</span>
+    </button>
+  </div>
 </div>

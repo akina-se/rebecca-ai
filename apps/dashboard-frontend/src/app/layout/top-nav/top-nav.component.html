@@ -1,9 +1,11 @@
 <div class="topbar glass-panel">
     <div style="display: flex; align-items: center; gap: 20px;">
-        <div class="breadcrumb">Admin <span class="material-icons" style="font-size: 1rem; color: var(--text-muted)">chevron_right</span> <span>Dashboard</span></div>
+        <div class="breadcrumb">Admin <span class="material-icons" style="font-size: 1rem; color: var(--text-muted)">chevron_right</span> <span>{{ pageTitle }}</span></div>
     </div>
     <div class="user-menu" style="display: flex; align-items: center; gap: 10px;">
-        <button class="sparkle-btn" (click)="toggleDrawer()"><span class="material-icons" style="font-size: 1.1rem;">auto_awesome</span> Rebecca</button>
+        <button class="sparkle-btn header-rebecca-btn" id="header-rebecca-btn" (click)="toggleDrawer()" title="Open Rebecca Copilot" aria-label="Open Rebecca Copilot">
+            <span class="material-icons" style="font-size: 1.1rem;">auto_awesome</span> Rebecca
+        </button>
         <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 5px;"></div>
         <div style="position: relative; cursor: pointer;" (click)="toggleUserDropdown($event)">
             <img [src]="userAvatarUrl" alt="Admin Account" class="avatar" style="width: 36px; height: 36px; border-radius: 50%;">
