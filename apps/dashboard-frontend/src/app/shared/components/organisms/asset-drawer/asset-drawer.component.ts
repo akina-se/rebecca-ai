@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
 import { ASSETS_REPOSITORY, AssetsRepository } from '../../../../core/ports/assets.repository';
+import { CopilotContextService } from '../../../../core/services/copilot-context.service';
 import { Asset } from '@rebecca/types';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 
@@ -26,6 +27,8 @@ export interface AssetDrawerData {
 export class AssetDrawerComponent implements OnChanges {
   drawerService = inject(DrawerService);
   toastService = inject(ToastService);
+  contextService = inject(CopilotContextService);
+
   @Input() assetId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
   @Output() assetUpdated = new EventEmitter<void>();
@@ -69,6 +72,14 @@ export class AssetDrawerComponent implements OnChanges {
           useCount: asset.usedCount || 0,
           lastUsedAt: asset.lastUsedAt || null,
         };
+
+        this.contextService.setFocusedEntity({
+          type: 'asset',
+          id: asset.id,
+          label: asset.filename,
+          details: { status: asset.status, useCount: asset.usedCount, caption: asset.caption }
+        });
+
         this.isLoading = false;
       },
       error: () => {

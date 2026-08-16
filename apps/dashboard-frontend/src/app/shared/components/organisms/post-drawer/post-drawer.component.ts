@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../../core/ports/dashboard.repository';
+import { CopilotContextService } from '../../../../core/services/copilot-context.service';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 
 interface PostDataModel {
@@ -27,6 +28,8 @@ interface PostDataModel {
 export class PostDrawerComponent implements OnChanges {
   drawerService = inject(DrawerService);
   toastService = inject(ToastService);
+  contextService = inject(CopilotContextService);
+
   @Input() postId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
 
@@ -59,6 +62,12 @@ export class PostDrawerComponent implements OnChanges {
           replies: post.replies || 0,
           mediaUrls: post.mediaUrls || []
         };
+        this.contextService.setFocusedEntity({
+          type: 'post',
+          id: post.id,
+          label: this.postData.text.slice(0, 35),
+          details: { impressions: this.postData.impressions, status: this.postData.status }
+        });
         this.isLoading = false;
       },
       error: () => {

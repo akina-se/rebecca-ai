@@ -6,6 +6,7 @@ import { ToastService } from '../../../services/toast.service';
 import { USERS_REPOSITORY, UsersRepository } from '../../../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
+import { CopilotContextService } from '../../../../core/services/copilot-context.service';
 
 /**
  * Component representing the User Drawer organism.
@@ -27,6 +28,9 @@ export class UserDrawerComponent implements OnChanges {
   
   /** Injected service for displaying toast notifications. */
   toastService = inject(ToastService);
+
+  /** Injected context service for AI copilot context tracking. */
+  contextService = inject(CopilotContextService);
   
   /** The ID of the user to display details for. */
   @Input() userId: string | null = null;
@@ -68,6 +72,12 @@ export class UserDrawerComponent implements OnChanges {
       next: (u) => {
         this.user = u;
         this.isBlocked = u.status === UserStatus.BLOCKED;
+        this.contextService.setFocusedEntity({
+          type: 'user',
+          id: u.id,
+          label: u.handle,
+          details: { interactions: u.interactions, status: u.status, firstSeen: u.firstSeen, lastSeen: u.lastSeen }
+        });
         try {
           this.parsedProfile = JSON.parse(u.coreProfile) as Record<string, string[]>;
           ['attributes', 'preferences', 'concerns', 'important_memories'].forEach(key => {

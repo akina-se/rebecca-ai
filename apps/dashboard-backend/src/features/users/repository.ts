@@ -161,6 +161,7 @@ export class UsersRepository {
       const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
 
       return {
+        id: u.id,
         handle: `@${u.id}`,
         userId: u.id,
         name: this.resolveUserName(u.id, data),
@@ -260,6 +261,7 @@ export class UsersRepository {
     const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
 
     return {
+      id: rawId,
       handle: `@${rawId}`,
       name: this.resolveUserName(rawId, data),
       interactions: data.interactions !== undefined ? data.interactions : (data.daily_reply_count || 0),

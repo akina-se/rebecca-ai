@@ -343,6 +343,7 @@ export interface ChatMessage {
 }
 
 export interface UserDetail {
+  id: string;
   handle: string;
   name: string;
   interactions: number;
@@ -387,18 +388,42 @@ export interface Asset {
   lastUsedAt?: string | null;
 }
 
+export type CopilotActionType = 
+  | 'BLOCK_USER'
+  | 'UNBLOCK_USER'
+  | 'DELETE_POST'
+  | 'FORCE_DREAMING'
+  | 'REGENERATE_CAPTIONS'
+  | 'NAVIGATE_PAGE';
+
+export interface CopilotAction {
+  type: CopilotActionType;
+  title: string;
+  description: string;
+  impactLevel: 'danger' | 'warning' | 'info';
+  requiresConfirmation: boolean;
+  payload: Record<string, unknown>;
+}
+
+export interface CopilotChatMessage {
+  id?: string;
+  role: 'user' | 'model';
+  text: string;
+  time?: string;
+  actionRequired?: CopilotAction;
+  suggestionChips?: string[];
+  actionStatus?: 'pending' | 'executed' | 'cancelled';
+}
+
 export interface CopilotRequest {
   message: string;
-  currentContext: string;
+  currentContext?: string;
+  history?: { role: 'user' | 'model'; text: string; time?: string }[];
 }
 
 export interface CopilotResponse {
   reply: string;
-  actionRequired?: {
-    type: 'BLOCK_USER' | 'DELETE_POST' | 'UPDATE_MEMORY';
-    payload: unknown;
-    description: string;
-  };
+  actionRequired?: CopilotAction | null;
   suggestionChips: string[];
 }
 
