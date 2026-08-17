@@ -5,6 +5,7 @@ import { DrawerService } from '../../core/services/drawer.service';
 import { CopilotService } from '../../core/services/copilot.service';
 import { CopilotContextService } from '../../core/services/copilot-context.service';
 import { TzDatePipe } from '../../shared/pipes/tz-date.pipe';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { CopilotAction } from '@rebecca/types';
 
 /**
@@ -14,7 +15,7 @@ import { CopilotAction } from '@rebecca/types';
 @Component({
   selector: 'app-ai-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TzDatePipe],
+  imports: [CommonModule, FormsModule, TzDatePipe, TranslatePipe],
   templateUrl: './ai-drawer.component.html',
   styleUrls: ['./ai-drawer.component.css']
 })

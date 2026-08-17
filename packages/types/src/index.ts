@@ -419,6 +419,7 @@ export interface CopilotRequest {
   message: string;
   currentContext?: string;
   history?: { role: 'user' | 'model'; text: string; time?: string }[];
+  language?: 'ja' | 'en';
 }
 
 export interface CopilotResponse {

@@ -123,7 +123,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
   test('should support global 1-hour interval timezones and persistence in Settings', async ({ page }) => {
     await page.goto('/settings');
-    await expect(page.locator('h2', { hasText: 'System Settings' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /System Settings|システム環境設定/ })).toBeVisible({ timeout: 15000 });
 
     // Open timezone dropdown
     const tzDropdown = page.locator('app-dropdown').nth(1);

@@ -7,6 +7,8 @@ import { MEMORY_REPOSITORY, MemoryRepository } from '../ports/memory.repository'
 import { ASSETS_REPOSITORY, AssetsRepository } from '../ports/assets.repository';
 import { CopilotContextService } from './copilot-context.service';
 import { ToastService } from '../../shared/services/toast.service';
+import { SettingsService } from './settings.service';
+import { TranslationService } from './translation.service';
 import { CopilotChatMessage, CopilotAction, UserStatus } from '@rebecca/types';
 
 /**
@@ -20,6 +22,8 @@ export class CopilotService {
   private copilotRepo = inject(COPILOT_REPOSITORY);
   private contextService = inject(CopilotContextService);
   private toastService = inject(ToastService);
+  private settingsService = inject(SettingsService);
+  private translationService = inject(TranslationService);
   private router = inject(Router);
 
   @Inject(USERS_REPOSITORY) private usersRepo = inject(USERS_REPOSITORY);
@@ -45,6 +49,23 @@ export class CopilotService {
         sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(current));
       }
     });
+
+    // Reactively update initial greeting if language switches and no user messages exist yet
+    effect(() => {
+      const lang = this.translationService.currentLang();
+      const current = this.messages();
+      if (current.length === 1 && current[0].id === 'initial-greeting') {
+        this.messages.set([
+          {
+            id: 'initial-greeting',
+            role: 'model',
+            text: this.translationService.t('copilot.greeting'),
+            time: new Date().toISOString(),
+            actionStatus: 'pending'
+          }
+        ]);
+      }
+    });
   }
 
   private hydrateSession(): void {
@@ -68,7 +89,7 @@ export class CopilotService {
       {
         id: 'initial-greeting',
         role: 'model',
-        text: 'Hello! I am Rebecca. How can I help you manage the system today, Master?♡\nダッシュボードの分析やデータ操作、何でも言ってちょうだい！',
+        text: this.translationService.t('copilot.greeting'),
         time: new Date().toISOString(),
         actionStatus: 'pending'
       }
@@ -99,10 +120,13 @@ export class CopilotService {
       time: m.time
     }));
 
+    const lang = (this.settingsService.selectedLang() === 'en' ? 'en' : 'ja') as 'ja' | 'en';
+
     this.copilotRepo.chat({
       message: trimmed,
       currentContext: this.contextService.fullContextDescription(),
-      history: historyPayload
+      history: historyPayload,
+      language: lang
     }).subscribe({
       next: (res) => {
         const modelMsg: CopilotChatMessage = {

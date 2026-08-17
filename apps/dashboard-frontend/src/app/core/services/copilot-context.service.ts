@@ -1,6 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { TranslationService } from './translation.service';
 
 export interface FocusedEntity {
   type: 'post' | 'user' | 'asset' | 'memory' | 'general';
@@ -18,6 +19,7 @@ export interface FocusedEntity {
 })
 export class CopilotContextService {
   private router = inject(Router);
+  private translationService = inject(TranslationService);
 
   /** Active URL path signal */
   currentRoute = signal<string>(typeof window !== 'undefined' ? window.location.pathname : '/dashboard');
@@ -67,11 +69,11 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
-    if (route.includes('/assets')) return 'Assets Library';
-    if (route.includes('/users')) return 'User Relations';
-    if (route.includes('/memory')) return 'Memory Management';
-    if (route.includes('/settings')) return 'System Settings';
-    return 'Performance Dashboard';
+    if (route.includes('/assets')) return this.translationService.t('nav.assets');
+    if (route.includes('/users')) return this.translationService.t('nav.users');
+    if (route.includes('/memory')) return this.translationService.t('nav.memory');
+    if (route.includes('/settings')) return this.translationService.t('nav.settings');
+    return this.translationService.t('dashboard.overview');
   });
 
   /**
@@ -92,35 +94,53 @@ export class CopilotContextService {
   });
 
   /**
-   * Dynamically suggested follow-up chips based on active route and entity.
+   * Dynamically suggested follow-up chips based on active route, entity, and language.
    */
   suggestionChips = computed<string[]>(() => {
+    const isEn = this.translationService.currentLang() === 'en';
     const focused = this.focusedEntity();
+
     if (focused) {
       if (focused.type === 'post') {
-        return ['トーンと反響を分析', 'この投稿を削除すべき？', '類似の過去投稿を検索'];
+        return isEn 
+          ? ['Analyze tone and engagement', 'Should I delete this post?', 'Find similar past posts']
+          : ['トーンと反響を分析', 'この投稿を削除すべき？', '類似の過去投稿を検索'];
       }
       if (focused.type === 'user') {
-        return ['このユーザーの過去の対話は？', 'ブロックすべき？', '重要記憶（RAG）を確認'];
+        return isEn 
+          ? ['Past interactions with user', 'Should we block them?', 'Check RAG memories']
+          : ['このユーザーの過去の対話は？', 'ブロックすべき？', '重要記憶（RAG）を確認'];
       }
       if (focused.type === 'asset') {
-        return ['キャプションの品質を評価', 'キャプションを再生成', 'この画像の使用状況'];
+        return isEn 
+          ? ['Evaluate caption quality', 'Regenerate caption', 'Check image usage']
+          : ['キャプションの品質を評価', 'キャプションを再生成', 'この画像の使用状況'];
       }
     }
 
     const route = this.currentRoute();
     if (route.includes('/assets')) {
-      return ['失敗したキャプションを確認', '未利用アセットを検索', 'キャプションの一括再生成'];
+      return isEn 
+        ? ['Check failed captions', 'Find unused assets', 'Bulk regenerate captions']
+        : ['失敗したキャプションを確認', '未利用アセットを検索', 'キャプションの一括再生成'];
     }
     if (route.includes('/users')) {
-      return ['アクティブユーザー上位は？', 'ブロック中ユーザーを確認', 'RAG記憶の生成状況'];
+      return isEn 
+        ? ['Top active users', 'Check blocked users', 'RAG memory generation status']
+        : ['アクティブユーザー上位は？', 'ブロック中ユーザーを確認', 'RAG記憶の生成状況'];
     }
     if (route.includes('/memory')) {
-      return ['ペルソナの各層を解説して', '強制ドリーミングを実行', 'Layer 1 の調整アドバイス'];
+      return isEn 
+        ? ['Explain memory layers', 'Trigger Force Dreaming', 'Layer 1 tuning advice']
+        : ['ペルソナの各層を解説して', '強制ドリーミングを実行', 'Layer 1 の調整アドバイス'];
     }
     if (route.includes('/settings')) {
-      return ['タイムゾーン設定の確認', 'クラウド同期ステータス', 'システム診断'];
+      return isEn 
+        ? ['Review timezone settings', 'Cloud sync status', 'System diagnostics']
+        : ['タイムゾーン設定の確認', 'クラウド同期ステータス', 'システム診断'];
     }
-    return ['KPI推移を要約して', 'エンゲージメント低下の原因は？', 'システムアラートを確認'];
+    return isEn 
+      ? ['Summarize KPI trends', 'Why did engagement drop?', 'Check system alerts']
+      : ['KPI推移を要約して', 'エンゲージメント低下の原因は？', 'システムアラートを確認'];
   });
 }

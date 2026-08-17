@@ -276,6 +276,7 @@
 .action-buttons-wrap { 
   display: flex; 
   gap: 8px; 
+  flex-wrap: nowrap;
 }
 
 .action-btn { 
@@ -288,7 +289,10 @@
   transition: 0.2s; 
   display: inline-flex; 
   align-items: center; 
+  justify-content: center;
   gap: 4px; 
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .approve-btn.danger { 
@@ -328,6 +332,7 @@
   padding: 4px 10px; 
   border-radius: 4px; 
   font-weight: 500; 
+  white-space: nowrap;
 }
 
 .action-status-badge.executed { 

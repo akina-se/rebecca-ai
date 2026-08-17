@@ -3,17 +3,20 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DrawerService } from '../../core/services/drawer.service';
+import { TranslationService } from '../../core/services/translation.service';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-top-nav',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './top-nav.component.html',
   styleUrls: ['./top-nav.component.css']
 })
 export class TopNavComponent {
   @Output() openDrawer = new EventEmitter<void>();
   private drawerService = inject(DrawerService);
+  private translationService = inject(TranslationService);
   isUserDropdownOpen = false;
   user: any = null;
 
@@ -25,11 +28,11 @@ export class TopNavComponent {
 
   get pageTitle(): string {
     const url = this.router.url;
-    if (url.includes('/memory')) return 'Memory Management';
-    if (url.includes('/assets')) return 'Assets Library';
-    if (url.includes('/users')) return 'User Relations';
-    if (url.includes('/settings')) return 'Settings';
-    return 'Dashboard';
+    if (url.includes('/memory')) return this.translationService.t('nav.memory');
+    if (url.includes('/assets')) return this.translationService.t('nav.assets');
+    if (url.includes('/users')) return this.translationService.t('nav.users');
+    if (url.includes('/settings')) return this.translationService.t('nav.settings');
+    return this.translationService.t('nav.dashboard');
   }
 
   get userAvatarUrl(): string {

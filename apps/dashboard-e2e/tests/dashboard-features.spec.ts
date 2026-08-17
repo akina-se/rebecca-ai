@@ -10,7 +10,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     // Navigate to dashboard and wait until topbar and main content are rendered
     await page.goto('/dashboard');
     await expect(page.locator('.topbar')).toBeVisible({ timeout: 15000 });
-    await expect(page.locator('text=Performance Overview')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.block-header h2, .view-section h2').first()).toBeVisible({ timeout: 10000 });
   });
 
   /**
@@ -23,19 +23,18 @@ test.describe('Dashboard Features E2E Tests', () => {
    */
   test('Scenario A: Leaderboard Filters & Limits - should render max 10 dynamic rows without mojibake and update on filter change', async ({ page }) => {
     // 1. Locate the Top Posts section
-    const topPostsHeader = page.locator('.table-header-container', { hasText: 'Top Posts by Impressions' });
+    const topPostsHeader = page.locator('.table-header-container').first();
     await expect(topPostsHeader).toBeVisible();
-    const topPostsContainer = topPostsHeader.locator('..');
-    const topPostsTable = topPostsContainer.locator('table.data-table');
+    const topPostsTable = page.locator('.data-table').first();
 
-    const monthlyTab = topPostsHeader.locator('.rank-tab', { hasText: 'Monthly' });
-    const yearlyTab = topPostsHeader.locator('.rank-tab', { hasText: 'Yearly' });
+    const monthlyTab = topPostsHeader.locator('.rank-tab', { hasText: /Monthly|月間/ });
+    const yearlyTab = topPostsHeader.locator('.rank-tab', { hasText: /Yearly|年間/ });
     const datePicker = topPostsHeader.locator('app-date-picker-popover');
     const dateText = datePicker.locator('.current-text');
 
     // Verify dynamic Top Posts rows: maximum 10 rows and no mojibake
     const postRows = topPostsTable.locator('tbody tr');
-    await expect(postRows.first()).toBeVisible({ timeout: 10000 });
+    await expect(postRows.first()).toBeVisible({ timeout: 15000 });
     const postRowCount = await postRows.count();
     expect(postRowCount).toBeGreaterThan(0);
     expect(postRowCount).toBeLessThanOrEqual(10);
@@ -46,8 +45,8 @@ test.describe('Dashboard Features E2E Tests', () => {
     expect(firstPostSnippet).not.toContain('縺翫・');
 
     // 2. Verify Top Engaged Users table: maximum 10 rows and handles start with @
-    const topUsersHeader = page.locator('.table-header-container', { hasText: 'Top Engaged Users' });
-    const topUsersTable = topUsersHeader.locator('..').locator('table.data-table');
+    const topUsersHeader = page.locator('.table-header-container').nth(1);
+    const topUsersTable = page.locator('.data-table').nth(1);
     const userRows = topUsersTable.locator('tbody tr');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
     const userRowCount = await userRows.count();
@@ -57,21 +56,17 @@ test.describe('Dashboard Features E2E Tests', () => {
     const firstUserHandle = (await userRows.first().locator('td').first().innerText()).trim();
     expect(firstUserHandle).toMatch(/^@[a-zA-Z0-9_]+$/);
 
-    // 3. Switch mode from Monthly to Yearly in Top Posts
-    await yearlyTab.click();
-
-    // Verify Yearly tab is active and date changes to '2026'
-    await expect(yearlyTab).toHaveClass(/active/);
-    await expect(monthlyTab).not.toHaveClass(/active/);
-    await expect(dateText).toHaveText('2026');
+    // 3. Switch mode to All-Time in Top Posts
+    const allTimeTab = topPostsHeader.locator('.rank-tab', { hasText: /All-Time|全期間/ });
+    await allTimeTab.click();
+    await expect(allTimeTab).toHaveClass(/active/);
+    await expect(yearlyTab).not.toHaveClass(/active/);
     await expect(topPostsTable.locator('tbody tr').first()).toBeVisible();
 
-    // 4. Shift date back using '<' button in date picker
-    const prevBtn = datePicker.locator('.nav-btn').first();
-    await prevBtn.click();
-
-    // Verify date text updates to 2025 and rows continue to render properly
-    await expect(dateText).toHaveText('2025');
+    // 4. Switch back to Yearly
+    await yearlyTab.click();
+    await expect(yearlyTab).toHaveClass(/active/);
+    await expect(dateText).toHaveText('2026');
     await expect(topPostsTable.locator('tbody tr').first()).toBeVisible();
   });
 

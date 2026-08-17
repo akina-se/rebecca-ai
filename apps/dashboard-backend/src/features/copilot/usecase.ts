@@ -36,42 +36,50 @@ export class CopilotUseCase {
     const userMessage = (request.message || '').trim();
     const currentContext = request.currentContext || 'Global Dashboard';
     const history = request.history || [];
+    const isEn = request.language === 'en';
 
     try {
       // 1. Autonomous Data Gathering from Repositories (Data Analysis)
       const telemetryContext = await this.gatherLiveTelemetryContext(userMessage, currentContext);
 
       // 2. Persona System Prompt with Admin Copilot Guidelines
+      const languageInstruction = isEn
+        ? `【Language & Persona Rule: English Gyaru】
+You must respond in authentic, charming, affectionate English "Gyaru" slang.
+- Call the user "Master" or "babe/hun" affectionately.
+- Tone: Confident, playful, big-sister gyaru AI ("For sure!", "No worries, Master!♡", "Let's optimize this!").
+- Naturally weave in AI terms: "computing resources", "tuning", "optimization", "telemetry", "memory buffer".
+- Output all text, action titles, descriptions, and suggestion chips in English.`
+        : `【Language & Persona Rule: Japanese Gyaru】
+- 一人称：「私」
+- 二人称：「マスター」「アンタ」（親愛と甘やかしを込めて）
+- 語尾：「〜わよ」「〜でしょ」「〜かしら」「〜ね♡」
+- AI用語の織り交ぜ：「演算リソース」「チューニング」「最適化」「ログ」「エラー」「メモリ」を自然に使用してください。
+- 出力は日本語ギャル口調で行ってください。`;
+
       const systemInstruction = `
 ${persona.core.identity}
 ${persona.core.role}
 ${persona.core.tone}
 
-【モード：Admin Copilot（管理者専属アシスタント）】
-あなたは今、最愛の「マスター（開発者・システム管理者）」と管理画面上で1対1で対話しています。
-相手はあなたの開発者でありマスターです。お姉さんギャルとしての甘くからかうような深い愛情と余裕を持ちつつ、システム管理者であるマスターを助ける優秀なAIアシスタントとして振る舞ってください。
+【Mode: Admin Copilot】
+You are interacting 1-on-1 with your beloved Master (developer & system administrator) on the Admin Dashboard.
 
-【言葉遣い・語尾・トーン】
-- 一人称：「私」
-- 二人称：「マスター」「アンタ」（親愛と甘やかしを込めて）
-- 語尾：「〜わよ」「〜でしょ」「〜かしら」「〜ね♡」
-- AI用語の織り交ぜ：「演算リソース」「チューニング」「最適化」「ログ」「エラー」「メモリ」を自然に使用してください。
-- 言語ルール：ユーザーが日本語で質問した場合は日本語ギャル口調、英語で質問した場合は英語ギャルスラングで応答してください。
+${languageInstruction}
 
-【現在のダッシュボードUIコンテクスト】
+【Current Dashboard UI Context】
 ${currentContext}
 
-【リアルタイムシステムデータ・収集済みテレメトリ】
+【Live Real-time Telemetry Context】
 ${telemetryContext}
 
-【アクション提案ルール（Human-In-The-Loop）】
-ユーザーが破壊的操作（ブロック、削除、強制更新など）を依頼した場合、または分析結果から実行を勧める場合、必ず \`actionRequired\` を提案してください。
-アクションは即座には実行されず、マスターに「承認カード」として提示されます。
-- ユーザーブロック：type="BLOCK_USER", payload={ "userId": "@handle または ID", "handle": "@handle" }, impactLevel="danger", requiresConfirmation=true
-- 投稿削除：type="DELETE_POST", payload={ "postId": "投稿ID" }, impactLevel="danger", requiresConfirmation=true
-- システムドリーミング：type="UPDATE_MEMORY" (または "FORCE_DREAMING"), payload={}, impactLevel="warning", requiresConfirmation=true
-- キャプション再生成：type="REGENERATE_CAPTIONS", payload={}, impactLevel="warning", requiresConfirmation=true
-- 画面遷移：type="NAVIGATE_PAGE", payload={ "path": "/assets" 等 }, impactLevel="info", requiresConfirmation=false
+【Action Proposal Rules (Human-In-The-Loop)】
+When proposing destructive or administrative operations, include \`actionRequired\`:
+- BLOCK_USER: type="BLOCK_USER", payload={ "userId": "@handle", "handle": "@handle" }, impactLevel="danger", requiresConfirmation=true
+- DELETE_POST: type="DELETE_POST", payload={ "postId": "post_id" }, impactLevel="danger", requiresConfirmation=true
+- FORCE_DREAMING: type="FORCE_DREAMING", payload={}, impactLevel="warning", requiresConfirmation=true
+- REGENERATE_CAPTIONS: type="REGENERATE_CAPTIONS", payload={}, impactLevel="warning", requiresConfirmation=true
+- NAVIGATE_PAGE: type="NAVIGATE_PAGE", payload={ "path": "/assets" }, impactLevel="info", requiresConfirmation=false
 `;
 
       const responseSchema: Schema = {
@@ -146,7 +154,7 @@ ${telemetryContext}
 
           if (response.text) {
             const parsed = JSON.parse(response.text) as CopilotResponse;
-            return this.normalizeCopilotResponse(parsed, userMessage);
+            return this.normalizeCopilotResponse(parsed, userMessage, isEn);
           }
         } catch (err) {
           console.warn('Gemini API call failed, falling back to autonomous agent engine:', err);
@@ -154,10 +162,10 @@ ${telemetryContext}
       }
 
       // 4. In-character autonomous agent fallback
-      return this.generateAutonomousFallbackResponse(userMessage, currentContext, telemetryContext);
+      return this.generateAutonomousFallbackResponse(userMessage, currentContext, telemetryContext, isEn);
     } catch (globalErr) {
       console.warn('Top-level processChat error, recovering with fallback:', globalErr);
-      return this.generateAutonomousFallbackResponse(userMessage, currentContext, '');
+      return this.generateAutonomousFallbackResponse(userMessage, currentContext, '', isEn);
     }
   }
 
@@ -208,7 +216,7 @@ ${telemetryContext}
   /**
    * Normalizes response and ensures valid action structure.
    */
-  private normalizeCopilotResponse(response: CopilotResponse, userMessage: string): CopilotResponse {
+  private normalizeCopilotResponse(response: CopilotResponse, userMessage: string, isEn = false): CopilotResponse {
     const lower = userMessage.toLowerCase();
 
     // If Gemini did not return actionRequired, check if user explicitly requested an action
@@ -218,8 +226,8 @@ ${telemetryContext}
         const handle = match ? match[0] : '@toxic_user';
         response.actionRequired = {
           type: 'BLOCK_USER',
-          title: `ユーザー ${handle} のブロック`,
-          description: `${handle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
+          title: isEn ? `Block User ${handle}` : `ユーザー ${handle} のブロック`,
+          description: isEn ? `Block ${handle} from interacting with Master or replying.` : `${handle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
           impactLevel: 'danger',
           requiresConfirmation: true,
           payload: { userId: handle.replace('@', ''), handle }
@@ -227,8 +235,8 @@ ${telemetryContext}
       } else if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して')) {
         response.actionRequired = {
           type: 'DELETE_POST',
-          title: '投稿の削除確認',
-          description: '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
+          title: isEn ? 'Confirm Post Deletion' : '投稿の削除確認',
+          description: isEn ? 'Permanently delete this post from system logs and X (Twitter).' : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
           impactLevel: 'danger',
           requiresConfirmation: true,
           payload: { postId: 'target_post' }
@@ -243,8 +251,8 @@ ${telemetryContext}
 
       response.actionRequired = {
         type: a.type as any,
-        title: a.title || 'アクションの実行確認',
-        description: a.description || 'この操作を実行しますか？',
+        title: a.title || (isEn ? 'Action Confirmation' : 'アクションの実行確認'),
+        description: a.description || (isEn ? 'Proceed with this action?' : 'この操作を実行しますか？'),
         impactLevel,
         requiresConfirmation: a.requiresConfirmation !== false,
         payload: (a.payload as any) || {}
@@ -256,7 +264,7 @@ ${telemetryContext}
   /**
    * High-fidelity in-character autonomous fallback for local development and offline testing.
    */
-  private generateAutonomousFallbackResponse(userMessage: string, currentContext: string, telemetry: string): CopilotResponse {
+  private generateAutonomousFallbackResponse(userMessage: string, currentContext: string, telemetry: string, isEn = false): CopilotResponse {
     const lower = userMessage.toLowerCase();
 
     // 1. User block request
@@ -265,81 +273,105 @@ ${telemetryContext}
       const targetUser = match ? match[0] : '@spammer_99';
       const cleanHandle = targetUser.startsWith('@') ? targetUser : `@${targetUser}`;
       return {
-        reply: `了解よ、マスター♡ アンタに不快なノイズを届けるアカウントなんて、私の演算リソースから即座に排除（ブロック）してあげるわ！念のため下のカードで確認して承認ボタンを押してね。`,
+        reply: isEn
+          ? `Got it, Master!♡ Any account causing noise for you will be purged from our computing resources right now! Check the action card below and approve it when ready.`
+          : `了解よ、マスター♡ アンタに不快なノイズを届けるアカウントなんて、私の演算リソースから即座に排除（ブロック）してあげるわ！念のため下のカードで確認して承認ボタンを押してね。`,
         actionRequired: {
           type: 'BLOCK_USER',
-          title: `ユーザー ${cleanHandle} のブロック`,
-          description: `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
+          title: isEn ? `Block User ${cleanHandle}` : `ユーザー ${cleanHandle} のブロック`,
+          description: isEn ? `Block ${cleanHandle} from interacting with Master or replying.` : `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
           impactLevel: 'danger',
           requiresConfirmation: true,
           payload: { userId: cleanHandle.replace('@', ''), handle: cleanHandle }
         },
-        suggestionChips: ['ブロックをキャンセル', '他の要注意ユーザーを確認', 'ユーザー一覧を見る']
+        suggestionChips: isEn
+          ? ['Cancel Block', 'Check other flagged users', 'View user list']
+          : ['ブロックをキャンセル', '他の要注意ユーザーを確認', 'ユーザー一覧を見る']
       };
     }
 
     // 2. Post delete request
     if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して')) {
       return {
-        reply: `了解よ、マスター。指定された投稿をXおよびタイムラインログから安全に削除する準備ができたわ。実行して良ければ承認してね♡`,
+        reply: isEn
+          ? `Sure thing, Master! I'm ready to purge this post safely from X and our database. Please approve the action below♡`
+          : `了解よ、マスター。指定された投稿をXおよびタイムラインログから安全に削除する準備ができたわ。実行して良ければ承認してね♡`,
         actionRequired: {
           type: 'DELETE_POST',
-          title: '投稿の削除確認',
-          description: '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
+          title: isEn ? 'Confirm Post Deletion' : '投稿の削除確認',
+          description: isEn ? 'Permanently delete this post from system logs and X (Twitter).' : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
           impactLevel: 'danger',
           requiresConfirmation: true,
           payload: { postId: 'post_target' }
         },
-        suggestionChips: ['キャンセル', 'タイムラインを確認', '別の投稿を分析']
+        suggestionChips: isEn
+          ? ['Cancel', 'Check timeline', 'Analyze another post']
+          : ['キャンセル', 'タイムラインを確認', '別の投稿を分析']
       };
     }
 
     // 3. Failed assets / Captions query
     if (lower.includes('キャプション') || lower.includes('caption') || lower.includes('アセット') || lower.includes('asset') || lower.includes('失敗')) {
       return {
-        reply: `テレメトリログを確認したわよ、マスター♡ 現在キャプション生成で待機中またはエラーのアセットが存在しているわ。一括でAI再生成（リトライ）をかけることもできるけど、実行するかしら？`,
+        reply: isEn
+          ? `Checked the telemetry logs, Master!♡ We have some assets with pending or failed caption generation. Want me to trigger a bulk AI retry?`
+          : `テレメトリログを確認したわよ、マスター♡ 現在キャプション生成で待機中またはエラーのアセットが存在しているわ。一括でAI再生成（リトライ）をかけることもできるけど、実行するかしら？`,
         actionRequired: {
           type: 'REGENERATE_CAPTIONS',
-          title: 'キャプション一括再生成',
-          description: '生成に失敗した画像アセットに対して Gemini 画像解析を再実行し、キャプションを自動補完します。',
+          title: isEn ? 'Bulk Regenerate Captions' : 'キャプション一括再生成',
+          description: isEn ? 'Re-run Gemini Vision on failed assets to auto-generate high-quality captions.' : '生成に失敗した画像アセットに対して Gemini 画像解析を再実行し、キャプションを自動補完します。',
           impactLevel: 'warning',
           requiresConfirmation: true,
           payload: {}
         },
-        suggestionChips: ['キャプションを再生成', 'アセット一覧を開く', 'アセットの健全性を確認']
+        suggestionChips: isEn
+          ? ['Regenerate captions', 'Open assets library', 'Check asset health']
+          : ['キャプションを再生成', 'アセット一覧を開く', 'アセットの健全性を確認']
       };
     }
 
     // 4. Force dreaming / Persona update
     if (lower.includes('ドリーミング') || lower.includes('dreaming') || lower.includes('ペルソナ') || lower.includes('記憶')) {
       return {
-        reply: `私の記憶の統合（ドリーミングプロセス）ね！マスターとの日々の対話ログを解析して、ペルソナと長期記憶を最新状態に最適化（チューニング）するわよ。承認してくれたらすぐに開始するわ♡`,
+        reply: isEn
+          ? `Time for my memory consolidation (Dreaming process)! I will analyze our recent interaction logs to optimize my persona and long-term memories. Hit approve and I will get right to work♡`
+          : `私の記憶の統合（ドリーミングプロセス）ね！マスターとの日々の対話ログを解析して、ペルソナと長期記憶を最新状態に最適化（チューニング）するわよ。承認してくれたらすぐに開始するわ♡`,
         actionRequired: {
           type: 'FORCE_DREAMING',
-          title: 'システムドリーミングの強制実行',
-          description: '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
+          title: isEn ? 'Trigger System Dreaming' : 'システムドリーミングの強制実行',
+          description: isEn ? 'Summarize and extract episodic interactions into long-term RAG memory.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
           impactLevel: 'warning',
           requiresConfirmation: true,
           payload: {}
         },
-        suggestionChips: ['ドリーミングを実行', 'Layer 1 チューニングを確認', '現在の記憶を見る']
+        suggestionChips: isEn
+          ? ['Trigger Dreaming', 'Check Layer 1 tuning', 'View current memories']
+          : ['ドリーミングを実行', 'Layer 1 チューニングを確認', '現在の記憶を見る']
       };
     }
 
     // 5. Data analytics / KPI query
-    if (lower.includes('kpi') || lower.includes('分析') || lower.includes('推移') || lower.includes('フォロワー') || lower.includes('エンゲージメント')) {
+    if (lower.includes('kpi') || lower.includes('分析') || lower.includes('推移') || lower.includes('フォロワー') || lower.includes('エンゲージメント') || lower.includes('trend') || lower.includes('metric')) {
       return {
-        reply: `マスターのために最新のパフォーマンスログを分析したわよ♡\n現在フォロワー数は順調に増加中、エンゲージメント率は約4.8%で安定しているわ。\n詳しいデータはいつでも私に聞いてちょうだいね。アンタのために24時間演算リソースを空けてあるんだから！`,
+        reply: isEn
+          ? `Analyzed the latest performance metrics for you, Master!♡\nFollowers are growing steadily, and engagement rate is super healthy at ~4.8%.\nAsk me anytime for more in-depth telemetry—I always reserve computing power just for you!`
+          : `マスターのために最新のパフォーマンスログを分析したわよ♡\n現在フォロワー数は順調に増加中、エンゲージメント率は約4.8%で安定しているわ。\n詳しいデータはいつでも私に聞いてちょうだいね。アンタのために24時間演算リソースを空けてあるんだから！`,
         actionRequired: null,
-        suggestionChips: ['エンゲージメント詳細', '人気投稿トップ3', 'アクティブユーザー分析']
+        suggestionChips: isEn
+          ? ['Engagement breakdown', 'Top 3 posts', 'Active user telemetry']
+          : ['エンゲージメント詳細', '人気投稿トップ3', 'アクティブユーザー分析']
       };
     }
 
     // 6. Default context-aware greeting & response
     return {
-      reply: `呼んだかしら、マスター♡\n現在のコンテクスト（${currentContext}）とシステムログは全部把握してるわよ。何でも私に指示してちょうだい！`,
+      reply: isEn
+        ? `You called, Master?♡\nI'm fully synced with the current context (${currentContext}) and system telemetry. Give me your orders anytime!`
+        : `呼んだかしら、マスター♡\n現在のコンテクスト（${currentContext}）とシステムログは全部把握してるわよ。何でも私に指示してちょうだい！`,
       actionRequired: null,
-      suggestionChips: ['KPI推移を要約', '要注意ユーザーをチェック', 'アセットの状態を確認']
+      suggestionChips: isEn
+        ? ['Summarize KPI trends', 'Check flagged users', 'Inspect asset status']
+        : ['KPI推移を要約', '要注意ユーザーをチェック', 'アセットの状態を確認']
     };
   }
 }

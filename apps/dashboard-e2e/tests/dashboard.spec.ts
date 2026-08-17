@@ -15,7 +15,7 @@ test.describe('Dashboard E2E Tests', () => {
 
   test('should render the dashboard layout correctly', async ({ page }) => {
     await expect(page.locator('.topbar')).toBeVisible();
-    await expect(page.locator('text=Performance Overview')).toBeVisible();
+    await expect(page.locator('.block-header h2, .view-section h2').first()).toBeVisible();
     await expect(page.locator('.kpi-grid')).toBeVisible();
     // Validate that the user is shown dynamically
     await expect(page.locator('.avatar')).toBeVisible();

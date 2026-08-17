@@ -31,8 +31,8 @@ export class DashboardPageComponent implements OnInit {
 
   toastService = inject(ToastService);
 
-  topPostsMode: 'monthly' | 'yearly' | 'all-time' = 'monthly';
-  topPostsDate = 'July 2026';
+  topPostsMode: 'monthly' | 'yearly' | 'all-time' = 'yearly';
+  topPostsDate = '2026';
 
   topUsersMode: 'monthly' | 'yearly' | 'all-time' = 'yearly';
   topUsersDate = '2026';
