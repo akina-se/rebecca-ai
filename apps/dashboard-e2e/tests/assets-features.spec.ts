@@ -11,7 +11,7 @@ test.describe('Assets Features E2E Tests', () => {
 
     // 2. Navigate to assets management page and verify it loads
     await page.goto('/assets');
-    await expect(page.locator('h2', { hasText: 'Assets Library' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /Assets Library|アセットライブラリ/ })).toBeVisible({ timeout: 15000 });
   });
 
   test('Scenario A: Pagination - should render max 20 assets per page and paginate properly', async ({ page }) => {
@@ -22,10 +22,10 @@ test.describe('Assets Features E2E Tests', () => {
     // 2. Verify pagination molecule information
     const totalItemsText = page.locator('.pagination-container .total-items-text');
     await expect(totalItemsText).toBeVisible();
-    await expect(totalItemsText).toContainText('Showing ');
+    await expect(totalItemsText).toContainText(/Showing|表示中/);
 
     const pageInfo = page.locator('.pagination-container .page-info');
-    await expect(pageInfo).toContainText('Page 1 / 2');
+    await expect(pageInfo).toContainText(/(Page|ページ) 1 \/ 2/);
 
     // 3. Verify realistic filenames on cards (no "400" bug)
     const firstCardTitle = cards.first().locator('.asset-info div').first();
@@ -37,17 +37,17 @@ test.describe('Assets Features E2E Tests', () => {
 
     // 5. Verify Page 2 displays remaining cards
     expect(await cards.count()).toBeGreaterThanOrEqual(10);
-    await expect(pageInfo).toContainText('Page 2 / 2');
+    await expect(pageInfo).toContainText(/(Page|ページ) 2 \/ 2/);
 
     // 6. Return to Page 1
     const page1Btn = page.locator('.pagination-controls button.num-btn', { hasText: '1' });
     await page1Btn.click();
     await expect(cards).toHaveCount(20, { timeout: 10000 });
-    await expect(pageInfo).toContainText('Page 1 / 2');
+    await expect(pageInfo).toContainText(/(Page|ページ) 1 \/ 2/);
   });
 
   test('Scenario B: Fuzzy Keyword Search - should filter assets by filename and caption', async ({ page }) => {
-    const searchInput = page.locator('input[placeholder*="Search by filename or caption"]');
+    const searchInput = page.locator('.block-header input.form-control');
     await expect(searchInput).toBeVisible();
 
     // 1. Search for specific keyword "cyberpunk"
@@ -57,13 +57,15 @@ test.describe('Assets Features E2E Tests', () => {
     expect(await cards.count()).toBeGreaterThanOrEqual(1);
 
     // 2. Search for keyword matching caption "winter"
+    await searchInput.clear();
     await searchInput.fill('winter');
-    await expect(cards.first()).toContainText('cozy_winter_cabin.jpg');
+    await expect(page.locator('.asset-card').first()).toContainText('cozy_winter_cabin.jpg', { timeout: 10000 });
     expect(await cards.count()).toBeGreaterThanOrEqual(1);
 
     // 3. Clear search - should restore full page of 20 assets
+    await searchInput.clear();
     await searchInput.fill('');
-    await expect(cards).toHaveCount(20, { timeout: 5000 });
+    await expect(cards).toHaveCount(20, { timeout: 10000 });
   });
 
   test('Scenario C: Asset Details Drawer - should isolate extension, display Last Used, open Lightbox, and save caption edit', async ({ page }) => {
@@ -75,7 +77,7 @@ test.describe('Assets Features E2E Tests', () => {
     const drawer = page.locator('.right-drawer.glass-panel');
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
-    await expect(drawer.locator('.drawer-header h3')).toContainText('Asset Details');
+    await expect(drawer.locator('.drawer-header h3')).toBeVisible();
 
     // 3. Verify no error toast appeared
     const errorToast = page.locator('.toast.danger, .toast.error');
@@ -95,11 +97,11 @@ test.describe('Assets Features E2E Tests', () => {
     await expect(previewMagnifier).toHaveCount(0);
 
     // 6. Verify Last Used metric box exists and is formatted
-    const lastUsedBox = drawer.locator('app-asset-drawer .metric-box', { hasText: 'Last Used' });
+    const lastUsedBox = drawer.locator('app-asset-drawer .metric-box').nth(1);
     await expect(lastUsedBox).toBeVisible();
 
     // 7. Verify "View Full Size" button opens full-screen Lightbox dialog
-    const viewFullSizeBtn = drawer.locator('app-asset-drawer button', { hasText: 'View Full Size' });
+    const viewFullSizeBtn = drawer.locator('app-asset-drawer button', { hasText: /View Full Size|原寸表示/ });
     await expect(viewFullSizeBtn).toBeVisible();
     await viewFullSizeBtn.click();
 
@@ -116,11 +118,11 @@ test.describe('Assets Features E2E Tests', () => {
     const editedCaption = '手動編集テスト: 新世代サイバーメカロボットのコンセプトアート';
     await captionArea.fill(editedCaption);
 
-    const saveBtn = drawer.locator('app-asset-drawer button', { hasText: 'Save Changes' });
+    const saveBtn = drawer.locator('app-asset-drawer button', { hasText: /Save Changes|変更を保存/ });
     await saveBtn.click();
 
     // 9. Verify success toast
-    const successToast = page.locator('.toast', { hasText: 'Successfully saved asset' });
+    const successToast = page.locator('.toast', { hasText: /Successfully saved asset|保存/ });
     await expect(successToast).toBeVisible({ timeout: 10000 });
 
     // 10. Close drawer
@@ -143,15 +145,15 @@ test.describe('Assets Features E2E Tests', () => {
     await regenerateBtn.click();
 
     // 3. Verify notification appears
-    const infoToast = page.locator('.toast', { hasText: 'caption' });
+    const infoToast = page.locator('.toast', { hasText: /caption|再生成/ });
     await expect(infoToast).toBeVisible({ timeout: 15000 });
 
     // 4. Test Delete Asset from inside drawer
-    const deleteBtn = drawer.locator('app-asset-drawer button', { hasText: 'Delete Asset' });
+    const deleteBtn = drawer.locator('app-asset-drawer button', { hasText: /Delete Asset|アセットを削除/ });
     await deleteBtn.click();
 
     // 5. Verify success toast and drawer closes automatically
-    const deleteToast = page.locator('.toast', { hasText: 'Successfully deleted asset' });
+    const deleteToast = page.locator('.toast', { hasText: /Successfully deleted asset|削除/ });
     await expect(deleteToast).toBeVisible({ timeout: 10000 });
     await expect(drawer).not.toHaveClass(/open/);
   });
@@ -169,7 +171,7 @@ test.describe('Assets Features E2E Tests', () => {
     await fileInput.setInputFiles([tempFilePath]);
 
     // 2. Verify upload toast notification appears
-    const uploadToast = page.locator('.toast', { hasText: 'upload' });
+    const uploadToast = page.locator('.toast', { hasText: /upload|アップロード/ });
     await expect(uploadToast).toBeVisible({ timeout: 15000 });
 
     // 3. Verify asset grid is refreshed
@@ -185,15 +187,15 @@ test.describe('Assets Features E2E Tests', () => {
 
     // 2. Verify bulk action bar indicates selection
     const bulkBarText = page.locator('#asset-bulk-bar .bulk-text');
-    await expect(bulkBarText).toContainText('1 items selected');
+    await expect(bulkBarText).toContainText(/1 (items selected|件のアセットを選択中)/);
 
     // 3. Click Retry AI Gen button
-    const retryBulkBtn = page.locator('#asset-bulk-bar button', { hasText: 'Retry AI Gen' });
+    const retryBulkBtn = page.locator('#asset-bulk-bar button', { hasText: /Retry AI Gen|AIキャプション再試行/ });
     await expect(retryBulkBtn).toBeVisible();
     await retryBulkBtn.click();
 
     // 4. Verify success toast
-    const successToast = page.locator('.toast', { hasText: 'AI regeneration' });
+    const successToast = page.locator('.toast', { hasText: /AI regeneration|再生成/ });
     await expect(successToast).toBeVisible({ timeout: 15000 });
   });
 

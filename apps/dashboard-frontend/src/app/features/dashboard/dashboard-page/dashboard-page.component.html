@@ -18,29 +18,29 @@
     <div *ngIf="systemAlerts && systemAlerts.length > 0">
         <div *ngFor="let alert of systemAlerts" class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
             <span class="material-icons">{{ alert.type === 'warning' ? 'warning' : alert.type === 'error' ? 'error' : 'info' }}</span>
-            <span><strong>{{ alert.type === 'warning' ? 'Action Required:' : alert.type === 'error' ? 'Error:' : 'Info:' }}</strong> {{ alert.message }}</span>
-            <a *ngIf="alert.link" [routerLink]="alert.link">{{ alert.linkText || 'Review' }} &rarr;</a>
+            <span><strong>{{ (alert.type === 'warning' ? 'common.action_required' : alert.type === 'error' ? 'common.error' : 'common.info') | translate }}</strong> {{ (alert.message === '3 image captions failed generation.' ? 'dashboard.alert_captions_failed' : alert.message) | translate }}</span>
+            <a *ngIf="alert.link" [routerLink]="alert.link">{{ (alert.linkText ? alert.linkText : 'common.review') | translate }} &rarr;</a>
         </div>
     </div>
 
     <!-- Block 1: KPI Overview -->
     <div class="block-header" style="margin-top: 0;">
-        <h2><span class="material-icons">query_stats</span> Performance Overview</h2>
+        <h2><span class="material-icons">query_stats</span> {{ 'dashboard.overview' | translate }}</h2>
         <!-- Date Picker Scoped ONLY to the KPIs -->
         <app-dropdown 
-            [options]="['Last 7 Days', 'Last 30 Days', 'Year to Date']" 
-            [selectedOption]="'Last 30 Days'"
+            [options]="kpiFilterOptions" 
+            [selectedOption]="'dashboard.filter_30d' | translate"
             (selectionChange)="setKpiFilter($event)">
         </app-dropdown>
     </div>
     
     <div class="kpi-grid" *ngIf="kpiMetrics">
         <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">people</span> Followers</div>
+            <div class="card-title"><span class="material-icons">people</span> {{ 'dashboard.followers' | translate }}</div>
             <div class="card-value">{{ kpiMetrics.followers | number }}</div>
             <div class="card-trend" [class.negative]="kpiMetrics.followersTrend < 0">
                 <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics.followersTrend >= 0 ? 'trending_up' : 'trending_down' }}</span> 
-                {{ kpiMetrics.followersTrend > 0 ? '+' : '' }}{{ kpiMetrics.followersTrend }}% vs previous period
+                {{ kpiMetrics.followersTrend > 0 ? '+' : '' }}{{ kpiMetrics.followersTrend }}% {{ 'dashboard.vs_previous' | translate }}
             </div>
             <svg class="sparkline" viewBox="0 0 100 20">
                 <polygon [attr.fill]="kpiMetrics.followersTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics.followersHistory)" />
@@ -48,11 +48,11 @@
             </svg>
         </div>
         <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">favorite</span> Engagement Rate</div>
+            <div class="card-title"><span class="material-icons">favorite</span> {{ 'dashboard.engagement_rate' | translate }}</div>
             <div class="card-value">{{ kpiMetrics.engagementRate }}%</div>
             <div class="card-trend" [class.negative]="kpiMetrics.engagementTrend < 0">
                 <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics.engagementTrend >= 0 ? 'trending_up' : 'trending_down' }}</span> 
-                {{ kpiMetrics.engagementTrend > 0 ? '+' : '' }}{{ kpiMetrics.engagementTrend }}% vs previous period
+                {{ kpiMetrics.engagementTrend > 0 ? '+' : '' }}{{ kpiMetrics.engagementTrend }}% {{ 'dashboard.vs_previous' | translate }}
             </div>
             <svg class="sparkline" viewBox="0 0 100 20">
                 <polygon [attr.fill]="kpiMetrics.engagementTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics.engagementHistory)" />
@@ -60,11 +60,11 @@
             </svg>
         </div>
         <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">chat</span> Daily Active Users</div>
+            <div class="card-title"><span class="material-icons">chat</span> {{ 'dashboard.dau' | translate }}</div>
             <div class="card-value">{{ kpiMetrics.dailyActiveUsers | number }}</div>
             <div class="card-trend" [class.negative]="kpiMetrics.dauTrend < 0">
                 <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics.dauTrend >= 0 ? 'trending_up' : 'trending_down' }}</span> 
-                {{ kpiMetrics.dauTrend > 0 ? '+' : '' }}{{ kpiMetrics.dauTrend }}% vs previous period
+                {{ kpiMetrics.dauTrend > 0 ? '+' : '' }}{{ kpiMetrics.dauTrend }}% {{ 'dashboard.vs_previous' | translate }}
             </div>
             <svg class="sparkline" viewBox="0 0 100 20">
                 <polygon [attr.fill]="kpiMetrics.dauTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics.dauHistory)" />
@@ -72,9 +72,9 @@
             </svg>
         </div>
         <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">api</span> API Calls</div>
+            <div class="card-title"><span class="material-icons">api</span> {{ 'dashboard.api_calls' | translate }}</div>
             <div class="card-value">{{ kpiMetrics.apiCalls | number }}</div>
-            <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> {{ kpiMetrics.apiTrendStatus }}</div>
+            <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> {{ 'dashboard.steady' | translate }}</div>
             <svg class="sparkline" viewBox="0 0 100 20">
                 <polygon fill="url(#spark-warning)" [attr.points]="getSparklinePolygon(kpiMetrics.apiCallsHistory)" />
                 <polyline fill="none" stroke="var(--warning)" [attr.points]="getSparklinePoints(kpiMetrics.apiCallsHistory)" />
@@ -84,17 +84,17 @@
 
     <!-- Block 2: Rankings -->
     <div class="block-header">
-        <h2><span class="material-icons">leaderboard</span> Leaderboards</h2>
+        <h2><span class="material-icons">leaderboard</span> {{ 'dashboard.leaderboards' | translate }}</h2>
     </div>
     <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
         <!-- Top Posts -->
         <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
             <div class="table-header-container glass-panel">
-                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">emoji_events</span> Top Posts by Impressions</div>
+                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">emoji_events</span> {{ 'dashboard.top_posts' | translate }}</div>
                 <div class="ranking-tabs">
-                    <button class="rank-tab" [class.active]="topPostsMode === 'all-time'" (click)="setMode('posts', 'all-time')">All-Time</button>
-                    <button class="rank-tab" [class.active]="topPostsMode === 'yearly'" (click)="setMode('posts', 'yearly')">Yearly</button>
-                    <button class="rank-tab" [class.active]="topPostsMode === 'monthly'" (click)="setMode('posts', 'monthly')">Monthly</button>
+                    <button class="rank-tab" [class.active]="topPostsMode === 'all-time'" (click)="setMode('posts', 'all-time')">{{ 'dashboard.filter_all_time' | translate }}</button>
+                    <button class="rank-tab" [class.active]="topPostsMode === 'yearly'" (click)="setMode('posts', 'yearly')">{{ 'dashboard.filter_yearly' | translate }}</button>
+                    <button class="rank-tab" [class.active]="topPostsMode === 'monthly'" (click)="setMode('posts', 'monthly')">{{ 'dashboard.filter_monthly' | translate }}</button>
                     <app-date-picker-popover 
                         [mode]="topPostsMode"
                         [currentText]="topPostsDate"
@@ -106,7 +106,7 @@
                 </div>
             </div>
             <table class="data-table glass-panel">
-                <thead><tr><th>Time</th><th>Post Snippet</th><th><span class="material-icons">visibility</span></th></tr></thead>
+                <thead><tr><th>{{ 'dashboard.table_time' | translate }}</th><th>{{ 'dashboard.table_content' | translate }}</th><th><span class="material-icons">visibility</span></th></tr></thead>
                 <tbody>
                     <tr class="clickable" *ngFor="let post of topPosts.slice(0, 10)" (click)="openPostDrawer(post.id)">
                         <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
@@ -120,17 +120,17 @@
                     </tr>
                 </tbody>
             </table>
-            <div class="table-footer-btn glass-panel" (click)="openRankingModal('posts')">View Full Ranking &rarr;</div>
+            <div class="table-footer-btn glass-panel" (click)="openRankingModal('posts')">{{ 'dashboard.view_full_ranking' | translate }}</div>
         </div>
         
         <!-- Top Users -->
         <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
             <div class="table-header-container glass-panel">
-                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">local_fire_department</span> Top Engaged Users</div>
+                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">local_fire_department</span> {{ 'dashboard.top_users' | translate }}</div>
                 <div class="ranking-tabs">
-                    <button class="rank-tab" [class.active]="topUsersMode === 'all-time'" (click)="setMode('users', 'all-time')">All-Time</button>
-                    <button class="rank-tab" [class.active]="topUsersMode === 'yearly'" (click)="setMode('users', 'yearly')">Yearly</button>
-                    <button class="rank-tab" [class.active]="topUsersMode === 'monthly'" (click)="setMode('users', 'monthly')">Monthly</button>
+                    <button class="rank-tab" [class.active]="topUsersMode === 'all-time'" (click)="setMode('users', 'all-time')">{{ 'dashboard.filter_all_time' | translate }}</button>
+                    <button class="rank-tab" [class.active]="topUsersMode === 'yearly'" (click)="setMode('users', 'yearly')">{{ 'dashboard.filter_yearly' | translate }}</button>
+                    <button class="rank-tab" [class.active]="topUsersMode === 'monthly'" (click)="setMode('users', 'monthly')">{{ 'dashboard.filter_monthly' | translate }}</button>
                     <app-date-picker-popover 
                         [mode]="topUsersMode"
                         [currentText]="topUsersDate"
@@ -142,7 +142,7 @@
                 </div>
             </div>
             <table class="data-table glass-panel">
-                <thead><tr><th>User ID</th><th>Interactions</th></tr></thead>
+                <thead><tr><th>{{ 'dashboard.table_user_id' | translate }}</th><th>{{ 'dashboard.table_interactions' | translate }}</th></tr></thead>
                 <tbody>
                     <tr class="clickable" *ngFor="let user of topUsers.slice(0, 10)" (click)="openUserDrawer($any(user).handle || user.userId)">
                         <td>{{ $any(user).handle || user.userId }}</td>
@@ -150,25 +150,25 @@
                     </tr>
                 </tbody>
             </table>
-            <div class="table-footer-btn glass-panel" (click)="openRankingModal('users')">View Full Ranking &rarr;</div>
+            <div class="table-footer-btn glass-panel" (click)="openRankingModal('users')">{{ 'dashboard.view_full_ranking' | translate }}</div>
         </div>
     </div>
 
     <!-- Block 3: Timeline Log -->
     <div class="block-header" style="margin-top: 3rem;">
-        <h2><span class="material-icons">history</span> Timeline Post History</h2>
-        <input type="text" class="form-control" placeholder="Search logs..." [(ngModel)]="searchQuery" (ngModelChange)="applyTimelineFilter()" style="width: 250px; padding: 0.5rem; border-radius: 20px;">
+        <h2><span class="material-icons">history</span> {{ 'dashboard.timeline_history' | translate }}</h2>
+        <input type="text" class="form-control" [placeholder]="'dashboard.search_placeholder' | translate" [(ngModel)]="searchQuery" (ngModelChange)="applyTimelineFilter()" style="width: 250px; padding: 0.5rem; border-radius: 20px;">
     </div>
     
     <div class="bulk-actions-bar glass-panel" id="timeline-bulk-bar">
         <label class="checkbox-container">
             <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()">
             <span class="checkmark"></span>
-            <span style="margin-left: 8px;">Select All</span>
+            <span style="margin-left: 8px;">{{ 'dashboard.select_all' | translate }}</span>
         </label>
         <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
         <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
-            {{ selectedRows.size > 0 ? selectedRows.size + ' items selected' : 'Select items to perform actions' }}
+            {{ selectedRows.size > 0 ? (selectedRows.size + ' ' + ('dashboard.items_selected' | translate)) : ('dashboard.select_items_hint' | translate) }}
         </span>
         <!-- Always reserve button space to prevent height shift -->
         <button class="btn bulk-btn" 
@@ -177,7 +177,7 @@
             style="min-width: 140px; justify-content: center; padding: 4px 12px; font-size: 0.8rem; border: 1px solid var(--danger); color: var(--danger); border-radius: 20px; background: rgba(255,71,87,0.1); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;"
             (click)="executeBulkDelete()">
             <span class="material-icons" [class.spinning]="isDeleting" style="font-size: 1rem;">{{ isDeleting ? 'sync' : 'delete' }}</span> 
-            {{ isDeleting ? 'Deleting...' : 'Delete from X' }}
+            {{ isDeleting ? ('dashboard.deleting' | translate) : ('dashboard.delete_from_x' | translate) }}
         </button>
     </div>
     
@@ -186,23 +186,23 @@
             <th style="width: 40px;"></th>
             <th class="sortable-th" (click)="toggleTimelineSort('time')" style="cursor: pointer; user-select: none;" title="Sort by Time">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                    <span [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'time' ? '600' : 'normal'">Time</span>
+                    <span [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'time' ? '600' : 'normal'">{{ 'dashboard.table_time' | translate }}</span>
                     <span class="material-icons sort-icon" [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
                         {{ timelineSortBy === 'time' ? (timelineSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
                     </span>
                 </div>
             </th>
-            <th>Media</th>
-            <th>Post Content</th>
+            <th>{{ 'dashboard.table_media' | translate }}</th>
+            <th>{{ 'dashboard.table_content' | translate }}</th>
             <th class="sortable-th" (click)="toggleTimelineSort('impressions')" style="cursor: pointer; user-select: none;" title="Sort by Impressions">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                    <span [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'impressions' ? '600' : 'normal'">Impressions</span>
+                    <span [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'impressions' ? '600' : 'normal'">{{ 'dashboard.table_impressions' | translate }}</span>
                     <span class="material-icons sort-icon" [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
                         {{ timelineSortBy === 'impressions' ? (timelineSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
                     </span>
                 </div>
             </th>
-            <th>Status</th>
+            <th>{{ 'dashboard.table_status' | translate }}</th>
         </tr></thead>
         <tbody>
             <tr class="clickable" *ngFor="let post of filteredTimelinePosts" (click)="openPostDrawer(post.id)">
@@ -233,7 +233,7 @@
             [currentPage]="timelinePage"
             [totalPages]="timelineTotalPages"
             [totalItems]="timelineTotalItems"
-            [itemsLabel]="'posts'"
+            [itemsLabel]="'pagination.posts' | translate"
             [isLoading]="isLoadingTimeline"
             (pageChange)="loadTimeline($event)">
         </app-pagination>

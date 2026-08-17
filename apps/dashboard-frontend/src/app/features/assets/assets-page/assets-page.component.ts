@@ -5,6 +5,7 @@ import { RightDrawerComponent } from '../../../shared/components/organisms/right
 import { AssetDrawerComponent } from '../../../shared/components/organisms/asset-drawer/asset-drawer.component';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ASSETS_REPOSITORY, AssetsRepository } from '../../../core/ports/assets.repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
@@ -18,7 +19,8 @@ import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
     RightDrawerComponent, 
     AssetDrawerComponent, 
     LightboxComponent,
-    PaginationComponent
+    PaginationComponent,
+    TranslatePipe
   ],
   templateUrl: './assets-page.component.html',
   styleUrl: './assets-page.component.css'

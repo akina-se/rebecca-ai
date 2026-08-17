@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, NgStyle } from '@angular/common';
+import { TranslatePipe } from '../../../pipes/translate.pipe';
 
 /**
  * DatePickerPopoverComponent
@@ -15,7 +16,7 @@ import { CommonModule, NgStyle } from '@angular/common';
 @Component({
   selector: 'app-date-picker-popover',
   standalone: true,
-  imports: [CommonModule, NgStyle],
+  imports: [CommonModule, NgStyle, TranslatePipe],
   templateUrl: './date-picker-popover.component.html',
   styleUrls: ['./date-picker-popover.component.css'],
 })

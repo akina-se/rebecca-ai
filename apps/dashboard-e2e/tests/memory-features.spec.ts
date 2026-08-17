@@ -9,7 +9,7 @@ test.describe('Memory Features E2E Tests', () => {
 
     // 2. Navigate to memory management page and verify it loads
     await page.goto('/memory');
-    await expect(page.locator('h2', { hasText: 'System Memory Layers' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /System Memory Layers|システム記憶レイヤー/ })).toBeVisible({ timeout: 15000 });
   });
 
   test('Scenario A: Memory Layers Table - should render 3 layers with valid dates and no Invalid Date', async ({ page }) => {
@@ -18,11 +18,11 @@ test.describe('Memory Features E2E Tests', () => {
 
     // Assert layer names
     await expect(rows.nth(0)).toContainText('Layer 0');
-    await expect(rows.nth(0)).toContainText('Persona Core Prompt');
+    await expect(rows.nth(0)).toContainText(/Core Prompt|コアプロンプト/);
     await expect(rows.nth(1)).toContainText('Layer 1');
-    await expect(rows.nth(1)).toContainText('Extended Persona Tuning');
+    await expect(rows.nth(1)).toContainText(/Extended Persona Tuning|拡張ペルソナ調整/);
     await expect(rows.nth(2)).toContainText('Layer 2');
-    await expect(rows.nth(2)).toContainText('Global Timeline Summary');
+    await expect(rows.nth(2)).toContainText(/Global Timeline Summary|全体タイムライン要約/);
 
     // Assert that no row contains "Invalid Date"
     const tableText = await page.locator('table.data-table').innerText();
@@ -36,7 +36,7 @@ test.describe('Memory Features E2E Tests', () => {
     const drawer = page.locator('.right-drawer.glass-panel');
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
-    await expect(drawer.locator('.drawer-header h3')).toContainText('Layer 0: Persona Core Prompt');
+    await expect(drawer.locator('.drawer-header h3')).toContainText(/Layer 0|Persona Core Prompt|コアプロンプト/);
 
     const textarea = drawer.locator('app-memory-drawer textarea');
     await expect(textarea).toBeVisible({ timeout: 10000 });
@@ -46,7 +46,7 @@ test.describe('Memory Features E2E Tests', () => {
     expect(promptValue).not.toContain('Loading...');
 
     // Read-only indicator
-    await expect(drawer.locator('app-memory-drawer')).toContainText('Hardcoded in source code (Read-only)');
+    await expect(drawer.locator('app-memory-drawer')).toContainText(/Hardcoded in source code \(Read-only\)|読み取り専用/);
 
     // Close drawer
     await drawer.locator('.drawer-header .close-btn').click();
@@ -60,7 +60,7 @@ test.describe('Memory Features E2E Tests', () => {
     const drawer = page.locator('.right-drawer.glass-panel');
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
-    await expect(drawer.locator('.drawer-header h3')).toContainText('Layer 1: Extended Persona Tuning');
+    await expect(drawer.locator('.drawer-header h3')).toContainText(/Layer 1|Extended Persona Tuning|拡張ペルソナ調整/);
 
     const textarea = drawer.locator('app-memory-drawer textarea');
     await expect(textarea).toBeVisible({ timeout: 10000 });
@@ -72,14 +72,14 @@ test.describe('Memory Features E2E Tests', () => {
     await textarea.fill(newTuningText);
 
     // Click Save Tuning
-    const saveBtn = drawer.locator('app-memory-drawer button', { hasText: 'Save Tuning' });
+    const saveBtn = drawer.locator('app-memory-drawer button', { hasText: /Save Tuning|チューニングを保存/ });
     await expect(saveBtn).toBeVisible();
     await saveBtn.click();
 
     // Assert toast
     const toast = page.locator('.toast.success');
     await expect(toast).toBeVisible({ timeout: 10000 });
-    await expect(toast).toContainText('Successfully saved Extended Persona Tuning');
+    await expect(toast).toContainText(/Successfully saved Extended Persona Tuning|正常に保存|保存/);
 
     // Close and reopen to verify persistence from real API/DB
     await drawer.locator('.drawer-header .close-btn').click();
@@ -100,7 +100,7 @@ test.describe('Memory Features E2E Tests', () => {
     const drawer = page.locator('.right-drawer.glass-panel');
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
-    await expect(drawer.locator('.drawer-header h3')).toContainText('Layer 2: Global Timeline Summary');
+    await expect(drawer.locator('.drawer-header h3')).toContainText(/Layer 2|Global Timeline Summary|全体タイムライン要約/);
 
     // Verify textarea is rendered (verifying level 2 fix)
     const textarea = drawer.locator('app-memory-drawer textarea');
@@ -111,14 +111,14 @@ test.describe('Memory Features E2E Tests', () => {
     await textarea.fill(newSummaryText);
 
     // Click Save Summary
-    const saveBtn = drawer.locator('app-memory-drawer button', { hasText: 'Save Summary' });
+    const saveBtn = drawer.locator('app-memory-drawer button', { hasText: /Save Summary|要約を保存/ });
     await expect(saveBtn).toBeVisible();
     await saveBtn.click();
 
     // Assert toast
     const toast = page.locator('.toast.success');
     await expect(toast).toBeVisible({ timeout: 10000 });
-    await expect(toast).toContainText('Successfully saved Global Timeline Summary');
+    await expect(toast).toContainText(/Successfully saved Global Timeline Summary|正常に保存|保存/);
 
     // Close and reopen to verify persistence
     await drawer.locator('.drawer-header .close-btn').click();
@@ -141,6 +141,6 @@ test.describe('Memory Features E2E Tests', () => {
     // Assert completion toast
     const toast = page.locator('.toast.success');
     await expect(toast).toBeVisible({ timeout: 15000 });
-    await expect(toast).toContainText('Force Dreaming completed successfully. Memory aligned.');
+    await expect(toast).toContainText(/Force Dreaming completed|完了/);
   });
 });

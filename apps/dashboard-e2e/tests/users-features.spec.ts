@@ -9,7 +9,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
   test('should render User Relations table with 30 items pagination', async ({ page }) => {
     await page.goto('/users');
-    await expect(page.locator('h2', { hasText: 'User Relations' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
 
     // Wait for user rows
     const userRows = page.locator('.data-table tbody tr.clickable');
@@ -22,17 +22,17 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     // Verify pagination controls are present
     const pagination = page.locator('app-pagination');
     await expect(pagination).toBeVisible();
-    await expect(page.locator('.pagination-container .total-items-text')).toContainText('Showing');
+    await expect(page.locator('.pagination-container .total-items-text')).toContainText(/Showing|表示中/);
   });
 
   test('should filter users using fuzzy search input', async ({ page }) => {
     await page.goto('/users');
-    await expect(page.locator('h2', { hasText: 'User Relations' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
 
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
-    const searchInput = page.locator('input[placeholder="Search users..."]');
+    const searchInput = page.locator('.block-header input.form-control');
     await expect(searchInput).toBeVisible();
 
     // Type search query
@@ -53,13 +53,13 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
   test('should sort users by User ID, Interactions, and Last Interaction with indicator symbols', async ({ page }) => {
     await page.goto('/users');
-    await expect(page.locator('h2', { hasText: 'User Relations' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
 
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
     // 1. Sort by User ID
-    const userIdHeader = page.locator('th.sortable-th').filter({ hasText: 'User ID' });
+    const userIdHeader = page.locator('th.sortable-th').filter({ hasText: /User ID|ユーザーID/ });
     await userIdHeader.click();
     await page.waitForResponse(resp => resp.url().includes('/api/v1/users') && resp.status() === 200);
 
@@ -72,13 +72,13 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     await expect(userIdHeader.locator('.sort-icon')).toContainText('arrow_upward');
 
     // 2. Sort by Last Interaction
-    const lastSeenHeader = page.locator('th.sortable-th').filter({ hasText: 'Last Interaction' });
+    const lastSeenHeader = page.locator('th.sortable-th').filter({ hasText: /Last Interaction|最終対話日時/ });
     await lastSeenHeader.click();
     await page.waitForResponse(resp => resp.url().includes('/api/v1/users') && resp.status() === 200);
     await expect(lastSeenHeader.locator('.sort-icon')).toContainText('arrow_downward');
 
     // 3. Sort by Interactions
-    const interactionsHeader = page.locator('th.sortable-th').filter({ hasText: 'Interactions' });
+    const interactionsHeader = page.locator('th.sortable-th').filter({ hasText: /Interactions|対話回数/ });
     await interactionsHeader.click();
     await page.waitForResponse(resp => resp.url().includes('/api/v1/users') && resp.status() === 200);
     await expect(interactionsHeader.locator('.sort-icon')).toContainText('arrow_downward');
@@ -86,7 +86,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
   test('should display RAG Memories status badges correctly', async ({ page }) => {
     await page.goto('/users');
-    await expect(page.locator('h2', { hasText: 'User Relations' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
 
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
@@ -99,7 +99,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
   test('should support bulk selection and status updates in User Relations', async ({ page }) => {
     await page.goto('/users');
-    await expect(page.locator('h2', { hasText: 'User Relations' })).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
 
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
@@ -110,15 +110,15 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // Verify bulk text shows selected count
     const bulkText = page.locator('#user-bulk-bar .bulk-text');
-    await expect(bulkText).toContainText('users selected');
+    await expect(bulkText).toContainText(/users selected|名のユーザーを選択中/);
 
     // Verify action buttons appear
     const blockBtn = page.locator('#user-bulk-bar button').first();
     const unblockBtn = page.locator('#user-bulk-bar button').last();
     await expect(blockBtn).toBeVisible();
-    await expect(blockBtn).toContainText('Block');
+    await expect(blockBtn).toContainText(/Block|ブロック/);
     await expect(unblockBtn).toBeVisible();
-    await expect(unblockBtn).toContainText('Unblock');
+    await expect(unblockBtn).toContainText(/Unblock|解除/);
   });
 
   test('should support global 1-hour interval timezones and persistence in Settings', async ({ page }) => {

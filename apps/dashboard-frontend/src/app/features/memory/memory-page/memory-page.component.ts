@@ -4,18 +4,21 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { MemoryDrawerComponent } from '../../../shared/components/organisms/memory-drawer/memory-drawer.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 import { MEMORY_REPOSITORY, MemoryRepository } from '../../../core/ports/memory.repository';
 import { MemoryLayer } from '@rebecca/types';
 
 @Component({
   selector: 'app-memory-page',
   standalone: true,
-  imports: [CommonModule, RightDrawerComponent, MemoryDrawerComponent, TzDatePipe],
+  imports: [CommonModule, RightDrawerComponent, MemoryDrawerComponent, TzDatePipe, TranslatePipe],
   templateUrl: './memory-page.component.html',
   styleUrls: ['./memory-page.component.css']
 })
 export class MemoryPageComponent implements OnInit {
   toastService = inject(ToastService);
+  translationService = inject(TranslationService);
   isDreaming = false;
   isLoading = false;
   
@@ -46,10 +49,10 @@ export class MemoryPageComponent implements OnInit {
     });
   }
 
-  openDrawer(level: number, title: string, icon: string) {
+  openDrawer(level: number) {
     this.drawerLevel = level;
-    this.drawerTitle = title;
-    this.drawerIcon = icon;
+    this.drawerTitle = this.translationService.t(`memory.layer${level}_name`);
+    this.drawerIcon = this.getIconForLayer(level);
     this.isDrawerOpen = true;
   }
 

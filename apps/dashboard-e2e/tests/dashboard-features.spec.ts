@@ -78,7 +78,7 @@ test.describe('Dashboard Features E2E Tests', () => {
    */
   test('Scenario B: Timeline Pagination & Sorting - should toggle sort by Time/Impressions and paginate properly', async ({ page }) => {
     // 1. Scroll to Timeline Post History
-    const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
+    const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
     await timelineHeading.scrollIntoViewIfNeeded();
     await expect(timelineHeading).toBeVisible();
 
@@ -87,8 +87,8 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
 
     // 2. Locate sortable table headers
-    const timeHeader = timelineTable.locator('th.sortable-th', { hasText: 'Time' });
-    const impressionsHeader = timelineTable.locator('th.sortable-th', { hasText: 'Impressions' });
+    const timeHeader = timelineTable.locator('th.sortable-th', { hasText: /Time|投稿日時/ });
+    const impressionsHeader = timelineTable.locator('th.sortable-th', { hasText: /Impressions|インプレッション/ });
 
     await expect(timeHeader).toBeVisible();
     await expect(impressionsHeader).toBeVisible();
@@ -120,14 +120,14 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(prevBtn).toBeDisabled();
     await expect(activePageBtn).toBeVisible();
     await expect(activePageBtn).toHaveText('1');
-    await expect(pageInfo).toHaveText(/Page 1\s*\/\s*\d+/);
+    await expect(pageInfo).toHaveText(/(Page|ページ) 1\s*\/\s*\d+/);
     await expect(nextBtn).toBeVisible();
     await expect(nextBtn).toBeEnabled();
 
     // 4. Click Next Page ('>') button
     await nextBtn.click();
     await expect(activePageBtn).toHaveText('2');
-    await expect(pageInfo).toHaveText(/Page 2\s*\/\s*\d+/);
+    await expect(pageInfo).toHaveText(/(Page|ページ) 2\s*\/\s*\d+/);
     await expect(prevBtn).toBeEnabled();
   });
 
@@ -138,7 +138,7 @@ test.describe('Dashboard Features E2E Tests', () => {
    * - Verify full-size Lightbox modal opens with real image URL and closes cleanly.
    */
   test('Scenario B2: Timeline Media Lightbox - should open lightbox modal with real image on thumbnail click', async ({ page }) => {
-    const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
+    const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
     await timelineHeading.scrollIntoViewIfNeeded();
 
     const timelineTable = page.locator('table.data-table').nth(2);
@@ -173,10 +173,10 @@ test.describe('Dashboard Features E2E Tests', () => {
    */
   test('Scenario C: Timeline Keyword Search - should filter timeline posts by search keyword', async ({ page }) => {
     // 1. Locate Timeline Post History and search input
-    const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
+    const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
     await timelineHeading.scrollIntoViewIfNeeded();
 
-    const searchInput = page.locator('input[placeholder="Search logs..."]');
+    const searchInput = page.locator('.block-header input.form-control').first();
     await expect(searchInput).toBeVisible();
 
     const timelineTable = page.locator('table.data-table').nth(2);
@@ -211,7 +211,7 @@ test.describe('Dashboard Features E2E Tests', () => {
    * - Assert success toast appears, network call succeeds, and deleted rows disappear.
    */
   test('Scenario D: Bulk Actions (Delete) - should select rows, execute bulk delete, and show success toast', async ({ page }) => {
-    const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
+    const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
     await timelineHeading.scrollIntoViewIfNeeded();
 
     const timelineTable = page.locator('table.data-table').nth(2);
@@ -236,7 +236,7 @@ test.describe('Dashboard Features E2E Tests', () => {
 
     // 2. Verify "Delete from X" button is now visible with correct count text
     await expect(bulkDeleteBtn).toBeVisible();
-    await expect(bulkBar).toContainText('2 items selected');
+    await expect(bulkBar).toContainText(/2 (items selected|件の投稿を選択中)/);
 
     // 3. Execute bulk delete
     await bulkDeleteBtn.click();
@@ -244,7 +244,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     // 4. Verify success toast notification
     const toast = page.locator('.toast.success, .toast');
     await expect(toast).toBeVisible({ timeout: 10000 });
-    await expect(toast).toContainText(/Successfully deleted 2 posts/i);
+    await expect(toast).toContainText(/Successfully deleted 2 posts|投稿.*削除|正常に削除/i);
 
     // 5. Verify the deleted posts no longer appear in the refreshed table
     await expect(timelineTable.locator('tbody')).not.toContainText(firstPostSnippet);
@@ -260,7 +260,7 @@ test.describe('Dashboard Features E2E Tests', () => {
    */
   test('Scenario E: Drawers and Navigation - should open and close User Profile (with resolved name) and Post Details drawers', async ({ page }) => {
     // 1. Open User Profile drawer from Top Engaged Users table
-    const topUsersHeader = page.locator('.table-header-container', { hasText: 'Top Engaged Users' });
+    const topUsersHeader = page.locator('.table-header-container', { hasText: /Top Engaged Users|エンゲージメント上位ユーザー/ });
     await expect(topUsersHeader).toBeVisible();
     const topUsersTable = topUsersHeader.locator('..').locator('table.data-table');
     const firstUserRow = topUsersTable.locator('tbody tr').first();
@@ -273,7 +273,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     const drawer = page.locator('.right-drawer.glass-panel');
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
-    await expect(drawer.locator('.drawer-header h3')).toContainText('User Profile');
+    await expect(drawer.locator('.drawer-header h3')).toContainText(/User Profile|ユーザープロファイル|ユーザー詳細/);
 
     const userDrawerContent = drawer.locator('app-user-drawer .drawer-content');
     await expect(userDrawerContent).toBeVisible({ timeout: 10000 });
@@ -285,7 +285,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     expect(profileName).not.toBe('Unknown');
 
     // Verify "View on X" button in User drawer triggers navigation to x.com profile
-    const userViewOnXBtn = userDrawerContent.locator('button', { hasText: 'View on X' });
+    const userViewOnXBtn = userDrawerContent.locator('button', { hasText: /View on X|Xで見る/ });
     await expect(userViewOnXBtn).toBeVisible();
     const [userPopup] = await Promise.all([
       page.waitForEvent('popup'),
@@ -300,7 +300,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(drawer).not.toHaveClass(/open/);
 
     // 3. Open Post Details drawer from Timeline Post History
-    const timelineHeading = page.locator('h2', { hasText: 'Timeline Post History' });
+    const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
     await timelineHeading.scrollIntoViewIfNeeded();
 
     const timelineTable = page.locator('table.data-table').nth(2);
@@ -316,14 +316,14 @@ test.describe('Dashboard Features E2E Tests', () => {
     // Verify Post Details drawer is open and shows post content
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
-    await expect(drawer.locator('.drawer-header h3')).toContainText('Post Details');
+    await expect(drawer.locator('.drawer-header h3')).toContainText(/Post Details|投稿詳細/);
 
     const postDrawerContent = drawer.locator('app-post-drawer .drawer-content');
     await expect(postDrawerContent).toBeVisible({ timeout: 10000 });
     await expect(postDrawerContent.locator('.content-box')).toContainText(postSnippetPrefix);
 
     // Verify "View on X" button in Post Details drawer triggers navigation to x.com post
-    const postViewOnXBtn = postDrawerContent.locator('button', { hasText: 'View on X' });
+    const postViewOnXBtn = postDrawerContent.locator('button', { hasText: /View on X|Xで見る/ });
     await expect(postViewOnXBtn).toBeVisible();
     const [postPopup] = await Promise.all([
       page.waitForEvent('popup'),
@@ -344,7 +344,7 @@ test.describe('Dashboard Features E2E Tests', () => {
    * - Close modal.
    */
   test('Scenario F: Full Ranking Modal - should display full ranking modal with handles and pagination', async ({ page }) => {
-    const topUsersHeader = page.locator('.table-header-container', { hasText: 'Top Engaged Users' });
+    const topUsersHeader = page.locator('.table-header-container', { hasText: /Top Engaged Users|エンゲージメント上位ユーザー/ });
     const topUsersContainer = topUsersHeader.locator('..');
     const viewFullRankingBtn = topUsersContainer.locator('.table-footer-btn');
 
@@ -352,7 +352,7 @@ test.describe('Dashboard Features E2E Tests', () => {
 
     const modal = page.locator('app-ranking-modal .modal-container');
     await expect(modal).toBeVisible({ timeout: 10000 });
-    await expect(modal.locator('.modal-title')).toContainText('Top Engaged Users');
+    await expect(modal.locator('.modal-title')).toContainText(/Top Engaged Users|エンゲージメント上位ユーザー/);
 
     const firstRankingRow = modal.locator('table.ranking-table tbody tr').first();
     await expect(firstRankingRow).toBeVisible();
