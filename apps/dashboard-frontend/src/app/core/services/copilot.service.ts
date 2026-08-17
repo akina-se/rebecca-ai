@@ -144,10 +144,13 @@ export class CopilotService {
       },
       error: (err) => {
         console.error('Copilot request failed:', err);
+        const isEn = this.translationService.currentLang() === 'en';
         const errorMsg: CopilotChatMessage = {
           id: `msg-${Date.now()}-error`,
           role: 'model',
-          text: 'ちょっと通信エラー（例外）が発生しちゃったみたい……ごめんなさい、マスター。もう一度試してくれるかしら？',
+          text: isEn 
+            ? "Oops, looks like there was a connection glitch... So sorry, Master! Could you try again?♡"
+            : 'ちょっと通信エラー（例外）が発生しちゃったみたい……ごめんなさい、マスター。もう一度試してくれるかしら？',
           time: new Date().toISOString()
         };
         this.messages.update(prev => [...prev, errorMsg]);
@@ -169,6 +172,7 @@ export class CopilotService {
     });
 
     const payload = action.payload || {};
+    const isEn = this.translationService.currentLang() === 'en';
 
     switch (action.type) {
       case 'BLOCK_USER': {
@@ -176,10 +180,10 @@ export class CopilotService {
         if (userId) {
           this.usersRepo.bulkUpdateStatus([userId], UserStatus.BLOCKED).subscribe({
             next: () => {
-              this.toastService.show(`ユーザー ${userId} を正常にブロックしました`, 'success');
-              this.appendSystemAck(`マスターの承認に基づき、ユーザー ${userId} をブロック（除外）したわよ♡`);
+              this.toastService.show(isEn ? `Blocked user ${userId}` : `ユーザー ${userId} を正常にブロックしました`, 'success');
+              this.appendSystemAck(isEn ? `Following your approval, I've blocked user ${userId}♡` : `マスターの承認に基づき、ユーザー ${userId} をブロック（除外）したわよ♡`);
             },
-            error: () => this.toastService.show(`ブロック操作に失敗しました`, 'error')
+            error: () => this.toastService.show(isEn ? `Failed to block user` : `ブロック操作に失敗しました`, 'error')
           });
         }
         break;
@@ -190,10 +194,10 @@ export class CopilotService {
         if (userId) {
           this.usersRepo.bulkUpdateStatus([userId], UserStatus.ACTIVE).subscribe({
             next: () => {
-              this.toastService.show(`ユーザー ${userId} のブロックを解除しました`, 'success');
-              this.appendSystemAck(`ユーザー ${userId} のブロックを解除したわ。`);
+              this.toastService.show(isEn ? `Unblocked user ${userId}` : `ユーザー ${userId} のブロックを解除しました`, 'success');
+              this.appendSystemAck(isEn ? `Unblocked user ${userId}.` : `ユーザー ${userId} のブロックを解除したわ。`);
             },
-            error: () => this.toastService.show(`ブロック解除に失敗しました`, 'error')
+            error: () => this.toastService.show(isEn ? `Failed to unblock user` : `ブロック解除に失敗しました`, 'error')
           });
         }
         break;
@@ -204,10 +208,10 @@ export class CopilotService {
         if (postId) {
           this.dashboardRepo.deletePosts([postId]).subscribe({
             next: () => {
-              this.toastService.show(`投稿 #${postId} を正常に削除しました`, 'success');
-              this.appendSystemAck(`指定された投稿 #${postId} をシステムとXから削除完了よ！`);
+              this.toastService.show(isEn ? `Deleted post #${postId}` : `投稿 #${postId} を正常に削除しました`, 'success');
+              this.appendSystemAck(isEn ? `Deleted post #${postId} from the system and X!` : `指定された投稿 #${postId} をシステムとXから削除完了よ！`);
             },
-            error: () => this.toastService.show(`投稿削除に失敗しました`, 'error')
+            error: () => this.toastService.show(isEn ? `Failed to delete post` : `投稿削除に失敗しました`, 'error')
           });
         }
         break;
@@ -215,11 +219,11 @@ export class CopilotService {
 
       case 'FORCE_DREAMING': {
         this.memoryRepo.triggerDreaming().subscribe({
-          next: () => {
-            this.toastService.show(`システムドリーミングを開始しました`, 'success');
-            this.appendSystemAck(`記憶の統合（ドリーミング）が正常に完了したわ♡`);
-          },
-          error: () => this.toastService.show(`ドリーミング実行に失敗しました`, 'error')
+            next: () => {
+              this.toastService.show(isEn ? `Force Dreaming completed` : `システムドリーミングを開始しました`, 'success');
+              this.appendSystemAck(isEn ? `Memory integration (dreaming) completed successfully♡` : `記憶の統合（ドリーミング）が正常に完了したわ♡`);
+            },
+            error: () => this.toastService.show(isEn ? `Force Dreaming failed` : `ドリーミング実行に失敗しました`, 'error')
         });
         break;
       }
@@ -227,10 +231,10 @@ export class CopilotService {
       case 'REGENERATE_CAPTIONS': {
         this.assetsRepo.regenerateCaptions([]).subscribe({
           next: () => {
-            this.toastService.show(`キャプション再生成ジョブを開始しました`, 'success');
-            this.appendSystemAck(`失敗していたアセットのキャプション再生成ジョブをバックグラウンドで起動したわよ！`);
+            this.toastService.show(isEn ? `Triggered caption regeneration` : `キャプション再生成ジョブを開始しました`, 'success');
+            this.appendSystemAck(isEn ? `Started the background job to regenerate failed captions!` : `失敗していたアセットのキャプション再生成ジョブをバックグラウンドで起動したわよ！`);
           },
-          error: () => this.toastService.show(`キャプション再生成に失敗しました`, 'error')
+          error: () => this.toastService.show(isEn ? `Failed to regenerate captions` : `キャプション再生成に失敗しました`, 'error')
         });
         break;
       }
@@ -238,7 +242,7 @@ export class CopilotService {
       case 'NAVIGATE_PAGE': {
         const path = String(payload['path'] || '/dashboard');
         this.router.navigate([path]);
-        this.toastService.show(`${path} へ移動しました`, 'info');
+        this.toastService.show(isEn ? `Navigated to ${path}` : `${path} へ移動しました`, 'info');
         break;
       }
 
@@ -258,7 +262,8 @@ export class CopilotService {
       }
       return updated;
     });
-    this.toastService.show('アクションの実行をキャンセルしました', 'info');
+    const isEn = this.translationService.currentLang() === 'en';
+    this.toastService.show(isEn ? 'Action execution cancelled' : 'アクションの実行をキャンセルしました', 'info');
   }
 
   private appendSystemAck(text: string): void {

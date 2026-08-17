@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../services/toast.service';
 import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
+import { TranslatePipe } from '../../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-memory-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <!-- Layer 0: Persona Core Prompt -->
     <div *ngIf="level === 0">
-      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Persona Core Prompt</h4>
+      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">{{ 'memory.layer0_name' | translate }}</h4>
       <textarea 
         class="form-control" 
         rows="15" 
@@ -19,13 +20,13 @@ import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
         [disabled]="isLoading"
         readonly>{{ corePrompt }}</textarea>
       <div style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; display: flex; align-items: center; gap: 4px;">
-          <span class="material-icons" style="font-size: 1rem;">lock</span> Hardcoded in source code (Read-only)
+          <span class="material-icons" style="font-size: 1rem;">lock</span> {{ 'memory.layer0_note' | translate }}
       </div>
     </div>
 
     <!-- Layer 1: Extended Persona Tuning -->
     <div *ngIf="level === 1">
-      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Extended Persona Tuning</h4>
+      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">{{ 'memory.layer1_name' | translate }}</h4>
       <textarea 
         class="form-control" 
         rows="15" 
@@ -38,13 +39,13 @@ import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
         (click)="onSavePrompt()" 
         [disabled]="isSavingPrompt || isLoading">
           <span class="material-icons" [class.spinning]="isSavingPrompt">{{ isSavingPrompt ? 'sync' : 'save' }}</span>
-          {{ isSavingPrompt ? 'Saving...' : 'Save Tuning' }}
+          {{ isSavingPrompt ? ('memory.saving' | translate) : ('memory.save_tuning' | translate) }}
       </button>
     </div>
 
     <!-- Layer 2: Global Timeline Summary -->
     <div *ngIf="level === 2">
-      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Global Timeline Summary</h4>
+      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">{{ 'memory.layer2_name' | translate }}</h4>
       <textarea 
         class="form-control" 
         rows="10" 
@@ -57,7 +58,7 @@ import { MEMORY_REPOSITORY } from '../../../../core/ports/memory.repository';
         (click)="onSaveSummary()" 
         [disabled]="isSavingSummary || isLoading">
           <span class="material-icons" [class.spinning]="isSavingSummary">{{ isSavingSummary ? 'sync' : 'save' }}</span>
-          {{ isSavingSummary ? 'Saving...' : 'Save Summary' }}
+          {{ isSavingSummary ? ('memory.saving' | translate) : ('memory.save_summary' | translate) }}
       </button>
     </div>
   `

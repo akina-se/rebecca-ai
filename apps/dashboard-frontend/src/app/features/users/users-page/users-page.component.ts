@@ -5,6 +5,7 @@ import { RightDrawerComponent } from '../../../shared/components/organisms/right
 import { UserDrawerComponent } from '../../../shared/components/organisms/user-drawer/user-drawer.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { USERS_REPOSITORY, UsersRepository } from '../../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -12,7 +13,7 @@ import { ToastService } from '../../../shared/services/toast.service';
 @Component({
   selector: 'app-users-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RightDrawerComponent, UserDrawerComponent, PaginationComponent, TzDatePipe],
+  imports: [CommonModule, FormsModule, RightDrawerComponent, UserDrawerComponent, PaginationComponent, TzDatePipe, TranslatePipe],
   templateUrl: './users-page.component.html',
   styleUrl: './users-page.component.css'
 })

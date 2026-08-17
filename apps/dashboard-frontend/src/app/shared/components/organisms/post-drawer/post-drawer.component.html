@@ -2,7 +2,7 @@
 
     <!-- Post Text Content -->
     <div class="glass-panel content-box">
-        <div class="stat-label" style="margin-bottom: 10px;">Post Content</div>
+        <div class="stat-label" style="margin-bottom: 10px;">{{ 'post_drawer.content' | translate }}</div>
         <div style="font-size: 1.05rem; line-height: 1.6; color: var(--text-main);">
             {{ postData.text }}
         </div>
@@ -16,7 +16,7 @@
     <div *ngIf="postData.mediaUrls && postData.mediaUrls.length > 0">
         <div class="stat-label" style="margin-bottom: 10px;">
             <span class="material-icons" style="font-size: 1rem; vertical-align: middle; margin-right: 4px;">photo_library</span>
-            Attached Media ({{ postData.mediaUrls.length }})
+            {{ 'post_drawer.attached_media' | translate }} ({{ postData.mediaUrls.length }})
         </div>
         <div class="media-grid">
             <div 
@@ -37,28 +37,28 @@
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">visibility</span>
             <div class="metric-info">
-                <div class="metric-title">Impressions</div>
+                <div class="metric-title">{{ 'post_drawer.impressions' | translate }}</div>
                 <div class="metric-value">{{ postData.impressions }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">favorite</span>
             <div class="metric-info">
-                <div class="metric-title">Likes</div>
+                <div class="metric-title">{{ 'post_drawer.likes' | translate }}</div>
                 <div class="metric-value">{{ postData.likes }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">repeat</span>
             <div class="metric-info">
-                <div class="metric-title">Retweets</div>
+                <div class="metric-title">{{ 'post_drawer.retweets' | translate }}</div>
                 <div class="metric-value">{{ postData.retweets }}</div>
             </div>
         </div>
         <div class="glass-panel metric-box">
             <span class="material-icons metric-icon">chat_bubble</span>
             <div class="metric-info">
-                <div class="metric-title">Replies</div>
+                <div class="metric-title">{{ 'post_drawer.replies' | translate }}</div>
                 <div class="metric-value">{{ postData.replies }}</div>
             </div>
         </div>
@@ -67,7 +67,7 @@
     <!-- Action Buttons -->
     <div class="action-buttons">
         <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 10px;" (click)="onViewOnX()">
-            <span class="material-icons">open_in_new</span> View on X
+            <span class="material-icons">open_in_new</span> {{ 'common.view_on_x' | translate }}
         </button>
         <button 
             class="btn" 
@@ -76,10 +76,10 @@
             style="width: 100%; justify-content: center; background: rgba(255, 71, 87, 0.15); border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
             (click)="onDeletePost()">
             <span class="material-icons" *ngIf="!isDeleting">delete</span>
-            <span *ngIf="!isDeleting">Delete Post</span>
+            <span *ngIf="!isDeleting">{{ 'post_drawer.delete_post' | translate }}</span>
             <!-- Loading state -->
             <span *ngIf="isDeleting" class="spinner"></span>
-            <span *ngIf="isDeleting">Deleting...</span>
+            <span *ngIf="isDeleting">{{ 'common.deleting' | translate }}</span>
         </button>
     </div>
 </div>

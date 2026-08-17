@@ -276,13 +276,16 @@
 .action-buttons-wrap { 
   display: flex; 
   gap: 8px; 
-  flex-wrap: nowrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .action-btn { 
-  padding: 6px 14px; 
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px; 
   border-radius: 6px; 
-  font-size: 0.8rem; 
+  font-size: 0.78rem; 
   font-weight: 600; 
   cursor: pointer; 
   border: none; 
@@ -292,7 +295,15 @@
   justify-content: center;
   gap: 4px; 
   white-space: nowrap;
-  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.action-btn.approve-btn {
+  flex: 1.35;
+}
+
+.action-btn.cancel-btn {
+  flex: 1;
 }
 
 .approve-btn.danger { 

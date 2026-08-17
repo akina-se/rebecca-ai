@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PaginationComponent } from '../../molecules/pagination/pagination.component';
+import { TranslatePipe } from '../../../pipes/translate.pipe';
 
 /** A single entry in the leaderboard. */
 export interface RankingEntry {
@@ -21,7 +22,7 @@ export interface RankingEntry {
 @Component({
   selector: 'app-ranking-modal',
   standalone: true,
-  imports: [CommonModule, PaginationComponent],
+  imports: [CommonModule, PaginationComponent, TranslatePipe],
   templateUrl: './ranking-modal.component.html',
   styleUrls: ['./ranking-modal.component.css'],
 })

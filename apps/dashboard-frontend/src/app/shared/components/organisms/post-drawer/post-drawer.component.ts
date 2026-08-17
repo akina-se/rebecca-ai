@@ -5,6 +5,7 @@ import { ToastService } from '../../../services/toast.service';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../../core/ports/dashboard.repository';
 import { CopilotContextService } from '../../../../core/services/copilot-context.service';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
+import { TranslatePipe } from '../../../pipes/translate.pipe';
 
 interface PostDataModel {
   id: string;
@@ -21,7 +22,7 @@ interface PostDataModel {
 @Component({
   selector: 'app-post-drawer',
   standalone: true,
-  imports: [CommonModule, TzDatePipe],
+  imports: [CommonModule, TzDatePipe, TranslatePipe],
   templateUrl: './post-drawer.component.html',
   styleUrls: ['./post-drawer.component.css']
 })

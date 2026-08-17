@@ -15,15 +15,18 @@ import { LightboxComponent } from '../../../shared/components/organisms/lightbox
 import { RankingModalComponent } from '../../../shared/components/organisms/ranking-modal/ranking-modal.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, TzDatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, TzDatePipe, TranslatePipe],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })
 export class DashboardPageComponent implements OnInit {
+  translationService = inject(TranslationService);
   kpiMetrics?: KpiMetrics;
   topPosts: PostLeaderboard[] = [];
   topUsers: UserLeaderboard[] = [];
@@ -180,11 +183,19 @@ export class DashboardPageComponent implements OnInit {
     return dateStr; // just year or as-is
   }
 
+  get kpiFilterOptions(): string[] {
+    return [
+      this.translationService.t('dashboard.filter_7d'),
+      this.translationService.t('dashboard.filter_30d'),
+      this.translationService.t('dashboard.filter_ytd')
+    ];
+  }
+
   setKpiFilter(filter: string) {
     let mode = 'monthly';
-    if (filter === 'Last 7 Days') mode = 'weekly';
-    else if (filter === 'Last 30 Days') mode = 'monthly';
-    else if (filter === 'Year to Date') mode = 'yearly';
+    if (filter === 'Last 7 Days' || filter === this.translationService.t('dashboard.filter_7d')) mode = 'weekly';
+    else if (filter === 'Last 30 Days' || filter === this.translationService.t('dashboard.filter_30d')) mode = 'monthly';
+    else if (filter === 'Year to Date' || filter === this.translationService.t('dashboard.filter_ytd')) mode = 'yearly';
     
     this.dashboardRepo.getKpiMetrics(mode).subscribe(metrics => this.kpiMetrics = metrics);
   }

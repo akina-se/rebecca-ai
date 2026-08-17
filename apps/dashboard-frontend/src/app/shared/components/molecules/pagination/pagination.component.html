@@ -1,6 +1,6 @@
 <div class="pagination-container" [class.no-total]="!showTotalCount || totalItems === undefined">
   <span *ngIf="showTotalCount && totalItems !== undefined" class="total-items-text">
-    Showing {{ totalItems }} {{ itemsLabel }}
+    {{ 'pagination.showing' | translate }} {{ totalItems }} {{ itemsLabel }}
   </span>
 
   <div class="pagination-controls">
@@ -39,7 +39,7 @@
 
     <!-- Page Info Text -->
     <span *ngIf="showPageInfo" class="page-info">
-      Page {{ currentPage }} / {{ totalPages }}
+      {{ 'pagination.page' | translate }} {{ currentPage }} / {{ totalPages }}
     </span>
   </div>
 </div>
