@@ -43,12 +43,12 @@
                       [ngClass]="msg.actionRequired.impactLevel"
                       (click)="onApproveAction(i, msg.actionRequired)">
                       <span class="material-icons" style="font-size: 0.9rem;">check_circle</span>
-                      <span>実行を承認する</span>
+                      <span>{{ 'copilot.approve' | translate }}</span>
                     </button>
                     <button 
                       class="action-btn cancel-btn"
                       (click)="onCancelAction(i)">
-                      <span>キャンセル</span>
+                      <span>{{ 'copilot.cancel' | translate }}</span>
                     </button>
                   </div>
                 }
@@ -56,14 +56,14 @@
                 @if (msg.actionStatus === 'executed') {
                   <div class="action-status-badge executed">
                     <span class="material-icons" style="font-size: 0.9rem;">task_alt</span>
-                    <span>実行完了（マスター承認済み）</span>
+                    <span>{{ 'copilot.status_executed' | translate }}</span>
                   </div>
                 }
 
                 @if (msg.actionStatus === 'cancelled') {
                   <div class="action-status-badge cancelled">
                     <span class="material-icons" style="font-size: 0.9rem;">block</span>
-                    <span>承認がキャンセルされました</span>
+                    <span>{{ 'copilot.status_cancelled' | translate }}</span>
                   </div>
                 }
               </div>
@@ -111,7 +111,7 @@
       [(ngModel)]="inputMessage" 
       (keydown.enter)="onSendMessage()"
       [disabled]="copilotService.isLoading()"
-      placeholder="Ask Rebecca anything...">
+      [placeholder]="'copilot.placeholder' | translate">
     <button 
       class="send-btn" 
       id="ai-send-btn"

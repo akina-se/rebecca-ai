@@ -1,11 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { DropdownComponent } from '../../../shared/components/molecules/dropdown/dropdown.component';
 import { SettingsService } from '../../../core/services/settings.service';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-settings-page',
   standalone: true,
-  imports: [DropdownComponent],
+  imports: [DropdownComponent, TranslatePipe],
   templateUrl: './settings-page.component.html',
   styleUrl: './settings-page.component.css'
 })

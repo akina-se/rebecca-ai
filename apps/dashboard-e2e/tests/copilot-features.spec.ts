@@ -8,11 +8,11 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
   test('Test 1: Global Header "✨ Rebecca" button opens AI Drawer with route-aware context across all pages', async ({ page }) => {
     const pagesToTest = [
-      { path: '/dashboard', expectedContext: 'Performance Dashboard' },
-      { path: '/assets', expectedContext: 'Assets Library' },
-      { path: '/users', expectedContext: 'User Relations' },
-      { path: '/memory', expectedContext: 'Memory Management' },
-      { path: '/settings', expectedContext: 'System Settings' }
+      { path: '/dashboard', expectedContext: /Performance Overview|パフォーマンス概要|Performance Dashboard/ },
+      { path: '/assets', expectedContext: /Assets Library|アセット管理/ },
+      { path: '/users', expectedContext: /User Relations|ユーザー関係/ },
+      { path: '/memory', expectedContext: /Memory Management|メモリ管理/ },
+      { path: '/settings', expectedContext: /Settings|システム設定|System Settings/ }
     ];
 
     for (const p of pagesToTest) {
@@ -53,7 +53,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(rightDrawer).toBeVisible({ timeout: 5000 });
 
     // Click the Analyze button
-    const analyzeBtn = page.locator('button', { hasText: 'Analyze' }).first();
+    const analyzeBtn = page.locator('button', { hasText: /Analyze|分析/ }).first();
     await expect(analyzeBtn).toBeVisible({ timeout: 5000 });
     await analyzeBtn.click();
 
@@ -112,7 +112,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     // Verify Safety Action Card is proposed
     const actionCard = aiDrawer.locator('.action-card.danger').last();
     await expect(actionCard).toBeVisible({ timeout: 8000 });
-    await expect(actionCard.locator('.action-card-title')).toContainText('ブロック');
+    await expect(actionCard.locator('.action-card-title')).toContainText(/ブロック|Block/);
     await expect(actionCard.locator('.approve-btn')).toBeVisible();
 
     // Click Approve & Execute
@@ -121,7 +121,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     // Verify action transitions to executed state
     const executedBadge = actionCard.locator('.action-status-badge.executed');
     await expect(executedBadge).toBeVisible({ timeout: 5000 });
-    await expect(executedBadge).toContainText('実行完了');
+    await expect(executedBadge).toContainText(/実行完了|Executed/);
   });
 
   test('Test 5: Zero-destruction chat persistence and continuity across route changes', async ({ page }) => {
@@ -143,7 +143,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(messagesContainer).toContainText(testMsg, { timeout: 5000 });
 
     // Navigate to Assets page via sidebar
-    const assetsNavLink = page.locator('app-sidebar .nav-item', { hasText: 'Assets Library' });
+    const assetsNavLink = page.locator('app-sidebar .nav-item', { hasText: /Assets Library|アセット管理/ });
     await assetsNavLink.click();
     await page.waitForURL(/\/assets/);
 
@@ -155,6 +155,37 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
     // Verify Context indicator dynamically updated to Assets Library
     const contextIndicator = page.locator('#ai-context-indicator');
-    await expect(contextIndicator).toContainText('Assets Library');
+    await expect(contextIndicator).toContainText(/Assets Library|アセット管理/);
+  });
+
+  test('Test 6: Instant bilingual (JA/EN) language switching updates UI and Copilot persona without reload', async ({ page }) => {
+    await page.goto('/settings');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Select English (US)
+    const langDropdown = page.locator('app-dropdown').first().locator('.dropdown-toggle');
+    await expect(langDropdown).toBeVisible({ timeout: 5000 });
+    await langDropdown.click();
+    const enOption = page.locator('.dropdown-item', { hasText: 'English (US)' });
+    await expect(enOption).toBeVisible({ timeout: 5000 });
+    await enOption.click();
+
+    // Verify sidebar navigation updated to English
+    const dashboardNav = page.locator('app-sidebar .nav-item').first();
+    await expect(dashboardNav).toContainText('Dashboard');
+
+    // Open AI Drawer and verify English greeting / chips
+    const rebeccaBtn = page.locator('#header-rebecca-btn');
+    await rebeccaBtn.click();
+    const aiDrawer = page.locator('.ai-drawer');
+    await expect(aiDrawer).toHaveClass(/open/);
+
+    const firstChip = aiDrawer.locator('.action-chip').first();
+    await expect(firstChip).toBeVisible({ timeout: 5000 });
+    const chipText = await firstChip.innerText();
+    expect(chipText).toMatch(/Review timezone|diagnostics|telemetry|KPI/i);
+
+    // Close drawer
+    await aiDrawer.locator('.close-btn').click();
   });
 });

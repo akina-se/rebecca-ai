@@ -133,7 +133,7 @@ test.describe('Memory Features E2E Tests', () => {
   });
 
   test('Scenario E: Force Dreaming - should trigger dreaming process and show completion toast', async ({ page }) => {
-    const forceDreamingBtn = page.locator('button', { hasText: 'Force Dreaming' });
+    const forceDreamingBtn = page.locator('.view-header button', { hasText: /Force Dreaming|ドリーミング/ }).first();
     await expect(forceDreamingBtn).toBeVisible();
 
     await forceDreamingBtn.click();
