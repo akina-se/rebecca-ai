@@ -6,11 +6,22 @@
             {{ isDreaming ? ('memory.processing' | translate) : ('memory.force_dreaming' | translate) }}
         </button>
     </div>
-    <table class="data-table glass-panel" style="border-radius: 12px;">
-        <thead><tr><th>{{ 'memory.layer' | translate }}</th><th>{{ 'memory.description' | translate }}</th><th>{{ 'memory.last_updated' | translate }}</th></tr></thead>
+    <table class="data-table glass-panel" style="border-radius: 12px; width: 100%;">
+        <thead>
+            <tr>
+                <th style="width: 280px; min-width: 260px;">{{ 'memory.layer' | translate }}</th>
+                <th>{{ 'memory.description' | translate }}</th>
+                <th style="width: 200px; min-width: 180px;">{{ 'memory.last_updated' | translate }}</th>
+            </tr>
+        </thead>
         <tbody>
             <tr class="clickable" *ngFor="let layer of layers" (click)="openDrawer(layer.level)">
-                <td><span class="badge" [style.background]="layer.level === 0 ? 'rgba(255,255,255,0.1)' : ''" [style.color]="layer.level === 0 ? 'var(--text-main)' : ''">Layer {{ layer.level }}</span> {{ ('memory.layer' + layer.level + '_name') | translate }}</td>
+                <td style="white-space: nowrap;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge" [style.background]="layer.level === 0 ? 'rgba(255,255,255,0.1)' : ''" [style.color]="layer.level === 0 ? 'var(--text-main)' : ''">Layer {{ layer.level }}</span>
+                        <span style="font-weight: 500;">{{ ('memory.layer' + layer.level + '_name') | translate }}</span>
+                    </div>
+                </td>
                 <td>{{ ('memory.layer' + layer.level + '_desc') | translate }}</td>
                 <td style="color: var(--text-muted); white-space: nowrap;" [title]="layer.lastUpdated || ''">{{ layer.lastUpdated | tzDate:'System Deploy' }}</td>
             </tr>
