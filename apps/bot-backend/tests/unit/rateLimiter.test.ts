@@ -64,4 +64,27 @@ describe('rateLimiter.ts', () => {
         
         expect(result).toEqual({ allowed: false, reason: 'user_daily' });
     });
+
+    it('should use default fallback limits when config values are not set', async () => {
+        const config = require('../../src/config').default;
+        const originalGlobal = config.limits.globalDailyLimit;
+        const originalSpam = config.limits.spamMinuteLimit;
+
+        delete config.limits.globalDailyLimit;
+        delete config.limits.spamMinuteLimit;
+
+        deps.firestore.checkAndConsumeRateLimit.mockResolvedValueOnce({ allowed: true });
+        await checkAndIncrementRateLimits(deps, 'user_fallback');
+
+        expect(deps.firestore.checkAndConsumeRateLimit).toHaveBeenCalledWith(
+            'user_fallback',
+            expect.any(String),
+            expect.any(String),
+            expect.any(String),
+            { globalDaily: 45, spamMinute: 3 }
+        );
+
+        config.limits.globalDailyLimit = originalGlobal;
+        config.limits.spamMinuteLimit = originalSpam;
+    });
 });

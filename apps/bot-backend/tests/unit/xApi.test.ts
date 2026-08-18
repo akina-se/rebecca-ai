@@ -355,4 +355,56 @@ describe('xApi.ts', () => {
             await expect(api.getUserTweets('123')).rejects.toThrow('api error');
         });
     });
+
+    describe('deleteTweet', () => {
+        it('should mock tweet deletion if client is not initialized or test ID is detected', async () => {
+            const api = getXApiModule();
+            const res = await api.deleteTweet('test_tweet_id');
+            expect(res).toBe(true);
+        });
+
+        it('should call posts.destroy if available', async () => {
+            const api = getXApiModule();
+            mockClientInstance.posts.destroy = jest.fn().mockResolvedValueOnce({});
+            const res = await api.deleteTweet('1234567890');
+            expect(res).toBe(true);
+            expect(mockClientInstance.posts.destroy).toHaveBeenCalledWith('1234567890');
+        });
+
+        it('should call posts.delete if destroy is not available', async () => {
+            const api = getXApiModule();
+            delete mockClientInstance.posts.destroy;
+            mockClientInstance.posts.delete = jest.fn().mockResolvedValueOnce({});
+            const res = await api.deleteTweet('1234567890');
+            expect(res).toBe(true);
+            expect(mockClientInstance.posts.delete).toHaveBeenCalledWith('1234567890');
+        });
+
+        it('should fallback to direct OAuth fetch when neither method exists on posts', async () => {
+            const api = getXApiModule();
+            delete mockClientInstance.posts.destroy;
+            delete mockClientInstance.posts.delete;
+
+            global.fetch = jest.fn().mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ data: { deleted: true } }),
+            }) as any;
+
+            const res = await api.deleteTweet('1234567890');
+            expect(res).toBe(true);
+        });
+
+        it('should throw on fetch error when deleting tweet', async () => {
+            const api = getXApiModule();
+            delete mockClientInstance.posts.destroy;
+            delete mockClientInstance.posts.delete;
+
+            global.fetch = jest.fn().mockResolvedValueOnce({
+                ok: false,
+                json: async () => ({ error: 'Not authorized' }),
+            }) as any;
+
+            await expect(api.deleteTweet('1234567890')).rejects.toThrow('Failed to delete tweet');
+        });
+    });
 });
