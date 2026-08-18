@@ -49,7 +49,7 @@ export class UsersPageComponent implements OnInit {
     this.loadUsers(1);
   }
 
-  loadUsers(page: number = 1) {
+  loadUsers(page = 1) {
     this.isLoading = true;
     this.currentPage = page;
     this.usersRepo.getAll({

@@ -1,4 +1,4 @@
-import { CopilotRequest, CopilotResponse, CopilotAction } from '@rebecca/types';
+import { CopilotRequest, CopilotResponse, PostLeaderboard } from '@rebecca/types';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { config } from '../../config';
 import { persona } from '@rebecca/persona';
@@ -115,7 +115,7 @@ When proposing destructive or administrative operations, include \`actionRequire
       // 3. Invoke Gemini Model if configured
       if (this.ai && config.gemini.apiKey) {
         try {
-          const contents: any[] = [];
+          const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
           
           // Build valid alternating conversation history starting with 'user'
           const priorHistory = history.filter((h, idx) => {
@@ -186,10 +186,10 @@ When proposing destructive or administrative operations, include \`actionRequire
       // 2. Query failed assets if asked or on /assets view
       if (this.assetsRepo && (lowerMsg.includes('asset') || lowerMsg.includes('caption') || lowerMsg.includes('アセット') || lowerMsg.includes('キャプション') || currentContext.includes('Assets'))) {
         const assets = await this.assetsRepo.getAll();
-        const failed = assets.filter((a: any) => a.status === 'FAILED' || !a.caption);
+        const failed = assets.filter(a => a.status === 'FAILED' || !a.caption);
         parts.push(`[Assets Telemetry]: Total=${assets.length}, FailedCaptions=${failed.length}`);
         if (failed.length > 0) {
-          parts.push(`[Failed Assets List]: ${failed.slice(0, 3).map((f: any) => f.filename || f.id).join(', ')}`);
+          parts.push(`[Failed Assets List]: ${failed.slice(0, 3).map(f => f.filename || f.id).join(', ')}`);
         }
       }
 
@@ -197,14 +197,14 @@ When proposing destructive or administrative operations, include \`actionRequire
       if (this.usersRepo && (lowerMsg.includes('user') || lowerMsg.includes('ユーザー') || lowerMsg.includes('@') || lowerMsg.includes('ブロック') || currentContext.includes('User'))) {
         const userRes = await this.usersRepo.getAll({ limit: 10, sortBy: 'interactions', sortOrder: 'desc' });
         const users = userRes.data || [];
-        parts.push(`[Top Engaged Users]: ${users.slice(0, 5).map((u: any) => `${u.handle} (Interactions: ${u.interactions}, Status: ${u.status})`).join(', ')}`);
+        parts.push(`[Top Engaged Users]: ${users.slice(0, 5).map(u => `${u.handle} (Interactions: ${u.interactions}, Status: ${u.status})`).join(', ')}`);
       }
 
       // 4. Query posts if asked about timeline, impressions, or posts
       if (this.timelineRepo && (lowerMsg.includes('post') || lowerMsg.includes('投稿') || lowerMsg.includes('timeline') || lowerMsg.includes('タイムライン') || lowerMsg.includes('バズ') || currentContext.includes('Post'))) {
         const postRes = await this.timelineRepo.getPosts({ limit: 10, sortBy: 'impressions', sortOrder: 'desc' });
         const topPosts = postRes.data || [];
-        parts.push(`[Top Posts by Impressions]: ${topPosts.slice(0, 3).map((p: any) => `ID=${p.id}, Impressions=${p.impressions}, Text="${p.snippet}"`).join(' | ')}`);
+        parts.push(`[Top Posts by Impressions]: ${topPosts.slice(0, 3).map((p: PostLeaderboard) => `ID=${p.id}, Impressions=${p.impressions}, Text="${p.snippet}"`).join(' | ')}`);
       }
     } catch (e) {
       console.warn('Could not collect all repository telemetry:', e);
@@ -250,12 +250,12 @@ When proposing destructive or administrative operations, include \`actionRequire
       const impactLevel: 'danger' | 'warning' | 'info' = rawImpact.includes('danger') ? 'danger' : rawImpact.includes('warn') ? 'warning' : 'info';
 
       response.actionRequired = {
-        type: a.type as any,
+        type: a.type as 'BLOCK_USER' | 'DELETE_POST' | 'FORCE_DREAMING' | 'REGENERATE_CAPTIONS' | 'NAVIGATE_PAGE',
         title: a.title || (isEn ? 'Action Confirmation' : 'アクションの実行確認'),
         description: a.description || (isEn ? 'Proceed with this action?' : 'この操作を実行しますか？'),
         impactLevel,
         requiresConfirmation: a.requiresConfirmation !== false,
-        payload: (a.payload as any) || {}
+        payload: (a.payload as Record<string, unknown>) || {}
       };
     }
     return response;

@@ -321,9 +321,9 @@ function makePassThroughConverter<T extends DocumentData>(): FirestoreDataConver
   };
 }
 
-const rateLimitConverter = makePassThroughConverter<RateLimitDoc>();
-const personaConverter = makePassThroughConverter<PersonaDoc>();
-const xApiStateConverter = makePassThroughConverter<XApiStateDoc>();
+export const rateLimitConverter = makePassThroughConverter<RateLimitDoc>();
+export const personaConverter = makePassThroughConverter<PersonaDoc>();
+export const xApiStateConverter = makePassThroughConverter<XApiStateDoc>();
 
 // ---------------------------------------------------------------------------
 // Public API: getCollections()

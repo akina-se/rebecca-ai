@@ -58,7 +58,7 @@ export class AssetsPageComponent implements OnInit {
     this.loadAssets(1);
   }
 
-  loadAssets(page: number = 1) {
+  loadAssets(page = 1) {
     this.isLoading = true;
     this.currentPage = page;
     this.assetsRepo.getAll({

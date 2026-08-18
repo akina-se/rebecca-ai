@@ -8,7 +8,7 @@
     "build": "ng build",
     "dev": "ng serve",
     "lint": "ng lint",
-    "test": "ng test",
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
     "ng": "ng",
     "start": "ng serve",
     "watch": "ng build --watch --configuration development",

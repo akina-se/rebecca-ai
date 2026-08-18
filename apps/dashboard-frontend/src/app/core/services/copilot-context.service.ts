@@ -34,8 +34,8 @@ export class CopilotContextService {
     }
 
     this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(event => {
         this.currentRoute.set(event.urlAfterRedirects || event.url || (typeof window !== 'undefined' ? window.location.pathname : '/dashboard'));
         // Clear drawer focus when moving between main pages
         this.focusedEntity.set(null);

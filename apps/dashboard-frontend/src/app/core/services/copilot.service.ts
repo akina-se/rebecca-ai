@@ -1,10 +1,10 @@
 import { Injectable, inject, signal, effect, Inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { COPILOT_REPOSITORY, CopilotRepository } from '../ports/copilot.repository';
-import { USERS_REPOSITORY, UsersRepository } from '../ports/users.repository';
-import { DASHBOARD_REPOSITORY, DashboardRepository } from '../ports/dashboard.repository';
-import { MEMORY_REPOSITORY, MemoryRepository } from '../ports/memory.repository';
-import { ASSETS_REPOSITORY, AssetsRepository } from '../ports/assets.repository';
+import { COPILOT_REPOSITORY } from '../ports/copilot.repository';
+import { USERS_REPOSITORY } from '../ports/users.repository';
+import { DASHBOARD_REPOSITORY } from '../ports/dashboard.repository';
+import { MEMORY_REPOSITORY } from '../ports/memory.repository';
+import { ASSETS_REPOSITORY } from '../ports/assets.repository';
 import { CopilotContextService } from './copilot-context.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { SettingsService } from './settings.service';
@@ -52,7 +52,7 @@ export class CopilotService {
 
     // Reactively update initial greeting if language switches and no user messages exist yet
     effect(() => {
-      const lang = this.translationService.currentLang();
+      this.translationService.currentLang();
       const current = this.messages();
       if (current.length === 1 && current[0].id === 'initial-greeting') {
         this.messages.set([

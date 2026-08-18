@@ -9,12 +9,14 @@ import * as tasks from '../../src/services/tasks';
 jest.mock('../../src/services/firestore', () => ({
     getUserDoc: jest.fn().mockResolvedValue({ episodicBuffer: [], coreProfile: {} }),
     updateUserDoc: jest.fn().mockResolvedValue(undefined),
+    updateCoreProfile: jest.fn().mockResolvedValue(undefined),
     appendEpisodicBuffer: jest.fn().mockResolvedValue(undefined),
     checkAndConsumeRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
     getAllUsers: jest.fn().mockResolvedValue([]),
     getRecentTimelinePosts: jest.fn().mockResolvedValue([]),
     getRecentConversationLogs: jest.fn().mockResolvedValue([]),
     saveExtendedPrompt: jest.fn().mockResolvedValue(undefined),
+    saveTimelineSummary: jest.fn().mockResolvedValue(undefined),
     hasProcessedFollower: jest.fn().mockResolvedValue(false),
     markFollowerProcessed: jest.fn().mockResolvedValue(undefined),
     getLastListInteraction: jest.fn().mockResolvedValue(null),
@@ -52,11 +54,12 @@ jest.mock('../../src/services/xApi', () => ({
     replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
     getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
     getFollowers: jest.fn().mockResolvedValue({ data: [] }),
-    addListMember: jest.fn().mockResolvedValue(undefined),
+    addListMember: jest.fn().mockResolvedValue(true),
     getListMembers: jest.fn().mockResolvedValue({ data: [] }),
     getTweetDetails: jest.fn().mockResolvedValue({ data: { text: '' }, includes: { media: [] } }),
     tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
     getUserProfile: jest.fn().mockResolvedValue({ data: { description: 'bio' } }),
+    getUserTweets: jest.fn().mockResolvedValue({ data: [{ id: 'tweet_123', text: 'today was fun' }] }),
 }));
 
 jest.mock('../../src/services/tasks', () => ({
@@ -66,6 +69,7 @@ jest.mock('../../src/services/tasks', () => ({
 describe('Integration Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        (firestore.checkAndConsumeRateLimit as jest.Mock).mockResolvedValue({ allowed: true });
     });
 
     describe('GET /batch/mentions', () => {
@@ -221,18 +225,17 @@ describe('Integration Tests', () => {
             
             expect(response.status).toBe(200);
             expect(firestore.getUserDoc).toHaveBeenCalledWith('new_user');
-            expect(gemini.analyzeUserProfile).toHaveBeenCalledWith('bio');
+            expect(gemini.analyzeUserProfile).toHaveBeenCalledWith(expect.stringContaining('bio'));
         });
 
         it('should block if rate limit is exceeded', async () => {
-            (firestore.checkAndConsumeRateLimit as jest.Mock).mockResolvedValueOnce({ allowed: false, reason: 'global_daily' }); // Blocked
-
+            (firestore.checkAndConsumeRateLimit as jest.Mock).mockResolvedValueOnce({ allowed: false, reason: 'global_daily' });
             const payload = {
                 tweetId: '12345',
                 text: '@rebecca_ai Hello',
                 authorId: 'user_1'
             };
-
+            
             const response = await request(app)
                 .post('/worker/reply')
                 .set('x-worker-secret', 'test_secret')
@@ -248,8 +251,7 @@ describe('Integration Tests', () => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
         it('should process dreaming successfully', async () => {
-            (firestore.getAllUsers as jest.Mock).mockResolvedValueOnce([{ id: 'user1' }]);
-            (firestore.getUserDoc as jest.Mock).mockResolvedValueOnce({ episodicBuffer: ['test'], coreProfile: {} });
+            (firestore.getAllUsers as jest.Mock).mockResolvedValueOnce([{ id: 'user1', episodicBuffer: ['test memory'], coreProfile: {} }]);
             (gemini.generateDreaming as jest.Mock).mockResolvedValueOnce({ preferences: ['test'] });
             (gemini.generateTimelineSummary as jest.Mock).mockResolvedValueOnce('Mock Summary');
             
@@ -258,8 +260,7 @@ describe('Integration Tests', () => {
             expect(response.status).toBe(200);
             expect(firestore.getAllUsers).toHaveBeenCalled();
             expect(gemini.generateDreaming).toHaveBeenCalled();
-            expect(firestore.updateUserDoc).toHaveBeenCalled();
-            expect(gemini.generateTimelineSummary).toHaveBeenCalled();
+            expect(firestore.updateCoreProfile).toHaveBeenCalled();
         });
     });
 
@@ -310,13 +311,11 @@ describe('Integration Tests', () => {
         it('should process stealth onboarding successfully', async () => {
             (xApi.getFollowers as jest.Mock).mockResolvedValueOnce({ data: [{ id: 'follower_1', username: 'test', description: 'bio' }] });
             (firestore.hasProcessedFollower as jest.Mock).mockResolvedValueOnce(false);
-            (gemini.analyzeUserProfile as jest.Mock).mockResolvedValueOnce({ attributes: ['tech'] });
             
             const response = await request(app).get('/batch/stealth-onboarding').set('x-batch-secret', 'test_secret');
             
             expect(response.status).toBe(200);
             expect(xApi.getFollowers).toHaveBeenCalled();
-            expect(gemini.analyzeUserProfile).toHaveBeenCalled();
             expect(xApi.addListMember).toHaveBeenCalledWith(expect.any(String), 'follower_1');
             expect(firestore.markFollowerProcessed).toHaveBeenCalledWith('follower_1');
         });

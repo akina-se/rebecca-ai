@@ -32,7 +32,7 @@ export class HttpUsersRepository implements UsersRepository {
       map(response => ({
         ...response,
         data: (response.data || []).map((user: UserDetail) => ({
-          ...(user as any),
+          ...user,
           status: this.mapStatus(user.status)
         }))
       }))
@@ -57,7 +57,7 @@ export class HttpUsersRepository implements UsersRepository {
     }
     return this.http.get<UserDetail>(`${this.baseUrl}/users/${encodeURIComponent(id)}`, { params }).pipe(
       map((user: UserDetail) => ({
-        ...(user as any),
+        ...user,
         status: this.mapStatus(user.status)
       }))
     );

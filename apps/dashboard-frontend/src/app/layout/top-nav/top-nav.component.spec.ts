@@ -4,6 +4,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+
 describe('TopNavComponent', () => {
   let component: TopNavComponent;
   let fixture: ComponentFixture<TopNavComponent>;
@@ -14,11 +17,13 @@ describe('TopNavComponent', () => {
     mockAuthService = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser$: of({ displayName: 'Test User' })
     });
-    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate'], { url: '/dashboard' });
 
     await TestBed.configureTestingModule({
       imports: [TopNavComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useValue: mockAuthService },
         { provide: Router, useValue: mockRouter }
       ]

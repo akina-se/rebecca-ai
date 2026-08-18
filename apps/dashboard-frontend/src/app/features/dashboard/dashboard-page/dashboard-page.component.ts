@@ -61,8 +61,8 @@ export class DashboardPageComponent implements OnInit {
   // Timeline State
   selectAll = false;
   selectedRows = new Set<string>();
-  timelinePosts: any[] = [];
-  filteredTimelinePosts: any[] = [];
+  timelinePosts: PostLeaderboard[] = [];
+  filteredTimelinePosts: PostLeaderboard[] = [];
   searchQuery = '';
   timelinePage = 1;
   timelineTotalPages = 1;
@@ -84,7 +84,7 @@ export class DashboardPageComponent implements OnInit {
   timelineSortBy: 'time' | 'impressions' = 'time';
   timelineSortOrder: 'asc' | 'desc' = 'desc';
 
-  loadTimeline(page: number = 1) {
+  loadTimeline(page = 1) {
     if (this.isLoadingTimeline) return;
 
     this.isLoadingTimeline = true;
@@ -102,7 +102,8 @@ export class DashboardPageComponent implements OnInit {
         const mapped = posts.map(p => ({
           id: p.id,
           time: p.time,
-          text: p.snippet,
+          snippet: p.snippet || '',
+          text: p.snippet || '',
           impressions: p.impressions,
           status: p.status || 'SUCCESS',
           hasMedia: p.hasMedia,
@@ -273,7 +274,7 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
-  rankingModalEntries: any[] = [];
+  rankingModalEntries: { id: string; rank: number; label: string; value: number | string; badge?: string }[] = [];
 
   openRankingModal(type: 'posts' | 'users') {
     if (type === 'posts') {
@@ -294,9 +295,9 @@ export class DashboardPageComponent implements OnInit {
       this.rankingModalColMetric = 'Interactions';
       this.rankingModalType = 'user';
       this.rankingModalEntries = this.topUsers.map((u, i) => ({
-        id: (u as any).handle || u.userId,
+        id: u.userId,
         rank: i + 1,
-        label: (u as any).handle || u.userId,
+        label: u.userId,
         value: u.interactions,
         badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
       }));

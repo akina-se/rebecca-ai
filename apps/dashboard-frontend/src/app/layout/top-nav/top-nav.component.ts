@@ -18,7 +18,7 @@ export class TopNavComponent {
   private drawerService = inject(DrawerService);
   private translationService = inject(TranslationService);
   isUserDropdownOpen = false;
-  user: any = null;
+  user: { displayName?: string | null; email?: string | null } | null = null;
 
   constructor(private eRef: ElementRef, private authService: AuthService, private router: Router) {
     this.authService.currentUser$.subscribe(user => {
@@ -27,7 +27,7 @@ export class TopNavComponent {
   }
 
   get pageTitle(): string {
-    const url = this.router.url;
+    const url = this.router.url || '';
     if (url.includes('/memory')) return this.translationService.t('nav.memory');
     if (url.includes('/assets')) return this.translationService.t('nav.assets');
     if (url.includes('/users')) return this.translationService.t('nav.users');

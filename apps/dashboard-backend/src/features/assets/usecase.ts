@@ -107,7 +107,7 @@ export class AssetsUseCase {
           resumable: false
         });
         imageUrl = `https://storage.googleapis.com/${config.gcp.imageBucketName}/media_assets/${hash}_${file.originalname}`;
-      } catch (err) {
+      } catch {
         // Fallback for local emulator / mock environments without live GCS
         const base64Data = file.buffer.toString('base64');
         imageUrl = `data:${file.mimetype};base64,${base64Data}`;
@@ -201,7 +201,6 @@ export class AssetsUseCase {
     for (const asset of targetAssets) {
       let newCaption = '';
       let status: AssetStatus = AssetStatus.FAILED;
-      let embedding: number[] = [];
 
       if (ai) {
         try {
@@ -215,17 +214,6 @@ export class AssetsUseCase {
           newCaption = response.text?.trim() || '';
           if (newCaption) {
             status = AssetStatus.SUCCESS;
-            try {
-              const embResponse = await ai.models.embedContent({
-                model: config.gemini.embeddingModel,
-                contents: newCaption
-              });
-              if (embResponse.embeddings?.[0]?.values) {
-                embedding = embResponse.embeddings[0].values;
-              }
-            } catch {
-              // Ignore embedding error
-            }
           }
         } catch (e) {
           console.error(`Failed to regenerate caption for asset ${asset.id}:`, e);

@@ -1,15 +1,14 @@
-import { getBasePrompt, getDreamingPrompt } from '../src/index';
-import * as promptModule from '../../src/core/prompt';
+import { getBasePrompt, getDreamingPrompt, persona } from '../src/index';
 
-describe('prompt.ts exports verification', () => {
+describe('persona package exports verification', () => {
     test('should export getBasePrompt and getDreamingPrompt functions', () => {
         expect(typeof getBasePrompt).toBe('function');
         expect(typeof getDreamingPrompt).toBe('function');
     });
 
-    test('should NOT export BASE_SYSTEM_PROMPT directly anymore (must use getBasePrompt)', () => {
-        expect((promptModule as any).BASE_SYSTEM_PROMPT).toBeUndefined();
-        expect((promptModule as any).BASE_SYSTEM_PROMPT_EN).toBeUndefined();
+    test('should export persona object', () => {
+        expect(persona).toBeDefined();
+        expect(persona.core.identity).toContain('レベッカ');
     });
 
     test('getBasePrompt should return string with context', () => {

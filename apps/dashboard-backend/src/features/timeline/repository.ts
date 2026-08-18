@@ -1,6 +1,6 @@
 import { Firestore, Query } from '@google-cloud/firestore';
 import { Storage } from '@google-cloud/storage';
-import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { config } from '../../config';
 
@@ -83,7 +83,7 @@ export class TimelineRepository {
    * @param period The time period for metrics (e.g., 'weekly', 'monthly', 'yearly')
    * @returns A promise that resolves to the global KPI metrics.
    */
-  async getMetrics(period: string = 'monthly'): Promise<any> {
+  async getMetrics(period: string = 'monthly'): Promise<KpiMetrics> {
     const doc = await this.collections.systemStats.doc('global').get();
     const data = (doc.data() || {}) as GlobalStatsDoc;
     
@@ -102,7 +102,7 @@ export class TimelineRepository {
       followers: Math.floor((data.total_followers || 0) * scale),
       followersTrend: data.followers_trend || 0,
       followersHistory: scaleArray(data.followers_history || [], historyLength),
-      engagementRate: ((data.avg_engagement_rate || 0) * (period === 'yearly' ? 1.2 : 1)).toFixed(1),
+      engagementRate: parseFloat(((data.avg_engagement_rate || 0) * (period === 'yearly' ? 1.2 : 1)).toFixed(1)),
       engagementTrend: data.engagement_trend || 0,
       engagementHistory: scaleArray(data.engagement_history || [], historyLength),
       dailyActiveUsers: Math.floor((data.dau || 0) * (period === 'yearly' ? 2 : 1)),
@@ -119,7 +119,7 @@ export class TimelineRepository {
    * 
    * @returns A promise that resolves to an array of leaderboard posts.
    */
-  async getPosts(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<{ data: PostLeaderboard[]; meta: any }> {
+  async getPosts(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<PaginatedResponse<PostLeaderboard>> {
     let query: Query = this.collections.timelineHistory;
     
     let startDate = '';
@@ -148,7 +148,7 @@ export class TimelineRepository {
     const page = params?.page || 1;
 
     let totalItems = 0;
-    let docs: Array<{ id: string; data: any }> = [];
+    let docs: Array<{ id: string; data: Record<string, unknown> }> = [];
 
     try {
       // 1. Database-level count aggregation (Google Cloud Production standard)
@@ -163,26 +163,26 @@ export class TimelineRepository {
         .limit(limit)
         .get();
 
-      docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
-    } catch (e) {
+      docs = snapshot.docs.map(doc => ({ id: doc.id, data: (doc.data() || {}) as Record<string, unknown> }));
+    } catch {
       // Graceful fallback for multi-field unindexed filters in emulator/dev environment
       const snapshot = await query.get();
-      docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+      docs = snapshot.docs.map(doc => ({ id: doc.id, data: (doc.data() || {}) as Record<string, unknown> }));
 
       docs.sort((a, b) => {
-        let valA = a.data[sortBy];
-        let valB = b.data[sortBy];
+        let numA = 0;
+        let numB = 0;
 
         if (sortBy === 'time' || sortBy === 'created_at' || sortBy === 'timestamp') {
-          valA = new Date(a.data.created_at || a.data.timestamp || 0).getTime();
-          valB = new Date(b.data.created_at || b.data.timestamp || 0).getTime();
+          numA = new Date(String(a.data.created_at || a.data.timestamp || 0)).getTime();
+          numB = new Date(String(b.data.created_at || b.data.timestamp || 0)).getTime();
         } else {
-          valA = typeof valA === 'number' ? valA : 0;
-          valB = typeof valB === 'number' ? valB : 0;
+          numA = typeof a.data[sortBy] === 'number' ? (a.data[sortBy] as number) : 0;
+          numB = typeof b.data[sortBy] === 'number' ? (b.data[sortBy] as number) : 0;
         }
 
-        if (sortOrder === 'desc') return valB < valA ? -1 : valB > valA ? 1 : 0;
-        return valA < valB ? -1 : valA > valB ? 1 : 0;
+        if (sortOrder === 'desc') return numB < numA ? -1 : numB > numA ? 1 : 0;
+        return numA < numB ? -1 : numA > numB ? 1 : 0;
       });
 
       totalItems = docs.length;
@@ -191,17 +191,17 @@ export class TimelineRepository {
 
     const totalPages = Math.ceil(totalItems / limit) || 1;
     
-    const data = docs.map(doc => {
+    const data: PostLeaderboard[] = docs.map(doc => {
       const d = doc.data;
-      const time = d.created_at || d.timestamp || new Date().toISOString();
-      const content = d.content || d.text || '';
-      const media = d.media_urls || d.mediaUrls || [];
+      const time = String(d.created_at || d.timestamp || new Date().toISOString());
+      const content = String(d.content || d.text || '');
+      const media = (d.media_urls || d.mediaUrls || []) as string[];
       return {
         id: doc.id,
         time,
         snippet: content ? content.substring(0, 50) + '...' : '',
-        impressions: d.impressions || 0,
-        status: d.status || 'SUCCESS',
+        impressions: typeof d.impressions === 'number' ? d.impressions : 0,
+        status: String(d.status || 'SUCCESS'),
         hasMedia: !!media && media.length > 0,
         mediaUrls: media
       };
@@ -211,10 +211,11 @@ export class TimelineRepository {
       data,
       meta: {
         totalItems,
-        itemCount: data.length,
-        itemsPerPage: limit,
         totalPages,
-        currentPage: page
+        currentPage: page,
+        limit,
+        itemCount: data.length,
+        itemsPerPage: limit
       }
     };
   }
@@ -229,8 +230,8 @@ export class TimelineRepository {
     const doc = await this.collections.timelineHistory.doc(id).get();
     if (!doc.exists) return null;
     
-    const data = doc.data() as any;
-    const rawMediaUrls: string[] = data.mediaUrls || data.media_urls || [];
+    const data = (doc.data() || {}) as Record<string, unknown>;
+    const rawMediaUrls: string[] = (data.mediaUrls || data.media_urls || []) as string[];
     
     // Resolve GCS paths to secure 15-minute Signed URLs
     const resolvedMediaUrls = await Promise.all(
@@ -239,14 +240,14 @@ export class TimelineRepository {
 
     return {
       id: doc.id,
-      time: data.timestamp || data.created_at || new Date().toISOString(),
-      content: data.content || data.text || '',
-      impressions: data.impressions || 0,
+      time: String(data.timestamp || data.created_at || new Date().toISOString()),
+      content: String(data.content || data.text || ''),
+      impressions: typeof data.impressions === 'number' ? data.impressions : 0,
       mediaUrls: resolvedMediaUrls.filter(url => url !== ''),
-      status: data.status || 'SUCCESS',
-      likes: data.likes || 0,
-      retweets: data.retweets || 0,
-      replies: data.replies || 0
+      status: String(data.status || 'SUCCESS'),
+      likes: typeof data.likes === 'number' ? data.likes : 0,
+      retweets: typeof data.retweets === 'number' ? data.retweets : 0,
+      replies: typeof data.replies === 'number' ? data.replies : 0
     };
   }
 

@@ -6,6 +6,9 @@ import { of } from 'rxjs';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { DrawerService } from '../../../../core/services/drawer.service';
 
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+
 describe('UserDrawerComponent (White-box Coverage)', () => {
   let component: UserDrawerComponent;
   let fixture: ComponentFixture<UserDrawerComponent>;
@@ -13,6 +16,7 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
   let mockToastService: jasmine.SpyObj<ToastService>;
 
   const mockUserDetail: UserDetail = {
+    id: 'user_123',
     handle: 'alice_gal',
     name: 'Alice',
     status: UserStatus.ACTIVE,
@@ -40,6 +44,8 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     await TestBed.configureTestingModule({
       imports: [UserDrawerComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         DrawerService,
         { provide: USERS_REPOSITORY, useValue: mockUsersRepo },
         { provide: ToastService, useValue: mockToastService }

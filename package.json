@@ -16,7 +16,7 @@
     "test": "turbo run test",
     "license-check": "turbo run license-check",
     "secret-check": "turbo run secret-check",
-    "audit:fix": "turbo run audit:fix"
+    "audit:fix": "npm audit fix"
   },
   "devDependencies": {
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",

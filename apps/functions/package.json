@@ -2,6 +2,8 @@
   "name": "functions",
   "version": "1.0.0",
   "description": "Cloud Functions for Firebase",
+  "author": "AKINA",
+  "license": "MIT",
   "main": "lib/index.js",
   "scripts": {
     "lint": "eslint .",
@@ -31,6 +33,5 @@
   "devDependencies": {
     "typescript": "~5.5.2",
     "firebase-functions-test": "^3.1.0"
-  },
-  "private": true
+  }
 }

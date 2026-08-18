@@ -13,7 +13,7 @@ import { SettingsService } from '../../core/services/settings.service';
 export class TzDatePipe implements PipeTransform {
   private settingsService = inject(SettingsService);
 
-  transform(value: string | Date | null | undefined, fallback: string = 'Never'): string {
+  transform(value: string | Date | null | undefined, fallback = 'Never'): string {
     if (!value || value === 'Never' || value === 'N/A' || value === 'System Deploy') {
       return value || fallback;
     }
