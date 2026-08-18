@@ -223,12 +223,13 @@ const analyzeUserProfile = async (prompt: string): Promise<Record<string, unknow
  * @param prompt - The formatted instruction with the headlines.
  * @returns A promise resolving to the generated post text.
  */
-const generateNewsPost = async (systemInstruction: string, prompt: string): Promise<string> => {
-    if (!ai || !prompt) return "";
+const generateNewsPost = async (systemInstruction: string, prompt: string | string[]): Promise<string> => {
+    if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) return "";
     try {
+        const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
         const response = await ai.models.generateContent({
             model: config.gemini.model,
-            contents: prompt,
+            contents: contentStr,
             config: {
                 systemInstruction: systemInstruction,
                 maxOutputTokens: 100,
@@ -248,17 +249,18 @@ const generateNewsPost = async (systemInstruction: string, prompt: string): Prom
  * @param prompt - The formatted instruction containing recent posts and previous summary.
  * @returns A promise resolving to the updated timeline summary string.
  */
-const generateTimelineSummary = async (prompt: string): Promise<string> => {
-    if (!ai || !prompt) return "";
+const generateTimelineSummary = async (prompt: string | string[], previousSummary?: string): Promise<string> => {
+    if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) return previousSummary || "";
     try {
+        const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
         const response = await ai.models.generateContent({
             model: config.gemini.model,
-            contents: prompt
+            contents: contentStr
         });
-        return response.text?.trim() || "";
+        return response.text?.trim() || previousSummary || "";
     } catch (e) {
         console.error('Error generating timeline summary:', e);
-        return "";
+        return previousSummary || "";
     }
 };
 
@@ -288,21 +290,23 @@ const generateEmbedding = async (text: string): Promise<number[]> => {
 /**
  * Extracts a concise search query based on conversational context and the newest user input.
  * 
- * @param prompt - The formatted instructions, context, and input.
+ * @param contextOrPrompt - The conversational context or formatted prompt.
+ * @param userInput - The user input.
  * @returns A promise resolving to a refined search query string.
  */
-const generateSearchQuery = async (prompt: string): Promise<string> => {
-    if (!ai) return "";
+const generateSearchQuery = async (contextOrPrompt: string, userInput?: string): Promise<string> => {
+    if (!ai) return userInput || contextOrPrompt || "";
     try {
+        const prompt = userInput ? `Context: ${contextOrPrompt}\nUser: ${userInput}` : contextOrPrompt;
         const response = await ai.models.generateContent({
             model: config.gemini.model,
             contents: prompt,
             config: { maxOutputTokens: 50 }
         });
-        return response.text?.trim() || "";
+        return response.text?.trim() || userInput || "";
     } catch (e) {
         console.error('Error generating search query:', e);
-        return "";
+        return userInput || "";
     }
 };
 

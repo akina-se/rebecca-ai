@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse, PostDetail } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -58,8 +58,8 @@ export class HttpDashboardRepository implements DashboardRepository {
     return this.http.get<SystemAlert[]>(`${this.baseUrl}/alerts`);
   }
 
-  getTimelineHistory(page: number, limit: number, sortBy: string = 'created_at', sortOrder: 'asc' | 'desc' = 'desc'): Observable<PaginatedResponse<PostLeaderboard>> {
-    let params = new HttpParams()
+  getTimelineHistory(page: number, limit: number, sortBy = 'created_at', sortOrder: 'asc' | 'desc' = 'desc'): Observable<PaginatedResponse<PostLeaderboard>> {
+    const params = new HttpParams()
       .set('page', page.toString())
       .set('limit', limit.toString())
       .set('sortBy', sortBy)
@@ -67,11 +67,11 @@ export class HttpDashboardRepository implements DashboardRepository {
     return this.http.get<PaginatedResponse<PostLeaderboard>>(`${this.postsBaseUrl}`, { params });
   }
 
-  getPostById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.postsBaseUrl}/${id}`);
+  getPostById(id: string): Observable<PostDetail> {
+    return this.http.get<PostDetail>(`${this.postsBaseUrl}/${id}`);
   }
 
   deletePosts(ids: string[]): Observable<void> {
-    return this.http.delete<void>(`${this.postsBaseUrl}`, { body: { ids } });
+    return this.http.request('DELETE', this.postsBaseUrl, { body: { ids } }) as unknown as Observable<void>;
   }
 }

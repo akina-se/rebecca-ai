@@ -284,6 +284,8 @@ export interface PaginationMeta {
   totalPages: number;
   currentPage: number;
   limit: number;
+  itemCount?: number;
+  itemsPerPage?: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -311,6 +313,7 @@ export interface PostLeaderboard {
   id: string;
   time: string;
   snippet: string;
+  text?: string;
   impressions: number;
   hasMedia: boolean;
   mediaUrls?: string[];

@@ -38,7 +38,7 @@ export class AiDrawerComponent implements OnInit, AfterViewChecked {
           this.shouldScrollToBottom = true;
         }
       },
-      error: (err: any) => console.error('AiDrawer drawerService error:', err)
+      error: (err: unknown) => console.error('AiDrawer drawerService error:', err)
     });
   }
 

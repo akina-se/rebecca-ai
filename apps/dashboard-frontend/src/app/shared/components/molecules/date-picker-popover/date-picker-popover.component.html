@@ -1,5 +1,5 @@
 <div class="time-nav-wrapper">
-    <div #navEl class="time-nav" [class.disabled]="mode === 'all-time'" (click)="toggle(navEl)">
+    <div class="time-nav" [class.disabled]="mode === 'all-time'" (click)="toggle()">
         <span class="material-icons nav-btn" (click)="onPrev($event)">chevron_left</span>
         <span class="current-text">{{ currentText }}</span>
         <span class="material-icons nav-btn" [class.disabled-icon]="!hasNext" (click)="onNext($event)">chevron_right</span>

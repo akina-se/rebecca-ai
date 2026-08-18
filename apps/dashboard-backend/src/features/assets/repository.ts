@@ -33,7 +33,7 @@ export class AssetsRepository {
    * @param data - Document data.
    * @returns Normalized Asset entity.
    */
-  private mapDocToAsset(id: string, data: Record<string, any>): Asset {
+  private mapDocToAsset(id: string, data: Record<string, unknown>): Asset {
     let status: AssetStatus = AssetStatus.PENDING;
     if (data.status) {
       const s = String(data.status).toUpperCase();
@@ -45,7 +45,7 @@ export class AssetsRepository {
     }
 
     // Resolve filename prioritizing data.filename
-    let filename = data.filename;
+    let filename = typeof data.filename === 'string' ? data.filename : undefined;
     if (!filename) {
       if (data.url && typeof data.url === 'string') {
         const parts = data.url.split('/');
@@ -64,11 +64,11 @@ export class AssetsRepository {
     return {
       id,
       filename,
-      caption: data.caption || '',
-      usedCount: data.useCount || data.usedCount || 0,
+      caption: typeof data.caption === 'string' ? data.caption : '',
+      usedCount: typeof data.useCount === 'number' ? data.useCount : (typeof data.usedCount === 'number' ? data.usedCount : 0),
       status,
-      url: data.url || '',
-      lastUsedAt: data.lastUsedAt || null
+      url: typeof data.url === 'string' ? data.url : '',
+      lastUsedAt: typeof data.lastUsedAt === 'string' ? data.lastUsedAt : null
     };
   }
 
@@ -83,7 +83,7 @@ export class AssetsRepository {
     
     let allAssets: Asset[] = [];
     if (!snapshot.empty) {
-      allAssets = snapshot.docs.map((doc: any) => this.mapDocToAsset(doc.id, doc.data()));
+      allAssets = snapshot.docs.map(doc => this.mapDocToAsset(doc.id, doc.data() as unknown as Record<string, unknown>));
     }
 
     // Sort by id or natural creation order
@@ -136,7 +136,7 @@ export class AssetsRepository {
   async getAll(): Promise<Asset[]> {
     const snapshot = await this.collections.images.get();
     if (snapshot.empty) return [];
-    return snapshot.docs.map((doc: any) => this.mapDocToAsset(doc.id, doc.data()));
+    return snapshot.docs.map(doc => this.mapDocToAsset(doc.id, doc.data() as unknown as Record<string, unknown>));
   }
 
   /**
@@ -150,7 +150,7 @@ export class AssetsRepository {
     if (!doc.exists) {
       return null;
     }
-    return this.mapDocToAsset(doc.id, doc.data() || {});
+    return this.mapDocToAsset(doc.id, (doc.data() || {}) as Record<string, unknown>);
   }
 
   /**
@@ -159,8 +159,8 @@ export class AssetsRepository {
    * @param id - Document ID.
    * @param data - Document data.
    */
-  async create(id: string, data: Record<string, any>): Promise<void> {
-    await (this.collections.images.doc(id) as any).set(data);
+  async create(id: string, data: Record<string, unknown>): Promise<void> {
+    await this.firestore.collection('images').doc(id).set(data);
   }
 
   /**

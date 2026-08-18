@@ -38,7 +38,7 @@ export class DatePickerPopoverComponent {
   /**
    * Toggles the popover open/closed.
    */
-  toggle(navEl: HTMLElement): void {
+  toggle(): void {
     if (this.mode === 'all-time') return;
     this.isOpen = !this.isOpen;
     this.cdr.markForCheck();

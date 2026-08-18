@@ -51,23 +51,23 @@ export class PostDrawerComponent implements OnChanges {
     this.isLoading = true;
     this.dashboardRepo.getPostById(id).subscribe({
       next: (post) => {
-        // Fallback for missing properties not returned by MVP backend
-        this.postData = {
+        const postData = {
           id: post.id,
           time: post.time,
-          text: post.content || post.text || '',
+          text: post.content || '',
           impressions: post.impressions?.toString() || '0',
-          status: post.status || 'SUCCESS',
+          status: String(post.status || 'SUCCESS'),
           likes: post.likes || 0,
           retweets: post.retweets || 0,
           replies: post.replies || 0,
           mediaUrls: post.mediaUrls || []
         };
+        this.postData = postData;
         this.contextService.setFocusedEntity({
           type: 'post',
           id: post.id,
-          label: this.postData.text.slice(0, 35),
-          details: { impressions: this.postData.impressions, status: this.postData.status }
+          label: postData.text.slice(0, 35),
+          details: { impressions: postData.impressions, status: postData.status }
         });
         this.isLoading = false;
       },

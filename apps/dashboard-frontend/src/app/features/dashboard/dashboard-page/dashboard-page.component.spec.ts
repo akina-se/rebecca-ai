@@ -5,6 +5,8 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { of } from 'rxjs';
 import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('DashboardPageComponent (White-box Coverage)', () => {
   let component: DashboardPageComponent;
@@ -48,6 +50,8 @@ describe('DashboardPageComponent (White-box Coverage)', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardPageComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([]),
         { provide: DASHBOARD_REPOSITORY, useValue: mockDashboardRepo },
         { provide: ToastService, useValue: mockToastService }

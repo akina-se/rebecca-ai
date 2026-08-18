@@ -47,7 +47,7 @@ async function seedAuth() {
     });
     console.log(`Successfully created dummy admin user in Auth Emulator: ${user.email}`);
   } catch (error) {
-    console.warn('Auth Emulator seeding skipped (emulator not running):', (error as any).message || error);
+    console.warn('Auth Emulator seeding skipped (emulator not running):', (error as Error).message || error);
   }
 }
 

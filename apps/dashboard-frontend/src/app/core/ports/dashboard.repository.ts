@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse, PostDetail } from '@rebecca/types';
 
 export interface DashboardRepository {
   getKpiMetrics(period: string): Observable<KpiMetrics>;
@@ -8,7 +8,7 @@ export interface DashboardRepository {
   getTopUsers(period: string, date?: string): Observable<PaginatedResponse<UserLeaderboard>>;
   getAlerts(): Observable<SystemAlert[]>;
   getTimelineHistory(page: number, limit: number, sortBy?: string, sortOrder?: 'asc' | 'desc'): Observable<PaginatedResponse<PostLeaderboard>>;
-  getPostById(id: string): Observable<any>;
+  getPostById(id: string): Observable<PostDetail>;
   deletePosts(ids: string[]): Observable<void>;
 }
 

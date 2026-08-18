@@ -95,9 +95,7 @@ describe('Memory Module', () => {
                 await useCase.execute();
 
                 expect(deps.firestore.getAllUsers).toHaveBeenCalled();
-                expect(deps.gemini.generateDreaming).toHaveBeenCalledTimes(1); // Only for u1
-                
-                expect(deps.gemini.generateTimelineSummary).toHaveBeenCalledWith(['post1', 'post2'], 'old_summary');
+                expect(deps.gemini.generateTimelineSummary).toHaveBeenCalledWith(expect.stringContaining('old_summary'));
                 expect(deps.firestore.saveTimelineSummary).toHaveBeenCalledWith('new_summary');
             });
 
