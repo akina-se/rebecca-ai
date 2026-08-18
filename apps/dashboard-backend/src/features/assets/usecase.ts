@@ -200,6 +200,7 @@ export class AssetsUseCase {
 
     for (const asset of targetAssets) {
       let newCaption = '';
+      let embedding: number[] = [];
       let status: AssetStatus = AssetStatus.FAILED;
 
       if (ai) {
@@ -214,6 +215,17 @@ export class AssetsUseCase {
           newCaption = response.text?.trim() || '';
           if (newCaption) {
             status = AssetStatus.SUCCESS;
+            try {
+              const embResponse = await ai.models.embedContent({
+                model: config.gemini.embeddingModel,
+                contents: newCaption
+              });
+              if (embResponse.embeddings?.[0]?.values) {
+                embedding = embResponse.embeddings[0].values;
+              }
+            } catch (embErr) {
+              console.warn(`Failed to generate embedding for regenerated asset ${asset.id}:`, embErr);
+            }
           }
         } catch (e) {
           console.error(`Failed to regenerate caption for asset ${asset.id}:`, e);
@@ -227,7 +239,8 @@ export class AssetsUseCase {
       await this.repo.update(asset.id, {
         caption: newCaption,
         status,
-        usedCount: asset.usedCount
+        usedCount: asset.usedCount,
+        ...(embedding.length > 0 ? { embedding } : {})
       });
     }
   }
