@@ -66,6 +66,10 @@ export class TimelineController {
     const { id } = req.params;
     try {
       const post = await this.useCase.getPostById(id as string);
+      if (!post) {
+        res.status(404).json({ error: 'Post not found' });
+        return;
+      }
       res.json(post);
     } catch (err) {
       console.error('Failed to fetch post details:', err);
@@ -86,8 +90,13 @@ export class TimelineController {
       res.status(400).json({ error: 'ids must be an array' });
       return;
     }
-    await this.useCase.deletePosts(ids);
-    res.json({ success: true });
+    try {
+      await this.useCase.deletePosts(ids);
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Failed to delete posts:', err);
+      res.status(500).json({ error: 'Failed to delete posts' });
+    }
   }
 
   /**

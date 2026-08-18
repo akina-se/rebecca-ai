@@ -285,17 +285,19 @@ export class UsersRepository {
    * @param coreProfileJson - The JSON string representing the user's core profile.
    * @returns A promise that resolves when the update is complete.
    */
-  async updateMemory(id: string, coreProfileJson: string): Promise<void> {
+  async updateMemory(id: string, coreProfileJson: string | Record<string, unknown>): Promise<void> {
     const rawId = id.replace('@', '');
+    let parsed: Record<string, unknown>;
     try {
-      const parsed = JSON.parse(coreProfileJson);
-      await this.collections.users.doc(rawId).set(
-        { coreProfile: parsed },
-        { merge: true }
-      );
+      parsed = typeof coreProfileJson === 'string' ? JSON.parse(coreProfileJson) : coreProfileJson;
     } catch (e) {
-      console.error('Failed to parse and update memory', e);
+      console.error('Failed to parse memory JSON', e);
+      return;
     }
+    await this.collections.users.doc(rawId).set(
+      { coreProfile: parsed },
+      { merge: true }
+    );
   }
 
   /**
