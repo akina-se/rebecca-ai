@@ -12,7 +12,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
   template: `
     <!-- Layer 0: Persona Core Prompt -->
     <div *ngIf="level === 0">
-      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">{{ 'memory.layer0_name' | translate }}</h4>
+      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Layer 0: {{ 'memory.layer0_name' | translate }}</h4>
       <textarea 
         class="form-control" 
         rows="15" 
@@ -26,7 +26,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 
     <!-- Layer 1: Extended Persona Tuning -->
     <div *ngIf="level === 1">
-      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">{{ 'memory.layer1_name' | translate }}</h4>
+      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Layer 1: {{ 'memory.layer1_name' | translate }}</h4>
       <textarea 
         class="form-control" 
         rows="15" 
@@ -45,7 +45,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 
     <!-- Layer 2: Global Timeline Summary -->
     <div *ngIf="level === 2">
-      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">{{ 'memory.layer2_name' | translate }}</h4>
+      <h4 style="margin-bottom: 1rem; color: var(--color-primary);">Layer 2: {{ 'memory.layer2_name' | translate }}</h4>
       <textarea 
         class="form-control" 
         rows="10" 

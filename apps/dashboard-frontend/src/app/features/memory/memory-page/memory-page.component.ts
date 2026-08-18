@@ -51,7 +51,7 @@ export class MemoryPageComponent implements OnInit {
 
   openDrawer(level: number) {
     this.drawerLevel = level;
-    this.drawerTitle = this.translationService.t(`memory.layer${level}_name`);
+    this.drawerTitle = `Layer ${level}: ${this.translationService.t(`memory.layer${level}_name`)}`;
     this.drawerIcon = this.getIconForLayer(level);
     this.isDrawerOpen = true;
   }
