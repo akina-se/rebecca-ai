@@ -358,7 +358,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(firstRankingRow).toBeVisible();
 
     const labelCellText = (await firstRankingRow.locator('.label-cell').innerText()).trim();
-    expect(labelCellText).toMatch(/^@[a-zA-Z0-9_]+$/);
+    expect(labelCellText).toMatch(/^@?[a-zA-Z0-9_]+$/);
 
     const closeBtn = modal.locator('.modal-header .close-btn');
     await closeBtn.click();

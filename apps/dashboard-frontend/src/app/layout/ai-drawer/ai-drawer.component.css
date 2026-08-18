@@ -275,7 +275,7 @@
 
 .action-buttons-wrap { 
   display: flex; 
-  gap: 8px; 
+  gap: 6px; 
   width: 100%;
   box-sizing: border-box;
 }
@@ -285,7 +285,7 @@
   min-width: 0;
   padding: 6px 8px; 
   border-radius: 6px; 
-  font-size: 0.78rem; 
+  font-size: 0.76rem; 
   font-weight: 600; 
   cursor: pointer; 
   border: none; 
@@ -296,14 +296,16 @@
   gap: 4px; 
   white-space: nowrap;
   box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-btn.approve-btn {
-  flex: 1.35;
+  flex: 1.15;
 }
 
 .action-btn.cancel-btn {
-  flex: 1;
+  flex: 0.85;
 }
 
 .approve-btn.danger { 
@@ -336,26 +338,31 @@
 }
 
 .action-status-badge { 
-  display: inline-flex; 
+  display: flex; 
   align-items: center; 
-  gap: 4px; 
+  justify-content: center;
+  gap: 6px; 
   font-size: 0.78rem; 
-  padding: 4px 10px; 
-  border-radius: 4px; 
-  font-weight: 500; 
-  white-space: nowrap;
+  padding: 6px 12px; 
+  border-radius: 6px; 
+  font-weight: 600; 
+  letter-spacing: 0.01em;
+  width: 100%; 
+  box-sizing: border-box; 
+  white-space: nowrap; 
+  text-align: center;
 }
 
 .action-status-badge.executed { 
-  background: rgba(16, 185, 129, 0.15); 
+  background: rgba(16, 185, 129, 0.12); 
   color: #34d399; 
-  border: 1px solid rgba(16, 185, 129, 0.4); 
+  border: 1px solid rgba(16, 185, 129, 0.35); 
 }
 
 .action-status-badge.cancelled { 
-  background: rgba(100, 116, 139, 0.15); 
+  background: rgba(148, 163, 184, 0.12); 
   color: #94a3b8; 
-  border: 1px solid rgba(100, 116, 139, 0.3); 
+  border: 1px solid rgba(148, 163, 184, 0.3); 
 }
 
 /* Typing Dots for Thinking State */
