@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, effect, Inject } from '@angular/core';
+import { Injectable, inject, signal, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { COPILOT_REPOSITORY } from '../ports/copilot.repository';
 import { USERS_REPOSITORY } from '../ports/users.repository';
@@ -26,10 +26,10 @@ export class CopilotService {
   private translationService = inject(TranslationService);
   private router = inject(Router);
 
-  @Inject(USERS_REPOSITORY) private usersRepo = inject(USERS_REPOSITORY);
-  @Inject(DASHBOARD_REPOSITORY) private dashboardRepo = inject(DASHBOARD_REPOSITORY);
-  @Inject(MEMORY_REPOSITORY) private memoryRepo = inject(MEMORY_REPOSITORY);
-  @Inject(ASSETS_REPOSITORY) private assetsRepo = inject(ASSETS_REPOSITORY);
+  private usersRepo = inject(USERS_REPOSITORY);
+  private dashboardRepo = inject(DASHBOARD_REPOSITORY);
+  private memoryRepo = inject(MEMORY_REPOSITORY);
+  private assetsRepo = inject(ASSETS_REPOSITORY);
 
   private readonly STORAGE_KEY = 'rebecca_copilot_session_history';
 
@@ -176,26 +176,38 @@ export class CopilotService {
 
     switch (action.type) {
       case 'BLOCK_USER': {
-        const userId = String(payload['userId'] || payload['handle'] || '');
-        if (userId) {
-          this.usersRepo.bulkUpdateStatus([userId], UserStatus.BLOCKED).subscribe({
+        const focused = this.contextService.focusedEntity();
+        let userId = String(payload['userId'] || payload['handle'] || payload['id'] || payload['user'] || payload['target'] || '');
+        if (!userId && focused?.type === 'user') {
+          userId = focused.id;
+        }
+        const cleanId = userId.replace(/^@/, '').trim();
+        if (cleanId) {
+          this.usersRepo.bulkUpdateStatus([cleanId], UserStatus.BLOCKED).subscribe({
             next: () => {
-              this.toastService.show(isEn ? `Blocked user ${userId}` : `ユーザー ${userId} を正常にブロックしました`, 'success');
-              this.appendSystemAck(isEn ? `Following your approval, I've blocked user ${userId}♡` : `マスターの承認に基づき、ユーザー ${userId} をブロック（除外）したわよ♡`);
+              this.toastService.show(isEn ? `Blocked user @${cleanId}` : `ユーザー @${cleanId} を正常にブロックしました`, 'success');
+              this.appendSystemAck(isEn ? `Following your approval, I've blocked user @${cleanId}♡` : `マスターの承認に基づき、ユーザー @${cleanId} をブロック（除外）したわよ♡`);
             },
             error: () => this.toastService.show(isEn ? `Failed to block user` : `ブロック操作に失敗しました`, 'error')
           });
+        } else {
+          this.toastService.show(isEn ? `No target user specified to block` : `ブロック対象のユーザーが指定されていません`, 'error');
         }
         break;
       }
 
       case 'UNBLOCK_USER': {
-        const userId = String(payload['userId'] || payload['handle'] || '');
-        if (userId) {
-          this.usersRepo.bulkUpdateStatus([userId], UserStatus.ACTIVE).subscribe({
+        const focused = this.contextService.focusedEntity();
+        let userId = String(payload['userId'] || payload['handle'] || payload['id'] || payload['user'] || payload['target'] || '');
+        if (!userId && focused?.type === 'user') {
+          userId = focused.id;
+        }
+        const cleanId = userId.replace(/^@/, '').trim();
+        if (cleanId) {
+          this.usersRepo.bulkUpdateStatus([cleanId], UserStatus.ACTIVE).subscribe({
             next: () => {
-              this.toastService.show(isEn ? `Unblocked user ${userId}` : `ユーザー ${userId} のブロックを解除しました`, 'success');
-              this.appendSystemAck(isEn ? `Unblocked user ${userId}.` : `ユーザー ${userId} のブロックを解除したわ。`);
+              this.toastService.show(isEn ? `Unblocked user @${cleanId}` : `ユーザー @${cleanId} のブロックを解除しました`, 'success');
+              this.appendSystemAck(isEn ? `Unblocked user @${cleanId}.` : `ユーザー @${cleanId} のブロックを解除したわ。`);
             },
             error: () => this.toastService.show(isEn ? `Failed to unblock user` : `ブロック解除に失敗しました`, 'error')
           });
@@ -204,15 +216,22 @@ export class CopilotService {
       }
 
       case 'DELETE_POST': {
-        const postId = String(payload['postId'] || '');
-        if (postId) {
-          this.dashboardRepo.deletePosts([postId]).subscribe({
+        const focused = this.contextService.focusedEntity();
+        let postId = String(payload['postId'] || payload['id'] || payload['post_id'] || payload['targetPost'] || '');
+        if (!postId && focused?.type === 'post') {
+          postId = focused.id;
+        }
+        const cleanPostId = postId.replace(/^#/, '').trim();
+        if (cleanPostId) {
+          this.dashboardRepo.deletePosts([cleanPostId]).subscribe({
             next: () => {
-              this.toastService.show(isEn ? `Deleted post #${postId}` : `投稿 #${postId} を正常に削除しました`, 'success');
-              this.appendSystemAck(isEn ? `Deleted post #${postId} from the system and X!` : `指定された投稿 #${postId} をシステムとXから削除完了よ！`);
+              this.toastService.show(isEn ? `Deleted post #${cleanPostId}` : `投稿 #${cleanPostId} を正常に削除しました`, 'success');
+              this.appendSystemAck(isEn ? `Deleted post #${cleanPostId} from the system and X!` : `指定された投稿 #${cleanPostId} をシステムとXから削除完了よ！`);
             },
             error: () => this.toastService.show(isEn ? `Failed to delete post` : `投稿削除に失敗しました`, 'error')
           });
+        } else {
+          this.toastService.show(isEn ? `No post specified to delete` : `削除対象の投稿が指定されていません`, 'error');
         }
         break;
       }
