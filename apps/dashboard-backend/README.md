@@ -4,7 +4,7 @@ The `dashboard-backend` is the Backend-for-Frontend (BFF) server for the Rebecca
 
 ---
 
-## 🏗️ Architectural Overview
+## Architectural Overview
 
 This service is structured using **Feature-Driven (Vertical Slicing) Architecture** combined with Dependency Injection (DI). Rather than splitting code by technical layers (e.g., all controllers in one folder, all repositories in another), the codebase is organized around domain capabilities (Features):
 
@@ -29,7 +29,7 @@ Each feature slice contains:
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 Copy or configure the following environment variables in `.env` or pass them in your shell:
 
@@ -45,7 +45,7 @@ Copy or configure the following environment variables in `.env` or pass them in 
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Install Dependencies
 Run from the monorepo root:
@@ -74,7 +74,7 @@ npm run dev --workspace=dashboard-backend
 
 ---
 
-## 📖 API Contract (OpenAPI Spec)
+## API Contract (OpenAPI Spec)
 
 Following Google senior engineering best practices, we use **OpenAPI 3.0** as the single source of truth for the API contract. This ensures documentation never drifts from code and permits automated client library generation or endpoint contract testing.
 
@@ -102,7 +102,7 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 
 ---
 
-## 🧪 Testing
+## Testing
 
 Execute tests configured for the BFF:
 ```bash
