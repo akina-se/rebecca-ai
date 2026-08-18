@@ -167,10 +167,10 @@ export class AssetsRepository {
    * Updates an asset's fields in the database.
    * 
    * @param id - The ID of the asset to update.
-   * @param updates - The partial asset fields to update.
+   * @param updates - The partial asset fields to update (including optional vector embedding).
    * @returns A promise that resolves when the update is complete.
    */
-  async update(id: string, updates: Partial<Asset>): Promise<void> {
+  async update(id: string, updates: Partial<Asset> & { embedding?: number[] }): Promise<void> {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.caption !== undefined) {
       dbUpdates.caption = updates.caption;
@@ -182,6 +182,7 @@ export class AssetsRepository {
     if (updates.usedCount !== undefined) dbUpdates.useCount = updates.usedCount;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.filename !== undefined) dbUpdates.filename = updates.filename;
+    if (updates.embedding !== undefined) dbUpdates.embedding = updates.embedding;
     
     await this.collections.images.doc(id).set(dbUpdates, { merge: true });
   }
