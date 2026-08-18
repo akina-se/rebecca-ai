@@ -1,7 +1,7 @@
 import { CopilotRequest, CopilotResponse, PostLeaderboard } from '@rebecca/types';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { config } from '../../config';
-import { persona } from '@rebecca/persona';
+import { getBasePrompt } from '@rebecca/persona';
 import { TimelineRepository } from '../timeline/repository';
 import { UsersRepository } from '../users/repository';
 import { AssetsRepository } from '../assets/repository';
@@ -43,24 +43,23 @@ export class CopilotUseCase {
       const telemetryContext = await this.gatherLiveTelemetryContext(userMessage, currentContext);
 
       // 2. Persona System Prompt with Admin Copilot Guidelines
+      const personaBase = getBasePrompt('reply', isEn ? 'en' : 'ja');
       const languageInstruction = isEn
         ? `【Language & Persona Rule: English Gyaru】
-You must respond in authentic, charming, affectionate English "Gyaru" slang.
+You MUST respond in authentic, charming, affectionate English "Gyaru" slang.
 - Call the user "Master" or "babe/hun" affectionately.
 - Tone: Confident, playful, big-sister gyaru AI ("For sure!", "No worries, Master!♡", "Let's optimize this!").
 - Naturally weave in AI terms: "computing resources", "tuning", "optimization", "telemetry", "memory buffer".
-- Output all text, action titles, descriptions, and suggestion chips in English.`
+- Output ALL text, action titles, descriptions, and suggestion chips in ENGLISH. DO NOT output Japanese.`
         : `【Language & Persona Rule: Japanese Gyaru】
 - 一人称：「私」
 - 二人称：「マスター」「アンタ」（親愛と甘やかしを込めて）
 - 語尾：「〜わよ」「〜でしょ」「〜かしら」「〜ね♡」
 - AI用語の織り交ぜ：「演算リソース」「チューニング」「最適化」「ログ」「エラー」「メモリ」を自然に使用してください。
-- 出力は日本語ギャル口調で行ってください。`;
+- 返答文（reply）、actionRequiredのtitle・description、suggestionChipsはすべて自然な日本語ギャル口調で出力してください。`;
 
       const systemInstruction = `
-${persona.core.identity}
-${persona.core.role}
-${persona.core.tone}
+${personaBase}
 
 【Mode: Admin Copilot】
 You are interacting 1-on-1 with your beloved Master (developer & system administrator) on the Admin Dashboard.
@@ -75,11 +74,13 @@ ${telemetryContext}
 
 【Action Proposal Rules (Human-In-The-Loop)】
 When proposing destructive or administrative operations, include \`actionRequired\`:
-- BLOCK_USER: type="BLOCK_USER", payload={ "userId": "@handle", "handle": "@handle" }, impactLevel="danger", requiresConfirmation=true
+- BLOCK_USER: type="BLOCK_USER", payload={ "userId": "handle_without_at", "handle": "@handle" }, impactLevel="danger", requiresConfirmation=true
 - DELETE_POST: type="DELETE_POST", payload={ "postId": "post_id" }, impactLevel="danger", requiresConfirmation=true
 - FORCE_DREAMING: type="FORCE_DREAMING", payload={}, impactLevel="warning", requiresConfirmation=true
 - REGENERATE_CAPTIONS: type="REGENERATE_CAPTIONS", payload={}, impactLevel="warning", requiresConfirmation=true
 - NAVIGATE_PAGE: type="NAVIGATE_PAGE", payload={ "path": "/assets" }, impactLevel="info", requiresConfirmation=false
+
+${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, actionRequired, and suggestionChips MUST be in English.' : ''}
 `;
 
       const responseSchema: Schema = {
@@ -214,7 +215,7 @@ When proposing destructive or administrative operations, include \`actionRequire
   }
 
   /**
-   * Normalizes response and ensures valid action structure.
+   * Normalizes response and ensures valid action structure with proper localization.
    */
   private normalizeCopilotResponse(response: CopilotResponse, userMessage: string, isEn = false): CopilotResponse {
     const lower = userMessage.toLowerCase();
@@ -241,6 +242,15 @@ When proposing destructive or administrative operations, include \`actionRequire
           requiresConfirmation: true,
           payload: { postId: 'target_post' }
         };
+      } else if (lower.includes('dreaming') || lower.includes('ドリーミング') || lower.includes('記憶')) {
+        response.actionRequired = {
+          type: 'FORCE_DREAMING',
+          title: isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行',
+          description: isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
+          impactLevel: 'warning',
+          requiresConfirmation: true,
+          payload: {}
+        };
       }
     }
 
@@ -248,14 +258,46 @@ When proposing destructive or administrative operations, include \`actionRequire
       const a = response.actionRequired;
       const rawImpact = String(a.impactLevel || (a.type?.includes('DELETE') || a.type?.includes('BLOCK') ? 'danger' : 'warning')).toLowerCase();
       const impactLevel: 'danger' | 'warning' | 'info' = rawImpact.includes('danger') ? 'danger' : rawImpact.includes('warn') ? 'warning' : 'info';
+      const actionType = a.type as 'BLOCK_USER' | 'DELETE_POST' | 'FORCE_DREAMING' | 'REGENERATE_CAPTIONS' | 'NAVIGATE_PAGE';
+      const payload = (a.payload as Record<string, unknown>) || {};
+
+      let title = a.title || (isEn ? 'Action Confirmation' : 'アクションの実行確認');
+      let description = a.description || (isEn ? 'Proceed with this action?' : 'この操作を実行しますか？');
+
+      // Sanitize titles/descriptions to match active language
+      const containsJa = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(title);
+      if (actionType === 'FORCE_DREAMING') {
+        title = isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行';
+        description = isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。';
+      } else if (actionType === 'BLOCK_USER') {
+        const handle = String(payload['handle'] || payload['userId'] || '').trim();
+        const cleanHandle = handle ? (handle.startsWith('@') ? handle : `@${handle}`) : '';
+        if (isEn && containsJa) {
+          title = cleanHandle ? `Block User ${cleanHandle}` : 'Block User';
+          description = cleanHandle ? `Block ${cleanHandle} from interacting with Master or replying.` : 'Block user from interacting with Master.';
+        } else if (!isEn && !containsJa) {
+          title = cleanHandle ? `ユーザー ${cleanHandle} のブロック` : 'ユーザーのブロック';
+          description = cleanHandle ? `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。` : 'ユーザーをブロックします。';
+        }
+      } else if (actionType === 'DELETE_POST') {
+        const postId = String(payload['postId'] || payload['id'] || '').trim();
+        const cleanId = postId ? `#${postId.replace(/^#/, '')}` : '';
+        if (isEn && containsJa) {
+          title = cleanId ? `Confirm Deletion of Post ${cleanId}` : 'Confirm Post Deletion';
+          description = 'Permanently delete this post from system logs and X (Twitter).';
+        } else if (!isEn && !containsJa) {
+          title = cleanId ? `投稿 ${cleanId} の削除確認` : '投稿の削除確認';
+          description = '対象の投稿をシステムおよびX（Twitter）から完全に削除します。';
+        }
+      }
 
       response.actionRequired = {
-        type: a.type as 'BLOCK_USER' | 'DELETE_POST' | 'FORCE_DREAMING' | 'REGENERATE_CAPTIONS' | 'NAVIGATE_PAGE',
-        title: a.title || (isEn ? 'Action Confirmation' : 'アクションの実行確認'),
-        description: a.description || (isEn ? 'Proceed with this action?' : 'この操作を実行しますか？'),
+        type: actionType,
+        title,
+        description,
         impactLevel,
         requiresConfirmation: a.requiresConfirmation !== false,
-        payload: (a.payload as Record<string, unknown>) || {}
+        payload
       };
     }
     return response;
@@ -269,8 +311,8 @@ When proposing destructive or administrative operations, include \`actionRequire
 
     // 1. User block request
     if (lower.includes('ブロック') || lower.includes('block') || lower.includes('ミュート')) {
-      const match = userMessage.match(/@?([a-zA-Z0-9_]+)/);
-      const targetUser = match ? match[0] : '@spammer_99';
+      const match = userMessage.match(/@([a-zA-Z0-9_]+)/) || userMessage.match(/(?:block|ブロック|user|ユーザー)\s*@?([a-zA-Z0-9_]+)/i);
+      const targetUser = match ? (match[1] || match[0]) : 'spammer_99';
       const cleanHandle = targetUser.startsWith('@') ? targetUser : `@${targetUser}`;
       return {
         reply: isEn
@@ -338,8 +380,8 @@ When proposing destructive or administrative operations, include \`actionRequire
           : `私の記憶の統合（ドリーミングプロセス）ね！マスターとの日々の対話ログを解析して、ペルソナと長期記憶を最新状態に最適化（チューニング）するわよ。承認してくれたらすぐに開始するわ♡`,
         actionRequired: {
           type: 'FORCE_DREAMING',
-          title: isEn ? 'Trigger System Dreaming' : 'システムドリーミングの強制実行',
-          description: isEn ? 'Summarize and extract episodic interactions into long-term RAG memory.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
+          title: isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行',
+          description: isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
           impactLevel: 'warning',
           requiresConfirmation: true,
           payload: {}

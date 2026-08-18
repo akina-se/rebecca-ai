@@ -5,11 +5,6 @@ import { GoogleGenAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import { config } from '../../config';
 
-let ai: GoogleGenAI | null = null;
-if (config.gemini.apiKey) {
-  ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
-}
-
 export interface UploadedFile {
   originalname: string;
   mimetype: string;
@@ -21,6 +16,7 @@ export interface UploadedFile {
  */
 export class AssetsUseCase {
   private storage: Storage;
+  private ai?: GoogleGenAI;
 
   /**
    * Creates an instance of AssetsUseCase.
@@ -29,6 +25,9 @@ export class AssetsUseCase {
    */
   constructor(private repo: AssetsRepository) {
     this.storage = new Storage();
+    if (config.gemini.apiKey) {
+      this.ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+    }
   }
 
   /**
@@ -118,9 +117,9 @@ export class AssetsUseCase {
       let embedding: number[] = [];
       let status: AssetStatus = AssetStatus.SUCCESS;
 
-      if (ai) {
+      if (this.ai) {
         try {
-          const response = await ai.models.generateContent({
+          const response = await this.ai.models.generateContent({
             model: config.gemini.model,
             contents: [
               {
@@ -140,7 +139,7 @@ export class AssetsUseCase {
 
           if (caption) {
             try {
-              const embResponse = await ai.models.embedContent({
+              const embResponse = await this.ai.models.embedContent({
                 model: config.gemini.embeddingModel,
                 contents: caption
               });
@@ -203,9 +202,9 @@ export class AssetsUseCase {
       let embedding: number[] = [];
       let status: AssetStatus = AssetStatus.FAILED;
 
-      if (ai) {
+      if (this.ai) {
         try {
-          const response = await ai.models.generateContent({
+          const response = await this.ai.models.generateContent({
             model: config.gemini.model,
             contents: [
               `Please generate a descriptive Japanese caption for anime asset: ${asset.filename}`
@@ -216,7 +215,7 @@ export class AssetsUseCase {
           if (newCaption) {
             status = AssetStatus.SUCCESS;
             try {
-              const embResponse = await ai.models.embedContent({
+              const embResponse = await this.ai.models.embedContent({
                 model: config.gemini.embeddingModel,
                 contents: newCaption
               });
