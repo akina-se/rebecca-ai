@@ -36,9 +36,5 @@ export class SettingsPageComponent {
     const value = this.settingsService.timezoneOptions.find(o => o.label === label)?.value || 'Asia/Tokyo';
     this.settingsService.setTimezone(value);
   }
-
-  mockAlert(msg: string) {
-    alert(msg);
-  }
 }
 
