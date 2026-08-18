@@ -45,6 +45,12 @@ export class ReplyTaskUseCase {
             return { status: 'rate_limited', reason: rateLimit.reason };
         }
         let userData = await deps.firestore.getUserDoc(authorId);
+        if (userData?.status === 'BLOCKED') {
+            console.log(`User ${sanitizeForLog(authorId)} is blocked by admin. Skipping reply for tweet ${sanitizeForLog(tweetId)}.`);
+            await deps.firestore.markMentionProcessed(tweetId);
+            return { status: 'blocked', reason: 'User is blocked by admin' };
+        }
+
         let isFirstTime = false;
         if (!userData) {
             userData = { episodicBuffer: [], coreProfile: {} };
