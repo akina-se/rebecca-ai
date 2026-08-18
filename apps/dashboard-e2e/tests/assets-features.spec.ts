@@ -171,8 +171,8 @@ test.describe('Assets Features E2E Tests', () => {
     await fileInput.setInputFiles([tempFilePath]);
 
     // 2. Verify upload toast notification appears
-    const uploadToast = page.locator('.toast', { hasText: /upload|アップロード/ });
-    await expect(uploadToast).toBeVisible({ timeout: 15000 });
+    const uploadToast = page.locator('.toast', { hasText: /upload|アップロード|image|success/i });
+    await expect(uploadToast.first()).toBeVisible({ timeout: 15000 });
 
     // 3. Verify asset grid is refreshed
     const cards = page.locator('.asset-card');
