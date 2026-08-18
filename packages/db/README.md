@@ -4,7 +4,7 @@ Provides the typed collections layer and schema bindings for the Firestore datab
 
 ---
 
-## 🏗️ Architectural Role
+## Architectural Role
 By encapsulating database pathways in a shared package, we guarantee:
 1. **Schema Consistency**: Changes to database documents (e.g., changing status Enums to uppercase) are immediately compiled and checked across all consuming applications (`bot-backend`, `dashboard-backend`, and `functions`).
 2. **Collection Path Safety**: Centralizes raw string paths to database collections, preventing spelling errors or collection path drifts during migration.

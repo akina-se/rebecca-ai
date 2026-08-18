@@ -4,7 +4,7 @@ The `bot-backend` is the core execution engine of Rebecca AI, operating as a ser
 
 ---
 
-## 🧠 Core Features & Algorithms
+## Core Features & Algorithms
 
 ### 1. Triple-Buffer Memory System
 Rebecca implements a multi-tiered memory architecture to keep prompts highly relevant while maintaining computational cost efficiency:
@@ -27,7 +27,7 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 
 ---
 
-## 📡 Internal gRPC API Specification
+## Internal gRPC API Specification
 
 `bot-backend` exposes a gRPC server on port `50051` to allow internal administration tools (like `dashboard-backend` BFF) to trigger administrative commands.
 
@@ -45,7 +45,7 @@ Response: `DeleteTweetResponse`
 
 ---
 
-## 🛠️ CLI Development Scripts
+## CLI Development Scripts
 
 The following helper scripts are available to developers for manual maintenance and local CLI simulation:
 
@@ -62,7 +62,7 @@ The following helper scripts are available to developers for manual maintenance 
 
 ---
 
-## ⚙️ Environment Variables
+## Environment Variables
 
 Configure these variables in your local `.env` or deployment configuration:
 

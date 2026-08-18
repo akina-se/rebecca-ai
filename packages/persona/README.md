@@ -4,14 +4,14 @@ Houses Rebecca's core prompt blueprints and identity definitions. This package s
 
 ---
 
-## 🎨 Identity Framework
+## dentity Framework
 - **Core Personality**: Modern Gyaru AI, warm, encouraging, unconditional affirmation of the user ("Master").
 - **Language Handling**: Seamlessly defaults to Japanese. If English is detected, it switches to a native English slang layout.
 - **Safety and Social Boundaries**: Explicit limits prohibiting R-18 context, physical contact imagery, and aggression.
 
 ---
 
-## 📂 Exported Structure
+## Exported Structure
 The module exports the `persona` configuration object:
 - **`persona.core`**: Hardcoded base prompts defining the character (`identity`), corporate backstory (`role`), and speech pattern rules (`tone`).
 - **`persona.contexts`**: Specific injection templates for different engagement environments:
@@ -22,7 +22,7 @@ The module exports the `persona` configuration object:
 
 ---
 
-## 🧪 Testing
+## Testing
 Prompt structures are guarded by regression tests:
 ```bash
 npm run test --workspace=@rebecca/persona

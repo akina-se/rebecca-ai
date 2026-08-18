@@ -4,7 +4,7 @@ This workspace contains serverless **Firebase Cloud Functions (v2)** that handle
 
 ---
 
-## 🏗️ Architectural Pattern: CQRS Aggregator
+## Architectural Pattern: CQRS Aggregator
 
 To prevent Firestore read limit exhaustion and ensure fast dashboard queries, we separate write-heavy transactional data from read-heavy analytics models (**Command Query Responsibility Segregation / CQRS**).
 
@@ -33,7 +33,7 @@ graph TD
 
 ---
 
-## ⚡ Available Triggers
+## Available Triggers
 
 ### 1. `onConversationLogCreated`
 - **Trigger Source**: Firestore document creation on collection `conversation_logs/{logId}`.
@@ -43,7 +43,7 @@ graph TD
 
 ---
 
-## 🚀 Deployment & Development
+## Deployment & Development
 
 ### 1. Local Emulation
 The Cloud Functions run locally inside the Firebase Emulator Suite.

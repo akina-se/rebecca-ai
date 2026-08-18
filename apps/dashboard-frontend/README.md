@@ -4,7 +4,7 @@ An Angular-based, highly customized administration control panel for Rebecca AI,
 
 ---
 
-## 🎨 Design System & Aesthetics
+## Design System & Aesthetics
 - **Theme**: Chibi Cyberpunk / Glassmorphism.
 - **Color Palette**: Neon purple primary (`--color-primary`), dark translucent glass panels (`glass-panel`), and bright status indicators.
 - **Typography & Icons**: Inter / Outfit fonts and Google Material Icons.
@@ -12,7 +12,7 @@ An Angular-based, highly customized administration control panel for Rebecca AI,
 
 ---
 
-## 🏗️ Clean Architecture (Ports & Adapters)
+## Clean Architecture (Ports & Adapters)
 To avoid hard-coupling the Angular application to a specific backend framework or HTTP library, the application is structured using the **Ports & Adapters (Hexagonal) Architecture**:
 
 ```
@@ -37,7 +37,7 @@ The app components inject core port tokens (e.g. `MEMORY_REPOSITORY`), which are
 
 ---
 
-## 🚀 Setup & Execution
+## Setup & Execution
 
 ### 1. Install Workspace Dependencies
 Ensure packages are installed from the monorepo root:

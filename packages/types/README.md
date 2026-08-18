@@ -4,7 +4,7 @@ Houses common TypeScript interfaces, type definitions, and Enums used across all
 
 ---
 
-## 🛠️ Key Domain Enums
+## Key Domain Enums
 To prevent inconsistencies in status processing, we enforce unified Enums:
 
 ### `UserStatus`
@@ -21,7 +21,7 @@ Tracks GCS and database image processing stages.
 
 ---
 
-## 📂 Key Data Interfaces
+## Key Data Interfaces
 - `MemoryLayer`: Metadata fields for system prompts.
 - `MemoryContent`: Raw content wrapper for Layer 0/1/2 summaries.
 - `RawConversationLog`: Represents Firestore document schema for interactions.
