@@ -288,6 +288,95 @@ describe('gemini.ts', () => {
         });
     });
 
+    describe('generateNewsPost', () => {
+        it('should handle array of headlines and string prompt', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'News post content' });
+
+            const res1 = await gemini.generateNewsPost('sys', ['headline 1', 'headline 2']);
+            expect(res1).toBe('News post content');
+
+            mockGenerateContent.mockResolvedValueOnce({ text: 'News post content 2' });
+            const res2 = await gemini.generateNewsPost('sys', 'single prompt');
+            expect(res2).toBe('News post content 2');
+        });
+
+        it('should return empty string if prompt is empty or error occurs', async () => {
+            const { gemini } = getGeminiModule();
+            expect(await gemini.generateNewsPost('sys', [])).toBe('');
+            expect(await gemini.generateNewsPost('sys', '')).toBe('');
+
+            mockGenerateContent.mockRejectedValueOnce(new Error('Gemini error'));
+            expect(await gemini.generateNewsPost('sys', 'prompt')).toBe('');
+        });
+    });
+
+    describe('generateTimelineSummary', () => {
+        it('should handle prompt array and fallback to previous summary on error or empty', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'New summary' });
+
+            const res = await gemini.generateTimelineSummary(['post1', 'post2'], 'old summary');
+            expect(res).toBe('New summary');
+
+            mockGenerateContent.mockRejectedValueOnce(new Error('Gemini error'));
+            const resFallback = await gemini.generateTimelineSummary('prompt', 'old summary');
+            expect(resFallback).toBe('old summary');
+
+            expect(await gemini.generateTimelineSummary([], 'prev')).toBe('prev');
+        });
+    });
+
+    describe('auditEvolutionPrompt', () => {
+        it('should strip json and generic markdown blocks', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '```json\n{"pass": true, "reason": "Looks good"}\n```',
+            });
+
+            const res = await gemini.auditEvolutionPrompt('cand', 'audit instructions');
+            expect(res).toEqual({ pass: true, reason: 'Looks good' });
+
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '```\n{"pass": false, "reason": "Unsafe"}\n```',
+            });
+            const res2 = await gemini.auditEvolutionPrompt('cand', 'audit instructions');
+            expect(res2).toEqual({ pass: false, reason: 'Unsafe' });
+        });
+
+        it('should return pass: false on parse error', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'INVALID_JSON' });
+            const res = await gemini.auditEvolutionPrompt('cand', 'audit');
+            expect(res.pass).toBe(false);
+        });
+    });
+
+    describe('generateSearchQuery', () => {
+        it('should handle string and array prompts and fallback on error', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'search keywords' });
+
+            const res1 = await gemini.generateSearchQuery('sys', ['ctx1', 'ctx2']);
+            expect(res1).toBe('search keywords');
+
+            mockGenerateContent.mockRejectedValueOnce(new Error('Search query error'));
+            const resFallback = await gemini.generateSearchQuery('sys', 'initial query');
+            expect(resFallback).toBe('initial query');
+
+            expect(await gemini.generateSearchQuery('sys', [])).toEqual([]);
+        });
+    });
+
+    describe('analyzeUserProfile', () => {
+        it('should catch error and return empty object', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockRejectedValueOnce(new Error('Analysis failed'));
+            const res = await gemini.analyzeUserProfile('user bio');
+            expect(res).toEqual({});
+        });
+    });
+
     describe('Missing Credentials Fallback (!ai)', () => {
         it('should return mock responses when API key is missing', async () => {
             const originalKey = config.gemini.apiKey;
@@ -297,9 +386,9 @@ describe('gemini.ts', () => {
             expect(await gemini.generateReply('sys', [], 'test')).toBe('Mock AI response');
             expect(await gemini.generateDreaming('sys', [], {})).toEqual({ attributes: [], preferences: [], concerns: [], important_memories: [] });
             expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
-            expect(await gemini.auditEvolutionPrompt('cand')).toEqual({ pass: true });
+            expect(await gemini.auditEvolutionPrompt('cand', 'audit')).toEqual({ pass: true });
             expect(await gemini.analyzeUserProfile('desc')).toEqual({});
-            expect(await gemini.generateNewsPost(['news'])).toBe('');
+            expect(await gemini.generateNewsPost('sys', ['news'])).toBe('');
             expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
             expect(await gemini.detectLanguage('test')).toBe('ja');
             expect(await gemini.generateEmbedding('test')).toEqual([]);

@@ -1,10 +1,11 @@
 import 'dotenv/config';
-import { GoogleGenAI  } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import * as gemini from '../../src/services/gemini';
-import { buildSystemPrompt  } from '../../src/core/contextInjector';
-import { Language } from '../../src/core/prompt';
+import { buildSystemPrompt } from '../../src/core/contextInjector';
+import { Language } from '@rebecca/persona';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'mock_api_key' && process.env.GEMINI_API_KEY !== 'test-key');
+const ai = hasApiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
 const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.1-flash-lite';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,7 +51,9 @@ ${rule}
     }
 };
 
-describe('LLM as a Judge: Prompt Evaluation', () => {
+const runEval = hasApiKey ? describe : describe.skip;
+
+runEval('LLM as a Judge: Prompt Evaluation', () => {
     // LLM calls can take some time, so we extend the timeout to 30 seconds
     jest.setTimeout(30000);
 
