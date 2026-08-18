@@ -56,6 +56,23 @@ describe('Stealth Onboarding Batch', () => {
         expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalledWith('user2');
     });
 
+    it('should skip adding follower to list if follower is blocked by admin', async () => {
+        deps.xApi.getFollowers.mockResolvedValue({
+            data: [
+                { id: 'blocked_user', username: 'badactor' }
+            ]
+        });
+        deps.firestore.hasProcessedFollower.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({ status: 'BLOCKED' });
+
+        const result = await new StealthOnboardingUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(0);
+        expect(deps.xApi.addListMember).not.toHaveBeenCalled();
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('blocked_user');
+    });
+
     it('should return successfully with 0 processed if there are no followers', async () => {
         deps.xApi.getFollowers.mockResolvedValue({ data: [] });
 

@@ -53,6 +53,34 @@ describe('Random Engagement Batch', () => {
         expect(deps.firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
     });
 
+    it('should skip blocked user during random engagement selection', async () => {
+        deps.xApi.getListMembers.mockResolvedValue({
+            data: [
+                { id: 'blocked_u1', username: 'blocked_u1' },
+                { id: 'active_u2', username: 'active_u2' }
+            ]
+        });
+
+        deps.firestore.getUserDoc.mockImplementation(async (id: string) => {
+            if (id === 'blocked_u1') return { status: 'BLOCKED' };
+            return { status: 'ACTIVE' };
+        });
+
+        deps.firestore.getLastListInteraction.mockResolvedValue(null);
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
+        deps.xApi.getUserProfile.mockResolvedValue({ data: { description: '' } });
+        deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't2', text: 'hi' }] });
+        deps.gemini.analyzeUserProfile.mockResolvedValue({});
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateReply.mockResolvedValue('@active_u2 Hello!');
+
+        const result = await new RandomEngagementUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processedUser).toBe('active_u2');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('@active_u2 Hello!');
+    });
+
     it('should skip if all users have already been engaged', async () => {
         deps.xApi.getListMembers.mockResolvedValue({
             data: [

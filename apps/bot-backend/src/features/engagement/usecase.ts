@@ -48,6 +48,11 @@ export class RandomEngagementUseCase {
         let targetUser = null;
 
         for (const user of shuffled) {
+            const userDoc = await this.deps.firestore.getUserDoc(user.id);
+            if (userDoc?.status === 'BLOCKED') {
+                console.log(`User @${user.username} (${user.id}) is blocked by admin. Skipping random engagement.`);
+                continue;
+            }
             const lastInteraction = await this.deps.firestore.getLastListInteraction(user.id);
             if (!lastInteraction) {
                 targetUser = user;

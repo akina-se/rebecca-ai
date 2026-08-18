@@ -56,6 +56,12 @@ export class StealthOnboardingUseCase {
                 }
 
                 console.log(`New follower detected: ${follower.username} (${follower.id})`);
+                const userDoc = await this.deps.firestore.getUserDoc(follower.id);
+                if (userDoc?.status === 'BLOCKED') {
+                    console.log(`Follower @${follower.username} (${follower.id}) is blocked by admin. Skipping list addition.`);
+                    await this.deps.firestore.markFollowerProcessed(follower.id);
+                    continue;
+                }
                 const added = await this.deps.xApi.addListMember(targetListId, follower.id);
                 if (added) {
                     await this.deps.firestore.markFollowerProcessed(follower.id);
