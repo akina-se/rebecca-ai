@@ -21,24 +21,40 @@ export class UsersRepository {
 
   private resolveUserName(rawId: string, data: Record<string, unknown>): string {
     if (data.name && data.name !== 'Unknown') return String(data.name);
-    if (data.coreProfile) {
-      if (typeof data.coreProfile === 'object' && data.coreProfile !== null) {
-        const cp = data.coreProfile as Record<string, unknown>;
-        if (cp.name && cp.name !== 'Unknown') {
-          return String(cp.name);
-        }
-      }
-      if (typeof data.coreProfile === 'string') {
-        try {
-          const parsed = JSON.parse(data.coreProfile);
-          if (parsed && parsed.name && parsed.name !== 'Unknown') return String(parsed.name);
-        } catch {
-          // Ignore JSON parse error
-        }
+
+    if (typeof data.coreProfile === 'object' && data.coreProfile !== null) {
+      const cp = data.coreProfile as Record<string, unknown>;
+      if (cp.name && cp.name !== 'Unknown') return String(cp.name);
+    } else if (typeof data.coreProfile === 'string') {
+      try {
+        const parsed = JSON.parse(data.coreProfile);
+        if (parsed?.name && parsed.name !== 'Unknown') return String(parsed.name);
+      } catch {
+        // Ignore JSON parse error
       }
     }
+
     const formatted = rawId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     return formatted || `@${rawId}`;
+  }
+
+  private resolveUserStatus(data: Record<string, unknown>): UserStatus {
+    const s = String(data.status || '').toUpperCase();
+    if (s === 'BLOCKED') return UserStatus.BLOCKED;
+    if (s === 'MUTED') return UserStatus.MUTED;
+    return UserStatus.ACTIVE;
+  }
+
+  private calculateRagStats(data: Record<string, unknown>): { ragMemoriesCount: number; ragMemoriesStatus: 'Generated' | 'None' } {
+    const hasCoreProfile = !!data.coreProfile && (typeof data.coreProfile === 'object' ? Object.keys(data.coreProfile).length > 0 : String(data.coreProfile).length > 2);
+    const hasEpisodic = Array.isArray(data.episodicBuffer) && data.episodicBuffer.length > 0;
+    const cp = typeof data.coreProfile === 'object' && data.coreProfile !== null ? (data.coreProfile as Record<string, unknown>) : null;
+    const importantMemoriesCount = Array.isArray(cp?.important_memories) ? cp.important_memories.length : 0;
+    const episodicCount = Array.isArray(data.episodicBuffer) ? data.episodicBuffer.length : 0;
+    const ragMemoriesCount = importantMemoriesCount + episodicCount || (hasCoreProfile ? 1 : 0);
+    const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
+
+    return { ragMemoriesCount, ragMemoriesStatus };
   }
 
   /**
@@ -139,22 +155,8 @@ export class UsersRepository {
 
     const data = usersData.map(u => {
       const data = u.data;
-      let status: UserStatus = UserStatus.ACTIVE;
-      if (data.status) {
-        const s = String(data.status).toUpperCase();
-        if (s === 'ACTIVE') status = UserStatus.ACTIVE;
-        else if (s === 'BLOCKED') status = UserStatus.BLOCKED;
-        else if (s === 'MUTED') status = UserStatus.MUTED;
-      }
-
-      // Calculate real RAG memories status and count
-      const hasCoreProfile = !!data.coreProfile && (typeof data.coreProfile === 'object' ? Object.keys(data.coreProfile).length > 0 : String(data.coreProfile).length > 2);
-      const hasEpisodic = Array.isArray(data.episodicBuffer) && data.episodicBuffer.length > 0;
-      const cp = typeof data.coreProfile === 'object' && data.coreProfile !== null ? (data.coreProfile as Record<string, unknown>) : null;
-      const importantMemoriesCount = Array.isArray(cp?.important_memories) ? cp.important_memories.length : 0;
-      const episodicCount = Array.isArray(data.episodicBuffer) ? data.episodicBuffer.length : 0;
-      const ragMemoriesCount = importantMemoriesCount + episodicCount || (hasCoreProfile ? 1 : 0);
-      const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
+      const status = this.resolveUserStatus(data);
+      const { ragMemoriesCount, ragMemoriesStatus } = this.calculateRagStats(data);
 
       return {
         id: u.id,
@@ -213,15 +215,10 @@ export class UsersRepository {
       return tA.localeCompare(tB);
     });
 
-    // Handle beforeTimestamp pagination filter
     if (beforeTimestamp) {
-      sortedDocs = sortedDocs.filter(d => {
-        const t = d.data().timestamp || '';
-        return t < beforeTimestamp;
-      });
+      sortedDocs = sortedDocs.filter(d => (d.data().timestamp || '') < beforeTimestamp);
     }
 
-    // Handle limit filter
     if (limit) {
       sortedDocs = sortedDocs.slice(-limit);
     }
@@ -245,22 +242,8 @@ export class UsersRepository {
       }
     }
 
-    let status: UserStatus = UserStatus.ACTIVE;
-    if (data.status) {
-      const s = String(data.status).toUpperCase();
-      if (s === 'ACTIVE') status = UserStatus.ACTIVE;
-      else if (s === 'BLOCKED') status = UserStatus.BLOCKED;
-      else if (s === 'MUTED') status = UserStatus.MUTED;
-    }
-
-    // Calculate real RAG memories status and count
-    const hasCoreProfile = !!data.coreProfile && (typeof data.coreProfile === 'object' ? Object.keys(data.coreProfile).length > 0 : String(data.coreProfile).length > 2);
-    const hasEpisodic = Array.isArray(data.episodicBuffer) && data.episodicBuffer.length > 0;
-    const cp = typeof data.coreProfile === 'object' && data.coreProfile !== null ? (data.coreProfile as Record<string, unknown>) : null;
-    const importantMemoriesCount = Array.isArray(cp?.important_memories) ? cp.important_memories.length : 0;
-    const episodicCount = Array.isArray(data.episodicBuffer) ? data.episodicBuffer.length : 0;
-    const ragMemoriesCount = importantMemoriesCount + episodicCount || (hasCoreProfile ? 1 : 0);
-    const ragMemoriesStatus = (hasCoreProfile || hasEpisodic) ? 'Generated' : 'None';
+    const status = this.resolveUserStatus(data);
+    const { ragMemoriesCount, ragMemoriesStatus } = this.calculateRagStats(data);
 
     return {
       id: rawId,
