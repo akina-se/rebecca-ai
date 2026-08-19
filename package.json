@@ -19,6 +19,7 @@
     "test:coverage-summary": "node scripts/ci-coverage-summary.js",
     "license-check": "turbo run license-check",
     "secret-check": "turbo run secret-check",
+    "register-admin": "npm run register-admin --workspace=dashboard-backend --",
     "audit:fix": "npm audit fix"
   },
   "devDependencies": {
