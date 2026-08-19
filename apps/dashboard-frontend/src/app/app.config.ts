@@ -1,6 +1,7 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { ConfigService } from './core/services/config.service';
 
 import { routes } from './app.routes';
 import { DASHBOARD_REPOSITORY } from './core/ports/dashboard.repository';
@@ -25,6 +26,12 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }), 
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (configService: ConfigService) => () => configService.loadAppConfig(),
+      deps: [ConfigService],
+      multi: true,
+    },
     { 
       provide: DASHBOARD_REPOSITORY, 
       useClass: HttpDashboardRepository 
