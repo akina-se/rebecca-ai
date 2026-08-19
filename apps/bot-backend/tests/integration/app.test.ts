@@ -307,6 +307,8 @@ describe('Integration Tests', () => {
     describe('GET /batch/stealth-onboarding', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
+            require('../../src/config').default.xApi.myUserId = 'test_my_user_id';
+            require('../../src/config').default.xApi.targetListId = 'test_target_list_id';
         });
         it('should process stealth onboarding successfully', async () => {
             (xApi.getFollowers as jest.Mock).mockResolvedValueOnce({ data: [{ id: 'follower_1', username: 'test', description: 'bio' }] });
@@ -324,6 +326,8 @@ describe('Integration Tests', () => {
     describe('GET /batch/random-engagement', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
+            require('../../src/config').default.xApi.myUserId = 'test_my_user_id';
+            require('../../src/config').default.xApi.targetListId = 'test_target_list_id';
         });
         it('should process random engagement successfully', async () => {
             (xApi.getListMembers as jest.Mock).mockResolvedValueOnce({ data: [{ id: 'target_1', username: 'target_user' }] });
