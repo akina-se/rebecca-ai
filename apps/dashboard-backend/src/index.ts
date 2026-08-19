@@ -16,6 +16,7 @@ import { initializeUsersModule } from './features/users';
 import { initializeSystemMemoryModule } from './features/system-memory';
 import { initializeAssetsModule } from './features/assets';
 import { initializeSettingsModule } from './features/settings';
+import { initializeConfigModule } from './features/config';
 
 import { config } from './config';
 
@@ -49,9 +50,11 @@ const usersRouter = initializeUsersModule(firestore);
 const systemMemoryRouter = initializeSystemMemoryModule(firestore);
 const assetsRouter = initializeAssetsModule(firestore);
 const settingsRouter = initializeSettingsModule(firestore);
+const configRouter = initializeConfigModule();
 
 // Mount Routes
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/config', configRouter);
 app.use('/api/v1/copilot', copilotRouter);
 // Note: Timeline handles /metrics and /posts
 app.use('/api/v1', timelineRouter);

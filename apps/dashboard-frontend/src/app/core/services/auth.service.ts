@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, User, signOut, onAuthStateChanged, connectAuthEmulator } from 'firebase/auth';
-import { environment } from '../../../environments/environment';
+import { ConfigService } from './config.service';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 /**
@@ -12,6 +12,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
+  private configService = inject(ConfigService);
   private auth;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
@@ -19,10 +20,11 @@ export class AuthService {
   private initPromise: Promise<void>;
 
   constructor() {
-    const app = !getApps().length ? initializeApp(environment.firebase) : getApp();
+    const firebaseConfig = this.configService.firebaseConfig;
+    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     this.auth = getAuth(app);
     
-    if (!environment.production && (environment as Record<string, unknown>)['useEmulators']) {
+    if (this.configService.isEmulator) {
       connectAuthEmulator(this.auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     }
     
