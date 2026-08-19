@@ -67,15 +67,14 @@ export class SettingsService {
   private fetchRemoteSettings(): void {
     this.http.get<{ data: SystemSettings }>(`${this.baseUrl}/settings`).subscribe({
       next: (res) => {
-        if (res.data) {
-          if (res.data.timezone && !localStorage.getItem(this.TZ_KEY)) {
-            this.selectedTz.set(res.data.timezone);
-            localStorage.setItem(this.TZ_KEY, res.data.timezone);
-          }
-          if (res.data.language && !localStorage.getItem(this.LANG_KEY)) {
-            this.selectedLang.set(res.data.language);
-            localStorage.setItem(this.LANG_KEY, res.data.language);
-          }
+        if (!res.data) return;
+        if (res.data.timezone && !localStorage.getItem(this.TZ_KEY)) {
+          this.selectedTz.set(res.data.timezone);
+          localStorage.setItem(this.TZ_KEY, res.data.timezone);
+        }
+        if (res.data.language && !localStorage.getItem(this.LANG_KEY)) {
+          this.selectedLang.set(res.data.language);
+          localStorage.setItem(this.LANG_KEY, res.data.language);
         }
       },
       error: () => {

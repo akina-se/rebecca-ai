@@ -218,89 +218,108 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
    * Normalizes response and ensures valid action structure with proper localization.
    */
   private normalizeCopilotResponse(response: CopilotResponse, userMessage: string, isEn = false): CopilotResponse {
-    const lower = userMessage.toLowerCase();
-
-    // If Gemini did not return actionRequired, check if user explicitly requested an action
     if (!response.actionRequired) {
-      if (lower.includes('ブロック') || lower.includes('block') || lower.includes('ミュート')) {
-        const match = userMessage.match(/@([a-zA-Z0-9_]+)/);
-        const handle = match ? match[0] : '@toxic_user';
-        response.actionRequired = {
-          type: 'BLOCK_USER',
-          title: isEn ? `Block User ${handle}` : `ユーザー ${handle} のブロック`,
-          description: isEn ? `Block ${handle} from interacting with Master or replying.` : `${handle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
-          impactLevel: 'danger',
-          requiresConfirmation: true,
-          payload: { userId: handle.replace('@', ''), handle }
-        };
-      } else if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して')) {
-        response.actionRequired = {
-          type: 'DELETE_POST',
-          title: isEn ? 'Confirm Post Deletion' : '投稿の削除確認',
-          description: isEn ? 'Permanently delete this post from system logs and X (Twitter).' : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
-          impactLevel: 'danger',
-          requiresConfirmation: true,
-          payload: { postId: 'target_post' }
-        };
-      } else if (lower.includes('dreaming') || lower.includes('ドリーミング') || lower.includes('記憶')) {
-        response.actionRequired = {
-          type: 'FORCE_DREAMING',
-          title: isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行',
-          description: isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
-          impactLevel: 'warning',
-          requiresConfirmation: true,
-          payload: {}
-        };
-      }
+      response.actionRequired = this.detectExplicitUserAction(userMessage, isEn);
     }
 
     if (response.actionRequired) {
-      const a = response.actionRequired;
-      const rawImpact = String(a.impactLevel || (a.type?.includes('DELETE') || a.type?.includes('BLOCK') ? 'danger' : 'warning')).toLowerCase();
-      const impactLevel: 'danger' | 'warning' | 'info' = rawImpact.includes('danger') ? 'danger' : rawImpact.includes('warn') ? 'warning' : 'info';
-      const actionType = a.type as 'BLOCK_USER' | 'DELETE_POST' | 'FORCE_DREAMING' | 'REGENERATE_CAPTIONS' | 'NAVIGATE_PAGE';
-      const payload = (a.payload as Record<string, unknown>) || {};
+      response.actionRequired = this.localizeActionCard(response.actionRequired, isEn);
+    }
 
-      let title = a.title || (isEn ? 'Action Confirmation' : 'アクションの実行確認');
-      let description = a.description || (isEn ? 'Proceed with this action?' : 'この操作を実行しますか？');
+    return response;
+  }
 
-      // Sanitize titles/descriptions to match active language
-      const containsJa = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(title);
-      if (actionType === 'FORCE_DREAMING') {
-        title = isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行';
-        description = isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。';
-      } else if (actionType === 'BLOCK_USER') {
-        const handle = String(payload['handle'] || payload['userId'] || '').trim();
-        const cleanHandle = handle ? (handle.startsWith('@') ? handle : `@${handle}`) : '';
-        if (isEn && containsJa) {
-          title = cleanHandle ? `Block User ${cleanHandle}` : 'Block User';
-          description = cleanHandle ? `Block ${cleanHandle} from interacting with Master or replying.` : 'Block user from interacting with Master.';
-        } else if (!isEn && !containsJa) {
-          title = cleanHandle ? `ユーザー ${cleanHandle} のブロック` : 'ユーザーのブロック';
-          description = cleanHandle ? `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。` : 'ユーザーをブロックします。';
-        }
-      } else if (actionType === 'DELETE_POST') {
-        const postId = String(payload['postId'] || payload['id'] || '').trim();
-        const cleanId = postId ? `#${postId.replace(/^#/, '')}` : '';
-        if (isEn && containsJa) {
-          title = cleanId ? `Confirm Deletion of Post ${cleanId}` : 'Confirm Post Deletion';
-          description = 'Permanently delete this post from system logs and X (Twitter).';
-        } else if (!isEn && !containsJa) {
-          title = cleanId ? `投稿 ${cleanId} の削除確認` : '投稿の削除確認';
-          description = '対象の投稿をシステムおよびX（Twitter）から完全に削除します。';
-        }
-      }
+  /**
+   * Detects explicit user intent from message text if AI model did not generate an action card.
+   */
+  private detectExplicitUserAction(userMessage: string, isEn: boolean): CopilotResponse['actionRequired'] {
+    const lower = userMessage.toLowerCase();
 
-      response.actionRequired = {
-        type: actionType,
-        title,
-        description,
-        impactLevel,
-        requiresConfirmation: a.requiresConfirmation !== false,
-        payload
+    if (lower.includes('ブロック') || lower.includes('block') || lower.includes('ミュート')) {
+      const match = userMessage.match(/@([a-zA-Z0-9_]+)/);
+      const handle = match ? match[0] : '@toxic_user';
+      return {
+        type: 'BLOCK_USER',
+        title: isEn ? `Block User ${handle}` : `ユーザー ${handle} のブロック`,
+        description: isEn ? `Block ${handle} from interacting with Master or replying.` : `${handle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
+        impactLevel: 'danger',
+        requiresConfirmation: true,
+        payload: { userId: handle.replace('@', ''), handle }
       };
     }
-    return response;
+
+    if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して')) {
+      return {
+        type: 'DELETE_POST',
+        title: isEn ? 'Confirm Post Deletion' : '投稿の削除確認',
+        description: isEn ? 'Permanently delete this post from system logs and X (Twitter).' : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
+        impactLevel: 'danger',
+        requiresConfirmation: true,
+        payload: { postId: 'target_post' }
+      };
+    }
+
+    if (lower.includes('dreaming') || lower.includes('ドリーミング') || lower.includes('記憶')) {
+      return {
+        type: 'FORCE_DREAMING',
+        title: isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行',
+        description: isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。',
+        impactLevel: 'warning',
+        requiresConfirmation: true,
+        payload: {}
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Sanitizes and localizes action card title, description, and impact levels.
+   */
+  private localizeActionCard(a: NonNullable<CopilotResponse['actionRequired']>, isEn: boolean): CopilotResponse['actionRequired'] {
+    const rawImpact = String(a.impactLevel || (a.type?.includes('DELETE') || a.type?.includes('BLOCK') ? 'danger' : 'warning')).toLowerCase();
+    const impactLevel: 'danger' | 'warning' | 'info' = rawImpact.includes('danger') ? 'danger' : rawImpact.includes('warn') ? 'warning' : 'info';
+    const actionType = a.type as 'BLOCK_USER' | 'DELETE_POST' | 'FORCE_DREAMING' | 'REGENERATE_CAPTIONS' | 'NAVIGATE_PAGE';
+    const payload = (a.payload as Record<string, unknown>) || {};
+
+    let title = a.title || (isEn ? 'Action Confirmation' : 'アクションの実行確認');
+    let description = a.description || (isEn ? 'Proceed with this action?' : 'この操作を実行しますか？');
+
+    const containsJa = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf]/.test(title);
+
+    if (actionType === 'FORCE_DREAMING') {
+      title = isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行';
+      description = isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。';
+    } else if (actionType === 'BLOCK_USER') {
+      const handle = String(payload['handle'] || payload['userId'] || '').trim();
+      const cleanHandle = handle ? (handle.startsWith('@') ? handle : `@${handle}`) : '';
+      if (isEn && containsJa) {
+        title = cleanHandle ? `Block User ${cleanHandle}` : 'Block User';
+        description = cleanHandle ? `Block ${cleanHandle} from interacting with Master or replying.` : 'Block user from interacting with Master.';
+      } else if (!isEn && !containsJa) {
+        title = cleanHandle ? `ユーザー ${cleanHandle} のブロック` : 'ユーザーのブロック';
+        description = cleanHandle ? `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。` : 'ユーザーをブロックします。';
+      }
+    } else if (actionType === 'DELETE_POST') {
+      const postId = String(payload['postId'] || payload['id'] || '').trim();
+      const cleanId = postId ? `#${postId.replace(/^#/, '')}` : '';
+      if (isEn && containsJa) {
+        title = cleanId ? `Confirm Deletion of Post ${cleanId}` : 'Confirm Post Deletion';
+        description = 'Permanently delete this post from system logs and X (Twitter).';
+      } else if (!isEn && !containsJa) {
+        title = cleanId ? `投稿 ${cleanId} の削除確認` : '投稿の削除確認';
+        description = '対象の投稿をシステムおよびX（Twitter）から完全に削除します。';
+      }
+    }
+
+    return {
+      type: actionType,
+      title,
+      description,
+      impactLevel,
+      requiresConfirmation: a.requiresConfirmation !== false,
+      payload
+    };
   }
 
   /**
