@@ -92,7 +92,7 @@ steps:
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
       - '--allow-unauthenticated'
-      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=https://rebecca-ai.net'
+      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL'
       - '--quiet'
 
   # ----------------------------------------------------------------------------
@@ -110,6 +110,7 @@ substitutions:
   _AR_HOSTNAME: 'asia-northeast1-docker.pkg.dev'
   _AR_REPOSITORY: 'cloud-run-source-deploy'
   _DEPLOY_REGION: 'asia-northeast1'
+  _PUBLIC_SITE_URL: 'https://rebecca-ai.net'
 
 options:
   logging: CLOUD_LOGGING_ONLY
