@@ -16,6 +16,35 @@ const adminCache = new Map<string, CachedAdmin>();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
 /**
+ * Resolves the administrator role from cache or Firestore `admin_users` collection.
+ */
+async function resolveAdminRole(email: string): Promise<{ authorized: boolean; role?: string; revoked?: boolean }> {
+  const now = Date.now();
+  const cached = adminCache.get(email);
+  if (cached && now - cached.cachedAt < CACHE_TTL_MS) {
+    return cached.status === 'ACTIVE'
+      ? { authorized: true, role: cached.role }
+      : { authorized: false, revoked: true };
+  }
+
+  const snapshot = await admin
+    .firestore()
+    .collection('admin_users')
+    .where('email', '==', email)
+    .where('status', '==', 'ACTIVE')
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return { authorized: false };
+  }
+
+  const role = snapshot.docs[0].data().role || 'ADMIN';
+  adminCache.set(email, { role, status: 'ACTIVE', cachedAt: now });
+  return { authorized: true, role };
+}
+
+/**
  * Middleware that verifies Firebase Authentication JWT tokens and enforces Role-Based Access Control (RBAC).
  * 
  * Ensures that dashboard endpoints are protected from unauthorized access by:
@@ -36,7 +65,6 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
   }
 
   // Bypass auth for local development if running in emulator and NO_AUTH=true is set
-  // Caution: Be extremely careful not to deploy this bypass to production!
   if (process.env.NODE_ENV !== 'production' && process.env.NO_AUTH === 'true') {
     req.user = { uid: 'local-dev-admin', role: 'SUPER_ADMIN' };
     next();
@@ -52,7 +80,6 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
   const token = authHeader.split('Bearer ')[1];
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    const email = decodedToken.email?.toLowerCase().trim();
 
     // 1. Check custom claims if present
     if (decodedToken.role === 'SUPER_ADMIN' || decodedToken.role === 'ADMIN' || decodedToken.admin === true) {
@@ -62,32 +89,14 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
     }
 
     // 2. Defense-in-Depth: Check admin_users collection with in-memory TTL cache
+    const email = decodedToken.email?.toLowerCase().trim();
     if (email) {
-      const now = Date.now();
-      const cached = adminCache.get(email);
-      if (cached && now - cached.cachedAt < CACHE_TTL_MS) {
-        if (cached.status === 'ACTIVE') {
-          req.user = { ...decodedToken, role: cached.role };
-          next();
-          return;
-        } else {
-          res.status(403).json({ error: 'Forbidden: Your admin access has been revoked.' });
-          return;
-        }
+      const { authorized, role, revoked } = await resolveAdminRole(email);
+      if (revoked) {
+        res.status(403).json({ error: 'Forbidden: Your admin access has been revoked.' });
+        return;
       }
-
-      const db = admin.firestore();
-      const snapshot = await db
-        .collection('admin_users')
-        .where('email', '==', email)
-        .where('status', '==', 'ACTIVE')
-        .limit(1)
-        .get();
-
-      if (!snapshot.empty) {
-        const docData = snapshot.docs[0].data();
-        const role = docData.role || 'ADMIN';
-        adminCache.set(email, { role, status: 'ACTIVE', cachedAt: now });
+      if (authorized) {
         req.user = { ...decodedToken, role };
         next();
         return;
