@@ -1,6 +1,10 @@
 // Karma configuration file, see link for more information
 // https://karma-runner.github.io/1.0/config/configuration-file.html
 
+if (process.env.CI && !process.env.CHROME_BIN) {
+  process.env.CHROME_BIN = '/usr/bin/google-chrome';
+}
+
 module.exports = function (config) {
   config.set({
     basePath: '',
@@ -33,12 +37,23 @@ module.exports = function (config) {
     customLaunchers: {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
-        flags: ['--no-sandbox', '--disable-gpu', '--disable-translate', '--disable-extensions']
+        flags: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-translate',
+          '--disable-extensions'
+        ]
       }
     },
     reporters: ['progress', 'kjhtml', 'coverage'],
     browsers: ['ChromeHeadlessCI'],
     restartOnFileChange: false,
-    singleRun: true
+    singleRun: true,
+    browserDisconnectTolerance: 3,
+    browserDisconnectTimeout: 30000,
+    browserNoActivityTimeout: 60000,
+    captureTimeout: 60000
   });
 };
