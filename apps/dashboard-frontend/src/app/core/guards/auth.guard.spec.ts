@@ -29,7 +29,7 @@ describe('authGuard', () => {
       email: 'admin@test.com'
     } as any);
 
-    const result = await TestBed.runInInjectionContext(() => authGuard({} as any));
+    const result = await TestBed.runInInjectionContext(() => authGuard());
     expect(result).toBeTrue();
   });
 
