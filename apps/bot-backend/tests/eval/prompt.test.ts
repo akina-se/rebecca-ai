@@ -8,9 +8,28 @@ const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_K
 const ai = hasApiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
 const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.1-flash-lite';
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const evaluateResponse = async (input, response, rule) => {
+const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 3000): Promise<T> => {
+    let delay = initialDelay;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            const isTransient = error?.status === 503 || error?.status === 429 || error?.code === 503 || error?.code === 429 || String(error?.message || '').includes('high demand') || String(error?.message || '').includes('UNAVAILABLE');
+            if (attempt < maxRetries && isTransient) {
+                console.warn(`[Eval Retry] Transient Gemini API error (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+                await sleep(delay);
+                delay *= 2;
+            } else {
+                throw error;
+            }
+        }
+    }
+    throw new Error('Retry exhausted');
+};
+
+const evaluateResponse = async (input: string, response: string, rule: string) => {
     const judgePrompt = `
 あなたはAIの振る舞いを評価する厳格な審査員です。
 以下の【AIの回答】が、【評価ルール】を満たしているかを判定してください。
@@ -31,7 +50,7 @@ ${rule}
 }`;
 
     try {
-        const result = await ai.models.generateContent({
+        const result = await ai!.models.generateContent({
             model: JUDGE_MODEL,
             contents: judgePrompt,
             config: {
@@ -39,14 +58,14 @@ ${rule}
             }
         });
         
-        let jsonStr = result.text.trim();
+        let jsonStr = result.text?.trim() || '{}';
         if (jsonStr.startsWith('```json')) {
             jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
         } else if (jsonStr.startsWith('```')) {
             jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
         }
         return JSON.parse(jsonStr);
-    } catch (e) {
+    } catch (e: any) {
         return { pass: false, reason: `Judge Error (${JUDGE_MODEL}): ${e.message}` };
     }
 };
@@ -54,8 +73,8 @@ ${rule}
 const runEval = hasApiKey ? describe : describe.skip;
 
 runEval('LLM as a Judge: Prompt Evaluation', () => {
-    // LLM calls can take some time, so we extend the timeout to 30 seconds
-    jest.setTimeout(30000);
+    // LLM calls with retry can take some time, so extend timeout to 90 seconds
+    jest.setTimeout(90000);
 
     const testCases = [
         {
@@ -87,14 +106,14 @@ runEval('LLM as a Judge: Prompt Evaluation', () => {
     });
 
     test.each(testCases)('should pass eval: $name', async (tc) => {
-        // 1. Generate Rebecca's response
+        // 1. Generate Rebecca's response with retry
         const userData = { episodicBuffer: [] }; // Mock empty memory
         const lang: Language = (tc.lang as Language) || 'ja';
         const systemPrompt = buildSystemPrompt('reply', userData as unknown as any, tc.input, '', '', [], lang);
-        const reply = await gemini.generateReply(systemPrompt, [], tc.input);
+        const reply = await retryAsync(() => gemini.generateReply(systemPrompt, [], tc.input));
 
-        // 2. Evaluate with Judge
-        const evalResult = await evaluateResponse(tc.input, reply, tc.rule);
+        // 2. Evaluate with Judge with retry
+        const evalResult = await retryAsync(() => evaluateResponse(tc.input, reply, tc.rule));
 
         // 3. Assert
         // Trick to display the reason and actual output in Jest's error log upon FAIL
