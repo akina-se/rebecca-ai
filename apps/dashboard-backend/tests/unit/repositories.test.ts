@@ -115,6 +115,61 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(res.data[0].interactions).toBe(2);
     });
 
+    it('getAll should aggregate all-time conversation logs and support handle/lastSeen sorting', async () => {
+      const mockDocs = [
+        {
+          id: 'user_b',
+          data: () => ({ name: 'User B', lastSeen: '2026-08-01T00:00:00Z', daily_reply_count: 1 })
+        },
+        {
+          id: 'user_a',
+          data: () => ({ name: 'User A', lastSeen: '2026-08-10T00:00:00Z', daily_reply_count: 1 })
+        }
+      ];
+      (usersRepo as any).collections.users.get = jest.fn().mockResolvedValue({
+        empty: false,
+        docs: mockDocs
+      });
+
+      const mockLogs = [
+        { data: () => ({ userId: 'user_b' }) },
+        { data: () => ({ userId: 'user_b' }) },
+        { data: () => ({ userId: 'user_a' }) },
+        { data: () => ({ userId: 'user_a' }) },
+      ];
+      (usersRepo as any).collections.conversationLogs.get = jest.fn().mockResolvedValue({
+        empty: false,
+        docs: mockLogs
+      });
+
+      // Sort by interactions with tie-breaker (most recently active user_a comes first)
+      const resInteractions = await usersRepo.getAll({ sortBy: 'interactions', sortOrder: 'desc' });
+      expect(resInteractions.data[0].id).toBe('user_a');
+      expect(resInteractions.data[0].interactions).toBe(2);
+
+      // Sort by handle ascending & descending
+      const resHandle = await usersRepo.getAll({ sortBy: 'handle', sortOrder: 'asc' });
+      expect(resHandle.data[0].id).toBe('user_a');
+      const resHandleDesc = await usersRepo.getAll({ sortBy: 'handle', sortOrder: 'desc' });
+      expect(resHandleDesc.data[0].id).toBe('user_b');
+
+      // Sort by lastSeen descending & ascending
+      const resLastSeen = await usersRepo.getAll({ sortBy: 'lastSeen', sortOrder: 'desc' });
+      expect(resLastSeen.data[0].id).toBe('user_a');
+      const resLastSeenAsc = await usersRepo.getAll({ sortBy: 'lastSeen', sortOrder: 'asc' });
+      expect(resLastSeenAsc.data[0].id).toBe('user_b');
+
+      // Sort by other numeric fields (desc and asc)
+      const resAffinityDesc = await usersRepo.getAll({ sortBy: 'daily_reply_count', sortOrder: 'desc' });
+      expect(resAffinityDesc.data).toHaveLength(2);
+      const resAffinityAsc = await usersRepo.getAll({ sortBy: 'daily_reply_count', sortOrder: 'asc' });
+      expect(resAffinityAsc.data).toHaveLength(2);
+      const resCustomField = await usersRepo.getAll({ sortBy: 'some_other_field', sortOrder: 'desc' });
+      expect(resCustomField.data).toHaveLength(2);
+      const resCustomFieldAsc = await usersRepo.getAll({ sortBy: 'some_other_field', sortOrder: 'asc' });
+      expect(resCustomFieldAsc.data).toHaveLength(2);
+    });
+
     it('getById should return user details with chat history or null', async () => {
       (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({
         get: jest.fn().mockResolvedValueOnce({

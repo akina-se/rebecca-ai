@@ -104,9 +104,22 @@ export class UsersRepository {
         u.data._dynamicInteractions = interactionsMap[u.id];
       });
     } else {
-      // All-time: just use their overall interactions from seed or calculate all-time
+      // All-time: Aggregate from all conversation_logs to get true all-time interaction counts
+      const logsSnap = await this.collections.conversationLogs.get();
+      const interactionsMap: Record<string, number> = {};
+      logsSnap.docs.forEach(doc => {
+        const userId = doc.data().userId;
+        if (userId) {
+          interactionsMap[userId] = (interactionsMap[userId] || 0) + 1;
+        }
+      });
+
       usersData.forEach(u => {
-        u.data._dynamicInteractions = u.data.interactions || u.data.daily_reply_count || 0;
+        const loggedCount = interactionsMap[u.id] || 0;
+        const rawInteractions = Number(u.data.interactions) || 0;
+        const dailyReplyCount = Number(u.data.daily_reply_count) || 0;
+        // Total interactions is max of logged conversations, explicit interactions field, or daily reply count
+        u.data._dynamicInteractions = Math.max(loggedCount, rawInteractions, dailyReplyCount);
       });
     }
 
@@ -124,26 +137,30 @@ export class UsersRepository {
     const sortOrder = params?.sortOrder || 'desc';
 
     usersData.sort((a, b) => {
-      let valA: unknown = a.data[sortBy];
-      let valB: unknown = b.data[sortBy];
-      
+      let diff = 0;
       if (sortBy === 'interactions' || sortBy === 'daily_reply_count') {
-        valA = Number(a.data._dynamicInteractions) || 0;
-        valB = Number(b.data._dynamicInteractions) || 0;
+        const countA = Number(a.data._dynamicInteractions) || 0;
+        const countB = Number(b.data._dynamicInteractions) || 0;
+        diff = sortOrder === 'desc' ? countB - countA : countA - countB;
+
+        // Tie-breaker when interaction counts are identical: sort by most recently active
+        if (diff === 0) {
+          const timeA = new Date(String(a.data.lastSeen || a.data.last_reply_date || 0)).getTime() || 0;
+          const timeB = new Date(String(b.data.lastSeen || b.data.last_reply_date || 0)).getTime() || 0;
+          diff = timeB - timeA;
+        }
       } else if (sortBy === 'handle' || sortBy === 'userId' || sortBy === 'id') {
-        valA = a.id.toLowerCase();
-        valB = b.id.toLowerCase();
-        if (sortOrder === 'desc') return String(valB).localeCompare(String(valA));
-        return String(valA).localeCompare(String(valB));
+        diff = sortOrder === 'desc' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
       } else if (sortBy === 'lastSeen' || sortBy === 'last_reply_date' || sortBy === 'lastInteraction') {
-        valA = new Date(String(a.data.lastSeen || a.data.last_reply_date || 0)).getTime();
-        valB = new Date(String(b.data.lastSeen || b.data.last_reply_date || 0)).getTime();
+        const timeA = new Date(String(a.data.lastSeen || a.data.last_reply_date || 0)).getTime() || 0;
+        const timeB = new Date(String(b.data.lastSeen || b.data.last_reply_date || 0)).getTime() || 0;
+        diff = sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+      } else {
+        const valA = Number(a.data[sortBy]) || 0;
+        const valB = Number(b.data[sortBy]) || 0;
+        diff = sortOrder === 'desc' ? valB - valA : valA - valB;
       }
-      
-      const numA = typeof valA === 'number' ? valA : 0;
-      const numB = typeof valB === 'number' ? valB : 0;
-      if (sortOrder === 'desc') return numB < numA ? -1 : numB > numA ? 1 : 0;
-      return numA < numB ? -1 : numA > numB ? 1 : 0;
+      return diff;
     });
 
     const totalItems = usersData.length;

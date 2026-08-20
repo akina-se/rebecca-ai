@@ -34,7 +34,11 @@ export class HttpDashboardRepository implements DashboardRepository {
    * @returns Observable list of top posts.
    */
   getTopPosts(period: string, date?: string): Observable<PaginatedResponse<PostLeaderboard>> {
-    let params = new HttpParams().set('period', period);
+    let params = new HttpParams()
+      .set('period', period)
+      .set('sortBy', 'impressions')
+      .set('sortOrder', 'desc')
+      .set('limit', '10');
     if (date) {
       params = params.set('date', date);
     }
@@ -42,7 +46,11 @@ export class HttpDashboardRepository implements DashboardRepository {
   }
 
   getTopUsers(period: string, date?: string): Observable<PaginatedResponse<UserLeaderboard>> {
-    let params = new HttpParams().set('period', period);
+    let params = new HttpParams()
+      .set('period', period)
+      .set('sortBy', 'interactions')
+      .set('sortOrder', 'desc')
+      .set('limit', '10');
     if (date) {
       params = params.set('date', date);
     }
