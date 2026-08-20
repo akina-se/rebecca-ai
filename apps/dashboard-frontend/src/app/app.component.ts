@@ -36,7 +36,7 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.authService.waitForInit();
     this.isLoading = false;
     this.authSub = this.authService.currentUser$.subscribe(user => {
-      this.isLoggedIn = !!user;
+      this.isLoggedIn = !!user || !!this.authService.currentUser;
     });
   }
 
