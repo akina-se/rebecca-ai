@@ -164,8 +164,8 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // 3. Verify Memory Management timestamps format
     await page.goto('/memory');
-    await expect(page.locator('.block-header h2').first()).toBeVisible({ timeout: 15000 });
     const memoryRows = page.locator('table.data-table tbody tr');
+    await expect(memoryRows.first()).toBeVisible({ timeout: 15000 });
     await expect(memoryRows).toHaveCount(3);
     const layer1Date = await memoryRows.nth(1).locator('td').nth(2).innerText();
     expect(layer1Date).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
