@@ -259,7 +259,7 @@ export class CopilotService {
       }
 
       case 'NAVIGATE_PAGE': {
-        const path = String(payload['path'] || '/dashboard');
+        const path = String(payload['path'] || payload['url'] || payload['route'] || '/dashboard');
         this.router.navigate([path]);
         this.toastService.show(isEn ? `Navigated to ${path}` : `${path} へ移動しました`, 'info');
         break;
