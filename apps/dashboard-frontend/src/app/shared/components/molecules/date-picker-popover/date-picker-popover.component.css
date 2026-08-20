@@ -1,0 +1,103 @@
+.time-nav-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.time-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0,0,0,0.3);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-highlight);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.time-nav:hover:not(.disabled) {
+  border-color: var(--color-primary);
+  background: rgba(138, 43, 226, 0.1);
+}
+
+.time-nav.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.current-text {
+  font-weight: bold;
+  color: var(--text-main);
+  min-width: 80px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.nav-btn {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+  border-radius: 50%;
+}
+
+.nav-btn:hover:not(.disabled-icon) {
+  color: var(--color-primary);
+  background: rgba(255,255,255,0.1);
+}
+
+.disabled-icon {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.popover-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 15, 25, 0.97);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 9999;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 150px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.popover-header {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-highlight);
+  background: rgba(0,0,0,0.2);
+}
+
+.popover-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.popover-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-main);
+}
+
+.popover-item.selected {
+  color: var(--color-primary);
+  background: rgba(138, 43, 226, 0.15);
+  font-weight: 600;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

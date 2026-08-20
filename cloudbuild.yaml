@@ -1,0 +1,121 @@
+# ==============================================================================
+# Google Cloud Build: Monorepo CI/CD Pipeline for Rebecca AI
+# ==============================================================================
+# Builds and deploys:
+#  1. Shared packages & workspaces (Turbo build)
+#  2. apps/bot-backend -> Cloud Run (rebecca-ai-gal)
+#  3. apps/dashboard-backend -> Cloud Run (rebecca-dashboard-bff)
+#  4. apps/dashboard-frontend -> Firebase Hosting (admin.rebecca-ai.net)
+#  5. apps/functions -> Cloud Functions (Firestore triggers & Auth blocking)
+# ==============================================================================
+
+steps:
+  # ----------------------------------------------------------------------------
+  # Step 1: Cache & Install Dependencies + Build Shared Packages
+  # ----------------------------------------------------------------------------
+  - name: 'node:22-alpine'
+    id: 'Install and Build Workspaces'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        npm ci
+        npx turbo run build
+
+  # ----------------------------------------------------------------------------
+  # Step 2: Build & Push bot-backend Docker Image
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build bot-backend Container'
+    args:
+      - 'build'
+      - '--no-cache'
+      - '-t'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/bot-backend:$COMMIT_SHA'
+      - '-f'
+      - 'apps/bot-backend/Dockerfile'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push bot-backend Container'
+    args:
+      - 'push'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/bot-backend:$COMMIT_SHA'
+
+  # ----------------------------------------------------------------------------
+  # Step 3: Deploy bot-backend to Cloud Run (rebecca-ai-gal)
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Deploy bot-backend to Cloud Run'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'update'
+      - 'rebecca-ai-gal'
+      - '--platform=managed'
+      - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/bot-backend:$COMMIT_SHA'
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+
+  # ----------------------------------------------------------------------------
+  # Step 4: Build & Push dashboard-backend Docker Image
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build dashboard-backend Container'
+    args:
+      - 'build'
+      - '--no-cache'
+      - '-t'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
+      - '-f'
+      - 'apps/dashboard-backend/Dockerfile'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push dashboard-backend Container'
+    args:
+      - 'push'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
+
+  # ----------------------------------------------------------------------------
+  # Step 5: Deploy dashboard-backend to Cloud Run (rebecca-dashboard-bff)
+  # ----------------------------------------------------------------------------
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: 'Deploy dashboard-backend to Cloud Run'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'rebecca-dashboard-bff'
+      - '--platform=managed'
+      - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
+      - '--region=$_DEPLOY_REGION'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL'
+      - '--quiet'
+
+  # ----------------------------------------------------------------------------
+  # Step 6: Deploy Firebase Hosting (Angular SPA) and Functions
+  # ----------------------------------------------------------------------------
+  - name: 'node:22-alpine'
+    id: 'Deploy Firebase Hosting and Functions'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        npx -y firebase-tools deploy --only hosting,functions --project $PROJECT_ID --non-interactive
+
+substitutions:
+  _AR_HOSTNAME: 'asia-northeast1-docker.pkg.dev'
+  _AR_REPOSITORY: 'cloud-run-source-deploy'
+  _DEPLOY_REGION: 'asia-northeast1'
+  _PUBLIC_SITE_URL: 'https://rebecca-ai.net'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
+
+images:
+  - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/bot-backend:$COMMIT_SHA'
+  - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
