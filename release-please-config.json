@@ -3,35 +3,44 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "rebecca-ai-gal-monorepo"
+      "package-name": "rebecca-ai-gal-monorepo",
+      "component": "rebecca-ai-gal-monorepo",
+      "include-component-in-tag": false
     },
     "apps/bot-backend": {
       "release-type": "node",
-      "package-name": "bot-backend"
+      "package-name": "bot-backend",
+      "component": "bot-backend"
     },
     "apps/dashboard-backend": {
       "release-type": "node",
-      "package-name": "dashboard-backend"
+      "package-name": "dashboard-backend",
+      "component": "dashboard-backend"
     },
     "apps/dashboard-frontend": {
       "release-type": "node",
-      "package-name": "dashboard-frontend"
+      "package-name": "dashboard-frontend",
+      "component": "dashboard-frontend"
     },
     "apps/functions": {
       "release-type": "node",
-      "package-name": "functions"
+      "package-name": "functions",
+      "component": "functions"
     },
     "packages/db": {
       "release-type": "node",
-      "package-name": "@rebecca/db"
+      "package-name": "@rebecca/db",
+      "component": "@rebecca/db"
     },
     "packages/persona": {
       "release-type": "node",
-      "package-name": "@rebecca/persona"
+      "package-name": "@rebecca/persona",
+      "component": "@rebecca/persona"
     },
     "packages/types": {
       "release-type": "node",
-      "package-name": "@rebecca/types"
+      "package-name": "@rebecca/types",
+      "component": "@rebecca/types"
     }
   },
   "plugins": [
