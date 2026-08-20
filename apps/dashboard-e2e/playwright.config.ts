@@ -20,6 +20,8 @@ export default defineConfig({
       timeout: 30 * 1000,
       env: {
         PORT: '8081',
+        NODE_ENV: 'development',
+        NO_AUTH: 'true',
         GCP_PROJECT_ID: 'rebecca-ai-gal-local',
         FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
         FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
