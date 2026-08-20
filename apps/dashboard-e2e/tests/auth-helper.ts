@@ -139,7 +139,11 @@ export async function loginWithEmulatorAndSeedDB(page: Page, email = 'admin@exam
     window.sessionStorage.setItem(firebaseKey, payload);
   }, firebaseUserData);
 
-  console.log(`[auth-helper] Auth Helper complete.`);
+  // 5. Navigate to /dashboard to establish active session and wait for topbar
+  console.log(`[auth-helper] Activating authenticated session on /dashboard...`);
+  await page.goto('/dashboard');
+  await page.waitForSelector('.topbar', { timeout: 15000 });
+  console.log(`[auth-helper] Auth Helper complete and session verified.`);
 }
 
 
