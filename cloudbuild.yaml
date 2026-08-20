@@ -92,7 +92,8 @@ steps:
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
       - '--allow-unauthenticated'
-      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL'
+      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL,IMAGE_BUCKET_NAME=rebecca-ai-gal-images'
+      - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
       - '--quiet'
 
   # ----------------------------------------------------------------------------
