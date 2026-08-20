@@ -74,6 +74,70 @@ graph TD
     Functions -.-> SharedModules
 ```
 
+## Setup Instructions
+
+> **Note on Gemini API (Free Tier):**
+> If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
+
+### 1. GCP Project Setup
+1. Create a new project in the GCP Console and enable billing (required even for the free tier).
+2. Enable the following APIs: `Cloud Run API`, `Cloud Tasks API`, `Cloud Firestore API`, `Cloud Scheduler API`
+3. Create a Firestore database (Native mode recommended).
+4. Create a Cloud Tasks queue:
+   ```bash
+   gcloud tasks queues create rebecca-reply-queue --location=asia-northeast1
+   ```
+5. Create a Firestore composite index (for RAG vector search):
+   ```bash
+   gcloud alpha firestore indexes composite create \
+     --collection-group=rag_memories \
+     --query-scope=COLLECTION \
+     --field-config=field-path=embedding,vector-config='{"dimension":768,"flat": "{}"}' \
+     --field-config=field-path=userId,order=ASCENDING \
+     --project=your-gcp-project-id
+   ```
+
+### 2. Environment Variables
+Create a `.env` file in the project root and configure the following variables:
+
+```env
+# Server
+PORT=8080
+
+# Security for Batch Endpoints
+BATCH_SECRET_KEY=your-secret-key-for-local-or-fallback-auth
+OIDC_EXPECTED_AUDIENCE=https://your-cloud-run-service-url.a.run.app
+OIDC_EXPECTED_ISSUER=https://accounts.google.com
+
+# GCP
+GCP_PROJECT_ID=your-gcp-project-id
+GCP_LOCATION=asia-northeast1
+GCP_TASK_QUEUE_NAME=rebecca-reply-queue
+WORKER_URL=https://your-cloud-run-service-url.a.run.app
+IMAGE_BUCKET_NAME=rebecca-ai-gal-images
+
+# X API
+X_API_KEY=
+X_API_SECRET=
+X_ACCESS_TOKEN=
+X_ACCESS_SECRET=
+X_MY_USER_ID=your-bot-twitter-user-id
+
+# Gemini API Models
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_JUDGE_MODEL=gemma-4-31b-it
+GEMINI_LANGUAGE_MODEL=gemma-4-31b-it
+GEMINI_EMBEDDING_MODEL=text-embedding-004
+GEMINI_VISION_MODEL=gemini-3.1-flash-lite
+GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
+
+# Rate Limits
+GLOBAL_DAILY_LIMIT=500
+SPAM_MINUTE_LIMIT=3
+PUBLIC_IP_RATE_LIMIT=100
+```
+
 ### Applications (`apps/`)
 
 - **`apps/bot-backend`**: The core worker service. Handles RAG memory injection, intent analysis, X API integration, and the background "Dreaming" evolution process.
