@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = 4200;
+const BFF_PORT = 8081;
 const DIST_DIR = path.resolve(__dirname, '../apps/dashboard-frontend/dist/dashboard-frontend/browser');
 
 const MIME_TYPES = {
@@ -17,6 +18,30 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+  // Proxy /api/* requests to BFF backend on port 8081
+  if ((req.url || '').startsWith('/api/')) {
+    const proxyReq = http.request(
+      {
+        host: '127.0.0.1',
+        port: BFF_PORT,
+        path: req.url,
+        method: req.method,
+        headers: { ...req.headers, host: `127.0.0.1:${BFF_PORT}` },
+      },
+      (proxyRes) => {
+        res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+        proxyRes.pipe(res);
+      }
+    );
+    proxyReq.on('error', (err) => {
+      console.error('[Proxy Error]', err.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Bad Gateway: BFF unreachable' }));
+    });
+    req.pipe(proxyReq);
+    return;
+  }
+
   const cleanUrl = (req.url || '/').split('?')[0];
   let filePath = path.join(DIST_DIR, cleanUrl);
 
@@ -38,5 +63,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`[SPA Server] Running on http://127.0.0.1:${PORT}`);
+  console.log(`[SPA Server] Running on http://127.0.0.1:${PORT} (Proxying /api/ -> 127.0.0.1:${BFF_PORT})`);
 });
