@@ -6,12 +6,10 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     await loginWithEmulatorAndSeedDB(page, 'admin@example.com', 'password123');
     await page.goto('/users');
-    await expect(page.locator('.topbar')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
   });
 
   test('should render User Relations table with 30 items pagination', async ({ page }) => {
-    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
-
     // Wait for user rows
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
@@ -27,9 +25,6 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
   });
 
   test('should filter users using fuzzy search input', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
-
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -53,9 +48,6 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
   });
 
   test('should sort users by User ID, Interactions, and Last Interaction with indicator symbols', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
-
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -86,9 +78,6 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
   });
 
   test('should display RAG Memories status badges correctly', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
-
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -99,9 +88,6 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
   });
 
   test('should support bulk selection and status updates in User Relations', async ({ page }) => {
-    await page.goto('/users');
-    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
-
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -157,6 +143,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
   test('should display all timestamps in uniform YYYY/MM/DD HH:mm:ss format and update with timezone changes', async ({ page }) => {
     // 1. Set timezone to JST (Tokyo, UTC+9)
     await page.goto('/settings');
+    await expect(page.locator('h2', { hasText: /System Settings|システム環境設定/ })).toBeVisible({ timeout: 15000 });
     const tzDropdown = page.locator('app-dropdown').nth(1);
     await tzDropdown.locator('.dropdown-toggle').click();
     await expect(tzDropdown.locator('.dropdown-menu')).toBeVisible();
@@ -164,6 +151,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // 2. Verify User Relations timestamps format
     await page.goto('/users');
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
     const userRows = page.locator('.data-table tbody tr.clickable');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
     const userDateText = await userRows.first().locator('td').nth(3).innerText();
@@ -176,6 +164,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // 3. Verify Memory Management timestamps format
     await page.goto('/memory');
+    await expect(page.locator('h2', { hasText: /System Memory Layers|システム記憶レイヤー/ })).toBeVisible({ timeout: 15000 });
     const memoryRows = page.locator('table.data-table tbody tr');
     await expect(memoryRows).toHaveCount(3);
     const layer1Date = await memoryRows.nth(1).locator('td').nth(2).innerText();
@@ -183,6 +172,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // 4. Verify Dashboard Timeline timestamps format
     await page.goto('/dashboard');
+    await expect(page.locator('.topbar')).toBeVisible({ timeout: 15000 });
     const timelineRows = page.locator('#timeline-table tbody tr.clickable');
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
     const timelineDateText = await timelineRows.first().locator('td').nth(1).innerText();
@@ -190,6 +180,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // 5. Change Timezone to UTC (London, UTC+0)
     await page.goto('/settings');
+    await expect(page.locator('h2', { hasText: /System Settings|システム環境設定/ })).toBeVisible({ timeout: 15000 });
     const tzDropdown2 = page.locator('app-dropdown').nth(1);
     await tzDropdown2.locator('.dropdown-toggle').click();
     await expect(tzDropdown2.locator('.dropdown-menu')).toBeVisible();
@@ -197,6 +188,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
     // 6. Verify User Relations timestamp updated according to timezone difference (9 hours difference)
     await page.goto('/users');
+    await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
     const userDateTextUTC = await page.locator('.data-table tbody tr.clickable').first().locator('td').nth(3).innerText();
     expect(userDateTextUTC).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
     expect(userDateTextUTC).not.toBe(userDateText);
