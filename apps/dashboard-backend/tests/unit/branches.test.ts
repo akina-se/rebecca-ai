@@ -22,6 +22,16 @@ jest.mock('@google-cloud/storage', () => ({
   }))
 }));
 
+// Mock Cloud Tasks for SystemMemoryRepository
+const mockCreateTask = jest.fn().mockResolvedValue([{}]);
+const mockQueuePath = jest.fn().mockReturnValue('projects/p/locations/l/queues/q');
+jest.mock('@google-cloud/tasks', () => ({
+  CloudTasksClient: jest.fn().mockImplementation(() => ({
+    queuePath: mockQueuePath,
+    createTask: mockCreateTask
+  }))
+}));
+
 // Mock Gemini AI
 const mockGenerateContent = jest.fn();
 const mockEmbedContent = jest.fn();
