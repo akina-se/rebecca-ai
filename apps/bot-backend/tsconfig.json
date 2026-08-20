@@ -14,7 +14,8 @@
     "types": ["node", "jest", "express"],
     "paths": {
       "@rebecca/types": ["../../packages/types/src/index.ts"],
-      "@rebecca/db": ["../../packages/db/src/index.ts"]
+      "@rebecca/db": ["../../packages/db/src/index.ts"],
+      "@rebecca/persona": ["../../packages/persona/src/index.ts"]
     }
   },
   "include": [
