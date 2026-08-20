@@ -728,4 +728,116 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(res.reply).toContain('呼んだかしら、マスター♡');
     });
   });
+
+  describe('AssetsUseCase & ConfigController Branches', () => {
+    it('AssetsUseCase uploadAssets and regenerateCaptions with Gemini Vision and Embedding branches', async () => {
+      const { AssetsUseCase } = require('../../src/features/assets/usecase');
+      const assetsRepo = {
+        create: jest.fn().mockResolvedValue(undefined),
+        save: jest.fn().mockImplementation((a) => Promise.resolve(a)),
+        getAll: jest.fn().mockResolvedValue([{ id: 'img_test', filename: 'test.jpg', usedCount: 1, caption: '' }]),
+        getById: jest.fn().mockResolvedValue({ id: 'img_test', filename: 'test.jpg', usedCount: 1, caption: '' }),
+        update: jest.fn().mockResolvedValue(undefined)
+      } as any;
+
+      const assetsUseCase = new AssetsUseCase(assetsRepo);
+
+      // 1. Successful Vision analysis & Embedding
+      mockGenerateContent.mockResolvedValueOnce({ text: '綺麗なアニメイラスト' });
+      mockEmbedContent.mockResolvedValueOnce({ embeddings: [{ values: [0.1, 0.2, 0.3] }] });
+
+      const uploadRes = await assetsUseCase.uploadImages([
+        {
+          originalname: 'test.png',
+          mimetype: 'image/png',
+          buffer: Buffer.from('mock-png-data')
+        }
+      ]);
+
+      expect(uploadRes[0].caption).toBe('綺麗なアニメイラスト');
+      expect(uploadRes[0].status).toBe(AssetStatus.SUCCESS);
+
+      // 2. Vision returns empty caption (FAILED)
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      const emptyCapRes = await assetsUseCase.uploadImages([
+        {
+          originalname: 'empty.png',
+          mimetype: 'image/png',
+          buffer: Buffer.from('mock-png-data')
+        }
+      ]);
+      expect(emptyCapRes[0].status).toBe(AssetStatus.FAILED);
+
+      // 3. Vision throws error (FAILED)
+      mockGenerateContent.mockRejectedValueOnce(new Error('Vision error'));
+      const errRes = await assetsUseCase.uploadImages([
+        {
+          originalname: 'error.png',
+          mimetype: 'image/png',
+          buffer: Buffer.from('mock-png-data')
+        }
+      ]);
+      expect(errRes[0].status).toBe(AssetStatus.FAILED);
+
+      // 4. Regenerate caption with Gemini AI and embedding failure handling
+      mockGenerateContent.mockResolvedValueOnce({ text: '再生成キャプション' });
+      mockEmbedContent.mockRejectedValueOnce(new Error('Embedding fail'));
+
+      await assetsUseCase.regenerateCaptions(['img_test']);
+      expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
+        caption: '再生成キャプション',
+        status: AssetStatus.SUCCESS
+      }));
+
+      // 5. Regenerate caption with empty response
+      mockGenerateContent.mockResolvedValueOnce({ text: '' });
+      await assetsUseCase.regenerateCaptions(['img_test']);
+      expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
+        status: AssetStatus.FAILED
+      }));
+
+      // 6. Regenerate caption with error throw
+      mockGenerateContent.mockRejectedValueOnce(new Error('Regen error'));
+      await assetsUseCase.regenerateCaptions(['img_test']);
+      expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
+        status: AssetStatus.FAILED
+      }));
+    });
+
+    it('ConfigController branches with all custom environment variables', () => {
+      const { ConfigController } = require('../../src/features/config/controller');
+      const configController = new ConfigController();
+
+      delete process.env.GCP_PROJECT_ID;
+      delete process.env.PUBLIC_SITE_URL;
+      process.env.NODE_ENV = 'development';
+      process.env.FIREBASE_AUTH_DOMAIN = 'custom-auth.domain.com';
+      process.env.FIREBASE_STORAGE_BUCKET = 'custom-storage.bucket.com';
+      process.env.FIREBASE_MESSAGING_SENDER_ID = '12345678';
+      process.env.FIREBASE_WEB_APP_ID = 'app:1:123';
+      process.env.FIREBASE_WEB_API_KEY = 'CUSTOM_API_KEY';
+
+      const req = {} as Request;
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() } as unknown as Response;
+
+      configController.getConfig(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        firebase: {
+          apiKey: 'CUSTOM_API_KEY',
+          authDomain: 'custom-auth.domain.com',
+          projectId: 'rebecca-ai-gal',
+          storageBucket: 'custom-storage.bucket.com',
+          messagingSenderId: '12345678',
+          appId: 'app:1:123'
+        },
+        apiUrl: '/api/v1',
+        publicSiteUrl: 'https://rebecca-ai.net',
+        production: false,
+        useEmulators: true
+      });
+    });
+  });
 });
+
