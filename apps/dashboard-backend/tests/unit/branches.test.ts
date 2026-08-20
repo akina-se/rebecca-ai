@@ -838,6 +838,18 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         useEmulators: true
       });
     });
+
+    it('SystemMemoryRepository.triggerDreaming branches', async () => {
+      const memoryRepo = new SystemMemoryRepository(mock.firestore as any);
+
+      // Branch 1: Emulator / non-production
+      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+      await expect(memoryRepo.triggerDreaming()).resolves.toBeUndefined();
+
+      // Branch 2: Cloud Tasks invocation and error fallback
+      delete process.env.FIRESTORE_EMULATOR_HOST;
+      await expect(memoryRepo.triggerDreaming()).resolves.toBeUndefined();
+    });
   });
 });
 

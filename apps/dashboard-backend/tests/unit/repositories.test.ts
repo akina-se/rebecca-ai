@@ -442,6 +442,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
     });
 
     it('triggerDreaming should invoke Cloud Tasks client and handle fallback', async () => {
+      delete process.env.FIRESTORE_EMULATOR_HOST;
       await memoryRepo.triggerDreaming();
       expect(mockCreateTask).toHaveBeenCalledTimes(1);
 
