@@ -15,7 +15,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "test:unit": "turbo run test --filter=!dashboard-e2e",
-    "test:e2e": "turbo run test --filter=dashboard-e2e",
+    "test:e2e": "npm run test --workspace=dashboard-e2e",
     "test:coverage-summary": "node scripts/ci-coverage-summary.js",
     "license-check": "turbo run license-check",
     "secret-check": "turbo run secret-check",
