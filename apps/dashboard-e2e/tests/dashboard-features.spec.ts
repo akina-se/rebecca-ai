@@ -27,7 +27,6 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(topPostsHeader).toBeVisible();
     const topPostsTable = page.locator('.data-table').first();
 
-    const monthlyTab = topPostsHeader.locator('.rank-tab', { hasText: /Monthly|月間/ });
     const yearlyTab = topPostsHeader.locator('.rank-tab', { hasText: /Yearly|年間/ });
     const datePicker = topPostsHeader.locator('app-date-picker-popover');
     const dateText = datePicker.locator('.current-text');
@@ -45,7 +44,6 @@ test.describe('Dashboard Features E2E Tests', () => {
     expect(firstPostSnippet).not.toContain('縺翫・');
 
     // 2. Verify Top Engaged Users table: maximum 10 rows and handles start with @
-    const topUsersHeader = page.locator('.table-header-container').nth(1);
     const topUsersTable = page.locator('.data-table').nth(1);
     const userRows = topUsersTable.locator('tbody tr');
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });

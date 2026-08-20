@@ -34,7 +34,8 @@ const server = http.createServer((req, res) => {
       }
     );
     proxyReq.on('error', (err) => {
-      console.error('[Proxy Error]', err.message);
+      const safeMsg = String(err?.message || '').replace(/[\r\n]/g, '');
+      console.error('[Proxy Error] %s', safeMsg);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Bad Gateway: BFF unreachable' }));
     });
@@ -42,8 +43,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const cleanUrl = (req.url || '/').split('?')[0];
-  let filePath = path.join(DIST_DIR, cleanUrl);
+  const rawUrl = (req.url || '/').split('?')[0];
+  const safeRelativePath = path.normalize(rawUrl).replace(/^(\.\.[\/\\])+/, '');
+  const filePath = path.resolve(DIST_DIR, '.' + path.sep + safeRelativePath);
+
+  // Guard against path traversal vulnerability
+  if (!filePath.startsWith(DIST_DIR)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath);

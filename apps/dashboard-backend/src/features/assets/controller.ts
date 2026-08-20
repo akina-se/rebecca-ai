@@ -50,7 +50,8 @@ export class AssetsController {
       }
       res.json(asset);
     } catch (err) {
-      console.error(`Failed to fetch asset ${req.params.id}:`, err);
+      const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
+      console.error('Failed to fetch asset %s:', safeId, err);
       res.status(500).json({ error: 'Failed to fetch asset' });
     }
   }
@@ -127,7 +128,8 @@ export class AssetsController {
       await this.useCase.updateAsset(id as string, req.body);
       res.json({ success: true });
     } catch (err) {
-      console.error(`Failed to update asset ${req.params.id}:`, err);
+      const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
+      console.error('Failed to update asset %s:', safeId, err);
       res.status(500).json({ error: 'Failed to update asset' });
     }
   }

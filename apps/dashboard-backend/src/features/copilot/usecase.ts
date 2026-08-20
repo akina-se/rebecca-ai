@@ -42,7 +42,7 @@ export class CopilotUseCase {
       // 1. Autonomous Data Gathering from Repositories (Data Analysis)
       const telemetryContext = await this.gatherLiveTelemetryContext(userMessage, currentContext);
 
-      // 2. Persona System Prompt with Admin Copilot Guidelines
+      // 2. Persona System Prompt with Admin Copilot Guidelines (Strictly static to prevent prompt injection)
       const personaBase = getBasePrompt('reply', isEn ? 'en' : 'ja');
       const languageInstruction = isEn
         ? `【Language & Persona Rule: English Gyaru】
@@ -65,12 +65,6 @@ ${personaBase}
 You are interacting 1-on-1 with your beloved Master (developer & system administrator) on the Admin Dashboard.
 
 ${languageInstruction}
-
-【Current Dashboard UI Context】
-${currentContext}
-
-【Live Real-time Telemetry Context】
-${telemetryContext}
 
 【Action Proposal Rules (Human-In-The-Loop)】
 When proposing destructive or administrative operations, include \`actionRequired\`:
@@ -136,10 +130,14 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
             }
           }
 
-          // Always end with current user prompt
+          // Always end with current user prompt with dynamic telemetry context
+          const userTurnText = (currentContext || telemetryContext)
+            ? `[Dashboard UI Context: ${currentContext}]\n[Telemetry Context: ${telemetryContext}]\n\nUser Question: ${userMessage}`
+            : userMessage;
+
           contents.push({
             role: 'user',
-            parts: [{ text: userMessage }]
+            parts: [{ text: userTurnText }]
           });
 
           const response = await this.ai.models.generateContent({
