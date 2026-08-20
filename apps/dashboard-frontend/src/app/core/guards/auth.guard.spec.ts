@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, UrlTree } from '@angular/router';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
 
 describe('authGuard', () => {
   let authServiceSpy: jasmine.SpyObj<AuthService>;
   let routerSpy: jasmine.SpyObj<Router>;
+  const mockRoute = {} as ActivatedRouteSnapshot;
+  const mockState = {} as RouterStateSnapshot;
 
   beforeEach(() => {
     authServiceSpy = jasmine.createSpyObj('AuthService', ['waitForInit'], {
@@ -29,7 +31,7 @@ describe('authGuard', () => {
       email: 'admin@test.com'
     } as any);
 
-    const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
+    const result = await TestBed.runInInjectionContext(() => authGuard(mockRoute, mockState));
     expect(result).toBeTrue();
   });
 
@@ -38,7 +40,7 @@ describe('authGuard', () => {
     const mockUrlTree = {} as UrlTree;
     routerSpy.parseUrl.and.returnValue(mockUrlTree);
 
-    const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
+    const result = await TestBed.runInInjectionContext(() => authGuard(mockRoute, mockState));
     expect(result).toBe(mockUrlTree);
     expect(routerSpy.parseUrl).toHaveBeenCalledWith('/login');
   });
