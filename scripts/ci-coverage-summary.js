@@ -3,8 +3,10 @@ const path = require('path');
 
 const packages = [
   { name: '@rebecca/persona', path: 'packages/persona/coverage/coverage-summary.json' },
+  { name: '@rebecca/db', path: 'packages/db/coverage/coverage-summary.json' },
   { name: 'apps/bot-backend', path: 'apps/bot-backend/coverage/coverage-summary.json' },
   { name: 'apps/dashboard-backend', path: 'apps/dashboard-backend/coverage/coverage-summary.json' },
+  { name: 'apps/functions', path: 'apps/functions/coverage/coverage-summary.json' },
 ];
 
 const THRESHOLD = 80.0;

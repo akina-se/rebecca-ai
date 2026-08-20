@@ -79,8 +79,10 @@ jobs:
           path: |
             coverage-summary.md
             packages/persona/coverage/
+            packages/db/coverage/
             apps/bot-backend/coverage/
             apps/dashboard-backend/coverage/
+            apps/functions/coverage/
 
       - name: Post Coverage Report to PR
         uses: actions/github-script@v7
