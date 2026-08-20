@@ -11,7 +11,8 @@ describe('AppComponent', () => {
 
   beforeEach(async () => {
     mockAuthService = jasmine.createSpyObj('AuthService', ['waitForInit'], {
-      currentUser$: of(null)
+      currentUser$: of({ uid: 'user_1' } as any),
+      currentUser: { uid: 'user_1' } as any
     });
     mockAuthService.waitForInit.and.returnValue(Promise.resolve());
 
@@ -26,15 +27,16 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('should create the app and authenticate user on init', async () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
-  });
-
-  it(`should have the 'frontend' title`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
     expect(app.title).toEqual('frontend');
+
+    await app.ngOnInit();
+    expect(app.isLoading).toBeFalse();
+    expect(app.isLoggedIn).toBeTrue();
+
+    app.ngOnDestroy();
   });
 });

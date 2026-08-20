@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpUsersRepository implements UsersRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
+  private baseUrl = environment.apiUrl;
 
   /**
    * Fetches all user details from the backend supporting pagination, search, and sorting.
@@ -98,19 +98,5 @@ export class HttpUsersRepository implements UsersRepository {
     if (s === 'BLOCKED') return UserStatus.BLOCKED;
     if (s === 'MUTED') return UserStatus.MUTED;
     return UserStatus.ACTIVE;
-  }
-
-  /**
-   * Helper to serialize enum to expected backend format.
-   * 
-   * @param status - The status string.
-   * @returns The backend string representation.
-   */
-  private mapStatusToBackend(status: string): string {
-    const s = status.toUpperCase();
-    if (s === 'ACTIVE') return 'Active';
-    if (s === 'BLOCKED') return 'Blocked';
-    if (s === 'MUTED') return 'Muted';
-    return status;
   }
 }

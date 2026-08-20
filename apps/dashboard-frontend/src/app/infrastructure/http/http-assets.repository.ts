@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpAssetsRepository implements AssetsRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
+  private baseUrl = environment.apiUrl;
 
   /**
    * Retrieves assets, supporting pagination, search, and status filters.

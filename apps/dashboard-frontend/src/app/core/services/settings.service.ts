@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
 })
 export class SettingsService {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
+  private baseUrl = environment.apiUrl;
 
   private readonly LANG_KEY = 'rebecca_lang';
   private readonly TZ_KEY = 'rebecca_tz';

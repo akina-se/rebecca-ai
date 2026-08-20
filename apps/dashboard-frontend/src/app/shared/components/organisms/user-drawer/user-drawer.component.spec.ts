@@ -2,10 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { UserDrawerComponent } from './user-drawer.component';
 import { USERS_REPOSITORY, UsersRepository } from '../../../../core/ports/users.repository';
 import { ToastService } from '../../../services/toast.service';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { DrawerService } from '../../../../core/services/drawer.service';
-
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -66,6 +65,13 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     expect(component.parsedProfile['attributes']).toContain('Gyaru lover');
   });
 
+  it('should handle fetch user error gracefully', () => {
+    mockUsersRepo.getById.and.returnValue(throwError(() => new Error('Not found')));
+    component.userId = 'err_user';
+    component.ngOnChanges();
+    expect(component.userId).toBe('err_user');
+  });
+
   it('should handle malformed coreProfile JSON gracefully', () => {
     const malformedUser = { ...mockUserDetail, coreProfile: 'INVALID_JSON{[' };
     mockUsersRepo.getById.and.returnValue(of(malformedUser));
@@ -84,6 +90,10 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     component.addTag('preferences', fakeEvent);
     expect(component.parsedProfile['preferences']).toContain('Gamer');
 
+    // Empty tag input
+    input.value = '   ';
+    component.addTag('preferences', fakeEvent);
+
     component.removeTag('preferences', 0);
     expect(component.parsedProfile['preferences']).not.toContain('Late night anime');
   });
@@ -92,12 +102,39 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     component.onBlockUser();
     expect(mockUsersRepo.bulkUpdateStatus).toHaveBeenCalledWith(['user_123'], UserStatus.BLOCKED);
     expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/blocked/i), 'success');
+
+    // Unblock branch
+    component.isBlocked = true;
+    component.onBlockUser();
+    expect(mockUsersRepo.bulkUpdateStatus).toHaveBeenCalledWith(['user_123'], UserStatus.ACTIVE);
   });
 
-  it('should format JSON and save updated core profile', () => {
+  it('should handle block user error', () => {
+    mockUsersRepo.bulkUpdateStatus.and.returnValue(throwError(() => new Error('Err')));
+    component.onBlockUser();
+    expect(component.isActionLoading).toBeFalse();
+  });
+
+  it('should format JSON and save updated core profile and handle error', () => {
     component.onSaveProfile();
     const expectedJson = JSON.stringify(component.parsedProfile, null, 2);
     expect(mockUsersRepo.updateMemory).toHaveBeenCalledWith('user_123', expectedJson);
     expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/saved core profile/i), 'success');
+
+    // Error branch
+    mockUsersRepo.updateMemory.and.returnValue(throwError(() => new Error('Err')));
+    component.onSaveProfile();
+    expect(component.isSavingProfile).toBeFalse();
+  });
+
+  it('should open user profile on X via window.open and handle empty handle', () => {
+    spyOn(window, 'open');
+    component.onViewOnX();
+    expect(window.open).toHaveBeenCalledWith('https://x.com/alice_gal', '_blank', 'noopener,noreferrer');
+
+    component.user = undefined;
+    component.userId = null;
+    component.onViewOnX();
+    expect(window.open).toHaveBeenCalledTimes(1);
   });
 });

@@ -14,7 +14,7 @@ import { environment } from '../../../environments/environment';
 })
 export class HttpCopilotRepository implements CopilotRepository {
   private http = inject(HttpClient);
-  private baseUrl = ((environment as Record<string, unknown>)['apiUrl'] as string) || 'http://localhost:8081/api/v1';
+  private baseUrl = environment.apiUrl;
 
   chat(request: CopilotRequest): Observable<CopilotResponse> {
     return this.http.post<CopilotResponse>(`${this.baseUrl}/copilot/chat`, request);
