@@ -192,7 +192,8 @@ export class AssetsUseCase {
       const embedding = await this.generateEmbedding(caption);
       return { caption, embedding, status: AssetStatus.SUCCESS };
     } catch (visionErr) {
-      console.error(`Gemini Vision analysis failed for ${file.originalname}:`, visionErr);
+      const safeName = String(file.originalname || '').replace(/[\r\n]/g, '');
+      console.error('Gemini Vision analysis failed for %s:', safeName, visionErr);
       return { caption: '', embedding: [], status: AssetStatus.FAILED };
     }
   }

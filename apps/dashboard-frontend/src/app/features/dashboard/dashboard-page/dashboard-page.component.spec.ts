@@ -3,7 +3,7 @@ import { DashboardPageComponent } from './dashboard-page.component';
 import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../core/ports/dashboard.repository';
 import { ToastService } from '../../../shared/services/toast.service';
 import { of } from 'rxjs';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, UserLeaderboard } from '@rebecca/types';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
