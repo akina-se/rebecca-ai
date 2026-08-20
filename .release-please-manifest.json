@@ -1,0 +1,10 @@
+{
+  ".": "1.4.0",
+  "apps/bot-backend": "1.4.0",
+  "apps/dashboard-backend": "1.4.0",
+  "apps/dashboard-frontend": "1.4.0",
+  "apps/functions": "1.4.0",
+  "packages/db": "1.4.0",
+  "packages/persona": "1.4.0",
+  "packages/types": "1.4.0"
+}

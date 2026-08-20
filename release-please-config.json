@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "rebecca-ai-gal-monorepo"
+    },
+    "apps/bot-backend": {
+      "release-type": "node",
+      "package-name": "bot-backend"
+    },
+    "apps/dashboard-backend": {
+      "release-type": "node",
+      "package-name": "dashboard-backend"
+    },
+    "apps/dashboard-frontend": {
+      "release-type": "node",
+      "package-name": "dashboard-frontend"
+    },
+    "apps/functions": {
+      "release-type": "node",
+      "package-name": "functions"
+    },
+    "packages/db": {
+      "release-type": "node",
+      "package-name": "@rebecca/db"
+    },
+    "packages/persona": {
+      "release-type": "node",
+      "package-name": "@rebecca/persona"
+    },
+    "packages/types": {
+      "release-type": "node",
+      "package-name": "@rebecca/types"
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "rebecca-ai",
+      "components": [
+        "rebecca-ai-gal-monorepo",
+        "bot-backend",
+        "dashboard-backend",
+        "dashboard-frontend",
+        "functions",
+        "@rebecca/db",
+        "@rebecca/persona",
+        "@rebecca/types"
+      ]
+    },
+    {
+      "type": "node-workspace"
+    }
+  ]
+}
