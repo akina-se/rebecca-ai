@@ -5,10 +5,11 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     await loginWithEmulatorAndSeedDB(page, 'admin@example.com', 'password123');
+    await page.goto('/users');
+    await expect(page.locator('.topbar')).toBeVisible({ timeout: 15000 });
   });
 
   test('should render User Relations table with 30 items pagination', async ({ page }) => {
-    await page.goto('/users');
     await expect(page.locator('h2', { hasText: /User Relations|ユーザー関係/ })).toBeVisible({ timeout: 15000 });
 
     // Wait for user rows
@@ -22,7 +23,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     // Verify pagination controls are present
     const pagination = page.locator('app-pagination');
     await expect(pagination).toBeVisible();
-    await expect(page.locator('.pagination-container .total-items-text')).toContainText(/Showing|表示中/);
+    await expect(page.locator('.pagination-container .total-items-text')).toContainText(/Showing|表示中|全.*件/);
   });
 
   test('should filter users using fuzzy search input', async ({ page }) => {

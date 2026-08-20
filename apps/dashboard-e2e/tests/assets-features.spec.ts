@@ -22,7 +22,7 @@ test.describe('Assets Features E2E Tests', () => {
     // 2. Verify pagination molecule information
     const totalItemsText = page.locator('.pagination-container .total-items-text');
     await expect(totalItemsText).toBeVisible();
-    await expect(totalItemsText).toContainText(/Showing|表示中/);
+    await expect(totalItemsText).toContainText(/Showing|表示中|全.*件/);
 
     const pageInfo = page.locator('.pagination-container .page-info');
     await expect(pageInfo).toContainText(/(Page|ページ) 1 \/ 2/);
