@@ -183,6 +183,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Monorepo
+        run: npm run build
+
       - name: Run LLM Eval Tests
         run: npm run test:eval --workspace=bot-backend
         env:
