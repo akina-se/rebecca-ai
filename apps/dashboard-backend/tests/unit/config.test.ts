@@ -32,7 +32,7 @@ describe('Config Feature Unit Tests', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       firebase: expect.objectContaining({
-        apiKey: 'LOCAL_DEV_API_KEY',
+        apiKey: 'YOUR_API_KEY',
         projectId: 'test-project',
         authDomain: 'test-project.firebaseapp.com'
       }),

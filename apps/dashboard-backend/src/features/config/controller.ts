@@ -17,7 +17,7 @@ export class ConfigController {
 
     const config = {
       firebase: {
-        apiKey: process.env.FIREBASE_WEB_API_KEY || (isProd ? '' : 'LOCAL_DEV_API_KEY'),
+        apiKey: process.env.FIREBASE_WEB_API_KEY || (isProd ? '' : 'YOUR_API_KEY'),
         authDomain: process.env.FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
         projectId: projectId,
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
@@ -27,7 +27,7 @@ export class ConfigController {
       apiUrl: '/api/v1',
       publicSiteUrl: process.env.PUBLIC_SITE_URL || 'https://rebecca-ai.net',
       production: isProd,
-      useEmulators: !isProd && process.env.USE_EMULATORS === 'true',
+      useEmulators: !isProd,
     };
 
     res.status(200).json(config);
