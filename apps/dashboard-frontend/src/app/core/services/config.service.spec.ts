@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ConfigService } from './config.service';
-import { HttpBackend } from '@angular/common/http';
 
 describe('ConfigService', () => {
   let service: ConfigService;
