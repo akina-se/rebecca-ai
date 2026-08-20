@@ -29,7 +29,7 @@ describe('authGuard', () => {
       email: 'admin@test.com'
     } as any);
 
-    const result = await TestBed.runInInjectionContext(() => authGuard());
+    const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
     expect(result).toBeTrue();
   });
 
@@ -38,7 +38,7 @@ describe('authGuard', () => {
     const mockUrlTree = {} as UrlTree;
     routerSpy.parseUrl.and.returnValue(mockUrlTree);
 
-    const result = await TestBed.runInInjectionContext(() => authGuard());
+    const result = await TestBed.runInInjectionContext(() => authGuard({} as any, {} as any));
     expect(result).toBe(mockUrlTree);
     expect(routerSpy.parseUrl).toHaveBeenCalledWith('/login');
   });
