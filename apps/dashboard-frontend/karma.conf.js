@@ -30,8 +30,14 @@ module.exports = function (config) {
         { type: 'lcovonly' }
       ]
     },
+    customLaunchers: {
+      ChromeHeadlessCI: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox', '--disable-gpu', '--disable-translate', '--disable-extensions']
+      }
+    },
     reporters: ['progress', 'kjhtml', 'coverage'],
-    browsers: ['ChromeHeadless'],
+    browsers: ['ChromeHeadlessCI'],
     restartOnFileChange: false,
     singleRun: true
   });

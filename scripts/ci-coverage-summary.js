@@ -2,11 +2,12 @@ const fs = require('fs');
 const path = require('path');
 
 const packages = [
-  { name: '@rebecca/persona', path: 'packages/persona/coverage/coverage-summary.json' },
-  { name: '@rebecca/db', path: 'packages/db/coverage/coverage-summary.json' },
-  { name: 'apps/bot-backend', path: 'apps/bot-backend/coverage/coverage-summary.json' },
-  { name: 'apps/dashboard-backend', path: 'apps/dashboard-backend/coverage/coverage-summary.json' },
-  { name: 'apps/functions', path: 'apps/functions/coverage/coverage-summary.json' },
+  { name: '@rebecca/persona', path: 'packages/persona/coverage/coverage-summary.json', requiredGate: true },
+  { name: '@rebecca/db', path: 'packages/db/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/bot-backend', path: 'apps/bot-backend/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/dashboard-backend', path: 'apps/dashboard-backend/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/functions', path: 'apps/functions/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/dashboard-frontend', path: 'apps/dashboard-frontend/coverage/coverage-summary.json', requiredGate: false },
 ];
 
 const THRESHOLD = 80.0;
@@ -26,7 +27,7 @@ for (const pkg of packages) {
       const lines = parseFloat(total.lines?.pct || 0);
 
       const passed = stmts >= THRESHOLD && branches >= THRESHOLD && funcs >= THRESHOLD && lines >= THRESHOLD;
-      if (!passed) {
+      if (pkg.requiredGate && !passed) {
         allPassed = false;
       }
 
@@ -36,7 +37,7 @@ for (const pkg of packages) {
         branches: `${branches.toFixed(2)}%`,
         funcs: `${funcs.toFixed(2)}%`,
         lines: `${lines.toFixed(2)}%`,
-        status: passed ? '✅ PASS' : '❌ FAIL',
+        status: passed ? '✅ PASS' : (pkg.requiredGate ? '❌ FAIL' : 'ℹ️ REPORTED'),
       });
     } catch (err) {
       console.error(`Error parsing ${pkg.path}:`, err);

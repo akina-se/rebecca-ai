@@ -43,7 +43,7 @@ jobs:
         run: npm run secret-check
 
   build-and-test:
-    name: Build & Test (Coverage Gate)
+    name: test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
