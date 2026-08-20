@@ -342,4 +342,35 @@ describe('Integration Tests', () => {
             expect(xApi.tweet).toHaveBeenCalled();
         });
     });
+
+    describe('Batch & Worker Security Gate (Unauthenticated Access Must Be Blocked)', () => {
+        const batchEndpoints = [
+            { method: 'get', path: '/batch/mentions' },
+            { method: 'get', path: '/batch/dreaming' },
+            { method: 'get', path: '/batch/evolution' },
+            { method: 'get', path: '/batch/news-post' },
+            { method: 'get', path: '/batch/stealth-onboarding' },
+            { method: 'get', path: '/batch/random-engagement' },
+        ];
+
+        batchEndpoints.forEach(({ method, path }) => {
+            it(`should reject unauthenticated request to ${method.toUpperCase()} ${path} with 401 Unauthorized`, async () => {
+                const response = await (request(app) as any)[method](path);
+                expect(response.status).toBe(401);
+                expect(response.body).toEqual({ error: 'Unauthorized' });
+            });
+
+            it(`should reject request to ${method.toUpperCase()} ${path} with invalid token with 401 Unauthorized`, async () => {
+                const response = await (request(app) as any)[method](path).set('Authorization', 'Bearer wrong_token');
+                expect(response.status).toBe(401);
+                expect(response.body).toEqual({ error: 'Unauthorized' });
+            });
+        });
+
+        it('should reject unauthenticated request to POST /worker/reply with 401 Unauthorized', async () => {
+            const response = await request(app).post('/worker/reply').send({ tweetId: '1' });
+            expect(response.status).toBe(401);
+            expect(response.body).toEqual({ error: 'Unauthorized' });
+        });
+    });
 });
