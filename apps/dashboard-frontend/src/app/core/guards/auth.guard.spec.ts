@@ -38,7 +38,7 @@ describe('authGuard', () => {
     const mockUrlTree = {} as UrlTree;
     routerSpy.parseUrl.and.returnValue(mockUrlTree);
 
-    const result = await TestBed.runInInjectionContext(() => authGuard({} as any));
+    const result = await TestBed.runInInjectionContext(() => authGuard());
     expect(result).toBe(mockUrlTree);
     expect(routerSpy.parseUrl).toHaveBeenCalledWith('/login');
   });
