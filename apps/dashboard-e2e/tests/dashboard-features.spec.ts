@@ -344,8 +344,11 @@ test.describe('Dashboard Features E2E Tests', () => {
   test('Scenario F: Full Ranking Modal - should display full ranking modal with handles and pagination', async ({ page }) => {
     const topUsersHeader = page.locator('.table-header-container', { hasText: /Top Engaged Users|エンゲージメント上位ユーザー/ });
     const topUsersContainer = topUsersHeader.locator('..');
-    const viewFullRankingBtn = topUsersContainer.locator('.table-footer-btn');
+    
+    // Ensure table data is loaded before opening modal
+    await expect(topUsersContainer.locator('table.glass-panel tbody tr').first()).toBeVisible({ timeout: 10000 });
 
+    const viewFullRankingBtn = topUsersContainer.locator('.table-footer-btn');
     await viewFullRankingBtn.click();
 
     const modal = page.locator('app-ranking-modal .modal-container');

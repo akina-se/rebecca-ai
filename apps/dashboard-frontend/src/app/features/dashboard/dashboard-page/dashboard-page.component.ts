@@ -152,12 +152,22 @@ export class DashboardPageComponent implements OnInit {
 
   loadTopPosts() {
     const isoDate = this.getIsoDate(this.topPostsDate);
-    this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(response => this.topPosts = response.data);
+    this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(response => {
+      this.topPosts = response.data;
+      if (this.isRankingModalOpen && this.rankingModalType === 'post') {
+        this.openRankingModal('posts');
+      }
+    });
   }
 
   loadTopUsers() {
     const isoDate = this.getIsoDate(this.topUsersDate);
-    this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(response => this.topUsers = response.data);
+    this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(response => {
+      this.topUsers = response.data;
+      if (this.isRankingModalOpen && this.rankingModalType === 'user') {
+        this.openRankingModal('users');
+      }
+    });
   }
 
   getIsoDate(dateStr: string): string {
