@@ -132,14 +132,20 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves when the trigger process is completed or fallback is registered.
    */
   async triggerDreaming(): Promise<void> {
-    const client = new CloudTasksClient();
-
-    const project = process.env.GOOGLE_CLOUD_PROJECT || 'rebecca-ai-project';
-    const location = process.env.GCP_LOCATION || 'asia-northeast1';
-    const queue = process.env.GCP_EVOLUTION_QUEUE || 'evolution-queue';
     const botUrl = process.env.BOT_BACKEND_URL || 'https://bot-backend.example.com';
+    const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
+
+    if (isEmulator) {
+      console.log(`[Local/Emulator fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
+      return;
+    }
 
     try {
+      const client = new CloudTasksClient();
+      const project = process.env.GOOGLE_CLOUD_PROJECT || 'rebecca-ai-project';
+      const location = process.env.GCP_LOCATION || 'asia-northeast1';
+      const queue = process.env.GCP_EVOLUTION_QUEUE || 'evolution-queue';
+
       const parent = client.queuePath(project, location, queue);
       const task = {
         httpRequest: {
@@ -153,9 +159,7 @@ export class SystemMemoryRepository {
       console.log('Successfully kicked off the Dreaming process via Cloud Tasks.');
     } catch (e) {
       console.error('Failed to trigger dreaming via Cloud Tasks', e);
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`[Local fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
-      }
+      console.log(`[Local fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
     }
   }
 }
