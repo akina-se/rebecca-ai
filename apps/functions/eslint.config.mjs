@@ -11,6 +11,14 @@ export default tseslint.config(
     }
   },
   {
-    ignores: ['lib/**', 'node_modules/**', 'coverage/**', 'artifacts/**', 'scratch/**']
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off'
+    }
+  },
+  {
+    ignores: ['lib/**', 'node_modules/**', 'coverage/**', 'artifacts/**', 'jest.config.js', 'scratch/**']
   }
 );
