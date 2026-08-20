@@ -152,3 +152,23 @@ Tracks random engagement history for list members.
 
 ## 6. Rate Limit Handling Specifications
 When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.
+
+## 7. Admin Dashboard & Copilot Specifications
+
+### 7.1 Architecture & Core Capabilities
+1. **Vertical Slicing & Feature-Driven BFF**:
+   - `apps/dashboard-backend` is cleanly decoupled into vertical slices: `timeline`, `users`, `assets`, `system-memory`, `copilot`, and `settings`.
+   - Built on strict Dependency Injection (DI), isolating controllers, use cases, and repositories for testability and maintainability.
+2. **Rebecca Copilot AI Assistant**:
+   - Always-accessible AI chat drawer triggered globally from the top navigation.
+   - Automatically senses active route transitions (Dashboard, Memory, Assets, Users, Settings) and currently inspected entities to dynamically supply rich UI context and suggestion chips.
+   - Autonomous toolchain collects live telemetry from Firestore repositories (KPIs, failed asset captions, flagged users, impressions) and injects it into LLM grounding.
+3. **Two-Phase Human-In-The-Loop (HITL) Safety Approval Flow**:
+   - For destructive actions (e.g., blocking a user, deleting a post, forcing memory dreaming, bulk caption regeneration), Rebecca generates an interactive Action Card rather than executing directly.
+   - Operations are executed only when the administrator (Master) clicks the "Approve & Execute" button.
+4. **Global 1-Hour Timezone Spectrum**:
+   - Supports 29 standard 1-hour interval timezones (UTC-12:00 through UTC+14:00).
+   - Selections are hydrated instantly via `localStorage` and synchronized with Firestore (`/settings/system`), standardizing all UI timestamps in `YYYY/MM/DD HH:mm:ss`.
+5. **Bilingual Internationalization (JA / EN i18n)**:
+   - Powered by Angular Signals and a reactive `TranslationService` / `TranslatePipe`, enabling instant zero-reload language switching.
+   - Seamlessly translates navigation, tables, buttons, toasts, and Rebecca's conversational persona (English Gyaru vs. Japanese Gyaru sister tone).

@@ -1,0 +1,122 @@
+<div class="view-section active">
+    <div class="block-header" style="margin-top: 0;">
+        <h2><span class="material-icons">group</span> {{ 'users.title' | translate }}</h2>
+        <input 
+            type="text" 
+            class="form-control" 
+            [placeholder]="'users.search_placeholder' | translate" 
+            [(ngModel)]="searchQuery" 
+            (ngModelChange)="onSearchChange()" 
+            style="width: 250px; padding: 0.5rem 1rem; border-radius: 20px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--border-color);">
+    </div>
+    
+    <div class="bulk-actions-bar glass-panel" id="user-bulk-bar">
+        <label class="checkbox-container">
+            <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()">
+            <span class="checkmark"></span>
+            <span style="margin-left: 8px;">{{ 'dashboard.select_all' | translate }}</span>
+        </label>
+        <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
+        <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
+            {{ selectedUsers.size > 0 ? (selectedUsers.size + ' ' + ('users.users_selected' | translate)) : ('users.select_users_hint' | translate) }}
+        </span>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isBlocking || isUnblocking"
+            style="min-width: 110px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="executeBulkBlock()">
+            <span class="material-icons" [class.spinning]="isBlocking" style="font-size: 1rem">{{ isBlocking ? 'sync' : 'block' }}</span> 
+            {{ isBlocking ? ('users.blocking' | translate) : ('users.block' | translate) }}
+        </button>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isBlocking || isUnblocking"
+            style="min-width: 120px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: var(--text-main); background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="executeBulkUnblock()">
+            <span class="material-icons" [class.spinning]="isUnblocking" style="font-size: 1rem">{{ isUnblocking ? 'sync' : 'lock_open' }}</span> 
+            {{ isUnblocking ? ('users.unblocking' | translate) : ('users.unblock' | translate) }}
+        </button>
+    </div>
+    
+    <table class="data-table glass-panel" style="border-radius: 0;">
+        <thead><tr>
+            <th style="width: 40px;"></th>
+            <th class="sortable-th" (click)="toggleUserSort('handle')" style="cursor: pointer; user-select: none;" title="Sort by User ID">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span [style.color]="userSortBy === 'handle' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'handle' ? '600' : 'normal'">{{ 'users.table_handle' | translate }}</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'handle' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'handle' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    </span>
+                </div>
+            </th>
+            <th class="sortable-th" (click)="toggleUserSort('interactions')" style="cursor: pointer; user-select: none;" title="Sort by Interactions">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span [style.color]="userSortBy === 'interactions' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'interactions' ? '600' : 'normal'">{{ 'users.table_interactions' | translate }}</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'interactions' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'interactions' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    </span>
+                </div>
+            </th>
+            <th class="sortable-th" (click)="toggleUserSort('lastSeen')" style="cursor: pointer; user-select: none;" title="Sort by Last Interaction">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span [style.color]="userSortBy === 'lastSeen' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'lastSeen' ? '600' : 'normal'">{{ 'users.table_last_interaction' | translate }}</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'lastSeen' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'lastSeen' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    </span>
+                </div>
+            </th>
+            <th>{{ 'users.table_rag_status' | translate }}</th>
+            <th>{{ 'users.table_status' | translate }}</th>
+        </tr></thead>
+        <tbody>
+            <tr class="clickable" *ngFor="let user of users" (click)="openUserDrawer(user.handle)" [style.opacity]="user.status === 'BLOCKED' ? 0.6 : 1">
+                <td (click)="$event.stopPropagation()">
+                    <label class="checkbox-container" (click)="$event.stopPropagation()">
+                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has(user.handle)" (change)="toggleSelection(user.handle, $event)">
+                        <span class="checkmark"></span>
+                    </label>
+                </td>
+                <td style="font-weight: 500;" [style.text-decoration]="user.status === 'BLOCKED' ? 'line-through' : 'none'">{{ user.handle }}</td>
+                <td>{{ user.interactions | number }}</td>
+                <td style="color: var(--text-muted); white-space: nowrap;" [title]="user.lastSeen || ''">{{ user.lastSeen | tzDate }}</td>
+                <td>
+                    <span class="badge" 
+                        [style.background]="user.ragMemoriesStatus === 'Generated' ? 'rgba(46, 213, 115, 0.15)' : 'rgba(255,255,255,0.05)'" 
+                        [style.color]="user.ragMemoriesStatus === 'Generated' ? 'var(--success)' : 'var(--text-muted)'"
+                        [style.borderColor]="user.ragMemoriesStatus === 'Generated' ? 'rgba(46, 213, 115, 0.3)' : 'var(--border-color)'">
+                        {{ (user.ragMemoriesStatus === 'Generated' ? 'users.rag_generated' : 'users.rag_none') | translate }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge" *ngIf="user.status === 'ACTIVE'">{{ 'users.status_active' | translate }}</span>
+                    <span class="badge" *ngIf="user.status === 'BLOCKED'" style="background: rgba(255, 71, 87, 0.2); color: var(--danger); border-color: rgba(255, 71, 87, 0.4);">{{ 'users.status_blocked' | translate }}</span>
+                    <span class="badge" *ngIf="user.status === 'MUTED'" style="background: rgba(255, 159, 67, 0.2); color: var(--warning); border-color: rgba(255, 159, 67, 0.4);">{{ 'users.status_muted' | translate }}</span>
+                </td>
+            </tr>
+            <tr *ngIf="users.length === 0 && !isLoading">
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted)">{{ 'users.no_users' | translate }}</td>
+            </tr>
+            <tr *ngIf="isLoading">
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted)">{{ 'common.loading' | translate }}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <!-- Shared Pagination Component -->
+    <div style="margin-top: 0;" *ngIf="totalPages > 1 || totalItems > 0">
+        <app-pagination
+            [currentPage]="currentPage"
+            [totalPages]="totalPages"
+            [totalItems]="totalItems"
+            [itemsLabel]="'pagination.users' | translate"
+            [isLoading]="isLoading"
+            (pageChange)="onPageChange($event)">
+        </app-pagination>
+    </div>
+</div>
+
+<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
+    <div style="padding: 20px;">
+        <app-user-drawer [userId]="selectedUserId"></app-user-drawer>
+    </div>
+</app-right-drawer>

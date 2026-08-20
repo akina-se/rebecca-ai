@@ -1,65 +1,83 @@
-# Rebecca - The Unconditional Affirmation Gyaru AI 
+# REBECCA AI SYSTEM ARCHITECTURE
 
 [![CI Status](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml/badge.svg)](https://github.com/akina-se/rebecca-ai/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Release](https://img.shields.io/github/v/release/akina-se/rebecca-ai)](https://github.com/akina-se/rebecca-ai/releases)
 
 ![Rebecca AI](docs/rebecca_landscape.jpg)
 
-**The kindest, unconditional affirmation Gyaru AI.**
-This is a fully serverless backend system operating on X (formerly Twitter), leveraging Google Cloud Platform (GCP) and the Gemini API.
+## Overview: The All-Affirming Gyaru AI "Rebecca"
 
-[日本語版の仕様書 (Japanese Specification)](docs/specification_ja.md) | [English Specification](docs/specification_en.md)
+Welcome to the Rebecca Project. This repository houses the complete backend and frontend ecosystem for "Rebecca", an advanced, all-affirming "Gyaru" persona AI. Engineered to provide an unconditionally positive and highly engaging interactive experience on X (formerly Twitter), Rebecca transcends traditional chatbots by implementing complex psychological simulation and contextual awareness.
 
-⚠️ **IMPORTANT DISCLAIMER FOR OPERATORS** ⚠️
-When operating this bot on X (Twitter), you MUST explicitly state in the account's profile description or pinned tweet: **"Rebecca is an AI, and her statements are fiction. She has no relation to real individuals or organizations."** This is critical to mitigate legal risks such as defamation, as the AI's generated "Gyaru" persona may inadvertently target real entities.
+Developed with the technical rigor expected of enterprise-grade cloud architectures, this system is a fully serverless, highly scalable monorepo leveraging Google Cloud Platform, Firebase, and the state-of-the-art Gemini API.
 
----
+## Core Features and Behavioral Design
 
-## Features
+- **Triple-Buffer Memory System**: Implements a multi-layered persistent memory architecture, ensuring Rebecca never loses the context of a conversation, seamlessly transitioning from short-term context to long-term memory via RAG (Retrieval-Augmented Generation) and vector search.
+- **Dynamic Context Injection**: Rebecca's internal prompts mutate dynamically based on environmental variables such as the time of day (morning routines, late-night deep talks), the user's absence duration, and keyword triggers like "overtime" or "boss" to provide hyper-personalized empathy.
+- **Intentional Humanized Latency**: To avoid the mechanical feel of instant replies, the system injects a randomized, intentional delay (1 to 3 minutes) via Cloud Tasks before responding to X mentions, accurately simulating human typing and thought processes.
+- **Proactive Engagement and Evolution**: Background processes scrape news and timelines to proactively engage users, while the "Evolution" batch system extracts collective consciousness from past interactions to refine and audit Rebecca's persona using LLM-as-a-Judge mechanisms.
+- **Strict Rate Limiting and Cost Controls**: Built-in, multi-tiered quota management prevents unexpected billing spikes from the GCP or X APIs, dynamically distributing limits globally, daily, and per user.
 
-- **Triple-Buffer Memory System**: Converts conversation contexts into long-term memory (RAG) efficiently without losing detail.
-- **Dynamic Context Injection**: Dynamically alters the AI's prompt based on the time of day (morning/late night), user absence duration, and specific keywords like "overtime" or "boss".
-- **Automatic Language Separation**: Detects the user's input language and switches entirely to an English system prompt (featuring English slang) for English-speaking users, preventing unnatural code-switching.
-- **Proactive Image Attachment**: Automatically analyzes uploaded images with Gemini Vision, converts captions to vector embeddings, and uses Firestore Semantic Vector Search (KNN) to intelligently attach them to proactive timeline posts based on inferred context and search queries.
-- **Intentional Delay**: Introduces a random 1-3 minute delay before replying to simulate human behavior.
-- **Strict Rate Limiting**: Multi-tiered dynamic limit management (Global Monthly, Global Daily, Dynamic User Allocation) to prevent unexpected API billing explosions for both X API and GCP.
+## System Architecture
 
-## Tech Stack
+The ecosystem is built around a scalable, event-driven serverless architecture.
 
-- **Language**: TypeScript / Node.js (Express)
-- **AI Models**:
-  - Main Conversation & Inference: `gemini-3.1-flash-lite`
-  - Image Recognition (Vision): `gemini-3.1-flash-lite`
-  - Language Detection & Safety Audit: `gemma-4-31b-it`
-  - RAG Vectorization: `text-embedding-004`
-- **Infrastructure (GCP)**: Cloud Run, Cloud Tasks, Cloud Scheduler, Cloud Firestore, Cloud Storage (GCS)
-- **SNS Integration**: X API v2 (via `@xdevplatform/xdk`)
+```mermaid
+sequenceDiagram
+    participant User as X (Twitter) User
+    participant Webhook as Cloud Run (Webhook Receiver)
+    participant Task as Cloud Tasks (Delay Queue)
+    participant Worker as Cloud Run (Core Worker)
+    participant DB as Firestore (Vector Store)
+    participant LLM as Gemini API
 
-## Architecture
+    User->>Webhook: Sends Mention/Reply
+    Webhook->>Task: Enqueue Payload (1-3 min delay)
+    Webhook-->>User: HTTP 200 OK
+    Note right of Task: Simulating human response time
+    Task->>Worker: Dispatch Event
+    Worker->>DB: Fetch Conversational Context & RAG Memories
+    Worker->>Worker: Inject Dynamic Persona Context
+    Worker->>LLM: Generate Response
+    LLM-->>Worker: Stream/Return Text
+    Worker->>DB: Persist New Memory
+    Worker->>User: Post Reply via X API
+```
+
+## Monorepo Topology
+
+The codebase is organized as a unified monorepo using npm Workspaces and Turborepo for optimized build caching and dependency management.
 
 ```mermaid
 graph TD
-    User([User on X]) -- "@Mention" --> XAPI[X API]
-    XAPI -- "Webhook / Polling" --> Webhook[Cloud Run: Receiver]
+    User([User on X]) <-->|Mentions & Replies| BotBackend[apps/bot-backend]
+    Admin([Dashboard Operator]) <-->|Angular UI| DashFrontend[apps/dashboard-frontend]
+    DashFrontend <-->|JSON REST API| DashBackend[apps/dashboard-backend BFF]
     
-    subgraph GCP [Serverless Backend]
-        Webhook -- "Enqueue (1-3 min delay)" --> Tasks[Cloud Tasks]
-        Tasks -- "Execute Worker" --> Worker[Cloud Run: Worker]
-        
-        Worker <--> DB[(Firestore: Memory & RAG)]
-        Worker <--> LLM[Gemini API]
+    subgraph SharedModules ["Shared Modules"]
+        Types[packages/types]
+        DB[packages/db]
+        Persona[packages/persona]
+        Grpc[packages/grpc-schemas]
     end
     
-    Worker -- "Generate & Reply" --> XAPI
+    DashBackend <-->|gRPC Protocol| BotBackend
+    BotBackend -.->|Persist Memory| Firestore[(Cloud Firestore)]
+    Firestore -.->|Event Trigger| Functions[apps/functions]
+    Functions -.->|Aggregate Read Models| Firestore
+    DashBackend -->|Query Dashboard Stats| Firestore
+    
+    DashBackend -.-> SharedModules
+    BotBackend -.-> SharedModules
+    Functions -.-> SharedModules
 ```
 
 ## Setup Instructions
 
-> **⚠️ Note on Gemini API (Free Tier):**
+> **Note on Gemini API (Free Tier):**
 > If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
-
 
 ### 1. GCP Project Setup
 1. Create a new project in the GCP Console and enable billing (required even for the free tier).
@@ -88,6 +106,8 @@ PORT=8080
 
 # Security for Batch Endpoints
 BATCH_SECRET_KEY=your-secret-key-for-local-or-fallback-auth
+OIDC_EXPECTED_AUDIENCE=https://your-cloud-run-service-url.a.run.app
+OIDC_EXPECTED_ISSUER=https://accounts.google.com
 
 # GCP
 GCP_PROJECT_ID=your-gcp-project-id
@@ -116,60 +136,49 @@ GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
 GLOBAL_DAILY_LIMIT=500
 SPAM_MINUTE_LIMIT=3
 PUBLIC_IP_RATE_LIMIT=100
-
-# Auth Configuration
-BATCH_SECRET_KEY=your_secret_key_here
-OIDC_EXPECTED_AUDIENCE=https://your-cloud-run-service-url.a.run.app
-OIDC_EXPECTED_ISSUER=https://accounts.google.com
 ```
 
-### 3. Local Execution & Testing
+### Applications (`apps/`)
+
+- **`apps/bot-backend`**: The core worker service. Handles RAG memory injection, intent analysis, X API integration, and the background "Dreaming" evolution process.
+- **`apps/dashboard-backend`**: Backend-for-Frontend (BFF) server providing administrative REST endpoints to the control panel, secured via Firebase Auth. Communicates with the bot-backend via gRPC.
+- **`apps/dashboard-frontend`**: A glassmorphic, Chibi-themed Angular administration control panel for monitoring AI interactions and system health.
+- **`apps/functions`**: Firebase Cloud Functions that asynchronously aggregate raw timeline interactions into read-optimized statistics, ensuring dashboard query performance.
+
+### Packages (`packages/`)
+
+- **`packages/types`**: Shared TypeScript definitions, interaction schemas, and global configurations.
+- **`packages/db`**: Shared database repository classes and connection pool managers.
+- **`packages/persona`**: The core repository for Rebecca's persona definition prompts and JST-focused system rules.
+- **`packages/grpc-schemas`**: Protocol Buffer schemas defining internal inter-service gRPC APIs.
+
+## Global Monorepo Operations
+
+We utilize **Turborepo** to orchestrate building, linting, and testing concurrently across all workspaces.
+
 ```bash
-# Install dependencies
+# Install dependencies for all workspaces and hoist shared modules
 npm install
 
-# Run tests (with coverage)
-npm run test:cov
+# Run build across all apps and packages in topological order
+npm run build
 
-# Run LLM-as-a-Judge Prompt Safety tests
-npm run test:eval
+# Execute linters (ESLint / Angular Lint) globally
+npm run lint
 
-# Test chatting locally via CLI
-npm run chat
+# Run all unit and integration test suites
+npm run test
 
-# Manually trigger Batches
-npm run batch:evolution
-npm run batch:news
-
-# Setup Cloud Scheduler and Cloud Tasks for automatic batches and async replies
-npm run setup:scheduler
-npm run setup:tasks
+# Perform security audit checks for exposed secrets
+npm run secret-check
 ```
 
-### 4. Deployment
-```bash
-npm run deploy
-```
+For detailed setup instructions, local testing environments (including the standalone local chat CLI), and deployment guides, please refer to the respective `README.md` files within the `apps/` and `packages/` directories.
 
-## Community & Security
-
-- **[Code of Conduct](CODE_OF_CONDUCT.md)**: We are committed to fostering a welcoming community. Please read and follow our Code of Conduct.
-- **[Security Policy](SECURITY.md)**: If you discover a security vulnerability, please refer to our Security Policy for reporting instructions.
-- **[Contributing Guide](CONTRIBUTING.md)**: Want to help? Check out our guidelines for submitting pull requests and issues.
-
-## Directory Structure
-- `src/index.ts` : Application entry point with Dependency Injection setup
-- `src/core/` : Core domain logic (Memory management, Context injection, Evolution audit)
-- `src/routes/` : Express route definitions (`batchRoutes.ts`, `workerRoutes.ts`)
-- `src/middleware/` : Authentication and Rate Limiting middlewares
-- `src/services/` : External service integrations (Firestore, Gemini, X, Cloud Tasks)
-- `src/config/` : Configuration and environment variables
-- `tests/` : Unit and integration tests
-- `scripts/` : Deployment and utility scripts
-
----
 ## License
+
 This project is licensed under the [MIT License](LICENSE).
 
 ## Author
+
 AKINA
