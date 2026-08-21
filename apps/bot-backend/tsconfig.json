@@ -3,6 +3,7 @@
     "target": "ES2022",
     "module": "CommonJS",
     "outDir": "./dist",
+    "rootDir": "./src",
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
@@ -11,12 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "types": ["node", "jest", "express"],
-    "paths": {
-      "@rebecca/types": ["../../packages/types/src/index.ts"],
-      "@rebecca/db": ["../../packages/db/src/index.ts"],
-      "@rebecca/persona": ["../../packages/persona/src/index.ts"]
-    }
+    "types": ["node", "jest", "express"]
   },
   "include": [
     "src/**/*"
