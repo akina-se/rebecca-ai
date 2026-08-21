@@ -25,10 +25,7 @@
   },
   "dependencies": {
     "firebase-admin": "^12.1.0",
-    "firebase-functions": "^5.0.1",
-    "@google-cloud/firestore": "^8.6.0",
-    "@rebecca/db": "*",
-    "@rebecca/types": "*"
+    "firebase-functions": "^5.0.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
