@@ -1,8 +1,20 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { COLLECTIONS } from '@rebecca/db';
-import { RawConversationLog } from '@rebecca/types';
+
+const COLLECTIONS = {
+  USERS: 'users',
+  CONVERSATION_LOGS: 'conversation_logs',
+  SYSTEM_STATS: 'system_stats',
+} as const;
+
+interface RawConversationLog {
+  userId?: string;
+  userText?: string;
+  aiText?: string;
+  timestamp?: string;
+  [key: string]: unknown;
+}
 
 /**
  * Cloud Function trigger that executes when a new conversation log document is created in Firestore.
