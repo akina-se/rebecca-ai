@@ -20,6 +20,14 @@
   - ベクトル化処理: text-embedding-004
 - **連携API**: X (Twitter) API v2 (ライブラリ: `@xdevplatform/xdk`)
 
+### 1.1 ダッシュボード・アーキテクチャ (Dashboard Architecture)
+管理画面（Admin Dashboard）向けには、Botコアロジックを肥大化させないため、専用の **BFF (Backend-For-Frontend)** を採用しています。
+また、将来的な「完全な非同期CQRS基盤」へのシームレスな移行を見据え、**Firestore Triggersを利用した「論理的CQRS」**を構築し、極限までコストを抑えつつアーキテクチャの美しさとスケール性を担保しています。
+
+- **Dashboard BFF**: `apps/dashboard-backend` に配置される独立したマイクロサービス。管理者向けのREST APIを提供し、Bot Coreと gRPC通信を行います。
+- **DIとクリーンアーキテクチャ**: BFF内のコアビジネスロジックは、インフラ（FirestoreやgRPC）に一切依存しないよう厳格な **Dependency Injection (DI)** によって抽象化されています。これにより、将来的にKafkaやElasticsearchを用いた物理的なCQRSへ移行する際も、コアコードの変更ゼロで対応可能です。
+- **低コストCQRS (Firestore Triggers)**: ダッシュボードのKPI計算用に毎度大量のドキュメントを読み取ることによる「Read課金の爆発」を防ぐため、Bot CoreがデータをWriteした際、Cloud Functionsが起動し、ダッシュボード表示専用の「サマリー（Read Model）」ドキュメントを更新する仕組みを採用しています。
+
 ## 2. キャラクター仕様・ペルソナ (Persona Specification)
 レベッカはジェミテック社（Gemitech）製・最新鋭パーソナルAIという設定のキャラクターです。
 
@@ -152,3 +160,24 @@
 
 ## 6. レートリミット時の挙動仕様 (Rate Limit Handling)
 日間のリプライ上限に達した際、システムはフェイルセーフとして新規リプライ処理を一時停止する。この際、単なる無応答とするのではなく、翌朝の定期ポスト等の自発的なメッセージ内で自身の「演算リソース（返信可能件数）の制限」について可愛らしく言及する設計とし、システム運用上の制約をキャラクター設定（世界観）に組み込んで自然に表現する仕様としている。
+
+## 7. 管理ダッシュボード仕様 (Admin Dashboard & Copilot Specification)
+
+### 7.1 アーキテクチャと機能一覧
+1. **Vertical Slicing & Feature-Driven BFF**:
+   - `apps/dashboard-backend` は、Clean Architecture / Vertical Slicing により `timeline`, `users`, `assets`, `system-memory`, `copilot`, `settings` の各機能スライスに分離。
+   - Dependency Injection (DI) により、コントローラー・ユースケース・リポジトリが疎結合に設計され、単体テスト・E2Eテストが容易。
+2. **Rebecca Copilot AI アシスタント**:
+   - 右上の「Rebecca」ボタンから開く常駐ドロワー。
+   - 画面遷移（Dashboard, Memory, Assets, Users, Settings）やドロワー表示中エンティティをリアルタイム検知し、UIコンテクストに即した対話・サジェスチョンチップを提供。
+   - 自律型データ収集ツールチェーンにより、FirestoreリポジトリからKPI、失敗アセット、要注意ユーザー、タイムライン投稿を自律検索してLLMコンテクストに注入。
+3. **Two-Phase Human-In-The-Loop (HITL) セーフティ承認フロー**:
+   - 破壊的操作（ユーザーのブロック、投稿削除、強制ドリーミング、キャプション一括再生成など）を依頼された場合、即時実行せず「承認カード」をチャット内に提示。
+   - 管理者（マスター）がカード内の「実行を承認する」ボタンをクリックした時のみ、安全に更新APIを呼び出すフェイルセーフ設計。
+4. **1時間刻みのグローバルタイムゾーン対応**:
+   - UTC-12:00 から UTC+14:00 までの世界標準1時間刻みタイムゾーンをサポート。
+   - 選択されたタイムゾーンは `localStorage` および Firestore（`/settings/system`）に永続化され、全画面のタイムスタンプが `YYYY/MM/DD HH:mm:ss` 形式で統一表示される。
+5. **日英（JA/EN）完全多言語化 (i18n)**:
+   - Angular Signals ベースの `TranslationService` / `TranslatePipe` により、画面リロードなしで日本語と英語が即座に切り替わる。
+   - UIの各ラベルだけでなく、Rebecca の初期挨拶・サジェスチョン・プロンプト・回答言語（英語ギャル / 日本語お姉さんギャル）も言語設定に完全連動。
+

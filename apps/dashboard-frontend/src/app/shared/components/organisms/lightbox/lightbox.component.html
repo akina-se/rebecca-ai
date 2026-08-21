@@ -1,0 +1,15 @@
+<div class="lightbox-overlay" *ngIf="isOpen" (click)="closeLightbox()">
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+        <button class="close-btn" (click)="closeLightbox()">
+            <span class="material-icons">close</span>
+        </button>
+        <div class="image-container">
+            <!-- Mock image placeholder -->
+            <div class="mock-image" *ngIf="!imageUrl">
+                <span class="material-icons" style="font-size: 5rem; color: var(--color-primary);">image</span>
+                <p style="margin-top: 20px; color: var(--text-muted);">Media Content Preview</p>
+            </div>
+            <img *ngIf="imageUrl" [src]="imageUrl" alt="Media content">
+        </div>
+    </div>
+</div>

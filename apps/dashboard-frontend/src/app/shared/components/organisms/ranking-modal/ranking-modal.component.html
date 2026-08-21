@@ -1,0 +1,50 @@
+<div class="modal-backdrop" *ngIf="isOpen" (click)="onBackdropClick($event)">
+    <div class="modal-container glass-panel" role="dialog" aria-modal="true">
+
+        <!-- Header -->
+        <div class="modal-header">
+            <div class="modal-title">
+                <span class="material-icons">emoji_events</span>
+                {{ title }}
+            </div>
+            <button class="close-btn" (click)="onClose()" aria-label="Close">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+
+        <!-- Table -->
+        <div class="modal-body">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th class="rank-col">{{ 'ranking_modal.rank' | translate }}</th>
+                        <th>{{ colLabel }}</th>
+                        <th class="metric-col">{{ colMetric }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let entry of pagedEntries" [class.podium]="entry.rank <= 3" class="clickable" (click)="onRowClick(entry)">
+                        <td class="rank-cell">
+                            <div *ngIf="entry.badge" class="rank-badge" [ngClass]="'rank-' + entry.badge">
+                                <span class="material-icons">emoji_events</span>
+                            </div>
+                            <span *ngIf="!entry.badge" class="rank-number">{{ entry.rank }}</span>
+                        </td>
+                        <td class="label-cell">{{ entry.label }}</td>
+                        <td class="metric-cell">{{ entry.value }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="modal-footer" *ngIf="totalPages > 1">
+            <app-pagination
+                [currentPage]="currentPage"
+                [totalPages]="totalPages"
+                [showTotalCount]="false"
+                (pageChange)="goToPage($event)">
+            </app-pagination>
+        </div>
+    </div>
+</div>

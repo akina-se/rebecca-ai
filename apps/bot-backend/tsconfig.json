@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "outDir": "./dist",
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "types": ["node", "jest", "express"],
+    "paths": {
+      "@rebecca/types": ["../../packages/types/src/index.ts"],
+      "@rebecca/db": ["../../packages/db/src/index.ts"],
+      "@rebecca/persona": ["../../packages/persona/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "scripts",
+    "tests"
+  ]
+}

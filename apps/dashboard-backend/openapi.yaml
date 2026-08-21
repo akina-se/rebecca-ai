@@ -1,0 +1,660 @@
+openapi: 3.0.3
+info:
+  title: Rebecca Admin Dashboard BFF API
+  description: |
+    Backend-for-Frontend (BFF) API serving the Rebecca AI Admin Dashboard.
+    Provides endpoints for user monitoring, memory administration, timeline post history, and image asset uploads.
+    
+    ### Timezones
+    All datetimes are returned in ISO-8601 UTC format (with `Z` suffix).
+    Aggregation endpoints (like `/posts`) handle JST (Japan Standard Time, UTC+09:00) conversions internally when using the `period` and `isoDate` query parameters to prevent date boundary alignment bugs.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/v1/dashboard
+    description: Local Dev Server
+paths:
+  /alerts:
+    get:
+      summary: Get dynamic system warnings and alerts
+      description: Aggregates active warnings dynamically across the system (e.g., failed image captions count).
+      responses:
+        '200':
+          description: Dynamic alerts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SystemAlert'
+                  Count:
+                    type: integer
+                    example: 1
+
+  /users:
+    get:
+      summary: Retrieve users list (Leaderboard)
+      description: Returns a paginated leaderboard or list of monitored users.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: startAfterId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          description: Prefix search by user handle
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [interactions, affinityScore]
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserOverview'
+                  Count:
+                    type: integer
+
+  /users/status:
+    put:
+      summary: Bulk update user statuses
+      description: Updates the status of multiple users simultaneously (Active, Blocked, Muted).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+                - status
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                status:
+                  $ref: '#/components/schemas/UserStatus'
+      responses:
+        '200':
+          description: Bulk status update results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /users/{id}:
+    get:
+      summary: Get user details and chat history
+      description: Retrieves full profile details and paginated chat history for a specific user handle.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User handle (without @ prefix, e.g. rebecca_oshi)
+          schema:
+            type: string
+        - name: beforeTimestamp
+          in: query
+          required: false
+          description: Before ISO timestamp for paginated chat history
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Limit for chat logs page size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Detailed user details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '404':
+          description: User not found
+
+  /users/{id}/memory:
+    put:
+      summary: Update a user's memory profile
+      description: Manually modifies the RAG memory categories and profile attributes of a user.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - coreProfile
+              properties:
+                coreProfile:
+                  $ref: '#/components/schemas/UserCoreProfile'
+                status:
+                  $ref: '#/components/schemas/UserStatus'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /posts:
+    get:
+      summary: Retrieve timeline posts history
+      description: Retrieves paginated timeline posts, filtered by period and JST-aligned range.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: startAfterId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          description: Search pattern for post snippets
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [monthly, yearly, all-time]
+            default: all-time
+        - name: isoDate
+          in: query
+          required: false
+          description: JST-aligned date boundary parameter (e.g. "2026-07" for monthly, "2026" for yearly)
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          required: false
+          schema:
+            type: string
+            default: time
+        - name: sortOrder
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TimelinePost'
+                  Count:
+                    type: integer
+
+    delete:
+      summary: Bulk delete timeline posts
+      description: Triggers deletion of posts from both Firestore and X (Twitter) via Bot gRPC client.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Deletion results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  deletedCount:
+                    type: integer
+                    example: 3
+
+  /images:
+    get:
+      summary: Retrieve library image assets
+      description: Returns a list of image assets with automatic alt-text generated by Gemini.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: startAfterId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AssetStatus'
+      responses:
+        '200':
+          description: List of image assets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImageAsset'
+                  Count:
+                    type: integer
+
+  /images/upload:
+    post:
+      summary: Upload an image asset
+      description: Uploads a raw image file to GCS and queues Gemini for auto-captioning.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Uploaded image record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImageAsset'
+
+  /images/{id}:
+    put:
+      summary: Edit image metadata
+      description: Updates the user-assigned name or caption for an image asset.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                caption:
+                  type: string
+      responses:
+        '200':
+          description: Image metadata updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /memory/layers:
+    get:
+      summary: Retrieve system memory layer structure
+      description: Lists the different system memory layers (Level 0, 1, 2) and their editing permissions.
+      responses:
+        '200':
+          description: Memory layers list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemoryLayer'
+
+  /memory/core:
+    get:
+      summary: Get Layer 0 Core Persona Prompt
+      description: Returns the immutable identity and behavioral prompt instructions for Rebecca.
+      responses:
+        '200':
+          description: Core prompt instructions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryContent'
+
+  /memory/global:
+    get:
+      summary: Get Layer 2 Global Memory
+      description: Retrieves the dynamic global memory context summary.
+      responses:
+        '200':
+          description: Global summary memory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryContent'
+    put:
+      summary: Update Layer 2 Global Memory
+      description: Manually overrides the global personality memory summary.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Memory updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /memory/force-dreaming:
+    post:
+      summary: Force Dreaming consolidation
+      description: Non-blocking trigger to run the background Dreaming process in the Bot backend.
+      responses:
+        '202':
+          description: Dreaming evolution triggered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Dreaming process initiated
+
+components:
+  schemas:
+    SystemAlert:
+      type: object
+      properties:
+        id:
+          type: string
+          example: alert-failed-captions
+        type:
+          type: string
+          enum: [warning, info]
+          example: warning
+        message:
+          type: string
+          example: "3 image caption generations failed in the last 24 hours."
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-07-18T13:35:28.000Z"
+
+    UserOverview:
+      type: object
+      properties:
+        handle:
+          type: string
+          example: "@rebecca_oshi"
+        name:
+          type: string
+          example: "Unknown"
+        interactions:
+          type: integer
+          example: 2
+        affinityScore:
+          type: string
+          example: "N/A"
+        firstSeen:
+          type: string
+          example: "N/A"
+        lastSeen:
+          type: string
+          example: "N/A"
+        coreProfile:
+          type: string
+          description: JSON serialized string of profile structure
+          example: '{"attributes":["student"],"preferences":["anime"],"concerns":[],"important_memories":[]}'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+
+    UserDetail:
+      type: object
+      properties:
+        handle:
+          type: string
+          example: "@rebecca_oshi"
+        name:
+          type: string
+          example: "Unknown"
+        interactions:
+          type: integer
+          example: 2
+        affinityScore:
+          type: string
+          example: "N/A"
+        firstSeen:
+          type: string
+          example: "2026-07-18T12:35:15.908Z"
+        lastSeen:
+          type: string
+          example: "2026-07-18T12:35:15.908Z"
+        coreProfile:
+          type: string
+          description: JSON serialized string of profile structure
+          example: '{"attributes":["student"],"preferences":["anime"],"concerns":[],"important_memories":[]}'
+        chatHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatBubble'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+
+    UserCoreProfile:
+      type: object
+      properties:
+        attributes:
+          type: array
+          items:
+            type: string
+        preferences:
+          type: array
+          items:
+            type: string
+        concerns:
+          type: array
+          items:
+            type: string
+        important_memories:
+          type: array
+          items:
+            type: string
+
+    ChatBubble:
+      type: object
+      properties:
+        from:
+          type: string
+          enum: [user, rebecca]
+          example: user
+        text:
+          type: string
+          example: "Hello Rebecca!"
+        time:
+          type: string
+          format: date-time
+          example: "2026-07-18T13:35:28.000Z"
+
+    TimelinePost:
+      type: object
+      properties:
+        id:
+          type: string
+          example: p1
+        time:
+          type: string
+          format: date-time
+          example: "2026-07-18T13:35:28.000Z"
+        snippet:
+          type: string
+          example: "Hello world!"
+        impressions:
+          type: integer
+          example: 450
+        hasMedia:
+          type: boolean
+          example: false
+
+    ImageAsset:
+      type: object
+      properties:
+        id:
+          type: string
+          example: img-123
+        name:
+          type: string
+          example: "profile_rebecca.png"
+        caption:
+          type: string
+          example: "Close up of chibi Rebecca smiling with purple eyes"
+        url:
+          type: string
+          format: uri
+          example: "https://storage.googleapis.com/rebecca-assets/profile_rebecca.png"
+        status:
+          $ref: '#/components/schemas/AssetStatus'
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-07-18T13:35:28.000Z"
+
+    MemoryLayer:
+      type: object
+      properties:
+        level:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Layer 1: Extended Persona Tuning"
+        description:
+          type: string
+          example: "Dynamic behavioral instructions"
+        lastUpdated:
+          type: string
+          example: "Auto-updated by Dreaming"
+        isReadOnly:
+          type: boolean
+          example: false
+
+    MemoryContent:
+      type: object
+      properties:
+        level:
+          type: integer
+          example: 2
+        name:
+          type: string
+          example: "Layer 2: Global Timeline Summary"
+        content:
+          type: string
+          example: "Rebecca is active talking about programming."
+        isReadOnly:
+          type: boolean
+          example: false
+
+    UserStatus:
+      type: string
+      enum: [ACTIVE, BLOCKED, MUTED]
+      example: ACTIVE
+
+    AssetStatus:
+      type: string
+      enum: [SUCCESS, FAILED, PROCESSING]
+      example: SUCCESS

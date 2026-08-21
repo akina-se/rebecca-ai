@@ -1,0 +1,17 @@
+<div class="view-section active">
+    <div class="block-header" style="margin-top: 0;"><h2><span class="material-icons">tune</span> {{ 'settings.title' | translate }}</h2></div>
+    <div class="glass-panel" style="max-width: 600px; padding: 2rem; border-radius: 12px;">
+        <div class="form-group">
+            <label class="form-label"><span class="material-icons">language</span> {{ 'settings.app_language' | translate }}</label>
+            <div style="width: 100%; max-width: 350px;">
+                <app-dropdown [options]="langOptions" [selectedOption]="selectedLang" (selectionChange)="selectedLang = $event"></app-dropdown>
+            </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label"><span class="material-icons">schedule</span> {{ 'settings.timezone' | translate }}</label>
+            <div style="width: 100%; max-width: 350px;">
+                <app-dropdown [options]="tzOptions" [selectedOption]="selectedTz" (selectionChange)="selectedTz = $event"></app-dropdown>
+            </div>
+        </div>
+    </div>
+</div>

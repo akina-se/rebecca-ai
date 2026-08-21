@@ -3,24 +3,58 @@ name: Continuous Integration
 on:
   push:
     branches:
+      - main
       - develop
+      - 'feature/**'
   pull_request:
     branches:
-      - develop
       - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  lint-and-quality:
+    name: Lint & Security Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint across monorepo
+        run: npm run lint
+
+      - name: Run Monorepo License Compliance Check
+        run: npm run license-check
+
+      - name: Run Monorepo Secret Leak Scan
+        run: npm run secret-check
+
+  build-and-test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -28,35 +62,120 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Check Licenses
-        run: npm run license-check
-
-      - name: Build TypeScript
+      - name: Build TypeScript & Angular packages
         run: npm run build
 
-      - name: Run Tests with Coverage Gate
-        run: npm test -- --coverage
+      - name: Run Unit & Integration Tests with Coverage
+        run: npm run test:unit
 
-      - name: Jest Coverage Comment
-        uses: MishaKav/jest-coverage-comment@main
+      - name: Measure & Verify Jest Coverage Gate (>= 80%)
+        run: npm run test:coverage-summary
+
+      - name: Upload Coverage Summaries
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monorepo-coverage-reports
+          path: |
+            coverage-summary.md
+            packages/persona/coverage/
+            packages/db/coverage/
+            apps/bot-backend/coverage/
+            apps/dashboard-backend/coverage/
+            apps/functions/coverage/
+            apps/dashboard-frontend/coverage/
+
+      - name: Post Coverage Report to PR
+        uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
-          coverage-summary-path: ./coverage/coverage-summary.json
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const summaryPath = path.resolve('coverage-summary.md');
+            if (fs.existsSync(summaryPath)) {
+              const body = fs.readFileSync(summaryPath, 'utf8');
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const botComment = comments.find(comment =>
+                comment.user.type === 'Bot' && comment.body.includes('Jest Test Coverage Gate Summary')
+              );
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: body,
+                });
+              }
+            }
+
+  e2e-test:
+    name: Playwright Dashboard E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-and-test]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Java (for Firebase Emulators)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Monorepo
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx --workspace=dashboard-e2e playwright install chromium
+
+      - name: Run Playwright E2E Tests with Firebase Emulators
+        run: |
+          npx --yes firebase-tools emulators:exec \
+            --only auth,firestore,storage \
+            --project rebecca-ai-gal-local \
+            "export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 && export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 && export FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 && export GCLOUD_PROJECT=rebecca-ai-gal-local && npx ts-node -T apps/dashboard-backend/src/scripts/seed-db.ts && npm run test:e2e"
+
+      - name: Upload Playwright Test Report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/dashboard-e2e/playwright-report/
+          retention-days: 7
 
   eval-test:
     name: LLM Evaluation (main PR only)
     runs-on: ubuntu-latest
-    # mainブランチへのPR時のみ実行
+    timeout-minutes: 15
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -64,7 +183,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Monorepo
+        run: npm run build
+
       - name: Run LLM Eval Tests
-        run: npm run test:eval
+        run: npm run test:eval --workspace=bot-backend
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
