@@ -105,7 +105,7 @@ steps:
     args:
       - '-c'
       - |
-        npx -y firebase-tools deploy --only hosting,functions --project $PROJECT_ID --non-interactive
+        npx -y firebase-tools deploy --only hosting,functions --project $PROJECT_ID --non-interactive --force
 
 substitutions:
   _AR_HOSTNAME: 'asia-northeast1-docker.pkg.dev'
