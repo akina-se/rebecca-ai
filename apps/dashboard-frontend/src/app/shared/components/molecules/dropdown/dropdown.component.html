@@ -1,0 +1,17 @@
+<div class="dropdown-wrapper">
+  <button class="dropdown-toggle glass-panel" (click)="toggle()">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span *ngIf="icon" class="material-icons" style="font-size: 1.1rem; color: var(--color-primary)">{{icon}}</span>
+      <span>{{ selectedOption || 'Select...' }}</span>
+    </div>
+    <span class="material-icons" style="font-size: 1.2rem; color: var(--text-muted); transition: transform 0.2s;" [style.transform]="isOpen ? 'rotate(180deg)' : 'rotate(0)'">expand_more</span>
+  </button>
+
+  <div class="dropdown-menu glass-panel" *ngIf="isOpen">
+    <div class="dropdown-item" *ngFor="let opt of options" 
+         [class.selected]="opt === selectedOption"
+         (click)="selectOption(opt)">
+      {{ opt }}
+    </div>
+  </div>
+</div>

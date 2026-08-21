@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+tsconfig.tsbuildinfo
+.turbo
+.eslintcache
+.env
+.env.local

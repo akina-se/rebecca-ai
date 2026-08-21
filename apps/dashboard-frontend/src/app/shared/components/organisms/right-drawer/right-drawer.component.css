@@ -1,0 +1,49 @@
+.drawer-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1040;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.drawer-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.drawer-overlay.open.shifted-overlay {
+    right: 450px;
+}
+
+.right-drawer {
+    width: 600px;
+    max-width: 90vw;
+    right: -650px;
+    left: auto;
+    border-left: 1px solid var(--border-highlight);
+    border-right: none;
+    z-index: 1050;
+    background: rgba(20, 15, 25, 0.95);
+    box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+}
+
+.right-drawer.open {
+    right: 0;
+}
+
+.right-drawer.open.shifted {
+    right: 450px;
+    border-right: 1px solid var(--border-highlight);
+    box-shadow: none;
+}
+
+@media (max-width: 1300px) {
+    .right-drawer.open.shifted {
+        right: 0;
+    }
+    .drawer-overlay.open.shifted-overlay {
+        right: 0;
+    }
+}

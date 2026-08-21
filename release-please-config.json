@@ -1,0 +1,65 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "rebecca-ai-gal-monorepo",
+      "component": "rebecca-ai-gal-monorepo",
+      "include-component-in-tag": false
+    },
+    "apps/bot-backend": {
+      "release-type": "node",
+      "package-name": "bot-backend",
+      "component": "bot-backend"
+    },
+    "apps/dashboard-backend": {
+      "release-type": "node",
+      "package-name": "dashboard-backend",
+      "component": "dashboard-backend"
+    },
+    "apps/dashboard-frontend": {
+      "release-type": "node",
+      "package-name": "dashboard-frontend",
+      "component": "dashboard-frontend"
+    },
+    "apps/functions": {
+      "release-type": "node",
+      "package-name": "functions",
+      "component": "functions"
+    },
+    "packages/db": {
+      "release-type": "node",
+      "package-name": "@rebecca/db",
+      "component": "@rebecca/db"
+    },
+    "packages/persona": {
+      "release-type": "node",
+      "package-name": "@rebecca/persona",
+      "component": "@rebecca/persona"
+    },
+    "packages/types": {
+      "release-type": "node",
+      "package-name": "@rebecca/types",
+      "component": "@rebecca/types"
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "rebecca-ai",
+      "components": [
+        "rebecca-ai-gal-monorepo",
+        "bot-backend",
+        "dashboard-backend",
+        "dashboard-frontend",
+        "functions",
+        "@rebecca/db",
+        "@rebecca/persona",
+        "@rebecca/types"
+      ]
+    },
+    {
+      "type": "node-workspace"
+    }
+  ]
+}

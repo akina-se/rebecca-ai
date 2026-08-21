@@ -1,0 +1,128 @@
+<div class="view-section active">
+    <!-- Header with Search and Real Multi-file Upload -->
+    <div class="block-header" style="margin-top: 0;">
+        <h2><span class="material-icons">collections</span> {{ 'assets.title' | translate }}</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input 
+                type="text" 
+                class="form-control" 
+                [placeholder]="'assets.search_placeholder' | translate" 
+                [(ngModel)]="searchQuery" 
+                (ngModelChange)="onSearchChange()"
+                style="width: 280px; padding: 0.5rem 1rem; border-radius: 20px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid var(--border-color);">
+            
+            <!-- Hidden Multi-file input -->
+            <input 
+                type="file" 
+                #fileInput 
+                multiple 
+                accept="image/*" 
+                (change)="onFilesSelected($event, fileInput)" 
+                style="display: none;">
+            
+            <button 
+                class="btn btn-primary" 
+                (click)="triggerFileUpload(fileInput)" 
+                [disabled]="isUploading">
+                <span class="material-icons" [class.spinning]="isUploading">{{ isUploading ? 'sync' : 'upload_file' }}</span>
+                {{ isUploading ? ('assets.uploading' | translate) : ('assets.upload' | translate) }}
+            </button>
+        </div>
+    </div>
+    
+    <!-- Bulk Actions Bar -->
+    <div class="bulk-actions-bar glass-panel" id="asset-bulk-bar" style="margin-bottom: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color);">
+        <label class="checkbox-container">
+            <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()">
+            <span class="checkmark"></span>
+            <span style="margin-left: 8px;">{{ 'dashboard.select_all' | translate }}</span>
+        </label>
+        <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
+        <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
+            {{ selectedAssets.size > 0 ? (selectedAssets.size + ' ' + ('assets.items_selected' | translate)) : ('assets.select_items_hint' | translate) }}
+        </span>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isDeletingBulk || isRetryingBulk"
+            style="min-width: 110px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="executeBulkDelete()">
+            <span class="material-icons" [class.spinning]="isDeletingBulk" style="font-size: 1rem">{{ isDeletingBulk ? 'sync' : 'delete' }}</span> 
+            {{ isDeletingBulk ? ('assets.deleting' | translate) : ('assets.delete' | translate) }}
+        </button>
+        <button class="btn bulk-btn" 
+            [style.visibility]="selectedAssets.size > 0 ? 'visible' : 'hidden'"
+            [disabled]="isDeletingBulk || isRetryingBulk"
+            style="min-width: 130px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: var(--text-main); background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;" 
+            (click)="executeBulkRetry()">
+            <span class="material-icons" [class.spinning]="isRetryingBulk" style="font-size: 1rem">{{ isRetryingBulk ? 'sync' : 'autorenew' }}</span> 
+            {{ isRetryingBulk ? ('assets.retrying' | translate) : ('assets.bulk_retry' | translate) }}
+        </button>
+    </div>
+    
+    <!-- Asset Cards Grid (Max 20 per page) -->
+    <div class="asset-grid">
+        <div class="asset-card glass-panel" *ngFor="let asset of assets" (click)="openAssetDrawer(asset.id)">
+            <div class="asset-checkbox-wrapper" (click)="$event.stopPropagation()">
+                <label class="checkbox-container">
+                    <input type="checkbox" class="asset-checkbox" [checked]="selectedAssets.has(asset.id)" (change)="toggleSelection(asset.id, $event)">
+                    <span class="checkmark" style="margin: 0;"></span>
+                </label>
+            </div>
+            <div class="asset-thumb" [style.background-image]="asset.url ? 'url(' + asset.url + ')' : 'none'" [style.background-size]="'cover'">
+                <span class="material-icons" style="font-size: 3rem; opacity: 0.5;" *ngIf="!asset.url">image</span>
+            </div>
+            <div class="asset-info">
+                <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="asset.filename">{{ asset.filename }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                    <span>{{ 'assets.used_count' | translate }}: {{ asset.usedCount || 0 }}</span>
+                    <span [style.color]="getStatusBadgeColor(asset.status)" style="font-weight: 600;">
+                        {{ asset.status || 'SUCCESS' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="assets.length === 0 && !isLoading" style="text-align: center; padding: 40px; color: var(--text-muted)">
+        <span class="material-icons" style="font-size: 3rem; opacity: 0.4; display: block; margin-bottom: 8px;">image_not_supported</span>
+        {{ 'assets.no_assets' | translate }}
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" style="text-align: center; padding: 40px; color: var(--text-muted)">
+        <span class="material-icons spinning" style="font-size: 2rem; display: block; margin-bottom: 8px;">sync</span>
+        {{ 'common.loading' | translate }}
+    </div>
+
+    <!-- Pagination Controls (Atomic PaginationComponent molecule) -->
+    <div style="margin-top: 1.5rem;" *ngIf="totalPages > 1 || totalItems > 0">
+        <app-pagination
+            [currentPage]="currentPage"
+            [totalPages]="totalPages"
+            [totalItems]="totalItems"
+            [itemsLabel]="'pagination.assets' | translate"
+            [isLoading]="isLoading"
+            (pageChange)="onPageChange($event)">
+        </app-pagination>
+    </div>
+</div>
+
+<!-- Asset Details Right Drawer -->
+<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
+    <div style="padding: 20px;">
+        <app-asset-drawer 
+            [assetId]="selectedAssetId"
+            (openLightbox)="onOpenLightbox($event)"
+            (assetUpdated)="onAssetUpdated()"
+            (assetDeleted)="onAssetDeleted()">
+        </app-asset-drawer>
+    </div>
+</app-right-drawer>
+
+<!-- Full Size Lightbox Dialog -->
+<app-lightbox 
+    [isOpen]="isLightboxOpen" 
+    [imageUrl]="lightboxImageUrl" 
+    (close)="isLightboxOpen = false">
+</app-lightbox>

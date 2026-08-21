@@ -1,0 +1,9 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div class="toast glass-panel" [ngClass]="toast.type">
+      <span class="material-icons toast-icon">{{ toast.icon }}</span>
+      <span class="toast-msg">{{ toast.message }}</span>
+      <button class="toast-close" (click)="toastService.remove(toast.id)"><span class="material-icons" style="font-size: 1rem;">close</span></button>
+    </div>
+  }
+</div>
