@@ -1,6 +1,6 @@
 {
   "name": "dashboard-backend",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Backend-for-Frontend (BFF) for the Admin Dashboard",
   "main": "dist/index.js",
   "scripts": {
@@ -28,9 +28,9 @@
     "@google/genai": "^2.10.0",
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
-    "@rebecca/db": "*",
-    "@rebecca/persona": "*",
-    "@rebecca/types": "*",
+    "@rebecca/db": "1.5.0",
+    "@rebecca/persona": "1.5.0",
+    "@rebecca/types": "1.5.0",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
