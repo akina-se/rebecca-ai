@@ -19,10 +19,21 @@ export const config = {
     location: process.env.GCP_LOCATION || 'asia-northeast1',
     imageBucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
   },
+  /** Services Configuration */
+  services: {
+    botBackendUrl: process.env.BOT_BACKEND_URL || '',
+  },
   /** Gemini API Configuration */
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
     model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
+  },
+  /** X API Configuration */
+  xApi: {
+    appKey: process.env.X_API_KEY || '',
+    appSecret: process.env.X_API_SECRET || '',
+    accessToken: process.env.X_ACCESS_TOKEN || '',
+    accessSecret: process.env.X_ACCESS_TOKEN_SECRET || '',
   }
 } as const;

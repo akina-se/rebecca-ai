@@ -54,6 +54,10 @@ export function createApp(firestore: Firestore): Express {
   app.use('/api/v1/config', configRouter);
   app.use('/api/v1/auth', authRouter);
 
+  // Mount Public Image Streaming (with internal ID validation and security headers)
+  app.get('/api/v1/assets/:id/image', (req, res, next) => assetsRouter(req, res, next));
+  app.get('/api/v1/images/:id/image', (req, res, next) => assetsRouter(req, res, next));
+
   // Healthcheck endpoint
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', service: 'dashboard-bff' });
@@ -65,6 +69,7 @@ export function createApp(firestore: Firestore): Express {
   app.use('/api/v1/posts', verifyAuth, postsRouter);
   app.use('/api/v1/users', verifyAuth, usersRouter);
   app.use('/api/v1/memory', verifyAuth, systemMemoryRouter);
+  app.use('/api/v1/assets', verifyAuth, assetsRouter);
   app.use('/api/v1/images', verifyAuth, assetsRouter);
   app.use('/api/v1/settings', verifyAuth, settingsRouter);
 

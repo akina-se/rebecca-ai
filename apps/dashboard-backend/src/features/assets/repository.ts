@@ -61,15 +61,31 @@ export class AssetsRepository {
       }
     }
 
+    let url = typeof data.url === 'string' ? data.url : '';
+    if (!url || url.startsWith('gs://')) {
+      url = `/api/v1/assets/${id}/image`;
+    }
+
     return {
       id,
       filename,
       caption: typeof data.caption === 'string' ? data.caption : '',
       usedCount: typeof data.useCount === 'number' ? data.useCount : (typeof data.usedCount === 'number' ? data.usedCount : 0),
       status,
-      url: typeof data.url === 'string' ? data.url : '',
+      url,
       lastUsedAt: typeof data.lastUsedAt === 'string' ? data.lastUsedAt : null
     };
+  }
+
+  /**
+   * Retrieves the raw document data for an asset.
+   * 
+   * @param id - Document ID.
+   * @returns Raw document data or null.
+   */
+  async getRawDoc(id: string): Promise<Record<string, unknown> | null> {
+    const doc = await this.collections.images.doc(id).get();
+    return doc.exists ? ((doc.data() || {}) as unknown as Record<string, unknown>) : null;
   }
 
   /**

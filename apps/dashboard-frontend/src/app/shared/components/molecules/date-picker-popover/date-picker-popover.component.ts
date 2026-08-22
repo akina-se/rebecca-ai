@@ -60,10 +60,37 @@ export class DatePickerPopoverComponent {
     this.isOpen = false;
   }
 
-  /** Returns the available options for the current mode. */
+  /** Returns the available options for the current mode dynamically from March 2006 to current month/year. */
   get mockOptions(): string[] {
-    if (this.mode === 'yearly') return ['2024', '2025', '2026'];
-    return ['May 2026', 'June 2026', 'July 2026'];
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed
+
+    if (this.mode === 'yearly') {
+      const years: string[] = [];
+      for (let y = currentYear; y >= 2006; y--) {
+        years.push(String(y));
+      }
+      return years;
+    }
+
+    if (this.mode === 'monthly') {
+      const options: string[] = [];
+      for (let y = currentYear; y >= 2006; y--) {
+        const startM = (y === currentYear) ? currentMonth : 11;
+        const endM = (y === 2006) ? 2 : 0; // Twitter founded in March 2006 (index 2)
+        for (let m = startM; m >= endM; m--) {
+          options.push(`${monthNames[m]} ${y}`);
+        }
+      }
+      return options;
+    }
+
+    return [];
   }
 
   /** Closes the popover when a click occurs outside the host element. */

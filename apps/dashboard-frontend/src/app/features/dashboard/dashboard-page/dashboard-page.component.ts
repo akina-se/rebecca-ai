@@ -236,17 +236,30 @@ export class DashboardPageComponent implements OnInit {
     this.isLightboxOpen = true;
   }
 
+  private getCurrentMonthStr(): string {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const now = new Date();
+    return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  }
+
+  private getCurrentYearStr(): string {
+    return String(new Date().getFullYear());
+  }
+
   setMode(target: 'posts' | 'users', mode: 'monthly' | 'yearly' | 'all-time') {
     if (target === 'posts') {
       this.topPostsMode = mode;
-      if (mode === 'monthly') this.topPostsDate = 'July 2026';
-      if (mode === 'yearly') this.topPostsDate = '2026';
+      if (mode === 'monthly') this.topPostsDate = this.getCurrentMonthStr();
+      if (mode === 'yearly') this.topPostsDate = this.getCurrentYearStr();
       if (mode === 'all-time') this.topPostsDate = 'All-Time';
       this.loadTopPosts();
     } else {
       this.topUsersMode = mode;
-      if (mode === 'monthly') this.topUsersDate = 'July 2026';
-      if (mode === 'yearly') this.topUsersDate = '2026';
+      if (mode === 'monthly') this.topUsersDate = this.getCurrentMonthStr();
+      if (mode === 'yearly') this.topUsersDate = this.getCurrentYearStr();
       if (mode === 'all-time') this.topUsersDate = 'All-Time';
       this.loadTopUsers();
     }
@@ -256,23 +269,48 @@ export class DashboardPageComponent implements OnInit {
     const isPosts = target === 'posts';
     const mode = isPosts ? this.topPostsMode : this.topUsersMode;
     let currentDate = isPosts ? this.topPostsDate : this.topUsersDate;
-    
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
     if (mode === 'monthly') {
-      const months = ['May 2026', 'June 2026', 'July 2026'];
-      let idx = months.indexOf(currentDate);
-      if (idx === -1) idx = 2;
-      let newIdx = idx + direction;
-      if (newIdx < 0) newIdx = 0;
-      if (newIdx > 2) newIdx = 2;
-      currentDate = months[newIdx];
+      const parts = currentDate.split(' ');
+      let mIdx = monthNames.indexOf(parts[0]);
+      let year = parseInt(parts[1], 10) || currentYear;
+      if (mIdx === -1) {
+        mIdx = currentMonth;
+        year = currentYear;
+      }
+
+      mIdx += direction;
+      if (mIdx > 11) {
+        mIdx = 0;
+        year += 1;
+      } else if (mIdx < 0) {
+        mIdx = 11;
+        year -= 1;
+      }
+
+      // Check bounds: March 2006 to current month/year
+      if (year < 2006 || (year === 2006 && mIdx < 2)) {
+        year = 2006;
+        mIdx = 2; // March 2006
+      } else if (year > currentYear || (year === currentYear && mIdx > currentMonth)) {
+        year = currentYear;
+        mIdx = currentMonth;
+      }
+
+      currentDate = `${monthNames[mIdx]} ${year}`;
     } else if (mode === 'yearly') {
-      const years = ['2024', '2025', '2026'];
-      let idx = years.indexOf(currentDate);
-      if (idx === -1) idx = 2;
-      let newIdx = idx + direction;
-      if (newIdx < 0) newIdx = 0;
-      if (newIdx > 2) newIdx = 2;
-      currentDate = years[newIdx];
+      let year = parseInt(currentDate, 10) || currentYear;
+      year += direction;
+      if (year < 2006) year = 2006;
+      if (year > currentYear) year = currentYear;
+      currentDate = String(year);
     }
     
     if (isPosts) {
@@ -282,6 +320,46 @@ export class DashboardPageComponent implements OnInit {
       this.topUsersDate = currentDate;
       this.loadTopUsers();
     }
+  }
+
+  canShiftDate(target: 'posts' | 'users', direction: -1 | 1): boolean {
+    const isPosts = target === 'posts';
+    const mode = isPosts ? this.topPostsMode : this.topUsersMode;
+    const currentDate = isPosts ? this.topPostsDate : this.topUsersDate;
+    if (mode === 'all-time') return false;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    if (mode === 'monthly') {
+      const parts = currentDate.split(' ');
+      const mIdx = monthNames.indexOf(parts[0]);
+      const year = parseInt(parts[1], 10) || currentYear;
+      if (mIdx === -1) return false;
+
+      if (direction === 1) {
+        return !(year > currentYear || (year === currentYear && mIdx >= currentMonth));
+      } else {
+        return !(year < 2006 || (year === 2006 && mIdx <= 2));
+      }
+    }
+
+    if (mode === 'yearly') {
+      const year = parseInt(currentDate, 10) || currentYear;
+      if (direction === 1) {
+        return year < currentYear;
+      } else {
+        return year > 2006;
+      }
+    }
+
+    return false;
   }
 
   rankingModalEntries: { id: string; rank: number; label: string; value: number | string; badge?: string }[] = [];
@@ -301,13 +379,13 @@ export class DashboardPageComponent implements OnInit {
       }));
     } else {
       this.rankingModalTitle = 'Top Engaged Users';
-      this.rankingModalColLabel = 'User ID';
+      this.rankingModalColLabel = 'User';
       this.rankingModalColMetric = 'Interactions';
       this.rankingModalType = 'user';
       this.rankingModalEntries = this.topUsers.map((u, i) => ({
         id: u.userId,
         rank: i + 1,
-        label: u.userId,
+        label: u.name ? `${u.name} (${u.handle})` : u.handle,
         value: u.interactions,
         badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
       }));

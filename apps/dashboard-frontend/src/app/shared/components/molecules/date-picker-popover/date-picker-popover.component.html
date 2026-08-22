@@ -7,10 +7,12 @@
 
     <div class="popover-menu glass-panel" *ngIf="isOpen">
         <div class="popover-header">{{ 'common.quick_select' | translate }}</div>
-        <div class="popover-item" *ngFor="let opt of mockOptions"
-             [class.selected]="opt === currentText"
-             (click)="select(opt, $event)">
-            {{ opt }}
+        <div class="popover-list">
+            <div class="popover-item" *ngFor="let opt of mockOptions"
+                 [class.selected]="opt === currentText"
+                 (click)="select(opt, $event)">
+                {{ opt }}
+            </div>
         </div>
     </div>
 </div>

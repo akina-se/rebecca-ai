@@ -20,7 +20,13 @@ export class UsersRepository {
   }
 
   private resolveUserName(rawId: string, data: Record<string, unknown>): string {
-    if (data.name && data.name !== 'Unknown') return String(data.name);
+    if (data.name && typeof data.name === 'string' && data.name !== 'Unknown' && data.name.trim().length > 0) {
+      return data.name.trim();
+    }
+
+    if (data.username && typeof data.username === 'string' && data.username.trim().length > 0) {
+      return `@${data.username.trim()}`;
+    }
 
     if (typeof data.coreProfile === 'object' && data.coreProfile !== null) {
       const cp = data.coreProfile as Record<string, unknown>;
@@ -36,6 +42,13 @@ export class UsersRepository {
 
     const formatted = rawId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     return formatted || `@${rawId}`;
+  }
+
+  private resolveUserHandle(rawId: string, data: Record<string, unknown>): string {
+    if (data.username && typeof data.username === 'string' && data.username.trim().length > 0) {
+      return `@${data.username.trim()}`;
+    }
+    return `@${rawId}`;
   }
 
   private resolveUserStatus(data: Record<string, unknown>): UserStatus {
@@ -123,13 +136,14 @@ export class UsersRepository {
       });
     }
 
-    // Fuzzy / Substring Search filter (by handle, name, or userId)
+    // Fuzzy / Substring Search filter (by handle, username, name, or userId)
     if (params?.search && params.search.trim().length > 0) {
       const q = params.search.trim().toLowerCase().replace(/^@/, '');
       usersData = usersData.filter(u => {
         const handle = u.id.toLowerCase();
+        const username = String(u.data.username || '').toLowerCase();
         const name = String(u.data.name || '').toLowerCase();
-        return handle.includes(q) || name.includes(q);
+        return handle.includes(q) || username.includes(q) || name.includes(q);
       });
     }
 
@@ -170,20 +184,26 @@ export class UsersRepository {
     
     usersData = usersData.slice((page - 1) * limit, page * limit);
 
-    const data = usersData.map(u => {
+    const data: UserDetail[] = usersData.map(u => {
       const data = u.data;
       const status = this.resolveUserStatus(data);
       const { ragMemoriesCount, ragMemoriesStatus } = this.calculateRagStats(data);
+      const username = typeof data.username === 'string' && data.username.trim().length > 0 ? data.username.trim() : u.id;
+      const handle = `@${username}`;
+      const name = this.resolveUserName(u.id, data);
+      const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : 'N/A';
+      const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : 'N/A';
 
       return {
         id: u.id,
-        handle: `@${u.id}`,
+        handle,
+        username,
         userId: u.id,
-        name: this.resolveUserName(u.id, data),
+        name,
         interactions: typeof data._dynamicInteractions === 'number' ? data._dynamicInteractions : 0,
         affinityScore: data.affinityScore !== undefined ? `${data.affinityScore}` : (data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A'),
-        firstSeen: String(data.firstSeen || data.first_seen_date || 'N/A'),
-        lastSeen: String(data.lastSeen || data.last_reply_date || 'N/A'),
+        firstSeen,
+        lastSeen,
         coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
         chatHistory: [],
         status,
@@ -206,24 +226,35 @@ export class UsersRepository {
   }
 
   /**
-   * Retrieves detailed user profile and status by their user ID.
+   * Retrieves detailed user profile and status by their user ID or username handle.
    * 
    * @param id - The user ID/handle to look up.
    * @returns A promise that resolves to the detailed user information, or null if the user does not exist.
    */
   async getById(id: string, beforeTimestamp?: string, limit?: number): Promise<UserDetail | null> {
-    const rawId = id.replace('@', '');
-    const doc = await this.collections.users.doc(rawId).get();
+    const rawId = id.replace('@', '').trim();
+    let doc = await this.collections.users.doc(rawId).get();
     
     if (!doc.exists) {
-      return null;
+      const snap = await this.collections.users.where('username', '==', rawId).limit(1).get();
+      if (!snap.empty) {
+        doc = snap.docs[0];
+      } else {
+        return null;
+      }
     }
 
     const data = (doc.data() || {}) as unknown as Record<string, unknown>;
+    const resolvedUserId = doc.id;
+    const username = typeof data.username === 'string' && data.username.trim().length > 0 ? data.username.trim() : resolvedUserId;
+    const handle = `@${username}`;
+    const name = this.resolveUserName(resolvedUserId, data);
+    const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : 'N/A';
+    const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : 'N/A';
     
     // Fetch conversation logs from Firestore and sort in-memory to prevent composite index requirements
     const chatLogsSnap = await this.collections.conversationLogs
-      .where('userId', '==', rawId)
+      .where('userId', '==', resolvedUserId)
       .get();
       
     let sortedDocs = chatLogsSnap.docs.sort((a, b) => {
@@ -259,14 +290,35 @@ export class UsersRepository {
       }
     }
 
+    // Fallback: If chatHistory is sparse, also check episodicBuffer or rag_memories
+    if (chatHistory.length === 0 && Array.isArray(data.episodicBuffer)) {
+      for (const entry of data.episodicBuffer as Array<{ role: string; content: string; timestamp?: string }>) {
+        if (entry.content) {
+          chatHistory.push({
+            from: entry.role === 'user' ? 'user' : 'rebecca',
+            text: entry.content,
+            time: entry.timestamp || String(data.last_reply_date || '')
+          });
+        }
+      }
+    }
+
+    const calculatedInteractions = Math.max(
+      chatLogsSnap.size,
+      chatHistory.length > 0 ? Math.ceil(chatHistory.length / 2) : 0,
+      typeof data.interactions === 'number' ? data.interactions : 0,
+      typeof data.daily_reply_count === 'number' ? data.daily_reply_count : 0
+    );
+
     const status = this.resolveUserStatus(data);
     const { ragMemoriesCount, ragMemoriesStatus } = this.calculateRagStats(data);
 
     return {
       id: rawId,
-      handle: `@${rawId}`,
+      handle: this.resolveUserHandle(rawId, data),
+      username,
       name: this.resolveUserName(rawId, data),
-      interactions: typeof data.interactions === 'number' ? data.interactions : (typeof data.daily_reply_count === 'number' ? data.daily_reply_count : 0),
+      interactions: calculatedInteractions,
       affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : (data.affinityScore !== undefined ? `${data.affinityScore}` : 'N/A'),
       firstSeen: String(data.first_seen_date || data.firstSeen || 'N/A'),
       lastSeen: String(data.last_reply_date || data.lastSeen || 'N/A'),

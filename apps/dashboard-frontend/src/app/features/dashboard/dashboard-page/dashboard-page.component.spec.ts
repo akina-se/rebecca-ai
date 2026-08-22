@@ -61,7 +61,7 @@ describe('DashboardPageComponent', () => {
   it('should switch mode for top posts and top users', () => {
     component.setMode('posts', 'monthly');
     expect(component.topPostsMode).toBe('monthly');
-    expect(component.topPostsDate).toBe('July 2026');
+    expect(component.topPostsDate).toContain('2026');
 
     component.setMode('posts', 'all-time');
     expect(component.topPostsMode).toBe('all-time');
@@ -69,7 +69,7 @@ describe('DashboardPageComponent', () => {
 
     component.setMode('users', 'monthly');
     expect(component.topUsersMode).toBe('monthly');
-    expect(component.topUsersDate).toBe('July 2026');
+    expect(component.topUsersDate).toContain('2026');
 
     component.setMode('users', 'all-time');
     expect(component.topUsersMode).toBe('all-time');
@@ -83,15 +83,18 @@ describe('DashboardPageComponent', () => {
     expect(component.topPostsDate).toBe('June 2026');
     component.shiftDate('posts', -1);
     expect(component.topPostsDate).toBe('May 2026');
+
+    // Test March 2006 lower boundary
+    component.topPostsDate = 'March 2006';
     component.shiftDate('posts', -1);
-    expect(component.topPostsDate).toBe('May 2026'); // Lower boundary
+    expect(component.topPostsDate).toBe('March 2006');
 
     component.setMode('users', 'yearly');
-    component.topUsersDate = '2024';
+    component.topUsersDate = '2006';
     component.shiftDate('users', -1);
-    expect(component.topUsersDate).toBe('2024'); // Lower boundary
+    expect(component.topUsersDate).toBe('2006'); // Lower boundary
     component.shiftDate('users', 1);
-    expect(component.topUsersDate).toBe('2025');
+    expect(component.topUsersDate).toBe('2007');
   });
 
   it('should calculate SVG sparkline points and polygon strings', () => {

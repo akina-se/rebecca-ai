@@ -36,7 +36,8 @@ export function initializeAssetsModule(firestore: Firestore): Router {
   // 3. Multi-file upload endpoint (supports multipart/form-data with field 'files' or single 'file')
   router.post('/', upload.array('files', 20), controller.upload.bind(controller));
 
-  // 4. Single Asset CRUD endpoints
+  // 4. Single Asset CRUD & streaming endpoints
+  router.get('/:id/image', controller.getImage.bind(controller));
   router.get('/:id', controller.getById.bind(controller));
   router.put('/:id', controller.update.bind(controller));
   router.delete('/', controller.deleteMany.bind(controller));

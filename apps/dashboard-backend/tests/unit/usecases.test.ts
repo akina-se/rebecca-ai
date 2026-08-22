@@ -70,6 +70,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       const mockUser: UserDetail = {
         id: 'u1',
         handle: 'alice',
+        username: 'alice',
         name: 'Alice',
         interactions: 5,
         affinityScore: '95',
@@ -94,6 +95,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       const mockUser: UserDetail = {
         id: 'u1',
         handle: 'alice',
+        username: 'alice',
         name: 'Alice',
         interactions: 5,
         affinityScore: '95',

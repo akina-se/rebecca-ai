@@ -6,6 +6,7 @@ export const createMockDeps = (): AppDependencies => {
             getLastMentionId: jest.fn(),
             setLastMentionId: jest.fn(),
             getUserDoc: jest.fn(),
+            updateUserDoc: jest.fn(),
             getExtendedPrompt: jest.fn(),
             getTimelineSummary: jest.fn(),
             findRagMemories: jest.fn(),

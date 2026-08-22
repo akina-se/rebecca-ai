@@ -57,6 +57,32 @@ export class AssetsController {
   }
 
   /**
+   * Streams the raw image binary for an asset with cache headers.
+   * 
+   * @param req - The Express Request object.
+   * @param res - The Express Response object.
+   */
+  async getImage(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const binary = await this.useCase.getAssetBinary(id as string);
+      if (!binary) {
+        res.status(404).send('Image not found');
+        return;
+      }
+      res.setHeader('Content-Type', binary.contentType);
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'");
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+      res.send(binary.buffer);
+    } catch (err) {
+      const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
+      console.error('Failed to stream image %s:', safeId, err);
+      res.status(500).send('Failed to stream image');
+    }
+  }
+
+  /**
    * Uploads one or multiple new assets to the system.
    * Supports multipart/form-data (via multer) and base64 JSON payload.
    * 

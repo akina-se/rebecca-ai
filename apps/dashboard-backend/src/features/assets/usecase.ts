@@ -60,6 +60,92 @@ export class AssetsUseCase {
   }
 
   /**
+   * Retrieves the raw image binary data for an asset from Cloud Storage or data URI.
+   * 
+   * @param id - The ID of the asset.
+   * @returns An object containing the binary buffer and content-type, or null.
+   */
+  async getAssetBinary(id: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+    // 0. Strict ID validation to prevent path traversal
+    if (!id || !/^[a-zA-Z0-9_.-]+$/.test(id)) {
+      return null;
+    }
+
+    const rawDoc = await this.repo.getRawDoc(id);
+    const bucketName = config.gcp.imageBucketName;
+    const bucket = this.storage.bucket(bucketName);
+
+    // 1. Try reading from GCS URL specified in doc
+    const rawUrl = String(rawDoc?.url || '');
+    if (rawUrl.startsWith('gs://')) {
+      const objectPath = rawUrl.replace(`gs://${bucketName}/`, '');
+      try {
+        const file = bucket.file(objectPath);
+        const [exists] = await file.exists();
+        if (exists) {
+          const [buffer] = await file.download();
+          const contentType = objectPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+          return { buffer, contentType };
+        }
+      } catch (err) {
+        console.warn(`Failed to download object from GCS path ${objectPath}:`, err);
+      }
+    }
+
+    // 2. Try exact conventional paths
+    const candidates = [
+      `images/${id}`,
+      `images/${id}.jpg`,
+      `images/${id}.png`,
+      `media_assets/${id}`
+    ];
+    for (const path of candidates) {
+      try {
+        const file = bucket.file(path);
+        const [exists] = await file.exists();
+        if (exists) {
+          const [buffer] = await file.download();
+          const [metadata] = await file.getMetadata();
+          const contentType = metadata.contentType || (path.endsWith('.png') ? 'image/png' : 'image/jpeg');
+          return { buffer, contentType };
+        }
+      } catch {
+        // Continue to next candidate
+      }
+    }
+
+    // 3. Try prefix search in media_assets/ and images/
+    try {
+      const [mediaFiles] = await bucket.getFiles({ prefix: `media_assets/${id}`, maxResults: 1 });
+      if (mediaFiles && mediaFiles.length > 0) {
+        const [buffer] = await mediaFiles[0].download();
+        const contentType = mediaFiles[0].name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        return { buffer, contentType };
+      }
+      const [imageFiles] = await bucket.getFiles({ prefix: `images/${id}`, maxResults: 1 });
+      if (imageFiles && imageFiles.length > 0) {
+        const [buffer] = await imageFiles[0].download();
+        const contentType = imageFiles[0].name.endsWith('.png') ? 'image/png' : 'image/jpeg';
+        return { buffer, contentType };
+      }
+    } catch (err) {
+      console.warn(`Failed to search prefix in GCS for ${id}:`, err);
+    }
+
+    // 4. Try base64 data URI in url field
+    if (rawUrl.startsWith('data:image/')) {
+      const matches = rawUrl.match(/^data:(image\/[a-zA-Z0-9.+_-]+);base64,(.+)$/);
+      if (matches) {
+        const contentType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        return { buffer, contentType };
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Updates an asset with partial data.
    * 
    * @param id - The ID of the asset to update.

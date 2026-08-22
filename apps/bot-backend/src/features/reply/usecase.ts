@@ -57,12 +57,21 @@ export class ReplyTaskUseCase {
             isFirstTime = true;
         }
 
-        if (isFirstTime) {
+        if (isFirstTime || !userData.username || !userData.name) {
             try {
-                // Analyze the user's X profile only on their first interaction to create the initial coreProfile
+                // Fetch and analyze the user's X profile
                 const profileRes = await deps.xApi.getUserProfile(authorId);
-                const desc = profileRes?.data?.description;
-                if (desc) {
+                const xUser = profileRes?.data;
+                if (xUser) {
+                    if (xUser.username) userData.username = xUser.username;
+                    if (xUser.name) userData.name = xUser.name;
+                    await deps.firestore.updateUserDoc(authorId, {
+                        username: xUser.username,
+                        name: xUser.name
+                    });
+                }
+                const desc = xUser?.description;
+                if (desc && isFirstTime) {
                     const profilePrompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
 【プロフィール文】
 ${desc}
@@ -78,7 +87,7 @@ ${desc}
                     userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
                 }
             } catch(e) {
-                console.error("Failed to fetch/analyze user profile on first time", e);
+                console.error("Failed to fetch/analyze user profile", e);
             }
         }
 

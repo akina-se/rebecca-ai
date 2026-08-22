@@ -26,6 +26,7 @@ import type {
   ProcessedFollower,
   ListInteraction,
 } from '../types';
+import { PostStatus } from '../types';
 
 // ---------------------------------------------------------------------------
 // Singleton Firestore client
@@ -83,10 +84,17 @@ const updateUserDoc = async (userId: string, data: Partial<FirestoreUser>): Prom
 const appendEpisodicBuffer = async (userId: string, logEntry: ConversationLogEntry): Promise<void> => {
   // FieldValue sentinels bypass the converter – we write directly to the raw ref.
   const rawRef = firestore.collection(COLLECTIONS.USERS).doc(userId);
+  const now = new Date().toISOString();
+  const docSnap = await rawRef.get();
+  const data = docSnap && typeof docSnap.data === 'function' ? docSnap.data() : undefined;
+  const firstSeen = typeof data?.firstSeen === 'string' ? data.firstSeen : now;
+
   await rawRef.set(
     {
       episodicBuffer: FieldValue.arrayUnion(logEntry),
-      last_reply_date: new Date().toISOString(),
+      last_reply_date: now,
+      lastSeen: now,
+      firstSeen,
     },
     { merge: true },
   );
@@ -383,20 +391,35 @@ const saveTimelineSummary = async (summaryText: string): Promise<void> => {
 // ---------------------------------------------------------------------------
 
 /**
- * Saves a timeline post to history.  Expires automatically after 30 days.
+ * Saves a timeline post to history, including media URLs, asset identifiers, and tweet ID.
+ * Expires automatically after 30 days.
  *
- * @param text - The post text content.
+ * @param text    - The post text content.
+ * @param options - Optional mediaUrls, assetId, and tweetId.
  */
-const saveTimelinePost = async (text: string): Promise<void> => {
+const saveTimelinePost = async (
+  text: string,
+  options?: { mediaUrls?: string[]; assetId?: string; tweetId?: string },
+): Promise<void> => {
   const ref = db.timelineHistory.doc();
   const now = new Date();
   const expireAt = new Date(now);
   expireAt.setDate(expireAt.getDate() + 30);
 
+  const mediaList = options?.mediaUrls || [];
   await ref.set({
     text,
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp.
+    mediaUrls: mediaList,
+    media_urls: mediaList,
+    ...(options?.assetId ? { assetId: options.assetId } : {}),
+    ...(options?.tweetId ? { tweetId: options.tweetId, tweet_id: options.tweetId } : {}),
+    impressions: 0,
+    likes: 0,
+    reposts: 0,
+    replies: 0,
+    status: PostStatus.SUCCESS,
   });
 };
 

@@ -98,7 +98,7 @@
                     <app-date-picker-popover 
                         [mode]="topPostsMode"
                         [currentText]="topPostsDate"
-                        [hasNext]="topPostsDate !== 'July 2026' && topPostsDate !== '2026' && topPostsDate !== 'All-Time'"
+                        [hasNext]="canShiftDate('posts', 1)"
                         (previous)="shiftDate('posts', -1)"
                         (next)="shiftDate('posts', 1)"
                         (pick)="onDatePicked('posts', $event)">
@@ -134,7 +134,7 @@
                     <app-date-picker-popover 
                         [mode]="topUsersMode"
                         [currentText]="topUsersDate"
-                        [hasNext]="topUsersDate !== 'July 2026' && topUsersDate !== '2026' && topUsersDate !== 'All-Time'"
+                        [hasNext]="canShiftDate('users', 1)"
                         (previous)="shiftDate('users', -1)"
                         (next)="shiftDate('users', 1)"
                         (pick)="onDatePicked('users', $event)">
@@ -144,8 +144,8 @@
             <table class="data-table glass-panel">
                 <thead><tr><th>{{ 'dashboard.table_user_id' | translate }}</th><th>{{ 'dashboard.table_interactions' | translate }}</th></tr></thead>
                 <tbody>
-                    <tr class="clickable" *ngFor="let user of topUsers.slice(0, 10)" (click)="openUserDrawer($any(user).handle || user.userId)">
-                        <td>{{ $any(user).handle || user.userId }}</td>
+                    <tr class="clickable" *ngFor="let user of topUsers.slice(0, 10)" (click)="openUserDrawer(user.handle)">
+                        <td>{{ user.handle }}</td>
                         <td>{{ user.interactions | number }}</td>
                     </tr>
                 </tbody>

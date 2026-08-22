@@ -155,7 +155,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'post_drawer.attached_media': '添付メディア',
     'post_drawer.impressions': 'インプレッション',
     'post_drawer.likes': 'いいね',
-    'post_drawer.retweets': 'リポスト',
+    'post_drawer.reposts': 'リポスト',
     'post_drawer.replies': 'リプライ',
     'post_drawer.delete_post': '投稿を削除',
 
@@ -341,7 +341,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'post_drawer.attached_media': 'Attached Media',
     'post_drawer.impressions': 'Impressions',
     'post_drawer.likes': 'Likes',
-    'post_drawer.retweets': 'Retweets',
+    'post_drawer.reposts': 'Reposts',
     'post_drawer.replies': 'Replies',
     'post_drawer.delete_post': 'Delete Post',
 

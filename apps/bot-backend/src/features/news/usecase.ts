@@ -81,10 +81,11 @@ ${postText}
         const searchQuery = await this.deps.gemini.inferImageSearchQuery(searchPrompt);
         
         const mediaIds: string[] = [];
+        let bestImage: { id: string; url: string } | null = null;
         if (searchQuery) {
             console.log(`Inferred image search query: ${searchQuery}`);
             const queryVector = await this.deps.gemini.generateEmbedding(searchQuery);
-            const bestImage = queryVector.length > 0 ? await this.deps.firestore.findImageByVector(queryVector) : null;
+            bestImage = queryVector.length > 0 ? await this.deps.firestore.findImageByVector(queryVector) : null;
             if (bestImage) {
                 console.log(`Found matching image: ${bestImage.url}`);
                 try {
@@ -107,9 +108,16 @@ ${postText}
             }
         }
 
-        await this.deps.xApi.tweet(postText, { mediaIds });
-        
-        await this.deps.firestore.saveTimelinePost(postText);
+        const tweetRes = await this.deps.xApi.tweet(postText, { mediaIds });
+        const tweetId = (tweetRes as { data?: { id?: string } })?.data?.id;
+        const attachedUrl = bestImage ? bestImage.url : undefined;
+        const assetId = bestImage ? bestImage.id : undefined;
+
+        await this.deps.firestore.saveTimelinePost(postText, {
+            mediaUrls: attachedUrl ? [attachedUrl] : [],
+            assetId,
+            tweetId
+        });
 
         return { status: 'success', post: postText, attachedMedia: mediaIds.length > 0 };
     } catch (e) {

@@ -3,6 +3,7 @@ import { CloudTasksClient } from '@google-cloud/tasks';
 import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { persona } from '@rebecca/persona';
+import { config } from '../../config';
 
 /**
  * Repository class for managing and loading system memory layers from Firestore and local static sources.
@@ -126,40 +127,42 @@ export class SystemMemoryRepository {
   }
 
   /**
-   * Triggers the dreaming process asynchronously by sending a task to Google Cloud Tasks.
-   * Falls back to a local HTTP call if running in a non-production environment where Cloud Tasks is unavailable.
+   * Triggers the dreaming and evolution processes by invoking the bot-backend Cloud Run endpoints with OIDC authentication.
    * 
-   * @returns A promise that resolves when the trigger process is completed or fallback is registered.
+   * @returns A promise that resolves when the trigger process is completed.
    */
   async triggerDreaming(): Promise<void> {
-    const botUrl = process.env.BOT_BACKEND_URL || 'https://bot-backend.example.com';
-    const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
+    const botUrl = config.services.botBackendUrl;
+    if (!botUrl) {
+      console.warn('BOT_BACKEND_URL is not configured. Skipping dreaming trigger.');
+      return;
+    }
 
+    const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
     if (isEmulator) {
-      console.log(`[Local/Emulator fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
+      console.log(`[Local/Emulator fallback] Triggering async dreaming at ${botUrl}/batch/dreaming`);
       return;
     }
 
     try {
-      const client = new CloudTasksClient();
-      const project = process.env.GOOGLE_CLOUD_PROJECT || 'rebecca-ai-project';
-      const location = process.env.GCP_LOCATION || 'asia-northeast1';
-      const queue = process.env.GCP_EVOLUTION_QUEUE || 'evolution-queue';
+      const { GoogleAuth } = await import('google-auth-library');
+      const auth = new GoogleAuth();
+      const client = await auth.getIdTokenClient(botUrl);
+      
+      console.log(`Triggering dreaming at ${botUrl}/batch/dreaming`);
+      await client.request({
+        url: `${botUrl}/batch/dreaming`,
+        method: 'POST',
+      });
 
-      const parent = client.queuePath(project, location, queue);
-      const task = {
-        httpRequest: {
-          httpMethod: 'POST' as const,
-          url: `${botUrl}/internal/evolution/trigger`,
-        },
-      };
-
-      console.log(`Sending task to queue ${queue} targeting ${botUrl}`);
-      await client.createTask({ parent, task });
-      console.log('Successfully kicked off the Dreaming process via Cloud Tasks.');
+      console.log(`Triggering evolution at ${botUrl}/batch/evolution`);
+      await client.request({
+        url: `${botUrl}/batch/evolution`,
+        method: 'POST',
+      });
+      console.log('Successfully completed Dreaming & Evolution batch executions.');
     } catch (e) {
-      console.error('Failed to trigger dreaming via Cloud Tasks', e);
-      console.log(`[Local fallback] Triggering async dreaming at ${botUrl}/internal/evolution/trigger`);
+      console.error('Failed to trigger dreaming on bot-backend', e);
     }
   }
 }

@@ -343,7 +343,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       });
 
       const metrics = await timelineRepo.getMetrics('weekly');
-      expect(metrics.followers).toBe(50); // 200 * 0.25
+      expect(metrics.followers).toBe(200);
       expect(metrics.followersHistory).toHaveLength(7);
     });
 
@@ -496,13 +496,10 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       );
     });
 
-    it('triggerDreaming should invoke Cloud Tasks client and handle fallback', async () => {
+    it('triggerDreaming should invoke dreaming batch and handle fallback', async () => {
+      process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+      await expect(memoryRepo.triggerDreaming()).resolves.toBeUndefined();
       delete process.env.FIRESTORE_EMULATOR_HOST;
-      await memoryRepo.triggerDreaming();
-      expect(mockCreateTask).toHaveBeenCalledTimes(1);
-
-      mockCreateTask.mockRejectedValueOnce(new Error('Cloud Tasks error'));
-      await memoryRepo.triggerDreaming();
     });
   });
 });

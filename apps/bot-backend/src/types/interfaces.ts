@@ -47,7 +47,10 @@ export interface IFirestoreService {
   saveExtendedPrompt(promptText: string): Promise<void>;
   getTimelineSummary(): Promise<string>;
   saveTimelineSummary(summaryText: string): Promise<void>;
-  saveTimelinePost(text: string): Promise<void>;
+  saveTimelinePost(
+    text: string,
+    options?: { mediaUrls?: string[]; assetId?: string; tweetId?: string },
+  ): Promise<void>;
   getRecentTimelinePosts(limit?: number): Promise<string[]>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
   findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;

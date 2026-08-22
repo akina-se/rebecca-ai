@@ -57,6 +57,7 @@ export enum AssetStatus {
 export interface FirestoreUser {
   id?: string;
   name?: string;
+  username?: string;
   handle?: string;
   avatarUrl?: string;
   coreProfile: UserCoreProfile;
@@ -112,8 +113,13 @@ export interface TimelinePost {
   impressions?: number;
   likes?: number;
   retweets?: number;
+  reposts?: number;
   replies?: number;
   mediaUrls?: string[];
+  media_urls?: string[];
+  tweetId?: string;
+  tweet_id?: string;
+  assetId?: string;
   authorId?: string;
   authorName?: string;
   authorHandle?: string;
@@ -329,13 +335,15 @@ export interface PostDetail {
   status?: PostStatus | string;
   likes?: number;
   retweets?: number;
+  reposts?: number;
   replies?: number;
 }
 
 export interface UserLeaderboard {
   userId: string;
-  handle?: string;
-  name?: string;
+  username: string;
+  handle: string;
+  name: string;
   interactions: number;
 }
 
@@ -348,6 +356,7 @@ export interface ChatMessage {
 export interface UserDetail {
   id: string;
   handle: string;
+  username: string;
   name: string;
   interactions: number;
   affinityScore: string;
