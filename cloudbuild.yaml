@@ -92,7 +92,7 @@ steps:
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
       - '--allow-unauthenticated'
-      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL,IMAGE_BUCKET_NAME=rebecca-ai-gal-images'
+      - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL,IMAGE_BUCKET_NAME=rebecca-ai-gal-images,FIREBASE_WEB_API_KEY=$_FIREBASE_WEB_API_KEY,FIREBASE_WEB_APP_ID=$_FIREBASE_WEB_APP_ID,FIREBASE_MESSAGING_SENDER_ID=$_FIREBASE_MESSAGING_SENDER_ID'
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
       - '--quiet'
 
@@ -112,6 +112,9 @@ substitutions:
   _AR_REPOSITORY: 'cloud-run-source-deploy'
   _DEPLOY_REGION: 'asia-northeast1'
   _PUBLIC_SITE_URL: 'https://rebecca-ai.net'
+  _FIREBASE_WEB_API_KEY: 'AIzaSyCpzcui2cfxEfNGdYpaZF3oGm03b1gyDn8'
+  _FIREBASE_WEB_APP_ID: '1:556353380728:web:b589f488a145822a7a688d'
+  _FIREBASE_MESSAGING_SENDER_ID: '556353380728'
 
 options:
   logging: CLOUD_LOGGING_ONLY

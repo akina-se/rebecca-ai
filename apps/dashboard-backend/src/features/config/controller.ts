@@ -17,12 +17,12 @@ export class ConfigController {
 
     const config = {
       firebase: {
-        apiKey: process.env.FIREBASE_WEB_API_KEY || (isProd ? '' : 'YOUR_API_KEY'),
+        apiKey: process.env.FIREBASE_WEB_API_KEY || (isProd ? 'AIzaSyCpzcui2cfxEfNGdYpaZF3oGm03b1gyDn8' : 'YOUR_API_KEY'),
         authDomain: process.env.FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
         projectId: projectId,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
-        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
-        appId: process.env.FIREBASE_WEB_APP_ID || '',
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '556353380728',
+        appId: process.env.FIREBASE_WEB_APP_ID || '1:556353380728:web:b589f488a145822a7a688d',
       },
       apiUrl: '/api/v1',
       publicSiteUrl: process.env.PUBLIC_SITE_URL || 'https://rebecca-ai.net',

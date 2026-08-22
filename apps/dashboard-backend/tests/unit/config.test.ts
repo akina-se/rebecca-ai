@@ -61,9 +61,9 @@ describe('Config Feature Unit Tests', () => {
         apiKey: 'PROD_API_KEY_123',
         authDomain: 'rebecca-prod.firebaseapp.com',
         projectId: 'rebecca-prod',
-        storageBucket: 'rebecca-prod.appspot.com',
-        messagingSenderId: '',
-        appId: ''
+        storageBucket: 'rebecca-prod.firebasestorage.app',
+        messagingSenderId: '556353380728',
+        appId: '1:556353380728:web:b589f488a145822a7a688d'
       },
       apiUrl: '/api/v1',
       publicSiteUrl: 'https://rebecca-ai.net',
