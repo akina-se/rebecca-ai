@@ -20,7 +20,7 @@ export class ConfigController {
         apiKey: process.env.FIREBASE_WEB_API_KEY || (isProd ? '' : 'YOUR_API_KEY'),
         authDomain: process.env.FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
         projectId: projectId,
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`,
         messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '',
         appId: process.env.FIREBASE_WEB_APP_ID || '',
       },

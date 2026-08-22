@@ -45,20 +45,6 @@
   },
   "plugins": [
     {
-      "type": "linked-versions",
-      "groupName": "rebecca-ai",
-      "components": [
-        "rebecca-ai-gal-monorepo",
-        "bot-backend",
-        "dashboard-backend",
-        "dashboard-frontend",
-        "functions",
-        "@rebecca/db",
-        "@rebecca/persona",
-        "@rebecca/types"
-      ]
-    },
-    {
       "type": "node-workspace"
     }
   ]
