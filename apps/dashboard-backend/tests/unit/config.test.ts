@@ -61,7 +61,7 @@ describe('Config Feature Unit Tests', () => {
         apiKey: 'PROD_API_KEY_123',
         authDomain: 'rebecca-prod.firebaseapp.com',
         projectId: 'rebecca-prod',
-        storageBucket: 'rebecca-prod.appspot.com',
+        storageBucket: 'rebecca-prod.firebasestorage.app',
         messagingSenderId: '',
         appId: ''
       },
