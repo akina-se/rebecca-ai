@@ -112,7 +112,8 @@ async function seedFirestore() {
         { role: 'model', content: 'こんにちは！とっても元気だよ！今日は何してるの？', timestamp: new Date(Date.now() - 3300000 * (i + 1)).toISOString() }
       ],
       status: i === 2 || i === 8 || i === 14 ? 'BLOCKED' : 'ACTIVE',
-      daily_reply_count: i % 3 === 0 ? 3 : 1,
+      dailyReplyCount: i % 3 === 0 ? 3 : 1,
+      lastReplyDate: lastSeenDate.toISOString().split('T')[0],
       affinityScore: Math.min(0.99, Math.max(0.1, Number((0.4 + (i * 0.02) + Math.sin(i)).toFixed(2)))),
       interactions: Math.floor(15 + i * 8 + Math.random() * 30),
       firstSeen: firstSeenDate.toISOString(),

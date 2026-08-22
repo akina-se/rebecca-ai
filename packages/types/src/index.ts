@@ -64,8 +64,8 @@ export interface FirestoreUser {
   working_memory?: ConversationLogEntry[];
   episodicBuffer: ConversationLogEntry[];
   /** ISO 8601 date string (YYYY-MM-DD) */
-  last_reply_date?: string;
-  daily_reply_count?: number;
+  lastReplyDate?: string;
+  dailyReplyCount?: number;
   status?: UserStatus;
   affinityScore?: number;
   firstSeen?: string;

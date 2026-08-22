@@ -26,7 +26,7 @@ describe('Context Injector', () => {
     it('should inject absence context if over 3 days', () => {
         // Current date: Jan 5. Last reply: Jan 1. (4 days diff)
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-05T12:00:00'));
-        const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [], last_reply_date: '2024-01-01T12:00:00' }, '久しぶり');
+        const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [], lastReplyDate: '2024-01-01T12:00:00' }, '久しぶり');
         expect(prompt).toContain('状況コンテキスト：放置');
         expect(prompt).toContain('4日ぶり');
     });
@@ -45,7 +45,7 @@ describe('Context Injector', () => {
 
     it('should inject English absence context if over 3 days when lang is en', () => {
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-05T12:00:00'));
-        const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [], last_reply_date: '2024-01-01T12:00:00' }, 'Long time no see', '', '', [], 'en');
+        const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [], lastReplyDate: '2024-01-01T12:00:00' }, 'Long time no see', '', '', [], 'en');
         expect(prompt).toContain('Context: Master has been absent');
         expect(prompt).toContain('4 days');
     });

@@ -23,7 +23,7 @@ const readDB = () => {
             console.error("Failed to parse local_db.json. Starting fresh.");
         }
     }
-    return { episodicBuffer: [], coreProfile: {}, last_reply_date: null };
+    return { episodicBuffer: [], coreProfile: {}, lastReplyDate: null };
 };
 
 const writeDB = (data) => {
@@ -82,7 +82,7 @@ const chatLoop = async () => {
             // Save to local JSON DB
             userData.episodicBuffer.push({ role: 'user', content: input, timestamp: new Date().toISOString() });
             userData.episodicBuffer.push({ role: 'model', content: reply, timestamp: new Date().toISOString() });
-            userData.last_reply_date = new Date().toISOString();
+            userData.lastReplyDate = new Date().toISOString();
             writeDB(userData);
 
             // Append to local raw logs for analytics

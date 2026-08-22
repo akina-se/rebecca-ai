@@ -38,13 +38,15 @@ export const onConversationLogCreated = onDocumentCreated(
     const db = admin.firestore();
     const batch = db.batch();
 
-    // Update User Stats (daily_reply_count and last_reply_date)
+    // Update User Stats (dailyReplyCount and lastReplyDate)
     const userRef = db.collection(COLLECTIONS.USERS).doc(log.userId);
+    const nowIso = log.timestamp || new Date().toISOString();
     batch.set(
       userRef,
       {
-        daily_reply_count: FieldValue.increment(1),
-        last_reply_date: log.timestamp || new Date().toISOString(),
+        dailyReplyCount: FieldValue.increment(1),
+        lastReplyDate: nowIso,
+        lastSeen: nowIso,
       },
       { merge: true }
     );

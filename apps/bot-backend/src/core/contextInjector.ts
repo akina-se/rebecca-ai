@@ -53,8 +53,8 @@ const buildSystemPrompt = (
             : `\n\n【状況コンテキスト：深夜】\n現在時刻は深夜です。マスターは一日の労働を終え、疲労感や孤独感を抱えている可能性があります。残業の労いと、圧倒的な癒やしを提供してください。`;
     }
 
-    if (userData?.last_reply_date) {
-        const lastDate = new Date(userData.last_reply_date);
+    if (userData?.lastReplyDate) {
+        const lastDate = new Date(userData.lastReplyDate);
         const diffMs = jstNow.getTime() - lastDate.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         if (diffDays >= 3) {

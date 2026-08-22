@@ -92,7 +92,7 @@ const appendEpisodicBuffer = async (userId: string, logEntry: ConversationLogEnt
   await rawRef.set(
     {
       episodicBuffer: FieldValue.arrayUnion(logEntry),
-      last_reply_date: now,
+      lastReplyDate: now,
       lastSeen: now,
       firstSeen,
     },

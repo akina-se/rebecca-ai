@@ -149,8 +149,8 @@ const userConverter: FirestoreDataConverter<FirestoreUser> = {
       coreProfile: data['coreProfile'] ?? {},
       working_memory: data['working_memory'],
       episodicBuffer: data['episodicBuffer'] ?? [],
-      last_reply_date: data['last_reply_date'],
-      daily_reply_count: data['daily_reply_count'],
+      lastReplyDate: data['lastReplyDate'],
+      dailyReplyCount: data['dailyReplyCount'],
     };
   },
 };

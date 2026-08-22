@@ -19,7 +19,7 @@ graph TD
     Function[Cloud Functions: onConversationLogCreated]
     BatchWrite(Batch Aggregation Write)
     
-    ColUsers["users Collection<br/>- Increments daily_reply_count<br/>- Updates last_reply_date"]
+    ColUsers["users Collection<br/>- Increments dailyReplyCount<br/>- Updates lastReplyDate"]
     ColStats["system_stats Collection<br/>- Performs unique user arrayUnion<br/>- Increments total_interactions"]
 
     Bot --> ActionWrite
@@ -38,7 +38,7 @@ graph TD
 ### 1. `onConversationLogCreated`
 - **Trigger Source**: Firestore document creation on collection `conversation_logs/{logId}`.
 - **Functionality**:
-  - **User Metrics**: Increments the user's `daily_reply_count` counter and sets the `last_reply_date` timestamp.
+  - **User Metrics**: Increments the user's `dailyReplyCount` counter and sets the `lastReplyDate` timestamp.
   - **System Metrics**: Appends the active user's ID to `system_stats/dau_YYYY-MM-DD`'s `active_users` list (using Firestore `arrayUnion` to ensure uniqueness for DAU measurements) and increments `total_interactions`.
 
 ---

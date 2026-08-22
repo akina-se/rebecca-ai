@@ -123,8 +123,8 @@ describe('Firestore Service Unit Tests', () => {
     });
 
     it('updateUserDoc should merge user data', async () => {
-      await firestoreService.updateUserDoc('u1', { daily_reply_count: 5 });
-      expect(mockDocSet).toHaveBeenCalledWith({ daily_reply_count: 5 }, { merge: true });
+      await firestoreService.updateUserDoc('u1', { dailyReplyCount: 5 });
+      expect(mockDocSet).toHaveBeenCalledWith({ dailyReplyCount: 5 }, { merge: true });
     });
 
     it('appendEpisodicBuffer should append turn with FieldValue.arrayUnion', async () => {
