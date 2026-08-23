@@ -373,7 +373,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(res.data[0].impressions).toBe(300);
     });
 
-    it('getPostById should resolve signed URLs for gs:// images', async () => {
+    it('getPostById should resolve streaming API URLs for gs:// images', async () => {
       (timelineRepo as any).collections.timelineHistory = {
         doc: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValueOnce({
@@ -391,7 +391,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
 
       const post = await timelineRepo.getPostById('post_1');
       expect(post).not.toBeNull();
-      expect(post?.mediaUrls[0]).toContain('https://storage.googleapis.com/signed-url');
+      expect(post?.mediaUrls[0]).toBe('/api/v1/assets/photo.jpg/image');
     });
 
     it('deletePosts should perform batch soft deletion', async () => {

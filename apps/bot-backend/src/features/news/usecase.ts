@@ -114,8 +114,8 @@ ${postText}
         const assetId = bestImage ? bestImage.id : undefined;
 
         await this.deps.firestore.saveTimelinePost(postText, {
-            mediaUrls: attachedUrl ? [attachedUrl] : [],
-            assetId,
+            mediaUrls: mediaIds.length > 0 && attachedUrl ? [attachedUrl] : [],
+            assetId: mediaIds.length > 0 ? assetId : undefined,
             tweetId
         });
 

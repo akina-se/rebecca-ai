@@ -1,5 +1,4 @@
 import { Firestore, Query } from '@google-cloud/firestore';
-import { Storage } from '@google-cloud/storage';
 import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { config } from '../../config';
@@ -32,7 +31,6 @@ interface TimelinePostDoc {
  */
 export class TimelineRepository {
   private collections;
-  private storage: Storage;
 
   /**
    * Creates an instance of TimelineRepository.
@@ -41,40 +39,6 @@ export class TimelineRepository {
    */
   constructor(private firestore: Firestore) {
     this.collections = getCollections(firestore);
-    this.storage = new Storage();
-  }
-
-  /**
-   * Generates a signed URL for a given GCS object path.
-   * The URL is valid for 15 minutes.
-   * 
-   * @param gcsPath - The GCS path (e.g. gs://bucket/object).
-   * @returns A promise that resolves to the signed HTTP URL, or the original path if not a GCS path.
-   */
-  private async getSignedUrl(gcsPath: string): Promise<string> {
-    if (!gcsPath || !gcsPath.startsWith('gs://')) {
-      return gcsPath; // Return as-is if it's already an HTTP URL or empty
-    }
-
-    try {
-      const bucketName = config.gcp.imageBucketName;
-      // Extract object name from gs://bucket-name/object/name
-      const objectName = gcsPath.replace(`gs://${bucketName}/`, '');
-      
-      const [url] = await this.storage
-         .bucket(bucketName)
-         .file(objectName)
-         .getSignedUrl({
-           version: 'v4',
-           action: 'read',
-           expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-         });
-      
-      return url;
-    } catch (e) {
-      console.error('Failed to generate Signed URL', e);
-      return ''; // Fallback for broken images
-    }
   }
 
   /**
@@ -251,17 +215,22 @@ export class TimelineRepository {
     const data = (doc.data() || {}) as Record<string, unknown>;
     const rawMediaUrls: string[] = (data.mediaUrls || data.media_urls || []) as string[];
     
-    // Resolve GCS paths to secure 15-minute Signed URLs
-    const resolvedMediaUrls = await Promise.all(
-      rawMediaUrls.map(url => this.getSignedUrl(url))
-    );
+    // Normalize GCS paths to secure backend streaming API endpoint (/api/v1/assets/:id/image)
+    const resolvedMediaUrls = rawMediaUrls.map(url => {
+      if (typeof url === 'string' && url.startsWith('gs://')) {
+        const parts = url.split('/');
+        const filename = parts.pop() || '';
+        return `/api/v1/assets/${filename}/image`;
+      }
+      return typeof url === 'string' ? url : '';
+    });
 
     return {
       id: doc.id,
       time: String(data.timestamp || data.created_at || new Date().toISOString()),
       content: String(data.content || data.text || ''),
       impressions: typeof data.impressions === 'number' ? data.impressions : 0,
-      mediaUrls: resolvedMediaUrls.filter(url => url !== ''),
+      mediaUrls: resolvedMediaUrls.filter(url => Boolean(url)),
       status: String(data.status || 'SUCCESS'),
       likes: typeof data.likes === 'number' ? data.likes : 0,
       retweets: typeof data.retweets === 'number' ? data.retweets : 0,

@@ -274,29 +274,29 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(metrics.followers).toBe(100);
     });
 
-    it('getSignedUrl branches: non-gs, empty, and error throw', async () => {
+    it('getPostById branches: missing post and mix of http and gs urls', async () => {
       // Non-existent post
       (repo as any).collections.timelineHistory.doc = jest.fn().mockReturnValue({
         get: jest.fn().mockResolvedValueOnce({ exists: false })
       });
       expect(await repo.getPostById('missing')).toBeNull();
 
-      // Post with http URL and gs URL error
+      // Post with http URL and gs URL
       (repo as any).collections.timelineHistory.doc = jest.fn().mockReturnValue({
         get: jest.fn().mockResolvedValueOnce({
           exists: true,
           id: 'p_mix',
           data: () => ({
             content: 'Mix',
-            media_urls: ['https://already.http/img.jpg', 'gs://bucket/fail.jpg']
+            media_urls: ['https://already.http/img.jpg', 'gs://bucket/photo.jpg']
           })
         })
       });
 
-      mockGetSignedUrl.mockRejectedValueOnce(new Error('GCS error'));
       const post = await repo.getPostById('p_mix');
-      expect(post?.mediaUrls).toHaveLength(1);
+      expect(post?.mediaUrls).toHaveLength(2);
       expect(post?.mediaUrls[0]).toBe('https://already.http/img.jpg');
+      expect(post?.mediaUrls[1]).toBe('/api/v1/assets/photo.jpg/image');
     });
 
     it('getPosts should test monthly and yearly date ranges and in-memory sort fallback with likes/retweets', async () => {
