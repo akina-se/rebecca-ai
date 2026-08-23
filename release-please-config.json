@@ -4,48 +4,44 @@
     ".": {
       "release-type": "node",
       "package-name": "rebecca-ai-gal-monorepo",
-      "component": "rebecca-ai-gal-monorepo",
-      "include-component-in-tag": false
-    },
-    "apps/bot-backend": {
-      "release-type": "node",
-      "package-name": "bot-backend",
-      "component": "bot-backend"
-    },
-    "apps/dashboard-backend": {
-      "release-type": "node",
-      "package-name": "dashboard-backend",
-      "component": "dashboard-backend"
-    },
-    "apps/dashboard-frontend": {
-      "release-type": "node",
-      "package-name": "dashboard-frontend",
-      "component": "dashboard-frontend"
-    },
-    "apps/functions": {
-      "release-type": "node",
-      "package-name": "functions",
-      "component": "functions"
-    },
-    "packages/db": {
-      "release-type": "node",
-      "package-name": "@rebecca/db",
-      "component": "@rebecca/db"
-    },
-    "packages/persona": {
-      "release-type": "node",
-      "package-name": "@rebecca/persona",
-      "component": "@rebecca/persona"
-    },
-    "packages/types": {
-      "release-type": "node",
-      "package-name": "@rebecca/types",
-      "component": "@rebecca/types"
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "apps/bot-backend/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "apps/dashboard-backend/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "apps/dashboard-frontend/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "apps/functions/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "packages/db/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "packages/persona/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "packages/types/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
     }
-  },
-  "plugins": [
-    {
-      "type": "node-workspace"
-    }
-  ]
+  }
 }
