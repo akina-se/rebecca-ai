@@ -38,6 +38,19 @@
     "cross-spawn": "^7.0.6",
     "micromatch": "^4.0.8",
     "brace-expansion": "^2.0.2",
-    "tmp": "^0.2.6"
+    "tmp": "^0.2.6",
+    "tar": "^7.5.3",
+    "rollup": "^4.59.0",
+    "postcss": "^8.5.3",
+    "piscina": "^4.8.2",
+    "http-proxy-middleware": "^3.0.3",
+    "serialize-javascript": "^7.0.5",
+    "uuid": "^11.1.1",
+    "vite": "^5.4.14",
+    "esbuild": "^0.25.0",
+    "webpack": "^5.98.0",
+    "webpack-dev-server": "^5.2.0",
+    "ts-deepmerge": "^8.0.0",
+    "picomatch": "^4.0.2"
   }
 }

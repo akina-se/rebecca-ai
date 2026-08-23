@@ -78,6 +78,28 @@ describe('runProactiveNewsPostBatch', () => {
         expect(deps.xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', { mediaIds: ['media_123'] });
     });
 
+    it('should reject image and post text-only if verifyImageRelevance returns false', async () => {
+        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        const text = 'A post about coffee';
+        deps.gemini.generateNewsPost.mockResolvedValue(text);
+        deps.firestore.getTimelineSummary.mockResolvedValue('summary');
+        deps.gemini.inferImageSearchQuery.mockResolvedValue('coffee');
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
+        deps.firestore.findImageByVector.mockResolvedValue({
+            id: 'hash123',
+            url: 'gs://bucket/images/hash123.jpg',
+            caption: 'irrelevant image'
+        });
+        deps.gemini.verifyImageRelevance.mockResolvedValue(false);
+
+        const result = await new ProactiveNewsUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.attachedMedia).toBe(false);
+        expect(deps.storage.downloadImage).not.toHaveBeenCalled();
+        expect(deps.xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', { mediaIds: [] });
+    });
+
     it('should handle image download or upload failure gracefully', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
         deps.gemini.generateNewsPost.mockResolvedValue('post');

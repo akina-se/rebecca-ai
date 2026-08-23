@@ -361,9 +361,6 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(resYearly.data[0].id).toBe('p_y1');
 
       // 2. Production query count and orderBy branch
-      const mockCountGet = jest.fn().mockResolvedValueOnce({
-        data: () => ({ count: 1 })
-      });
       const chainableQuery: any = {
         where: jest.fn().mockReturnThis(),
         get: jest.fn().mockResolvedValue({
