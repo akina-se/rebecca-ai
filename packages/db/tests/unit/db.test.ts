@@ -37,10 +37,9 @@ describe('@rebecca/db Unit Tests', () => {
       const user: FirestoreUser = {
         id: 'u1',
         name: 'User 1',
-        handle: 'user1',
+        username: 'user1',
         avatarUrl: 'https://avatar.png',
         status: UserStatus.ACTIVE,
-        affinityScore: 10,
         firstSeen: '2026-01-01T00:00:00Z',
         lastSeen: '2026-01-02T00:00:00Z',
         coreProfile: { persona: 'Friendly' },
@@ -54,10 +53,9 @@ describe('@rebecca/db Unit Tests', () => {
         id: 'u1',
         data: () => ({
           name: 'User 1',
-          handle: 'user1',
+          username: 'user1',
           avatarUrl: 'https://avatar.png',
           status: UserStatus.ACTIVE,
-          affinityScore: 10,
           firstSeen: '2026-01-01T00:00:00Z',
           lastSeen: '2026-01-02T00:00:00Z',
         }),
@@ -66,8 +64,43 @@ describe('@rebecca/db Unit Tests', () => {
       const result = userConverter.fromFirestore(mockSnapshot);
       expect(result.id).toBe('u1');
       expect(result.name).toBe('User 1');
+      expect(result.username).toBe('user1');
       expect(result.coreProfile).toEqual({});
       expect(result.episodicBuffer).toEqual([]);
+    });
+
+    it('fromFirestore should handle snake_case and missing fields', () => {
+      const mockSnapshot = {
+        id: 'u2',
+        data: () => ({
+          first_seen: '2026-02-01T00:00:00Z',
+          last_seen: '2026-02-02T00:00:00Z',
+          last_reply_date: '2026-02-03T00:00:00Z',
+          daily_reply_count: 5,
+        }),
+      } as any;
+
+      const result = userConverter.fromFirestore(mockSnapshot);
+      expect(result.id).toBe('u2');
+      expect(result.name).toBe('');
+      expect(result.username).toBe('');
+      expect(result.avatarUrl).toBe('');
+      expect(result.firstSeen).toBe('2026-02-01T00:00:00Z');
+      expect(result.lastSeen).toBe('2026-02-02T00:00:00Z');
+      expect(result.lastReplyDate).toBe('2026-02-03T00:00:00Z');
+      expect(result.dailyReplyCount).toBe(5);
+    });
+
+    it('fromFirestore should fallback lastSeen to last_reply_date when both lastSeen and last_seen are missing', () => {
+      const mockSnapshot = {
+        id: 'u3',
+        data: () => ({
+          last_reply_date: '2026-03-01T00:00:00Z',
+        }),
+      } as any;
+
+      const result = userConverter.fromFirestore(mockSnapshot);
+      expect(result.lastSeen).toBe('2026-03-01T00:00:00Z');
     });
   });
 

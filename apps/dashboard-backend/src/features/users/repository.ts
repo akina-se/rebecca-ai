@@ -19,23 +19,6 @@ export class UsersRepository {
     this.collections = getCollections(firestore);
   }
 
-  private resolveUserName(rawId: string, data: Record<string, unknown>): string {
-    if (typeof data.name === 'string' && data.name.trim().length > 0) {
-      return data.name.trim();
-    }
-    if (typeof data.username === 'string' && data.username.trim().length > 0) {
-      return `@${data.username.trim()}`;
-    }
-    return `@${rawId}`;
-  }
-
-  private resolveUserHandle(rawId: string, data: Record<string, unknown>): string {
-    if (typeof data.username === 'string' && data.username.trim().length > 0) {
-      return `@${data.username.trim()}`;
-    }
-    return `@${rawId}`;
-  }
-
   private resolveUserStatus(data: Record<string, unknown>): UserStatus {
     const s = String(data.status || '').toUpperCase();
     if (s === 'BLOCKED') return UserStatus.BLOCKED;
@@ -121,14 +104,14 @@ export class UsersRepository {
       });
     }
 
-    // Fuzzy / Substring Search filter (by handle, username, name, or userId)
+    // Fuzzy / Substring Search filter (by username, name, or id)
     if (params?.search && params.search.trim().length > 0) {
       const q = params.search.trim().toLowerCase().replace(/^@/, '');
       usersData = usersData.filter(u => {
-        const handle = u.id.toLowerCase();
+        const id = u.id.toLowerCase();
         const username = String(u.data.username || '').toLowerCase();
         const name = String(u.data.name || '').toLowerCase();
-        return handle.includes(q) || username.includes(q) || name.includes(q);
+        return id.includes(q) || username.includes(q) || name.includes(q);
       });
     }
 
@@ -148,7 +131,11 @@ export class UsersRepository {
           const timeB = new Date(String(b.data.lastSeen || b.data.last_reply_date || 0)).getTime() || 0;
           diff = timeB - timeA;
         }
-      } else if (sortBy === 'handle' || sortBy === 'userId' || sortBy === 'id') {
+      } else if (sortBy === 'username') {
+        const nameA = String(a.data.username || '');
+        const nameB = String(b.data.username || '');
+        diff = sortOrder === 'desc' ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
+      } else if (sortBy === 'id') {
         diff = sortOrder === 'desc' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
       } else if (sortBy === 'lastSeen' || sortBy === 'last_reply_date' || sortBy === 'lastInteraction') {
         const timeA = new Date(String(a.data.lastSeen || a.data.last_reply_date || 0)).getTime() || 0;
@@ -173,20 +160,16 @@ export class UsersRepository {
       const data = u.data;
       const status = this.resolveUserStatus(data);
       const { ragMemoriesCount, ragMemoriesStatus } = this.calculateRagStats(data);
-      const username = typeof data.username === 'string' && data.username.trim().length > 0 ? data.username.trim() : u.id;
-      const handle = `@${username}`;
-      const name = this.resolveUserName(u.id, data);
-      const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : 'N/A';
-      const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : 'N/A';
+      const username = typeof data.username === 'string' ? data.username.trim() : '';
+      const name = typeof data.name === 'string' ? data.name.trim() : '';
+      const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : '';
+      const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : '';
 
       return {
         id: u.id,
-        handle,
         username,
-        userId: u.id,
         name,
         interactions: typeof data._dynamicInteractions === 'number' ? data._dynamicInteractions : 0,
-        affinityScore: data.affinityScore !== undefined ? `${data.affinityScore}` : (data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A'),
         firstSeen,
         lastSeen,
         coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
@@ -231,11 +214,10 @@ export class UsersRepository {
 
     const data = (doc.data() || {}) as unknown as Record<string, unknown>;
     const resolvedUserId = doc.id;
-    const username = typeof data.username === 'string' && data.username.trim().length > 0 ? data.username.trim() : resolvedUserId;
-    const handle = `@${username}`;
-    const name = this.resolveUserName(resolvedUserId, data);
-    const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : 'N/A';
-    const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : 'N/A';
+    const username = typeof data.username === 'string' ? data.username.trim() : '';
+    const name = typeof data.name === 'string' ? data.name.trim() : '';
+    const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : '';
+    const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : '';
     
     // Fetch conversation logs from Firestore and sort in-memory to prevent composite index requirements
     const chatLogsSnap = await this.collections.conversationLogs
@@ -299,14 +281,12 @@ export class UsersRepository {
     const { ragMemoriesCount, ragMemoriesStatus } = this.calculateRagStats(data);
 
     return {
-      id: rawId,
-      handle: this.resolveUserHandle(rawId, data),
+      id: resolvedUserId,
       username,
-      name: this.resolveUserName(rawId, data),
+      name,
       interactions: calculatedInteractions,
-      affinityScore: data.affinityScore !== undefined ? `${data.affinityScore}` : (data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A'),
-      firstSeen: typeof data.firstSeen === 'string' ? data.firstSeen : 'N/A',
-      lastSeen: typeof data.lastSeen === 'string' ? data.lastSeen : 'N/A',
+      firstSeen,
+      lastSeen,
       coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
       chatHistory,
       status,

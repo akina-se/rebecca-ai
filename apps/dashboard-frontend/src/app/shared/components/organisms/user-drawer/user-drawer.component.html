@@ -7,8 +7,8 @@
                 <span class="material-icons">person</span>
             </div>
             <div class="profile-info">
-                <div class="profile-name">{{ user.name }}</div>
-                <div class="profile-handle">{{ user.handle }}</div>
+                <div class="profile-name">{{ user.name || user.username || user.id }}</div>
+                <div class="profile-handle" *ngIf="user.username">&#64;{{ user.username }}</div>
             </div>
         </div>
     </div>

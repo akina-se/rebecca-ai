@@ -98,6 +98,7 @@ async function seedFirestore() {
     mockUsers.push({
       id: handle,
       name: userName,
+      username: handle,
       handle: `@${handle}`,
       avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${handle}`,
       coreProfile: {
@@ -224,7 +225,7 @@ async function seedFirestore() {
     images.push({
       id: `a${i}`,
       filename: filename,
-      url: `https://picsum.photos/seed/asset${i}/600/400`,
+      url: `gs://rebecca-ai-gal-local-images/images/${filename}`,
       caption: caption,
       embedding: isFailed ? [] : new Array(1536).fill(0.01 * i),
       lastUsedAt: i % 3 === 0 ? new Date(Date.now() - 3600000 * i).toISOString() : null,

@@ -63,7 +63,7 @@ export class AssetsRepository {
 
     let url = typeof data.url === 'string' ? data.url : '';
     let thumbnailUrl: string | undefined;
-    if (!url || url.startsWith('gs://')) {
+    if (!url || url.startsWith('gs://') || url.includes('storage.googleapis.com')) {
       url = `/api/v1/assets/${id}/image`;
       thumbnailUrl = `/api/v1/assets/${id}/image?size=thumbnail`;
     } else {

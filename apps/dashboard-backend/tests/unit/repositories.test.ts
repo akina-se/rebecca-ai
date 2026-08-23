@@ -52,10 +52,9 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
           id: 'user_alice',
           data: () => ({
             name: 'Alice',
-            handle: '@alice_gyaru',
+            username: 'alice_gyaru',
             interactions: 50,
             status: 'ACTIVE',
-            affinity_score: 90,
             first_seen: '2026-08-01',
             last_seen: '2026-08-18',
             coreProfile: JSON.stringify({ bio: 'Gal enthusiast' })
@@ -65,10 +64,9 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
           id: 'user_bob',
           data: () => ({
             name: 'Bob',
-            handle: '@bob_dev',
+            username: 'bob_dev',
             interactions: 10,
-            status: 'BLOCKED',
-            affinity_score: 20
+            status: 'BLOCKED'
           })
         }
       ];
@@ -82,7 +80,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       const res = await usersRepo.getAll({ page: 1, limit: 10, search: 'alice', sortBy: 'interactions', sortOrder: 'desc' });
       expect(res.data).toHaveLength(1);
       expect(res.data[0].name).toBe('Alice');
-      expect(res.data[0].handle).toBe('@user_alice');
+      expect(res.data[0].username).toBe('alice_gyaru');
       expect(res.meta.totalItems).toBe(1);
     });
 
@@ -90,7 +88,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       const mockDocs = [
         {
           id: 'user_1',
-          data: () => ({ name: 'User 1', handle: '@user1' })
+          data: () => ({ name: 'User 1', username: 'user1' })
         }
       ];
       (usersRepo as any).collections.users.get = jest.fn().mockResolvedValueOnce({
@@ -119,11 +117,11 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       const mockDocs = [
         {
           id: 'user_b',
-          data: () => ({ name: 'User B', lastSeen: '2026-08-01T00:00:00Z', daily_reply_count: 1 })
+          data: () => ({ name: 'User B', username: 'user_b', lastSeen: '2026-08-01T00:00:00Z', daily_reply_count: 1 })
         },
         {
           id: 'user_a',
-          data: () => ({ name: 'User A', lastSeen: '2026-08-10T00:00:00Z', daily_reply_count: 1 })
+          data: () => ({ name: 'User A', username: 'user_a', lastSeen: '2026-08-10T00:00:00Z', daily_reply_count: 1 })
         }
       ];
       (usersRepo as any).collections.users.get = jest.fn().mockResolvedValue({
@@ -147,11 +145,11 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(resInteractions.data[0].id).toBe('user_a');
       expect(resInteractions.data[0].interactions).toBe(2);
 
-      // Sort by handle ascending & descending
-      const resHandle = await usersRepo.getAll({ sortBy: 'handle', sortOrder: 'asc' });
-      expect(resHandle.data[0].id).toBe('user_a');
-      const resHandleDesc = await usersRepo.getAll({ sortBy: 'handle', sortOrder: 'desc' });
-      expect(resHandleDesc.data[0].id).toBe('user_b');
+      // Sort by username ascending & descending
+      const resUsername = await usersRepo.getAll({ sortBy: 'username', sortOrder: 'asc' });
+      expect(resUsername.data[0].id).toBe('user_a');
+      const resUsernameDesc = await usersRepo.getAll({ sortBy: 'username', sortOrder: 'desc' });
+      expect(resUsernameDesc.data[0].id).toBe('user_b');
 
       // Sort by lastSeen descending & ascending
       const resLastSeen = await usersRepo.getAll({ sortBy: 'lastSeen', sortOrder: 'desc' });
@@ -177,7 +175,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
           id: 'u1',
           data: () => ({
             name: 'Alice',
-            handle: '@alice',
+            username: 'alice',
             interactions: 5,
             status: 'ACTIVE',
             coreProfile: { attributes: ['fun'] }

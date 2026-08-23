@@ -69,11 +69,9 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
     it('getAllUsers should delegate to repository', async () => {
       const mockUser: UserDetail = {
         id: 'u1',
-        handle: 'alice',
         username: 'alice',
         name: 'Alice',
         interactions: 5,
-        affinityScore: '95',
         firstSeen: '2026-08-01',
         lastSeen: '2026-08-18',
         coreProfile: '{}',
@@ -94,11 +92,9 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
     it('getUserById should delegate to repository', async () => {
       const mockUser: UserDetail = {
         id: 'u1',
-        handle: 'alice',
         username: 'alice',
         name: 'Alice',
         interactions: 5,
-        affinityScore: '95',
         firstSeen: '2026-08-01',
         lastSeen: '2026-08-18',
         coreProfile: '{}',
