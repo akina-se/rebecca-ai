@@ -438,7 +438,14 @@ const getRecentTimelinePosts = async (limit = 3): Promise<string[]> => {
   const posts: string[] = [];
   snapshot.forEach((doc) => {
     const data = doc.data();
-    if (data?.text) posts.push(data.text);
+    if (data?.text) {
+      const dateStr = data.timestamp
+        ? new Date(data.timestamp).toLocaleDateString('ja-JP', {
+            month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo'
+          })
+        : '';
+      posts.push(dateStr ? `[${dateStr}] ${data.text}` : data.text);
+    }
   });
   return posts.reverse();
 };
