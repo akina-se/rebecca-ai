@@ -377,6 +377,68 @@ describe('gemini.ts', () => {
         });
     });
 
+    describe('generateStructuredReply', () => {
+        it('should generate structured thought and reply JSON', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({
+                text: JSON.stringify({ thought: '心配だわ', reply: 'お疲れ様♡' })
+            });
+
+            const res = await gemini.generateStructuredReply('System', [], '疲れた');
+            expect(res.thought).toBe('心配だわ');
+            expect(res.reply).toBe('お疲れ様♡');
+        });
+
+        it('should handle tool calling with news search in structured reply', async () => {
+            const { gemini, news } = getGeminiModule();
+            news.fetchYahooNewsHeadlines.mockResolvedValueOnce(['AI最新動向']);
+
+            mockGenerateContent
+                .mockResolvedValueOnce({
+                    functionCalls: [{ name: 'search_news', args: {} }],
+                    candidates: [{ content: { role: 'model', parts: [{ functionCall: { name: 'search_news' } }] } }]
+                })
+                .mockResolvedValueOnce({
+                    text: JSON.stringify({ thought: '最新ニュースね', reply: 'AIニュース確認したわ！' })
+                });
+
+            const res = await gemini.generateStructuredReply('System', [], '最新ニュース教えて');
+            expect(res.thought).toBe('最新ニュースね');
+            expect(res.reply).toBe('AIニュース確認したわ！');
+            expect(news.fetchYahooNewsHeadlines).toHaveBeenCalled();
+        });
+    });
+
+    describe('verifyImageRelevance', () => {
+        it('should return true when LLM evaluates image as relevant', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({
+                text: JSON.stringify({ relevant: true, reason: 'Context matches' })
+            });
+
+            const res = await gemini.verifyImageRelevance('A cute cat enjoying sunshine', '今日はいい天気で猫もまったりしてるわね');
+            expect(res).toBe(true);
+        });
+
+        it('should return false when LLM evaluates image as irrelevant', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({
+                text: JSON.stringify({ relevant: false, reason: 'Mismatch' })
+            });
+
+            const res = await gemini.verifyImageRelevance('A sports car on highway', 'おいしいパスタ作ったわ♡');
+            expect(res).toBe(false);
+        });
+
+        it('should handle parsing error and return false safely', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockRejectedValueOnce(new Error('API error'));
+
+            const res = await gemini.verifyImageRelevance('Caption', 'Post text');
+            expect(res).toBe(false);
+        });
+    });
+
     describe('Missing Credentials Fallback (!ai)', () => {
         it('should return mock responses when API key is missing', async () => {
             const originalKey = config.gemini.apiKey;
@@ -384,6 +446,8 @@ describe('gemini.ts', () => {
             const { gemini } = getGeminiModule();
 
             expect(await gemini.generateReply('sys', [], 'test')).toBe('Mock AI response');
+            expect(await gemini.generateStructuredReply('sys', [], 'test')).toEqual({ thought: 'モック内省', reply: 'Mock AI response' });
+            expect(await gemini.verifyImageRelevance('caption', 'post')).toBe(false);
             expect(await gemini.generateDreaming('sys', [], {})).toEqual({ attributes: [], preferences: [], concerns: [], important_memories: [] });
             expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
             expect(await gemini.auditEvolutionPrompt('cand', 'audit')).toEqual({ pass: true });

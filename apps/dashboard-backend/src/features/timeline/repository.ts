@@ -309,12 +309,14 @@ export class TimelineRepository {
               accessTokenSecret: config.xApi.accessSecret,
             });
             const client = new Client({ oauth1: oauth1Client });
-            await client.posts.delete(tweetId);
-            console.log(`Deleted tweet ${tweetId} from X API.`);
+            await client.posts.deleteTweet(tweetId);
+            const safeTweetId = String(tweetId).replace(/[\r\n\u2028\u2029]/g, '');
+            console.log('Deleted tweet %s from X API.', safeTweetId);
           }
         }
       } catch (err) {
-        console.warn(`Could not delete post ${id} from X:`, err);
+        const safeId = String(id).replace(/[\r\n\u2028\u2029]/g, '');
+        console.warn('Could not delete post %s from X:', safeId, err);
       }
       batch.delete(this.collections.timelineHistory.doc(id));
     }

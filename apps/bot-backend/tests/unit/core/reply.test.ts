@@ -66,7 +66,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(result.status).toBe('blocked');
         expect(result.reason).toBe('User is blocked by admin');
         expect(deps.firestore.markMentionProcessed).toHaveBeenCalledWith('tweet_1');
-        expect(deps.gemini.generateReply).not.toHaveBeenCalled();
+        expect(deps.gemini.generateStructuredReply).not.toHaveBeenCalled();
         expect(deps.xApi.replyToMention).not.toHaveBeenCalled();
     });
 
@@ -87,7 +87,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
         deps.firestore.findRagMemories.mockResolvedValue([]);
         deps.gemini.detectLanguage.mockResolvedValue('ja');
-        deps.gemini.generateReply.mockResolvedValue('よろしくね！');
+        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: '内省モック', reply: 'よろしくね！' });
 
         const result = await usecase.execute({
             tweetId: 'tweet_new_1',
@@ -118,7 +118,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         
         // 150 characters response
         const longReply = 'あ'.repeat(150);
-        deps.gemini.generateReply.mockResolvedValue(longReply);
+        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: '内省', reply: longReply });
         deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
 
         await usecase.execute({

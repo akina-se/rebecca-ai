@@ -63,7 +63,18 @@ export class AssetsRepository {
 
     let url = typeof data.url === 'string' ? data.url : '';
     let thumbnailUrl: string | undefined;
-    if (!url || url.startsWith('gs://') || url.includes('storage.googleapis.com')) {
+    let isInternalStorage = !url || url.startsWith('gs://');
+    if (!isInternalStorage && (url.startsWith('http://') || url.startsWith('https://'))) {
+      try {
+        const parsedHost = new URL(url).hostname;
+        if (parsedHost === 'storage.googleapis.com' || parsedHost.endsWith('.storage.googleapis.com')) {
+          isInternalStorage = true;
+        }
+      } catch {
+        isInternalStorage = true;
+      }
+    }
+    if (isInternalStorage) {
       url = `/api/v1/assets/${id}/image`;
       thumbnailUrl = `/api/v1/assets/${id}/image?size=thumbnail`;
     } else {
