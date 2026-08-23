@@ -75,16 +75,11 @@ export class AssetsUseCase {
     const bucketName = config.gcp.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    // 1. Try reading from GCS URL specified in doc (gs://, https://storage.googleapis.com/..., etc.)
+    // 1. Try reading from GCS URL specified in doc (gs://...)
     const rawUrl = String(rawDoc?.url || '');
     let objectPathFromUrl = '';
     if (rawUrl.startsWith('gs://')) {
       objectPathFromUrl = rawUrl.replace(`gs://${bucketName}/`, '').replace(/^gs:\/\/[^/]+\//, '');
-    } else if (rawUrl.includes('storage.googleapis.com/') || rawUrl.includes('storage.cloud.google.com/')) {
-      const match = rawUrl.match(/(?:storage\.googleapis\.com|storage\.cloud\.google\.com)\/[^/]+\/(.+)$/);
-      if (match) {
-        objectPathFromUrl = decodeURIComponent(match[1]);
-      }
     }
 
     if (objectPathFromUrl) {

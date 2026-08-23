@@ -62,9 +62,7 @@ export class AssetsRepository {
     }
 
     let url = typeof data.url === 'string' ? data.url : '';
-    // If stored in internal private GCS (gs://), route through backend streaming proxy.
-    // If external public CDN/HTTP or inline data URI, preserve and return the URL directly.
-    if (!url || url.startsWith('gs://') || url.includes('storage.googleapis.com/rebecca-ai-gal-images')) {
+    if (!url || url.startsWith('gs://')) {
       url = `/api/v1/assets/${id}/image`;
     }
 
