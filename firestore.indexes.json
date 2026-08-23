@@ -49,12 +49,14 @@
     {
       "collectionGroup": "conversation_logs",
       "fieldPath": "expireAt",
-      "ttl": true
+      "ttl": true,
+      "indexes": []
     },
     {
       "collectionGroup": "timeline_history",
       "fieldPath": "expireAt",
-      "ttl": true
+      "ttl": true,
+      "indexes": []
     }
   ]
 }
