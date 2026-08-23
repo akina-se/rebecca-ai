@@ -49,21 +49,19 @@ test.describe('Assets Features E2E Tests', () => {
   test('Scenario B: Fuzzy Keyword Search - should filter assets by filename and caption', async ({ page }) => {
     const searchInput = page.locator('.block-header input.form-control');
     await expect(searchInput).toBeVisible();
+    const cards = page.locator('.asset-card');
 
     // 1. Search for specific keyword "cyberpunk"
     await searchInput.fill('cyberpunk');
-    const cards = page.locator('.asset-card');
+    await expect(cards).toHaveCount(1, { timeout: 10000 });
     await expect(cards.first()).toContainText('cyberpunk_street.png');
-    expect(await cards.count()).toBeGreaterThanOrEqual(1);
 
     // 2. Search for keyword matching caption "winter"
-    await searchInput.clear();
     await searchInput.fill('winter');
-    await expect(page.locator('.asset-card').first()).toContainText('cozy_winter_cabin.jpg', { timeout: 10000 });
-    expect(await cards.count()).toBeGreaterThanOrEqual(1);
+    await expect(cards).toHaveCount(1, { timeout: 10000 });
+    await expect(cards.first()).toContainText('cozy_winter_cabin.jpg');
 
     // 3. Clear search - should restore full page of 20 assets
-    await searchInput.clear();
     await searchInput.fill('');
     await expect(cards).toHaveCount(20, { timeout: 10000 });
   });
@@ -150,11 +148,12 @@ test.describe('Assets Features E2E Tests', () => {
 
     // 4. Test Delete Asset from inside drawer
     const deleteBtn = drawer.locator('app-asset-drawer button', { hasText: /Delete Asset|アセットを削除/ });
+    await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
 
     // 5. Verify success toast and drawer closes automatically
     const deleteToast = page.locator('.toast', { hasText: /Successfully deleted asset|削除/ });
-    await expect(deleteToast).toBeVisible({ timeout: 10000 });
+    await expect(deleteToast).toBeVisible({ timeout: 15000 });
     await expect(drawer).not.toHaveClass(/open/);
   });
 

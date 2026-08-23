@@ -40,10 +40,10 @@ describe('HttpUsersRepository', () => {
     expect(req.request.method).toBe('GET');
     req.flush({
       data: [
-        { handle: 'alice', status: 'ACTIVE' },
-        { handle: 'bob', status: 'BLOCKED' },
-        { handle: 'charlie', status: 'MUTED' },
-        { handle: 'dave', status: null }
+        { id: 'u1', username: 'alice', status: 'ACTIVE' },
+        { id: 'u2', username: 'bob', status: 'BLOCKED' },
+        { id: 'u3', username: 'charlie', status: 'MUTED' },
+        { id: 'u4', username: 'dave', status: null }
       ],
       meta: { totalItems: 4 }
     });
@@ -61,7 +61,7 @@ describe('HttpUsersRepository', () => {
 
   it('should fetch user by ID with beforeTimestamp and limit', () => {
     repository.getById('bob', '2026-08-15T00:00:00Z', 20).subscribe((user) => {
-      expect(user.handle).toBe('bob');
+      expect(user.username).toBe('bob');
       expect(user.status).toBe(UserStatus.BLOCKED);
     });
 
@@ -71,7 +71,7 @@ describe('HttpUsersRepository', () => {
       r.params.get('limit') === '20'
     );
     expect(req.request.method).toBe('GET');
-    req.flush({ handle: 'bob', status: 'BLOCKED' });
+    req.flush({ id: 'bob', username: 'bob', status: 'BLOCKED' });
   });
 
   it('should update user memory via PUT request', () => {

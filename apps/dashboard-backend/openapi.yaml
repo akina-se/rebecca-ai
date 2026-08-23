@@ -60,7 +60,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [interactions, affinityScore]
+            enum: [interactions, username, id, lastSeen]
         - name: sortOrder
           in: query
           required: false
@@ -476,27 +476,27 @@ components:
           format: date-time
           example: "2026-07-18T13:35:28.000Z"
 
-    UserOverview:
+    UserSummary:
       type: object
       properties:
-        handle:
+        id:
           type: string
-          example: "@rebecca_oshi"
+          example: "1934600616791482369"
+        username:
+          type: string
+          example: "se_akina"
         name:
           type: string
-          example: "Unknown"
+          example: "AKINA"
         interactions:
           type: integer
           example: 2
-        affinityScore:
-          type: string
-          example: "N/A"
         firstSeen:
           type: string
-          example: "N/A"
+          example: "2026-06-29T14:05:12.200Z"
         lastSeen:
           type: string
-          example: "N/A"
+          example: "2026-07-12T07:52:34.766Z"
         coreProfile:
           type: string
           description: JSON serialized string of profile structure
@@ -507,18 +507,18 @@ components:
     UserDetail:
       type: object
       properties:
-        handle:
+        id:
           type: string
-          example: "@rebecca_oshi"
+          example: "1934600616791482369"
+        username:
+          type: string
+          example: "se_akina"
         name:
           type: string
-          example: "Unknown"
+          example: "AKINA"
         interactions:
           type: integer
           example: 2
-        affinityScore:
-          type: string
-          example: "N/A"
         firstSeen:
           type: string
           example: "2026-07-18T12:35:15.908Z"

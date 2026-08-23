@@ -170,13 +170,13 @@ export class TimelineRepository {
       const content = String(d.content || d.text || '');
       const rawMedia = (d.media_urls || d.mediaUrls || []) as string[];
       const media = rawMedia.map(url => {
-        if (url.startsWith('gs://')) {
+        if (typeof url === 'string' && url.startsWith('gs://')) {
           const parts = url.split('/');
           const filename = parts.pop() || '';
-          return `/api/v1/assets/${filename}/image`;
+          return `/api/v1/assets/${filename}/image?size=thumbnail`;
         }
-        return url;
-      });
+        return typeof url === 'string' ? url : '';
+      }).filter(url => Boolean(url));
 
       return {
         id: doc.id,

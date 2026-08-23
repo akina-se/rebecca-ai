@@ -31,7 +31,7 @@ describe('UsersPageComponent', () => {
   it('should create users page component and load users on init', () => {
     usersRepoSpy.getAll.and.returnValue(of({
       data: [
-        { handle: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE }
+        { id: 'u_alice', username: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
       ],
       meta: { totalItems: 1, totalPages: 1 }
     }));
@@ -40,7 +40,7 @@ describe('UsersPageComponent', () => {
 
     expect(usersRepoSpy.getAll).toHaveBeenCalled();
     expect(component.users.length).toBe(1);
-    expect(component.users[0].handle).toBe('alice');
+    expect(component.users[0].username).toBe('alice');
     expect(component.isLoading).toBeFalse();
   });
 
@@ -62,15 +62,15 @@ describe('UsersPageComponent', () => {
     component.toggleUserSort('interactions');
     expect(component.userSortOrder).toBe('asc');
 
-    component.toggleUserSort('handle');
-    expect(component.userSortBy).toBe('handle');
+    component.toggleUserSort('username');
+    expect(component.userSortBy).toBe('username');
     expect(component.userSortOrder).toBe('desc');
   });
 
   it('should toggle select all users and handle individual selection changes', () => {
     component.users = [
-      { handle: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any,
-      { handle: 'bob', interactions: 5, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
+      { id: 'alice', username: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any,
+      { id: 'bob', username: 'bob', interactions: 5, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
     ];
 
     component.toggleSelectAll();
@@ -133,9 +133,29 @@ describe('UsersPageComponent', () => {
     expect(component.currentPage).toBe(3);
   });
 
-  it('should open user drawer on openUserDrawer', () => {
+  it('should open user drawer on openUserDrawer and ignore when text is selected', () => {
     component.openUserDrawer('alice');
     expect(component.selectedUserId).toBe('alice');
     expect(component.isDrawerOpen).toBeTrue();
+
+    // When text is selected
+    spyOn(window, 'getSelection').and.returnValue({ toString: () => 'copied text' } as any);
+    component.isDrawerOpen = false;
+    component.openUserDrawer('bob');
+    expect(component.isDrawerOpen).toBeFalse();
+  });
+
+  it('should return early from bulk actions when no users selected', async () => {
+    component.selectedUsers.clear();
+    await component.executeBulkBlock();
+    await component.executeBulkUnblock();
+    expect(usersRepoSpy.bulkUpdateStatus).not.toHaveBeenCalled();
+  });
+
+  it('should sort by lastSeen', () => {
+    usersRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
+    component.toggleUserSort('lastSeen');
+    expect(component.userSortBy).toBe('lastSeen');
+    expect(component.userSortOrder).toBe('desc');
   });
 });
