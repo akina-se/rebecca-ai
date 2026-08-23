@@ -772,13 +772,27 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       ]);
       expect(errRes[0].status).toBe(AssetStatus.FAILED);
 
-      // 4. Regenerate caption with Gemini AI and embedding failure handling
+      // 4. Regenerate caption with Gemini AI and embedding failure handling (with image binary)
+      jest.spyOn(assetsUseCase, 'getAssetBinary').mockResolvedValueOnce({
+        buffer: Buffer.from('mock-png-binary'),
+        contentType: 'image/png'
+      });
       mockGenerateContent.mockResolvedValueOnce({ text: '再生成キャプション' });
       mockEmbedContent.mockRejectedValueOnce(new Error('Embedding fail'));
 
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
         caption: '再生成キャプション',
+        status: AssetStatus.SUCCESS
+      }));
+
+      // 4b. Regenerate caption when image binary is null (fallback text prompt)
+      jest.spyOn(assetsUseCase, 'getAssetBinary').mockResolvedValueOnce(null);
+      mockGenerateContent.mockResolvedValueOnce({ text: 'フォールバックキャプション' });
+      mockEmbedContent.mockResolvedValueOnce({ embeddings: [{ values: [0.1] }] });
+      await assetsUseCase.regenerateCaptions(['img_test']);
+      expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
+        caption: 'フォールバックキャプション',
         status: AssetStatus.SUCCESS
       }));
 

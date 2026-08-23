@@ -422,7 +422,7 @@ export class AssetsUseCase {
   }
 
   /**
-   * Helper: Generates caption and embedding when regenerating for an existing asset.
+   * Helper: Generates caption and embedding when regenerating for an existing asset using Gemini Vision.
    */
   private async generateCaptionForAsset(filename: string, assetId: string): Promise<{ caption: string; embedding: number[]; status: AssetStatus }> {
     if (!this.ai) {
@@ -431,9 +431,25 @@ export class AssetsUseCase {
     }
 
     try {
+      // 1. Fetch original image binary from GCS / Storage to perform true Gemini Vision analysis
+      const imageBinary = await this.getAssetBinary(assetId, 'full');
+
+      const contents = imageBinary && imageBinary.buffer && imageBinary.buffer.length > 0
+        ? [
+            {
+              inlineData: {
+                data: imageBinary.buffer.toString('base64'),
+                mimeType: imageBinary.contentType || 'image/jpeg'
+              }
+            },
+            'Please generate a concise, descriptive Japanese caption (1 sentence) for this anime / character image.'
+          ]
+        : [`Please output a single concise Japanese sentence describing the character/anime asset: ${filename}`];
+
       const response = await this.ai.models.generateContent({
         model: config.gemini.model,
-        contents: [`Please generate a descriptive Japanese caption for anime asset: ${filename}`]
+        contents,
+        config: { maxOutputTokens: 200 }
       });
 
       const caption = response.text?.trim() || '';
