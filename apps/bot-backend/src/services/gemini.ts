@@ -92,11 +92,19 @@ const generateReply = async (systemInstruction: string, history: ConversationLog
                     contents: contents,
                     config: baseConfig
                 });
-                return finalResponse.text;
+                const finalText = finalResponse.text?.trim();
+                if (!finalText) {
+                    throw new Error('Gemini API returned empty response after function execution.');
+                }
+                return finalText;
             }
         }
 
-        return response.text || '';
+        const replyText = response.text?.trim();
+        if (!replyText) {
+            throw new Error('Gemini API returned empty response or content was filtered.');
+        }
+        return replyText;
     } catch (error) {
         console.error('Error generating reply with Gemini:', error);
         throw error;
@@ -285,7 +293,8 @@ const generateEmbedding = async (text: string): Promise<number[]> => {
                 outputDimensionality: 768
             }
         });
-        return response.embeddings[0].values;
+        const values = response.embeddings?.[0]?.values;
+        return values || [];
     } catch (e) {
         console.error('Error generating embedding:', e);
         return [];
@@ -480,7 +489,7 @@ const generateStructuredReply = async (
                     functionDeclarations: [
                         {
                             name: "search_news",
-                            description: "Fetches the latest news headlines. Useful when the user asks about current events, news, or today's topics."
+                            description: "Fetches the latest news headlines. ONLY use when the user explicitly asks about current events, news, or today's topics. NEVER use for casual greetings or general chat."
                         }
                     ]
                 }]
@@ -512,11 +521,19 @@ const generateStructuredReply = async (
                     contents: contents,
                     config: baseConfig
                 });
-                return parsePersonaResponse(finalResponse.text || '');
+                const finalText = finalResponse.text?.trim();
+                if (!finalText) {
+                    throw new Error('Gemini API returned empty structured response after function execution.');
+                }
+                return parsePersonaResponse(finalText);
             }
         }
 
-        return parsePersonaResponse(response.text || '');
+        const rawText = response.text?.trim();
+        if (!rawText) {
+            throw new Error('Gemini API returned empty structured response or content was filtered.');
+        }
+        return parsePersonaResponse(rawText);
     } catch (error) {
         console.error('Error generating structured reply with Gemini:', error);
         throw error;
