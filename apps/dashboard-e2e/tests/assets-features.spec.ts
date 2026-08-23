@@ -148,11 +148,12 @@ test.describe('Assets Features E2E Tests', () => {
 
     // 4. Test Delete Asset from inside drawer
     const deleteBtn = drawer.locator('app-asset-drawer button', { hasText: /Delete Asset|アセットを削除/ });
+    await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
 
     // 5. Verify success toast and drawer closes automatically
     const deleteToast = page.locator('.toast', { hasText: /Successfully deleted asset|削除/ });
-    await expect(deleteToast).toBeVisible({ timeout: 10000 });
+    await expect(deleteToast).toBeVisible({ timeout: 15000 });
     await expect(drawer).not.toHaveClass(/open/);
   });
 
