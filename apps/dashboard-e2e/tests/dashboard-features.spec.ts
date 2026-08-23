@@ -337,11 +337,14 @@ test.describe('Dashboard Features E2E Tests', () => {
 
   /**
    * Scenario F: Full Ranking Modal
+  /**
+   * Scenario F: Full Ranking Modal (Top Users)
    * - Click "View Full Ranking" in Top Engaged Users.
-   * - Assert Ranking Modal displays title "Top Engaged Users" and user handles.
+   * - Assert Ranking Modal displays title "Top Engaged Users" and user @handles.
+   * - Assert server-side pagination exists and clicking page 2 loads next rank offset.
    * - Close modal.
    */
-  test('Scenario F: Full Ranking Modal - should display full ranking modal with handles and pagination', async ({ page }) => {
+  test('Scenario F: Full Ranking Modal - should display full ranking modal with handles and server-side pagination', async ({ page }) => {
     const topUsersHeader = page.locator('.table-header-container', { hasText: /Top Engaged Users|エンゲージメント上位ユーザー/ });
     const topUsersContainer = topUsersHeader.locator('..');
     
@@ -361,6 +364,45 @@ test.describe('Dashboard Features E2E Tests', () => {
     const labelCellText = (await firstRankingRow.locator('.label-cell').innerText()).trim();
     expect(labelCellText).toMatch(/@?[a-zA-Z0-9_]+/);
     expect(labelCellText).toContain('@');
+
+    // Test server-side pagination inside ranking modal
+    const modalPagination = modal.locator('.modal-footer app-pagination');
+    await expect(modalPagination).toBeVisible();
+    
+    const page2Btn = modalPagination.locator('.pagination-controls button.num-btn', { hasText: '2' });
+    if (await page2Btn.isVisible()) {
+      await page2Btn.click();
+      // Verify row rank updates to 11 on Page 2
+      const rankCell = modal.locator('table.ranking-table tbody tr .rank-cell').first();
+      await expect(rankCell).toContainText('11');
+    }
+
+    const closeBtn = modal.locator('.modal-header .close-btn');
+    await closeBtn.click();
+    await expect(modal).not.toBeVisible();
+  });
+
+  /**
+   * Scenario G: Top Posts Ranking Modal
+   * - Click "View Full Ranking" in Top Posts by Impressions.
+   * - Assert Ranking Modal displays title "Top Posts by Impressions" and post snippets.
+   * - Close modal.
+   */
+  test('Scenario G: Top Posts Ranking Modal - should open top posts ranking modal and close cleanly', async ({ page }) => {
+    const topPostsHeader = page.locator('.table-header-container', { hasText: /Top Posts by Impressions|インプレッション上位ポスト/ });
+    const topPostsContainer = topPostsHeader.locator('..');
+
+    await expect(topPostsContainer.locator('table.glass-panel tbody tr').first()).toBeVisible({ timeout: 10000 });
+
+    const viewFullRankingBtn = topPostsContainer.locator('.table-footer-btn');
+    await viewFullRankingBtn.click();
+
+    const modal = page.locator('app-ranking-modal .modal-container');
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    await expect(modal.locator('.modal-title')).toContainText(/Top Posts|インプレッション上位/);
+
+    const firstRow = modal.locator('table.ranking-table tbody tr').first();
+    await expect(firstRow).toBeVisible();
 
     const closeBtn = modal.locator('.modal-header .close-btn');
     await closeBtn.click();

@@ -75,29 +75,59 @@ export class AssetsUseCase {
     const bucketName = config.gcp.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    // 1. Try reading from GCS URL specified in doc
+    // 1. Try reading from GCS URL specified in doc (gs://, https://storage.googleapis.com/..., etc.)
     const rawUrl = String(rawDoc?.url || '');
+    let objectPathFromUrl = '';
     if (rawUrl.startsWith('gs://')) {
-      const objectPath = rawUrl.replace(`gs://${bucketName}/`, '');
-      try {
-        const file = bucket.file(objectPath);
-        const [exists] = await file.exists();
-        if (exists) {
-          const [buffer] = await file.download();
-          const contentType = objectPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
-          return { buffer, contentType };
-        }
-      } catch (err) {
-        console.warn(`Failed to download object from GCS path ${objectPath}:`, err);
+      objectPathFromUrl = rawUrl.replace(`gs://${bucketName}/`, '').replace(/^gs:\/\/[^/]+\//, '');
+    } else if (rawUrl.includes('storage.googleapis.com/') || rawUrl.includes('storage.cloud.google.com/')) {
+      const match = rawUrl.match(/(?:storage\.googleapis\.com|storage\.cloud\.google\.com)\/[^/]+\/(.+)$/);
+      if (match) {
+        objectPathFromUrl = decodeURIComponent(match[1]);
       }
     }
 
-    // 2. Try exact conventional paths
+    if (objectPathFromUrl) {
+      try {
+        const file = bucket.file(objectPathFromUrl);
+        const [exists] = await file.exists();
+        if (exists) {
+          const [buffer] = await file.download();
+          let contentType = objectPathFromUrl.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+          if (typeof file.getMetadata === 'function') {
+            try {
+              const [metadata] = await file.getMetadata();
+              if (metadata?.contentType) contentType = metadata.contentType;
+            } catch {
+              // ignore metadata error
+            }
+          }
+          return { buffer, contentType };
+        }
+      } catch (err) {
+        console.warn(`Failed to download object from GCS path ${objectPathFromUrl}:`, err);
+      }
+    }
+
+    // 2. Try clean ID (stripped of 'img_' prefix if present)
+    const cleanId = id.replace(/^img_/, '');
+
+    // 3. Try exact conventional paths
     const candidates = [
       `images/${id}`,
       `images/${id}.jpg`,
       `images/${id}.png`,
-      `media_assets/${id}`
+      `images/${cleanId}`,
+      `images/${cleanId}.jpg`,
+      `images/${cleanId}.png`,
+      `media_assets/${id}`,
+      `media_assets/${id}.jpg`,
+      `media_assets/${id}.png`,
+      `media_assets/${cleanId}`,
+      `media_assets/${cleanId}.jpg`,
+      `media_assets/${cleanId}.png`,
+      id,
+      cleanId
     ];
     for (const path of candidates) {
       try {
@@ -105,8 +135,15 @@ export class AssetsUseCase {
         const [exists] = await file.exists();
         if (exists) {
           const [buffer] = await file.download();
-          const [metadata] = await file.getMetadata();
-          const contentType = metadata.contentType || (path.endsWith('.png') ? 'image/png' : 'image/jpeg');
+          let contentType = path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+          if (typeof file.getMetadata === 'function') {
+            try {
+              const [metadata] = await file.getMetadata();
+              if (metadata?.contentType) contentType = metadata.contentType;
+            } catch {
+              // ignore metadata error
+            }
+          }
           return { buffer, contentType };
         }
       } catch {
@@ -114,25 +151,30 @@ export class AssetsUseCase {
       }
     }
 
-    // 3. Try prefix search in media_assets/ and images/
+    // 4. Try prefix search in media_assets/ and images/
     try {
-      const [mediaFiles] = await bucket.getFiles({ prefix: `media_assets/${id}`, maxResults: 1 });
-      if (mediaFiles && mediaFiles.length > 0) {
-        const [buffer] = await mediaFiles[0].download();
-        const contentType = mediaFiles[0].name.endsWith('.png') ? 'image/png' : 'image/jpeg';
-        return { buffer, contentType };
-      }
-      const [imageFiles] = await bucket.getFiles({ prefix: `images/${id}`, maxResults: 1 });
-      if (imageFiles && imageFiles.length > 0) {
-        const [buffer] = await imageFiles[0].download();
-        const contentType = imageFiles[0].name.endsWith('.png') ? 'image/png' : 'image/jpeg';
-        return { buffer, contentType };
+      for (const prefix of [`media_assets/${cleanId}`, `images/${cleanId}`, `media_assets/${id}`, `images/${id}`]) {
+        const [files] = await bucket.getFiles({ prefix, maxResults: 1 });
+        if (files && files.length > 0) {
+          const file = files[0];
+          const [buffer] = await file.download();
+          let contentType = file.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+          if (typeof file.getMetadata === 'function') {
+            try {
+              const [metadata] = await file.getMetadata();
+              if (metadata?.contentType) contentType = metadata.contentType;
+            } catch {
+              // ignore metadata error
+            }
+          }
+          return { buffer, contentType };
+        }
       }
     } catch (err) {
       console.warn(`Failed to search prefix in GCS for ${id}:`, err);
     }
 
-    // 4. Try base64 data URI in url field
+    // 5. Try base64 data URI in url field
     if (rawUrl.startsWith('data:image/')) {
       const matches = rawUrl.match(/^data:(image\/[a-zA-Z0-9.+_-]+);base64,(.+)$/);
       if (matches) {
