@@ -34,7 +34,7 @@ export class UsersPageComponent implements OnInit {
   totalPages = 1;
   totalItems = 0;
 
-  userSortBy: 'handle' | 'interactions' | 'lastSeen' = 'interactions';
+  userSortBy: 'username' | 'interactions' | 'lastSeen' = 'interactions';
   userSortOrder: 'asc' | 'desc' = 'desc';
 
   isBlocking = false;
@@ -82,7 +82,7 @@ export class UsersPageComponent implements OnInit {
     this.loadUsers(page);
   }
 
-  toggleUserSort(column: 'handle' | 'interactions' | 'lastSeen') {
+  toggleUserSort(column: 'username' | 'interactions' | 'lastSeen') {
     if (this.userSortBy === column) {
       this.userSortOrder = this.userSortOrder === 'desc' ? 'asc' : 'desc';
     } else {
@@ -95,7 +95,7 @@ export class UsersPageComponent implements OnInit {
   toggleSelectAll() {
     this.selectAll = !this.selectAll;
     if (this.selectAll) {
-      this.users.forEach(u => this.selectedUsers.add(u.handle));
+      this.users.forEach(u => this.selectedUsers.add(u.id));
     } else {
       this.selectedUsers.clear();
     }

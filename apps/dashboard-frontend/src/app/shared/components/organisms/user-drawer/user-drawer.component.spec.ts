@@ -16,11 +16,9 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
 
   const mockUserDetail: UserDetail = {
     id: 'user_123',
-    handle: 'alice_gal',
     username: 'alice_gal',
     name: 'Alice',
     status: UserStatus.ACTIVE,
-    affinityScore: '92',
     interactions: 140,
     firstSeen: '2026-01-01',
     lastSeen: '2026-07-22',
@@ -137,5 +135,39 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     component.userId = null;
     component.onViewOnX();
     expect(window.open).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle empty userId on lifecycle changes and early exits', () => {
+    component.userId = null;
+    component.ngOnChanges();
+    expect(component.user).toBeDefined(); // preserved previous state
+
+    component.userId = null;
+    component.onBlockUser();
+    component.onSaveProfile();
+    expect(component.isActionLoading).toBeFalse();
+    expect(component.isSavingProfile).toBeFalse();
+  });
+
+  it('should set context label with fallback to name and ID when username is missing', () => {
+    const userWithoutUsername = {
+      ...mockUserDetail,
+      username: '',
+      name: 'Alice Only'
+    };
+    mockUsersRepo.getById.and.returnValue(of(userWithoutUsername));
+    component.userId = 'user_no_uname';
+    component.ngOnChanges();
+    expect(component.user?.name).toBe('Alice Only');
+
+    const userWithIdOnly = {
+      ...mockUserDetail,
+      username: '',
+      name: ''
+    };
+    mockUsersRepo.getById.and.returnValue(of(userWithIdOnly));
+    component.userId = 'user_id_only';
+    component.ngOnChanges();
+    expect(component.user?.id).toBe('user_123');
   });
 });

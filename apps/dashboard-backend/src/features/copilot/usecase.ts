@@ -196,7 +196,7 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
       if (this.usersRepo && (lowerMsg.includes('user') || lowerMsg.includes('ユーザー') || lowerMsg.includes('@') || lowerMsg.includes('ブロック') || currentContext.includes('User'))) {
         const userRes = await this.usersRepo.getAll({ limit: 10, sortBy: 'interactions', sortOrder: 'desc' });
         const users = userRes.data || [];
-        parts.push(`[Top Engaged Users]: ${users.slice(0, 5).map(u => `${u.handle} (Interactions: ${u.interactions}, Status: ${u.status})`).join(', ')}`);
+        parts.push(`[Top Engaged Users]: ${users.slice(0, 5).map(u => `${u.name ? `${u.name} (@${u.username})` : (u.username ? `@${u.username}` : u.id)} (Interactions: ${u.interactions}, Status: ${u.status})`).join(', ')}`);
       }
 
       // 4. Query posts if asked about timeline, impressions, or posts

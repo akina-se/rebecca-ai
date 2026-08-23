@@ -41,11 +41,11 @@
     <table class="data-table glass-panel" style="border-radius: 0;">
         <thead><tr>
             <th style="width: 40px;"></th>
-            <th class="sortable-th" (click)="toggleUserSort('handle')" style="cursor: pointer; user-select: none;" title="Sort by User ID">
+            <th class="sortable-th" (click)="toggleUserSort('username')" style="cursor: pointer; user-select: none;" title="Sort by User">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                    <span [style.color]="userSortBy === 'handle' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'handle' ? '600' : 'normal'">{{ 'users.table_handle' | translate }}</span>
-                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'handle' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
-                        {{ userSortBy === 'handle' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                    <span [style.color]="userSortBy === 'username' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="userSortBy === 'username' ? '600' : 'normal'">{{ 'users.table_handle' | translate }}</span>
+                    <span class="material-icons sort-icon" [style.color]="userSortBy === 'username' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ userSortBy === 'username' ? (userSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
                     </span>
                 </div>
             </th>
@@ -69,16 +69,16 @@
             <th>{{ 'users.table_status' | translate }}</th>
         </tr></thead>
         <tbody>
-            <tr class="clickable" *ngFor="let user of users" (click)="openUserDrawer(user.handle)" [style.opacity]="user.status === 'BLOCKED' ? 0.6 : 1">
+            <tr class="clickable" *ngFor="let user of users" (click)="openUserDrawer(user.id)" [style.opacity]="user.status === 'BLOCKED' ? 0.6 : 1">
                 <td (click)="$event.stopPropagation()">
                     <label class="checkbox-container" (click)="$event.stopPropagation()">
-                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has(user.handle)" (change)="toggleSelection(user.handle, $event)">
+                        <input type="checkbox" class="row-checkbox" [checked]="selectedUsers.has(user.id)" (change)="toggleSelection(user.id, $event)">
                         <span class="checkmark"></span>
                     </label>
                 </td>
                 <td style="font-weight: 500;" [style.text-decoration]="user.status === 'BLOCKED' ? 'line-through' : 'none'">
-                    <div style="font-weight: 600;">{{ user.name }}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ user.handle }}</div>
+                    <div style="font-weight: 600;">{{ user.name || user.username || user.id }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);" *ngIf="user.username">&#64;{{ user.username }}</div>
                 </td>
                 <td>{{ user.interactions | number }}</td>
                 <td style="color: var(--text-muted); white-space: nowrap;" [title]="user.lastSeen">{{ user.lastSeen | tzDate }}</td>

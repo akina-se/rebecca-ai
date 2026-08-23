@@ -36,7 +36,7 @@ export class HttpDashboardRepository implements DashboardRepository {
    * @param limit Page size.
    * @returns Observable list of top posts with metadata.
    */
-  getTopPosts(period: string, date?: string, page: number = 1, limit: number = 10): Observable<PaginatedResponse<PostLeaderboard>> {
+  getTopPosts(period: string, date?: string, page = 1, limit = 10): Observable<PaginatedResponse<PostLeaderboard>> {
     let params = new HttpParams()
       .set('period', period)
       .set('sortBy', 'impressions')
@@ -58,7 +58,7 @@ export class HttpDashboardRepository implements DashboardRepository {
    * @param limit Page size.
    * @returns Observable list of top users with metadata.
    */
-  getTopUsers(period: string, date?: string, page: number = 1, limit: number = 10): Observable<PaginatedResponse<UserLeaderboard>> {
+  getTopUsers(period: string, date?: string, page = 1, limit = 10): Observable<PaginatedResponse<UserLeaderboard>> {
     let params = new HttpParams()
       .set('period', period)
       .set('sortBy', 'interactions')

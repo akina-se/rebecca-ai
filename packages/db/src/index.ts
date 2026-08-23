@@ -139,18 +139,17 @@ const userConverter: FirestoreDataConverter<FirestoreUser> = {
     const data = snapshot.data();
     return {
       id: snapshot.id,
-      name: data['name'],
-      handle: data['handle'],
-      avatarUrl: data['avatarUrl'],
+      name: data['name'] || '',
+      username: data['username'] || '',
+      avatarUrl: data['avatarUrl'] || '',
       status: data['status'],
-      affinityScore: data['affinityScore'],
-      firstSeen: data['firstSeen'],
-      lastSeen: data['lastSeen'],
+      firstSeen: toIsoString(data['firstSeen'] ?? data['first_seen']) || '',
+      lastSeen: toIsoString(data['lastSeen'] ?? data['last_seen'] ?? data['last_reply_date']) || '',
       coreProfile: data['coreProfile'] ?? {},
       working_memory: data['working_memory'],
       episodicBuffer: data['episodicBuffer'] ?? [],
-      lastReplyDate: data['lastReplyDate'],
-      dailyReplyCount: data['dailyReplyCount'],
+      lastReplyDate: data['lastReplyDate'] ?? data['last_reply_date'],
+      dailyReplyCount: data['dailyReplyCount'] ?? data['daily_reply_count'],
     };
   },
 };
