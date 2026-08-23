@@ -131,15 +131,14 @@ export class AssetDrawerComponent implements OnChanges {
   }
 
   async onRegenerate(): Promise<void> {
-    if (!this.displayAsset) return;
+    const assetId = this.displayAsset?.id || this.assetId;
+    if (!assetId) return;
     this.isRegenerating = true;
-    this.assetsRepo.regenerateCaptions([this.displayAsset.id]).subscribe({
+    this.assetsRepo.regenerateCaptions([assetId]).subscribe({
       next: () => {
         this.toastService.show(`Successfully regenerated caption`, 'success');
         this.isRegenerating = false;
-        if (this.assetId) {
-          this.loadAsset(this.assetId);
-        }
+        this.loadAsset(assetId);
         this.assetUpdated.emit();
       },
       error: () => {
@@ -150,9 +149,9 @@ export class AssetDrawerComponent implements OnChanges {
   }
 
   async onDelete(): Promise<void> {
-    if (!this.displayAsset) return;
+    const assetId = this.displayAsset?.id || this.assetId;
+    if (!assetId) return;
     this.isDeleting = true;
-    const assetId = this.displayAsset.id;
     this.assetsRepo.deleteMany([assetId]).subscribe({
       next: () => {
         this.toastService.show(`Successfully deleted asset`, 'success');

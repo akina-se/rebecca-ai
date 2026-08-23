@@ -227,4 +227,76 @@ describe('DashboardPageComponent', () => {
     component.mockAlert('System message');
     expect(toastServiceSpy.show).toHaveBeenCalledWith('System message', 'info');
   });
+
+  it('should strip size=thumbnail when opening lightbox and handle state', () => {
+    component.openLightbox('/api/v1/assets/photo1.webp?size=thumbnail');
+    expect(component.lightboxImageUrl).toBe('/api/v1/assets/photo1.webp');
+    expect(component.isLightboxOpen).toBeTrue();
+
+    // Plain URL without size parameter
+    component.openLightbox('https://cdn.example.com/original.jpg');
+    expect(component.lightboxImageUrl).toBe('https://cdn.example.com/original.jpg');
+
+    // Empty URL
+    component.openLightbox('');
+    expect(component.lightboxImageUrl).toBe('');
+  });
+
+  it('should open and handle state for post drawer, user drawer, and ranking modals', () => {
+    component.openPostDrawer('p_101');
+    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.drawerType).toBe('post');
+    expect(component.selectedItemId).toBe('p_101');
+
+    component.openUserDrawer('u_202');
+    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.drawerType).toBe('user');
+    expect(component.selectedItemId).toBe('u_202');
+
+    component.openRankingModal('posts');
+    expect(component.isRankingModalOpen).toBeTrue();
+    expect(component.rankingModalType).toBe('post');
+
+    component.onRankingPageChange(2);
+    expect(component.rankingModalCurrentPage).toBe(2);
+  });
+
+  it('should test canShiftDate for monthly, yearly, and all-time bounds', () => {
+    component.setMode('posts', 'all-time');
+    expect(component.canShiftDate('posts', 1)).toBeFalse();
+    expect(component.canShiftDate('posts', -1)).toBeFalse();
+
+    component.setMode('posts', 'monthly');
+    component.topPostsDate = 'March 2006';
+    expect(component.canShiftDate('posts', -1)).toBeFalse();
+    expect(component.canShiftDate('posts', 1)).toBeTrue();
+
+    component.topPostsDate = 'InvalidMonth 2026';
+    expect(component.canShiftDate('posts', 1)).toBeFalse();
+
+    component.setMode('users', 'yearly');
+    component.topUsersDate = '2006';
+    expect(component.canShiftDate('users', -1)).toBeFalse();
+    expect(component.canShiftDate('users', 1)).toBeTrue();
+  });
+
+  it('should handle year roll-over when shifting months backward and forward', () => {
+    component.setMode('posts', 'monthly');
+    component.topPostsDate = 'January 2025';
+    component.shiftDate('posts', -1);
+    expect(component.topPostsDate).toBe('December 2024');
+
+    component.shiftDate('posts', 1);
+    expect(component.topPostsDate).toBe('January 2025');
+  });
+
+  it('should ignore open drawers when browser text is selected', () => {
+    spyOn(window, 'getSelection').and.returnValue({ toString: () => 'some highlighted text' } as any);
+    component.isDrawerOpen = false;
+    component.openPostDrawer('p_123');
+    expect(component.isDrawerOpen).toBeFalse();
+
+    component.openUserDrawer('u_123');
+    expect(component.isDrawerOpen).toBeFalse();
+  });
 });

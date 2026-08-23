@@ -60,17 +60,22 @@ describe('ConfigService', () => {
     expect(service.isEmulator).toBeTrue();
   });
 
-  it('should fallback gracefully to environment defaults if /api/v1/config fails', async () => {
+  it('should fall back gracefully to environment defaults when /api/v1/config fails', async () => {
     const loadPromise = service.loadAppConfig();
-
     const req = httpMock.expectOne('/api/v1/config');
-    req.error(new ProgressEvent('Network error'));
-
+    req.flush('Network error', { status: 500, statusText: 'Server Error' });
     await loadPromise;
 
-    expect(service.runtimeConfig).toBeDefined();
+    expect(service.runtimeConfig).not.toBeNull();
+    expect(service.publicSiteUrl()).toBe('https://rebecca-ai.net');
+    expect(service.apiUrl).toBeDefined();
+    expect(service.firebaseConfig).toBeDefined();
+  });
+
+  it('should return environment fallbacks when config is null', () => {
+    (service as any).config = null;
     expect(service.firebaseConfig).toBeDefined();
     expect(service.apiUrl).toBeDefined();
-    expect(service.isEmulator).toBeDefined();
+    expect(service.isEmulator).toBeFalse();
   });
 });

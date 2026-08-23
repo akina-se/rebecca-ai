@@ -232,7 +232,9 @@ export class DashboardPageComponent implements OnInit {
   }
 
   openLightbox(imageUrl = '') {
-    this.lightboxImageUrl = imageUrl;
+    // If imageUrl is a thumbnail URL (e.g. contains size=thumbnail), strip size parameter to load full-resolution image
+    const fullUrl = imageUrl ? imageUrl.replace(/([?&])size=thumbnail(&|$)/, '$1').replace(/[?&]$/, '') : '';
+    this.lightboxImageUrl = fullUrl || imageUrl;
     this.isLightboxOpen = true;
   }
 
@@ -401,9 +403,9 @@ export class DashboardPageComponent implements OnInit {
         this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
         this.rankingModalTotalPages = res.meta?.totalPages || 1;
         this.rankingModalEntries = res.data.map((u, i) => ({
-          id: u.userId,
+          id: u.id,
           rank: (page - 1) * 10 + i + 1,
-          label: u.name ? `${u.name} (${u.handle})` : u.handle,
+          label: u.name ? `${u.name}${u.username ? ` (@${u.username})` : ''}` : (u.username ? `@${u.username}` : u.id),
           value: u.interactions,
           badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
         }));

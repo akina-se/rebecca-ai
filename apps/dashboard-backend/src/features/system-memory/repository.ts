@@ -1,5 +1,4 @@
 import { Firestore } from '@google-cloud/firestore';
-import { CloudTasksClient } from '@google-cloud/tasks';
 import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { persona } from '@rebecca/persona';
