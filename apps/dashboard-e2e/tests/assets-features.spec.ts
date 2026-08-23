@@ -52,19 +52,20 @@ test.describe('Assets Features E2E Tests', () => {
 
     // 1. Search for specific keyword "cyberpunk"
     await searchInput.fill('cyberpunk');
+    await page.waitForResponse(resp => resp.url().includes('/api/v1/assets') && resp.status() === 200);
     const cards = page.locator('.asset-card');
     await expect(cards.first()).toContainText('cyberpunk_street.png');
     expect(await cards.count()).toBeGreaterThanOrEqual(1);
 
     // 2. Search for keyword matching caption "winter"
-    await searchInput.clear();
     await searchInput.fill('winter');
+    await page.waitForResponse(resp => resp.url().includes('/api/v1/assets') && resp.status() === 200);
     await expect(page.locator('.asset-card').first()).toContainText('cozy_winter_cabin.jpg', { timeout: 10000 });
     expect(await cards.count()).toBeGreaterThanOrEqual(1);
 
     // 3. Clear search - should restore full page of 20 assets
-    await searchInput.clear();
     await searchInput.fill('');
+    await page.waitForResponse(resp => resp.url().includes('/api/v1/assets') && resp.status() === 200);
     await expect(cards).toHaveCount(20, { timeout: 10000 });
   });
 
