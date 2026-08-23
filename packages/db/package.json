@@ -1,6 +1,6 @@
 {
   "name": "@rebecca/db",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Type-safe Firestore collection layer for the Rebecca AI monorepo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
   "author": "AKINA",
   "license": "MIT",
   "dependencies": {
-    "@rebecca/types": "*",
+    "@rebecca/types": "1.5.0",
     "@google-cloud/firestore": "^8.6.0"
   },
   "devDependencies": {
