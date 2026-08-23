@@ -102,12 +102,13 @@ const createIndex = (idx: IndexDefinition) => {
     try {
         execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
         console.log(`  ✅ Index creation request issued successfully.`);
-    } catch (e: any) {
-        const stderr = e.stderr ? e.stderr.toString() : '';
+    } catch (e: unknown) {
+        const err = e as { stderr?: Buffer | string; message?: string };
+        const stderr = err.stderr ? err.stderr.toString() : '';
         if (stderr.includes('ALREADY_EXISTS') || stderr.includes('already exists')) {
             console.log(`  ℹ️  Index already exists. Skipping.`);
         } else {
-            console.warn(`  ⚠️ Warning/Note: ${stderr.trim() || e.message}`);
+            console.warn(`  ⚠️ Warning/Note: ${stderr.trim() || err.message}`);
         }
     }
 };
@@ -118,12 +119,13 @@ const setupTtl = (ttl: { collectionGroup: string; field: string; description: st
     try {
         execSync(cmd, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
         console.log(`  ✅ TTL policy configured.`);
-    } catch (e: any) {
-        const stderr = e.stderr ? e.stderr.toString() : '';
+    } catch (e: unknown) {
+        const err = e as { stderr?: Buffer | string; message?: string };
+        const stderr = err.stderr ? err.stderr.toString() : '';
         if (stderr.includes('ALREADY_EXISTS') || stderr.includes('already exists') || stderr.includes('TTL is already enabled')) {
             console.log(`  ℹ️  TTL policy already active. Skipping.`);
         } else {
-            console.warn(`  ⚠️ Note: ${stderr.trim() || e.message}`);
+            console.warn(`  ⚠️ Note: ${stderr.trim() || err.message}`);
         }
     }
 };
