@@ -1,4 +1,5 @@
 import rawPatterns from './data/personaPatterns.json';
+export { precomputedPersonaPatternEmbeddings, PersonaPatternWithVector } from './personaPatternVectors';
 
 export type PromptContext = 'reply' | 'timeline' | 'random_engagement' | 'copilot';
 export type Language = 'ja' | 'en';

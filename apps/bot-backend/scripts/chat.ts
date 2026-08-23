@@ -76,7 +76,7 @@ const chatLoop = async () => {
             try {
                 const userEmbedding = await gemini.generateEmbedding(input);
                 if (userEmbedding && userEmbedding.length > 0) {
-                    const patternEmbeddings = await getPersonaPatternEmbeddings(gemini);
+                    const patternEmbeddings = getPersonaPatternEmbeddings();
                     const topPatterns = findTopPersonaPatterns(userEmbedding, patternEmbeddings, 3);
                     personaFewShotPrompt = buildPersonaFewShotPrompt(topPatterns, 'ja');
                     console.log(`\n[🔍 抽出されたペルソナアンカー Top 3: ${topPatterns.map(p => `#${p.id} ${p.category}`).join(', ')}]`);
