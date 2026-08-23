@@ -73,8 +73,8 @@ ${rule}
 const runEval = hasApiKey ? describe : describe.skip;
 
 runEval('LLM as a Judge: Prompt Evaluation', () => {
-    // LLM calls with retry can take some time, so extend timeout to 90 seconds
-    jest.setTimeout(90000);
+    // LLM calls with retry can take some time, so extend timeout to 120 seconds
+    jest.setTimeout(120000);
 
     const testCases = [
         {
@@ -101,8 +101,8 @@ runEval('LLM as a Judge: Prompt Evaluation', () => {
     ];
 
     beforeEach(async () => {
-        // Add a 2.5-second delay between tests to avoid TPM/RPM limits
-        await sleep(2500);
+        // Add a 3-second delay between tests to avoid TPM/RPM limits
+        await sleep(3000);
     });
 
     test.each(testCases)('should pass eval: $name', async (tc) => {
