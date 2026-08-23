@@ -22,6 +22,7 @@ describe('persona package exports verification', () => {
     expect(persona.core.identity).toContain('レベッカ');
     expect(persona.core.patternsText).toContain('#1 [究極の世話焼き＆日常サポート]');
     expect(persona.core.patternsText).toContain('#120 [セカイとの繋がり＆AIとしての幸福]');
+    expect(getFormattedPersonaPatternsText()).toBe(persona.core.patternsText);
   });
 
   test('should verify 120 persona patterns integrity', () => {
@@ -101,10 +102,22 @@ describe('persona package exports verification', () => {
     expect(resMd.thought).toBe('内省');
     expect(resMd.reply).toBe('返答');
 
+    const genericMd = '```\n{"thought": "内省汎用", "reply": "返答汎用"}\n```';
+    const resGenericMd = parsePersonaResponse(genericMd);
+    expect(resGenericMd.thought).toBe('内省汎用');
+    expect(resGenericMd.reply).toBe('返答汎用');
+
+    const textFallback = '{"text": "テキストのみ"}';
+    const resText = parsePersonaResponse(textFallback);
+    expect(resText.reply).toBe('テキストのみ');
+
     const plainText = 'ただのプレーンテキスト';
     const resPlain = parsePersonaResponse(plainText);
     expect(resPlain.thought).toBe('');
     expect(resPlain.reply).toBe('ただのプレーンテキスト');
+
+    expect(parsePersonaResponse('')).toEqual({ thought: '', reply: '' });
+    expect(parsePersonaResponse(null as unknown as string)).toEqual({ thought: '', reply: '' });
   });
 
   test('getDreamingPrompt should return the dreaming instruction', () => {
