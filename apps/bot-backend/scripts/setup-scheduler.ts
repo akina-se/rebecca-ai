@@ -14,35 +14,37 @@ if (!projectId || !serviceUrl) {
 
 console.log(`Setting up Cloud Scheduler jobs for ${projectId} in ${region}...`);
 
+const timeZone = 'Asia/Tokyo';
+
 const jobs = [
     {
         name: 'rebecca-mentions-polling',
-        schedule: '0 * * * *', // Every hour (at minute 0)
+        schedule: '0 3,7-23 * * *', // 7:00-23:00 every hour + 3:00 AM JST (18 times/day)
         url: `${serviceUrl}/batch/mentions`
     },
     {
         name: 'rebecca-stealth-onboarding',
-        schedule: '15 * * * *', // Every hour (at minute 15)
+        schedule: '15 3,9,15,21 * * *', // 3:15, 9:15, 15:15, 21:15 JST (4 times/day)
         url: `${serviceUrl}/batch/stealth-onboarding`
     },
     {
         name: 'rebecca-random-engagement',
-        schedule: '0 */2 * * *', // Every 2 hours
+        schedule: '0 10,14,18,22 * * *', // 10:00, 14:00, 18:00, 22:00 JST (4 times/day)
         url: `${serviceUrl}/batch/random-engagement`
     },
     {
         name: 'rebecca-dreaming-batch',
-        schedule: '0 * * * *', // Every hour (at minute 0)
+        schedule: '0 4 * * *', // Daily at 4:00 AM JST
         url: `${serviceUrl}/batch/dreaming`
     },
     {
         name: 'rebecca-evolution-batch',
-        schedule: '0 5 * * *', // Every day at 05:00 UTC
+        schedule: '0 5 * * *', // Daily at 5:00 AM JST
         url: `${serviceUrl}/batch/evolution`
     },
     {
         name: 'rebecca-news-batch',
-        schedule: '0 */6 * * *', // Every 6 hours
+        schedule: '0 8,12,18,21 * * *', // 8:00, 12:00, 18:00, 21:00 JST (4 times/day)
         url: `${serviceUrl}/batch/news-post`
     }
 ];
@@ -52,6 +54,7 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
         const args = [
             'scheduler', 'jobs', 'create', 'http', job.name,
             '--schedule', `"${job.schedule}"`,
+            '--time-zone', timeZone,
             '--uri', job.url,
             '--http-method', 'GET',
             '--location', region,
@@ -70,7 +73,7 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
             console.warn(`WARNING: No authentication configured for ${job.name}. Add SERVICE_ACCOUNT_EMAIL or BATCH_SECRET_KEY to .env`);
         }
 
-        console.log(`Creating job: ${job.name} -> ${job.schedule}`);
+        console.log(`Creating job: ${job.name} -> ${job.schedule} (${timeZone})`);
         execFileSync('gcloud', args, { stdio: 'inherit', shell: true });
         console.log(`✅ Successfully created ${job.name}`);
     } catch {
@@ -80,16 +83,17 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
             const updateArgs = [
                 'scheduler', 'jobs', 'update', 'http', job.name,
                 '--schedule', `"${job.schedule}"`,
+                '--time-zone', timeZone,
                 '--uri', job.url,
                 '--location', region,
                 '--project', projectId
             ];
-            
+
             if (serviceAccount) {
                 updateArgs.push('--oidc-service-account-email', serviceAccount);
                 updateArgs.push('--oidc-token-audience', serviceUrl);
             } else if (batchSecret) {
-                updateArgs.push('--headers', `X-Batch-Secret=${batchSecret}`);
+                updateArgs.push('--update-headers', `X-Batch-Secret=${batchSecret}`);
             }
 
             execFileSync('gcloud', updateArgs, { stdio: 'inherit', shell: true });

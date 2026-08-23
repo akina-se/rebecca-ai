@@ -14,6 +14,7 @@
     "deploy": "npx ts-node scripts/deploy.ts",
     "setup:scheduler": "npx ts-node scripts/setup-scheduler.ts",
     "setup:tasks": "npx ts-node scripts/setup-tasks.ts",
+    "setup:indexes": "npx ts-node scripts/setup-indexes.ts",
     "chat": "npx ts-node scripts/chat.ts",
     "test:eval": "jest tests/eval",
     "batch:evolution": "npx ts-node scripts/run-evolution.ts",

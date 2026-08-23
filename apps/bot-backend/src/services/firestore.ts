@@ -301,7 +301,7 @@ const saveRawConversationLog = async (userId: string, userText: string, aiText: 
   const logRef = db.conversationLogs.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setDate(expireAt.getDate() + 30);
+  expireAt.setFullYear(expireAt.getFullYear() + 5);
 
   const log: RawConversationLog = {
     userId,
@@ -404,7 +404,7 @@ const saveTimelinePost = async (
   const ref = db.timelineHistory.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setDate(expireAt.getDate() + 30);
+  expireAt.setFullYear(expireAt.getFullYear() + 5);
 
   const mediaList = options?.mediaUrls || [];
   await ref.set({
