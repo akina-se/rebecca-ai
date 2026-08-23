@@ -385,6 +385,14 @@ export class AssetsUseCase {
   }
 
   /**
+   * Standardized prompt matching bot-backend image ingestion logic for high-quality vector search.
+   */
+  private static readonly CAPTION_PROMPT =
+    'この画像に写っている状況、被写体の表情、および感情を説明するテキスト（キャプション）を生成してください。' +
+    'ベクトル検索のクエリとして使用するため、具体的なキーワード（場所、服装、髪型、表情、時間帯、天候、シチュエーション）を豊富に含めた自然な日本語にしてください。' +
+    '途中で途切れないように、必ず完全な文章（句点で終わる）で出力してください。';
+
+  /**
    * Helper: Analyzes image content using Gemini Vision and generates embeddings.
    */
   private async analyzeImage(file: UploadedFile): Promise<{ caption: string; embedding: number[]; status: AssetStatus }> {
@@ -402,9 +410,9 @@ export class AssetsUseCase {
               mimeType: file.mimetype
             }
           },
-          'Please generate a concise, descriptive Japanese caption for this anime / character image.'
+          AssetsUseCase.CAPTION_PROMPT
         ],
-        config: { maxOutputTokens: 200 }
+        config: { maxOutputTokens: 300 }
       });
 
       const caption = response.text?.trim() || '';
@@ -422,7 +430,7 @@ export class AssetsUseCase {
   }
 
   /**
-   * Helper: Generates caption and embedding when regenerating for an existing asset.
+   * Helper: Generates caption and embedding when regenerating for an existing asset using Gemini Vision.
    */
   private async generateCaptionForAsset(filename: string, assetId: string): Promise<{ caption: string; embedding: number[]; status: AssetStatus }> {
     if (!this.ai) {
@@ -431,9 +439,28 @@ export class AssetsUseCase {
     }
 
     try {
+      // 1. Fetch original image binary from GCS / Storage to perform true Gemini Vision analysis
+      const imageBinary = await this.getAssetBinary(assetId, 'full');
+
+      const contents = imageBinary && imageBinary.buffer && imageBinary.buffer.length > 0
+        ? [
+            {
+              inlineData: {
+                data: imageBinary.buffer.toString('base64'),
+                mimeType: imageBinary.contentType || 'image/jpeg'
+              }
+            },
+            AssetsUseCase.CAPTION_PROMPT
+          ]
+        : [
+            `このアニメ画像アセット（ファイル名: ${filename}）の状況や被写体を説明する日本語のキャプション文を生成してください。` +
+            '解説や前置きは含めず、具体的なキーワード（シチュエーション、服装、表情等）を含むキャプション本文のみを句点で終わる完全な文章として出力してください。'
+          ];
+
       const response = await this.ai.models.generateContent({
         model: config.gemini.model,
-        contents: [`Please generate a descriptive Japanese caption for anime asset: ${filename}`]
+        contents,
+        config: { maxOutputTokens: 300 }
       });
 
       const caption = response.text?.trim() || '';
