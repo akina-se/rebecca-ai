@@ -38,11 +38,12 @@
         </div>
 
         <!-- Pagination -->
-        <div class="modal-footer" *ngIf="totalPages > 1">
+        <div class="modal-footer" *ngIf="computedTotalPages > 1 || totalItems > 0">
             <app-pagination
                 [currentPage]="currentPage"
-                [totalPages]="totalPages"
-                [showTotalCount]="false"
+                [totalPages]="computedTotalPages"
+                [totalItems]="totalItems"
+                [showTotalCount]="totalItems > 0"
                 (pageChange)="goToPage($event)">
             </app-pagination>
         </div>

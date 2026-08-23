@@ -28,29 +28,43 @@ export class HttpDashboardRepository implements DashboardRepository {
   }
 
   /**
-   * Fetches the top timeline posts from the backend.
+   * Fetches the top timeline posts from the backend with server-side pagination.
    * 
    * @param period The time period filter.
-   * @returns Observable list of top posts.
+   * @param date Optional date filter.
+   * @param page Page number (1-based).
+   * @param limit Page size.
+   * @returns Observable list of top posts with metadata.
    */
-  getTopPosts(period: string, date?: string): Observable<PaginatedResponse<PostLeaderboard>> {
+  getTopPosts(period: string, date?: string, page: number = 1, limit: number = 10): Observable<PaginatedResponse<PostLeaderboard>> {
     let params = new HttpParams()
       .set('period', period)
       .set('sortBy', 'impressions')
       .set('sortOrder', 'desc')
-      .set('limit', '10');
+      .set('page', page.toString())
+      .set('limit', limit.toString());
     if (date) {
       params = params.set('date', date);
     }
     return this.http.get<PaginatedResponse<PostLeaderboard>>(`${this.postsBaseUrl}`, { params });
   }
 
-  getTopUsers(period: string, date?: string): Observable<PaginatedResponse<UserLeaderboard>> {
+  /**
+   * Fetches top engaged users from the backend with server-side pagination.
+   * 
+   * @param period The time period filter.
+   * @param date Optional date filter.
+   * @param page Page number (1-based).
+   * @param limit Page size.
+   * @returns Observable list of top users with metadata.
+   */
+  getTopUsers(period: string, date?: string, page: number = 1, limit: number = 10): Observable<PaginatedResponse<UserLeaderboard>> {
     let params = new HttpParams()
       .set('period', period)
       .set('sortBy', 'interactions')
       .set('sortOrder', 'desc')
-      .set('limit', '10');
+      .set('page', page.toString())
+      .set('limit', limit.toString());
     if (date) {
       params = params.set('date', date);
     }

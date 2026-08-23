@@ -20,32 +20,17 @@ export class UsersRepository {
   }
 
   private resolveUserName(rawId: string, data: Record<string, unknown>): string {
-    if (data.name && typeof data.name === 'string' && data.name !== 'Unknown' && data.name.trim().length > 0) {
+    if (typeof data.name === 'string' && data.name.trim().length > 0) {
       return data.name.trim();
     }
-
-    if (data.username && typeof data.username === 'string' && data.username.trim().length > 0) {
+    if (typeof data.username === 'string' && data.username.trim().length > 0) {
       return `@${data.username.trim()}`;
     }
-
-    if (typeof data.coreProfile === 'object' && data.coreProfile !== null) {
-      const cp = data.coreProfile as Record<string, unknown>;
-      if (cp.name && cp.name !== 'Unknown') return String(cp.name);
-    } else if (typeof data.coreProfile === 'string') {
-      try {
-        const parsed = JSON.parse(data.coreProfile);
-        if (parsed?.name && parsed.name !== 'Unknown') return String(parsed.name);
-      } catch {
-        // Ignore JSON parse error
-      }
-    }
-
-    const formatted = rawId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    return formatted || `@${rawId}`;
+    return `@${rawId}`;
   }
 
   private resolveUserHandle(rawId: string, data: Record<string, unknown>): string {
-    if (data.username && typeof data.username === 'string' && data.username.trim().length > 0) {
+    if (typeof data.username === 'string' && data.username.trim().length > 0) {
       return `@${data.username.trim()}`;
     }
     return `@${rawId}`;
@@ -319,9 +304,9 @@ export class UsersRepository {
       username,
       name: this.resolveUserName(rawId, data),
       interactions: calculatedInteractions,
-      affinityScore: data.affinity_score !== undefined ? `${data.affinity_score}%` : (data.affinityScore !== undefined ? `${data.affinityScore}` : 'N/A'),
-      firstSeen: String(data.first_seen_date || data.firstSeen || 'N/A'),
-      lastSeen: String(data.last_reply_date || data.lastSeen || 'N/A'),
+      affinityScore: data.affinityScore !== undefined ? `${data.affinityScore}` : (data.affinity_score !== undefined ? `${data.affinity_score}%` : 'N/A'),
+      firstSeen: typeof data.firstSeen === 'string' ? data.firstSeen : 'N/A',
+      lastSeen: typeof data.lastSeen === 'string' ? data.lastSeen : 'N/A',
       coreProfile: typeof data.coreProfile === 'string' ? data.coreProfile : JSON.stringify(data.coreProfile || {}),
       chatHistory,
       status,

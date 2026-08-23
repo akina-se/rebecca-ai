@@ -46,7 +46,7 @@ export function createApp(firestore: Firestore): Express {
   const { dashboardRouter: timelineRouter, postsRouter } = initializeTimelineModule(firestore);
   const usersRouter = initializeUsersModule(firestore);
   const systemMemoryRouter = initializeSystemMemoryModule(firestore);
-  const assetsRouter = initializeAssetsModule(firestore);
+  const { assetsRouter, publicImagesRouter } = initializeAssetsModule(firestore);
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
 
@@ -54,9 +54,9 @@ export function createApp(firestore: Firestore): Express {
   app.use('/api/v1/config', configRouter);
   app.use('/api/v1/auth', authRouter);
 
-  // Mount Public Image Streaming (with internal ID validation and security headers)
-  app.get('/api/v1/assets/:id/image', (req, res, next) => assetsRouter(req, res, next));
-  app.get('/api/v1/images/:id/image', (req, res, next) => assetsRouter(req, res, next));
+  // Mount Public Image Streaming (unauthenticated streaming for browser <img> & CSS assets)
+  app.use('/api/v1/assets', publicImagesRouter);
+  app.use('/api/v1/images', publicImagesRouter);
 
   // Healthcheck endpoint
   app.get('/health', (req, res) => {

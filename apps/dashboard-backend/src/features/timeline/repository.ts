@@ -97,7 +97,34 @@ export class TimelineRepository {
       });
     };
     
-    const apiCallsMultiplier = period === 'weekly' ? 7 : period === 'yearly' ? 365 : 30;
+    const now = new Date();
+    let startDateIso = '';
+    if (period === 'weekly') {
+      const d = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
+      startDateIso = d.toISOString();
+    } else if (period === 'monthly') {
+      const d = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+      startDateIso = d.toISOString();
+    } else if (period === 'yearly') {
+      const d = new Date(now.getFullYear(), 0, 1);
+      startDateIso = d.toISOString();
+    }
+
+    let calculatedApiCalls = typeof data.api_calls_today === 'number' ? data.api_calls_today : 342;
+    try {
+      if (startDateIso) {
+        const [logsCountSnap, postsCountSnap] = await Promise.all([
+          this.collections.conversationLogs.where('timestamp', '>=', startDateIso).count().get(),
+          this.collections.timelineHistory.where('timestamp', '>=', startDateIso).count().get()
+        ]);
+        const count = (logsCountSnap.data().count || 0) + (postsCountSnap.data().count || 0);
+        if (count > 0) {
+          calculatedApiCalls = count;
+        }
+      }
+    } catch {
+      calculatedApiCalls = typeof data.api_calls_today === 'number' ? data.api_calls_today : 342;
+    }
 
     return {
       followers: typeof data.total_followers === 'number' ? data.total_followers : 51,
@@ -109,7 +136,7 @@ export class TimelineRepository {
       dailyActiveUsers: typeof data.dau === 'number' ? data.dau : 12,
       dauTrend: typeof data.dau_trend === 'number' ? data.dau_trend : 0,
       dauHistory: scaleArray(data.dau_history || [8, 9, 10, 11, 10, 12, 12], historyLength),
-      apiCalls: typeof data.api_calls_today === 'number' ? data.api_calls_today * apiCallsMultiplier : 342 * apiCallsMultiplier,
+      apiCalls: calculatedApiCalls,
       apiTrendStatus: data.api_trend_status || 'Steady',
       apiCallsHistory: scaleArray(data.api_calls_history || [280, 310, 295, 340, 320, 335, 342], historyLength)
     };

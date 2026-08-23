@@ -4,8 +4,8 @@ import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedRes
 
 export interface DashboardRepository {
   getKpiMetrics(period: string): Observable<KpiMetrics>;
-  getTopPosts(period: string, date?: string): Observable<PaginatedResponse<PostLeaderboard>>;
-  getTopUsers(period: string, date?: string): Observable<PaginatedResponse<UserLeaderboard>>;
+  getTopPosts(period: string, date?: string, page?: number, limit?: number): Observable<PaginatedResponse<PostLeaderboard>>;
+  getTopUsers(period: string, date?: string, page?: number, limit?: number): Observable<PaginatedResponse<UserLeaderboard>>;
   getAlerts(): Observable<SystemAlert[]>;
   getTimelineHistory(page: number, limit: number, sortBy?: string, sortOrder?: 'asc' | 'desc'): Observable<PaginatedResponse<PostLeaderboard>>;
   getPostById(id: string): Observable<PostDetail>;

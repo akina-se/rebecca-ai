@@ -266,6 +266,10 @@
     [colLabel]="rankingModalColLabel"
     [colMetric]="rankingModalColMetric"
     [entries]="rankingModalEntries"
+    [currentPage]="rankingModalCurrentPage"
+    [totalPages]="rankingModalTotalPages"
+    [totalItems]="rankingModalTotalItems"
+    (pageChange)="onRankingPageChange($event)"
     (close)="isRankingModalOpen = false"
     (rowClick)="rankingModalType === 'post' ? openPostDrawer($event) : openUserDrawer($event)">
 </app-ranking-modal>

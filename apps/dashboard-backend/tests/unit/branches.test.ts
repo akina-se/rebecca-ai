@@ -71,27 +71,19 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         {
           id: 'user_one',
           data: () => ({
-            name: 'Unknown',
-            coreProfile: { name: 'Profile Name' }
+            name: 'Direct Name',
+            username: 'user_one_handle'
           })
         },
         {
           id: 'user_two',
           data: () => ({
-            coreProfile: JSON.stringify({ name: 'JSON Profile Name' })
+            username: 'user_two_handle'
           })
         },
         {
-          id: 'user_three_cool',
-          data: () => ({
-            coreProfile: 'INVALID_JSON'
-          })
-        },
-        {
-          id: 'user_four_vip',
-          data: () => ({
-            name: 'Unknown'
-          })
+          id: 'user_three',
+          data: () => ({})
         }
       ];
 
@@ -101,10 +93,12 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       });
 
       const res = await repo.getAll({ sortBy: 'handle', sortOrder: 'asc' });
-      expect(res.data[0].name).toBe('User Four Vip');
-      expect(res.data[1].name).toBe('Profile Name');
-      expect(res.data[2].name).toBe('User Three Cool');
-      expect(res.data[3].name).toBe('JSON Profile Name');
+      expect(res.data[0].name).toBe('Direct Name');
+      expect(res.data[0].handle).toBe('@user_one_handle');
+      expect(res.data[1].name).toBe('@user_three');
+      expect(res.data[1].handle).toBe('@user_three');
+      expect(res.data[2].name).toBe('@user_two_handle');
+      expect(res.data[2].handle).toBe('@user_two_handle');
     });
 
     it('getAll should test sorting by handle (desc/asc), interactions, lastSeen, and yearly period filter', async () => {

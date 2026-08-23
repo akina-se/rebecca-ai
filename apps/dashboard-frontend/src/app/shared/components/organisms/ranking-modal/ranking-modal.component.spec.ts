@@ -28,12 +28,14 @@ describe('RankingModalComponent', () => {
       value: (100 - i) * 10
     }));
 
-    expect(component.totalPages).toBe(3);
+    expect(component.computedTotalPages).toBe(3);
     expect(component.pagedEntries.length).toBe(10);
     expect(component.pagedEntries[0].id).toBe('item_0');
 
+    spyOn(component.pageChange, 'emit');
     component.goToPage(2);
     expect(component.currentPage).toBe(2);
+    expect(component.pageChange.emit).toHaveBeenCalledWith(2);
     expect(component.pagedEntries[0].id).toBe('item_10');
   });
 

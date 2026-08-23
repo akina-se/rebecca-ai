@@ -363,34 +363,56 @@ export class DashboardPageComponent implements OnInit {
   }
 
   rankingModalEntries: { id: string; rank: number; label: string; value: number | string; badge?: string }[] = [];
+  rankingModalCurrentPage = 1;
+  rankingModalTotalPages = 1;
+  rankingModalTotalItems = 0;
 
   openRankingModal(type: 'posts' | 'users') {
-    if (type === 'posts') {
+    this.rankingModalType = type === 'posts' ? 'post' : 'user';
+    this.rankingModalCurrentPage = 1;
+    this.loadRankingModalData(1);
+    this.isRankingModalOpen = true;
+  }
+
+  loadRankingModalData(page: number) {
+    this.rankingModalCurrentPage = page;
+    if (this.rankingModalType === 'post') {
       this.rankingModalTitle = 'Top Posts by Impressions';
       this.rankingModalColLabel = 'Post';
       this.rankingModalColMetric = 'Impressions';
-      this.rankingModalType = 'post';
-      this.rankingModalEntries = this.topPosts.map((p, i) => ({
-        id: p.id,
-        rank: i + 1,
-        label: p.snippet,
-        value: p.impressions,
-        badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
-      }));
+      const isoDate = this.getIsoDate(this.topPostsDate);
+      this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate, page, 10).subscribe(res => {
+        this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
+        this.rankingModalTotalPages = res.meta?.totalPages || 1;
+        this.rankingModalEntries = res.data.map((p, i) => ({
+          id: p.id,
+          rank: (page - 1) * 10 + i + 1,
+          label: p.snippet,
+          value: p.impressions,
+          badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
+        }));
+      });
     } else {
       this.rankingModalTitle = 'Top Engaged Users';
       this.rankingModalColLabel = 'User';
       this.rankingModalColMetric = 'Interactions';
-      this.rankingModalType = 'user';
-      this.rankingModalEntries = this.topUsers.map((u, i) => ({
-        id: u.userId,
-        rank: i + 1,
-        label: u.name ? `${u.name} (${u.handle})` : u.handle,
-        value: u.interactions,
-        badge: i < 3 ? ['1st', '2nd', '3rd'][i] : undefined,
-      }));
+      const isoDate = this.getIsoDate(this.topUsersDate);
+      this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate, page, 10).subscribe(res => {
+        this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
+        this.rankingModalTotalPages = res.meta?.totalPages || 1;
+        this.rankingModalEntries = res.data.map((u, i) => ({
+          id: u.userId,
+          rank: (page - 1) * 10 + i + 1,
+          label: u.name ? `${u.name} (${u.handle})` : u.handle,
+          value: u.interactions,
+          badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
+        }));
+      });
     }
-    this.isRankingModalOpen = true;
+  }
+
+  onRankingPageChange(page: number) {
+    this.loadRankingModalData(page);
   }
 
   openPostDrawer(id: string) {

@@ -18,29 +18,33 @@ const upload = multer({
  * Initializes the assets feature module, setting up dependencies and routes.
  * 
  * @param firestore - The Firestore instance used for database operations.
- * @returns An Express Router configured with the assets routes.
+ * @returns An object containing the protected assets router and public image streaming router.
  */
-export function initializeAssetsModule(firestore: Firestore): Router {
-  const router = Router();
+export function initializeAssetsModule(firestore: Firestore): { assetsRouter: Router; publicImagesRouter: Router } {
+  const assetsRouter = Router();
+  const publicImagesRouter = Router();
   
   const repo = new AssetsRepository(firestore);
   const useCase = new AssetsUseCase(repo);
   const controller = new AssetsController(useCase);
 
+  // Public image streaming endpoint (no auth required for browser <img> / css requests)
+  publicImagesRouter.get('/:id/image', controller.getImage.bind(controller));
+
   // 1. List / Query Assets (Paginated with search)
-  router.get('/', controller.getAll.bind(controller));
+  assetsRouter.get('/', controller.getAll.bind(controller));
 
   // 2. Action endpoints (registered before :id parameterized routes)
-  router.post('/regenerate-captions', controller.regenerateCaptions.bind(controller));
+  assetsRouter.post('/regenerate-captions', controller.regenerateCaptions.bind(controller));
   
   // 3. Multi-file upload endpoint (supports multipart/form-data with field 'files' or single 'file')
-  router.post('/', upload.array('files', 20), controller.upload.bind(controller));
+  assetsRouter.post('/', upload.array('files', 20), controller.upload.bind(controller));
 
   // 4. Single Asset CRUD & streaming endpoints
-  router.get('/:id/image', controller.getImage.bind(controller));
-  router.get('/:id', controller.getById.bind(controller));
-  router.put('/:id', controller.update.bind(controller));
-  router.delete('/', controller.deleteMany.bind(controller));
+  assetsRouter.get('/:id/image', controller.getImage.bind(controller));
+  assetsRouter.get('/:id', controller.getById.bind(controller));
+  assetsRouter.put('/:id', controller.update.bind(controller));
+  assetsRouter.delete('/', controller.deleteMany.bind(controller));
 
-  return router;
+  return { assetsRouter, publicImagesRouter };
 }

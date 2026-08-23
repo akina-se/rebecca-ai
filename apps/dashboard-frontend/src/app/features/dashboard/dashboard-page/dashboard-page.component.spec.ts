@@ -163,13 +163,13 @@ describe('DashboardPageComponent', () => {
   });
 
   it('should open ranking modals for posts and users', () => {
-    component.topPosts = [{ id: 'p1', snippet: 'Top 1', impressions: 1000 } as any];
+    dashboardRepoSpy.getTopPosts.and.returnValue(of({ data: [{ id: 'p1', snippet: 'Top 1', impressions: 1000 } as any], meta: { totalPages: 1, totalItems: 1, currentPage: 1, limit: 10 } }));
     component.openRankingModal('posts');
     expect(component.isRankingModalOpen).toBeTrue();
     expect(component.rankingModalType).toBe('post');
     expect(component.rankingModalEntries.length).toBe(1);
 
-    component.topUsers = [{ userId: 'user1', interactions: 50 } as any];
+    dashboardRepoSpy.getTopUsers.and.returnValue(of({ data: [{ userId: 'user1', interactions: 50, handle: '@user1' } as any], meta: { totalPages: 1, totalItems: 1, currentPage: 1, limit: 10 } }));
     component.openRankingModal('users');
     expect(component.rankingModalType).toBe('user');
     expect(component.rankingModalEntries.length).toBe(1);

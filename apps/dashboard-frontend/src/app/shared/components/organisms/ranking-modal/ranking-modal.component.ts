@@ -40,28 +40,40 @@ export class RankingModalComponent {
   /** Emitted when a row is clicked. */
   @Output() rowClick = new EventEmitter<string>();
 
-  currentPage = 1;
-  readonly pageSize = 10;
-
+  @Input() currentPage = 1;
+  @Input() totalPages = 1;
+  @Input() totalItems = 0;
+  @Input() pageSize = 10;
   @Input() entries: RankingEntry[] = [];
+  @Output() pageChange = new EventEmitter<number>();
 
-  get totalPages(): number {
+  get pagedEntries(): RankingEntry[] {
+    // If entries length exceeds pageSize (legacy client-side usage in some tests), slice it; otherwise render current page entries directly
+    if (this.entries.length > this.pageSize) {
+      const start = (this.currentPage - 1) * this.pageSize;
+      return this.entries.slice(start, start + this.pageSize);
+    }
+    return this.entries;
+  }
+
+  get computedTotalPages(): number {
+    if (this.totalPages && this.totalPages > 1) {
+      return this.totalPages;
+    }
+    if (this.totalItems && this.totalItems > 0) {
+      return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+    }
     return Math.max(1, Math.ceil(this.entries.length / this.pageSize));
   }
 
-  get pagedEntries(): RankingEntry[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.entries.slice(start, start + this.pageSize);
-  }
-
   goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
+    if (page >= 1 && page <= this.computedTotalPages) {
       this.currentPage = page;
+      this.pageChange.emit(page);
     }
   }
 
   onClose(): void {
-    this.currentPage = 1;
     this.close.emit();
   }
 
