@@ -133,9 +133,29 @@ describe('UsersPageComponent', () => {
     expect(component.currentPage).toBe(3);
   });
 
-  it('should open user drawer on openUserDrawer', () => {
+  it('should open user drawer on openUserDrawer and ignore when text is selected', () => {
     component.openUserDrawer('alice');
     expect(component.selectedUserId).toBe('alice');
     expect(component.isDrawerOpen).toBeTrue();
+
+    // When text is selected
+    spyOn(window, 'getSelection').and.returnValue({ toString: () => 'copied text' } as any);
+    component.isDrawerOpen = false;
+    component.openUserDrawer('bob');
+    expect(component.isDrawerOpen).toBeFalse();
+  });
+
+  it('should return early from bulk actions when no users selected', async () => {
+    component.selectedUsers.clear();
+    await component.executeBulkBlock();
+    await component.executeBulkUnblock();
+    expect(usersRepoSpy.bulkUpdateStatus).not.toHaveBeenCalled();
+  });
+
+  it('should sort by lastSeen', () => {
+    usersRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
+    component.toggleUserSort('lastSeen');
+    expect(component.userSortBy).toBe('lastSeen');
+    expect(component.userSortOrder).toBe('desc');
   });
 });

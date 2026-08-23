@@ -166,4 +166,26 @@ describe('AssetsPageComponent', () => {
     component.onPageChange(2);
     expect(component.currentPage).toBe(2);
   });
+
+  it('should return early from bulk actions when no assets selected', async () => {
+    component.selectedAssets.clear();
+    await component.executeBulkDelete();
+    await component.executeBulkRetry();
+    expect(assetsRepoSpy.deleteMany).not.toHaveBeenCalled();
+    expect(assetsRepoSpy.regenerateCaptions).not.toHaveBeenCalled();
+  });
+
+  it('should handle onFilesSelected when files list is empty', () => {
+    const mockInput = { value: '', files: null } as any;
+    const mockEvent = { target: mockInput } as any;
+    component.onFilesSelected(mockEvent, mockInput);
+    expect(assetsRepoSpy.upload).not.toHaveBeenCalled();
+  });
+
+  it('should ignore openAssetDrawer when text is selected in browser', () => {
+    spyOn(window, 'getSelection').and.returnValue({ toString: () => 'some text' } as any);
+    component.isDrawerOpen = false;
+    component.openAssetDrawer('asset_99');
+    expect(component.isDrawerOpen).toBeFalse();
+  });
 });

@@ -27,12 +27,12 @@ const path = require('path');
  * `requiredGate`: true enforces >= 80% threshold causing non-zero exit on failure.
  */
 const packages = [
-  { name: '@rebecca/persona', path: 'packages/persona/coverage/coverage-summary.json', requiredGate: true, branchThreshold: 80.0 },
-  { name: '@rebecca/db', path: 'packages/db/coverage/coverage-summary.json', requiredGate: true, branchThreshold: 80.0 },
-  { name: 'apps/bot-backend', path: 'apps/bot-backend/coverage/coverage-summary.json', requiredGate: true, branchThreshold: 80.0 },
-  { name: 'apps/dashboard-backend', path: 'apps/dashboard-backend/coverage/coverage-summary.json', requiredGate: true, branchThreshold: 75.0 },
-  { name: 'apps/functions', path: 'apps/functions/coverage/coverage-summary.json', requiredGate: true, branchThreshold: 80.0 },
-  { name: 'apps/dashboard-frontend', path: 'apps/dashboard-frontend/coverage/coverage-summary.json', requiredGate: true, branchThreshold: 75.0 },
+  { name: '@rebecca/persona', path: 'packages/persona/coverage/coverage-summary.json', requiredGate: true },
+  { name: '@rebecca/db', path: 'packages/db/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/bot-backend', path: 'apps/bot-backend/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/dashboard-backend', path: 'apps/dashboard-backend/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/functions', path: 'apps/functions/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/dashboard-frontend', path: 'apps/dashboard-frontend/coverage/coverage-summary.json', requiredGate: true },
 ];
 
 /** Quality Gate Threshold (Minimum percentage required for C0/C1 metrics) */
@@ -52,8 +52,7 @@ for (const pkg of packages) {
       const funcs = parseFloat(total.functions?.pct || 0);
       const lines = parseFloat(total.lines?.pct || 0);
 
-      const branchThreshold = pkg.branchThreshold || THRESHOLD;
-      const passed = stmts >= THRESHOLD && branches >= branchThreshold && funcs >= THRESHOLD && lines >= THRESHOLD;
+      const passed = stmts >= THRESHOLD && branches >= THRESHOLD && funcs >= THRESHOLD && lines >= THRESHOLD;
       if (pkg.requiredGate && !passed) {
         allPassed = false;
       }

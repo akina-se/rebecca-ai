@@ -929,6 +929,510 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
 
       delete process.env.FIRESTORE_EMULATOR_HOST;
     });
+
+    it('AssetsUseCase on-demand sharp thumbnail generation and LRU cache eviction', async () => {
+      const { AssetsUseCase } = require('../../src/features/assets/usecase');
+      const assetsRepo = {
+        getRawDoc: jest.fn().mockResolvedValue({ url: 'gs://rebecca-ai-gal-images/images/test_thumb.png' })
+      } as any;
+
+      const assetsUseCase = new AssetsUseCase(assetsRepo);
+
+      // 1x1 valid PNG base64 for sharp resize
+      const validPngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+      const mockFile = {
+        exists: jest.fn().mockResolvedValue([true]),
+        download: jest.fn().mockResolvedValue([validPngBuffer]),
+        getMetadata: jest.fn().mockResolvedValue([{ contentType: 'image/png' }]),
+        save: jest.fn().mockResolvedValue([])
+      };
+
+      (assetsUseCase as any).storage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue(mockFile)
+        })
+      };
+
+      // 1. On-demand thumbnail generation with sharp
+      const generatedThumb = await assetsUseCase.getAssetBinary('test_thumb.png', 'thumbnail');
+      expect(generatedThumb).not.toBeNull();
+      expect(generatedThumb?.contentType).toBe('image/webp');
+
+      // 2. Sharp failure fallback to original
+      const invalidBuffer = Buffer.from('invalid-non-image-data');
+      (assetsUseCase as any).storage.bucket().file().download = jest.fn().mockResolvedValue([invalidBuffer]);
+      (assetsUseCase as any).thumbnailMemoryCache = new (assetsUseCase as any).thumbnailMemoryCache.constructor(2);
+
+      const fallbackThumb = await assetsUseCase.getAssetBinary('corrupt.png', 'thumbnail');
+      expect(fallbackThumb?.buffer).toEqual(invalidBuffer);
+
+      // 3. LRU Cache eviction testing (capacity = 2)
+      const cache = (assetsUseCase as any).thumbnailMemoryCache;
+      cache.set('key1', { buffer: Buffer.from('1'), contentType: 'image/png' });
+      cache.set('key2', { buffer: Buffer.from('2'), contentType: 'image/png' });
+      cache.set('key3', { buffer: Buffer.from('3'), contentType: 'image/png' }); // evicts key1
+      expect(cache.get('key1')).toBeUndefined();
+      expect(cache.get('key2')).toBeDefined();
+      expect(cache.get('key3')).toBeDefined();
+
+      // Refresh key2 and insert key4 -> should evict key3
+      cache.get('key2');
+      cache.set('key4', { buffer: Buffer.from('4'), contentType: 'image/png' });
+      expect(cache.get('key3')).toBeUndefined();
+      expect(cache.get('key2')).toBeDefined();
+    });
+
+    it('TimelineRepository edge cases for periods, metrics count, and post deletion', async () => {
+      const timelineRepo = new TimelineRepository(mock.firestore as any);
+
+      // 1. getMetrics for monthly and yearly
+      (timelineRepo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          data: () => ({
+            total_followers: 500,
+            avg_engagement_rate: 6.2,
+            dau: 35,
+            api_calls_today: 999
+          })
+        })
+      });
+
+      const monthlyMetrics = await timelineRepo.getMetrics('monthly');
+      expect(monthlyMetrics.followersHistory).toHaveLength(30);
+
+      const yearlyMetrics = await timelineRepo.getMetrics('yearly');
+      expect(yearlyMetrics.followersHistory).toHaveLength(12);
+
+      // 2. getPosts with sorting by time, created_at, impressions, and status
+      const mockTimelineDocs = [
+        {
+          id: 'p_1',
+          data: () => ({
+            created_at: '2026-08-01T00:00:00Z',
+            content: 'First post',
+            impressions: 100,
+            status: 'SUCCESS',
+            media_urls: ['gs://rebecca-ai-gal-images/images/p1.jpg']
+          })
+        },
+        {
+          id: 'p_2',
+          data: () => ({
+            timestamp: '2026-08-02T00:00:00Z',
+            text: 'Second post',
+            impressions: 500,
+            status: 'FAILED',
+            media_urls: ['https://cdn.example.com/external.png']
+          })
+        }
+      ];
+
+      (timelineRepo as any).collections.timelineHistory = {
+        where: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({
+              empty: false,
+              docs: mockTimelineDocs
+            })
+          }),
+          get: jest.fn().mockResolvedValue({
+            empty: false,
+            docs: mockTimelineDocs
+          })
+        }),
+        get: jest.fn().mockResolvedValue({
+          empty: false,
+          docs: mockTimelineDocs
+        })
+      };
+
+      const postsByTime = await timelineRepo.getPosts({ sortBy: 'created_at', sortOrder: 'asc', period: 'monthly', date: '2026-08' });
+      expect(postsByTime.data[0]?.id).toBe('p_1');
+      expect(postsByTime.data[0]?.mediaUrls?.[0]).toContain('?size=thumbnail');
+      expect(postsByTime.data[1]?.mediaUrls?.[0]).toBe('https://cdn.example.com/external.png');
+
+      const postsByImpDesc = await timelineRepo.getPosts({ sortBy: 'impressions', sortOrder: 'desc', period: 'yearly', date: '2026' });
+      expect(postsByImpDesc.data[0]?.id).toBe('p_2');
+
+      // 3. deletePosts with X API deletion branch
+      const mockBatchDelete = jest.fn();
+      const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
+      (timelineRepo as any).firestore.batch = jest.fn().mockReturnValue({
+        delete: mockBatchDelete,
+        commit: mockBatchCommit
+      });
+      (timelineRepo as any).collections.timelineHistory.doc = jest.fn().mockReturnValue({ id: 'p_1' });
+
+      await timelineRepo.deletePosts(['p_1']);
+      expect(mockBatchDelete).toHaveBeenCalled();
+      expect(mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('UsersRepository search query, pagination, and status branches', async () => {
+      const usersRepo = new UsersRepository(mock.firestore as any);
+
+      const mockUsers = [
+        { id: '101', data: () => ({ name: 'Alice Walker', username: 'alice_w', status: 'ACTIVE', _dynamicInteractions: 20 }) },
+        { id: '102', data: () => ({ name: 'Bob Smith', username: 'bob_s', status: 'MUTED', _dynamicInteractions: 10 }) },
+        { id: '103', data: () => ({ name: 'Charlie', username: 'charlie_x', status: 'BLOCKED', _dynamicInteractions: 5 }) }
+      ];
+
+      (usersRepo as any).collections.users.get = jest.fn().mockResolvedValue({
+        empty: false,
+        docs: mockUsers
+      });
+
+      // Search by query matching username
+      const searchRes = await usersRepo.getAll({ search: 'alice' });
+      expect(searchRes.data).toHaveLength(1);
+      expect(searchRes.data[0]?.id).toBe('101');
+
+      // Search by query matching ID
+      (usersRepo as any).collections.users.get = jest.fn().mockResolvedValue({
+        empty: false,
+        docs: mockUsers
+      });
+      const searchIdRes = await usersRepo.getAll({ search: '102' });
+      expect(searchIdRes.data).toHaveLength(1);
+      expect(searchIdRes.data[0]?.id).toBe('102');
+
+      // Sort by id asc/desc
+      (usersRepo as any).collections.users.get = jest.fn().mockResolvedValue({
+        empty: false,
+        docs: mockUsers
+      });
+      const sortIdRes = await usersRepo.getAll({ sortBy: 'id', sortOrder: 'desc' });
+      expect(sortIdRes.data[0]?.id).toBe('103');
+
+      // Update status with updateStatusBulk
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({ id: '101' });
+      const mockBatchSet = jest.fn();
+      const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
+      (usersRepo as any).firestore.batch = jest.fn().mockReturnValue({
+        set: mockBatchSet,
+        commit: mockBatchCommit
+      });
+
+      await usersRepo.updateStatusBulk(['101', '102'], 'ACTIVE' as any);
+      expect(mockBatchSet).toHaveBeenCalledTimes(2);
+      expect(mockBatchCommit).toHaveBeenCalledTimes(1);
+    });
+
+    it('CopilotUseCase autonomous fallback, safety execution, and bilingual action localization', async () => {
+      const usersRepo = {
+        getAll: jest.fn().mockResolvedValue({ data: [{ id: '123', name: 'User 123', username: 'u123', interactions: 5, status: 'ACTIVE' }] }),
+        getById: jest.fn().mockResolvedValue(null),
+        updateStatus: jest.fn().mockResolvedValue(undefined)
+      } as any;
+      const timelineRepo = {
+        getPosts: jest.fn().mockResolvedValue({ data: [{ id: 'post_abc', impressions: 42, snippet: 'Hello' }] }),
+        getMetrics: jest.fn().mockResolvedValue({ followers: 100 }),
+        deletePosts: jest.fn().mockResolvedValue(undefined)
+      } as any;
+      const assetsRepo = {
+        getAll: jest.fn().mockResolvedValue([{ id: 'a1', status: 'FAILED' }])
+      } as any;
+      const memoryRepo = {
+        getMemoryLayers: jest.fn().mockResolvedValue([]),
+        triggerDreaming: jest.fn().mockResolvedValue(undefined)
+      } as any;
+
+      const copilot = new CopilotUseCase(usersRepo, timelineRepo, assetsRepo, memoryRepo);
+
+      // 1. ProcessChat with block intent in EN and JA
+      const resEnBlock = await copilot.processChat({
+        message: 'Block user @spammer_123',
+        history: [],
+        currentContext: 'User Profile',
+        language: 'en'
+      });
+      expect(resEnBlock.actionRequired?.type).toBe('BLOCK_USER');
+      expect(resEnBlock.actionRequired?.title).toContain('Block User @spammer_123');
+
+      const resJaBlock = await copilot.processChat({
+        message: 'ユーザー @bad_actor をブロックして',
+        history: [],
+        currentContext: 'User Relations',
+        language: 'ja'
+      });
+      expect(resJaBlock.actionRequired?.type).toBe('BLOCK_USER');
+      expect(resJaBlock.actionRequired?.title).toContain('ブロック');
+
+      // 2. ProcessChat with delete post intent in EN
+      const resEnDelete = await copilot.processChat({
+        message: 'Please delete post #post_abc',
+        history: [],
+        currentContext: 'Timeline Post History',
+        language: 'en'
+      });
+      expect(resEnDelete.actionRequired?.type).toBe('DELETE_POST');
+      expect(resEnDelete.actionRequired?.title).toContain('Post Deletion');
+
+      // 3. ProcessChat with dreaming intent in JA
+      const resJaDream = await copilot.processChat({
+        message: '長期記憶のドリーミングを実行して',
+        history: [],
+        currentContext: 'Memory Management',
+        language: 'ja'
+      });
+      expect(resJaDream.actionRequired?.type).toBe('FORCE_DREAMING');
+      expect(resJaDream.actionRequired?.title).toContain('ドリーミング');
+
+      // 4. ProcessChat with Assets context telemetry gathering
+      const resAssets = await copilot.processChat({
+        message: 'Check failed asset captions',
+        history: [],
+        currentContext: 'Assets Library',
+        language: 'en'
+      });
+      expect(resAssets.reply).toBeDefined();
+    });
+
+    it('AssetsController.getImage branches with sizes, 404, and error handling', async () => {
+      const { AssetsController } = require('../../src/features/assets/controller');
+      const mockUseCase = {
+        getAssetBinary: jest.fn()
+          .mockResolvedValueOnce({ buffer: Buffer.from('thumb-webp'), contentType: 'image/webp' })
+          .mockResolvedValueOnce(null)
+          .mockRejectedValueOnce(new Error('Storage access failed'))
+      };
+
+      const controller = new AssetsController(mockUseCase as any);
+
+      // Branch 1: size=thumbnail / thumb success
+      const req1 = { params: { id: 'img_1.png' }, query: { size: 'thumb' } } as any;
+      const res1 = {
+        setHeader: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn()
+      } as any;
+      await controller.getImage(req1, res1);
+      expect(res1.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
+      expect(res1.send).toHaveBeenCalledWith(Buffer.from('thumb-webp'));
+
+      // Branch 2: Binary null -> 404
+      const req2 = { params: { id: 'missing.png' }, query: {} } as any;
+      const res2 = {
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn()
+      } as any;
+      await controller.getImage(req2, res2);
+      expect(res2.status).toHaveBeenCalledWith(404);
+
+      // Branch 3: Error thrown -> 500
+      const req3 = { params: { id: 'corrupt.png' }, query: {} } as any;
+      const res3 = {
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn()
+      } as any;
+      await controller.getImage(req3, res3);
+      expect(res3.status).toHaveBeenCalledWith(500);
+    });
+
+    it('TimelineRepository.getMetrics with calculated API call counts from collections', async () => {
+      const timelineRepo = new TimelineRepository(mock.firestore as any);
+
+      (timelineRepo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          data: () => ({
+            total_followers: 120,
+            avg_engagement_rate: 4.5,
+            dau: 18,
+            api_calls_today: 100
+          })
+        })
+      });
+
+      // Mock conversationLogs and timelineHistory count queries
+      (timelineRepo as any).collections.conversationLogs = {
+        where: jest.fn().mockReturnValue({
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({
+              data: () => ({ count: 150 })
+            })
+          })
+        })
+      };
+      (timelineRepo as any).collections.timelineHistory = {
+        where: jest.fn().mockReturnValue({
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({
+              data: () => ({ count: 50 })
+            })
+          })
+        })
+      };
+
+      const metricsWeekly = await timelineRepo.getMetrics('weekly');
+      expect(metricsWeekly.apiCalls).toBe(200); // 150 + 50
+    });
+
+    it('UsersRepository.getById with beforeTimestamp and limit options', async () => {
+      const usersRepo = new UsersRepository(mock.firestore as any);
+
+      const mockUserDoc = {
+        exists: true,
+        id: 'u_detail',
+        data: () => ({
+          name: 'Detailed User',
+          username: 'detail_u',
+          status: 'ACTIVE',
+          first_seen: '2026-08-01T00:00:00Z',
+          last_seen: '2026-08-20T00:00:00Z',
+          coreProfile: {
+            personality: 'Analytical'
+          }
+        })
+      };
+
+      const mockLogs = [
+        {
+          id: 'log_1',
+          data: () => ({
+            timestamp: '2026-08-10T12:00:00Z',
+            userText: 'Hello Rebecca',
+            aiText: 'Hi there!'
+          })
+        }
+      ];
+
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue(mockUserDoc)
+      });
+      (usersRepo as any).collections.conversationLogs = {
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            empty: false,
+            docs: mockLogs
+          })
+        })
+      };
+
+      // 1. Existing user with beforeTimestamp and limit
+      const userDetail = await usersRepo.getById('u_detail', '2026-08-15T00:00:00Z', 5);
+      expect(userDetail).not.toBeNull();
+      expect(userDetail?.username).toBe('detail_u');
+      expect(userDetail?.chatHistory).toHaveLength(2);
+
+      // 2. User lookup fallback by username
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ exists: false })
+      });
+      (usersRepo as any).collections.users.where = jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            empty: false,
+            docs: [mockUserDoc]
+          })
+        })
+      });
+      const userByHandle = await usersRepo.getById('@detail_u');
+      expect(userByHandle?.id).toBe('u_detail');
+
+      // 3. User does not exist anywhere -> returns null
+      (usersRepo as any).collections.users.where = jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            empty: true,
+            docs: []
+          })
+        })
+      });
+      const userNull = await usersRepo.getById('non_existent');
+      expect(userNull).toBeNull();
+
+      // 4. User with episodicBuffer fallback
+      const mockUserWithEpisodic = {
+        exists: true,
+        id: 'u_episodic',
+        data: () => ({
+          name: 'Episodic User',
+          username: 'episodic_u',
+          episodicBuffer: [
+            { role: 'user', content: 'Remember this' },
+            { role: 'assistant', content: 'I remember!' }
+          ]
+        })
+      };
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue(mockUserWithEpisodic)
+      });
+      (usersRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ empty: true, docs: [] })
+      });
+
+      const userEpisodic = await usersRepo.getById('u_episodic');
+      expect(userEpisodic?.chatHistory).toHaveLength(2);
+
+      // 5. updateMemory with valid object and invalid JSON string
+      const mockSet = jest.fn().mockResolvedValue(undefined);
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({ set: mockSet });
+
+      await usersRepo.updateMemory('u_test', { key: 'val' });
+      expect(mockSet).toHaveBeenCalledWith({ coreProfile: { key: 'val' } }, { merge: true });
+
+      await usersRepo.updateMemory('u_test', 'invalid json string');
+      // Should gracefully catch and return without throwing
+    });
+
+    it('AssetsUseCase thumbnail cache hits (memory & GCS) and null binary branches', async () => {
+      const { AssetsUseCase } = require('../../src/features/assets/usecase');
+      const assetsRepo = {
+        getRawDoc: jest.fn().mockResolvedValue({ url: 'gs://rebecca-ai-gal-images/images/cached_thumb.png' })
+      } as any;
+
+      const assetsUseCase = new AssetsUseCase(assetsRepo);
+
+      // 1. Memory cache hit
+      (assetsUseCase as any).thumbnailMemoryCache.set('cached_thumb.png', {
+        buffer: Buffer.from('mem-cached'),
+        contentType: 'image/webp'
+      });
+      const memHit = await assetsUseCase.getAssetBinary('cached_thumb.png', 'thumbnail');
+      expect(memHit?.buffer).toEqual(Buffer.from('mem-cached'));
+
+      // 2. GCS thumbnail cache hit
+      const mockGcsFile = {
+        exists: jest.fn().mockResolvedValue([true]),
+        download: jest.fn().mockResolvedValue([Buffer.from('gcs-cached-thumb')])
+      };
+      (assetsUseCase as any).storage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue(mockGcsFile)
+        })
+      };
+      const gcsHit = await assetsUseCase.getAssetBinary('gcs_thumb.png', 'thumbnail');
+      expect(gcsHit?.buffer).toEqual(Buffer.from('gcs-cached-thumb'));
+
+      // 3. Null binary when asset is not found
+      assetsRepo.getRawDoc = jest.fn().mockResolvedValue(null);
+      (assetsUseCase as any).storage.bucket().file().exists = jest.fn().mockResolvedValue([false]);
+      (assetsUseCase as any).storage.bucket().getFiles = jest.fn().mockResolvedValue([[]]);
+      const notFound = await assetsUseCase.getAssetBinary('missing_all.png', 'full');
+      expect(notFound).toBeNull();
+    });
+
+    it('TimelineRepository deletePosts with tweetId deletion', async () => {
+      const timelineRepo = new TimelineRepository(mock.firestore as any);
+
+      (timelineRepo as any).collections.timelineHistory.doc = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          exists: true,
+          data: () => ({ tweetId: 'tweet_999' })
+        })
+      });
+
+      const mockBatchDelete = jest.fn();
+      const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
+      (timelineRepo as any).firestore.batch = jest.fn().mockReturnValue({
+        delete: mockBatchDelete,
+        commit: mockBatchCommit
+      });
+
+      await timelineRepo.deletePosts(['p_tweet']);
+      expect(mockBatchDelete).toHaveBeenCalled();
+      expect(mockBatchCommit).toHaveBeenCalled();
+    });
   });
 });
 
