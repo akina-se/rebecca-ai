@@ -13,11 +13,39 @@ export interface UploadedFile {
 }
 
 /**
+ * In-memory LRU Cache for high-frequency thumbnail streaming.
+ */
+class ThumbnailMemoryCache {
+  private cache = new Map<string, { buffer: Buffer; contentType: string }>();
+  constructor(private max = 200) {}
+
+  get(key: string) {
+    const val = this.cache.get(key);
+    if (val) {
+      this.cache.delete(key);
+      this.cache.set(key, val);
+    }
+    return val;
+  }
+
+  set(key: string, val: { buffer: Buffer; contentType: string }) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.max) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest !== undefined) this.cache.delete(oldest);
+    }
+    this.cache.set(key, val);
+  }
+}
+
+/**
  * UseCase for managing and processing Assets (images).
  */
 export class AssetsUseCase {
   private storage: Storage;
   private ai?: GoogleGenAI;
+  private thumbnailMemoryCache = new ThumbnailMemoryCache(200);
 
   /**
    * Creates an instance of AssetsUseCase.
@@ -62,7 +90,7 @@ export class AssetsUseCase {
 
   /**
    * Retrieves the image binary data for an asset.
-   * Supports on-demand compressed WebP thumbnail generation and GCS caching.
+   * Supports on-demand compressed WebP thumbnail generation and multi-tier caching (RAM -> GCS -> On-demand).
    * 
    * @param id - The ID of the asset.
    * @param size - 'full' for original high-resolution or 'thumbnail' for compressed 400px WebP.
@@ -78,22 +106,25 @@ export class AssetsUseCase {
     const bucketName = config.gcp.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    // 1. If thumbnail is requested, check if pre-cached thumbnail exists in GCS
+    // 1. If thumbnail is requested:
     if (size === 'thumbnail') {
-      const cachedThumbnailPaths = [
-        `thumbnails/${cleanId}.webp`,
-        `thumbnails/${id}.webp`
-      ];
+      // Tier 1: In-memory RAM cache (sub-1ms)
+      const memoryHit = this.thumbnailMemoryCache.get(cleanId);
+      if (memoryHit) {
+        return memoryHit;
+      }
+
+      // Tier 2: Pre-cached GCS thumbnail
+      const cachedThumbnailPaths = cleanId === id ? [`thumbnails/${cleanId}.webp`] : [`thumbnails/${cleanId}.webp`, `thumbnails/${id}.webp`];
       for (const thumbPath of cachedThumbnailPaths) {
         try {
           const file = bucket.file(thumbPath);
-          const [exists] = await file.exists();
-          if (exists) {
-            const [buffer] = await file.download();
-            return { buffer, contentType: 'image/webp' };
-          }
+          const [buffer] = await file.download();
+          const result = { buffer, contentType: 'image/webp' };
+          this.thumbnailMemoryCache.set(cleanId, result);
+          return result;
         } catch {
-          // ignore cache read error and proceed to generation
+          // GCS 404 or read error, proceed
         }
       }
     }
@@ -112,6 +143,9 @@ export class AssetsUseCase {
           .webp({ quality: 80 })
           .toBuffer();
 
+        const result = { buffer: thumbnailBuffer, contentType: 'image/webp' };
+        this.thumbnailMemoryCache.set(cleanId, result);
+
         // Asynchronously save to GCS cache for subsequent instant loads
         const cachePath = `thumbnails/${cleanId}.webp`;
         bucket.file(cachePath).save(thumbnailBuffer, {
@@ -120,7 +154,7 @@ export class AssetsUseCase {
           console.warn(`Failed to cache thumbnail ${cachePath} in GCS:`, err);
         });
 
-        return { buffer: thumbnailBuffer, contentType: 'image/webp' };
+        return result;
       } catch (err) {
         console.warn(`Failed to generate thumbnail for ${id}, falling back to original:`, err);
         return original;
