@@ -1,0 +1,553 @@
+:robot: I have created a release *beep* *boop*
+---
+
+
+<details><summary>@rebecca/db: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/@rebecca/db-v1.4.0...@rebecca/db-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard-backend:** align package scripts, create openapi spec and readme ([cdcd39d](https://github.com/akina-se/rebecca-ai/commit/cdcd39d357ad84ca066c0d595048d4850aa033a7))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([87591d8](https://github.com/akina-se/rebecca-ai/commit/87591d800bece5931daccdb9ebde8593486911ba))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([7942f6f](https://github.com/akina-se/rebecca-ai/commit/7942f6fe0b3deddd1d822a917cdc35ba0e92de7c))
+* **db,types:** add filename and status fields to ImageDoc converter ([2738f2e](https://github.com/akina-se/rebecca-ai/commit/2738f2e414be3cbd1255cafa1edcaac82874ab2f))
+* **db:** add @rebecca/db type-safe Firestore collection layer ([0ade3b8](https://github.com/akina-se/rebecca-ai/commit/0ade3b8435bcd900a7afef2fb4b0f20f69902a92))
+
+
+### Bug Fixes
+
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **db, bff:** resolve user display names and decouple profile models ([2652eb0](https://github.com/akina-se/rebecca-ai/commit/2652eb0b6d94dcdedc30cc9d3792a3d90b50298b))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @rebecca/types bumped from * to 1.5.0
+</details>
+
+<details><summary>@rebecca/persona: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/@rebecca/persona-v1.4.0...@rebecca/persona-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard-backend:** align package scripts, create openapi spec and readme ([cdcd39d](https://github.com/akina-se/rebecca-ai/commit/cdcd39d357ad84ca066c0d595048d4850aa033a7))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+
+
+### Bug Fixes
+
+* **dashboard-backend:** resolve compile errors by updating mock data usage and dependencies ([3099d03](https://github.com/akina-se/rebecca-ai/commit/3099d03117d5d83f494367becdd6be2678284bbc))
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+</details>
+
+<details><summary>@rebecca/types: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/@rebecca/types-v1.4.0...@rebecca/types-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **assets:** add sharp thumbnail generation and dual-resolution streaming optimization ([34f2cf7](https://github.com/akina-se/rebecca-ai/commit/34f2cf70cb9c4e0ebf7b7f0b05ba22e86b250416))
+* **dashboard-backend:** align package scripts, create openapi spec and readme ([cdcd39d](https://github.com/akina-se/rebecca-ai/commit/cdcd39d357ad84ca066c0d595048d4850aa033a7))
+* **dashboard,users,settings:** optimize DB queries, add user relations search/sort/pagination, and global timezones ([dbf13d3](https://github.com/akina-se/rebecca-ai/commit/dbf13d35a94d8d2c872eee9304f4610a0cf00a4e))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([87591d8](https://github.com/akina-se/rebecca-ai/commit/87591d800bece5931daccdb9ebde8593486911ba))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([7942f6f](https://github.com/akina-se/rebecca-ai/commit/7942f6fe0b3deddd1d822a917cdc35ba0e92de7c))
+* **db,types:** add filename and status fields to ImageDoc converter ([2738f2e](https://github.com/akina-se/rebecca-ai/commit/2738f2e414be3cbd1255cafa1edcaac82874ab2f))
+* **i18n:** implement dynamic JA/EN localization for UI, copilot persona, and sync specifications ([e8fbcb6](https://github.com/akina-se/rebecca-ai/commit/e8fbcb652c5ceae0004ee00bb2f0cf3a3ae61bbe))
+* implement Rebecca Copilot AI Chat with autonomous toolchain, HITL safety, and sleek Cyberpunk UX ([ec2df28](https://github.com/akina-se/rebecca-ai/commit/ec2df2890ece43747939a1b028683e0cba543d52))
+* **monorepo:** integrate live gRPC tweet deletion, uppercase status enums, JST timezone filters, dynamic alerts API, and Angular infinite scroll UX ([00e074c](https://github.com/akina-se/rebecca-ai/commit/00e074cf503af13193abc4f150b36b8cb817a4ea))
+* **types:** add @rebecca/types shared data model package ([38bdf05](https://github.com/akina-se/rebecca-ai/commit/38bdf05da70da90dcef74a0d733093ce08aa039c))
+
+
+### Bug Fixes
+
+* **bff:** optimize rate limiter and decouple firestore data from api dtos ([30dceae](https://github.com/akina-se/rebecca-ai/commit/30dceaee2be6c05f7ffd3b91b92e580f234f7f1a))
+* **dashboard,assets:** add timeline sorting, lightbox preview, date picking, and isolate asset extension ([70c5709](https://github.com/akina-se/rebecca-ai/commit/70c57099352097a72ff222dd61e59fa13c227a82))
+* **dashboard:** resolve data sync, date picker ranges, assets streaming, and strictly typed user models ([478f39c](https://github.com/akina-se/rebecca-ai/commit/478f39cd58e0ac234081ccec53034a49cf34bd6a))
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **db, bff:** resolve user display names and decouple profile models ([2652eb0](https://github.com/akina-se/rebecca-ai/commit/2652eb0b6d94dcdedc30cc9d3792a3d90b50298b))
+* **monorepo:** align all frontend and backend repositories with uppercase UserStatus and AssetStatus Enums ([72ba458](https://github.com/akina-se/rebecca-ai/commit/72ba4582fc90a63ebbad36aba0835614fc99adba))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+</details>
+
+<details><summary>bot-backend: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/bot-backend-v1.4.0...bot-backend-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* add user inspection script and automated bulk image upload tool with AI captioning and embedding generation ([7811583](https://github.com/akina-se/rebecca-ai/commit/7811583c5198c3c9581a43d7becfa98c3e7c8616))
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **bot-backend:** handle blocked users in reply, engagement, and onboarding with comprehensive unit tests ([660908c](https://github.com/akina-se/rebecca-ai/commit/660908c3470a1b703a621a62376075ea4d5bdfdc))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **monorepo:** integrate live gRPC tweet deletion, uppercase status enums, JST timezone filters, dynamic alerts API, and Angular infinite scroll UX ([00e074c](https://github.com/akina-se/rebecca-ai/commit/00e074cf503af13193abc4f150b36b8cb817a4ea))
+
+
+### Bug Fixes
+
+* **bot-backend:** clean up catch blocks in setup-scheduler.ts ([41734ba](https://github.com/akina-se/rebecca-ai/commit/41734babb440d8ef9572411b7e33f4e87bed5c1b))
+* **bot-backend:** resolve Cloud Run container entrypoint path ([#55](https://github.com/akina-se/rebecca-ai/issues/55)) ([69cd3a1](https://github.com/akina-se/rebecca-ai/commit/69cd3a1b22f395b286c42d96e675e0c691411cac))
+* **bot-backend:** set rootDir to ./src in tsconfig to ensure dist/index.js output path ([850c436](https://github.com/akina-se/rebecca-ai/commit/850c436631c60536e93035cb9b4f2352061b3ec2))
+* **bot-backend:** set rootDir to ./src in tsconfig to fix dist/index.js output path ([#53](https://github.com/akina-se/rebecca-ai/issues/53)) ([1cc371d](https://github.com/akina-se/rebecca-ai/commit/1cc371daa57210ccae046f55c7a9057439fcc4f1))
+* **build:** resolve type definitions for gRPC server/client and cloud tasks httpMethod ([28784e2](https://github.com/akina-se/rebecca-ai/commit/28784e20ca7000771690f3988223c4bb295d902d))
+* **ci:** add build step to eval-test and resolve @rebecca/persona path in bot-backend ([6fc3aa2](https://github.com/akina-se/rebecca-ai/commit/6fc3aa20b4f7413d978e273712897ca1b6ebb52b))
+* **ci:** add build step to eval-test and resolve @rebecca/persona path in bot-backend ([#50](https://github.com/akina-se/rebecca-ai/issues/50)) ([c1c8a44](https://github.com/akina-se/rebecca-ai/commit/c1c8a448018b069c8b99582939c422d3510351e9))
+* **dashboard:** resolve data sync, date picker ranges, assets streaming, and strictly typed user models ([478f39c](https://github.com/akina-se/rebecca-ai/commit/478f39cd58e0ac234081ccec53034a49cf34bd6a))
+* **dashboard:** resolve UI issues across dashboard, assets, and user relation pages ([96f7843](https://github.com/akina-se/rebecca-ai/commit/96f7843a4b4a00b2f15565056328cdea938eaabf))
+* **dashboard:** resolve UI layout and interaction issues ([69cd3a1](https://github.com/akina-se/rebecca-ai/commit/69cd3a1b22f395b286c42d96e675e0c691411cac))
+* **dashboard:** resolve UI layout and interaction issues ([69cd3a1](https://github.com/akina-se/rebecca-ai/commit/69cd3a1b22f395b286c42d96e675e0c691411cac))
+* **dashboard:** resolve UI layout and interaction issues ([1cc371d](https://github.com/akina-se/rebecca-ai/commit/1cc371daa57210ccae046f55c7a9057439fcc4f1))
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard:** resolve UI layout and interaction issues ([1045cf2](https://github.com/akina-se/rebecca-ai/commit/1045cf21e95866be3035b828457fd8e6daa16870))
+* **frontend:** resolve CodeQL superfluous arguments and configure ESLint argsIgnorePattern ([#52](https://github.com/akina-se/rebecca-ai/issues/52)) ([53667a6](https://github.com/akina-se/rebecca-ai/commit/53667a6bb8bc53a1779cca5b9fb4dd05f055da6d))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+* **timeline:** resolve post detail mediaUrls via backend streaming API and remove mock image fallback ([492a91e](https://github.com/akina-se/rebecca-ai/commit/492a91eec05ed5cd503123a2817a8f2ab0aef9d6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @rebecca/db bumped from * to 1.5.0
+    * @rebecca/persona bumped from * to 1.5.0
+    * @rebecca/types bumped from * to 1.5.0
+</details>
+
+<details><summary>dashboard-backend: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/dashboard-backend-v1.4.0...dashboard-backend-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **assets:** add sharp thumbnail generation and dual-resolution streaming optimization ([34f2cf7](https://github.com/akina-se/rebecca-ai/commit/34f2cf70cb9c4e0ebf7b7f0b05ba22e86b250416))
+* **bff, dashboard-frontend:** implement Layer 1 extended memory API and connect real Firestore persistence ([ab134dd](https://github.com/akina-se/rebecca-ai/commit/ab134dd5a7ba5e431935616d7b400ed1ffa0484d))
+* **config:** implement 12-factor runtime config endpoint and dynamic app initializer ([1392203](https://github.com/akina-se/rebecca-ai/commit/13922038701b28f434b966139a8e0002d846bee4))
+* **dashboard-backend:** align package scripts, create openapi spec and readme ([cdcd39d](https://github.com/akina-se/rebecca-ai/commit/cdcd39d357ad84ca066c0d595048d4850aa033a7))
+* **dashboard-backend:** implement paginated assets API, multer upload, caption regeneration, and clean config ([2736588](https://github.com/akina-se/rebecca-ai/commit/27365889d2b330c928d82a3a3e5ac97a7c1ca258))
+* **dashboard-backend:** query actual conversationLogs and sort in-memory for user chat history ([d7f38a4](https://github.com/akina-se/rebecca-ai/commit/d7f38a46068bb4ccc2a60dfce408383bfc38756a))
+* **dashboard,users,settings:** optimize DB queries, add user relations search/sort/pagination, and global timezones ([dbf13d3](https://github.com/akina-se/rebecca-ai/commit/dbf13d35a94d8d2c872eee9304f4610a0cf00a4e))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **dashboard:** restrict sidebar visibility prior to login, refine branding text, and perform full backend/functions JSDoc documentation review ([a81f803](https://github.com/akina-se/rebecca-ai/commit/a81f8037fff178415510351759138237f61f5345))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([87591d8](https://github.com/akina-se/rebecca-ai/commit/87591d800bece5931daccdb9ebde8593486911ba))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([7942f6f](https://github.com/akina-se/rebecca-ai/commit/7942f6fe0b3deddd1d822a917cdc35ba0e92de7c))
+* **i18n:** implement dynamic JA/EN localization for UI, copilot persona, and sync specifications ([e8fbcb6](https://github.com/akina-se/rebecca-ai/commit/e8fbcb652c5ceae0004ee00bb2f0cf3a3ae61bbe))
+* implement Rebecca Copilot AI Chat with autonomous toolchain, HITL safety, and sleek Cyberpunk UX ([ec2df28](https://github.com/akina-se/rebecca-ai/commit/ec2df2890ece43747939a1b028683e0cba543d52))
+* **monorepo:** integrate live gRPC tweet deletion, uppercase status enums, JST timezone filters, dynamic alerts API, and Angular infinite scroll UX ([00e074c](https://github.com/akina-se/rebecca-ai/commit/00e074cf503af13193abc4f150b36b8cb817a4ea))
+* scaffold dashboard-backend with clean architecture and strict DI ([0aeb8b4](https://github.com/akina-se/rebecca-ai/commit/0aeb8b4b5627d38ab6afc6ba10d7ddd717f7a160))
+* **security:** implement firebase auth blocking function and admin management CLI ([f6a4cde](https://github.com/akina-se/rebecca-ai/commit/f6a4cde5cc7b5b36d085adafbeabba61e8c4fef6))
+
+
+### Bug Fixes
+
+* **assets:** ensure re-vectorization occurs during regenerateCaptions ([8e138d2](https://github.com/akina-se/rebecca-ai/commit/8e138d22f3d6a0f140721a4381c41b46376f327d))
+* **assets:** migrate legacy DB URLs and preserve external CDN URLs without backend lock-in ([03ac832](https://github.com/akina-se/rebecca-ai/commit/03ac8328f87f505ebc275de04d97841a40e65c69))
+* **assets:** resolve direct GCS URLs to backend streaming endpoint and expand E2E test coverage ([87cad17](https://github.com/akina-se/rebecca-ai/commit/87cad1790499536ffeeca2341db92697eaa2fbb2))
+* **backend:** fix implicit any types and build order issues ([64ac66a](https://github.com/akina-se/rebecca-ai/commit/64ac66a5e3494351b86549cba1cae8f82b4b9504))
+* **bff:** optimize rate limiter and decouple firestore data from api dtos ([30dceae](https://github.com/akina-se/rebecca-ai/commit/30dceaee2be6c05f7ffd3b91b92e580f234f7f1a))
+* **build:** resolve type definitions for gRPC server/client and cloud tasks httpMethod ([28784e2](https://github.com/akina-se/rebecca-ai/commit/28784e20ca7000771690f3988223c4bb295d902d))
+* **ci:** fix inferrable types, resolve E2E seed schema, and enforce strict 80% coverage gates ([ca6e31b](https://github.com/akina-se/rebecca-ai/commit/ca6e31baf77d89e35ec686174f419c06b6c54e00))
+* **config:** ensure dev apiKey compatibility and add branch tests for assets and config ([12d8155](https://github.com/akina-se/rebecca-ai/commit/12d8155cb3007859853cbcd3e6e1857762f434ae))
+* **dashboard-backend:** prevent unhandled grpc client crash in emulator dreaming and meet branch coverage threshold ([f4ff000](https://github.com/akina-se/rebecca-ai/commit/f4ff0006caa6993404a9c0768d5bcec04618d3ed))
+* **dashboard-backend:** resolve compile errors by updating mock data usage and dependencies ([3099d03](https://github.com/akina-se/rebecca-ai/commit/3099d03117d5d83f494367becdd6be2678284bbc))
+* **dashboard,assets:** add timeline sorting, lightbox preview, date picking, and isolate asset extension ([70c5709](https://github.com/akina-se/rebecca-ai/commit/70c57099352097a72ff222dd61e59fa13c227a82))
+* **dashboard:** calculate all-time user interactions from conversation_logs and sort by interactions descending ([820df51](https://github.com/akina-se/rebecca-ai/commit/820df51a607972eead494372fe398ab9e9618783))
+* **dashboard:** implement server-side pagination for modals, strict [@username](https://github.com/username) resolution, and public assets image streaming ([a88625c](https://github.com/akina-se/rebecca-ai/commit/a88625c2b41dbce20ed92a75293c53345646f914))
+* **dashboard:** resolve data sync, date picker ranges, assets streaming, and strictly typed user models ([478f39c](https://github.com/akina-se/rebecca-ai/commit/478f39cd58e0ac234081ccec53034a49cf34bd6a))
+* **dashboard:** resolve runtime config via Secret Manager, update favicon, and fix release-please config ([cfd6825](https://github.com/akina-se/rebecca-ai/commit/cfd68250db3faff69e13e39b26a7819b8515d1c6))
+* **dashboard:** resolve runtime config via Secret Manager, update favicon, and fix release-please config ([51d8eab](https://github.com/akina-se/rebecca-ai/commit/51d8eab5a4d522a39ab792c176b32e6d061d2707))
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard:** trim whitespace from runtime config secrets ([da10a12](https://github.com/akina-se/rebecca-ai/commit/da10a12aa8af789b718017aafce5dddc0653ea69))
+* **db, bff:** resolve user display names and decouple profile models ([2652eb0](https://github.com/akina-se/rebecca-ai/commit/2652eb0b6d94dcdedc30cc9d3792a3d90b50298b))
+* **monorepo:** align all frontend and backend repositories with uppercase UserStatus and AssetStatus Enums ([72ba458](https://github.com/akina-se/rebecca-ai/commit/72ba4582fc90a63ebbad36aba0835614fc99adba))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+* **security:** resolve CodeQL path traversal, prompt injection, and log formatting findings ([a63d12e](https://github.com/akina-se/rebecca-ai/commit/a63d12e694c3679418e212065664d7624b021cdf))
+* **timeline:** resolve post detail mediaUrls via backend streaming API and remove mock image fallback ([492a91e](https://github.com/akina-se/rebecca-ai/commit/492a91eec05ed5cd503123a2817a8f2ab0aef9d6))
+
+
+### Performance Improvements
+
+* **assets:** add in-memory LRU cache and optimize GCS thumbnail streaming ([26728ef](https://github.com/akina-se/rebecca-ai/commit/26728efc2e591afb9fed81967d0708e0d3d82585))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @rebecca/db bumped from * to 1.5.0
+    * @rebecca/persona bumped from * to 1.5.0
+    * @rebecca/types bumped from * to 1.5.0
+</details>
+
+<details><summary>dashboard-frontend: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/dashboard-frontend-v1.4.0...dashboard-frontend-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* add AI regenerate button to asset details drawer ([387b324](https://github.com/akina-se/rebecca-ai/commit/387b324c6b2bc84d5804ba83131043589b6ff5d6))
+* add subtle cyber animations and moving gradient background to Rebecca AI drawer ([78e2c33](https://github.com/akina-se/rebecca-ai/commit/78e2c3322debb42459d401df237e5fa7460bcba3))
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **assets:** add sharp thumbnail generation and dual-resolution streaming optimization ([34f2cf7](https://github.com/akina-se/rebecca-ai/commit/34f2cf70cb9c4e0ebf7b7f0b05ba22e86b250416))
+* **bff, dashboard-frontend:** implement Layer 1 extended memory API and connect real Firestore persistence ([ab134dd](https://github.com/akina-se/rebecca-ai/commit/ab134dd5a7ba5e431935616d7b400ed1ffa0484d))
+* **config:** implement 12-factor runtime config endpoint and dynamic app initializer ([1392203](https://github.com/akina-se/rebecca-ai/commit/13922038701b28f434b966139a8e0002d846bee4))
+* **dashboard-frontend:** add firebase auth login ui and interceptors ([91fa72c](https://github.com/akina-se/rebecca-ai/commit/91fa72c84f3130009602fb538012b4e43e9ad972))
+* **dashboard-frontend:** implement View on X navigation in PostDrawer and UserDrawer with E2E tests ([d84932a](https://github.com/akina-se/rebecca-ai/commit/d84932a6b0e05c6dc6ac6a00934667f76ad18b50))
+* **dashboard-frontend:** support multi-file upload, pagination, and add E2E test suite for assets ([e2c0f2f](https://github.com/akina-se/rebecca-ai/commit/e2c0f2f6f8a0718e1af231c33c2430c587374d39))
+* **dashboard-frontend:** unify all UI timestamps to YYYY/MM/DD HH:mm:ss with reactive timezone support ([19b7d8f](https://github.com/akina-se/rebecca-ai/commit/19b7d8f3063144afaa3cdca05c0d9d217524b4a3))
+* **dashboard,users,settings:** optimize DB queries, add user relations search/sort/pagination, and global timezones ([dbf13d3](https://github.com/akina-se/rebecca-ai/commit/dbf13d35a94d8d2c872eee9304f4610a0cf00a4e))
+* **dashboard:** add AI Analyze button to detail drawers and implement shifted layout ([3c05293](https://github.com/akina-se/rebecca-ai/commit/3c052935a0da25190e5b0b22da281f94e877cdb9))
+* **dashboard:** configure frontend to connect to Firebase Auth Emulator automatically in dev mode ([33c9010](https://github.com/akina-se/rebecca-ai/commit/33c9010fa8dd3303852946e359d943a737a82aee))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **dashboard:** implement live HttpDashboardRepository and register it conditionally in app config ([29ba153](https://github.com/akina-se/rebecca-ai/commit/29ba15396c50a7b88664ca67fd50bd5682a3719b))
+* **dashboard:** implement page-based pagination for timeline history ([9a606a1](https://github.com/akina-se/rebecca-ai/commit/9a606a15040b50809c0840a9fe5a1bfed2243c15))
+* **dashboard:** restrict sidebar visibility prior to login, refine branding text, and perform full backend/functions JSDoc documentation review ([a81f803](https://github.com/akina-se/rebecca-ai/commit/a81f8037fff178415510351759138237f61f5345))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([87591d8](https://github.com/akina-se/rebecca-ai/commit/87591d800bece5931daccdb9ebde8593486911ba))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([7942f6f](https://github.com/akina-se/rebecca-ai/commit/7942f6fe0b3deddd1d822a917cdc35ba0e92de7c))
+* **i18n:** implement dynamic JA/EN localization for UI, copilot persona, and sync specifications ([e8fbcb6](https://github.com/akina-se/rebecca-ai/commit/e8fbcb652c5ceae0004ee00bb2f0cf3a3ae61bbe))
+* implement advanced UI/UX improvements based on HEART audit ([30b0ec8](https://github.com/akina-se/rebecca-ai/commit/30b0ec8359f9605f7e85f753f0049feabf0c75de))
+* implement Rebecca Copilot AI Chat with autonomous toolchain, HITL safety, and sleek Cyberpunk UX ([ec2df28](https://github.com/akina-se/rebecca-ai/commit/ec2df2890ece43747939a1b028683e0cba543d52))
+* **monorepo:** integrate live gRPC tweet deletion, uppercase status enums, JST timezone filters, dynamic alerts API, and Angular infinite scroll UX ([00e074c](https://github.com/akina-se/rebecca-ai/commit/00e074cf503af13193abc4f150b36b8cb817a4ea))
+
+
+### Bug Fixes
+
+* align AI drawer text colors with global variables ([ca31fea](https://github.com/akina-se/rebecca-ai/commit/ca31feaa852027a4dfa0cea0a62ece38e62905bb))
+* change button active effect to a softer ripple instead of flash ([ab34bfa](https://github.com/akina-se/rebecca-ai/commit/ab34bfafe3e50a8e2538ab0dad3cd6f6731aa37f))
+* **ci:** fix inferrable types, resolve E2E seed schema, and enforce strict 80% coverage gates ([ca6e31b](https://github.com/akina-se/rebecca-ai/commit/ca6e31baf77d89e35ec686174f419c06b6c54e00))
+* **dashboard-frontend:** align authGuard signature with route/state parameters ([32ecc7c](https://github.com/akina-se/rebecca-ai/commit/32ecc7c318d11c27c6c023ac55e6ea7fb5e1947a))
+* **dashboard-frontend:** bind top posts dynamically, display user handles, and update pagination UI ([a064657](https://github.com/akina-se/rebecca-ai/commit/a064657cd5d2b6124fed98c15830329e53ae944c))
+* **dashboard-frontend:** ensure top users ranking modal data sync and wait in e2e ([7bb03c0](https://github.com/akina-se/rebecca-ai/commit/7bb03c08e1d3e54c30fe6803d46b1a2cf74cb012))
+* **dashboard-frontend:** fix level 2 drawer rendering and format lastUpdated timestamps safely ([fc94825](https://github.com/akina-se/rebecca-ai/commit/fc94825bec6f0787e0418be18d9f84f7dec34491))
+* **dashboard-frontend:** modernize copilot action cards, fix i18n localization and update e2e matchers ([04ac1aa](https://github.com/akina-se/rebecca-ai/commit/04ac1aa499bbbe702ff1525cab1c9f51514cb408))
+* **dashboard-frontend:** provide resilient currentUser resolution for offline and e2e sessions ([9c024e0](https://github.com/akina-se/rebecca-ai/commit/9c024e01f5e004dc694ca96aa7924b46d1125f42))
+* **dashboard-frontend:** standardize UTF-8 Japanese language labels across settings ([c8d940e](https://github.com/akina-se/rebecca-ai/commit/c8d940e258ff8f35a63c263d4126a0dbd3d376b3))
+* **dashboard,assets:** add timeline sorting, lightbox preview, date picking, and isolate asset extension ([70c5709](https://github.com/akina-se/rebecca-ai/commit/70c57099352097a72ff222dd61e59fa13c227a82))
+* **dashboard:** calculate all-time user interactions from conversation_logs and sort by interactions descending ([820df51](https://github.com/akina-se/rebecca-ai/commit/820df51a607972eead494372fe398ab9e9618783))
+* **dashboard:** enhance asset drawer delete/regenerate reliability and E2E timeouts ([b17d7cb](https://github.com/akina-se/rebecca-ai/commit/b17d7cb4aa9d8fbb2f64ff39d5da7a66da4c8a51))
+* **dashboard:** fix action button overflow, sidebar text wrap, and complete Japanese localization across all views ([e727cbb](https://github.com/akina-se/rebecca-ai/commit/e727cbb81d3113846cfa6bd3b1870fb91ef453b7))
+* **dashboard:** implement server-side pagination for modals, strict [@username](https://github.com/username) resolution, and public assets image streaming ([a88625c](https://github.com/akina-se/rebecca-ai/commit/a88625c2b41dbce20ed92a75293c53345646f914))
+* **dashboard:** resolve build errors and import path ([5a8a374](https://github.com/akina-se/rebecca-ai/commit/5a8a374cd1c70b16ba92e6c4c38c37e893db8ab9))
+* **dashboard:** resolve data sync, date picker ranges, assets streaming, and strictly typed user models ([478f39c](https://github.com/akina-se/rebecca-ai/commit/478f39cd58e0ac234081ccec53034a49cf34bd6a))
+* **dashboard:** resolve runtime config via Secret Manager, update favicon, and fix release-please config ([cfd6825](https://github.com/akina-se/rebecca-ai/commit/cfd68250db3faff69e13e39b26a7819b8515d1c6))
+* **dashboard:** resolve runtime config via Secret Manager, update favicon, and fix release-please config ([51d8eab](https://github.com/akina-se/rebecca-ai/commit/51d8eab5a4d522a39ab792c176b32e6d061d2707))
+* **dashboard:** resolve UI issues across dashboard, assets, and user relation pages ([96f7843](https://github.com/akina-se/rebecca-ai/commit/96f7843a4b4a00b2f15565056328cdea938eaabf))
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard:** resolve UI layout and interaction issues ([1045cf2](https://github.com/akina-se/rebecca-ai/commit/1045cf21e95866be3035b828457fd8e6daa16870))
+* **dashboard:** update project name to dashboard-frontend in angular.json ([e976552](https://github.com/akina-se/rebecca-ai/commit/e9765527d95c3079808e6bbe7edba7a077e8115a))
+* **frontend:** align authGuard signature and configure eslint argsIgnorePattern for underscore parameters ([afb34a6](https://github.com/akina-se/rebecca-ai/commit/afb34a61b4950606860826c498871a569f36dd85))
+* **frontend:** enforce strict typing and fix component errors ([01572d6](https://github.com/akina-se/rebecca-ai/commit/01572d695d3d6347997e736d5b0af14f87a567c7))
+* **frontend:** resolve CodeQL superfluous arguments and configure ESLint argsIgnorePattern ([#52](https://github.com/akina-se/rebecca-ai/issues/52)) ([53667a6](https://github.com/akina-se/rebecca-ai/commit/53667a6bb8bc53a1779cca5b9fb4dd05f055da6d))
+* **memory:** remove duplicate layer label prefix and fix cell text wrapping in memory layers table ([e8dd8e8](https://github.com/akina-se/rebecca-ai/commit/e8dd8e8e824b13ca997bd63db85535f4a4e5ec82))
+* **monorepo:** align all frontend and backend repositories with uppercase UserStatus and AssetStatus Enums ([72ba458](https://github.com/akina-se/rebecca-ai/commit/72ba4582fc90a63ebbad36aba0835614fc99adba))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+* **security:** resolve CodeQL path traversal, prompt injection, and log formatting findings ([a63d12e](https://github.com/akina-se/rebecca-ai/commit/a63d12e694c3679418e212065664d7624b021cdf))
+* **sidebar:** increase sidebar width to 280px to prevent nav item text overflow ([538ac53](https://github.com/akina-se/rebecca-ai/commit/538ac530a393f6dc89bc857783a5cbacb929983b))
+* standardize colors for asset clock and dashboard flame icons ([7fc66b8](https://github.com/akina-se/rebecca-ai/commit/7fc66b834c51e34fa002ae686b22c012c6dd74f3))
+* **timeline:** resolve post detail mediaUrls via backend streaming API and remove mock image fallback ([492a91e](https://github.com/akina-se/rebecca-ai/commit/492a91eec05ed5cd503123a2817a8f2ab0aef9d6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @rebecca/types bumped from * to 1.5.0
+</details>
+
+<details><summary>functions: 1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/functions-v1.4.0...functions-v1.5.0) (2026-08-23)
+
+
+### Features
+
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard-backend:** align package scripts, create openapi spec and readme ([cdcd39d](https://github.com/akina-se/rebecca-ai/commit/cdcd39d357ad84ca066c0d595048d4850aa033a7))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **dashboard:** restrict sidebar visibility prior to login, refine branding text, and perform full backend/functions JSDoc documentation review ([a81f803](https://github.com/akina-se/rebecca-ai/commit/a81f8037fff178415510351759138237f61f5345))
+* **monorepo:** integrate live gRPC tweet deletion, uppercase status enums, JST timezone filters, dynamic alerts API, and Angular infinite scroll UX ([00e074c](https://github.com/akina-se/rebecca-ai/commit/00e074cf503af13193abc4f150b36b8cb817a4ea))
+* **security:** implement firebase auth blocking function and admin management CLI ([f6a4cde](https://github.com/akina-se/rebecca-ai/commit/f6a4cde5cc7b5b36d085adafbeabba61e8c4fef6))
+
+
+### Bug Fixes
+
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **functions:** make functions standalone and add force flag to cloudbuild firebase deploy ([4e376d2](https://github.com/akina-se/rebecca-ai/commit/4e376d237c49e38eda04347736bb8432e1aa01a0))
+* **functions:** make functions standalone and fix cloudbuild firebase deploy ([#56](https://github.com/akina-se/rebecca-ai/issues/56)) ([a1cf6a8](https://github.com/akina-se/rebecca-ai/commit/a1cf6a8911f44890b4e73193940d7c437af5e4d4))
+* **functions:** remove GCIP blocking trigger export for free tier compatibility ([#58](https://github.com/akina-se/rebecca-ai/issues/58)) ([4778995](https://github.com/akina-se/rebecca-ai/commit/477899553c6a54bb6998d39b25a6545e49b355f5))
+* **functions:** remove GCIP blocking trigger export to support standard Firebase Auth free tier ([6d32829](https://github.com/akina-se/rebecca-ai/commit/6d328292339ed3e0efbcafd4cce74b9edd5c7fa4))
+* **functions:** resolve undefined FieldValue error in firestore triggers ([b77f2f5](https://github.com/akina-se/rebecca-ai/commit/b77f2f51435f0d2a90daa5a120a9d7469efece55))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+</details>
+
+<details><summary>1.5.0</summary>
+
+## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/v1.4.0...v1.5.0) (2026-08-23)
+
+
+### Features
+
+* add AI regenerate button to asset details drawer ([387b324](https://github.com/akina-se/rebecca-ai/commit/387b324c6b2bc84d5804ba83131043589b6ff5d6))
+* add CRC endpoint for X webhook registration ([158870b](https://github.com/akina-se/rebecca-ai/commit/158870b5374fea1bfcc7b0225c2c857d639d3cd0))
+* add favicon with dark purple gradient background ([5d24f83](https://github.com/akina-se/rebecca-ai/commit/5d24f835a6b8ac598901f7ea103c99cc382c4238))
+* add get-lists tool script ([ec20490](https://github.com/akina-se/rebecca-ai/commit/ec20490a14779cd2039b49405e15802a1764a673))
+* add get-lists tool script ([482399a](https://github.com/akina-se/rebecca-ai/commit/482399ad3278a39105c4b62698ec69f658474535))
+* add GitHub repository link to landing page ([005687d](https://github.com/akina-se/rebecca-ai/commit/005687d18e11fa418b696a10c07bc666f02dbd25))
+* add premium landing page with exact character art ([afc7434](https://github.com/akina-se/rebecca-ai/commit/afc7434eb63baa7df69a01f0525e88b11564b928))
+* add proactive news post, onboarding scraping, and timeline summarization ([627ab45](https://github.com/akina-se/rebecca-ai/commit/627ab453e47f877781414adfd8c7cf823782013d))
+* add release-please workflow for automated versioning ([b033e12](https://github.com/akina-se/rebecca-ai/commit/b033e12da0f8da7bcb110c6f56f61fd9fc44fd9f))
+* add subtle cyber animations and moving gradient background to Rebecca AI drawer ([78e2c33](https://github.com/akina-se/rebecca-ai/commit/78e2c3322debb42459d401df237e5fa7460bcba3))
+* add Terms of Service and Privacy Policy static pages ([bbf95b0](https://github.com/akina-se/rebecca-ai/commit/bbf95b0ca3dc4318d61914f6fbfd8602782248eb))
+* add user inspection script and automated bulk image upload tool with AI captioning and embedding generation ([7811583](https://github.com/akina-se/rebecca-ai/commit/7811583c5198c3c9581a43d7becfa98c3e7c8616))
+* admin management dashboard, full monorepo architecture, and enterprise CI/CD ([#49](https://github.com/akina-se/rebecca-ai/issues/49)) ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* append brand hashtag to proactive news posts conditionally ([9b20b68](https://github.com/akina-se/rebecca-ai/commit/9b20b681240ade0ca59c77b40d4fa9f8a28dc3c3))
+* apply modern UI best practices and add back button ([8ed3ed5](https://github.com/akina-se/rebecca-ai/commit/8ed3ed5f167972c61d7adeedf33a23e0638128c1))
+* **assets:** add sharp thumbnail generation and dual-resolution streaming optimization ([34f2cf7](https://github.com/akina-se/rebecca-ai/commit/34f2cf70cb9c4e0ebf7b7f0b05ba22e86b250416))
+* **bff, dashboard-frontend:** implement Layer 1 extended memory API and connect real Firestore persistence ([ab134dd](https://github.com/akina-se/rebecca-ai/commit/ab134dd5a7ba5e431935616d7b400ed1ffa0484d))
+* **bot-backend:** handle blocked users in reply, engagement, and onboarding with comprehensive unit tests ([660908c](https://github.com/akina-se/rebecca-ai/commit/660908c3470a1b703a621a62376075ea4d5bdfdc))
+* complete vector search migration and fix X API upload ([0d43eef](https://github.com/akina-se/rebecca-ai/commit/0d43eef33fe98f3f8117fbe43ea8a43cfc8fcefe))
+* **config:** implement 12-factor runtime config endpoint and dynamic app initializer ([1392203](https://github.com/akina-se/rebecca-ai/commit/13922038701b28f434b966139a8e0002d846bee4))
+* constrain image tags and inference keywords to a predefined list for better matching ([947525f](https://github.com/akina-se/rebecca-ai/commit/947525f3d05ad0fab6efcae0297c39434ec9f184))
+* **core:** implement stealth onboarding and random engagement ([770d0f5](https://github.com/akina-se/rebecca-ai/commit/770d0f55b68ad40e18f1877eb6d2951fe1564698))
+* **core:** implement stealth onboarding and random engagement ([3a0dc51](https://github.com/akina-se/rebecca-ai/commit/3a0dc51f515ddb6a38e3bc38907a1ffedef11496))
+* **dashboard-backend:** align package scripts, create openapi spec and readme ([cdcd39d](https://github.com/akina-se/rebecca-ai/commit/cdcd39d357ad84ca066c0d595048d4850aa033a7))
+* **dashboard-backend:** implement paginated assets API, multer upload, caption regeneration, and clean config ([2736588](https://github.com/akina-se/rebecca-ai/commit/27365889d2b330c928d82a3a3e5ac97a7c1ca258))
+* **dashboard-backend:** query actual conversationLogs and sort in-memory for user chat history ([d7f38a4](https://github.com/akina-se/rebecca-ai/commit/d7f38a46068bb4ccc2a60dfce408383bfc38756a))
+* **dashboard-frontend:** add firebase auth login ui and interceptors ([91fa72c](https://github.com/akina-se/rebecca-ai/commit/91fa72c84f3130009602fb538012b4e43e9ad972))
+* **dashboard-frontend:** implement View on X navigation in PostDrawer and UserDrawer with E2E tests ([d84932a](https://github.com/akina-se/rebecca-ai/commit/d84932a6b0e05c6dc6ac6a00934667f76ad18b50))
+* **dashboard-frontend:** support multi-file upload, pagination, and add E2E test suite for assets ([e2c0f2f](https://github.com/akina-se/rebecca-ai/commit/e2c0f2f6f8a0718e1af231c33c2430c587374d39))
+* **dashboard-frontend:** unify all UI timestamps to YYYY/MM/DD HH:mm:ss with reactive timezone support ([19b7d8f](https://github.com/akina-se/rebecca-ai/commit/19b7d8f3063144afaa3cdca05c0d9d217524b4a3))
+* **dashboard,users,settings:** optimize DB queries, add user relations search/sort/pagination, and global timezones ([dbf13d3](https://github.com/akina-se/rebecca-ai/commit/dbf13d35a94d8d2c872eee9304f4610a0cf00a4e))
+* **dashboard:** add AI Analyze button to detail drawers and implement shifted layout ([3c05293](https://github.com/akina-se/rebecca-ai/commit/3c052935a0da25190e5b0b22da281f94e877cdb9))
+* **dashboard:** configure frontend to connect to Firebase Auth Emulator automatically in dev mode ([33c9010](https://github.com/akina-se/rebecca-ai/commit/33c9010fa8dd3303852946e359d943a737a82aee))
+* **dashboard:** implement full admin dashboard, zero-trust auth, and monorepo CI/CD ([67ca5d9](https://github.com/akina-se/rebecca-ai/commit/67ca5d99a0c6ec0351d6dff7810982be47bf2dc7))
+* **dashboard:** implement live HttpDashboardRepository and register it conditionally in app config ([29ba153](https://github.com/akina-se/rebecca-ai/commit/29ba15396c50a7b88664ca67fd50bd5682a3719b))
+* **dashboard:** implement page-based pagination for timeline history ([9a606a1](https://github.com/akina-se/rebecca-ai/commit/9a606a15040b50809c0840a9fe5a1bfed2243c15))
+* **dashboard:** restrict sidebar visibility prior to login, refine branding text, and perform full backend/functions JSDoc documentation review ([a81f803](https://github.com/akina-se/rebecca-ai/commit/a81f8037fff178415510351759138237f61f5345))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([87591d8](https://github.com/akina-se/rebecca-ai/commit/87591d800bece5931daccdb9ebde8593486911ba))
+* **dashboard:** streamline user schema, optimize timeline thumbnails, and remove artificial fallbacks ([7942f6f](https://github.com/akina-se/rebecca-ai/commit/7942f6fe0b3deddd1d822a917cdc35ba0e92de7c))
+* **db,types:** add filename and status fields to ImageDoc converter ([2738f2e](https://github.com/akina-se/rebecca-ai/commit/2738f2e414be3cbd1255cafa1edcaac82874ab2f))
+* **db:** add @rebecca/db type-safe Firestore collection layer ([0ade3b8](https://github.com/akina-se/rebecca-ai/commit/0ade3b8435bcd900a7afef2fb4b0f20f69902a92))
+* enhance README with image, update privacy policy for Gemini API, and improve test coverage ([6f62136](https://github.com/akina-se/rebecca-ai/commit/6f62136de6fe45854cb77112ee37a5c8ed88ad47))
+* Enhance Rebecca's Persona and Core Values ([#14](https://github.com/akina-se/rebecca-ai/issues/14)) ([5a79b10](https://github.com/akina-se/rebecca-ai/commit/5a79b10f178c3d9c54ccce0c23d3d0bebf81c945))
+* enhance Rebecca's persona based on original novel values ([78f3a81](https://github.com/akina-se/rebecca-ai/commit/78f3a819edeeeb49634724a9b7d0f7583ed40672))
+* **i18n:** implement dynamic JA/EN localization for UI, copilot persona, and sync specifications ([e8fbcb6](https://github.com/akina-se/rebecca-ai/commit/e8fbcb652c5ceae0004ee00bb2f0cf3a3ae61bbe))
+* implement advanced UI/UX improvements based on HEART audit ([30b0ec8](https://github.com/akina-se/rebecca-ai/commit/30b0ec8359f9605f7e85f753f0049feabf0c75de))
+* implement Angular foundational components and layout from prototype ([fb8f8a4](https://github.com/akina-se/rebecca-ai/commit/fb8f8a4baa026daeb8d2bea0e55e13fe12fd4fbd))
+* implement Batch 3 Evolution with Gemma auditor ([df44085](https://github.com/akina-se/rebecca-ai/commit/df44085f9fb31dd1ce0f5e6efdad964a99a0080d))
+* implement CI pipeline with automated testing, linting, build checks, and Jest coverage thresholds ([c4aa6ac](https://github.com/akina-se/rebecca-ai/commit/c4aa6ac161236e8107f099169e85f6d513153b24))
+* implement environment-based application configuration with unit tests ([c1f420e](https://github.com/akina-se/rebecca-ai/commit/c1f420e7952a4faf1364ef6a5822321019fd7ace))
+* implement proactive image attachment ([#26](https://github.com/akina-se/rebecca-ai/issues/26)) ([9fa5c46](https://github.com/akina-se/rebecca-ai/commit/9fa5c465e1a9cacd89790c4fafb82da7d044dc0a))
+* implement proactive image attachment ([#26](https://github.com/akina-se/rebecca-ai/issues/26)) ([121b636](https://github.com/akina-se/rebecca-ai/commit/121b636f8ad0a1389ef8e6395a1c87831cc4110b))
+* Implement Quote Retweet and Image Analysis for Mentions ([10ccaa8](https://github.com/akina-se/rebecca-ai/commit/10ccaa89b13e282b7438ff401b19d4c45c32df1a))
+* Implement Quote Retweet and Image Analysis for Mentions ([a2a742d](https://github.com/akina-se/rebecca-ai/commit/a2a742da2cdee43913e7555dac5363796ed98c9d))
+* implement RAG hybrid memory and Function Calling for news search ([ecfe70c](https://github.com/akina-se/rebecca-ai/commit/ecfe70c26e54911116b892fe26e5b5bfddec165c))
+* implement Rebecca Copilot AI Chat with autonomous toolchain, HITL safety, and sleek Cyberpunk UX ([ec2df28](https://github.com/akina-se/rebecca-ai/commit/ec2df2890ece43747939a1b028683e0cba543d52))
+* implement stealth onboarding, random engagement and fix security ([#32](https://github.com/akina-se/rebecca-ai/issues/32)) ([aad2f42](https://github.com/akina-se/rebecca-ai/commit/aad2f42de61c77e6d08ef2c33176f2a270a8d8f5))
+* make public IP rate limit configurable ([cecc65f](https://github.com/akina-se/rebecca-ai/commit/cecc65fbd92aad73747f4ad98d7a88cd9d73b000))
+* make public IP rate limit configurable ([56c3f17](https://github.com/akina-se/rebecca-ai/commit/56c3f174d4275b018f2e0bf772ce6510ef11d8a8))
+* migrate from webhook to polling for mentions ([c0fb0a0](https://github.com/akina-se/rebecca-ai/commit/c0fb0a076c6bd9f0eedfc39e1bb22a2f51b9cede))
+* **monorepo:** integrate live gRPC tweet deletion, uppercase status enums, JST timezone filters, dynamic alerts API, and Angular infinite scroll UX ([00e074c](https://github.com/akina-se/rebecca-ai/commit/00e074cf503af13193abc4f150b36b8cb817a4ea))
+* redesign prompt architecture separating core and context ([296faf6](https://github.com/akina-se/rebecca-ai/commit/296faf68339db56ff40f3cf6bccde0b51e2ced4c))
+* redesign prompt architecture separating core and context ([4cac444](https://github.com/akina-se/rebecca-ai/commit/4cac44441f3676256945a24ccb8255d46217322f))
+* scaffold dashboard-backend with clean architecture and strict DI ([0aeb8b4](https://github.com/akina-se/rebecca-ai/commit/0aeb8b4b5627d38ab6afc6ba10d7ddd717f7a160))
+* **scripts:** add missing jobs to setup-scheduler ([1cba9e1](https://github.com/akina-se/rebecca-ai/commit/1cba9e1a76cc7b9c8e6dd12638678f5fd59b284c))
+* **scripts:** add missing jobs to setup-scheduler ([738849d](https://github.com/akina-se/rebecca-ai/commit/738849de0851f8a93102823a8849e0281e884541))
+* **security:** implement firebase auth blocking function and admin management CLI ([f6a4cde](https://github.com/akina-se/rebecca-ai/commit/f6a4cde5cc7b5b36d085adafbeabba61e8c4fef6))
+* setup standalone chat, oss configs, llm as a judge eval, and specification docs ([906ef5f](https://github.com/akina-se/rebecca-ai/commit/906ef5f8c9102ee8cf7cb9b537f4c1f66ba24c4b))
+* switch random engagement to standalone tweet due to API limits ([a94f75b](https://github.com/akina-se/rebecca-ai/commit/a94f75b2ca3731441fa2a7499bee6e9187057ce3))
+* switch random engagement to standalone tweet due to API limits ([c2a974d](https://github.com/akina-se/rebecca-ai/commit/c2a974d0f7aaa9d03a43bfb8e087e6aaedf22ece))
+* switch random engagement to standalone tweet due to API limits ([dbb0a62](https://github.com/akina-se/rebecca-ai/commit/dbb0a62dc77bc8ccffe347f139044f0351023cd2))
+* **types:** add @rebecca/types shared data model package ([38bdf05](https://github.com/akina-se/rebecca-ai/commit/38bdf05da70da90dcef74a0d733093ce08aa039c))
+* UI enhancements (favicon and GitHub link) ([63d8278](https://github.com/akina-se/rebecca-ai/commit/63d82786a27b84c6b803a162ca2b536b6475b141))
+
+
+### Bug Fixes
+
+* add favicon.ico to resolve 404 ([7989ec0](https://github.com/akina-se/rebecca-ai/commit/7989ec07c2827364aa36c0143d0108fb595bc89c))
+* add public folder to Dockerfile production image ([c8f8eea](https://github.com/akina-se/rebecca-ai/commit/c8f8eea3bd9638a17a1f8ce948e56162ff435866))
+* add retry logic and rate limit delay for bulk upload ([c2c264f](https://github.com/akina-se/rebecca-ai/commit/c2c264f0b7d80425aa39f2eae88deb5470a3b6d8))
+* address CodeQL log injection and ESLint unexpected any/prefer-const/unused-vars issues ([d5579fd](https://github.com/akina-se/rebecca-ai/commit/d5579fdbe29f719d5fd0a01141e3be75f769b389))
+* address CodeQL log injection and ESLint unexpected any/prefer-const/unused-vars issues ([ec9ef59](https://github.com/akina-se/rebecca-ai/commit/ec9ef59d22c1cbf2fa1168cfd8be927df3c695e4))
+* align AI drawer text colors with global variables ([ca31fea](https://github.com/akina-se/rebecca-ai/commit/ca31feaa852027a4dfa0cea0a62ece38e62905bb))
+* **api:** fix worker/reply response handling to prevent CPU throttling and enable retries ([fc58a9b](https://github.com/akina-se/rebecca-ai/commit/fc58a9bb6a1a03a665a0772347ba43db11c4c735))
+* **api:** fix worker/reply response handling to prevent CPU throttling and enable retries ([6f28d3e](https://github.com/akina-se/rebecca-ai/commit/6f28d3e8b778296ead6e458eb59234f622c5bd94))
+* **api:** mask detailed error messages in 500 responses for security ([dd6f404](https://github.com/akina-se/rebecca-ai/commit/dd6f404dc3bb999d714a56206473eb4d7914ecca))
+* **api:** mask detailed error messages in 500 responses for security ([c842562](https://github.com/akina-se/rebecca-ai/commit/c842562cbfeef931f87ec177bee69ef4c5effe2d))
+* **api:** unify success and error response formats for all batch endpoints ([5ca29af](https://github.com/akina-se/rebecca-ai/commit/5ca29af9d4f82fe772b64f9ad531406541ef80a7))
+* **api:** unify success and error response formats for all batch endpoints ([1a7c574](https://github.com/akina-se/rebecca-ai/commit/1a7c5743ffec88c4bf3e4cde03a4c982ad5489f1))
+* **arch:** extract newsFetcher to break circular dependency between services and core ([5965904](https://github.com/akina-se/rebecca-ai/commit/5965904066faceed01b84769dbab1cdddea67d31))
+* **arch:** extract newsFetcher to break circular dependency between services and core ([34d625e](https://github.com/akina-se/rebecca-ai/commit/34d625ecd5194b5b711e3799dbf23de4278be57c))
+* **assets:** ensure re-vectorization occurs during regenerateCaptions ([8e138d2](https://github.com/akina-se/rebecca-ai/commit/8e138d22f3d6a0f140721a4381c41b46376f327d))
+* **assets:** migrate legacy DB URLs and preserve external CDN URLs without backend lock-in ([03ac832](https://github.com/akina-se/rebecca-ai/commit/03ac8328f87f505ebc275de04d97841a40e65c69))
+* **assets:** resolve direct GCS URLs to backend streaming endpoint and expand E2E test coverage ([87cad17](https://github.com/akina-se/rebecca-ai/commit/87cad1790499536ffeeca2341db92697eaa2fbb2))
+* **backend:** fix implicit any types and build order issues ([64ac66a](https://github.com/akina-se/rebecca-ai/commit/64ac66a5e3494351b86549cba1cae8f82b4b9504))
+* **bff:** optimize rate limiter and decouple firestore data from api dtos ([30dceae](https://github.com/akina-se/rebecca-ai/commit/30dceaee2be6c05f7ffd3b91b92e580f234f7f1a))
+* **bot-backend:** clean up catch blocks in setup-scheduler.ts ([41734ba](https://github.com/akina-se/rebecca-ai/commit/41734babb440d8ef9572411b7e33f4e87bed5c1b))
+* **bot-backend:** resolve Cloud Run container entrypoint path ([#55](https://github.com/akina-se/rebecca-ai/issues/55)) ([69cd3a1](https://github.com/akina-se/rebecca-ai/commit/69cd3a1b22f395b286c42d96e675e0c691411cac))
+* **bot-backend:** set rootDir to ./src in tsconfig to ensure dist/index.js output path ([850c436](https://github.com/akina-se/rebecca-ai/commit/850c436631c60536e93035cb9b4f2352061b3ec2))
+* **bot-backend:** set rootDir to ./src in tsconfig to fix dist/index.js output path ([#53](https://github.com/akina-se/rebecca-ai/issues/53)) ([1cc371d](https://github.com/akina-se/rebecca-ai/commit/1cc371daa57210ccae046f55c7a9057439fcc4f1))
+* **build:** resolve type definitions for gRPC server/client and cloud tasks httpMethod ([28784e2](https://github.com/akina-se/rebecca-ai/commit/28784e20ca7000771690f3988223c4bb295d902d))
+* cast string to Language type in eval test ([269a7b6](https://github.com/akina-se/rebecca-ai/commit/269a7b6a0ab0fab579a7ce84a8ee766926b85e2d))
+* change autonomous system to autonomous personal AI ([2d057f1](https://github.com/akina-se/rebecca-ai/commit/2d057f185efe0ceb3220f39bdf01de6080e7e447))
+* change button active effect to a softer ripple instead of flash ([ab34bfa](https://github.com/akina-se/rebecca-ai/commit/ab34bfafe3e50a8e2538ab0dad3cd6f6731aa37f))
+* change first-person pronoun to watashi ([f40591f](https://github.com/akina-se/rebecca-ai/commit/f40591f114b557501cf34781d0446ab272569755))
+* change npm start to run dist/src/index.js ([60c288b](https://github.com/akina-se/rebecca-ai/commit/60c288b00d3c3ce7677f212a111441e294d90e1d))
+* change X(Twitter) to X and add english translation on index ([9251b8c](https://github.com/akina-se/rebecca-ai/commit/9251b8c163260cf58db089b5b3a5e665e10f2294))
+* chunk evaluation in simulation to avoid rate limits ([747b03e](https://github.com/akina-se/rebecca-ai/commit/747b03ec3b82a7a5970f30c9314411c214e695ac))
+* **ci:** add build step to eval-test and resolve @rebecca/persona path in bot-backend ([6fc3aa2](https://github.com/akina-se/rebecca-ai/commit/6fc3aa20b4f7413d978e273712897ca1b6ebb52b))
+* **ci:** add build step to eval-test and resolve @rebecca/persona path in bot-backend ([#50](https://github.com/akina-se/rebecca-ai/issues/50)) ([c1c8a44](https://github.com/akina-se/rebecca-ai/commit/c1c8a448018b069c8b99582939c422d3510351e9))
+* **ci:** fix inferrable types, resolve E2E seed schema, and enforce strict 80% coverage gates ([ca6e31b](https://github.com/akina-se/rebecca-ai/commit/ca6e31baf77d89e35ec686174f419c06b6c54e00))
+* **ci:** fix transaction tests, update configs, and sync docs ([6521638](https://github.com/akina-se/rebecca-ai/commit/652163873cb881de8dd24682cda18672d5a70fdf))
+* **ci:** fix transaction tests, update configs, and sync docs ([651d146](https://github.com/akina-se/rebecca-ai/commit/651d14678bf956972235c4a59621ccc04bda4186))
+* **ci:** proxy /api routes from frontend SPA server to BFF backend on port 8081 ([4dea790](https://github.com/akina-se/rebecca-ai/commit/4dea790ccc8fa1f167f763ab60fbec180108bd7b))
+* **config:** ensure dev apiKey compatibility and add branch tests for assets and config ([12d8155](https://github.com/akina-se/rebecca-ai/commit/12d8155cb3007859853cbcd3e6e1857762f434ae))
+* correct favicon (hotfix) ([989f1aa](https://github.com/akina-se/rebecca-ai/commit/989f1aaa2de918b838c541fac2fa1ef82db7e551))
+* correct test function argument to number array ([4d17e1b](https://github.com/akina-se/rebecca-ai/commit/4d17e1b25c9cb4faa0ef20ff03a2c2cdf425c35f))
+* correct test function argument to number array ([becf2bc](https://github.com/akina-se/rebecca-ai/commit/becf2bc46b84ff1132442963e16ebcc7527dec30))
+* correct webhook payload parsing for twitter API ([5a542ec](https://github.com/akina-se/rebecca-ai/commit/5a542ecc4e01d9a6485b687c47de449120aba28f))
+* **dashboard-backend:** prevent unhandled grpc client crash in emulator dreaming and meet branch coverage threshold ([f4ff000](https://github.com/akina-se/rebecca-ai/commit/f4ff0006caa6993404a9c0768d5bcec04618d3ed))
+* **dashboard-backend:** resolve compile errors by updating mock data usage and dependencies ([3099d03](https://github.com/akina-se/rebecca-ai/commit/3099d03117d5d83f494367becdd6be2678284bbc))
+* **dashboard-frontend:** align authGuard signature with route/state parameters ([32ecc7c](https://github.com/akina-se/rebecca-ai/commit/32ecc7c318d11c27c6c023ac55e6ea7fb5e1947a))
+* **dashboard-frontend:** bind top posts dynamically, display user handles, and update pagination UI ([a064657](https://github.com/akina-se/rebecca-ai/commit/a064657cd5d2b6124fed98c15830329e53ae944c))
+* **dashboard-frontend:** ensure top users ranking modal data sync and wait in e2e ([7bb03c0](https://github.com/akina-se/rebecca-ai/commit/7bb03c08e1d3e54c30fe6803d46b1a2cf74cb012))
+* **dashboard-frontend:** fix level 2 drawer rendering and format lastUpdated timestamps safely ([fc94825](https://github.com/akina-se/rebecca-ai/commit/fc94825bec6f0787e0418be18d9f84f7dec34491))
+* **dashboard-frontend:** modernize copilot action cards, fix i18n localization and update e2e matchers ([04ac1aa](https://github.com/akina-se/rebecca-ai/commit/04ac1aa499bbbe702ff1525cab1c9f51514cb408))
+* **dashboard-frontend:** provide resilient currentUser resolution for offline and e2e sessions ([9c024e0](https://github.com/akina-se/rebecca-ai/commit/9c024e01f5e004dc694ca96aa7924b46d1125f42))
+* **dashboard-frontend:** standardize UTF-8 Japanese language labels across settings ([c8d940e](https://github.com/akina-se/rebecca-ai/commit/c8d940e258ff8f35a63c263d4126a0dbd3d376b3))
+* **dashboard,assets:** add timeline sorting, lightbox preview, date picking, and isolate asset extension ([70c5709](https://github.com/akina-se/rebecca-ai/commit/70c57099352097a72ff222dd61e59fa13c227a82))
+* **dashboard:** calculate all-time user interactions from conversation_logs and sort by interactions descending ([820df51](https://github.com/akina-se/rebecca-ai/commit/820df51a607972eead494372fe398ab9e9618783))
+* **dashboard:** enhance asset drawer delete/regenerate reliability and E2E timeouts ([b17d7cb](https://github.com/akina-se/rebecca-ai/commit/b17d7cb4aa9d8fbb2f64ff39d5da7a66da4c8a51))
+* **dashboard:** fix action button overflow, sidebar text wrap, and complete Japanese localization across all views ([e727cbb](https://github.com/akina-se/rebecca-ai/commit/e727cbb81d3113846cfa6bd3b1870fb91ef453b7))
+* **dashboard:** implement server-side pagination for modals, strict [@username](https://github.com/username) resolution, and public assets image streaming ([a88625c](https://github.com/akina-se/rebecca-ai/commit/a88625c2b41dbce20ed92a75293c53345646f914))
+* **dashboard:** resolve build errors and import path ([5a8a374](https://github.com/akina-se/rebecca-ai/commit/5a8a374cd1c70b16ba92e6c4c38c37e893db8ab9))
+* **dashboard:** resolve data sync, date picker ranges, assets streaming, and strictly typed user models ([478f39c](https://github.com/akina-se/rebecca-ai/commit/478f39cd58e0ac234081ccec53034a49cf34bd6a))
+* **dashboard:** resolve runtime config via Secret Manager, update favicon, and fix release-please config ([cfd6825](https://github.com/akina-se/rebecca-ai/commit/cfd68250db3faff69e13e39b26a7819b8515d1c6))
+* **dashboard:** resolve runtime config via Secret Manager, update favicon, and fix release-please config ([51d8eab](https://github.com/akina-se/rebecca-ai/commit/51d8eab5a4d522a39ab792c176b32e6d061d2707))
+* **dashboard:** resolve UI issues across dashboard, assets, and user relation pages ([96f7843](https://github.com/akina-se/rebecca-ai/commit/96f7843a4b4a00b2f15565056328cdea938eaabf))
+* **dashboard:** resolve UI layout and interaction issues ([69cd3a1](https://github.com/akina-se/rebecca-ai/commit/69cd3a1b22f395b286c42d96e675e0c691411cac))
+* **dashboard:** resolve UI layout and interaction issues ([69cd3a1](https://github.com/akina-se/rebecca-ai/commit/69cd3a1b22f395b286c42d96e675e0c691411cac))
+* **dashboard:** resolve UI layout and interaction issues ([1cc371d](https://github.com/akina-se/rebecca-ai/commit/1cc371daa57210ccae046f55c7a9057439fcc4f1))
+* **dashboard:** resolve UI layout and interaction issues ([a622c01](https://github.com/akina-se/rebecca-ai/commit/a622c01f5b69a63363b62c5955fd20567afb7f60))
+* **dashboard:** resolve UI layout and interaction issues ([1045cf2](https://github.com/akina-se/rebecca-ai/commit/1045cf21e95866be3035b828457fd8e6daa16870))
+* **dashboard:** trim whitespace from runtime config secrets ([da10a12](https://github.com/akina-se/rebecca-ai/commit/da10a12aa8af789b718017aafce5dddc0653ea69))
+* **dashboard:** update project name to dashboard-frontend in angular.json ([e976552](https://github.com/akina-se/rebecca-ai/commit/e9765527d95c3079808e6bbe7edba7a077e8115a))
+* **db, bff:** resolve user display names and decouple profile models ([2652eb0](https://github.com/akina-se/rebecca-ai/commit/2652eb0b6d94dcdedc30cc9d3792a3d90b50298b))
+* **docs:** resolve Mermaid syntax error in Monorepo Topology diagram ([3558b6c](https://github.com/akina-se/rebecca-ai/commit/3558b6c4e0b1b030929aa5cdfdc91383ea557b79))
+* **e2e:** add graceful fallback for offline auth emulator during CI test execution ([4f2a877](https://github.com/akina-se/rebecca-ai/commit/4f2a877d6a93f78c81c78a0f35cdd7a127957b88))
+* **e2e:** configure explicit ipv4 binding and working directory for playwright webServer ([2297448](https://github.com/akina-se/rebecca-ai/commit/2297448fef5bc02aa41cafff625433e268f7ffa3))
+* enforce 130 character limit for replies and fix test coverage ([a508a68](https://github.com/akina-se/rebecca-ai/commit/a508a68d5c7ef202c2e4babf5bd2353c9f1102d7))
+* enforce 130 character limit for replies and fix test coverage ([6764ccb](https://github.com/akina-se/rebecca-ai/commit/6764ccb02746644e012b303c80fc1b35775eb0ab))
+* **env:** add preflight port check and process cleanup to start-local-env.ps1 ([7b0a570](https://github.com/akina-se/rebecca-ai/commit/7b0a570d85e56117e4753f86480422da3fed3f55))
+* ESLint error in test-qr.ts ([d8aacd0](https://github.com/akina-se/rebecca-ai/commit/d8aacd03e8f478ba5307dc254e6f1927164f1044))
+* ESLint error in test-qr.ts ([b79271c](https://github.com/akina-se/rebecca-ai/commit/b79271c09297eed1bc124341a3fb8ae1d3aceae4))
+* **firebase:** add storage rules config for emulator ([d9c0798](https://github.com/akina-se/rebecca-ai/commit/d9c07981ebcbbc23f47ff63b26b1c9233e3712b6))
+* **firebase:** restore auth and storage emulator configs ([708c7d1](https://github.com/akina-se/rebecca-ai/commit/708c7d1ef5f8be5d4f8c219646672a3414a8f3d0))
+* **frontend:** align authGuard signature and configure eslint argsIgnorePattern for underscore parameters ([afb34a6](https://github.com/akina-se/rebecca-ai/commit/afb34a61b4950606860826c498871a569f36dd85))
+* **frontend:** enforce strict typing and fix component errors ([01572d6](https://github.com/akina-se/rebecca-ai/commit/01572d695d3d6347997e736d5b0af14f87a567c7))
+* **frontend:** resolve CodeQL superfluous arguments and configure ESLint argsIgnorePattern ([#52](https://github.com/akina-se/rebecca-ai/issues/52)) ([53667a6](https://github.com/akina-se/rebecca-ai/commit/53667a6bb8bc53a1779cca5b9fb4dd05f055da6d))
+* **functions:** make functions standalone and add force flag to cloudbuild firebase deploy ([4e376d2](https://github.com/akina-se/rebecca-ai/commit/4e376d237c49e38eda04347736bb8432e1aa01a0))
+* **functions:** make functions standalone and fix cloudbuild firebase deploy ([#56](https://github.com/akina-se/rebecca-ai/issues/56)) ([a1cf6a8](https://github.com/akina-se/rebecca-ai/commit/a1cf6a8911f44890b4e73193940d7c437af5e4d4))
+* **functions:** remove GCIP blocking trigger export for free tier compatibility ([#58](https://github.com/akina-se/rebecca-ai/issues/58)) ([4778995](https://github.com/akina-se/rebecca-ai/commit/477899553c6a54bb6998d39b25a6545e49b355f5))
+* **functions:** remove GCIP blocking trigger export to support standard Firebase Auth free tier ([6d32829](https://github.com/akina-se/rebecca-ai/commit/6d328292339ed3e0efbcafd4cce74b9edd5c7fa4))
+* **functions:** resolve undefined FieldValue error in firestore triggers ([b77f2f5](https://github.com/akina-se/rebecca-ai/commit/b77f2f51435f0d2a90daa5a120a9d7469efece55))
+* integrate tsconfig.build.json into tsconfig.json ([ebd1cb7](https://github.com/akina-se/rebecca-ai/commit/ebd1cb7ccb3fb9d47e5a8041d597119c609314e0))
+* **memory:** remove duplicate layer label prefix and fix cell text wrapping in memory layers table ([e8dd8e8](https://github.com/akina-se/rebecca-ai/commit/e8dd8e8e824b13ca997bd63db85535f4a4e5ec82))
+* **monorepo:** align all frontend and backend repositories with uppercase UserStatus and AssetStatus Enums ([72ba458](https://github.com/akina-se/rebecca-ai/commit/72ba4582fc90a63ebbad36aba0835614fc99adba))
+* **onboarding:** implement Fetch-until-seen and Cloud Scheduler OIDC integration for batch processes ([f4a5a39](https://github.com/akina-se/rebecca-ai/commit/f4a5a399a825a8e38f48e33dd085cf7bc9640885))
+* **onboarding:** implement Fetch-until-seen and Cloud Scheduler OIDC integration for batch processes ([bd3528b](https://github.com/akina-se/rebecca-ai/commit/bd3528ba82de6b00c4546560a6877a2ff9c151f9))
+* **onboarding:** implement Fetch-until-seen and Cloud Scheduler OIDC integration for batch processes ([657195f](https://github.com/akina-se/rebecca-ai/commit/657195f770012e180f7cb14dce49ea944a51bc43))
+* **quality:** resolve strict linter issues, add unit tests, and verify license/secret checks ([c5fa2df](https://github.com/akina-se/rebecca-ai/commit/c5fa2df573294dbf6c7c1ea1b78c9d1c5584dbd3))
+* relax ESLint rules for test files and remove unused imports ([b9e49c8](https://github.com/akina-se/rebecca-ai/commit/b9e49c8d7323a10178c3adce55910910fda53ca1))
+* remove marketing jargon from prompt to preserve character immersion ([b489497](https://github.com/akina-se/rebecca-ai/commit/b4894975a7f042f8d9aebce977a6a35d90c7d71c))
+* remove smoke test and fix rate limit for simulation ([7527f45](https://github.com/akina-se/rebecca-ai/commit/7527f45fe7048477927e9f6bf350980130a88051))
+* resolve CodeQL alerts and test remnants ([473c8bd](https://github.com/akina-se/rebecca-ai/commit/473c8bd05ec590be39433a94d03d06f1a58e837b))
+* resolve CodeQL alerts and test remnants ([4ec599b](https://github.com/akina-se/rebecca-ai/commit/4ec599bac53b6c658f2f6ab23e8c8c30c43e8bd8))
+* resolve CodeQL and Dependabot security alerts ([cb7d111](https://github.com/akina-se/rebecca-ai/commit/cb7d11123142366cbbe80dfba9f0ebfda9f6eae7))
+* resolve CodeQL auth bypass warning and fix test coverage threshold ([7075557](https://github.com/akina-se/rebecca-ai/commit/70755577f205031367a92111cef80a3e1679c3df))
+* resolve CodeQL auth bypass warning and fix test coverage threshold ([0574977](https://github.com/akina-se/rebecca-ai/commit/0574977ab41607073d048212f386b6be3d635928))
+* resolve CodeQL security alerts (ASI and CLI injection) ([664ab21](https://github.com/akina-se/rebecca-ai/commit/664ab2174d78570afee9d430c3062c95ca8d772c))
+* resolve Log Injection alerts and update vulnerable dependencies ([01aad39](https://github.com/akina-se/rebecca-ai/commit/01aad39156d286a8ddb62c8fe3ce95ca71cc0002))
+* resolve numeric user ID automatically for getMentions ([05433d3](https://github.com/akina-se/rebecca-ai/commit/05433d3f60cc6fde0da311d108aadd2c496a3549))
+* resolve undefined authorId in pollMentions ([e451aff](https://github.com/akina-se/rebecca-ai/commit/e451aff0539c8f210cd09c294471d1f8dbc0555d))
+* restore missing types and getDreamingPrompt function ([e54653a](https://github.com/akina-se/rebecca-ai/commit/e54653a286ebdd5596eb00db3ff7c8cbcabaf02f))
+* **script:** resolve powershell quote stripping error in start-process ([e2eb83f](https://github.com/akina-se/rebecca-ai/commit/e2eb83fe96b0747eb3b4c53fe9502c0623c00557))
+* **scripts:** quote schedule string to prevent powershell wildcard expansion ([721782c](https://github.com/akina-se/rebecca-ai/commit/721782cb5d4200973ebce990e70ea4845b823a3c))
+* **scripts:** quote schedule string to prevent powershell wildcard expansion ([9352e3b](https://github.com/akina-se/rebecca-ai/commit/9352e3bbb8fc228287dcb466a59efae859e6a20b))
+* **scripts:** resolve CodeQL security warnings in create-list.ts ([d8a904f](https://github.com/akina-se/rebecca-ai/commit/d8a904ff24c9b75e470bb5e83daea00df789a8fc))
+* **scripts:** resolve CodeQL security warnings in create-list.ts ([2e735d5](https://github.com/akina-se/rebecca-ai/commit/2e735d51897f9fc4cc13bc737b47b5dbde25b6fc))
+* **security:** remove personal email example from admin CLI script ([37792c2](https://github.com/akina-se/rebecca-ai/commit/37792c2368094adb1727a4d5935f50fe237f99ec))
+* **security:** resolve CodeQL alerts for missing rate limits and user-controlled bypass ([d4e1b2b](https://github.com/akina-se/rebecca-ai/commit/d4e1b2b89571f6fd4df5c178ee66ccfbf5af1a66))
+* **security:** resolve CodeQL alerts for missing rate limits and user-controlled bypass ([de33783](https://github.com/akina-se/rebecca-ai/commit/de33783d95f6ff0d884ccdcfd86949b5fd7a23b0))
+* **security:** resolve CodeQL bypass and update config tests ([7dafd10](https://github.com/akina-se/rebecca-ai/commit/7dafd105181ec70a00e12bcd99e3d9f926ae64fb))
+* **security:** resolve CodeQL bypass and update config tests ([86bf18b](https://github.com/akina-se/rebecca-ai/commit/86bf18b047af9bd44118f328c7200f19faa242d2))
+* **security:** resolve CodeQL clear-text logging warning in get-lists.ts ([76610bd](https://github.com/akina-se/rebecca-ai/commit/76610bd7adf5249261095862e60954b247fa233c))
+* **security:** resolve CodeQL clear-text logging warning in get-lists.ts ([477ffa3](https://github.com/akina-se/rebecca-ai/commit/477ffa36c36b5f71e4a2651f603c9061c864af79))
+* **security:** resolve CodeQL path traversal, prompt injection, and log formatting findings ([a63d12e](https://github.com/akina-se/rebecca-ai/commit/a63d12e694c3679418e212065664d7624b021cdf))
+* **security:** resolve CodeQL polynomial regex and bypass alerts ([6928b3f](https://github.com/akina-se/rebecca-ai/commit/6928b3f53e0dddf4f1b4fc2a7ec57b47f0c1b033))
+* **security:** resolve CodeQL polynomial regex and bypass alerts ([9baec71](https://github.com/akina-se/rebecca-ai/commit/9baec718f6797180bc33fda43bea5121ef97fa40))
+* **security:** resolve CodeQL user-controlled bypass in authUtils ([f1ad721](https://github.com/akina-se/rebecca-ai/commit/f1ad7216f2013c0fb2e7ae130bfbfe6afd6fb738))
+* **security:** resolve CodeQL user-controlled bypass in authUtils ([3957c75](https://github.com/akina-se/rebecca-ai/commit/3957c752dcb5b4d65849cb26f290aef6c60c36b4))
+* **security:** trust proxy for express rate limiting on Cloud Run ([f34f7b9](https://github.com/akina-se/rebecca-ai/commit/f34f7b9bf9d2a7b2c827b5eada1fd66dc09d6fdf))
+* **security:** trust proxy for express rate limiting on Cloud Run ([464d2c4](https://github.com/akina-se/rebecca-ai/commit/464d2c4ef88b0b5111bdff9c98bafbe7ba8acc0d))
+* **sidebar:** increase sidebar width to 280px to prevent nav item text overflow ([538ac53](https://github.com/akina-se/rebecca-ai/commit/538ac530a393f6dc89bc857783a5cbacb929983b))
+* skip firestore save on empty tags to allow retry ([a550f6d](https://github.com/akina-se/rebecca-ai/commit/a550f6d67f0f48ebc85a509297c32cc739b5c7f5))
+* standardize colors for asset clock and dashboard flame icons ([7fc66b8](https://github.com/akina-se/rebecca-ai/commit/7fc66b834c51e34fa002ae686b22c012c6dd74f3))
+* strict eslint errors and add Dockerfile ([a4a23b4](https://github.com/akina-se/rebecca-ai/commit/a4a23b445ea1c1bee7bd68d797b6ca1f82fa9164))
+* stricter nsfw block rule and test fixes for language separation ([f7c99ee](https://github.com/akina-se/rebecca-ai/commit/f7c99eeab278e42121afca130f09dce6bc1cce66))
+* **tasks:** properly set service account for OIDC auth in Cloud Tasks ([2dc8124](https://github.com/akina-se/rebecca-ai/commit/2dc8124985243d1171f58256592ae91c9aadb014))
+* **tasks:** properly set service account for OIDC auth in Cloud Tasks ([fe64931](https://github.com/akina-se/rebecca-ai/commit/fe649313290879e4b6fe4c1bc418419bd488bee9))
+* **test:** correct function mock name for image analysis ([ff76962](https://github.com/akina-se/rebecca-ai/commit/ff76962b1267c6fcb48ea9ee3e51de1138ed9a84))
+* **test:** correct function mock name for image analysis ([948d4cf](https://github.com/akina-se/rebecca-ai/commit/948d4cf5ccbb813ec7977b3a6f27390a6204cb5f))
+* **timeline:** resolve post detail mediaUrls via backend streaming API and remove mock image fallback ([492a91e](https://github.com/akina-se/rebecca-ai/commit/492a91eec05ed5cd503123a2817a8f2ab0aef9d6))
+* timezone issues in tests and exclude evals from CI ([3611f99](https://github.com/akina-se/rebecca-ai/commit/3611f99712c9f71ed0ab15ef6f26b949d765df1b))
+* TS compilation error due to unknown type casting ([47ab2a0](https://github.com/akina-se/rebecca-ai/commit/47ab2a0a91299e87ba711875d898ac9e0236d8f6))
+* TS compilation error due to unknown type casting ([569ce7b](https://github.com/akina-se/rebecca-ai/commit/569ce7bb4aeaf60a00603ce0e9c48509a1b6e300))
+* **types:** add optional timestamp to ConversationLogEntry to fix build ([4a44d02](https://github.com/akina-se/rebecca-ai/commit/4a44d020140f6ece076f3740a7462471166d9f48))
+* **types:** add optional timestamp to ConversationLogEntry to fix build ([db0e87a](https://github.com/akina-se/rebecca-ai/commit/db0e87a8264f59982a326fa69526c10b84854c85))
+* **types:** enforce strict types for xApi responses and resolve state leak in tests ([b6c7ef4](https://github.com/akina-se/rebecca-ai/commit/b6c7ef4ef17f95888e1596075a29a0635dd94cfb))
+* **types:** enforce strict types for xApi responses and resolve state leak in tests ([827eef2](https://github.com/akina-se/rebecca-ai/commit/827eef22e80ea803e68d895cfe73c1d9472982ea))
+* **types:** update XApiTweet to correctly map SDK camelCase properties ([ac3f986](https://github.com/akina-se/rebecca-ai/commit/ac3f9866d35e93b1368dd303d48792828b954bfc))
+* **types:** update XApiTweet to correctly map SDK camelCase properties ([7c135b6](https://github.com/akina-se/rebecca-ai/commit/7c135b61b89e0c47e2c1ae7adb4d6754c0d2be0c))
+* update buildSystemPrompt signature in eval tests ([474dcfd](https://github.com/akina-se/rebecca-ai/commit/474dcfdabc18c68c74b99c1b683212ea6079453f))
+* update default gemini models to available 3.x series ([9a40cc3](https://github.com/akina-se/rebecca-ai/commit/9a40cc316f549776b662988e8095b017ca4608ef))
+* update gemini tests to match generateNewsPost signature ([a2a67d1](https://github.com/akina-se/rebecca-ai/commit/a2a67d116dfaafe58d31af11281558271d94e959))
+* update test to match new buildSystemPrompt signature ([c789fab](https://github.com/akina-se/rebecca-ai/commit/c789faba7159d7a87b4cd65ef64d1859f697ca6e))
+* use config for storage bucket and update .env.example ([e54252e](https://github.com/akina-se/rebecca-ai/commit/e54252e0341e85e56f1910d4d5b8d824ed7013b6))
+* use correct favicon.png and remove rejected favicon.ico ([0a3838c](https://github.com/akina-se/rebecca-ai/commit/0a3838c6d14ada235b335ffb9e226e0af08523d6))
+* use inline replace for log injection to satisfy CodeQL taint tracking ([76dd71d](https://github.com/akina-se/rebecca-ai/commit/76dd71d57921d149106dd1d6cfc8bfdee12d0006))
+* use tsconfig.build.json to output directly to dist ([de03ebb](https://github.com/akina-se/rebecca-ai/commit/de03ebb2629f04e26ca1604b073f28467d35b7c7))
+
+
+### Performance Improvements
+
+* **assets:** add in-memory LRU cache and optimize GCS thumbnail streaming ([26728ef](https://github.com/akina-se/rebecca-ai/commit/26728efc2e591afb9fed81967d0708e0d3d82585))
+* enforce strict language separation and avoid conversational loops ([3ee37fd](https://github.com/akina-se/rebecca-ai/commit/3ee37fdeb2dd2edbf2d9fe18fa2c20db7e1a1cde))
+* refine system prompt constraints and output tokens limit ([16008a8](https://github.com/akina-se/rebecca-ai/commit/16008a8824e53ef202346bc87221b61043977a76))
+</details>
+
+---
+This PR was generated with [Release Please](https://github.com/googleapis/release-please). See [documentation](https://github.com/googleapis/release-please#release-please).
