@@ -66,7 +66,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       repo = new UsersRepository(mock.firestore);
     });
 
-    it('resolveUserName should test all name resolution branches', async () => {
+    it('getAll should map clean username and name without fake fallbacks', async () => {
       const mockDocs = [
         {
           id: 'user_one',
@@ -92,20 +92,21 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         docs: mockDocs
       });
 
-      const res = await repo.getAll({ sortBy: 'handle', sortOrder: 'asc' });
-      expect(res.data[0].name).toBe('Direct Name');
-      expect(res.data[0].handle).toBe('@user_one_handle');
-      expect(res.data[1].name).toBe('@user_three');
-      expect(res.data[1].handle).toBe('@user_three');
-      expect(res.data[2].name).toBe('@user_two_handle');
-      expect(res.data[2].handle).toBe('@user_two_handle');
+      const res = await repo.getAll({ sortBy: 'username', sortOrder: 'asc' });
+      expect(res.data[0].name).toBe('');
+      expect(res.data[0].username).toBe('');
+      expect(res.data[1].name).toBe('Direct Name');
+      expect(res.data[1].username).toBe('user_one_handle');
+      expect(res.data[2].name).toBe('');
+      expect(res.data[2].username).toBe('user_two_handle');
     });
 
-    it('getAll should test sorting by handle (desc/asc), interactions, lastSeen, and yearly period filter', async () => {
+    it('getAll should test sorting by username (desc/asc), interactions, lastSeen, and yearly period filter', async () => {
       const mockDocs = [
         {
           id: 'alice_z',
           data: () => ({
+            username: 'alice_z',
             lastSeen: '2026-08-10T00:00:00Z',
             status: 'MUTED',
             coreProfile: { important_memories: ['m1', 'm2'] },
@@ -117,6 +118,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         {
           id: 'bob_a',
           data: () => ({
+            username: 'bob_a',
             lastSeen: '2026-08-15T00:00:00Z',
             status: 'BLOCKED',
             coreProfile: '{}',
@@ -142,8 +144,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         })
       });
 
-      // Test yearly period and handle desc sort
-      const res = await repo.getAll({ period: 'yearly', date: '2026', sortBy: 'handle', sortOrder: 'desc' });
+      // Test yearly period and username desc sort
+      const res = await repo.getAll({ period: 'yearly', date: '2026', sortBy: 'username', sortOrder: 'desc' });
       expect(res.data[0].id).toBe('bob_a');
       expect(res.data[1].id).toBe('alice_z');
       expect(res.data[0].status).toBe(UserStatus.BLOCKED);
@@ -815,6 +817,10 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const cachedThumbRes = await assetsUseCase.getAssetBinary('cached_1', 'thumbnail');
       expect(cachedThumbRes?.contentType).toBe('image/webp');
       expect(cachedThumbRes?.buffer.toString()).toBe('cached-thumb');
+
+      // In-memory cache hit on second call
+      const memoryThumbRes = await assetsUseCase.getAssetBinary('cached_1', 'thumbnail');
+      expect(memoryThumbRes?.contentType).toBe('image/webp');
 
       // C. Doc with gs:// url (PNG)
       assetsRepo.getRawDoc = jest.fn().mockResolvedValueOnce({

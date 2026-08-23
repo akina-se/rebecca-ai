@@ -58,7 +58,6 @@ export interface FirestoreUser {
   id?: string;
   name?: string;
   username?: string;
-  handle?: string;
   avatarUrl?: string;
   coreProfile: UserCoreProfile;
   working_memory?: ConversationLogEntry[];
@@ -67,7 +66,6 @@ export interface FirestoreUser {
   lastReplyDate?: string;
   dailyReplyCount?: number;
   status?: UserStatus;
-  affinityScore?: number;
   firstSeen?: string;
   lastSeen?: string;
 }
@@ -340,9 +338,8 @@ export interface PostDetail {
 }
 
 export interface UserLeaderboard {
-  userId: string;
+  id: string;
   username: string;
-  handle: string;
   name: string;
   interactions: number;
 }
@@ -355,11 +352,9 @@ export interface ChatMessage {
 
 export interface UserDetail {
   id: string;
-  handle: string;
   username: string;
   name: string;
   interactions: number;
-  affinityScore: string;
   firstSeen: string;
   lastSeen: string;
   coreProfile: string; // JSON string

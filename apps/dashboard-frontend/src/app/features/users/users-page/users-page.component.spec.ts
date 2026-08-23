@@ -31,7 +31,7 @@ describe('UsersPageComponent', () => {
   it('should create users page component and load users on init', () => {
     usersRepoSpy.getAll.and.returnValue(of({
       data: [
-        { handle: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE }
+        { id: 'u_alice', username: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
       ],
       meta: { totalItems: 1, totalPages: 1 }
     }));
@@ -40,7 +40,7 @@ describe('UsersPageComponent', () => {
 
     expect(usersRepoSpy.getAll).toHaveBeenCalled();
     expect(component.users.length).toBe(1);
-    expect(component.users[0].handle).toBe('alice');
+    expect(component.users[0].username).toBe('alice');
     expect(component.isLoading).toBeFalse();
   });
 
@@ -62,15 +62,15 @@ describe('UsersPageComponent', () => {
     component.toggleUserSort('interactions');
     expect(component.userSortOrder).toBe('asc');
 
-    component.toggleUserSort('handle');
-    expect(component.userSortBy).toBe('handle');
+    component.toggleUserSort('username');
+    expect(component.userSortBy).toBe('username');
     expect(component.userSortOrder).toBe('desc');
   });
 
   it('should toggle select all users and handle individual selection changes', () => {
     component.users = [
-      { handle: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any,
-      { handle: 'bob', interactions: 5, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
+      { id: 'alice', username: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any,
+      { id: 'bob', username: 'bob', interactions: 5, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
     ];
 
     component.toggleSelectAll();

@@ -16,11 +16,9 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
 
   const mockUserDetail: UserDetail = {
     id: 'user_123',
-    handle: 'alice_gal',
     username: 'alice_gal',
     name: 'Alice',
     status: UserStatus.ACTIVE,
-    affinityScore: '92',
     interactions: 140,
     firstSeen: '2026-01-01',
     lastSeen: '2026-07-22',

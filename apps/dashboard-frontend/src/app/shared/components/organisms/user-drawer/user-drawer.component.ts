@@ -76,7 +76,7 @@ export class UserDrawerComponent implements OnChanges {
         this.contextService.setFocusedEntity({
           type: 'user',
           id: u.id,
-          label: u.handle,
+          label: u.username ? `@${u.username}` : (u.name || u.id),
           details: { interactions: u.interactions, status: u.status, firstSeen: u.firstSeen, lastSeen: u.lastSeen }
         });
         try {
@@ -171,7 +171,7 @@ export class UserDrawerComponent implements OnChanges {
    */
   onViewOnX(): void {
     if (!this.user) return;
-    const username = this.user.username ? this.user.username.replace(/^@/, '').trim() : this.user.handle.replace(/^@/, '').trim();
+    const username = (this.user.username || this.user.id).replace(/^@/, '').trim();
     if (!username) return;
     const url = `https://x.com/${encodeURIComponent(username)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
