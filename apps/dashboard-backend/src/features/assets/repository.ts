@@ -62,9 +62,9 @@ export class AssetsRepository {
     }
 
     let url = typeof data.url === 'string' ? data.url : '';
-    // Always route through backend streaming API endpoint unless it is an inline data:image URI
-    // Direct GCS URLs (gs:// or https://storage.googleapis.com/...) are private and will return 403 Forbidden to the browser
-    if (!url.startsWith('data:image/')) {
+    // If stored in internal private GCS (gs://), route through backend streaming proxy.
+    // If external public CDN/HTTP or inline data URI, preserve and return the URL directly.
+    if (!url || url.startsWith('gs://') || url.includes('storage.googleapis.com/rebecca-ai-gal-images')) {
       url = `/api/v1/assets/${id}/image`;
     }
 
