@@ -301,7 +301,7 @@ const saveRawConversationLog = async (userId: string, userText: string, aiText: 
   const logRef = db.conversationLogs.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setDate(expireAt.getDate() + 30);
+  expireAt.setFullYear(expireAt.getFullYear() + 5);
 
   const log: RawConversationLog = {
     userId,
@@ -404,7 +404,7 @@ const saveTimelinePost = async (
   const ref = db.timelineHistory.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setDate(expireAt.getDate() + 30);
+  expireAt.setFullYear(expireAt.getFullYear() + 5);
 
   const mediaList = options?.mediaUrls || [];
   await ref.set({
@@ -438,7 +438,14 @@ const getRecentTimelinePosts = async (limit = 3): Promise<string[]> => {
   const posts: string[] = [];
   snapshot.forEach((doc) => {
     const data = doc.data();
-    if (data?.text) posts.push(data.text);
+    if (data?.text) {
+      const dateStr = data.timestamp
+        ? new Date(data.timestamp).toLocaleDateString('ja-JP', {
+            month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo'
+          })
+        : '';
+      posts.push(dateStr ? `[${dateStr}] ${data.text}` : data.text);
+    }
   });
   return posts.reverse();
 };
@@ -605,19 +612,24 @@ const getImageByHash = async (hash: string): Promise<ImageDocWithId | null> => {
 
 /**
  * Performs a vector search across the images collection and returns the best
- * available image that is past its cooldown period.
+ * available image that meets the similarity threshold and is past its cooldown period.
  *
  * @param queryVector - Query embedding for semantic image matching.
+ * @param similarityThreshold - Minimum cosine similarity required (default: from config).
  * @returns A randomly-selected `ImageDocWithId` from available matches, or `null`.
  */
-const findImageByVector = async (queryVector: number[]): Promise<ImageDocWithId | null> => {
+const findImageByVector = async (
+  queryVector: number[],
+  similarityThreshold = config.images.similarityThreshold
+): Promise<ImageDocWithId | null> => {
   try {
     const snapshot = await firestore
       .collection(COLLECTIONS.IMAGES)
       .findNearest('embedding', FieldValue.vector(queryVector), {
         limit: 10,
         distanceMeasure: 'COSINE',
-      })
+        distanceResultField: 'vectorDistance',
+      } as unknown as { limit: number; distanceMeasure: 'COSINE'; distanceResultField?: string })
       .get();
 
     if (snapshot.empty) return null;
@@ -627,7 +639,14 @@ const findImageByVector = async (queryVector: number[]): Promise<ImageDocWithId 
     const availableImages: ImageDocWithId[] = [];
 
     for (const doc of snapshot.docs) {
-      const data = doc.data() as ImageDoc;
+      const data = doc.data() as ImageDoc & { vectorDistance?: number };
+      const vectorDistance = typeof data.vectorDistance === 'number' ? data.vectorDistance : 0;
+      const similarity = 1 - vectorDistance;
+
+      if (similarity < similarityThreshold) {
+        continue;
+      }
+
       // `lastUsedAt` is stored as a Firestore Timestamp on disk but arrives
       // as a raw DocumentData snapshot here (bypassing converter). We handle both.
       const rawLastUsed = data.lastUsedAt as unknown;

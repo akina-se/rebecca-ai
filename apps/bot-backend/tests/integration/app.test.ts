@@ -37,6 +37,8 @@ jest.mock('../../src/services/firestore', () => ({
 
 jest.mock('../../src/services/gemini', () => ({
     generateReply: jest.fn().mockResolvedValue('Mock AI Reply'),
+    generateStructuredReply: jest.fn().mockResolvedValue({ thought: '内省モック', reply: 'Mock AI Reply' }),
+    verifyImageRelevance: jest.fn().mockResolvedValue(true),
     generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
     detectLanguage: jest.fn().mockResolvedValue('ja'),
@@ -135,7 +137,7 @@ describe('Integration Tests', () => {
             // Check if user was fetched
             expect(firestore.getUserDoc).toHaveBeenCalledWith('user_1');
             // Check if reply was generated
-            expect(gemini.generateReply).toHaveBeenCalled();
+            expect(gemini.generateStructuredReply).toHaveBeenCalled();
             // Check if reply was posted
             expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');
             // Check if memory was appended
@@ -157,9 +159,9 @@ describe('Integration Tests', () => {
             expect(response.status).toBe(200);
             
             // Check if reply was generated
-            expect(gemini.generateReply).toHaveBeenCalled();
+            expect(gemini.generateStructuredReply).toHaveBeenCalled();
             
-            const generateReplyCalls = (gemini.generateReply as jest.Mock).mock.calls;
+            const generateReplyCalls = (gemini.generateStructuredReply as jest.Mock).mock.calls;
             const lastCall = generateReplyCalls[generateReplyCalls.length - 1];
             expect(lastCall[0]).toContain('developed by Gemitech'); // BASE_SYSTEM_PROMPT_EN starts or contains this
 
@@ -192,7 +194,7 @@ describe('Integration Tests', () => {
             
             global.fetch = originalFetch; // Restore fetch
             expect(response.status).toBe(200);
-            expect(gemini.generateReply).toHaveBeenCalled();
+            expect(gemini.generateStructuredReply).toHaveBeenCalled();
         });
 
         it('should handle errors when analyzing user profile gracefully', async () => {
@@ -204,7 +206,7 @@ describe('Integration Tests', () => {
             const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
             
             expect(response.status).toBe(200);
-            expect(gemini.generateReply).toHaveBeenCalled(); // Should continue processing
+            expect(gemini.generateStructuredReply).toHaveBeenCalled(); // Should continue processing
         });
 
         it('should block unauthorized access to worker', async () => {

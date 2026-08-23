@@ -23,6 +23,8 @@ export interface UserCoreProfile {
 export interface ConversationLogEntry {
   role: 'user' | 'model';
   content: string;
+  /** Inner thought of the persona during reply generation */
+  thought?: string;
   /** ISO 8601 datetime string */
   timestamp?: string;
 }

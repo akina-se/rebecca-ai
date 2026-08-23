@@ -458,6 +458,7 @@ describe('Firestore Service Unit Tests', () => {
             id: 'img1',
             data: () => ({
               filename: 'test.png',
+              vectorDistance: 0.1, // similarity = 0.9 >= 0.75
               lastUsedAt: null,
             }),
           },
@@ -467,6 +468,24 @@ describe('Firestore Service Unit Tests', () => {
       const img = await firestoreService.findImageByVector([0.1, 0.2]);
       expect(img).toBeDefined();
       expect(img?.id).toBe('img1');
+
+      // Test below threshold
+      mockQueryGet.mockResolvedValueOnce({
+        empty: false,
+        size: 1,
+        docs: [
+          {
+            id: 'img_low',
+            data: () => ({
+              filename: 'low.png',
+              vectorDistance: 0.4, // similarity = 0.6 < 0.75
+              lastUsedAt: null,
+            }),
+          },
+        ],
+      });
+      const lowImg = await firestoreService.findImageByVector([0.1, 0.2]);
+      expect(lowImg).toBeNull();
 
       await firestoreService.updateImageLastUsed('img1');
       expect(mockDocSet).toHaveBeenCalled();

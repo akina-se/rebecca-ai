@@ -42,8 +42,11 @@ test.describe('Memory Features E2E Tests', () => {
     await expect(textarea).toBeVisible({ timeout: 10000 });
     await expect(textarea).toHaveAttribute('readonly', '');
     const promptValue = await textarea.inputValue();
-    expect(promptValue.length).toBeGreaterThan(10);
+    expect(promptValue.length).toBeGreaterThan(100);
     expect(promptValue).not.toContain('Loading...');
+    expect(promptValue).toContain('ペルソナマスターデータ');
+    expect(promptValue).toContain('#1');
+    expect(promptValue).toContain('#120');
 
     // Read-only indicator
     await expect(drawer.locator('app-memory-drawer')).toContainText(/Hardcoded in source code \(Read-only\)|読み取り専用/);

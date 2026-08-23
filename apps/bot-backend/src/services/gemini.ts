@@ -8,6 +8,7 @@ import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
 import { fetchYahooNewsHeadlines } from '../utils/newsFetcher';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
+import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 
 /**
  * Global Gemini API client instance.
@@ -91,11 +92,19 @@ const generateReply = async (systemInstruction: string, history: ConversationLog
                     contents: contents,
                     config: baseConfig
                 });
-                return finalResponse.text;
+                const finalText = finalResponse.text?.trim();
+                if (!finalText) {
+                    throw new Error('Gemini API returned empty response after function execution.');
+                }
+                return finalText;
             }
         }
 
-        return response.text || '';
+        const replyText = response.text?.trim();
+        if (!replyText) {
+            throw new Error('Gemini API returned empty response or content was filtered.');
+        }
+        return replyText;
     } catch (error) {
         console.error('Error generating reply with Gemini:', error);
         throw error;
@@ -255,7 +264,11 @@ const generateTimelineSummary = async (prompt: string | string[], previousSummar
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
         const response = await ai.models.generateContent({
             model: config.gemini.model,
-            contents: contentStr
+            contents: contentStr,
+            config: {
+                systemInstruction: 'あなたはAIキャラクター「レベッカ」の長期記憶管理システムです。与えられたレベッカ自身のツイート履歴と過去の要約を元に、レベッカが最近どんな話題・文脈・ムードでツイートしていたかを400文字以内で要約してください。投稿の傾向・繰り返し取り上げるテーマ・話題の変化なども含めて記述してください。箇条書きや記号は使わず、自然な日本語の文章で出力してください。',
+                maxOutputTokens: 400
+            }
         });
         return response.text?.trim() || previousSummary || "";
     } catch (e) {
@@ -280,7 +293,8 @@ const generateEmbedding = async (text: string): Promise<number[]> => {
                 outputDimensionality: 768
             }
         });
-        return response.embeddings[0].values;
+        const values = response.embeddings?.[0]?.values;
+        return values || [];
     } catch (e) {
         console.error('Error generating embedding:', e);
         return [];
@@ -389,8 +403,147 @@ const inferImageSearchQuery = async (prompt: string): Promise<string | null> => 
     }
 };
 
+/**
+ * Verifies whether a candidate image is contextually relevant to the generated post text (LLM Re-ranking).
+ *
+ * @param imageCaption - The description/caption of the image candidate.
+ * @param postText - The generated post text to be published.
+ * @returns A promise resolving to true if contextually aligned, false otherwise.
+ */
+const verifyImageRelevance = async (imageCaption: string, postText: string): Promise<boolean> => {
+    if (!ai || !imageCaption || !postText) return false;
+    try {
+        const prompt = `あなたはSNS投稿と添付画像の文脈整合性を判定する厳格なモデレーターAIです。
+以下の「投稿テキスト」と「画像キャプション」を比較し、この投稿にこの画像を添付することが文脈上自然かつ適切かどうかを判定してください。
+無関係な画像（例: ニュースの内容と全く関係のない日常風景、料理、キャラ画像など）は絶対に除外（false）してください。
+
+【投稿テキスト】
+${postText}
+
+【画像キャプション】
+${imageCaption}
+
+出力はJSON形式で、以下のスキーマに従ってください：
+{
+  "relevant": true または false,
+  "reason": "判定理由（短文）"
+}`;
+
+        const response = await ai.models.generateContent({
+            model: config.gemini.judgeModel || config.gemini.model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json"
+            }
+        });
+
+        const text = response.text?.trim() || "{}";
+        const cleaned = text.startsWith('```') ? text.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '') : text;
+        const parsed = JSON.parse(cleaned);
+        return Boolean(parsed.relevant);
+    } catch (e) {
+        console.error("Error verifying image relevance:", e);
+        return false;
+    }
+};
+
+/**
+ * Generates a structured conversational reply with internal monologue using Gemini API Structured Outputs.
+ *
+ * @param systemInstruction - The system persona and behavioral guidelines.
+ * @param history - Conversation history log entries.
+ * @param userInput - The most recent text input provided by the user.
+ * @returns A promise resolving to StructuredPersonaResponse ({ thought, reply }).
+ */
+const generateStructuredReply = async (
+    systemInstruction: string,
+    history: ConversationLogEntry[],
+    userInput: string
+): Promise<StructuredPersonaResponse> => {
+    if (!ai) {
+        console.warn('Gemini API client not initialized. Mocking structured reply.');
+        return { thought: 'モック内省', reply: 'Mock AI response' };
+    }
+
+    try {
+        const contents: Content[] = [];
+        for (const msg of history) {
+            contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] });
+        }
+        contents.push({ role: 'user', parts: [{ text: userInput }] });
+
+        const baseConfig = {
+            systemInstruction: systemInstruction,
+            maxOutputTokens: 180,
+            responseMimeType: 'application/json',
+            responseSchema: PERSONA_RESPONSE_SCHEMA,
+            safetySettings: [] as never[]
+        };
+
+        const response = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: contents,
+            config: {
+                ...baseConfig,
+                tools: [{
+                    functionDeclarations: [
+                        {
+                            name: "search_news",
+                            description: "Fetches the latest news headlines. ONLY use when the user explicitly asks about current events, news, or today's topics. NEVER use for casual greetings or general chat."
+                        }
+                    ]
+                }]
+            }
+        });
+
+        if (response.functionCalls && response.functionCalls.length > 0) {
+            const call = response.functionCalls[0];
+            if (call.name === 'search_news') {
+                const headlines = await fetchYahooNewsHeadlines();
+                const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
+
+                if (response.candidates && response.candidates[0].content) {
+                    contents.push(response.candidates[0].content);
+                }
+
+                contents.push({
+                    role: 'user',
+                    parts: [{
+                        functionResponse: {
+                            name: call.name,
+                            response: { result: newsResult }
+                        }
+                    }]
+                });
+
+                const finalResponse = await ai.models.generateContent({
+                    model: config.gemini.model,
+                    contents: contents,
+                    config: baseConfig
+                });
+                const finalText = finalResponse.text?.trim();
+                if (!finalText) {
+                    throw new Error('Gemini API returned empty structured response after function execution.');
+                }
+                return parsePersonaResponse(finalText);
+            }
+        }
+
+        const rawText = response.text?.trim();
+        if (!rawText) {
+            throw new Error('Gemini API returned empty structured response or content was filtered.');
+        }
+        return parsePersonaResponse(rawText);
+    } catch (error) {
+        console.error('Error generating structured reply with Gemini:', error);
+        throw error;
+    }
+};
+
 export { 
     generateReply,
+    generateStructuredReply,
+    verifyImageRelevance,
     generateDreaming,
     generateEvolutionPrompt,
     auditEvolutionPrompt,

@@ -3,6 +3,8 @@ import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
 import { getWorkingMemory, saveInteraction } from '../../core/memory';
 import { buildSystemPrompt } from '../../core/contextInjector';
 import { downloadImage } from '../../utils/image';
+import { buildPersonaFewShotPrompt, findTopPersonaPatterns } from '@rebecca/persona';
+import { getPersonaPatternEmbeddings } from '../../core/personaEmbeddingCache';
 
 const sanitizeForLog = (value: unknown): string => {
     return String(value).replace(/[\r\n\u2028\u2029]/g, '');
@@ -138,10 +140,25 @@ ${processedText}
         const detectPrompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
 テキスト: "${processedText}"`;
         const lang = await deps.gemini.detectLanguage(detectPrompt);
-        const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang);
+        // Dynamic Few-Shot Persona Anchors
+        let personaFewShotPrompt = '';
+        try {
+            const patternVectors = getPersonaPatternEmbeddings();
+            const userVector = await deps.gemini.generateEmbedding(processedText);
+            const topPatterns = findTopPersonaPatterns(userVector, patternVectors, 3);
+            personaFewShotPrompt = buildPersonaFewShotPrompt(topPatterns, lang);
+        } catch (e) {
+            console.warn('Failed to generate dynamic few-shot persona anchors:', e);
+        }
 
-        // Generate the AI response based on the contextualized prompt
-        let aiResponseText = await deps.gemini.generateReply(systemPrompt, workingMemory, processedText);
+        const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang, personaFewShotPrompt);
+
+        // Generate the structured AI response (thought + reply) based on the contextualized prompt
+        const structuredReply = await deps.gemini.generateStructuredReply(systemPrompt, workingMemory, processedText);
+        let aiResponseText = structuredReply.reply;
+        const internalThought = structuredReply.thought;
+
+        console.log(`Generated AI Thought for tweet ${sanitizeForLog(tweetId)}: ${sanitizeForLog(internalThought)}`);
         console.log(`Generated AI Reply for tweet ${sanitizeForLog(tweetId)}: ${sanitizeForLog(aiResponseText)}`);
 
         // Fallback: X API limits Japanese text effectively to 140 characters.
@@ -150,14 +167,14 @@ ${processedText}
             console.log(`Truncated AI Reply to 138 characters: ${sanitizeForLog(aiResponseText)}`);
         }
 
-        // Publish the generated reply back to the user on X
+        // Publish ONLY the reply back to the user on X (thought is private)
         await deps.xApi.replyToMention(tweetId, aiResponseText);
         
         // Record the mention as processed to ensure idempotency
         await deps.firestore.markMentionProcessed(tweetId);
 
-        // Persist the conversation history in the user's episodic buffer
-        await saveInteraction(this.deps, authorId, processedText, aiResponseText);
+        // Persist the conversation history with thought in the user's episodic buffer
+        await saveInteraction(this.deps, authorId, processedText, aiResponseText, internalThought);
 
         // Store a vectorized representation of the interaction for long-term retrieval
         const combinedText = `User: ${processedText}\nRebecca: ${aiResponseText}`;

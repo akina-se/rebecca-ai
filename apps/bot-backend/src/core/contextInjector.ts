@@ -23,9 +23,14 @@ const buildSystemPrompt = (
     extendedPrompt = '', 
     timelineSummary = '', 
     ragMemories: string[] = [], 
-    lang: Language = 'ja'
+    lang: Language = 'ja',
+    personaFewShotPrompt = ''
 ): string => {
     let prompt = getBasePrompt(promptContext, lang);
+
+    if (personaFewShotPrompt) {
+        prompt += `\n\n${personaFewShotPrompt}`;
+    }
 
     if (userData?.coreProfile) {
         prompt += lang === 'en' 
