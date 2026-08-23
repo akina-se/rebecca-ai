@@ -397,6 +397,7 @@ export interface Asset {
   usedCount: number;
   status: AssetStatus;
   url?: string;
+  thumbnailUrl?: string;
   lastUsedAt?: string | null;
 }
 

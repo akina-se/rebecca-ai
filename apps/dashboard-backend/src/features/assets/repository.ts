@@ -62,8 +62,12 @@ export class AssetsRepository {
     }
 
     let url = typeof data.url === 'string' ? data.url : '';
+    let thumbnailUrl: string | undefined;
     if (!url || url.startsWith('gs://')) {
       url = `/api/v1/assets/${id}/image`;
+      thumbnailUrl = `/api/v1/assets/${id}/image?size=thumbnail`;
+    } else {
+      thumbnailUrl = url;
     }
 
     return {
@@ -73,6 +77,7 @@ export class AssetsRepository {
       usedCount: typeof data.useCount === 'number' ? data.useCount : (typeof data.usedCount === 'number' ? data.usedCount : 0),
       status,
       url,
+      thumbnailUrl,
       lastUsedAt: typeof data.lastUsedAt === 'string' ? data.lastUsedAt : null
     };
   }

@@ -68,8 +68,8 @@
                     <span class="checkmark" style="margin: 0;"></span>
                 </label>
             </div>
-            <div class="asset-thumb" [style.background-image]="asset.url ? 'url(' + asset.url + ')' : 'none'" [style.background-size]="'cover'">
-                <span class="material-icons" style="font-size: 3rem; opacity: 0.5;" *ngIf="!asset.url">image</span>
+            <div class="asset-thumb" [style.background-image]="(asset.thumbnailUrl || asset.url) ? 'url(' + (asset.thumbnailUrl || asset.url) + ')' : 'none'" [style.background-size]="'cover'">
+                <span class="material-icons" style="font-size: 3rem; opacity: 0.5;" *ngIf="!asset.url && !asset.thumbnailUrl">image</span>
             </div>
             <div class="asset-info">
                 <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="asset.filename">{{ asset.filename }}</div>

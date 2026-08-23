@@ -65,7 +65,9 @@ export class AssetsController {
   async getImage(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const binary = await this.useCase.getAssetBinary(id as string);
+      const sizeParam = req.query.size;
+      const size: 'full' | 'thumbnail' = (sizeParam === 'thumbnail' || sizeParam === 'thumb') ? 'thumbnail' : 'full';
+      const binary = await this.useCase.getAssetBinary(id as string, size);
       if (!binary) {
         res.status(404).send('Image not found');
         return;

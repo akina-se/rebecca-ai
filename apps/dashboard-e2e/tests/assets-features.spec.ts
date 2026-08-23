@@ -199,16 +199,16 @@ test.describe('Assets Features E2E Tests', () => {
     await expect(successToast).toBeVisible({ timeout: 15000 });
   });
 
-  test('Scenario G: Image Streaming - asset card images should route to backend API and not direct GCS', async ({ page }) => {
+  test('Scenario G: Dual-Resolution Image Streaming - asset card should use thumbnail API and drawer should use full-res API', async ({ page }) => {
     const firstCard = page.locator('.asset-card').first();
     await expect(firstCard).toBeVisible();
 
-    // Verify background-image routes to /api/v1/assets/ or /api/v1/images/ and never storage.googleapis.com
+    // Verify background-image uses compressed thumbnail API
     const thumb = firstCard.locator('.asset-thumb');
     const bgStyle = (await thumb.getAttribute('style')) || '';
     if (bgStyle.includes('url(')) {
       expect(bgStyle).not.toContain('storage.googleapis.com');
-      expect(bgStyle).toMatch(/\/api\/v1\/(assets|images)\//);
+      expect(bgStyle).toContain('size=thumbnail');
     }
 
     // Click card to open drawer
@@ -216,11 +216,12 @@ test.describe('Assets Features E2E Tests', () => {
     const drawer = page.locator('.right-drawer.glass-panel');
     await expect(drawer).toBeVisible();
 
-    // Verify preview image src is normalized to backend API
+    // Verify drawer preview loads full-resolution original image (no size=thumbnail)
     const previewImg = drawer.locator('app-asset-drawer .preview-img');
     await expect(previewImg).toBeVisible();
     const imgSrc = (await previewImg.getAttribute('src')) || '';
     expect(imgSrc).not.toContain('storage.googleapis.com');
+    expect(imgSrc).not.toContain('size=thumbnail');
     expect(imgSrc).toMatch(/\/api\/v1\/(assets|images)\//);
   });
 });

@@ -802,7 +802,21 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(await assetsUseCase.getAssetBinary('../secret.png')).toBeNull();
       expect(await assetsUseCase.getAssetBinary('')).toBeNull();
 
-      // B. Doc with gs:// url (PNG)
+      // B. Cached thumbnail hit
+      (assetsUseCase as any).storage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue({
+            exists: jest.fn().mockResolvedValue([true]),
+            download: jest.fn().mockResolvedValue([Buffer.from('cached-thumb')]),
+            save: jest.fn().mockResolvedValue([])
+          })
+        })
+      };
+      const cachedThumbRes = await assetsUseCase.getAssetBinary('cached_1', 'thumbnail');
+      expect(cachedThumbRes?.contentType).toBe('image/webp');
+      expect(cachedThumbRes?.buffer.toString()).toBe('cached-thumb');
+
+      // C. Doc with gs:// url (PNG)
       assetsRepo.getRawDoc = jest.fn().mockResolvedValueOnce({
         url: 'gs://rebecca-ai-gal-images/images/valid.png'
       });
@@ -819,7 +833,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const gsRes = await assetsUseCase.getAssetBinary('valid.png');
       expect(gsRes?.contentType).toBe('image/png');
 
-      // C. Conventional path exists (JPEG)
+      // D. Conventional path exists (JPEG)
       assetsRepo.getRawDoc = jest.fn().mockResolvedValueOnce(null);
       (assetsUseCase as any).storage = {
         bucket: jest.fn().mockReturnValue({
@@ -834,7 +848,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const convRes = await assetsUseCase.getAssetBinary('conv_test');
       expect(convRes?.contentType).toBe('image/jpeg');
 
-      // D. Prefix search in media_assets
+      // E. Prefix search in media_assets
       assetsRepo.getRawDoc = jest.fn().mockResolvedValueOnce(null);
       (assetsUseCase as any).storage = {
         bucket: jest.fn().mockReturnValue({
@@ -849,7 +863,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const prefixRes = await assetsUseCase.getAssetBinary('prefix_123');
       expect(prefixRes?.contentType).toBe('image/png');
 
-      // E. Base64 data URI
+      // F. Base64 data URI
       assetsRepo.getRawDoc = jest.fn().mockResolvedValueOnce({
         url: 'data:image/webp;base64,dGVzdA=='
       });

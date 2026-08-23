@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import sharp from 'sharp';
 import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
@@ -60,17 +61,82 @@ export class AssetsUseCase {
   }
 
   /**
-   * Retrieves the raw image binary data for an asset from Cloud Storage or data URI.
+   * Retrieves the image binary data for an asset.
+   * Supports on-demand compressed WebP thumbnail generation and GCS caching.
    * 
    * @param id - The ID of the asset.
+   * @param size - 'full' for original high-resolution or 'thumbnail' for compressed 400px WebP.
    * @returns An object containing the binary buffer and content-type, or null.
    */
-  async getAssetBinary(id: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  async getAssetBinary(id: string, size: 'full' | 'thumbnail' = 'full'): Promise<{ buffer: Buffer; contentType: string } | null> {
     // 0. Strict ID validation to prevent path traversal
     if (!id || !/^[a-zA-Z0-9_.-]+$/.test(id)) {
       return null;
     }
 
+    const cleanId = id.replace(/^img_/, '');
+    const bucketName = config.gcp.imageBucketName;
+    const bucket = this.storage.bucket(bucketName);
+
+    // 1. If thumbnail is requested, check if pre-cached thumbnail exists in GCS
+    if (size === 'thumbnail') {
+      const cachedThumbnailPaths = [
+        `thumbnails/${cleanId}.webp`,
+        `thumbnails/${id}.webp`
+      ];
+      for (const thumbPath of cachedThumbnailPaths) {
+        try {
+          const file = bucket.file(thumbPath);
+          const [exists] = await file.exists();
+          if (exists) {
+            const [buffer] = await file.download();
+            return { buffer, contentType: 'image/webp' };
+          }
+        } catch {
+          // ignore cache read error and proceed to generation
+        }
+      }
+    }
+
+    // 2. Retrieve original full binary
+    const original = await this.getOriginalAssetBinary(id);
+    if (!original) {
+      return null;
+    }
+
+    // 3. If thumbnail requested and not pre-cached, generate compressed WebP via sharp
+    if (size === 'thumbnail') {
+      try {
+        const thumbnailBuffer = await sharp(original.buffer)
+          .resize({ width: 400, withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+
+        // Asynchronously save to GCS cache for subsequent instant loads
+        const cachePath = `thumbnails/${cleanId}.webp`;
+        bucket.file(cachePath).save(thumbnailBuffer, {
+          metadata: { contentType: 'image/webp', cacheControl: 'public, max-age=31536000, immutable' }
+        }).catch(err => {
+          console.warn(`Failed to cache thumbnail ${cachePath} in GCS:`, err);
+        });
+
+        return { buffer: thumbnailBuffer, contentType: 'image/webp' };
+      } catch (err) {
+        console.warn(`Failed to generate thumbnail for ${id}, falling back to original:`, err);
+        return original;
+      }
+    }
+
+    return original;
+  }
+
+  /**
+   * Internal helper to fetch original binary data from GCS or data URI.
+   * 
+   * @param id - The ID of the asset.
+   * @returns Binary buffer and content type, or null.
+   */
+  private async getOriginalAssetBinary(id: string): Promise<{ buffer: Buffer; contentType: string } | null> {
     const rawDoc = await this.repo.getRawDoc(id);
     const bucketName = config.gcp.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
