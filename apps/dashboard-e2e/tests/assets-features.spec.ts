@@ -142,9 +142,12 @@ test.describe('Assets Features E2E Tests', () => {
     await expect(regenerateBtn).toBeVisible();
     await regenerateBtn.click();
 
-    // 3. Verify notification appears
+    // 3. Verify notification appears and caption textarea does not contain invalid placeholder text
     const infoToast = page.locator('.toast', { hasText: /caption|再生成/ });
     await expect(infoToast).toBeVisible({ timeout: 15000 });
+
+    const captionTextarea = drawer.locator('textarea');
+    await expect(captionTextarea).not.toHaveValue(/画像ファイルが直接確認できない/);
 
     // 4. Test Delete Asset from inside drawer
     const deleteBtn = drawer.locator('app-asset-drawer button', { hasText: /Delete Asset|アセットを削除/ });
