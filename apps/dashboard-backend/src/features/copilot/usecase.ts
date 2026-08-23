@@ -43,7 +43,7 @@ export class CopilotUseCase {
       const telemetryContext = await this.gatherLiveTelemetryContext(userMessage, currentContext);
 
       // 2. Persona System Prompt with Admin Copilot Guidelines (Strictly static to prevent prompt injection)
-      const personaBase = getBasePrompt('reply', isEn ? 'en' : 'ja');
+      const personaBase = getBasePrompt('copilot', isEn ? 'en' : 'ja');
       const languageInstruction = isEn
         ? `【Language & Persona Rule: English Gyaru】
 You MUST respond in authentic, charming, affectionate English "Gyaru" slang.

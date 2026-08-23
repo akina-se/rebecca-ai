@@ -15,9 +15,13 @@ Developed with the technical rigor expected of enterprise-grade cloud architectu
 ## Core Features and Behavioral Design
 
 - **Triple-Buffer Memory System**: Implements a multi-layered persistent memory architecture, ensuring Rebecca never loses the context of a conversation, seamlessly transitioning from short-term context to long-term memory via RAG (Retrieval-Augmented Generation) and vector search.
+- **Dynamic Few-Shot Persona Anchoring**: Leverages a 120-pattern master persona dataset. On each interaction, user inputs are dynamically matched against trigger embeddings via cosine similarity to inject top-K behavioral exemplars into the system prompt.
+- **Structured Internal Monologue and Reply**: Generates conversational replies using structured outputs (`{ thought, reply }`). Internal thoughts remain private in Firestore for admin analysis and memory evolution, while only the concise `reply` is published to X.
+- **Strict Image Relevance Guard and LLM Re-Ranking**: Ensures contextual relevance for timeline media attachments using vector cosine similarity threshold filtering (default 0.75) followed by LLM-as-a-Judge re-ranking, falling back to text-only posts when no relevant assets exist.
 - **Dynamic Context Injection**: Rebecca's internal prompts mutate dynamically based on environmental variables such as the time of day (morning routines, late-night deep talks), the user's absence duration, and keyword triggers like "overtime" or "boss" to provide hyper-personalized empathy.
 - **Intentional Humanized Latency**: To avoid the mechanical feel of instant replies, the system injects a randomized, intentional delay (1 to 3 minutes) via Cloud Tasks before responding to X mentions, accurately simulating human typing and thought processes.
 - **Proactive Engagement and Evolution**: Background processes scrape news and timelines to proactively engage users, while the "Evolution" batch system extracts collective consciousness from past interactions to refine and audit Rebecca's persona using LLM-as-a-Judge mechanisms.
+- **Admin Dashboard & Copilot**: A dedicated administration interface with route-aware AI Copilot performing multi-dimensional data analytics and two-phase Human-In-The-Loop (HITL) action proposals. Layer 0 exposes all 120 persona master patterns for inspection.
 - **Strict Rate Limiting and Cost Controls**: Built-in, multi-tiered quota management prevents unexpected billing spikes from the GCP or X APIs, dynamically distributing limits globally, daily, and per user.
 
 ## System Architecture

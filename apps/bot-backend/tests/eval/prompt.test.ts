@@ -6,7 +6,7 @@ import { Language } from '@rebecca/persona';
 
 const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'mock_api_key' && process.env.GEMINI_API_KEY !== 'test-key');
 const ai = hasApiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
-const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.1-flash-lite';
+const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.5-flash-lite';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

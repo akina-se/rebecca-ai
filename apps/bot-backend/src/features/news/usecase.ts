@@ -81,27 +81,37 @@ ${postText}
         const searchQuery = await this.deps.gemini.inferImageSearchQuery(searchPrompt);
         
         const mediaIds: string[] = [];
-        let bestImage: { id: string; url: string } | null = null;
+        let bestImage: { id: string; url: string; caption?: string; description?: string } | null = null;
         if (searchQuery) {
             console.log(`Inferred image search query: ${searchQuery}`);
             const queryVector = await this.deps.gemini.generateEmbedding(searchQuery);
             bestImage = queryVector.length > 0 ? await this.deps.firestore.findImageByVector(queryVector) : null;
             if (bestImage) {
-                console.log(`Found matching image: ${bestImage.url}`);
-                try {
-                    const buffer = await this.deps.storage.downloadImage(bestImage.url);
-                    let mimeType = 'image/jpeg';
-                    if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
-                    else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
-                    
-                    const mediaId = await this.deps.xApi.uploadMedia(buffer, mimeType);
-                    if (mediaId && mediaId !== 'mock_media_id') {
-                        mediaIds.push(mediaId);
-                        await this.deps.firestore.updateImageLastUsed(bestImage.id);
-                        console.log(`Attached media ID: ${mediaId}`);
+                console.log(`Found matching image candidate: ${bestImage.url}`);
+                const isRelevant = await this.deps.gemini.verifyImageRelevance(
+                    bestImage.caption || bestImage.description || '',
+                    postText
+                );
+                if (!isRelevant) {
+                    console.log(`Image rejected by LLM re-ranking (irrelevant to context). Fallback to text-only.`);
+                    bestImage = null;
+                } else {
+                    console.log(`Image approved by LLM re-ranking.`);
+                    try {
+                        const buffer = await this.deps.storage.downloadImage(bestImage.url);
+                        let mimeType = 'image/jpeg';
+                        if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
+                        else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
+                        
+                        const mediaId = await this.deps.xApi.uploadMedia(buffer, mimeType);
+                        if (mediaId && mediaId !== 'mock_media_id') {
+                            mediaIds.push(mediaId);
+                            await this.deps.firestore.updateImageLastUsed(bestImage.id);
+                            console.log(`Attached media ID: ${mediaId}`);
+                        }
+                    } catch (e) {
+                        console.error("Failed to attach image to post:", e);
                     }
-                } catch (e) {
-                    console.error("Failed to attach image to post:", e);
                 }
             } else {
                 console.log("No matching image found or all are in cooldown.");

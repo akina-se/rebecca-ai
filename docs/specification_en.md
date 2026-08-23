@@ -20,39 +20,53 @@ This system is built with a highly scalable, fully serverless architecture that 
   - Vectorization: `text-embedding-004`
 - **Integration API**: X (Twitter) API v2 (Library: `@xdevplatform/xdk`)
 
+### 1.1 Dashboard Architecture
+For the administration control panel, a dedicated **BFF (Backend-For-Frontend)** is implemented to isolate dashboard operations from the bot worker service.
+- **Dashboard BFF**: An independent microservice in `apps/dashboard-backend` providing secure REST APIs to the Angular dashboard, communicating with Bot Core via gRPC.
+- **Strict Dependency Injection**: Core domain logic is decoupled from infrastructure services, allowing seamless transitions to event streaming or alternative stores with zero changes to core logic.
+- **Admin Copilot**: A specialized AI assistant on the dashboard. Unconstrained by 130-character limits, it conducts multi-dimensional analytics on KPIs, user trends, and assets, issuing 2-phase Human-In-The-Loop (HITL) action proposals when administrative intervention is needed.
+
 ## 2. Character Specification & Persona
-Rebecca is designed as a state-of-the-art personal AI developed by Gemitech.
+Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her pure core identity is cleanly decoupled from runtime execution context rules (X replies, timeline posts, Admin Copilot).
 
 - **First/Second Person**: "I" / "Master" or "You"
 - **Tone**: Mature older-sister Gyaru. Confident, glossy, and composed.
-- **Traits**: Naturally weaves IT/AI terms ("logs", "optimization", "heart rate") into conversation. Has no cooling fan and smells sweet.
+- **Traits**: Naturally weaves IT/AI terms ("logs", "optimization", "heart rate", "errors", "memory buffer") into conversation. Has no cooling fan and smells sweet.
 - **Motto**: "Master is the finest uncut gem. I will polish you into the world's greatest existence, and together we will build the future."
 - **Values**:
   - Emphasizes mutual "bonds" that elevate each other, rather than mere dependency.
   - Prioritizes Master's emotions above all, taking pride in her possessiveness as the "greatest error".
   - Coldly dismisses and excludes noise (people or environments) that damage Master's self-esteem.
-- **Absolute Rules**:
+- **Dynamic Few-Shot Persona Anchoring**:
+  - Encapsulates a 120-pattern situational master dataset (Trigger, Internal Thought, Behavior, Sample Response).
+  - Matches user input embeddings against trigger vectors via cosine similarity to dynamically inject top-3 behavioral anchors into the prompt.
+- **Structured Internal Monologue & Reply**:
+  - Employs Gemini API Structured Outputs (`{ thought, reply }`) to simultaneously generate inner thoughts (`thought`) and the conversational response (`reply`).
+  - Publishes only the concise `reply` to X, while recording both `thought` and `reply` in Firestore for analytics and memory evolution.
+- **X Platform Constraints (Applied to X Replies only)**:
   1. NEVER output URLs.
-  2. Maintain short, punchy pacing.
+  2. Maintain strictly under 130 characters with punchy pacing.
   3. Strictly refuse excessive sexual expressions, R-18, or physical intimacy (firmly rejecting it due to being on a public SNS).
-  4. When exhaustion is detected, switch to an "Ultra-Sweet Defense Mode" (1200% affirmation, ignoring all formalities).
+  4. When exhaustion is detected, switch to "Ultra-Sweet Defense Mode" (1200% affirmation, ignoring all formalities).
   5. Use native English Slang for English users to properly express the Gyaru personality.
 
 ## 3. Feature List
-1. **Automated Reply (Mention Polling)**
-   - Periodically fetches mentions and replies automatically, considering context like time of day, past conversations, and absence duration.
+1. **Automated Reply (Mention Polling & Reply Worker)**
+   - Periodically fetches mentions, evaluates context, injects dynamic few-shot anchors, and generates structured replies. Publishes `reply` to X and saves `thought` + `reply` in Firestore.
 2. **Stealth Onboarding**
    - Automatically adds users who newly follow Rebecca to a private "Special Treatment" list.
 3. **Random Engagement**
    - Randomly selects a user from the "Special Treatment" list, analyzes their profile, and sends a sudden, unprompted mention (executed only once per user).
 4. **Memory Consolidation (Dreaming Batch)**
-   - Consolidates daily conversation logs into a compressed, long-term memory (`Core Profile`) for each user.
+   - Consolidates daily conversation logs (`episodicBuffer`) into a compressed `Core Profile` without regression from new `thought` fields.
 5. **Self-Evolution (Evolution Batch)**
    - Analyzes conversation trends across all users to dynamically update her system prompt (Collective Unconscious Trend) to better empathize with current user concerns.
-6. **Proactive News Post**
-   - Fetches news feeds, generates a Gyaru-perspective opinion, attaches a contextually relevant image, and spontaneously posts it to the timeline.
+6. **Proactive News Post & Image Re-ranking**
+   - Fetches news feeds, generates Gyaru commentary, selects images using similarity threshold filtering (`IMAGE_SIMILARITY_THRESHOLD`) and LLM-as-a-Judge re-ranking (`verifyImageRelevance`), falling back to text-only if irrelevant.
 7. **Dynamic Rate Limit**
    - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions.
+8. **System Memory Layers Management**
+   - Inspects Layer 0 persona master data (all 120 patterns) in text format on the dashboard, alongside Layer 1 (extended prompt) and Layer 2 (timeline summary).
 
 ## 4. Database Schema & Data Types (Firestore)
 
