@@ -252,7 +252,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res[0].url).toContain('data:image/png;base64,');
     });
 
-    it('regenerateCaptions should update existing assets with new captions and embeddings', async () => {
+    it('regenerateCaptions should update existing assets with new captions and embeddings using image binary', async () => {
       repo.getAll.mockResolvedValueOnce([
         {
           id: 'img_123',
@@ -264,6 +264,12 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         }
       ]);
 
+      // Mock getAssetBinary to return image buffer
+      jest.spyOn(useCase, 'getAssetBinary').mockResolvedValueOnce({
+        buffer: Buffer.from('mock-image-data'),
+        contentType: 'image/png'
+      });
+
       mockGenerateContent.mockResolvedValueOnce({
         text: '新しく生成された高画質なレベッカの笑顔イラスト'
       });
@@ -273,12 +279,57 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
 
       await useCase.regenerateCaptions(['img_123']);
 
+      expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+        contents: expect.arrayContaining([
+          expect.objectContaining({
+            inlineData: {
+              data: Buffer.from('mock-image-data').toString('base64'),
+              mimeType: 'image/png'
+            }
+          })
+        ])
+      }));
+
       expect(repo.update).toHaveBeenCalledWith('img_123', {
         caption: '新しく生成された高画質なレベッカの笑顔イラスト',
         status: AssetStatus.SUCCESS,
         usedCount: 3,
         embedding: [0.5, 0.6, 0.7]
       });
+    });
+
+    it('regenerateCaptions should fallback to concise prompt when image binary is unavailable', async () => {
+      repo.getAll.mockResolvedValueOnce([
+        {
+          id: 'img_no_bin',
+          filename: 'fallback_icon.png',
+          caption: 'Old caption',
+          usedCount: 0,
+          status: AssetStatus.SUCCESS,
+          url: 'http://img_no_bin.png'
+        }
+      ]);
+
+      jest.spyOn(useCase, 'getAssetBinary').mockResolvedValueOnce(null);
+
+      mockGenerateContent.mockResolvedValueOnce({
+        text: 'アニメアイコンのビジュアルアセット。'
+      });
+      mockEmbedContent.mockResolvedValueOnce({
+        embeddings: [{ values: [0.1, 0.2] }]
+      });
+
+      await useCase.regenerateCaptions(['img_no_bin']);
+
+      expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+        contents: expect.arrayContaining([
+          expect.stringContaining('fallback_icon.png')
+        ])
+      }));
+      expect(repo.update).toHaveBeenCalledWith('img_no_bin', expect.objectContaining({
+        caption: 'アニメアイコンのビジュアルアセット。',
+        status: AssetStatus.SUCCESS
+      }));
     });
 
     it('regenerateCaptions fallback without AI key', async () => {

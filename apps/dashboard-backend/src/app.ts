@@ -26,6 +26,9 @@ import { initializeConfigModule } from './features/config';
 export function createApp(firestore: Firestore): Express {
   const app = express();
 
+  // Trust the first proxy (Google Cloud Run / Firebase Hosting) to fix express-rate-limit ValidationError
+  app.set('trust proxy', 1);
+
   // Middleware
   app.use(helmet());
   app.use(cors());
