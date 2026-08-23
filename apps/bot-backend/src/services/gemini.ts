@@ -256,7 +256,11 @@ const generateTimelineSummary = async (prompt: string | string[], previousSummar
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
         const response = await ai.models.generateContent({
             model: config.gemini.model,
-            contents: contentStr
+            contents: contentStr,
+            config: {
+                systemInstruction: 'あなたはAIキャラクター「レベッカ」の長期記憶管理システムです。与えられたレベッカ自身のツイート履歴と過去の要約を元に、レベッカが最近どんな話題・文脈・ムードでツイートしていたかを400文字以内で要約してください。投稿の傾向・繰り返し取り上げるテーマ・話題の変化なども含めて記述してください。箇条書きや記号は使わず、自然な日本語の文章で出力してください。',
+                maxOutputTokens: 400
+            }
         });
         return response.text?.trim() || previousSummary || "";
     } catch (e) {

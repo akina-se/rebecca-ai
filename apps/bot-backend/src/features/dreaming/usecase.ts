@@ -32,19 +32,14 @@ export class GlobalDreamingUseCase {
         }
 
         try {
-            const recentPosts = await this.deps.firestore.getRecentTimelinePosts(10);
+            const recentPosts = await this.deps.firestore.getRecentTimelinePosts(20);
             if (recentPosts.length > 0) {
                 const previousSummary = await this.deps.firestore.getTimelineSummary();
-                const prompt = `あなたはAIキャラクター「レベッカ」の記憶整理システムです。
-これまでの「過去のツイートの要約」と、「最近のツイート」を統合し、レベッカが最近どんな文脈でどんなことを呟いていたかを50文字以内の短いテキストで要約してください。
+                const prompt = `【過去の要約】
+${previousSummary || '（まだ要約なし）'}
 
-【過去の要約】
-${previousSummary}
-
-【最近のツイート】
-${recentPosts.join('\n')}
-
-出力は要約されたテキストのみ。`;
+【レベッカの最近のツイート（古い順）】
+${recentPosts.map((p, i) => `[${i + 1}] ${p}`).join('\n')}`;
                 const newSummary = await this.deps.gemini.generateTimelineSummary(prompt);
                 await this.deps.firestore.saveTimelineSummary(newSummary);
                 console.log("Timeline summary updated:", newSummary);
