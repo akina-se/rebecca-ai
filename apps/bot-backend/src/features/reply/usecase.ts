@@ -143,7 +143,7 @@ ${processedText}
         // Dynamic Few-Shot Persona Anchors
         let personaFewShotPrompt = '';
         try {
-            const patternVectors = await getPersonaPatternEmbeddings(deps.gemini);
+            const patternVectors = getPersonaPatternEmbeddings();
             const userVector = await deps.gemini.generateEmbedding(processedText);
             const topPatterns = findTopPersonaPatterns(userVector, patternVectors, 3);
             personaFewShotPrompt = buildPersonaFewShotPrompt(topPatterns, lang);

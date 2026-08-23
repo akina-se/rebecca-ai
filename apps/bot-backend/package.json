@@ -16,6 +16,7 @@
     "setup:tasks": "npx ts-node scripts/setup-tasks.ts",
     "setup:indexes": "npx ts-node scripts/setup-indexes.ts",
     "chat": "npx ts-node scripts/chat.ts",
+    "generate:persona-vectors": "npx ts-node scripts/generatePersonaVectors.ts",
     "test:eval": "jest tests/eval",
     "batch:evolution": "npx ts-node scripts/run-evolution.ts",
     "batch:news": "npx ts-node scripts/run-news.ts",
