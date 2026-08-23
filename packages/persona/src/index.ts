@@ -331,9 +331,15 @@ export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => 
   }
   let cleaned = raw.trim();
   if (cleaned.startsWith('```json')) {
-    cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    cleaned = cleaned.slice(7).trim();
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.slice(0, -3).trim();
+    }
   } else if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    cleaned = cleaned.slice(3).trim();
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.slice(0, -3).trim();
+    }
   }
 
   try {
