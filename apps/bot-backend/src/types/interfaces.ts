@@ -60,7 +60,7 @@ export interface IFirestoreService {
   markMentionProcessed(tweetId: string): Promise<void>;
   saveImageMetadata(hash: string, url: string, description: string, vector: number[]): Promise<void>;
   getImageByHash(hash: string): Promise<ImageDocWithId | null>;
-  findImageByVector(queryVector: number[]): Promise<ImageDocWithId | null>;
+  findImageByVector(queryVector: number[], similarityThreshold?: number): Promise<ImageDocWithId | null>;
   updateImageLastUsed(hash: string): Promise<void>;
   hasProcessedFollower(followerId: string): Promise<boolean>;
   markFollowerProcessed(followerId: string): Promise<void>;
@@ -79,6 +79,8 @@ export interface IFirestoreService {
  */
 export interface IGeminiService {
   generateReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string>;
+  generateStructuredReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<{ thought: string; reply: string }>;
+  verifyImageRelevance(imageCaption: string, postText: string): Promise<boolean>;
   generateDreaming(systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile>;
   generateEvolutionPrompt(prompt: string): Promise<string>;
   auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;

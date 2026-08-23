@@ -46,10 +46,10 @@ export const COLLECTIONS = {
   /** Primary user documents: profiles, episodic buffers, working memory. */
   USERS: 'users',
 
-  /** TTL-based raw conversation logs (30-day expiry). */
+  /** TTL-based raw conversation logs (5-year expiry). */
   CONVERSATION_LOGS: 'conversation_logs',
 
-  /** TTL-based timeline post history (30-day expiry). */
+  /** TTL-based timeline post history (5-year expiry). */
   TIMELINE_HISTORY: 'timeline_history',
 
   /** Vector-indexed RAG memory entries per user. */

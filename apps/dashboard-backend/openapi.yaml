@@ -390,11 +390,11 @@ paths:
 
   /memory/core:
     get:
-      summary: Get Layer 0 Core Persona Prompt
-      description: Returns the immutable identity and behavioral prompt instructions for Rebecca.
+      summary: Get Layer 0 Core Persona Prompt & Master Patterns
+      description: Returns the immutable identity, behavioral guidelines, and the 120 persona master patterns for Rebecca.
       responses:
         '200':
-          description: Core prompt instructions
+          description: Core prompt instructions and 120-pattern master data
           content:
             application/json:
               schema:
