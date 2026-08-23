@@ -1,6 +1,6 @@
 {
   "name": "dashboard-frontend",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "",
   "author": "AKINA",
   "license": "MIT",
@@ -25,7 +25,7 @@
     "@angular/platform-browser": "^18.2.0",
     "@angular/platform-browser-dynamic": "^18.2.0",
     "@angular/router": "^18.2.0",
-    "@rebecca/types": "*",
+    "@rebecca/types": "1.5.0",
     "firebase": "^12.16.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.6.3",
