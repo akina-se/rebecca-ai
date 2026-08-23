@@ -309,7 +309,7 @@ export class TimelineRepository {
               accessTokenSecret: config.xApi.accessSecret,
             });
             const client = new Client({ oauth1: oauth1Client });
-            await client.posts.deleteTweet(tweetId);
+            await client.posts.delete(tweetId);
             const safeTweetId = String(tweetId).replace(/[\r\n\u2028\u2029]/g, '');
             console.log('Deleted tweet %s from X API.', safeTweetId);
           }

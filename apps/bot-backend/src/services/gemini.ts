@@ -8,7 +8,7 @@ import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
 import { fetchYahooNewsHeadlines } from '../utils/newsFetcher';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
-import { parsePersonaResponse, StructuredPersonaResponse } from '@rebecca/persona';
+import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 
 /**
  * Global Gemini API client instance.
@@ -461,8 +461,9 @@ const generateStructuredReply = async (
 
         const baseConfig = {
             systemInstruction: systemInstruction,
-            maxOutputTokens: 250,
+            maxOutputTokens: 180,
             responseMimeType: 'application/json',
+            responseSchema: PERSONA_RESPONSE_SCHEMA,
             safetySettings: [] as never[]
         };
 
