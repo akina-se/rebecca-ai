@@ -6,7 +6,7 @@ import * as gemini from '../src/services/gemini';
 import { getWorkingMemory } from '../src/core/memory';
 import { buildSystemPrompt } from '../src/core/contextInjector';
 import { findTopPersonaPatterns, buildPersonaFewShotPrompt } from '@rebecca/persona';
-import { getTriggerEmbeddings } from '../src/core/personaEmbeddingCache';
+import { getPersonaPatternEmbeddings } from '../src/core/personaEmbeddingCache';
 
 const DB_FILE = path.join(__dirname, '../local_db.json');
 const RAW_LOG_FILE = path.join(__dirname, '../local_raw_logs.jsonl');
@@ -33,8 +33,8 @@ const writeDB = (data: Record<string, unknown>) => {
 };
 
 const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
+    input: process.stdin as unknown as NodeJS.ReadableStream,
+    output: process.stdout as unknown as NodeJS.WritableStream
 });
 
 console.log("==================================================");
@@ -76,7 +76,7 @@ const chatLoop = async () => {
             try {
                 const userEmbedding = await gemini.generateEmbedding(input);
                 if (userEmbedding && userEmbedding.length > 0) {
-                    const patternEmbeddings = await getTriggerEmbeddings(gemini.generateEmbedding);
+                    const patternEmbeddings = await getPersonaPatternEmbeddings(gemini);
                     const topPatterns = findTopPersonaPatterns(userEmbedding, patternEmbeddings, 3);
                     personaFewShotPrompt = buildPersonaFewShotPrompt(topPatterns, 'ja');
                     console.log(`\n[🔍 抽出されたペルソナアンカー Top 3: ${topPatterns.map(p => `#${p.id} ${p.category}`).join(', ')}]`);
