@@ -22,9 +22,20 @@ const getWorkingMemory = (episodicBuffer: ConversationLogEntry[] | undefined, li
  * @param modelText - The text response from the model.
  * @returns A promise that resolves when both interactions have been successfully saved.
  */
-const saveInteraction = async (deps: AppDependencies, userId: string, userText: string, modelText: string): Promise<void> => {
+const saveInteraction = async (
+    deps: AppDependencies, 
+    userId: string, 
+    userText: string, 
+    modelText: string, 
+    thought?: string
+): Promise<void> => {
     await deps.firestore.appendEpisodicBuffer(userId, { role: 'user', content: userText, timestamp: new Date().toISOString() });
-    await deps.firestore.appendEpisodicBuffer(userId, { role: 'model', content: modelText, timestamp: new Date().toISOString() });
+    await deps.firestore.appendEpisodicBuffer(userId, { 
+        role: 'model', 
+        content: modelText, 
+        thought: thought || undefined, 
+        timestamp: new Date().toISOString() 
+    });
 };
 
 export { 
