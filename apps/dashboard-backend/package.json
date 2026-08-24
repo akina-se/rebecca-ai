@@ -36,7 +36,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
-    "firebase-admin": "^12.1.0",
+    "firebase-admin": "^14.3.0",
     "helmet": "^8.0.0",
     "luxon": "^3.7.2",
     "multer": "^2.2.0",

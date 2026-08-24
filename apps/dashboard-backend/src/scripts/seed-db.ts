@@ -1,13 +1,14 @@
 import { Firestore } from '@google-cloud/firestore';
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 // Set emulator host env variables so SDKs target the local emulators
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 
 // Initialize Firebase Admin (targeting emulator)
-if (!admin.apps.length) {
-  admin.initializeApp({
+if (!getApps().length) {
+  initializeApp({
     projectId: 'rebecca-ai-gal-local',
     credential: {
       getAccessToken: () => Promise.resolve({
@@ -33,12 +34,12 @@ async function seedAuth() {
   try {
     // Delete existing user if exists to prevent duplicate errors
     try {
-      await admin.auth().deleteUser('local-dev-admin');
+      await getAuth().deleteUser('local-dev-admin');
     } catch {
       // Ignore if not found
     }
 
-    const user = await admin.auth().createUser({
+    const user = await getAuth().createUser({
       uid: 'local-dev-admin',
       email: 'admin@example.com',
       password: 'password123',

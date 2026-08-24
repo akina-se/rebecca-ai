@@ -24,7 +24,7 @@
     "node": "22"
   },
   "dependencies": {
-    "firebase-admin": "^12.1.0",
+    "firebase-admin": "^14.3.0",
     "firebase-functions": "^5.0.1"
   },
   "devDependencies": {
