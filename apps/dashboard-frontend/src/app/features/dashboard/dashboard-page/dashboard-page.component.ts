@@ -69,8 +69,7 @@ export class DashboardPageComponent implements OnInit {
   timelineTotalItems = 0;
   timelineItemsPerPage = 10;
   isLoadingTimeline = false;
-
-  constructor(@Inject(DASHBOARD_REPOSITORY) private dashboardRepo: DashboardRepository) {}
+  private readonly dashboardRepo = inject(DASHBOARD_REPOSITORY);
 
   ngOnInit(): void {
     this.dashboardRepo.getKpiMetrics('monthly').subscribe(metrics => this.kpiMetrics = metrics);

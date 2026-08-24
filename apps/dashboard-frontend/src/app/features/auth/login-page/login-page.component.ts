@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -13,8 +13,8 @@ import { AuthService } from '../../../core/services/auth.service';
 export class LoginPageComponent {
   error: string | null = null;
   isLoading = false;
-
-  constructor(private authService: AuthService, private router: Router) {}
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   async loginWithGoogle() {
     this.isLoading = true;

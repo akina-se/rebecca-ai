@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { ActionHelperService } from './action-helper.service';
 import { ToastService } from './toast.service';
 
@@ -7,6 +7,7 @@ describe('ActionHelperService', () => {
   let toastServiceSpy: jasmine.SpyObj<ToastService>;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['show']);
 
     TestBed.configureTestingModule({
@@ -19,27 +20,33 @@ describe('ActionHelperService', () => {
     service = TestBed.inject(ActionHelperService);
   });
 
-  it('should execute mock action with default delay', fakeAsync(() => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('should execute mock action with default delay', async () => {
     let completed = false;
-    service.executeMockAction('Success action').then(() => {
+    const promise = service.executeMockAction('Success action').then(() => {
       completed = true;
     });
 
-    expect(completed).toBeFalse();
-    tick(2000);
-    expect(completed).toBeTrue();
+    expect(completed).toBe(false);
+    jest.advanceTimersByTime(2000);
+    await promise;
+    expect(completed).toBe(true);
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Success action', 'success');
-  }));
+  });
 
-  it('should execute mock action with custom delay', fakeAsync(() => {
+  it('should execute mock action with custom delay', async () => {
     let completed = false;
-    service.executeMockAction('Custom action', 500).then(() => {
+    const promise = service.executeMockAction('Custom action', 500).then(() => {
       completed = true;
     });
 
-    expect(completed).toBeFalse();
-    tick(500);
-    expect(completed).toBeTrue();
+    expect(completed).toBe(false);
+    jest.advanceTimersByTime(500);
+    await promise;
+    expect(completed).toBe(true);
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Custom action', 'success');
-  }));
+  });
 });

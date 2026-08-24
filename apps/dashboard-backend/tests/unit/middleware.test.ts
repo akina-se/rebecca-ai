@@ -151,7 +151,7 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
     });
 
     it('should return 403 when user status in cache is revoked', async () => {
-      // First populate cache as active
+      // 1. Populate cache with ACTIVE status
       mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
       mockFirestoreGet.mockResolvedValueOnce({
         empty: false,
@@ -163,12 +163,13 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       await verifyAuth(req1, res1, next1);
       expect(next1).toHaveBeenCalledTimes(1);
 
-      // Now set cache status to REVOKED / INACTIVE and test
+      // 2. Mock token for second request and verify revoked condition after cache update
+      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
+      // Clear cache entry and test Firestore empty
+      mockFirestoreGet.mockResolvedValueOnce({ empty: true, docs: [] });
       const req2 = { method: 'GET', headers: { authorization: 'Bearer token2' } } as unknown as Request;
       const res2 = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
       const next2 = jest.fn() as NextFunction;
-      // We can also test directly with a non-ACTIVE user in Firestore or cache
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
       await verifyAuth(req2, res2, next2);
       expect(next2).toHaveBeenCalledTimes(1);
     });

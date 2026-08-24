@@ -51,8 +51,7 @@ export class AssetsPageComponent implements OnInit {
   isLoading = false;
 
   toastService = inject(ToastService);
-
-  constructor(@Inject(ASSETS_REPOSITORY) private assetsRepo: AssetsRepository) {}
+  private readonly assetsRepo = inject(ASSETS_REPOSITORY);
 
   ngOnInit() {
     this.loadAssets(1);

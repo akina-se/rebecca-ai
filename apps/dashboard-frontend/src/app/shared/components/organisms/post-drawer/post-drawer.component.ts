@@ -38,8 +38,7 @@ export class PostDrawerComponent implements OnChanges {
   isLoading = false;
 
   postData: PostDataModel | null = null;
-
-  constructor(@Inject(DASHBOARD_REPOSITORY) private dashboardRepo: DashboardRepository) {}
+  private readonly dashboardRepo = inject(DASHBOARD_REPOSITORY);
 
   ngOnChanges() {
     if (this.postId) {

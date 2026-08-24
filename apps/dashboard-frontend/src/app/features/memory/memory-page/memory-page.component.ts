@@ -28,8 +28,7 @@ export class MemoryPageComponent implements OnInit {
   drawerIcon = 'dns';
 
   layers: MemoryLayer[] = [];
-
-  constructor(@Inject(MEMORY_REPOSITORY) private memoryRepo: MemoryRepository) {}
+  private readonly memoryRepo = inject(MEMORY_REPOSITORY);
 
   ngOnInit() {
     this.loadLayers();
