@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpBackend, HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -31,8 +31,7 @@ export interface RuntimeConfig {
 export class ConfigService {
   private config: RuntimeConfig | null = null;
   readonly publicSiteUrl = signal<string>('https://rebecca-ai.net');
-
-  constructor(private httpBackend: HttpBackend) {}
+  private readonly httpBackend = inject(HttpBackend);
 
   /**
    * Asynchronously fetches the runtime configuration before the Angular application bootstraps.

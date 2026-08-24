@@ -55,13 +55,7 @@ export class UserDrawerComponent implements OnChanges {
   
   /** Indicates if a profile save operation is currently in progress. */
   isSavingProfile = false;
-
-  /**
-   * Initializes the user drawer component.
-   * 
-   * @param usersRepo - The injected repository for managing user data.
-   */
-  constructor(@Inject(USERS_REPOSITORY) private usersRepo: UsersRepository) {}
+  private readonly usersRepo = inject(USERS_REPOSITORY);
 
   /**
    * Lifecycle hook that is called when any data-bound property of a directive changes.

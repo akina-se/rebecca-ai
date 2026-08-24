@@ -15,12 +15,16 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 })
 export class TopNavComponent {
   @Output() openDrawer = new EventEmitter<void>();
-  private drawerService = inject(DrawerService);
-  private translationService = inject(TranslationService);
+  private readonly drawerService = inject(DrawerService);
+  private readonly translationService = inject(TranslationService);
+  private readonly eRef = inject(ElementRef);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
   isUserDropdownOpen = false;
   user: { displayName?: string | null; email?: string | null } | null = null;
 
-  constructor(private eRef: ElementRef, private authService: AuthService, private router: Router) {
+  constructor() {
     this.authService.currentUser$.subscribe(user => {
       this.user = user;
     });

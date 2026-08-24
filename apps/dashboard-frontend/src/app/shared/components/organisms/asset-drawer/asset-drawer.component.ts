@@ -43,8 +43,7 @@ export class AssetDrawerComponent implements OnChanges {
   assetData: AssetDrawerData | null = null;
   assetBaseName = '';
   assetExtension = '.png';
-
-  constructor(@Inject(ASSETS_REPOSITORY) private assetsRepo: AssetsRepository) {}
+  private readonly assetsRepo = inject(ASSETS_REPOSITORY);
 
   ngOnChanges() {
     if (this.assetId) {

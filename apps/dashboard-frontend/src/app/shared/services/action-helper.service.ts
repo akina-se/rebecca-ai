@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { ToastService } from './toast.service';
 
 /**
@@ -9,7 +9,7 @@ import { ToastService } from './toast.service';
   providedIn: 'root'
 })
 export class ActionHelperService {
-  constructor(private toastService: ToastService) {}
+  private readonly toastService = inject(ToastService);
 
   /**
    * Executes a mock action with an artificial delay, displaying a success toast upon completion.

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from './layout/sidebar/sidebar.component';
 import { TopNavComponent } from './layout/top-nav/top-nav.component';
@@ -22,9 +22,8 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'frontend';
   isLoggedIn = false;
   isLoading = true;
+  private readonly authService = inject(AuthService);
   private authSub?: Subscription;
-
-  constructor(private authService: AuthService) {}
 
   /**
    * Initializes the component.

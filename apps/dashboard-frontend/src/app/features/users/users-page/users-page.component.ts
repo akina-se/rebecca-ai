@@ -42,8 +42,7 @@ export class UsersPageComponent implements OnInit {
   isLoading = false;
 
   toastService = inject(ToastService);
-
-  constructor(@Inject(USERS_REPOSITORY) private usersRepo: UsersRepository) {}
+  private readonly usersRepo = inject(USERS_REPOSITORY);
 
   ngOnInit() {
     this.loadUsers(1);
