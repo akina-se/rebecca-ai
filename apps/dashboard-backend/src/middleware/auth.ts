@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
-// Initialize Firebase Admin (Only once across the application)
-if (!admin.apps.length) {
-  admin.initializeApp();
+// Initialize Firebase Admin (only once across the application)
+if (!getApps().length) {
+  initializeApp();
 }
 
 // In-memory cache for admin authorization status (5-minute TTL)
@@ -27,8 +29,7 @@ async function resolveAdminRole(email: string): Promise<{ authorized: boolean; r
       : { authorized: false, revoked: true };
   }
 
-  const snapshot = await admin
-    .firestore()
+  const snapshot = await getFirestore()
     .collection('admin_users')
     .where('email', '==', email)
     .where('status', '==', 'ACTIVE')
@@ -79,7 +80,7 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
 
   const token = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await getAuth().verifyIdToken(token);
 
     // 1. Check custom claims if present
     if (decodedToken.role === 'SUPER_ADMIN' || decodedToken.role === 'ADMIN' || decodedToken.admin === true) {

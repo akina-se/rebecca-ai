@@ -36,30 +36,27 @@ const mockCollection = jest.fn().mockReturnValue({
   doc: mockDoc,
 });
 
-jest.mock('firebase-admin', () => ({
+jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
-  firestore: Object.assign(
-    jest.fn().mockReturnValue({
-      collection: mockCollection,
-      batch: jest.fn().mockReturnValue({
-        set: mockBatchSet,
-        commit: mockBatchCommit,
-      }),
-    }),
-    {
-      FieldValue: {
-        increment: jest.fn().mockImplementation((n) => ({ increment: n })),
-        arrayUnion: jest.fn().mockImplementation((val) => ({ arrayUnion: val })),
-      },
-    }
-  ),
+  getApps: jest.fn().mockReturnValue([{}]), // Simulate app already initialized
 }));
 
 jest.mock('firebase-admin/firestore', () => ({
+  getFirestore: jest.fn().mockReturnValue({
+    collection: mockCollection,
+    batch: jest.fn().mockReturnValue({
+      set: mockBatchSet,
+      commit: mockBatchCommit,
+    }),
+  }),
   FieldValue: {
     increment: jest.fn().mockImplementation((n) => ({ increment: n })),
     arrayUnion: jest.fn().mockImplementation((val) => ({ arrayUnion: val })),
   },
+}));
+
+jest.mock('firebase-admin/auth', () => ({
+  getAuth: jest.fn().mockReturnValue({}),
 }));
 
 import '../../src/triggers/authBlocking';
