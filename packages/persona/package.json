@@ -14,11 +14,11 @@
     "audit:fix": "npm audit fix"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^26.1.0",
-    "eslint": "^9.39.1",
-    "typescript": "~5.5.2",
-    "typescript-eslint": "^8.63.0"
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.9.0",
+    "typescript": "~7.0.2",
+    "typescript-eslint": "^8.67.0"
   },
   "license": "MIT"
 }
