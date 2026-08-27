@@ -10,7 +10,7 @@ import { getFirestore } from 'firebase-admin/firestore';
  */
 export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
   const user = event.data;
-  const email = user.email?.toLowerCase().trim();
+  const email = user?.email?.toLowerCase().trim();
 
   if (!email) {
     throw new HttpsError(
