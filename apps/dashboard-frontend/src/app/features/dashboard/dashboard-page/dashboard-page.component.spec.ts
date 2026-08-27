@@ -165,13 +165,13 @@ describe('DashboardPageComponent', () => {
   it('should open ranking modal for posts and users', () => {
     dashboardRepoSpy.getTopPosts.and.returnValue(of({ data: [{ id: 'p1', impressions: 100 } as any], meta: { totalPages: 1, totalItems: 1, currentPage: 1, limit: 10 } }));
     component.openRankingModal('posts');
-    expect(component.rankingModalType).toBe('post');
-    expect(component.rankingModalEntries.length).toBe(1);
+    expect(component.rankingModalType()).toBe('post');
+    expect(component.rankingModalEntries().length).toBe(1);
 
     dashboardRepoSpy.getTopUsers.and.returnValue(of({ data: [{ userId: 'user1', interactions: 50, handle: '@user1' } as any], meta: { totalPages: 1, totalItems: 1, currentPage: 1, limit: 10 } }));
     component.openRankingModal('users');
-    expect(component.rankingModalType).toBe('user');
-    expect(component.rankingModalEntries.length).toBe(1);
+    expect(component.rankingModalType()).toBe('user');
+    expect(component.rankingModalEntries().length).toBe(1);
   });
 
   it('should open lightbox and drawers for post and user', () => {
@@ -253,11 +253,11 @@ describe('DashboardPageComponent', () => {
     expect(component.selectedItemId()).toBe('u_202');
 
     component.openRankingModal('posts');
-    expect(component.isRankingModalOpen).toBeTrue();
-    expect(component.rankingModalType).toBe('post');
+    expect(component.isRankingModalOpen()).toBeTrue();
+    expect(component.rankingModalType()).toBe('post');
 
     component.onRankingPageChange(2);
-    expect(component.rankingModalCurrentPage).toBe(2);
+    expect(component.rankingModalCurrentPage()).toBe(2);
   });
 
   it('should test canShiftDate for monthly, yearly, and all-time bounds', () => {

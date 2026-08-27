@@ -282,15 +282,15 @@
             </app-lightbox>
 
             <app-ranking-modal
-              [isOpen]="isRankingModalOpen"
-              [title]="rankingModalTitle"
-              [colLabel]="rankingModalColLabel"
-              [colMetric]="rankingModalColMetric"
-              [entries]="rankingModalEntries"
-              [currentPage]="rankingModalCurrentPage"
-              [totalPages]="rankingModalTotalPages"
-              [totalItems]="rankingModalTotalItems"
+              [isOpen]="isRankingModalOpen()"
+              [title]="rankingModalTitle()"
+              [colLabel]="rankingModalColLabel()"
+              [colMetric]="rankingModalColMetric()"
+              [entries]="rankingModalEntries()"
+              [currentPage]="rankingModalCurrentPage()"
+              [totalPages]="rankingModalTotalPages()"
+              [totalItems]="rankingModalTotalItems()"
               (pageChange)="onRankingPageChange($event)"
-              (modalClose)="isRankingModalOpen = false"
-              (rowClick)="rankingModalType === 'post' ? openPostDrawer($event) : openUserDrawer($event)">
+              (modalClose)="isRankingModalOpen.set(false)"
+              (rowClick)="rankingModalType() === 'post' ? openPostDrawer($event) : openUserDrawer($event)">
             </app-ranking-modal>
