@@ -2,14 +2,26 @@ import { Firestore } from '@google-cloud/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
-// Set emulator host env variables so SDKs target the local emulators
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
-process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+// 🛡️ STRICT SAFETY GUARD: Prevent execution against production or staging environments
+const targetProjectId = process.env.GCP_PROJECT_ID || 'rebecca-ai-gal-local';
 
-// Initialize Firebase Admin (targeting emulator)
+if (
+  process.env.NODE_ENV === 'production' ||
+  targetProjectId === 'rebecca-ai-gal' ||
+  !targetProjectId.endsWith('-local')
+) {
+  console.error(`FATAL: seed-db.ts cannot run against production or non-local project '${targetProjectId}'.`);
+  process.exit(1);
+}
+
+// Set emulator host env variables so SDKs target the local emulators
+process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099';
+
+// Initialize Firebase Admin (strictly targeting emulator)
 if (!getApps().length) {
   initializeApp({
-    projectId: 'rebecca-ai-gal-local',
+    projectId: targetProjectId,
     credential: {
       getAccessToken: () => Promise.resolve({
         access_token: 'dummy-token',
@@ -20,7 +32,7 @@ if (!getApps().length) {
 }
 
 const firestore = new Firestore({
-  projectId: 'rebecca-ai-gal-local',
+  projectId: targetProjectId,
 });
 
 /**
