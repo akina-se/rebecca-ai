@@ -1,4 +1,4 @@
-﻿@if (postData()) {
+@if (postData()) {
   <div class="drawer-content">
     <!-- Post Text Content -->
     <div class="glass-panel content-box">
@@ -66,6 +66,9 @@
     </div>
     <!-- Action Buttons -->
     <div class="action-buttons">
+      <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 10px;" (click)="onViewOnX()">
+        <span class="material-icons">open_in_new</span> {{ 'common.view_on_x' | translate }}
+      </button>
       <button
         class="btn"
         [disabled]="isDeleting"
