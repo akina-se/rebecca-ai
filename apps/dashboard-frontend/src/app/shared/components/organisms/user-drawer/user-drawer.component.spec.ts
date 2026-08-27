@@ -116,9 +116,9 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
 
   it('should format JSON and save updated core profile and handle error', () => {
     component.onSaveProfile();
-    const expectedJson = JSON.stringify(component.parsedProfile());
+    const expectedJson = JSON.stringify(component.parsedProfile(), null, 2);
     expect(mockUsersRepo.updateMemory).toHaveBeenCalledWith('user_123', expectedJson);
-    expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/updated successfully/i), 'success');
+    expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/saved core profile/i), 'success');
 
     // Error branch
     mockUsersRepo.updateMemory.and.returnValue(throwError(() => new Error('Err')));
