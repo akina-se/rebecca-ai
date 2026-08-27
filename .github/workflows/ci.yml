@@ -157,6 +157,14 @@ jobs:
             --project rebecca-ai-gal-local \
             "export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 && export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 && export FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 && export GCLOUD_PROJECT=rebecca-ai-gal-local && npx ts-node -T apps/dashboard-backend/scripts/seed-db.ts && npm run test:e2e"
 
+      - name: Upload Playwright UI Screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-ui-screenshots
+          path: apps/dashboard-e2e/screenshots/
+          retention-days: 14
+
       - name: Upload Playwright Test Report
         uses: actions/upload-artifact@v4
         if: failure()

@@ -66,6 +66,8 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(yearlyTab).toHaveClass(/active/);
     await expect(dateText).toHaveText('2026');
     await expect(topPostsTable.locator('tbody tr').first()).toBeVisible();
+
+    await page.screenshot({ path: 'screenshots/01_dashboard_leaderboards.png' });
   });
 
   /**
@@ -285,6 +287,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     // Verify "View on X" button in User drawer triggers navigation to x.com profile
     const userViewOnXBtn = userDrawerContent.locator('button', { hasText: /View on X|Xで見る/ });
     await expect(userViewOnXBtn).toBeVisible();
+    await page.screenshot({ path: 'screenshots/02_user_profile_drawer.png' });
     const [userPopup] = await Promise.all([
       page.waitForEvent('popup'),
       userViewOnXBtn.click(),
@@ -323,6 +326,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     // Verify "View on X" button in Post Details drawer triggers navigation to x.com post
     const postViewOnXBtn = postDrawerContent.locator('button', { hasText: /View on X|Xで見る/ });
     await expect(postViewOnXBtn).toBeVisible();
+    await page.screenshot({ path: 'screenshots/03_post_details_drawer.png' });
     const [postPopup] = await Promise.all([
       page.waitForEvent('popup'),
       postViewOnXBtn.click(),
@@ -335,8 +339,6 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(drawer).not.toHaveClass(/open/);
   });
 
-  /**
-   * Scenario F: Full Ranking Modal
   /**
    * Scenario F: Full Ranking Modal (Top Users)
    * - Click "View Full Ranking" in Top Engaged Users.
@@ -356,6 +358,7 @@ test.describe('Dashboard Features E2E Tests', () => {
 
     const modal = page.locator('app-ranking-modal .modal-container');
     await expect(modal).toBeVisible({ timeout: 10000 });
+    await page.screenshot({ path: 'screenshots/04_ranking_modal.png' });
     await expect(modal.locator('.modal-title')).toContainText(/Top Engaged Users|エンゲージメント上位ユーザー/);
 
     const firstRankingRow = modal.locator('table.ranking-table tbody tr').first();
