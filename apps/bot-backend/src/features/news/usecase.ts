@@ -60,7 +60,7 @@ ${headlines.join('\n')}
         }
 
         // Sanitize accidental character count annotations e.g. (90文字) or (85 chars)
-        postText = postText.replace(/[（\(]\s*\d+\s*(?:文字|chars?|characters?)\s*[）\)]/gi, '').trim();
+        postText = postText.replace(/[（(]\s*\d+\s*(?:文字|chars?|characters?)\s*[）)]/gi, '').trim();
 
         const hashtag = "\n#全肯定AIレベッカ";
         if (postText.length + hashtag.length <= 140) {

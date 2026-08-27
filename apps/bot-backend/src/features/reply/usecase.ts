@@ -162,7 +162,7 @@ ${processedText}
         console.log(`Generated AI Reply for tweet ${sanitizeForLog(tweetId)}: ${sanitizeForLog(aiResponseText)}`);
 
         // Sanitize accidental character count annotations e.g. (90文字) or (85 chars)
-        aiResponseText = aiResponseText.replace(/[（\(]\s*\d+\s*(?:文字|chars?|characters?)\s*[）\)]/gi, '').trim();
+        aiResponseText = aiResponseText.replace(/[（(]\s*\d+\s*(?:文字|chars?|characters?)\s*[）)]/gi, '').trim();
 
         // Fallback: X API limits Japanese text effectively to 140 characters.
         if (aiResponseText.length > 138) {
