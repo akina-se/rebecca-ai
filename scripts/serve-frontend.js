@@ -49,7 +49,8 @@ const server = http.createServer((req, res) => {
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-        proxyRes.pipe(res);
+        proxyRes.on('data', (chunk) => res.write(chunk));
+        proxyRes.on('end', () => res.end());
       }
     );
     proxyReq.on('error', (err) => {
@@ -58,7 +59,11 @@ const server = http.createServer((req, res) => {
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Bad Gateway: Dashboard BFF unreachable' }));
     });
-    req.pipe(proxyReq);
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      proxyReq.end();
+    } else {
+      req.pipe(proxyReq);
+    }
     return;
   }
 
@@ -76,15 +81,23 @@ const server = http.createServer((req, res) => {
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath);
-    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
-    return fs.createReadStream(filePath).pipe(res);
+    const content = fs.readFileSync(filePath);
+    res.writeHead(200, {
+      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+      'Content-Length': content.length
+    });
+    return res.end(content);
   }
 
   // 3. SPA Fallback: return index.html for Angular HTML5 client-side router navigation
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (fs.existsSync(indexPath)) {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return fs.createReadStream(indexPath).pipe(res);
+    const content = fs.readFileSync(indexPath);
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': content.length
+    });
+    return res.end(content);
   }
 
   res.writeHead(404);
