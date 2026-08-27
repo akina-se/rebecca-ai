@@ -31,6 +31,9 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
       // Verify dynamic context indicator
       const contextIndicator = page.locator('#ai-context-indicator');
       await expect(contextIndicator).toContainText(p.expectedContext, { timeout: 5000 });
+      if (p.path === '/dashboard') {
+        await page.screenshot({ path: 'screenshots/10_copilot_ai_chat_drawer.png' });
+      }
 
       // Close drawer
       const closeBtn = aiDrawer.locator('.close-btn');

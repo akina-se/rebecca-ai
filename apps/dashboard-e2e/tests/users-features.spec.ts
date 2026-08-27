@@ -22,6 +22,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     const pagination = page.locator('app-pagination');
     await expect(pagination).toBeVisible();
     await expect(page.locator('.pagination-container .total-items-text')).toContainText(/Showing|表示中|全.*件/);
+    await page.screenshot({ path: 'screenshots/05_users_management_page.png' });
   });
 
   test('should filter users using fuzzy search input', async ({ page }) => {
@@ -147,6 +148,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     const tzDropdown = page.locator('app-dropdown').nth(1);
     await tzDropdown.locator('.dropdown-toggle').click();
     await expect(tzDropdown.locator('.dropdown-menu')).toBeVisible();
+    await page.screenshot({ path: 'screenshots/06_settings_page.png' });
     await tzDropdown.locator('.dropdown-item').filter({ hasText: 'Tokyo' }).click();
 
     // 2. Verify User Relations timestamps format
