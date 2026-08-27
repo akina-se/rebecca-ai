@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.6.0](https://github.com/akina-se/rebecca-ai/compare/v1.5.0...v1.6.0) (2026-08-27)
+
+
+### Features
+
+* **dashboard-backend:** migrate firebase-admin v14 & secure RBAC BFF ([7515066](https://github.com/akina-se/rebecca-ai/commit/75150661010efb2f23b1694054b5057961a33204))
+* **dashboard-frontend:** add View on X button and onViewOnX method to PostDrawerComponent ([cba7e6e](https://github.com/akina-se/rebecca-ai/commit/cba7e6e09eb8fc576610cb6a579a3bcc0db7a179))
+* **dashboard-frontend:** modernize Angular 22 Zoneless, Signal state, and Control Flow ([73e6ca9](https://github.com/akina-se/rebecca-ai/commit/73e6ca9e094b0dc8e8096051e066cf9cd8fbeb85))
+* **functions:** implement scheduled X timeline and metrics sync with cost minimization ([#80](https://github.com/akina-se/rebecca-ai/issues/80)) ([3b74055](https://github.com/akina-se/rebecca-ai/commit/3b74055159aeaa3ecb1cd0d621f851ca2cfb1b70))
+* improve Layer 2 timeline summary and upgrade Gemini to 3.5-flash-lite ([a4b049b](https://github.com/akina-se/rebecca-ai/commit/a4b049b90265e9588437ad35318c976c5beccc0d))
+* initialize bot-backend service with automated Firestore indexing and Cloud Scheduler tasks ([d8a34bf](https://github.com/akina-se/rebecca-ai/commit/d8a34bf8cc8db68e562e15853e678e38547ebe04))
+* overhaul persona system, resolve security alerts, fix image relevance and update specifications (Fixes [#42](https://github.com/akina-se/rebecca-ai/issues/42), [#43](https://github.com/akina-se/rebecca-ai/issues/43)) ([a71aa2c](https://github.com/akina-se/rebecca-ai/commit/a71aa2c90ffa612caea59536d5300a38c81bd2d7))
+* **persona:** bundle precomputed vectors with raw patterns, remove fallbacks, and add generate:persona-vectors script ([bf52027](https://github.com/akina-se/rebecca-ai/commit/bf52027629b46011a7af5701193b3d982a42407d))
+* release v1.6.0 with automated X metrics sync, security upgrades, and Angular 22 modernization ([98eedaf](https://github.com/akina-se/rebecca-ai/commit/98eedaffde47b5738bda1f864526cfda6ffe03fe))
+* system overhaul, dynamic persona anchors, security alerts & image relevance (Fixes [#42](https://github.com/akina-se/rebecca-ai/issues/42), [#43](https://github.com/akina-se/rebecca-ai/issues/43)) ([ad602f1](https://github.com/akina-se/rebecca-ai/commit/ad602f1b1f8cfdf2d4a3739e7380b3eadeef3bb9))
+
+
+### Bug Fixes
+
+* **assets:** pass image binary to Gemini Vision on caption regeneration and enhance tests ([#74](https://github.com/akina-se/rebecca-ai/issues/74)) ([455be01](https://github.com/akina-se/rebecca-ai/commit/455be01bd614371af5b04250ad61021065a4f816))
+* **backend, frontend:** use typed AuthenticatedRequest and fix proxy.conf.json BOM encoding ([bf7e995](https://github.com/akina-se/rebecca-ai/commit/bf7e9956038da74ba3b2bf80ce5b783956cdcc6b))
+* **bot-backend:** throw explicit errors when Gemini response text is empty and refine search_news tool description ([812a0d3](https://github.com/akina-se/rebecca-ai/commit/812a0d3c80fb60553d2644f0493a5c9153a831e5))
+* **chat:** fix getPersonaPatternEmbeddings import and readline typings for local CLI ([251c568](https://github.com/akina-se/rebecca-ai/commit/251c568499131636b8b2940dc8050b1060368d01))
+* **dashboard-frontend:** signalize user drawer and ranking modal state for zoneless reactivity ([9583502](https://github.com/akina-se/rebecca-ai/commit/9583502d4e7887a64e4c3b5bc677ccd936231695))
+* **dashboard-frontend:** strictly align user-drawer toast messages and update logic with develop ([4168796](https://github.com/akina-se/rebecca-ai/commit/4168796717b4282f107a1c84e9be20fe65281c78))
+* **dashboard:** resolve caption regeneration with multimodal vision and set trust proxy ([#75](https://github.com/akina-se/rebecca-ai/issues/75)) ([61809b7](https://github.com/akina-se/rebecca-ai/commit/61809b7c2e5c15dde18e4663fce01ba12aeafe94))
+* **firestore:** add required indexes array to fieldOverrides in firestore.indexes.json ([302120f](https://github.com/akina-se/rebecca-ai/commit/302120f0186d47d9f281b23f9b8fb8d492c1a07d))
+* **frontend:** add proxy.conf.json and proxyConfig to route /api requests to backend BFF (port 8081) ([15c23c6](https://github.com/akina-se/rebecca-ai/commit/15c23c60f5ead989c962fda1be7378ae72e9afae))
+* **frontend:** strictly guard emulator auth under isEmulator flag for production safety ([d23f479](https://github.com/akina-se/rebecca-ai/commit/d23f479461c637d064ca8cc67a3c1e222e80e610))
+* **frontend:** switch from proxy.conf.json to proxy.conf.js to completely eliminate JSON parsing issues ([90dd7c1](https://github.com/akina-se/rebecca-ai/commit/90dd7c13ef62afd2231ae334bd54a29e89101414))
+* **local-env, e2e, metrics:** fix start script, add CJK fonts to CI, eliminate mock fallbacks, and expand interactive E2E UI coverage ([4e9475c](https://github.com/akina-se/rebecca-ai/commit/4e9475c36b480ca4172fb854484f214de0c262be))
+* **persona:** refine overwork affirmation to avoid aggressive hate and strictly isolate physical intimacy rejection ([#71](https://github.com/akina-se/rebecca-ai/issues/71)) ([c27836d](https://github.com/akina-se/rebecca-ai/commit/c27836de2a529297c25200baec0efc7718b9d4d0))
+* refine copilot prompt, adjust maxOutputTokens, fix xdk delete method, and upgrade chat CLI ([9a9e57a](https://github.com/akina-se/rebecca-ai/commit/9a9e57abf15fb4a66de31b1765b78cb022fad34d))
+* relocate seed script out of src, restore all E2E tests, remove fake fallback email, and align dependencies ([9396f54](https://github.com/akina-se/rebecca-ai/commit/9396f5456ed8d3f7967cf07c197e1ffe6d917701))
+* **security:** resolve CodeQL alerts for ReDoS in persona parser, unused test import, and command injection in setup-indexes ([19fd702](https://github.com/akina-se/rebecca-ai/commit/19fd702482a608cc48067b7a25af5e6e5bbd6af4))
+* **security:** resolve CodeQL TOCTOU file system race condition in serve-frontend.js ([83698a5](https://github.com/akina-se/rebecca-ai/commit/83698a532689f6c90253388701f7a7f21ffadcfc))
+
 ## [1.5.0](https://github.com/akina-se/rebecca-ai/compare/v1.4.0...v1.5.0) (2026-08-23)
 
 
