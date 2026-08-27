@@ -1,139 +1,142 @@
-<div class="drawer-content" *ngIf="user">
-
+@if (user) {
+  <div class="drawer-content">
     <!-- Profile Header -->
     <div class="glass-panel profile-box">
-        <div class="profile-header">
-            <div class="avatar-placeholder">
-                <span class="material-icons">person</span>
-            </div>
-            <div class="profile-info">
-                <div class="profile-name">{{ user.name || user.username || user.id }}</div>
-                <div class="profile-handle" *ngIf="user.username">&#64;{{ user.username }}</div>
-            </div>
+      <div class="profile-header">
+        <div class="avatar-placeholder">
+          <span class="material-icons">person</span>
         </div>
+        <div class="profile-info">
+          <div class="profile-name">{{ user.name || user.username || user.id }}</div>
+          @if (user.username) {
+            <div class="profile-handle">&#64;{{ user.username }}</div>
+          }
+        </div>
+      </div>
     </div>
-
     <!-- Metrics -->
     <div class="metrics-grid">
-        <div class="glass-panel metric-box" style="grid-column: span 2;">
-            <span class="material-icons metric-icon">forum</span>
-            <div class="metric-info">
-                <div class="metric-title">{{ 'users.table_interactions' | translate }}</div>
-                <div class="metric-value">{{ user.interactions }}</div>
-            </div>
+      <div class="glass-panel metric-box" style="grid-column: span 2;">
+        <span class="material-icons metric-icon">forum</span>
+        <div class="metric-info">
+          <div class="metric-title">{{ 'users.table_interactions' | translate }}</div>
+          <div class="metric-value">{{ user.interactions }}</div>
         </div>
+      </div>
     </div>
-
     <!-- First/Last Seen -->
     <div class="glass-panel stat-box">
-        <div class="timeline-stat">
-            <div class="stat-label">{{ 'user_drawer.first_seen' | translate }}</div>
-            <div class="stat-value" [title]="user.firstSeen">{{ user.firstSeen | tzDate }}</div>
-        </div>
-        <div class="divider"></div>
-        <div class="timeline-stat">
-            <div class="stat-label">{{ 'user_drawer.last_seen' | translate }}</div>
-            <div class="stat-value" [title]="user.lastSeen">{{ user.lastSeen | tzDate }}</div>
-        </div>
+      <div class="timeline-stat">
+        <div class="stat-label">{{ 'user_drawer.first_seen' | translate }}</div>
+        <div class="stat-value" [title]="user.firstSeen">{{ user.firstSeen | tzDate }}</div>
+      </div>
+      <div class="divider"></div>
+      <div class="timeline-stat">
+        <div class="stat-label">{{ 'user_drawer.last_seen' | translate }}</div>
+        <div class="stat-value" [title]="user.lastSeen">{{ user.lastSeen | tzDate }}</div>
+      </div>
     </div>
-
     <!-- Core Profile -->
     <div>
-        <div class="section-label">
-            <span class="material-icons" style="font-size: 1rem;">person</span>
-            {{ 'user_drawer.profile_title' | translate }}
+      <div class="section-label">
+        <span class="material-icons" style="font-size: 1rem;">person</span>
+        {{ 'user_drawer.profile_title' | translate }}
+      </div>
+      <div class="profile-editor">
+        <!-- Attributes -->
+        <div class="profile-category">
+          <div class="category-label">{{ 'user_drawer.attributes' | translate }}</div>
+          <div class="tags-container">
+            @for (item of parsedProfile['attributes']; track item; let i = $index) {
+              <div class="profile-tag">
+                {{ item }}
+                <span class="material-icons tag-close" (click)="removeTag('attributes', i)">close</span>
+              </div>
+            }
+            <input type="text" class="tag-input" [placeholder]="'user_drawer.add_attribute' | translate" (keydown.enter)="addTag('attributes', $event)" (blur)="addTag('attributes', $event)">
+          </div>
         </div>
-        
-        <div class="profile-editor">
-            <!-- Attributes -->
-            <div class="profile-category">
-                <div class="category-label">{{ 'user_drawer.attributes' | translate }}</div>
-                <div class="tags-container">
-                    <div class="profile-tag" *ngFor="let item of parsedProfile['attributes']; let i = index">
-                        {{ item }}
-                        <span class="material-icons tag-close" (click)="removeTag('attributes', i)">close</span>
-                    </div>
-                    <input type="text" class="tag-input" [placeholder]="'user_drawer.add_attribute' | translate" (keydown.enter)="addTag('attributes', $event)" (blur)="addTag('attributes', $event)">
-                </div>
-            </div>
-
-            <!-- Preferences -->
-            <div class="profile-category">
-                <div class="category-label">{{ 'user_drawer.preferences' | translate }}</div>
-                <div class="tags-container">
-                    <div class="profile-tag" *ngFor="let item of parsedProfile['preferences']; let i = index">
-                        {{ item }}
-                        <span class="material-icons tag-close" (click)="removeTag('preferences', i)">close</span>
-                    </div>
-                    <input type="text" class="tag-input" [placeholder]="'user_drawer.add_preference' | translate" (keydown.enter)="addTag('preferences', $event)" (blur)="addTag('preferences', $event)">
-                </div>
-            </div>
-
-            <!-- Concerns -->
-            <div class="profile-category">
-                <div class="category-label">{{ 'user_drawer.concerns' | translate }}</div>
-                <div class="tags-container">
-                    <div class="profile-tag" *ngFor="let item of parsedProfile['concerns']; let i = index">
-                        {{ item }}
-                        <span class="material-icons tag-close" (click)="removeTag('concerns', i)">close</span>
-                    </div>
-                    <input type="text" class="tag-input" [placeholder]="'user_drawer.add_concern' | translate" (keydown.enter)="addTag('concerns', $event)" (blur)="addTag('concerns', $event)">
-                </div>
-            </div>
-
-            <!-- Important Memories -->
-            <div class="profile-category">
-                <div class="category-label">{{ 'user_drawer.important_memories' | translate }}</div>
-                <div class="tags-container">
-                    <div class="profile-tag" *ngFor="let item of parsedProfile['important_memories']; let i = index">
-                        {{ item }}
-                        <span class="material-icons tag-close" (click)="removeTag('important_memories', i)">close</span>
-                    </div>
-                    <input type="text" class="tag-input" [placeholder]="'user_drawer.add_memory' | translate" (keydown.enter)="addTag('important_memories', $event)" (blur)="addTag('important_memories', $event)">
-                </div>
-            </div>
+        <!-- Preferences -->
+        <div class="profile-category">
+          <div class="category-label">{{ 'user_drawer.preferences' | translate }}</div>
+          <div class="tags-container">
+            @for (item of parsedProfile['preferences']; track item; let i = $index) {
+              <div class="profile-tag">
+                {{ item }}
+                <span class="material-icons tag-close" (click)="removeTag('preferences', i)">close</span>
+              </div>
+            }
+            <input type="text" class="tag-input" [placeholder]="'user_drawer.add_preference' | translate" (keydown.enter)="addTag('preferences', $event)" (blur)="addTag('preferences', $event)">
+          </div>
         </div>
-
-        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 20px; margin-top: 10px;" (click)="onSaveProfile()" [disabled]="isSavingProfile">
-            <span class="material-icons" [class.spinning]="isSavingProfile">{{ isSavingProfile ? 'sync' : 'save' }}</span>
-            {{ isSavingProfile ? ('common.saving' | translate) : ('user_drawer.save_profile' | translate) }}
-        </button>
+        <!-- Concerns -->
+        <div class="profile-category">
+          <div class="category-label">{{ 'user_drawer.concerns' | translate }}</div>
+          <div class="tags-container">
+            @for (item of parsedProfile['concerns']; track item; let i = $index) {
+              <div class="profile-tag">
+                {{ item }}
+                <span class="material-icons tag-close" (click)="removeTag('concerns', i)">close</span>
+              </div>
+            }
+            <input type="text" class="tag-input" [placeholder]="'user_drawer.add_concern' | translate" (keydown.enter)="addTag('concerns', $event)" (blur)="addTag('concerns', $event)">
+          </div>
+        </div>
+        <!-- Important Memories -->
+        <div class="profile-category">
+          <div class="category-label">{{ 'user_drawer.important_memories' | translate }}</div>
+          <div class="tags-container">
+            @for (item of parsedProfile['important_memories']; track item; let i = $index) {
+              <div class="profile-tag">
+                {{ item }}
+                <span class="material-icons tag-close" (click)="removeTag('important_memories', i)">close</span>
+              </div>
+            }
+            <input type="text" class="tag-input" [placeholder]="'user_drawer.add_memory' | translate" (keydown.enter)="addTag('important_memories', $event)" (blur)="addTag('important_memories', $event)">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 20px; margin-top: 10px;" (click)="onSaveProfile()" [disabled]="isSavingProfile">
+        <span class="material-icons" [class.spinning]="isSavingProfile">{{ isSavingProfile ? 'sync' : 'save' }}</span>
+        {{ isSavingProfile ? ('common.saving' | translate) : ('user_drawer.save_profile' | translate) }}
+      </button>
     </div>
-
     <!-- Chat History -->
     <div>
-        <div class="section-label">
-            <span class="material-icons" style="font-size: 1rem;">chat</span>
-            {{ 'user_drawer.past_interactions' | translate }}
-        </div>
-        <div class="chat-history">
-            <div class="chat-bubble user" *ngFor="let msg of user.chatHistory" [class.user]="msg.from === 'user'">
-                <ng-container *ngIf="msg.from === 'user'">
-                    <div class="bubble-content user-bubble">{{ msg.text }}</div>
-                    <div class="bubble-time" style="text-align: right;" [title]="msg.time">{{ msg.time | tzDate }}</div>
-                </ng-container>
-                <ng-container *ngIf="msg.from === 'rebecca'">
-                    <div class="bubble-rebecca-wrapper">
-                        <img src="rebecca_icon.png" alt="Rebecca" class="rebecca-icon">
-                        <div>
-                            <div class="bubble-content rebecca-bubble">{{ msg.text }}</div>
-                            <div class="bubble-time" [title]="msg.time">{{ msg.time | tzDate }}</div>
-                        </div>
-                    </div>
-                </ng-container>
-            </div>
-        </div>
+      <div class="section-label">
+        <span class="material-icons" style="font-size: 1rem;">chat</span>
+        {{ 'user_drawer.past_interactions' | translate }}
+      </div>
+      <div class="chat-history">
+        @for (msg of user.chatHistory; track msg) {
+          <div class="chat-bubble user" [class.user]="msg.from === 'user'">
+            @if (msg.from === 'user') {
+              <div class="bubble-content user-bubble">{{ msg.text }}</div>
+              <div class="bubble-time" style="text-align: right;" [title]="msg.time">{{ msg.time | tzDate }}</div>
+            }
+            @if (msg.from === 'rebecca') {
+              <div class="bubble-rebecca-wrapper">
+                <img src="rebecca_icon.png" alt="Rebecca" class="rebecca-icon">
+                <div>
+                  <div class="bubble-content rebecca-bubble">{{ msg.text }}</div>
+                  <div class="bubble-time" [title]="msg.time">{{ msg.time | tzDate }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
-
     <!-- Actions -->
     <div class="action-buttons">
-        <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 12px;" (click)="onViewOnX()">
-            <span class="material-icons">open_in_new</span> {{ 'common.view_on_x' | translate }}
-        </button>
-        <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);"
-            (click)="onBlockUser()" [disabled]="isActionLoading">
-            <span class="material-icons" [class.spinning]="isActionLoading">{{ isActionLoading ? 'sync' : 'block' }}</span> 
-            {{ isActionLoading ? ('common.loading' | translate) : (isBlocked ? ('user_drawer.unblock_user' | translate) : ('user_drawer.block_user' | translate)) }}
-        </button>
+      <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 12px;" (click)="onViewOnX()">
+        <span class="material-icons">open_in_new</span> {{ 'common.view_on_x' | translate }}
+      </button>
+      <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);"
+        (click)="onBlockUser()" [disabled]="isActionLoading">
+        <span class="material-icons" [class.spinning]="isActionLoading">{{ isActionLoading ? 'sync' : 'block' }}</span>
+        {{ isActionLoading ? ('common.loading' | translate) : (isBlocked ? ('user_drawer.unblock_user' | translate) : ('user_drawer.block_user' | translate)) }}
+      </button>
     </div>
-</div>
+  </div>
+}

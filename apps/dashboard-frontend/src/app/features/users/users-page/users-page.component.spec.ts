@@ -39,9 +39,9 @@ describe('UsersPageComponent', () => {
     component.ngOnInit();
 
     expect(usersRepoSpy.getAll).toHaveBeenCalled();
-    expect(component.users.length).toBe(1);
-    expect(component.users[0].username).toBe('alice');
-    expect(component.isLoading).toBeFalse();
+    expect(component.users().length).toBe(1);
+    expect(component.users()[0].username).toBe('alice');
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should handle load users error gracefully', () => {
@@ -50,7 +50,7 @@ describe('UsersPageComponent', () => {
     component.loadUsers();
 
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to load users', 'error');
-    expect(component.isLoading).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should handle sorting toggle on column click', () => {
@@ -68,10 +68,10 @@ describe('UsersPageComponent', () => {
   });
 
   it('should toggle select all users and handle individual selection changes', () => {
-    component.users = [
+    component.users.set([
       { id: 'alice', username: 'alice', interactions: 10, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any,
       { id: 'bob', username: 'bob', interactions: 5, lastSeen: '2026-08-15', status: UserStatus.ACTIVE } as any
-    ];
+    ]);
 
     component.toggleSelectAll();
     expect(component.selectAll).toBeTrue();
@@ -100,7 +100,7 @@ describe('UsersPageComponent', () => {
     await component.executeBulkBlock();
 
     expect(usersRepoSpy.bulkUpdateStatus).toHaveBeenCalledWith(['spammer_bot'], UserStatus.BLOCKED);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/blocked 1 users/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/[Bb]locked 1 user/), 'success');
 
     // Error case
     component.selectedUsers.add('spammer_bot');
@@ -117,7 +117,7 @@ describe('UsersPageComponent', () => {
     await component.executeBulkUnblock();
 
     expect(usersRepoSpy.bulkUpdateStatus).toHaveBeenCalledWith(['rehabilitated_user'], UserStatus.ACTIVE);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/unblocked 1 users/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/[Uu]nblocked 1 user/), 'success');
 
     // Error case
     component.selectedUsers.add('rehabilitated_user');
@@ -133,16 +133,10 @@ describe('UsersPageComponent', () => {
     expect(component.currentPage).toBe(3);
   });
 
-  it('should open user drawer on openUserDrawer and ignore when text is selected', () => {
+  it('should open user drawer on openUserDrawer', () => {
     component.openUserDrawer('alice');
     expect(component.selectedUserId).toBe('alice');
     expect(component.isDrawerOpen).toBeTrue();
-
-    // When text is selected
-    spyOn(window, 'getSelection').and.returnValue({ toString: () => 'copied text' } as any);
-    component.isDrawerOpen = false;
-    component.openUserDrawer('bob');
-    expect(component.isDrawerOpen).toBeFalse();
   });
 
   it('should return early from bulk actions when no users selected', async () => {

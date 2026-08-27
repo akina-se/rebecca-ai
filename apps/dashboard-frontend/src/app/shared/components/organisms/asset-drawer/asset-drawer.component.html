@@ -1,65 +1,63 @@
-<div class="drawer-content" *ngIf="assetData">
-
+﻿@if (assetData()) {
+  <div class="drawer-content">
     <!-- Image Preview -->
     <div class="asset-preview glass-panel">
-        <img [src]="assetData.url" alt="Asset Preview" class="preview-img">
+      <img [src]="assetData()!.url" alt="Asset Preview" class="preview-img">
     </div>
-
     <!-- Asset Details -->
     <div class="glass-panel stat-box">
-        <div class="timeline-stat" style="display: block;">
-            <div class="stat-label" style="margin-bottom: 8px;">{{ 'assets.name' | translate }}</div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="text" class="form-control" [(ngModel)]="assetBaseName" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
-                <span style="color: var(--text-muted); font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; border: 1px solid var(--border-color);">{{ assetExtension }}</span>
-            </div>
+      <div class="timeline-stat" style="display: block;">
+        <div class="stat-label" style="margin-bottom: 8px;">{{ 'assets.name' | translate }}</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="text" class="form-control" [(ngModel)]="assetBaseName" style="flex: 1; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main);">
+          <span style="color: var(--text-muted); font-weight: 600; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px; border: 1px solid var(--border-color);">{{ assetExtension }}</span>
         </div>
-        <div class="divider"></div>
-        <div class="timeline-stat" style="display: block;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div class="stat-label" style="margin-bottom: 0;">{{ 'assets.caption' | translate }}</div>
-                <button class="sparkle-btn" (click)="onRegenerate()" [disabled]="isRegenerating" style="padding: 4px 10px; font-size: 0.75rem;">
-                    <span class="material-icons" [class.spinning]="isRegenerating" style="font-size: 1rem;">{{ isRegenerating ? 'sync' : 'auto_awesome' }}</span>
-                    {{ isRegenerating ? ('assets.regenerating' | translate) : ('assets.regenerate' | translate) }}
-                </button>
-            </div>
-            <textarea class="form-control" [(ngModel)]="assetData.caption" style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main); resize: vertical;"></textarea>
+      </div>
+      <div class="divider"></div>
+      <div class="timeline-stat" style="display: block;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div class="stat-label" style="margin-bottom: 0;">{{ 'assets.caption' | translate }}</div>
+          <button class="sparkle-btn" (click)="onRegenerate()" [disabled]="isRegenerating" style="padding: 4px 10px; font-size: 0.75rem;">
+            <span class="material-icons" [class.spinning]="isRegenerating" style="font-size: 1rem;">{{ isRegenerating ? 'sync' : 'auto_awesome' }}</span>
+            {{ isRegenerating ? ('assets.regenerating' | translate) : ('assets.regenerate' | translate) }}
+          </button>
         </div>
-        <div style="margin-top: 16px;">
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" (click)="onSave()" [disabled]="isSaving">
-                <span class="material-icons" [class.spinning]="isSaving" style="margin-right: 8px;">{{ isSaving ? 'sync' : 'save' }}</span>
-                {{ isSaving ? ('common.saving' | translate) : ('common.save_changes' | translate) }}
-            </button>
-        </div>
+        <textarea class="form-control" [(ngModel)]="assetData()!.caption" style="width: 100%; min-height: 80px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3); color: var(--text-main); resize: vertical;"></textarea>
+      </div>
+      <div style="margin-top: 16px;">
+        <button class="btn btn-primary" style="width: 100%; justify-content: center;" (click)="onSave()" [disabled]="isSaving">
+          <span class="material-icons" [class.spinning]="isSaving" style="margin-right: 8px;">{{ isSaving ? 'sync' : 'save' }}</span>
+          {{ isSaving ? ('common.saving' | translate) : ('common.save_changes' | translate) }}
+        </button>
+      </div>
     </div>
-
     <!-- Metrics -->
     <div class="metrics-grid">
-        <div class="glass-panel metric-box">
-            <span class="material-icons metric-icon">bar_chart</span>
-            <div class="metric-info">
-                <div class="metric-title">{{ 'assets.used_count' | translate }}</div>
-                <div class="metric-value">{{ assetData.useCount }}</div>
-            </div>
+      <div class="glass-panel metric-box">
+        <span class="material-icons metric-icon">bar_chart</span>
+        <div class="metric-info">
+          <div class="metric-title">{{ 'assets.used_count' | translate }}</div>
+          <div class="metric-value">{{ assetData()!.useCount }}</div>
         </div>
-        <div class="glass-panel metric-box">
-            <span class="material-icons metric-icon">schedule</span>
-            <div class="metric-info">
-                <div class="metric-title">{{ 'users.table_last_interaction' | translate }}</div>
-                <div class="metric-value" style="font-size: 0.9rem; white-space: nowrap;" [title]="assetData.lastUsedAt || ''">{{ assetData.lastUsedAt | tzDate }}</div>
-            </div>
+      </div>
+      <div class="glass-panel metric-box">
+        <span class="material-icons metric-icon">schedule</span>
+        <div class="metric-info">
+          <div class="metric-title">{{ 'users.table_last_interaction' | translate }}</div>
+          <div class="metric-value" style="font-size: 0.9rem; white-space: nowrap;" [title]="assetData()!.lastUsedAt || ''">{{ assetData()!.lastUsedAt | tzDate }}</div>
         </div>
+      </div>
     </div>
-
     <!-- Actions -->
     <div class="action-buttons">
-        <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 12px;" (click)="onViewFullSize()">
-            <span class="material-icons">fullscreen</span> {{ 'assets.view_full_size' | translate }}
-        </button>
-        <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);" 
-            (click)="onDelete()" [disabled]="isDeleting">
-            <span class="material-icons" [class.spinning]="isDeleting">{{ isDeleting ? 'sync' : 'delete' }}</span> 
-            {{ isDeleting ? ('assets.deleting' | translate) : ('assets.delete' | translate) }}
-        </button>
+      <button class="btn btn-outline" style="width: 100%; justify-content: center; margin-bottom: 12px;" (click)="onViewFullSize()">
+        <span class="material-icons">fullscreen</span> {{ 'assets.view_full_size' | translate }}
+      </button>
+      <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);"
+        (click)="onDelete()" [disabled]="isDeleting">
+        <span class="material-icons" [class.spinning]="isDeleting">{{ isDeleting ? 'sync' : 'delete' }}</span>
+        {{ isDeleting ? ('assets.deleting' | translate) : ('assets.delete' | translate) }}
+      </button>
     </div>
-</div>
+  </div>
+}

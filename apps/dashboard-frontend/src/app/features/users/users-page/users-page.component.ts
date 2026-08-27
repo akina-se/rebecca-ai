@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, inject } from '@angular/core';
+﻿import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
@@ -6,7 +6,7 @@ import { UserDrawerComponent } from '../../../shared/components/organisms/user-d
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { USERS_REPOSITORY, UsersRepository } from '../../../core/ports/users.repository';
+import { USERS_REPOSITORY } from '../../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
 
@@ -23,7 +23,7 @@ export class UsersPageComponent implements OnInit {
   drawerTitle = '';
   drawerIcon = '';
 
-  users: UserDetail[] = [];
+  readonly users = signal<UserDetail[]>([]);
   selectedUsers = new Set<string>();
   selectAll = false;
 
@@ -31,15 +31,15 @@ export class UsersPageComponent implements OnInit {
   searchQuery = '';
   currentPage = 1;
   pageSize = 30;
-  totalPages = 1;
-  totalItems = 0;
+  readonly totalPages = signal<number>(1);
+  readonly totalItems = signal<number>(0);
 
   userSortBy: 'username' | 'interactions' | 'lastSeen' = 'interactions';
   userSortOrder: 'asc' | 'desc' = 'desc';
 
   isBlocking = false;
   isUnblocking = false;
-  isLoading = false;
+  readonly isLoading = signal<boolean>(false);
 
   toastService = inject(ToastService);
   private readonly usersRepo = inject(USERS_REPOSITORY);
@@ -49,7 +49,7 @@ export class UsersPageComponent implements OnInit {
   }
 
   loadUsers(page = 1) {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.currentPage = page;
     this.usersRepo.getAll({
       page: this.currentPage,
@@ -59,16 +59,18 @@ export class UsersPageComponent implements OnInit {
       sortOrder: this.userSortOrder
     }).subscribe({
       next: (response) => {
-        this.users = response.data || [];
-        this.totalItems = response.meta?.totalItems || this.users.length;
-        this.totalPages = response.meta?.totalPages || Math.ceil(this.totalItems / this.pageSize) || 1;
+        const items = response.data || [];
+        this.users.set(items);
+        const count = response.meta?.totalItems || items.length;
+        this.totalItems.set(count);
+        this.totalPages.set(response.meta?.totalPages || Math.ceil(count / this.pageSize) || 1);
         this.selectedUsers.clear();
         this.selectAll = false;
-        this.isLoading = false;
+        this.isLoading.set(false);
       },
       error: () => {
         this.toastService.show('Failed to load users', 'error');
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }
@@ -94,7 +96,7 @@ export class UsersPageComponent implements OnInit {
   toggleSelectAll() {
     this.selectAll = !this.selectAll;
     if (this.selectAll) {
-      this.users.forEach(u => this.selectedUsers.add(u.id));
+      this.users().forEach(u => this.selectedUsers.add(u.id));
     } else {
       this.selectedUsers.clear();
     }
@@ -102,25 +104,41 @@ export class UsersPageComponent implements OnInit {
 
   toggleSelection(userId: string, event: Event) {
     event.stopPropagation();
-    const target = event.target as HTMLInputElement;
-    if (target.checked) {
-      this.selectedUsers.add(userId);
-    } else {
+    if (this.selectedUsers.has(userId)) {
       this.selectedUsers.delete(userId);
+    } else {
+      this.selectedUsers.add(userId);
     }
-    this.selectAll = this.selectedUsers.size === this.users.length && this.users.length > 0;
+    this.selectAll = this.selectedUsers.size === this.users().length && this.users().length > 0;
   }
 
-  async executeBulkBlock() {
+  openUserDrawer(userOrId: UserDetail | string) {
+    if (typeof userOrId === 'string') {
+      const user = this.users().find(u => u.id === userOrId);
+      this.selectedUserId = userOrId;
+      this.drawerTitle = `@${user?.username || userOrId}`;
+    } else {
+      this.selectedUserId = userOrId.id;
+      this.drawerTitle = `@${userOrId.username || userOrId.id}`;
+    }
+    this.drawerIcon = 'person';
+    this.isDrawerOpen = true;
+  }
+
+  onUserUpdated() {
+    this.loadUsers(this.currentPage);
+  }
+
+  executeBulkBlock() {
     if (this.selectedUsers.size === 0) return;
+    const ids = Array.from(this.selectedUsers);
     this.isBlocking = true;
-    this.usersRepo.bulkUpdateStatus(Array.from(this.selectedUsers), UserStatus.BLOCKED).subscribe({
+
+    this.usersRepo.bulkUpdateStatus(ids, UserStatus.BLOCKED).subscribe({
       next: () => {
-        this.toastService.show(`Successfully blocked ${this.selectedUsers.size} users`, 'success');
-        this.selectedUsers.clear();
-        this.selectAll = false;
+        this.toastService.show(`Blocked ${ids.length} user(s)`, 'success');
         this.isBlocking = false;
-        this.loadUsers();
+        this.loadUsers(this.currentPage);
       },
       error: () => {
         this.toastService.show('Failed to block users', 'error');
@@ -129,16 +147,16 @@ export class UsersPageComponent implements OnInit {
     });
   }
 
-  async executeBulkUnblock() {
+  executeBulkUnblock() {
     if (this.selectedUsers.size === 0) return;
+    const ids = Array.from(this.selectedUsers);
     this.isUnblocking = true;
-    this.usersRepo.bulkUpdateStatus(Array.from(this.selectedUsers), UserStatus.ACTIVE).subscribe({
+
+    this.usersRepo.bulkUpdateStatus(ids, UserStatus.ACTIVE).subscribe({
       next: () => {
-        this.toastService.show(`Successfully unblocked ${this.selectedUsers.size} users`, 'success');
-        this.selectedUsers.clear();
-        this.selectAll = false;
+        this.toastService.show(`Unblocked ${ids.length} user(s)`, 'success');
         this.isUnblocking = false;
-        this.loadUsers();
+        this.loadUsers(this.currentPage);
       },
       error: () => {
         this.toastService.show('Failed to unblock users', 'error');
@@ -147,11 +165,12 @@ export class UsersPageComponent implements OnInit {
     });
   }
 
-  openUserDrawer(id: string) {
-    if ((window.getSelection()?.toString() || '').trim().length > 0) return;
-    this.selectedUserId = id;
-    this.drawerTitle = 'User Profile';
-    this.drawerIcon = 'person';
-    this.isDrawerOpen = true;
+  getStatusBadgeClass(status: UserStatus): string {
+    switch (status) {
+      case UserStatus.ACTIVE: return 'status-active';
+      case UserStatus.BLOCKED: return 'status-blocked';
+      case UserStatus.MUTED: return 'status-muted';
+      default: return 'status-active';
+    }
   }
 }

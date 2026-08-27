@@ -1,8 +1,8 @@
-import { Component, Input, Output, EventEmitter, inject, OnChanges, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+﻿import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
+
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
-import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../../core/ports/dashboard.repository';
+import { DASHBOARD_REPOSITORY } from '../../../../core/ports/dashboard.repository';
 import { CopilotContextService } from '../../../../core/services/copilot-context.service';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
@@ -22,7 +22,7 @@ interface PostDataModel {
 @Component({
   selector: 'app-post-drawer',
   standalone: true,
-  imports: [CommonModule, TzDatePipe, TranslatePipe],
+  imports: [TzDatePipe, TranslatePipe],
   templateUrl: './post-drawer.component.html',
   styleUrls: ['./post-drawer.component.css']
 })
@@ -35,9 +35,9 @@ export class PostDrawerComponent implements OnChanges {
   @Output() openLightbox = new EventEmitter<string>();
 
   isDeleting = false;
-  isLoading = false;
+  readonly isLoading = signal<boolean>(false);
 
-  postData: PostDataModel | null = null;
+  readonly postData = signal<PostDataModel | null>(null);
   private readonly dashboardRepo = inject(DASHBOARD_REPOSITORY);
 
   ngOnChanges() {
@@ -47,7 +47,7 @@ export class PostDrawerComponent implements OnChanges {
   }
 
   loadPost(id: string) {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.dashboardRepo.getPostById(id).subscribe({
       next: (post) => {
         const postData = {
@@ -61,54 +61,46 @@ export class PostDrawerComponent implements OnChanges {
           replies: post.replies || 0,
           mediaUrls: post.mediaUrls || []
         };
-        this.postData = postData;
+        this.postData.set(postData);
+
         this.contextService.setFocusedEntity({
           type: 'post',
           id: post.id,
-          label: postData.text.slice(0, 35),
-          details: { impressions: postData.impressions, status: postData.status }
+          label: post.content?.slice(0, 30) || post.id,
+          details: { impressions: post.impressions, status: post.status }
         });
-        this.isLoading = false;
+
+        this.isLoading.set(false);
       },
       error: () => {
         this.toastService.show('Failed to load post details', 'error');
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }
 
-  onOpenLightbox(url: string) {
+  get displayPost(): PostDataModel | null {
+    return this.postData();
+  }
+
+  onMediaClick(url: string): void {
     this.openLightbox.emit(url);
   }
 
-  onDeletePost() {
-    if (!this.postData) return;
+  onDelete(): void {
+    const data = this.postData();
+    if (!data) return;
+
     this.isDeleting = true;
-    this.dashboardRepo.deletePosts([this.postData.id]).subscribe({
+    this.dashboardRepo.deletePosts([data.id]).subscribe({
       next: () => {
-        this.toastService.show(`Successfully deleted post`, 'success');
+        this.toastService.show('Post deleted successfully', 'success');
         this.isDeleting = false;
-        this.drawerService.close(); // Close drawer after delete
-        // We might want to reload the timeline here, but the dashboard page does that
-        // However, we don't have an EventEmitter for that in this component, but the UI should reflect it.
-        // E2E test will check if it's gone after reload or via DB
       },
       error: () => {
-        this.toastService.show(`Failed to delete post`, 'error');
+        this.toastService.show('Failed to delete post', 'error');
         this.isDeleting = false;
       }
     });
   }
-
-  onViewOnX(): void {
-    const tweetId = this.postData?.id || this.postId;
-    if (!tweetId) return;
-    const url = `https://x.com/i/status/${tweetId}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
-
-  openAiCopilot() {
-    this.drawerService.open();
-  }
 }
-

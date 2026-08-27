@@ -47,8 +47,7 @@ export class ConfigService {
           this.publicSiteUrl.set(data.publicSiteUrl);
         }
       }
-    } catch (err) {
-      console.warn('Could not load runtime /api/v1/config, falling back to local environment defaults:', err);
+    } catch {
       this.config = {
         firebase: environment.firebase,
         apiUrl: environment.apiUrl,

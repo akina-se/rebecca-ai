@@ -4,6 +4,13 @@
   height: 100%;
 }
 
+.authenticated-layout {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
 .login-layout {
   flex: 1;
   display: flex;

@@ -1,274 +1,296 @@
-<div class="view-section active">
-    
-    <!-- Shared SVG Gradients -->
-    <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
-        <linearGradient id="spark-success" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="var(--success)" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="var(--success)" stop-opacity="0"/>
-        </linearGradient>
-        <linearGradient id="spark-danger" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="var(--danger)" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="var(--danger)" stop-opacity="0"/>
-        </linearGradient>
-        <linearGradient id="spark-warning" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="var(--warning)" stop-opacity="0.3"/>
-            <stop offset="100%" stop-color="var(--warning)" stop-opacity="0"/>
-        </linearGradient>
-    </svg>
-    <div *ngIf="systemAlerts && systemAlerts.length > 0">
-        <div *ngFor="let alert of systemAlerts" class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
-            <span class="material-icons">{{ alert.type === 'warning' ? 'warning' : alert.type === 'error' ? 'error' : 'info' }}</span>
-            <span><strong>{{ (alert.type === 'warning' ? 'common.action_required' : alert.type === 'error' ? 'common.error' : 'common.info') | translate }}</strong> {{ (alert.message === '3 image captions failed generation.' ? 'dashboard.alert_captions_failed' : alert.message) | translate }}</span>
-            <a *ngIf="alert.link" [routerLink]="alert.link">{{ (alert.linkText ? alert.linkText : 'common.review') | translate }} &rarr;</a>
-        </div>
-    </div>
+<div class="view-section active" data-testid="dashboard-ready">
 
-    <!-- Block 1: KPI Overview -->
-    <div class="block-header" style="margin-top: 0;">
-        <h2><span class="material-icons">query_stats</span> {{ 'dashboard.overview' | translate }}</h2>
-        <!-- Date Picker Scoped ONLY to the KPIs -->
-        <app-dropdown 
-            [options]="kpiFilterOptions" 
-            [selectedOption]="'dashboard.filter_30d' | translate"
-            (selectionChange)="setKpiFilter($event)">
-        </app-dropdown>
-    </div>
-    
-    <div class="kpi-grid" *ngIf="kpiMetrics">
-        <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">people</span> {{ 'dashboard.followers' | translate }}</div>
-            <div class="card-value">{{ kpiMetrics.followers | number }}</div>
-            <div class="card-trend" [class.negative]="kpiMetrics.followersTrend < 0">
-                <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics.followersTrend >= 0 ? 'trending_up' : 'trending_down' }}</span> 
-                {{ kpiMetrics.followersTrend > 0 ? '+' : '' }}{{ kpiMetrics.followersTrend }}% {{ 'dashboard.vs_previous' | translate }}
-            </div>
-            <svg class="sparkline" viewBox="0 0 100 20">
-                <polygon [attr.fill]="kpiMetrics.followersTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics.followersHistory)" />
-                <polyline fill="none" [attr.stroke]="kpiMetrics.followersTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics.followersHistory)" />
-            </svg>
+  <!-- Shared SVG Gradients -->
+  <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+    <linearGradient id="spark-success" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="var(--success)" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="var(--success)" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="spark-danger" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="var(--danger)" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="var(--danger)" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="spark-warning" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="var(--warning)" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="var(--warning)" stop-opacity="0"/>
+    </linearGradient>
+  </svg>
+  @if (systemAlerts() && systemAlerts().length > 0) {
+    <div>
+      @for (alert of systemAlerts(); track alert) {
+        <div class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
+          <span class="material-icons">{{ alert.type === 'warning' ? 'warning' : alert.type === 'error' ? 'error' : 'info' }}</span>
+          <span><strong>{{ (alert.type === 'warning' ? 'common.action_required' : alert.type === 'error' ? 'common.error' : 'common.info') | translate }}</strong> {{ (alert.message === '3 image captions failed generation.' ? 'dashboard.alert_captions_failed' : alert.message) | translate }}</span>
+          @if (alert.link) {
+            <a [routerLink]="alert.link">{{ (alert.linkText ? alert.linkText : 'common.review') | translate }} &rarr;</a>
+          }
         </div>
-        <div class="card glass-panel">
+      }
+    </div>
+  }
+
+  <!-- Block 1: KPI Overview -->
+  <div class="block-header" style="margin-top: 0;">
+    <h2><span class="material-icons">query_stats</span> {{ 'dashboard.overview' | translate }}</h2>
+    <!-- Date Picker Scoped ONLY to the KPIs -->
+    <app-dropdown
+      [options]="kpiFilterOptions"
+      [selectedOption]="'dashboard.filter_30d' | translate"
+      (selectionChange)="setKpiFilter($event)">
+    </app-dropdown>
+  </div>
+
+  @if (kpiMetrics()) {
+    <div class="kpi-grid">
+      <div class="card glass-panel">
+        <div class="card-title"><span class="material-icons">people</span> {{ 'dashboard.followers' | translate }}</div>
+        <div class="card-value">{{ kpiMetrics()!.followers | number }}</div>
+        <div class="card-trend" [class.negative]="kpiMetrics()!.followersTrend < 0">
+          <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.followersTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
+          {{ kpiMetrics()!.followersTrend > 0 ? '+' : '' }}{{ kpiMetrics()!.followersTrend }}% {{ 'dashboard.vs_previous' | translate }}
+        </div>
+        <svg class="sparkline" viewBox="0 0 100 20">
+          <polygon [attr.fill]="kpiMetrics()!.followersTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.followersHistory)" />
+            <polyline fill="none" [attr.stroke]="kpiMetrics()!.followersTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.followersHistory)" />
+            </svg>
+          </div>
+          <div class="card glass-panel">
             <div class="card-title"><span class="material-icons">favorite</span> {{ 'dashboard.engagement_rate' | translate }}</div>
-            <div class="card-value">{{ kpiMetrics.engagementRate }}%</div>
-            <div class="card-trend" [class.negative]="kpiMetrics.engagementTrend < 0">
-                <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics.engagementTrend >= 0 ? 'trending_up' : 'trending_down' }}</span> 
-                {{ kpiMetrics.engagementTrend > 0 ? '+' : '' }}{{ kpiMetrics.engagementTrend }}% {{ 'dashboard.vs_previous' | translate }}
+            <div class="card-value">{{ kpiMetrics()!.engagementRate }}%</div>
+            <div class="card-trend" [class.negative]="kpiMetrics()!.engagementTrend < 0">
+              <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.engagementTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
+              {{ kpiMetrics()!.engagementTrend > 0 ? '+' : '' }}{{ kpiMetrics()!.engagementTrend }}% {{ 'dashboard.vs_previous' | translate }}
             </div>
             <svg class="sparkline" viewBox="0 0 100 20">
-                <polygon [attr.fill]="kpiMetrics.engagementTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics.engagementHistory)" />
-                <polyline fill="none" [attr.stroke]="kpiMetrics.engagementTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics.engagementHistory)" />
-            </svg>
-        </div>
-        <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">chat</span> {{ 'dashboard.dau' | translate }}</div>
-            <div class="card-value">{{ kpiMetrics.dailyActiveUsers | number }}</div>
-            <div class="card-trend" [class.negative]="kpiMetrics.dauTrend < 0">
-                <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics.dauTrend >= 0 ? 'trending_up' : 'trending_down' }}</span> 
-                {{ kpiMetrics.dauTrend > 0 ? '+' : '' }}{{ kpiMetrics.dauTrend }}% {{ 'dashboard.vs_previous' | translate }}
-            </div>
-            <svg class="sparkline" viewBox="0 0 100 20">
-                <polygon [attr.fill]="kpiMetrics.dauTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics.dauHistory)" />
-                <polyline fill="none" [attr.stroke]="kpiMetrics.dauTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics.dauHistory)" />
-            </svg>
-        </div>
-        <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">api</span> {{ 'dashboard.api_calls' | translate }}</div>
-            <div class="card-value">{{ kpiMetrics.apiCalls | number }}</div>
-            <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> {{ 'dashboard.steady' | translate }}</div>
-            <svg class="sparkline" viewBox="0 0 100 20">
-                <polygon fill="url(#spark-warning)" [attr.points]="getSparklinePolygon(kpiMetrics.apiCallsHistory)" />
-                <polyline fill="none" stroke="var(--warning)" [attr.points]="getSparklinePoints(kpiMetrics.apiCallsHistory)" />
-            </svg>
-        </div>
-    </div>
+              <polygon [attr.fill]="kpiMetrics()!.engagementTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.engagementHistory)" />
+                <polyline fill="none" [attr.stroke]="kpiMetrics()!.engagementTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.engagementHistory)" />
+                </svg>
+              </div>
+              <div class="card glass-panel">
+                <div class="card-title"><span class="material-icons">chat</span> {{ 'dashboard.dau' | translate }}</div>
+                <div class="card-value">{{ kpiMetrics()!.dailyActiveUsers | number }}</div>
+                <div class="card-trend" [class.negative]="kpiMetrics()!.dauTrend < 0">
+                  <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.dauTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
+                  {{ kpiMetrics()!.dauTrend > 0 ? '+' : '' }}{{ kpiMetrics()!.dauTrend }}% {{ 'dashboard.vs_previous' | translate }}
+                </div>
+                <svg class="sparkline" viewBox="0 0 100 20">
+                  <polygon [attr.fill]="kpiMetrics()!.dauTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.dauHistory)" />
+                    <polyline fill="none" [attr.stroke]="kpiMetrics()!.dauTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.dauHistory)" />
+                    </svg>
+                  </div>
+                  <div class="card glass-panel">
+                    <div class="card-title"><span class="material-icons">api</span> {{ 'dashboard.api_calls' | translate }}</div>
+                    <div class="card-value">{{ kpiMetrics()!.apiCalls | number }}</div>
+                    <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> {{ 'dashboard.steady' | translate }}</div>
+                    <svg class="sparkline" viewBox="0 0 100 20">
+                      <polygon fill="url(#spark-warning)" [attr.points]="getSparklinePolygon(kpiMetrics()!.apiCallsHistory)" />
+                      <polyline fill="none" stroke="var(--warning)" [attr.points]="getSparklinePoints(kpiMetrics()!.apiCallsHistory)" />
+                    </svg>
+                  </div>
+                </div>
+              }
 
-    <!-- Block 2: Rankings -->
-    <div class="block-header">
-        <h2><span class="material-icons">leaderboard</span> {{ 'dashboard.leaderboards' | translate }}</h2>
-    </div>
-    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
-        <!-- Top Posts -->
-        <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
-            <div class="table-header-container glass-panel">
-                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">emoji_events</span> {{ 'dashboard.top_posts' | translate }}</div>
-                <div class="ranking-tabs">
-                    <button class="rank-tab" [class.active]="topPostsMode === 'all-time'" (click)="setMode('posts', 'all-time')">{{ 'dashboard.filter_all_time' | translate }}</button>
-                    <button class="rank-tab" [class.active]="topPostsMode === 'yearly'" (click)="setMode('posts', 'yearly')">{{ 'dashboard.filter_yearly' | translate }}</button>
-                    <button class="rank-tab" [class.active]="topPostsMode === 'monthly'" (click)="setMode('posts', 'monthly')">{{ 'dashboard.filter_monthly' | translate }}</button>
-                    <app-date-picker-popover 
+              <!-- Block 2: Rankings -->
+              <div class="block-header">
+                <h2><span class="material-icons">leaderboard</span> {{ 'dashboard.leaderboards' | translate }}</h2>
+              </div>
+              <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                <!-- Top Posts -->
+                <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
+                  <div class="table-header-container glass-panel">
+                    <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">emoji_events</span> {{ 'dashboard.top_posts' | translate }}</div>
+                    <div class="ranking-tabs">
+                      <button class="rank-tab" [class.active]="topPostsMode === 'all-time'" (click)="setMode('posts', 'all-time')">{{ 'dashboard.filter_all_time' | translate }}</button>
+                      <button class="rank-tab" [class.active]="topPostsMode === 'yearly'" (click)="setMode('posts', 'yearly')">{{ 'dashboard.filter_yearly' | translate }}</button>
+                      <button class="rank-tab" [class.active]="topPostsMode === 'monthly'" (click)="setMode('posts', 'monthly')">{{ 'dashboard.filter_monthly' | translate }}</button>
+                      <app-date-picker-popover
                         [mode]="topPostsMode"
                         [currentText]="topPostsDate"
                         [hasNext]="canShiftDate('posts', 1)"
                         (previous)="shiftDate('posts', -1)"
                         (next)="shiftDate('posts', 1)"
                         (pick)="onDatePicked('posts', $event)">
-                    </app-date-picker-popover>
-                </div>
-            </div>
-            <table class="data-table glass-panel">
-                <thead><tr><th>{{ 'dashboard.table_time' | translate }}</th><th>{{ 'dashboard.table_content' | translate }}</th><th><span class="material-icons">visibility</span></th></tr></thead>
-                <tbody>
-                    <tr class="clickable" *ngFor="let post of topPosts.slice(0, 10)" (click)="openPostDrawer(post.id)">
-                        <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
-                        <td>
+                      </app-date-picker-popover>
+                    </div>
+                  </div>
+                  <table class="data-table glass-panel">
+                    <thead><tr><th>{{ 'dashboard.table_time' | translate }}</th><th>{{ 'dashboard.table_content' | translate }}</th><th><span class="material-icons">visibility</span></th></tr></thead>
+                    <tbody>
+                      @for (post of topPosts().slice(0, 10); track post) {
+                        <tr class="clickable" (click)="openPostDrawer(post.id)">
+                          <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
+                          <td>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span>{{ post.snippet }}</span>
-                                <span *ngIf="post.hasMedia" class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span>
+                              <span>{{ post.snippet }}</span>
+                              @if (post.hasMedia) {
+                                <span class="material-icons" style="font-size: 1rem; color: var(--color-primary);" title="Contains Media">image</span>
+                              }
                             </div>
-                        </td>
-                        <td>{{ post.impressions | number }}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="table-footer-btn glass-panel" (click)="openRankingModal('posts')">{{ 'dashboard.view_full_ranking' | translate }}</div>
-        </div>
-        
-        <!-- Top Users -->
-        <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
-            <div class="table-header-container glass-panel">
-                <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">local_fire_department</span> {{ 'dashboard.top_users' | translate }}</div>
-                <div class="ranking-tabs">
-                    <button class="rank-tab" [class.active]="topUsersMode === 'all-time'" (click)="setMode('users', 'all-time')">{{ 'dashboard.filter_all_time' | translate }}</button>
-                    <button class="rank-tab" [class.active]="topUsersMode === 'yearly'" (click)="setMode('users', 'yearly')">{{ 'dashboard.filter_yearly' | translate }}</button>
-                    <button class="rank-tab" [class.active]="topUsersMode === 'monthly'" (click)="setMode('users', 'monthly')">{{ 'dashboard.filter_monthly' | translate }}</button>
-                    <app-date-picker-popover 
+                          </td>
+                          <td>{{ post.impressions | number }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  <div class="table-footer-btn glass-panel" (click)="openRankingModal('posts')">{{ 'dashboard.view_full_ranking' | translate }}</div>
+                </div>
+
+                <!-- Top Users -->
+                <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column;">
+                  <div class="table-header-container glass-panel">
+                    <div class="table-title"><span class="material-icons" style="color: var(--color-primary);">local_fire_department</span> {{ 'dashboard.top_users' | translate }}</div>
+                    <div class="ranking-tabs">
+                      <button class="rank-tab" [class.active]="topUsersMode === 'all-time'" (click)="setMode('users', 'all-time')">{{ 'dashboard.filter_all_time' | translate }}</button>
+                      <button class="rank-tab" [class.active]="topUsersMode === 'yearly'" (click)="setMode('users', 'yearly')">{{ 'dashboard.filter_yearly' | translate }}</button>
+                      <button class="rank-tab" [class.active]="topUsersMode === 'monthly'" (click)="setMode('users', 'monthly')">{{ 'dashboard.filter_monthly' | translate }}</button>
+                      <app-date-picker-popover
                         [mode]="topUsersMode"
                         [currentText]="topUsersDate"
                         [hasNext]="canShiftDate('users', 1)"
                         (previous)="shiftDate('users', -1)"
                         (next)="shiftDate('users', 1)"
                         (pick)="onDatePicked('users', $event)">
-                    </app-date-picker-popover>
-                </div>
-            </div>
-            <table class="data-table glass-panel">
-                <thead><tr><th>{{ 'dashboard.table_user_id' | translate }}</th><th>{{ 'dashboard.table_interactions' | translate }}</th></tr></thead>
-                <tbody>
-                    <tr class="clickable" *ngFor="let user of topUsers.slice(0, 10)" (click)="openUserDrawer(user.id)">
-                        <td>&#64;{{ user.username || user.id }}</td>
-                        <td>{{ user.interactions | number }}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="table-footer-btn glass-panel" (click)="openRankingModal('users')">{{ 'dashboard.view_full_ranking' | translate }}</div>
-        </div>
-    </div>
-
-    <!-- Block 3: Timeline Log -->
-    <div class="block-header" style="margin-top: 3rem;">
-        <h2><span class="material-icons">history</span> {{ 'dashboard.timeline_history' | translate }}</h2>
-        <input type="text" class="form-control" [placeholder]="'dashboard.search_placeholder' | translate" [(ngModel)]="searchQuery" (ngModelChange)="applyTimelineFilter()" style="width: 250px; padding: 0.5rem; border-radius: 20px;">
-    </div>
-    
-    <div class="bulk-actions-bar glass-panel" id="timeline-bulk-bar">
-        <label class="checkbox-container">
-            <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()">
-            <span class="checkmark"></span>
-            <span style="margin-left: 8px;">{{ 'dashboard.select_all' | translate }}</span>
-        </label>
-        <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
-        <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
-            {{ selectedRows.size > 0 ? (selectedRows.size + ' ' + ('dashboard.items_selected' | translate)) : ('dashboard.select_items_hint' | translate) }}
-        </span>
-        <!-- Always reserve button space to prevent height shift -->
-        <button class="btn bulk-btn" 
-            [style.visibility]="selectedRows.size > 0 ? 'visible' : 'hidden'"
-            [disabled]="isDeleting"
-            style="min-width: 140px; justify-content: center; padding: 4px 12px; font-size: 0.8rem; border: 1px solid var(--danger); color: var(--danger); border-radius: 20px; background: rgba(255,71,87,0.1); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;"
-            (click)="executeBulkDelete()">
-            <span class="material-icons" [class.spinning]="isDeleting" style="font-size: 1rem;">{{ isDeleting ? 'sync' : 'delete' }}</span> 
-            {{ isDeleting ? ('dashboard.deleting' | translate) : ('dashboard.delete_from_x' | translate) }}
-        </button>
-    </div>
-    
-    <table class="data-table glass-panel" id="timeline-table" style="border-radius: 0;">
-        <thead><tr>
-            <th style="width: 40px;"></th>
-            <th class="sortable-th" (click)="toggleTimelineSort('time')" style="cursor: pointer; user-select: none;" title="Sort by Time">
-                <div style="display: flex; align-items: center; gap: 4px;">
-                    <span [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'time' ? '600' : 'normal'">{{ 'dashboard.table_time' | translate }}</span>
-                    <span class="material-icons sort-icon" [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
-                        {{ timelineSortBy === 'time' ? (timelineSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
-                    </span>
-                </div>
-            </th>
-            <th>{{ 'dashboard.table_media' | translate }}</th>
-            <th>{{ 'dashboard.table_content' | translate }}</th>
-            <th class="sortable-th" (click)="toggleTimelineSort('impressions')" style="cursor: pointer; user-select: none;" title="Sort by Impressions">
-                <div style="display: flex; align-items: center; gap: 4px;">
-                    <span [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'impressions' ? '600' : 'normal'">{{ 'dashboard.table_impressions' | translate }}</span>
-                    <span class="material-icons sort-icon" [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
-                        {{ timelineSortBy === 'impressions' ? (timelineSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
-                    </span>
-                </div>
-            </th>
-            <th>{{ 'dashboard.table_status' | translate }}</th>
-        </tr></thead>
-        <tbody>
-            <tr class="clickable" *ngFor="let post of filteredTimelinePosts" (click)="openPostDrawer(post.id)">
-                <td (click)="$event.stopPropagation()">
-                    <label class="checkbox-container" (click)="$event.stopPropagation()">
-                        <input type="checkbox" class="row-checkbox" [checked]="selectedRows.has(post.id)" (change)="toggleRowSelection(post.id, $event)">
-                        <span class="checkmark"></span>
-                    </label>
-                </td>
-                <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
-                <td>
-                    <div *ngIf="post.hasMedia && post.mediaUrls && post.mediaUrls[0]" 
-                         (click)="$event.stopPropagation(); openLightbox(post.mediaUrls[0])" 
-                         style="width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border-color); overflow: hidden;"
-                         title="Click to view image">
-                        <img [src]="post.mediaUrls[0]" style="width: 100%; height: 100%; object-fit: cover;" alt="Media Thumbnail" />
+                      </app-date-picker-popover>
                     </div>
-                </td>
-                <td>{{ post.text }}</td>
-                <td>{{ post.impressions | number }}</td>
-                <td><span class="badge">{{ post.status }}</span></td>
-            </tr>
-        </tbody>
-    </table>
-    <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px; padding: 0.75rem 1.5rem;">
-        <app-pagination
-            [currentPage]="timelinePage"
-            [totalPages]="timelineTotalPages"
-            [totalItems]="timelineTotalItems"
-            [itemsLabel]="'pagination.posts' | translate"
-            [isLoading]="isLoadingTimeline"
-            (pageChange)="loadTimeline($event)">
-        </app-pagination>
-    </div>
-</div>
+                  </div>
+                  <table class="data-table glass-panel">
+                    <thead><tr><th>{{ 'dashboard.table_user_id' | translate }}</th><th>{{ 'dashboard.table_interactions' | translate }}</th></tr></thead>
+                    <tbody>
+                      @for (user of topUsers().slice(0, 10); track user) {
+                        <tr class="clickable" (click)="openUserDrawer(user.id)">
+                          <td style="font-weight: 500;">@{{ user.username || user.id }}</td>
+                          <td>{{ user.interactions | number }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                  <div class="table-footer-btn glass-panel" (click)="openRankingModal('users')">{{ 'dashboard.view_full_ranking' | translate }}</div>
+                </div>
+              </div>
 
-<app-right-drawer [isOpen]="isDrawerOpen" [title]="drawerTitle" [icon]="drawerIcon" (closeDrawer)="isDrawerOpen = false">
-    <!-- Post Detail Drawer -->
-    <div style="padding: 20px;" *ngIf="drawerType === 'post'">
-        <app-post-drawer 
-            [postId]="selectedItemId"
-            (openLightbox)="openLightbox($event)">
-        </app-post-drawer>
-    </div>
-    <!-- User Profile Drawer -->
-    <div style="padding: 20px;" *ngIf="drawerType === 'user'">
-        <app-user-drawer [userId]="selectedItemId"></app-user-drawer>
-    </div>
-</app-right-drawer>
+              <!-- Block 3: Timeline Log -->
+              <div class="block-header" style="margin-top: 3rem;">
+                <h2><span class="material-icons">history</span> {{ 'dashboard.timeline_history' | translate }}</h2>
+                <input type="text" class="form-control" [placeholder]="'dashboard.search_placeholder' | translate" [(ngModel)]="searchQuery" (ngModelChange)="applyTimelineFilter()" style="width: 250px; padding: 0.5rem; border-radius: 20px;">
+              </div>
 
-<app-lightbox 
-    [isOpen]="isLightboxOpen" 
-    [imageUrl]="lightboxImageUrl" 
-    (close)="isLightboxOpen = false">
-</app-lightbox>
+              <div class="bulk-actions-bar glass-panel" id="timeline-bulk-bar">
+                <label class="checkbox-container">
+                  <input type="checkbox" class="select-all" [checked]="selectAll" (change)="toggleSelectAll()">
+                  <span class="checkmark"></span>
+                  <span style="margin-left: 8px;">{{ 'dashboard.select_all' | translate }}</span>
+                </label>
+                <div style="width: 1px; height: 16px; background: var(--border-color); margin: 0 10px;"></div>
+                <span class="bulk-text" style="color: var(--text-muted); font-style: italic; flex: 1;">
+                  {{ selectedRows.size > 0 ? (selectedRows.size + ' ' + ('dashboard.items_selected' | translate)) : ('dashboard.select_items_hint' | translate) }}
+                </span>
+                <!-- Always reserve button space to prevent height shift -->
+                <button class="btn bulk-btn"
+                  [style.visibility]="selectedRows.size > 0 ? 'visible' : 'hidden'"
+                  [disabled]="isDeleting"
+                  style="min-width: 140px; justify-content: center; padding: 4px 12px; font-size: 0.8rem; border: 1px solid var(--danger); color: var(--danger); border-radius: 20px; background: rgba(255,71,87,0.1); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap;"
+                  (click)="executeBulkDelete()">
+                  <span class="material-icons" [class.spinning]="isDeleting" style="font-size: 1rem;">{{ isDeleting ? 'sync' : 'delete' }}</span>
+                  {{ isDeleting ? ('dashboard.deleting' | translate) : ('dashboard.delete_from_x' | translate) }}
+                </button>
+              </div>
 
-<app-ranking-modal
-    [isOpen]="isRankingModalOpen"
-    [title]="rankingModalTitle"
-    [colLabel]="rankingModalColLabel"
-    [colMetric]="rankingModalColMetric"
-    [entries]="rankingModalEntries"
-    [currentPage]="rankingModalCurrentPage"
-    [totalPages]="rankingModalTotalPages"
-    [totalItems]="rankingModalTotalItems"
-    (pageChange)="onRankingPageChange($event)"
-    (close)="isRankingModalOpen = false"
-    (rowClick)="rankingModalType === 'post' ? openPostDrawer($event) : openUserDrawer($event)">
-</app-ranking-modal>
+              <table class="data-table glass-panel" id="timeline-table" style="border-radius: 0;">
+                <thead><tr>
+                  <th style="width: 40px;"></th>
+                  <th class="sortable-th" (click)="toggleTimelineSort('time')" style="cursor: pointer; user-select: none;" title="Sort by Time">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'time' ? '600' : 'normal'">{{ 'dashboard.table_time' | translate }}</span>
+                      <span class="material-icons sort-icon" [style.color]="timelineSortBy === 'time' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ timelineSortBy === 'time' ? (timelineSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                      </span>
+                    </div>
+                  </th>
+                  <th>{{ 'dashboard.table_media' | translate }}</th>
+                  <th>{{ 'dashboard.table_content' | translate }}</th>
+                  <th class="sortable-th" (click)="toggleTimelineSort('impressions')" style="cursor: pointer; user-select: none;" title="Sort by Impressions">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      <span [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'inherit'" [style.font-weight]="timelineSortBy === 'impressions' ? '600' : 'normal'">{{ 'dashboard.table_impressions' | translate }}</span>
+                      <span class="material-icons sort-icon" [style.color]="timelineSortBy === 'impressions' ? 'var(--color-primary)' : 'var(--text-muted)'" style="font-size: 1rem;">
+                        {{ timelineSortBy === 'impressions' ? (timelineSortOrder === 'desc' ? 'arrow_downward' : 'arrow_upward') : 'unfold_more' }}
+                      </span>
+                    </div>
+                  </th>
+                  <th>{{ 'dashboard.table_status' | translate }}</th>
+                </tr></thead>
+                <tbody>
+                  @for (post of filteredTimelinePosts(); track post) {
+                    <tr class="clickable" (click)="openPostDrawer(post.id)">
+                      <td (click)="$event.stopPropagation()">
+                        <label class="checkbox-container" (click)="$event.stopPropagation()">
+                          <input type="checkbox" class="row-checkbox" [checked]="selectedRows.has(post.id)" (change)="toggleRowSelection(post.id, $event)">
+                          <span class="checkmark"></span>
+                        </label>
+                      </td>
+                      <td style="color: var(--text-muted); white-space: nowrap;" [title]="post.time">{{ post.time | tzDate }}</td>
+                      <td>
+                        @if (post.hasMedia && post.mediaUrls && post.mediaUrls[0]) {
+                          <div
+                            (click)="$event.stopPropagation(); openLightbox(post.mediaUrls[0])"
+                            style="width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--border-color); overflow: hidden;"
+                            title="Click to view image">
+                            <img [src]="post.mediaUrls[0]" style="width: 100%; height: 100%; object-fit: cover;" alt="Media Thumbnail" />
+                          </div>
+                        }
+                      </td>
+                      <td>{{ post.text }}</td>
+                      <td>{{ post.impressions | number }}</td>
+                      <td><span class="badge">{{ post.status }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              <div class="pagination glass-panel" style="border-radius: 0 0 12px 12px; padding: 0.75rem 1.5rem;">
+                <app-pagination
+                  [currentPage]="timelinePage"
+                  [totalPages]="timelineTotalPages"
+                  [totalItems]="timelineTotalItems"
+                  [itemsLabel]="'pagination.posts' | translate"
+                  [isLoading]="isLoadingTimeline"
+                  (pageChange)="loadTimeline($event)">
+                </app-pagination>
+              </div>
+            </div>
+
+            <app-right-drawer [isOpen]="isDrawerOpen()" [title]="drawerTitle()" [icon]="drawerIcon()" (closeDrawer)="isDrawerOpen.set(false)">
+              <!-- Post Detail Drawer -->
+              @if (drawerType() === 'post') {
+                <div style="padding: 20px;">
+                  <app-post-drawer
+                    [postId]="selectedItemId()"
+                    (openLightbox)="openLightbox($event)">
+                  </app-post-drawer>
+                </div>
+              }
+              <!-- User Profile Drawer -->
+              @if (drawerType() === 'user') {
+                <div style="padding: 20px;">
+                  <app-user-drawer [userId]="selectedItemId()"></app-user-drawer>
+                </div>
+              }
+            </app-right-drawer>
+
+            <app-lightbox
+              [isOpen]="isLightboxOpen()"
+              [imageUrl]="lightboxImageUrl()"
+              (lightboxClose)="isLightboxOpen.set(false)">
+            </app-lightbox>
+
+            <app-ranking-modal
+              [isOpen]="isRankingModalOpen"
+              [title]="rankingModalTitle"
+              [colLabel]="rankingModalColLabel"
+              [colMetric]="rankingModalColMetric"
+              [entries]="rankingModalEntries"
+              [currentPage]="rankingModalCurrentPage"
+              [totalPages]="rankingModalTotalPages"
+              [totalItems]="rankingModalTotalItems"
+              (pageChange)="onRankingPageChange($event)"
+              (modalClose)="isRankingModalOpen = false"
+              (rowClick)="rankingModalType === 'post' ? openPostDrawer($event) : openUserDrawer($event)">
+            </app-ranking-modal>

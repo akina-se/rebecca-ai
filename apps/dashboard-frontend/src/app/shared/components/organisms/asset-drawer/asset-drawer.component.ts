@@ -1,10 +1,11 @@
-import { Component, Input, Output, EventEmitter, inject, OnChanges, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+﻿import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
-import { ASSETS_REPOSITORY, AssetsRepository } from '../../../../core/ports/assets.repository';
+import { ASSETS_REPOSITORY } from '../../../../core/ports/assets.repository';
 import { CopilotContextService } from '../../../../core/services/copilot-context.service';
+import { TranslationService } from '../../../../core/services/translation.service';
 import { Asset } from '@rebecca/types';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
@@ -21,7 +22,7 @@ export interface AssetDrawerData {
 @Component({
   selector: 'app-asset-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TzDatePipe, TranslatePipe],
+  imports: [FormsModule, TzDatePipe, TranslatePipe],
   templateUrl: './asset-drawer.component.html',
   styleUrls: ['./asset-drawer.component.css'],
 })
@@ -29,6 +30,7 @@ export class AssetDrawerComponent implements OnChanges {
   drawerService = inject(DrawerService);
   toastService = inject(ToastService);
   contextService = inject(CopilotContextService);
+  translationService = inject(TranslationService);
 
   @Input() assetId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
@@ -38,9 +40,9 @@ export class AssetDrawerComponent implements OnChanges {
   isDeleting = false;
   isSaving = false;
   isRegenerating = false;
-  isLoading = false;
+  readonly isLoading = signal<boolean>(false);
 
-  assetData: AssetDrawerData | null = null;
+  readonly assetData = signal<AssetDrawerData | null>(null);
   assetBaseName = '';
   assetExtension = '.png';
   private readonly assetsRepo = inject(ASSETS_REPOSITORY);
@@ -52,7 +54,7 @@ export class AssetDrawerComponent implements OnChanges {
   }
 
   loadAsset(id: string) {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.assetsRepo.getById(id).subscribe({
       next: (asset: Asset) => {
         const dotIndex = (asset.filename || '').lastIndexOf('.');
@@ -64,14 +66,14 @@ export class AssetDrawerComponent implements OnChanges {
           this.assetExtension = '.png';
         }
 
-        this.assetData = {
+        this.assetData.set({
           id: asset.id,
           name: asset.filename,
           caption: asset.caption || '',
           url: asset.url || '',
           useCount: asset.usedCount || 0,
           lastUsedAt: asset.lastUsedAt || null,
-        };
+        });
 
         this.contextService.setFocusedEntity({
           type: 'asset',
@@ -80,97 +82,90 @@ export class AssetDrawerComponent implements OnChanges {
           details: { status: asset.status, useCount: asset.usedCount, caption: asset.caption }
         });
 
-        this.isLoading = false;
+        this.isLoading.set(false);
       },
       error: () => {
-        this.toastService.show('Failed to load asset details', 'error');
-        this.isLoading = false;
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'Failed to load asset details' : 'アセット情報の取得に失敗しました', 'error');
+        this.isLoading.set(false);
       }
     });
   }
 
   get displayAsset(): AssetDrawerData | null {
-    return this.assetData;
+    return this.assetData();
   }
 
   onViewFullSize(): void {
-    if (this.displayAsset?.url) {
-      this.openLightbox.emit(this.displayAsset.url);
+    const data = this.assetData();
+    if (data?.url) {
+      this.openLightbox.emit(data.url);
     }
   }
 
-  async onSave(): Promise<void> {
-    if (!this.displayAsset) return;
+  onSave(): void {
+    const data = this.assetData();
+    if (!data) return;
+
     this.isSaving = true;
+    const newFilename = `${this.assetBaseName.trim()}${this.assetExtension}`;
 
-    // Sanitize base name to prevent duplicate extensions if user typed .png/.jpg
-    let cleanBase = this.assetBaseName.trim();
-    if (cleanBase.toLowerCase().endsWith(this.assetExtension.toLowerCase())) {
-      cleanBase = cleanBase.substring(0, cleanBase.length - this.assetExtension.length);
-    }
-    const finalFilename = `${cleanBase}${this.assetExtension}`;
-
-    this.assetsRepo.update(this.displayAsset.id, { 
-      caption: this.displayAsset.caption,
-      filename: finalFilename
+    this.assetsRepo.update(data.id, {
+      filename: newFilename,
+      caption: data.caption,
     }).subscribe({
       next: () => {
-        this.toastService.show(`Successfully saved asset`, 'success');
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'Successfully saved asset' : 'アセットを正常に保存しました', 'success');
         this.isSaving = false;
-        if (this.assetData) {
-          this.assetData.name = finalFilename;
-        }
         this.assetUpdated.emit();
       },
       error: () => {
-        this.toastService.show(`Failed to save asset`, 'error');
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'Failed to update asset' : 'アセットの更新に失敗しました', 'error');
         this.isSaving = false;
       }
     });
   }
 
-  async onRegenerate(): Promise<void> {
-    const assetId = this.displayAsset?.id || this.assetId;
-    if (!assetId) return;
+  onRegenerate(): void {
+    const data = this.assetData();
+    if (!data) return;
+
     this.isRegenerating = true;
-    this.assetsRepo.regenerateCaptions([assetId]).subscribe({
+    this.assetsRepo.regenerateCaptions([data.id]).subscribe({
       next: () => {
-        this.toastService.show(`Successfully regenerated caption`, 'success');
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'AI caption regeneration requested' : 'キャプション再生成を開始しました', 'success');
         this.isRegenerating = false;
-        this.loadAsset(assetId);
+        this.loadAsset(data.id);
         this.assetUpdated.emit();
       },
       error: () => {
-        this.toastService.show(`Failed to regenerate caption`, 'error');
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'Failed to request caption regeneration' : 'キャプション再生成要求に失敗しました', 'error');
         this.isRegenerating = false;
       }
     });
   }
 
-  async onDelete(): Promise<void> {
-    const assetId = this.displayAsset?.id || this.assetId;
-    if (!assetId) return;
+  onDelete(): void {
+    const data = this.assetData();
+    if (!data) return;
+
     this.isDeleting = true;
-    this.assetsRepo.deleteMany([assetId]).subscribe({
+    this.assetsRepo.deleteMany([data.id]).subscribe({
       next: () => {
-        this.toastService.show(`Successfully deleted asset`, 'success');
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'Successfully deleted asset' : 'アセットを正常に削除しました', 'success');
         this.isDeleting = false;
-        this.assetDeleted.emit(assetId);
-        this.drawerService.close();
+        this.assetDeleted.emit(data.id);
       },
       error: () => {
-        this.toastService.show(`Failed to delete asset`, 'error');
+        const isEn = this.translationService.currentLang() === 'en';
+        this.toastService.show(isEn ? 'Failed to delete asset' : 'アセットの削除に失敗しました', 'error');
         this.isDeleting = false;
       }
-    });
-  }
-
-  formatDate(iso: string | null): string {
-    if (!iso) return 'Never';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return 'Never';
-    return d.toLocaleDateString('ja-JP', {
-      year: 'numeric', month: 'short', day: 'numeric',
     });
   }
 }

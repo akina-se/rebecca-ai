@@ -21,15 +21,15 @@ describe('LightboxComponent', () => {
   });
 
   it('should emit close on closeLightbox()', () => {
-    spyOn(component.close, 'emit');
+    spyOn(component.lightboxClose, 'emit');
     component.closeLightbox();
-    expect(component.close.emit).toHaveBeenCalled();
+    expect(component.lightboxClose.emit).toHaveBeenCalled();
   });
 
   it('should close on Escape keydown when open', () => {
-    spyOn(component.close, 'emit');
+    spyOn(component.lightboxClose, 'emit');
     component.isOpen = true;
     component.onKeydownHandler();
-    expect(component.close.emit).toHaveBeenCalled();
+    expect(component.lightboxClose.emit).toHaveBeenCalled();
   });
 });
