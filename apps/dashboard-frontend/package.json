@@ -8,7 +8,7 @@
     "build": "ng build",
     "dev": "ng serve",
     "lint": "ng lint",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --coverage",
     "ng": "ng",
     "start": "ng serve",
     "watch": "ng build --watch --configuration development",

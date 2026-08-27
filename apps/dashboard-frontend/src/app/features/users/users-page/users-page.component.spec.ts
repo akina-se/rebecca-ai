@@ -133,13 +133,32 @@ describe('UsersPageComponent', () => {
     expect(component.currentPage).toBe(3);
   });
 
-  it('should open user drawer on openUserDrawer', () => {
+  it('should open user drawer on openUserDrawer and close correctly', () => {
     component.openUserDrawer('alice');
     expect(component.selectedUserId).toBe('alice');
     expect(component.isDrawerOpen).toBeTrue();
+
+    component.isDrawerOpen = false;
+    expect(component.isDrawerOpen).toBeFalse();
   });
 
-  it('should return early from bulk actions when no users selected', async () => {
+  it('should toggle user sort order and change column correctly', () => {
+    usersRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
+
+    component.userSortBy = 'interactions';
+    component.userSortOrder = 'desc';
+
+    // Toggle same column
+    component.toggleUserSort('interactions');
+    expect(component.userSortOrder).toBe('asc');
+
+    // Change column (defaults to desc)
+    component.toggleUserSort('username');
+    expect(component.userSortBy).toBe('username');
+    expect(component.userSortOrder).toBe('desc');
+  });
+
+  it('should return early from bulk actions when selectedUsers is empty', async () => {
     component.selectedUsers.clear();
     await component.executeBulkBlock();
     await component.executeBulkUnblock();

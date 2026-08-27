@@ -81,4 +81,42 @@ describe('HttpAssetsRepository', () => {
     expect(req.request.body).toEqual({ ids: ['a1'] });
     req.flush({ queued: 1 });
   });
+
+  it('should handle getAll without params or with empty search/status', () => {
+    repository.getAll().subscribe((res) => {
+      expect(res.data.length).toBe(3);
+      expect(res.data[0].status).toBe(AssetStatus.PENDING);
+      expect(res.data[1].status).toBe(AssetStatus.PROCESSING);
+      expect(res.data[2].status).toBe(AssetStatus.PENDING);
+    });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/images'));
+    expect(req.request.params.keys().length).toBe(0);
+    req.flush({
+      data: [
+        { id: 'a1', filename: 'img1.png', status: null },
+        { id: 'a2', filename: 'img2.png', status: 'PROCESSING' },
+        { id: 'a3', filename: 'img3.png', status: 'UNKNOWN' }
+      ]
+    });
+  });
+
+  it('should upload multiple files as an array', () => {
+    const files = [
+      new File(['data1'], 'test1.jpg', { type: 'image/jpeg' }),
+      new File(['data2'], 'test2.png', { type: 'image/png' })
+    ];
+    repository.upload(files).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/images') && r.method === 'POST');
+    expect(req.request.body instanceof FormData).toBeTrue();
+    req.flush({ success: true });
+  });
+
+  it('should delete a single asset via direct ID URL', () => {
+    repository.deleteMany(['a1']).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/images/a1') && r.method === 'DELETE');
+    req.flush({ success: true });
+  });
 });

@@ -1,4 +1,4 @@
-﻿import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { AuthService } from './auth.service';
 import { ConfigService } from './config.service';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
@@ -94,5 +94,42 @@ describe('AuthService', () => {
     } catch {
       // Expected in node/jsdom environment without popup support
     }
+  });
+
+  it('should return token from getSyncToken and getToken when user is authenticated with accessToken or stsTokenManager', async () => {
+    const mockUserWithToken = {
+      uid: 'user-1',
+      accessToken: 'token-direct',
+      getIdToken: () => Promise.resolve('token-async')
+    } as any;
+    service.currentUserSignal.set(mockUserWithToken);
+
+    expect(service.currentUser).toBe(mockUserWithToken);
+    expect(service.getSyncToken()).toBe('token-direct');
+    expect(await service.getToken()).toBe('token-direct');
+
+    const mockUserWithSts = {
+      uid: 'user-2',
+      stsTokenManager: { accessToken: 'token-sts' },
+      getIdToken: () => Promise.resolve('token-async')
+    } as any;
+    service.currentUserSignal.set(mockUserWithSts);
+    expect(service.getSyncToken()).toBe('token-sts');
+    expect(await service.getToken()).toBe('token-sts');
+
+    const mockUserNoDirectToken = {
+      uid: 'user-3',
+      getIdToken: () => Promise.resolve('token-from-idtoken')
+    } as any;
+    service.currentUserSignal.set(mockUserNoDirectToken);
+    expect(service.getSyncToken()).toBeNull();
+    expect(await service.getToken()).toBe('token-from-idtoken');
+
+    const mockUserFailingToken = {
+      uid: 'user-4',
+      getIdToken: () => Promise.reject(new Error('fail'))
+    } as any;
+    service.currentUserSignal.set(mockUserFailingToken);
+    expect(await service.getToken()).toBeNull();
   });
 });
