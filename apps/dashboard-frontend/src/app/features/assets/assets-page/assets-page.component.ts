@@ -1,5 +1,5 @@
-import { Component, OnInit, Inject, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { AssetDrawerComponent } from '../../../shared/components/organisms/asset-drawer/asset-drawer.component';
@@ -7,59 +7,57 @@ import { LightboxComponent } from '../../../shared/components/organisms/lightbox
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { ToastService } from '../../../shared/services/toast.service';
-import { ASSETS_REPOSITORY, AssetsRepository } from '../../../core/ports/assets.repository';
+import { ASSETS_REPOSITORY } from '../../../core/ports/assets.repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 
 @Component({
   selector: 'app-assets-page',
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    RightDrawerComponent, 
-    AssetDrawerComponent, 
+    FormsModule,
+    RightDrawerComponent,
+    AssetDrawerComponent,
     LightboxComponent,
     PaginationComponent,
     TranslatePipe
-  ],
+],
   templateUrl: './assets-page.component.html',
   styleUrl: './assets-page.component.css'
 })
 export class AssetsPageComponent implements OnInit {
-  isDrawerOpen = false;
-  selectedAssetId: string | null = null;
-  drawerTitle = '';
-  drawerIcon = '';
+  readonly isDrawerOpen = signal<boolean>(false);
+  readonly selectedAssetId = signal<string | null>(null);
+  readonly drawerTitle = signal<string>('');
+  readonly drawerIcon = signal<string>('');
 
   // Lightbox State
-  isLightboxOpen = false;
-  lightboxImageUrl = '';
+  readonly isLightboxOpen = signal<boolean>(false);
+  readonly lightboxImageUrl = signal<string>('');
 
-  assets: Asset[] = [];
+  readonly assets = signal<Asset[]>([]);
   selectedAssets = new Set<string>();
   selectAll = false;
 
   searchQuery = '';
   currentPage = 1;
   pageSize = 20;
-  totalPages = 1;
-  totalItems = 0;
+  readonly totalPages = signal<number>(1);
+  readonly totalItems = signal<number>(0);
 
   isDeletingBulk = false;
   isRetryingBulk = false;
   isUploading = false;
-  isLoading = false;
+  readonly isLoading = signal<boolean>(false);
 
   toastService = inject(ToastService);
-
-  constructor(@Inject(ASSETS_REPOSITORY) private assetsRepo: AssetsRepository) {}
+  private readonly assetsRepo = inject(ASSETS_REPOSITORY);
 
   ngOnInit() {
     this.loadAssets(1);
   }
 
   loadAssets(page = 1) {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.currentPage = page;
     this.assetsRepo.getAll({
       page: this.currentPage,
@@ -67,16 +65,18 @@ export class AssetsPageComponent implements OnInit {
       search: this.searchQuery
     }).subscribe({
       next: (res: PaginatedResponse<Asset>) => {
-        this.assets = res.data || [];
-        this.totalItems = res.meta?.totalItems || this.assets.length;
-        this.totalPages = res.meta?.totalPages || Math.ceil(this.totalItems / this.pageSize) || 1;
+        const items = res.data || [];
+        this.assets.set(items);
+        const count = res.meta?.totalItems || items.length;
+        this.totalItems.set(count);
+        this.totalPages.set(res.meta?.totalPages || Math.ceil(count / this.pageSize) || 1);
         this.selectedAssets.clear();
         this.selectAll = false;
-        this.isLoading = false;
+        this.isLoading.set(false);
       },
       error: () => {
         this.toastService.show('Failed to load assets', 'error');
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }
@@ -92,7 +92,7 @@ export class AssetsPageComponent implements OnInit {
   toggleSelectAll() {
     this.selectAll = !this.selectAll;
     if (this.selectAll) {
-      this.assets.forEach(a => this.selectedAssets.add(a.id));
+      this.assets().forEach(a => this.selectedAssets.add(a.id));
     } else {
       this.selectedAssets.clear();
     }
@@ -100,13 +100,37 @@ export class AssetsPageComponent implements OnInit {
 
   toggleSelection(assetId: string, event: Event) {
     event.stopPropagation();
-    const target = event.target as HTMLInputElement;
-    if (target.checked) {
-      this.selectedAssets.add(assetId);
-    } else {
+    if (this.selectedAssets.has(assetId)) {
       this.selectedAssets.delete(assetId);
+    } else {
+      this.selectedAssets.add(assetId);
     }
-    this.selectAll = this.selectedAssets.size === this.assets.length && this.assets.length > 0;
+    this.selectAll = this.selectedAssets.size === this.assets().length && this.assets().length > 0;
+  }
+
+  openAssetDrawer(assetId: string) {
+    if (typeof window !== 'undefined' && window.getSelection()?.toString().length) {
+      return;
+    }
+    const asset = this.assets().find(a => a.id === assetId);
+    this.selectedAssetId.set(assetId);
+    this.drawerTitle.set(asset ? asset.filename : 'Asset Details');
+    this.drawerIcon.set('image');
+    this.isDrawerOpen.set(true);
+  }
+
+  onOpenLightbox(imageUrl: string) {
+    this.lightboxImageUrl.set(imageUrl);
+    this.isLightboxOpen.set(true);
+  }
+
+  onAssetUpdated() {
+    this.loadAssets(this.currentPage);
+  }
+
+  onAssetDeleted() {
+    this.isDrawerOpen.set(false);
+    this.loadAssets(this.currentPage);
   }
 
   triggerFileUpload(fileInput: HTMLInputElement) {
@@ -115,91 +139,69 @@ export class AssetsPageComponent implements OnInit {
 
   onFilesSelected(event: Event, fileInput: HTMLInputElement) {
     const target = event.target as HTMLInputElement;
-    const files = target.files;
-    if (!files || files.length === 0) return;
+    if (!target.files || target.files.length === 0) return;
 
-    const fileList = Array.from(files);
+    const files: File[] = Array.from(target.files);
     this.isUploading = true;
-    this.toastService.show(`Uploading ${fileList.length} image(s)...`, 'info');
 
-    this.assetsRepo.upload(fileList).subscribe({
+    this.assetsRepo.upload(files).subscribe({
       next: () => {
-        this.toastService.show(`Successfully uploaded ${fileList.length} image(s) with AI caption processing.`, 'success');
+        this.toastService.show(`Successfully uploaded asset(s)`, 'success');
         this.isUploading = false;
         fileInput.value = '';
         this.loadAssets(1);
       },
       error: () => {
-        this.toastService.show('Failed to upload image(s)', 'error');
+        this.toastService.show('Failed to upload assets', 'error');
         this.isUploading = false;
         fileInput.value = '';
       }
     });
   }
 
-  async executeBulkDelete() {
+  executeBulkDelete() {
     if (this.selectedAssets.size === 0) return;
+    const ids = Array.from(this.selectedAssets);
     this.isDeletingBulk = true;
-    this.assetsRepo.deleteMany(Array.from(this.selectedAssets)).subscribe({
+
+    this.assetsRepo.deleteMany(ids).subscribe({
       next: () => {
-        this.toastService.show(`Successfully deleted ${this.selectedAssets.size} assets`, 'success');
-        this.selectedAssets.clear();
-        this.selectAll = false;
+        this.toastService.show(`Deleted ${ids.length} asset(s)`, 'success');
         this.isDeletingBulk = false;
         this.loadAssets(this.currentPage);
       },
       error: () => {
-        this.toastService.show('Failed to delete assets', 'error');
+        this.toastService.show('Failed to delete selected assets', 'error');
         this.isDeletingBulk = false;
       }
     });
   }
 
-  async executeBulkRetry() {
+  executeBulkRetry() {
     if (this.selectedAssets.size === 0) return;
+    const ids = Array.from(this.selectedAssets);
     this.isRetryingBulk = true;
-    this.assetsRepo.regenerateCaptions(Array.from(this.selectedAssets)).subscribe({
+
+    this.assetsRepo.regenerateCaptions(ids).subscribe({
       next: () => {
-        this.toastService.show(`Successfully triggered AI regeneration for ${this.selectedAssets.size} assets`, 'success');
-        this.selectedAssets.clear();
-        this.selectAll = false;
+        this.toastService.show(`Initiated AI regeneration retry for ${ids.length} asset(s)`, 'success');
         this.isRetryingBulk = false;
         this.loadAssets(this.currentPage);
       },
       error: () => {
-        this.toastService.show('Failed to trigger regeneration', 'error');
+        this.toastService.show('Failed to retry captions', 'error');
         this.isRetryingBulk = false;
       }
     });
   }
 
-  openAssetDrawer(id: string) {
-    if ((window.getSelection()?.toString() || '').trim().length > 0) return;
-    this.selectedAssetId = id;
-    this.drawerTitle = 'Asset Details';
-    this.drawerIcon = 'image';
-    this.isDrawerOpen = true;
-  }
-
-  onAssetUpdated() {
-    this.loadAssets(this.currentPage);
-  }
-
-  onAssetDeleted() {
-    this.isDrawerOpen = false;
-    this.selectedAssetId = null;
-    this.loadAssets(this.currentPage);
-  }
-
-  onOpenLightbox(url: string) {
-    this.lightboxImageUrl = url;
-    this.isLightboxOpen = true;
-  }
-
-  getStatusBadgeColor(status: AssetStatus | string): string {
-    const s = String(status).toUpperCase();
-    if (s === 'SUCCESS' || s === 'READY') return 'var(--success)';
-    if (s === 'FAILED' || s === 'CAPTION FAILED') return 'var(--danger)';
-    return 'var(--warning)';
+  getStatusBadgeColor(status: AssetStatus): string {
+    switch (status) {
+      case AssetStatus.SUCCESS: return 'var(--success)';
+      case AssetStatus.FAILED: return 'var(--danger)';
+      case AssetStatus.PENDING:
+      case AssetStatus.PROCESSING: return 'var(--warning)';
+      default: return 'var(--text-muted)';
+    }
   }
 }

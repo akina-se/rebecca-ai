@@ -729,6 +729,34 @@ const getLastListInteraction = async (userId: string): Promise<Date | null> => {
 };
 
 /**
+ * Retrieves the total count of processed followers in Firestore.
+ *
+ * @returns The total number of processed followers.
+ */
+const getProcessedFollowersCount = async (): Promise<number> => {
+  try {
+    const snap = await db.processedFollowers.count().get();
+    return snap.data().count || 0;
+  } catch (error) {
+    console.error('Failed to get processed followers count:', error);
+    return 0;
+  }
+};
+
+/**
+ * Updates the global total followers statistic in the systemStats collection.
+ *
+ * @param count - The total follower count.
+ */
+const updateTotalFollowers = async (count: number): Promise<void> => {
+  const rawRef = firestore.collection(COLLECTIONS.SYSTEM_STATS).doc('global');
+  await rawRef.set(
+    { total_followers: count, updatedAt: FieldValue.serverTimestamp() },
+    { merge: true },
+  );
+};
+
+/**
  * Records the current timestamp as the latest interaction with a list member.
  *
  * @param userId - The list member's X user ID.
@@ -781,6 +809,8 @@ export {
   updateImageLastUsed,
   hasProcessedFollower,
   markFollowerProcessed,
+  getProcessedFollowersCount,
+  updateTotalFollowers,
   getLastListInteraction,
   updateLastListInteraction,
 };

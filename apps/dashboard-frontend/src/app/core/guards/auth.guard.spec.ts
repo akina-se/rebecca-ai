@@ -4,18 +4,21 @@ import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
 
 describe('authGuard', () => {
-  let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let routerSpy: jasmine.SpyObj<Router>;
+  let authServiceSpy: { waitForInit: jest.Mock; currentUser: any };
+  let routerSpy: { parseUrl: jest.Mock; createUrlTree: jest.Mock };
   const mockRoute = {} as ActivatedRouteSnapshot;
   const mockState = {} as RouterStateSnapshot;
 
   beforeEach(() => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['waitForInit'], {
-      currentUser: null
-    });
-    authServiceSpy.waitForInit.and.returnValue(Promise.resolve());
+    authServiceSpy = {
+      waitForInit: jest.fn().mockResolvedValue(undefined),
+      currentUser: null,
+    };
 
-    routerSpy = jasmine.createSpyObj('Router', ['parseUrl']);
+    routerSpy = {
+      parseUrl: jest.fn(),
+      createUrlTree: jest.fn(),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -26,22 +29,22 @@ describe('authGuard', () => {
   });
 
   it('should allow activation when user is authenticated', async () => {
-    (Object.getOwnPropertyDescriptor(authServiceSpy, 'currentUser')?.get as jasmine.Spy).and.returnValue({
+    authServiceSpy.currentUser = {
       uid: 'user_123',
       email: 'admin@test.com'
-    } as any);
+    };
 
     const result = await TestBed.runInInjectionContext(() => authGuard(mockRoute, mockState));
-    expect(result).toBeTrue();
+    expect(result).toBe(true);
   });
 
   it('should redirect to /login when user is unauthenticated', async () => {
-    (Object.getOwnPropertyDescriptor(authServiceSpy, 'currentUser')?.get as jasmine.Spy).and.returnValue(null);
+    authServiceSpy.currentUser = null;
     const mockUrlTree = {} as UrlTree;
-    routerSpy.parseUrl.and.returnValue(mockUrlTree);
+    routerSpy.createUrlTree.mockReturnValue(mockUrlTree);
 
     const result = await TestBed.runInInjectionContext(() => authGuard(mockRoute, mockState));
     expect(result).toBe(mockUrlTree);
-    expect(routerSpy.parseUrl).toHaveBeenCalledWith('/login');
+    expect(routerSpy.createUrlTree).toHaveBeenCalledWith(['/login']);
   });
 });

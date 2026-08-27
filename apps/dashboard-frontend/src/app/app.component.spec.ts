@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { AppComponent } from './app.component';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
@@ -12,6 +13,7 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     mockAuthService = jasmine.createSpyObj('AuthService', ['waitForInit'], {
       currentUser$: of({ uid: 'user_1' } as any),
+      currentUserSignal: signal({ uid: 'user_1' } as any),
       currentUser: { uid: 'user_1' } as any
     });
     mockAuthService.waitForInit.and.returnValue(Promise.resolve());
@@ -27,16 +29,10 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('should create the app and authenticate user on init', async () => {
+  it('should create the app and authenticate user on init', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
-    expect(app.title).toEqual('frontend');
-
-    await app.ngOnInit();
-    expect(app.isLoading).toBeFalse();
-    expect(app.isLoggedIn).toBeTrue();
-
-    app.ngOnDestroy();
+    expect(app.isLoggedIn()).toBeTrue();
   });
 });

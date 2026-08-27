@@ -1,31 +1,32 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAuth } from '../../src/middleware/auth';
-import * as admin from 'firebase-admin';
 
-jest.mock('firebase-admin', () => {
-  const verifyIdTokenMock = jest.fn();
-  const getMock = jest.fn();
-  const limitMock = jest.fn().mockReturnValue({ get: getMock });
-  const whereMock2 = jest.fn().mockReturnValue({ limit: limitMock, get: getMock });
-  const whereMock1 = jest.fn().mockReturnValue({ where: whereMock2, limit: limitMock, get: getMock });
-  const collectionMock = jest.fn().mockReturnValue({ where: whereMock1 });
-  const firestoreMock = jest.fn().mockReturnValue({ collection: collectionMock });
+const mockVerifyIdToken = jest.fn();
+const mockGet = jest.fn();
+const mockLimit = jest.fn().mockReturnValue({ get: mockGet });
+const mockWhere2 = jest.fn().mockReturnValue({ limit: mockLimit, get: mockGet });
+const mockWhere1 = jest.fn().mockReturnValue({ where: mockWhere2, limit: mockLimit, get: mockGet });
+const mockCollection = jest.fn().mockReturnValue({ where: mockWhere1 });
 
-  return {
-    apps: [{ name: '[DEFAULT]' }],
-    initializeApp: jest.fn(),
-    auth: jest.fn().mockReturnValue({
-      verifyIdToken: verifyIdTokenMock
-    }),
-    firestore: firestoreMock,
-    __verifyIdTokenMock: verifyIdTokenMock,
-    __firestoreGetMock: getMock
-  };
-});
+jest.mock('firebase-admin/app', () => ({
+  initializeApp: jest.fn(),
+  getApps: jest.fn().mockReturnValue([{ name: '[DEFAULT]' }]),
+}));
+
+jest.mock('firebase-admin/auth', () => ({
+  getAuth: () => ({
+    verifyIdToken: mockVerifyIdToken,
+  }),
+}));
+
+jest.mock('firebase-admin/firestore', () => ({
+  getFirestore: () => ({
+    collection: mockCollection,
+  }),
+}));
 
 describe('Dashboard Backend Middleware Unit Tests', () => {
-  const mockVerifyIdToken = (admin as any).__verifyIdTokenMock;
-  const mockFirestoreGet = (admin as any).__firestoreGetMock;
+  const mockFirestoreGet = mockGet;
 
   const originalEnv = process.env.NODE_ENV;
   const originalNoAuth = process.env.NO_AUTH;
@@ -150,7 +151,7 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
     });
 
     it('should return 403 when user status in cache is revoked', async () => {
-      // First populate cache as active
+      // 1. Populate cache with ACTIVE status
       mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
       mockFirestoreGet.mockResolvedValueOnce({
         empty: false,
@@ -162,12 +163,13 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       await verifyAuth(req1, res1, next1);
       expect(next1).toHaveBeenCalledTimes(1);
 
-      // Now set cache status to REVOKED / INACTIVE and test
+      // 2. Mock token for second request and verify revoked condition after cache update
+      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
+      // Clear cache entry and test Firestore empty
+      mockFirestoreGet.mockResolvedValueOnce({ empty: true, docs: [] });
       const req2 = { method: 'GET', headers: { authorization: 'Bearer token2' } } as unknown as Request;
       const res2 = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
       const next2 = jest.fn() as NextFunction;
-      // We can also test directly with a non-ACTIVE user in Firestore or cache
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
       await verifyAuth(req2, res2, next2);
       expect(next2).toHaveBeenCalledTimes(1);
     });

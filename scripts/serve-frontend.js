@@ -49,7 +49,8 @@ const server = http.createServer((req, res) => {
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
-        proxyRes.pipe(res);
+        proxyRes.on('data', (chunk) => res.write(chunk));
+        proxyRes.on('end', () => res.end());
       }
     );
     proxyReq.on('error', (err) => {
@@ -58,7 +59,11 @@ const server = http.createServer((req, res) => {
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Bad Gateway: Dashboard BFF unreachable' }));
     });
-    req.pipe(proxyReq);
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      proxyReq.end();
+    } else {
+      req.pipe(proxyReq);
+    }
     return;
   }
 
@@ -74,21 +79,32 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+  // Attempt direct file read (atomic operation without TOCTOU race conditions)
+  try {
+    const content = fs.readFileSync(filePath);
     const ext = path.extname(filePath);
-    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
-    return fs.createReadStream(filePath).pipe(res);
+    res.writeHead(200, {
+      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+      'Content-Length': content.length
+    });
+    return res.end(content);
+  } catch (_err) {
+    // Fall through to SPA fallback if file not found, directory, or not readable
   }
 
-  // 3. SPA Fallback: return index.html for Angular HTML5 client-side router navigation
+  // 3. SPA Fallback: return index.html for Angular client-side router navigation
   const indexPath = path.join(DIST_DIR, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return fs.createReadStream(indexPath).pipe(res);
+  try {
+    const content = fs.readFileSync(indexPath);
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': content.length
+    });
+    return res.end(content);
+  } catch (_err) {
+    res.writeHead(404);
+    res.end('Not found');
   }
-
-  res.writeHead(404);
-  res.end('Not found');
 });
 
 server.listen(PORT, '127.0.0.1', () => {

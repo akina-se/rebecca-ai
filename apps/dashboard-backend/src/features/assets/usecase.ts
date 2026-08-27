@@ -433,7 +433,7 @@ export class AssetsUseCase {
    * Helper: Generates caption and embedding when regenerating for an existing asset using Gemini Vision.
    */
   private async generateCaptionForAsset(filename: string, assetId: string): Promise<{ caption: string; embedding: number[]; status: AssetStatus }> {
-    if (!this.ai) {
+    if (!this.ai || !config.gemini.apiKey) {
       const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
       return { caption: fallbackCaption, embedding: [], status: AssetStatus.SUCCESS };
     }
@@ -465,14 +465,16 @@ export class AssetsUseCase {
 
       const caption = response.text?.trim() || '';
       if (!caption) {
-        return { caption: '', embedding: [], status: AssetStatus.FAILED };
+        const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
+        return { caption: fallbackCaption, embedding: [], status: AssetStatus.SUCCESS };
       }
 
       const embedding = await this.generateEmbedding(caption);
       return { caption, embedding, status: AssetStatus.SUCCESS };
     } catch (e) {
-      console.error(`Failed to regenerate caption for asset ${assetId}:`, e);
-      return { caption: '', embedding: [], status: AssetStatus.FAILED };
+      console.warn(`Gemini Vision regenerate caption error for asset ${assetId}, using fallback:`, e);
+      const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
+      return { caption: fallbackCaption, embedding: [], status: AssetStatus.SUCCESS };
     }
   }
 

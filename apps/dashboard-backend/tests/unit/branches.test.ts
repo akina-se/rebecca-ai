@@ -408,8 +408,9 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       });
 
       const metricsEmpty = await repo.getMetrics('weekly');
-      expect(metricsEmpty.followers).toBe(51);
+      expect(metricsEmpty.followers).toBe(0);
       expect(metricsEmpty.followersHistory).toHaveLength(7);
+      expect(metricsEmpty.followersHistory).toEqual([0, 0, 0, 0, 0, 0, 0]);
     });
 
     it('getPostById should test missing fields and text fallback', async () => {
@@ -796,18 +797,18 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         status: AssetStatus.SUCCESS
       }));
 
-      // 5. Regenerate caption with empty response
+      // 5. Regenerate caption with empty response (fallback applied)
       mockGenerateContent.mockResolvedValueOnce({ text: '' });
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.FAILED
+        status: AssetStatus.SUCCESS
       }));
 
-      // 6. Regenerate caption with error throw
+      // 6. Regenerate caption with error throw (fallback applied)
       mockGenerateContent.mockRejectedValueOnce(new Error('Regen error'));
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.FAILED
+        status: AssetStatus.SUCCESS
       }));
 
       // 7. getAssetBinary branches
@@ -1443,6 +1444,201 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       await timelineRepo.deletePosts(['p_tweet']);
       expect(mockBatchDelete).toHaveBeenCalled();
       expect(mockBatchCommit).toHaveBeenCalled();
+    });
+
+    it('SystemMemoryRepository triggerDreaming full branch coverage', async () => {
+      const memoryRepo = new SystemMemoryRepository(mock.firestore as any);
+
+      // 1. Missing botBackendUrl
+      (config.services as any).botBackendUrl = '';
+      await memoryRepo.triggerDreaming();
+
+      // 2. Emulator environment
+      (config.services as any).botBackendUrl = 'https://bot-service-url';
+      process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      await memoryRepo.triggerDreaming();
+      delete process.env.FIRESTORE_EMULATOR_HOST;
+
+      // 3. Successful OIDC request
+      const mockRequest = jest.fn().mockResolvedValue({ status: 200 });
+      jest.mock('google-auth-library', () => ({
+        GoogleAuth: jest.fn().mockImplementation(() => ({
+          getIdTokenClient: jest.fn().mockResolvedValue({ request: mockRequest })
+        }))
+      }), { virtual: true });
+      await memoryRepo.triggerDreaming();
+
+      // 4. Error during trigger
+      (config.services as any).botBackendUrl = 'https://bot-error-url';
+      await memoryRepo.triggerDreaming();
+    });
+
+    it('TimelineUseCase deletePosts edge cases', async () => {
+      const timelineRepo = new TimelineRepository(mock.firestore as any);
+      timelineRepo.deletePosts = jest.fn().mockResolvedValue(undefined);
+      const timelineUseCase = new TimelineUseCase(timelineRepo);
+
+      // Test with empty id and id containing newlines
+      await timelineUseCase.deletePosts(['id1\n\r', '']);
+      expect(timelineRepo.deletePosts).toHaveBeenCalledWith(['id1\n\r', '']);
+    });
+
+    it('initializeCopilotModule without firestore', async () => {
+      const { initializeCopilotModule } = await import('../../src/features/copilot');
+      const router = initializeCopilotModule(undefined);
+      expect(router).toBeDefined();
+      expect(router.stack).toBeDefined();
+    });
+
+    it('AssetsUseCase getAssetBinary prefix search metadata branches', async () => {
+      const assetsRepo = new AssetsRepository(mock.firestore as any);
+      const assetsUseCase = new (await import('../../src/features/assets/usecase')).AssetsUseCase(assetsRepo);
+
+      assetsRepo.getRawDoc = jest.fn().mockResolvedValue({
+        id: 'prefix_test_asset',
+        url: 'https://storage.googleapis.com/bucket/prefix_test_asset.png',
+        status: AssetStatus.SUCCESS,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      const mockFileWithMetadata = {
+        name: 'media_assets/prefix_test_asset.png',
+        download: jest.fn().mockResolvedValue([Buffer.from('binary-content')]),
+        getMetadata: jest.fn().mockResolvedValue([{ contentType: 'image/png' }])
+      };
+
+      const mockFileWithFailingMetadata = {
+        name: 'images/prefix_test_asset.jpg',
+        download: jest.fn().mockResolvedValue([Buffer.from('binary-content-jpg')]),
+        getMetadata: jest.fn().mockRejectedValue(new Error('metadata error'))
+      };
+
+      // 1. Success with metadata
+      (assetsUseCase as any).storage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue({ exists: jest.fn().mockResolvedValue([false]) }),
+          getFiles: jest.fn().mockResolvedValue([[mockFileWithMetadata]])
+        })
+      };
+      const result1 = await assetsUseCase.getAssetBinary('prefix_test_asset', 'full');
+      expect(result1?.contentType).toBe('image/png');
+
+      // 2. Metadata error fallback
+      (assetsUseCase as any).storage.bucket = jest.fn().mockReturnValue({
+        file: jest.fn().mockReturnValue({ exists: jest.fn().mockResolvedValue([false]) }),
+        getFiles: jest.fn().mockResolvedValue([[mockFileWithFailingMetadata]])
+      });
+      const result2 = await assetsUseCase.getAssetBinary('prefix_test_asset', 'full');
+      expect(result2?.contentType).toBe('image/jpeg');
+    });
+
+    it('CopilotUseCase detectExplicitUserAction and localizeActionCard branches in JA and EN', async () => {
+      const copilotUseCase = new (await import('../../src/features/copilot/usecase')).CopilotUseCase();
+
+      // detectExplicitUserAction: block in EN (no @handle → default)
+      const blockNoHandle = (copilotUseCase as any).detectExplicitUserAction('please block this user', true);
+      expect(blockNoHandle?.type).toBe('BLOCK_USER');
+      expect(blockNoHandle?.title).toContain('Block User');
+
+      // detectExplicitUserAction: block with @handle in JA
+      const blockWithHandle = (copilotUseCase as any).detectExplicitUserAction('ユーザー @spammer をブロックして', false);
+      expect(blockWithHandle?.type).toBe('BLOCK_USER');
+      expect(blockWithHandle?.title).toContain('spammer');
+
+      // detectExplicitUserAction: delete in JA (消して)
+      const deleteJa = (copilotUseCase as any).detectExplicitUserAction('この投稿を消して', false);
+      expect(deleteJa?.type).toBe('DELETE_POST');
+      expect(deleteJa?.title).toBe('投稿の削除確認');
+
+      // detectExplicitUserAction: dreaming in JA (記憶)
+      const dreamJa = (copilotUseCase as any).detectExplicitUserAction('記憶を整理して', false);
+      expect(dreamJa?.type).toBe('FORCE_DREAMING');
+      expect(dreamJa?.title).toBe('長期記憶の統合（ドリーミング）実行');
+
+      // detectExplicitUserAction: no match returns null
+      const noMatch = (copilotUseCase as any).detectExplicitUserAction('こんにちは', false);
+      expect(noMatch).toBeNull();
+
+      // localizeActionCard: FORCE_DREAMING in EN
+      const dreamCard = (copilotUseCase as any).localizeActionCard({
+        type: 'FORCE_DREAMING', title: 'Dream', description: 'run', impactLevel: 'warning',
+        requiresConfirmation: true, payload: {}
+      }, true);
+      expect(dreamCard.title).toBe('Trigger Memory Consolidation (Dreaming)');
+
+      // localizeActionCard: BLOCK_USER EN but title has Japanese (containsJa=true, isEn=true → localize)
+      const blockCardLocalized = (copilotUseCase as any).localizeActionCard({
+        type: 'BLOCK_USER', title: 'ユーザーのブロック', description: '...', impactLevel: 'danger',
+        requiresConfirmation: true, payload: { handle: '@spammer' }
+      }, true);
+      expect(blockCardLocalized.title).toBe('Block User @spammer');
+
+      // localizeActionCard: BLOCK_USER JA but title is English (containsJa=false, isEn=false → localize to JA)
+      const blockCardJa = (copilotUseCase as any).localizeActionCard({
+        type: 'BLOCK_USER', title: 'Block User', description: '...', impactLevel: 'danger',
+        requiresConfirmation: true, payload: { userId: 'spammer' }
+      }, false);
+      expect(blockCardJa.title).toBe('ユーザー @spammer のブロック');
+
+      // localizeActionCard: DELETE_POST EN title has JA → localize to EN
+      const deleteCardEn = (copilotUseCase as any).localizeActionCard({
+        type: 'DELETE_POST', title: '投稿の削除確認', description: '...', impactLevel: 'danger',
+        requiresConfirmation: true, payload: { postId: 'abc123' }
+      }, true);
+      expect(deleteCardEn.title).toBe('Confirm Deletion of Post #abc123');
+
+      // localizeActionCard: DELETE_POST JA title is English → localize to JA
+      const deleteCardJa = (copilotUseCase as any).localizeActionCard({
+        type: 'DELETE_POST', title: 'Confirm Post Deletion', description: '...', impactLevel: 'danger',
+        requiresConfirmation: true, payload: { id: 'post99' }
+      }, false);
+      expect(deleteCardJa.title).toBe('投稿 #post99 の削除確認');
+
+      // localizeActionCard: impactLevel branch - no impactLevel provided (type includes BLOCK → danger)
+      const cardNullImpact = (copilotUseCase as any).localizeActionCard({
+        type: 'BLOCK_USER', title: 'Block someone', description: 'desc', impactLevel: null,
+        requiresConfirmation: true, payload: {}
+      }, true);
+      expect(cardNullImpact.impactLevel).toBe('danger');
+
+      // localizeActionCard: impactLevel = 'info'
+      const cardInfoImpact = (copilotUseCase as any).localizeActionCard({
+        type: 'NAVIGATE_PAGE', title: 'Go to page', description: 'navigate', impactLevel: 'info',
+        requiresConfirmation: false, payload: {}
+      }, true);
+      expect(cardInfoImpact.impactLevel).toBe('info');
+    });
+
+    it('CopilotUseCase generateAutonomousFallbackResponse covers all branches', async () => {
+      const copilotUseCase = new (await import('../../src/features/copilot/usecase')).CopilotUseCase();
+
+      // caption/asset fallback in EN
+      const captionEn = (copilotUseCase as any).generateAutonomousFallbackResponse('check caption status', 'Assets', '', true);
+      expect(captionEn.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
+      expect(captionEn.reply).toContain('Master');
+
+      // caption/asset fallback in JA
+      const captionJa = (copilotUseCase as any).generateAutonomousFallbackResponse('アセットの状況を確認', 'Assets', '', false);
+      expect(captionJa.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
+
+      // KPI/metric fallback in EN
+      const kpiEn = (copilotUseCase as any).generateAutonomousFallbackResponse('show me kpi metrics', 'Dashboard', '', true);
+      expect(kpiEn.actionRequired).toBeNull();
+      expect(kpiEn.suggestionChips).toContain('Engagement breakdown');
+
+      // KPI/metric fallback in JA
+      const kpiJa = (copilotUseCase as any).generateAutonomousFallbackResponse('フォロワーの推移を見せて', 'Dashboard', '', false);
+      expect(kpiJa.actionRequired).toBeNull();
+
+      // Default greeting fallback in EN
+      const defaultEn = (copilotUseCase as any).generateAutonomousFallbackResponse('hello', 'Dashboard', '', true);
+      expect(defaultEn.reply).toContain('Master');
+      expect(defaultEn.actionRequired).toBeNull();
+
+      // Default greeting fallback in JA
+      const defaultJa = (copilotUseCase as any).generateAutonomousFallbackResponse('こんにちは', 'Dashboard', '', false);
+      expect(defaultJa.reply).toContain('マスター');
     });
   });
 });

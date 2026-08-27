@@ -1,17 +1,13 @@
-.login-container {
+﻿.login-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background-color: var(--bg-base);
   background-image: 
     radial-gradient(circle at 15% 50%, rgba(155, 89, 182, 0.08), transparent 25%), 
     radial-gradient(circle at 85% 30%, rgba(155, 89, 182, 0.05), transparent 25%);
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 100; /* Ensure it covers everything if needed, or route will handle */
 }
 
 .login-card {
