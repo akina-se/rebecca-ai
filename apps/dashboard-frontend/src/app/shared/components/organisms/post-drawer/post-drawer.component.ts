@@ -1,4 +1,4 @@
-﻿import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
 
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
@@ -102,5 +102,12 @@ export class PostDrawerComponent implements OnChanges {
         this.isDeleting = false;
       }
     });
+  }
+
+  onViewOnX(): void {
+    const tweetId = this.postData()?.id || this.postId;
+    if (!tweetId) return;
+    const url = `https://x.com/i/status/${tweetId}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 }

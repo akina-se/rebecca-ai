@@ -136,5 +136,13 @@ describe('PostDrawerComponent', () => {
     component.onMediaClick('https://example.com/img.png');
     expect(component.openLightbox.emit).toHaveBeenCalledWith('https://example.com/img.png');
   });
+
+  it('should open tweet on X via window.open on onViewOnX', () => {
+    const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+    component.postId = 'tweet_123';
+    component.onViewOnX();
+    expect(openSpy).toHaveBeenCalledWith('https://x.com/i/status/tweet_123', '_blank', 'noopener,noreferrer');
+    openSpy.mockRestore();
+  });
 });
 
