@@ -74,15 +74,13 @@ export class TimelineRepository {
       startDateIso = d.toISOString();
     }
 
-    // 1. Dynamic Total Followers: Prefer aggregated systemStats, fallback to true processedFollowers count
-    let totalFollowers = typeof data.total_followers === 'number' && data.total_followers > 0 ? data.total_followers : 0;
-    if (totalFollowers === 0) {
-      try {
-        const followersSnap = await this.collections.processedFollowers.count().get();
-        totalFollowers = followersSnap.data().count || 0;
-      } catch {
-        totalFollowers = 0;
-      }
+    // 1. Dynamic Total Followers: Always source directly from processedFollowers collection
+    let totalFollowers = 0;
+    try {
+      const followersSnap = await this.collections.processedFollowers.count().get();
+      totalFollowers = followersSnap.data().count || 0;
+    } catch {
+      totalFollowers = typeof data.total_followers === 'number' ? data.total_followers : 0;
     }
 
     // 2. Dynamic API Calls: Aggregate actual logs and timeline posts within the selected time window
