@@ -1,4 +1,4 @@
-import { getConfig, X_SECRET_KEYS } from '../../src/config';
+import { getConfig, FUNCTION_SECRET_KEYS, X_SECRET_KEYS } from '../../src/config';
 
 describe('Functions Config', () => {
   const originalEnv = process.env;
@@ -12,8 +12,9 @@ describe('Functions Config', () => {
     process.env = originalEnv;
   });
 
-  it('should export correct X_SECRET_KEYS list', () => {
-    expect(X_SECRET_KEYS).toEqual([
+  it('should export correct FUNCTION_SECRET_KEYS list', () => {
+    expect(FUNCTION_SECRET_KEYS).toEqual([
+      'BATCH_SECRET_KEY',
       'X_API_KEY',
       'X_API_SECRET',
       'X_ACCESS_TOKEN',
@@ -21,9 +22,11 @@ describe('Functions Config', () => {
       'X_BEARER_TOKEN',
       'X_MY_USER_ID',
     ]);
+    expect(X_SECRET_KEYS).toEqual(FUNCTION_SECRET_KEYS);
   });
 
   it('should populate config from environment variables', () => {
+    process.env.BATCH_SECRET_KEY = 'test_batch_secret';
     process.env.X_API_KEY = 'test_key';
     process.env.X_API_SECRET = 'test_secret';
     process.env.X_ACCESS_TOKEN = 'test_token';
@@ -32,6 +35,7 @@ describe('Functions Config', () => {
     process.env.X_MY_USER_ID = 'test_user_id';
 
     const cfg = getConfig();
+    expect(cfg.batchSecretKey).toBe('test_batch_secret');
     expect(cfg.xApi.apiKey).toBe('test_key');
     expect(cfg.xApi.apiSecret).toBe('test_secret');
     expect(cfg.xApi.accessToken).toBe('test_token');

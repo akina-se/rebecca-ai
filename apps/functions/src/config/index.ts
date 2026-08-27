@@ -1,7 +1,5 @@
-/**
- * Secrets required by Cloud Functions triggers accessing the X (Twitter) API.
- */
-export const X_SECRET_KEYS = [
+export const FUNCTION_SECRET_KEYS = [
+  'BATCH_SECRET_KEY',
   'X_API_KEY',
   'X_API_SECRET',
   'X_ACCESS_TOKEN',
@@ -9,6 +7,8 @@ export const X_SECRET_KEYS = [
   'X_BEARER_TOKEN',
   'X_MY_USER_ID',
 ] as const;
+
+export const X_SECRET_KEYS = FUNCTION_SECRET_KEYS;
 
 export interface XApiConfig {
   apiKey: string;
@@ -21,6 +21,7 @@ export interface XApiConfig {
 }
 
 export interface FunctionsConfig {
+  batchSecretKey?: string;
   xApi: XApiConfig;
 }
 
@@ -35,6 +36,7 @@ const parseMaxResults = (envValue: string | undefined): number => {
  * Retrieves the strongly-typed application configuration.
  */
 export const getConfig = (): FunctionsConfig => ({
+  batchSecretKey: process.env.BATCH_SECRET_KEY,
   xApi: {
     apiKey: process.env.X_API_KEY || '',
     apiSecret: process.env.X_API_SECRET || '',
