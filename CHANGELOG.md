@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/akina-se/rebecca-ai/compare/v1.6.0...v1.7.0) (2026-08-27)
+
+
+### Features
+
+* **functions:** transition timeline sync to Cloud Scheduler-driven HTTPS trigger with setup script ([#83](https://github.com/akina-se/rebecca-ai/issues/83)) ([8da4eb3](https://github.com/akina-se/rebecca-ai/commit/8da4eb3263ddaa61bf971d41ecf3dbad51e1f0c4))
+
 ## [1.6.0](https://github.com/akina-se/rebecca-ai/compare/v1.5.0...v1.6.0) (2026-08-27)
 
 
