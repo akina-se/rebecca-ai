@@ -408,8 +408,9 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       });
 
       const metricsEmpty = await repo.getMetrics('weekly');
-      expect(metricsEmpty.followers).toBe(51);
+      expect(metricsEmpty.followers).toBe(0);
       expect(metricsEmpty.followersHistory).toHaveLength(7);
+      expect(metricsEmpty.followersHistory).toEqual([0, 0, 0, 0, 0, 0, 0]);
     });
 
     it('getPostById should test missing fields and text fallback', async () => {
