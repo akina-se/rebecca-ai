@@ -1,9 +1,14 @@
-import { Request, Response, NextFunction } from 'express';
-import * as admin from 'firebase-admin';
+import { Response, NextFunction } from 'express';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+import { AuthenticatedRequest, AuthenticatedUser } from '../types/auth';
 
-// Initialize Firebase Admin (Only once across the application)
-if (!admin.apps.length) {
-  admin.initializeApp();
+export { AuthenticatedRequest, AuthenticatedUser };
+
+// Initialize Firebase Admin (only once across the application)
+if (!getApps().length) {
+  initializeApp();
 }
 
 // In-memory cache for admin authorization status (5-minute TTL)
@@ -27,8 +32,7 @@ async function resolveAdminRole(email: string): Promise<{ authorized: boolean; r
       : { authorized: false, revoked: true };
   }
 
-  const snapshot = await admin
-    .firestore()
+  const snapshot = await getFirestore()
     .collection('admin_users')
     .where('email', '==', email)
     .where('status', '==', 'ACTIVE')
@@ -57,7 +61,7 @@ async function resolveAdminRole(email: string): Promise<{ authorized: boolean; r
  * @param next - The Express NextFunction callback to pass control to the next middleware.
  * @returns A promise that resolves when the verification process is complete.
  */
-export const verifyAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   // Allow OPTIONS requests for CORS
   if (req.method === 'OPTIONS') {
     next();
@@ -79,7 +83,7 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
 
   const token = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await getAuth().verifyIdToken(token);
 
     // 1. Check custom claims if present
     if (decodedToken.role === 'SUPER_ADMIN' || decodedToken.role === 'ADMIN' || decodedToken.admin === true) {

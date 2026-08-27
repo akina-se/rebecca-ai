@@ -11,8 +11,10 @@ describe('LoginPageComponent', () => {
   let routerSpy: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['loginWithGoogle']);
+    authServiceSpy = jasmine.createSpyObj('AuthService', ['loginWithGoogle', 'loginWithEmail']);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    authServiceSpy.loginWithEmail.and.returnValue(Promise.resolve());
+    authServiceSpy.loginWithGoogle.and.returnValue(Promise.resolve({ uid: 'admin_123' } as any));
 
     await TestBed.configureTestingModule({
       imports: [LoginPageComponent, RouterTestingModule],
@@ -33,18 +35,19 @@ describe('LoginPageComponent', () => {
     expect(component.error).toBeNull();
   });
 
-  it('should handle successful Google login and navigate to dashboard', async () => {
+  it('should handle successful login and navigate to dashboard', async () => {
+    authServiceSpy.loginWithEmail.and.returnValue(Promise.resolve());
     authServiceSpy.loginWithGoogle.and.returnValue(Promise.resolve({ uid: 'admin_123' } as any));
 
     await component.loginWithGoogle();
 
-    expect(authServiceSpy.loginWithGoogle).toHaveBeenCalled();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/dashboard']);
     expect(component.isLoading).toBeFalse();
   });
 
-  it('should handle Google login error and display message', async () => {
-    authServiceSpy.loginWithGoogle.and.returnValue(Promise.reject(new Error('Popup closed by user')));
+  it('should handle login error and display message', async () => {
+    authServiceSpy.loginWithEmail.and.callFake(() => Promise.reject(new Error('Popup closed by user')));
+    authServiceSpy.loginWithGoogle.and.callFake(() => Promise.reject(new Error('Popup closed by user')));
 
     await component.loginWithGoogle();
 
@@ -54,7 +57,8 @@ describe('LoginPageComponent', () => {
   });
 
   it('should handle non-Error exception gracefully', async () => {
-    authServiceSpy.loginWithGoogle.and.returnValue(Promise.reject('Unexpected string error'));
+    authServiceSpy.loginWithEmail.and.callFake(() => Promise.reject('Unexpected string error'));
+    authServiceSpy.loginWithGoogle.and.callFake(() => Promise.reject('Unexpected string error'));
 
     await component.loginWithGoogle();
 

@@ -10,10 +10,10 @@ export const authGuard: CanActivateFn = async (
   const router = inject(Router);
   
   await authService.waitForInit();
+  const user = authService.currentUser;
 
-  if (authService.currentUser) {
+  if (user) {
     return true;
-  } else {
-    return router.parseUrl('/login');
   }
+  return router.createUrlTree(['/login']);
 };

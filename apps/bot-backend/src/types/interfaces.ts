@@ -64,6 +64,8 @@ export interface IFirestoreService {
   updateImageLastUsed(hash: string): Promise<void>;
   hasProcessedFollower(followerId: string): Promise<boolean>;
   markFollowerProcessed(followerId: string): Promise<void>;
+  getProcessedFollowersCount(): Promise<number>;
+  updateTotalFollowers(count: number): Promise<void>;
   getLastListInteraction(userId: string): Promise<Date | null>;
   updateLastListInteraction(userId: string): Promise<void>;
 }

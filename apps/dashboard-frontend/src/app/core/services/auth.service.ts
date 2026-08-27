@@ -1,8 +1,19 @@
-import { Injectable, inject } from '@angular/core';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, User, signOut, onAuthStateChanged, connectAuthEmulator } from 'firebase/auth';
+import { Injectable, inject, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  User, 
+  signOut, 
+  onAuthStateChanged, 
+  connectAuthEmulator, 
+  Auth 
+} from 'firebase/auth';
 import { ConfigService } from './config.service';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 
 /**
  * Service responsible for managing user authentication state and interactions
@@ -13,51 +24,78 @@ import { BehaviorSubject, Observable } from 'rxjs';
 })
 export class AuthService {
   private configService = inject(ConfigService);
-  private auth;
-  private currentUserSubject = new BehaviorSubject<User | null>(null);
-  public currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
-  
-  private initPromise: Promise<void>;
+  private auth: Auth | null = null;
+  private app: FirebaseApp | null = null;
+  private authReadyPromise: Promise<void> | null = null;
 
-  constructor() {
-    const firebaseConfig = this.configService.firebaseConfig;
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    this.auth = getAuth(app);
-    
-    if (this.configService.isEmulator) {
-      connectAuthEmulator(this.auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-    }
-    
-    this.initPromise = new Promise<void>((resolve) => {
+  /** Native Angular Signal for current authenticated user */
+  readonly currentUserSignal = signal<User | null>(null);
+  public currentUser$: Observable<User | null> = toObservable(this.currentUserSignal);
+
+  get isEmulator(): boolean {
+    return this.configService.isEmulator;
+  }
+
+  private ensureAuth(): Auth {
+    if (!this.auth) {
+      const firebaseConfig = this.configService.firebaseConfig;
+      this.app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+      this.auth = getAuth(this.app);
+      
+      if (this.configService.isEmulator) {
+        connectAuthEmulator(this.auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+      }
+      
       onAuthStateChanged(this.auth, (user) => {
-        this.currentUserSubject.next(user);
-        resolve();
+        this.currentUserSignal.set(user);
       });
-    });
+      
+      this.authReadyPromise = typeof this.auth.authStateReady === 'function' 
+        ? this.auth.authStateReady() 
+        : Promise.resolve();
+    }
+    const currentAuth = this.auth;
+    if (!currentAuth) {
+      throw new Error('Firebase Auth initialization failed');
+    }
+    return currentAuth;
   }
 
   /**
-   * Waits for the initial authentication state to be resolved.
-   *
-   * @returns {Promise<void>} A promise that resolves when the auth state is initialized.
+   * Waits for Firebase Auth to complete its initial authentication state check.
    */
   async waitForInit(): Promise<void> {
-    return this.initPromise;
+    this.ensureAuth();
+    if (this.authReadyPromise) {
+      await this.authReadyPromise;
+    }
+    const user = this.auth?.currentUser ?? null;
+    if (this.currentUserSignal() !== user) {
+      this.currentUserSignal.set(user);
+    }
+  }
+
+  /**
+   * Logs in with Email & Password against Firebase Auth (used for Emulators & E2E tests).
+   */
+  async loginWithEmail(email: string, password: string): Promise<void> {
+    const auth = this.ensureAuth();
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    this.currentUserSignal.set(cred.user);
   }
 
   /**
    * Initiates a login flow using Google as the authentication provider.
-   *
-   * @returns {Promise<User>} A promise that resolves to the authenticated user.
-   * @throws Will throw an error if the login process fails.
    */
   async loginWithGoogle(): Promise<User> {
+    const auth = this.ensureAuth();
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account'
     });
     try {
-      const result = await signInWithPopup(this.auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      this.currentUserSignal.set(result.user);
       return result.user;
     } catch (error) {
       console.error('Google login error', error);
@@ -67,58 +105,47 @@ export class AuthService {
 
   /**
    * Logs out the currently authenticated user.
-   *
-   * @returns {Promise<void>} A promise that resolves when the user is logged out.
-   * @throws Will throw an error if the logout process fails.
    */
   async logout(): Promise<void> {
-    try {
-      await signOut(this.auth);
-    } catch (error) {
-      console.error('Logout error', error);
-      throw error;
-    }
+    const auth = this.ensureAuth();
+    await signOut(auth);
+    this.currentUserSignal.set(null);
   }
 
   /**
    * Retrieves the currently authenticated user.
-   *
-   * @returns {User | null} The current user, or null if no user is logged in.
    */
   get currentUser(): User | null {
-    if (this.currentUserSubject.value) {
-      return this.currentUserSubject.value;
-    }
-    // Resilient fallback for local test runners and offline sessions
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        const raw = window.localStorage.getItem('firebase:authUser:YOUR_API_KEY:[DEFAULT]');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          return {
-            uid: parsed.uid || 'admin_test_uid',
-            email: parsed.email || 'admin@example.com',
-            displayName: parsed.displayName || 'Rebecca Administrator',
-            getIdToken: async () => parsed.stsTokenManager?.accessToken || 'mock_e2e_jwt_token',
-          } as unknown as User;
-        }
-      } catch {
-        // Fallback
-      }
-    }
-    return null;
+    return this.currentUserSignal() || this.auth?.currentUser || null;
   }
 
   /**
-   * Retrieves the ID token for the currently authenticated user.
-   *
-   * @returns {Promise<string | null>} A promise that resolves to the token string, or null if unauthenticated.
+   * Synchronously retrieves the current user's Firebase in-memory access token without async queue lockups.
+   */
+  getSyncToken(): string | null {
+    const user = this.currentUser;
+    if (!user) return null;
+    const userObj = user as unknown as { accessToken?: string; stsTokenManager?: { accessToken?: string } };
+    return userObj.accessToken || userObj.stsTokenManager?.accessToken || null;
+  }
+
+  /**
+   * Retrieves the current user's Firebase ID token for HTTP authorization headers.
    */
   async getToken(): Promise<string | null> {
+    const sync = this.getSyncToken();
+    if (sync) return sync;
+
     const user = this.currentUser;
-    if (user) {
-      return await user.getIdToken();
+    if (!user) return null;
+
+    try {
+      return await Promise.race([
+        user.getIdToken(false),
+        new Promise<string | null>((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 1000))
+      ]);
+    } catch {
+      return null;
     }
-    return null;
   }
 }

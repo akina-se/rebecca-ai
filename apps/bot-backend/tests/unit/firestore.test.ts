@@ -553,6 +553,22 @@ describe('Firestore Service Unit Tests', () => {
 
       await firestoreService.updateLastListInteraction('l1');
       expect(mockDocSet).toHaveBeenCalled();
+
+      // getProcessedFollowersCount & updateTotalFollowers
+      (mockCollection as any).count = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValueOnce({ data: () => ({ count: 120 }) })
+      });
+      const followerCount = await firestoreService.getProcessedFollowersCount();
+      expect(followerCount).toBe(120);
+
+      (mockCollection as any).count = jest.fn().mockReturnValue({
+        get: jest.fn().mockRejectedValueOnce(new Error('Count query error'))
+      });
+      const errorCount = await firestoreService.getProcessedFollowersCount();
+      expect(errorCount).toBe(0);
+
+      await firestoreService.updateTotalFollowers(120);
+      expect(mockDocSet).toHaveBeenCalled();
     });
   });
 });

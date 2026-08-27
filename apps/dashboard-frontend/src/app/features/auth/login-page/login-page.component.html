@@ -1,4 +1,4 @@
-<div class="login-container">
+﻿<div class="login-container">
   <div class="glass-panel login-card">
     <div class="logo-container">
       <div class="logo-dot"></div>
@@ -10,18 +10,23 @@
       <p>Authorized access only. Please authenticate to interface with the Rebecca Core administration console.</p>
     </div>
 
-    <div *ngIf="error" class="alert-banner error-banner">
-      <span class="material-icons">error_outline</span>
-      <span>{{ error }}</span>
-    </div>
+    @if (error) {
+      <div class="alert-banner error-banner">
+        <span class="material-icons">error_outline</span>
+        <span>{{ error }}</span>
+      </div>
+    }
 
     <button 
       class="btn btn-primary login-btn" 
       (click)="loginWithGoogle()" 
       [disabled]="isLoading">
       
-      <span class="material-icons" *ngIf="!isLoading">login</span>
-      <span class="material-icons spinning" *ngIf="isLoading">sync</span>
+      @if (!isLoading) {
+        <span class="material-icons">login</span>
+      } @else {
+        <span class="material-icons spinning">sync</span>
+      }
       <span>{{ isLoading ? 'Authenticating...' : 'Sign in with Google' }}</span>
     </button>
     

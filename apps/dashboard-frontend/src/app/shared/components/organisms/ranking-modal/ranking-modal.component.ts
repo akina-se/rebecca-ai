@@ -36,7 +36,7 @@ export class RankingModalComponent {
   /** Column header for the metric column. */
   @Input() colMetric = 'Impressions';
   /** Emitted when the modal requests to close. */
-  @Output() close = new EventEmitter<void>();
+  @Output() modalClose = new EventEmitter<void>();
   /** Emitted when a row is clicked. */
   @Output() rowClick = new EventEmitter<string>();
 
@@ -74,7 +74,7 @@ export class RankingModalComponent {
   }
 
   onClose(): void {
-    this.close.emit();
+    this.modalClose.emit();
   }
 
   onRowClick(entry: RankingEntry): void {
