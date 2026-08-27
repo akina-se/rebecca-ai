@@ -38,6 +38,25 @@ describe('Functions Config', () => {
     expect(cfg.xApi.accessSecret).toBe('test_token_secret');
     expect(cfg.xApi.bearerToken).toBe('test_bearer');
     expect(cfg.xApi.myUserId).toBe('test_user_id');
+    expect(cfg.xApi.syncMaxResults).toBe(100);
+  });
+
+  it('should parse X_SYNC_MAX_RESULTS properly when configured', () => {
+    process.env.X_SYNC_MAX_RESULTS = '50';
+    let cfg = getConfig();
+    expect(cfg.xApi.syncMaxResults).toBe(50);
+
+    process.env.X_SYNC_MAX_RESULTS = '150';
+    cfg = getConfig();
+    expect(cfg.xApi.syncMaxResults).toBe(100);
+
+    process.env.X_SYNC_MAX_RESULTS = 'invalid';
+    cfg = getConfig();
+    expect(cfg.xApi.syncMaxResults).toBe(100);
+
+    process.env.X_SYNC_MAX_RESULTS = '2';
+    cfg = getConfig();
+    expect(cfg.xApi.syncMaxResults).toBe(100);
   });
 
   it('should handle empty environment variables gracefully', () => {
@@ -47,6 +66,7 @@ describe('Functions Config', () => {
     delete process.env.X_ACCESS_SECRET;
     delete process.env.X_BEARER_TOKEN;
     delete process.env.X_MY_USER_ID;
+    delete process.env.X_SYNC_MAX_RESULTS;
 
     const cfg = getConfig();
     expect(cfg.xApi.apiKey).toBe('');
@@ -55,5 +75,6 @@ describe('Functions Config', () => {
     expect(cfg.xApi.accessSecret).toBe('');
     expect(cfg.xApi.bearerToken).toBe('');
     expect(cfg.xApi.myUserId).toBe('');
+    expect(cfg.xApi.syncMaxResults).toBe(100);
   });
 });

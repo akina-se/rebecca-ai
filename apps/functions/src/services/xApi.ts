@@ -23,7 +23,7 @@ export interface IXApiService {
 export class XApiService implements IXApiService {
   private client: Client | null = null;
 
-  constructor(xApiConfig: XApiConfig) {
+  constructor(private xApiConfig: XApiConfig) {
     this.client = this.createClient(xApiConfig);
   }
 
@@ -52,10 +52,10 @@ export class XApiService implements IXApiService {
    * Fetches recent timeline posts authored by the specified user, excluding retweets and replies.
    *
    * @param userId - The X user ID whose tweets are to be fetched.
-   * @param limit - Maximum number of tweets to fetch (defaults to 100).
+   * @param limit - Maximum number of tweets to fetch (defaults to configured syncMaxResults, max 100).
    * @returns Array of normalized TimelineTweetDto items.
    */
-  async fetchRecentTimelineTweets(userId: string, limit = 100): Promise<TimelineTweetDto[]> {
+  async fetchRecentTimelineTweets(userId: string, limit?: number): Promise<TimelineTweetDto[]> {
     if (!this.client) {
       console.warn('[XApiService] X API client is not configured.');
       return [];
@@ -66,8 +66,10 @@ export class XApiService implements IXApiService {
       return [];
     }
 
+    const effectiveLimit = limit ?? this.xApiConfig.syncMaxResults ?? 100;
+
     const response = (await this.client.users.getPosts(userId, {
-      max_results: limit,
+      max_results: effectiveLimit,
       exclude: ['retweets', 'replies'],
       'tweet.fields': ['created_at', 'public_metrics', 'attachments', 'text'],
       expansions: ['attachments.media_keys'],

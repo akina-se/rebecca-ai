@@ -171,6 +171,13 @@ describe('SyncTimelineUseCase', () => {
     expect(mockBatchCommit).toHaveBeenCalled();
   });
 
+  it('should pass custom limit to XApiService if provided', async () => {
+    mockXApiService.fetchRecentTimelineTweets.mockResolvedValueOnce([]);
+
+    await useCase.execute('12345', 30);
+    expect(mockXApiService.fetchRecentTimelineTweets).toHaveBeenCalledWith('12345', 30);
+  });
+
   it('should catch error and return error metric if exception occurs', async () => {
     mockXApiService.fetchRecentTimelineTweets.mockRejectedValueOnce(new Error('Firestore connection failure'));
 

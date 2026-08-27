@@ -26,9 +26,10 @@ export class SyncTimelineUseCase {
    * Executes the timeline synchronization workflow.
    *
    * @param userId - Target author's X user ID.
+   * @param limit - Optional max tweets to fetch. Defaults to configured limit.
    * @returns Aggregated synchronization metrics.
    */
-  async execute(userId: string): Promise<SyncTimelineResult> {
+  async execute(userId: string, limit?: number): Promise<SyncTimelineResult> {
     if (!userId) {
       console.warn('[SyncTimelineUseCase] userId is empty. Aborting sync.');
       return { processed: 0, updated: 0, created: 0, errors: 0 };
@@ -36,7 +37,7 @@ export class SyncTimelineUseCase {
 
     try {
       // 1. Fetch normalized tweets from external service adapter
-      const tweets = await this.xApiService.fetchRecentTimelineTweets(userId, 100);
+      const tweets = await this.xApiService.fetchRecentTimelineTweets(userId, limit);
       if (tweets.length === 0) {
         console.log('[SyncTimelineUseCase] No tweets retrieved from X API.');
         return { processed: 0, updated: 0, created: 0, errors: 0 };

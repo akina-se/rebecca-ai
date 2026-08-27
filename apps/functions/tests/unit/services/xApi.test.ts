@@ -26,6 +26,7 @@ describe('XApiService', () => {
       accessSecret: 'tokenSecret',
       bearerToken: '',
       myUserId: '12345',
+      syncMaxResults: 100,
     };
     const service = new XApiService(cfg);
     expect(service).toBeDefined();
@@ -39,6 +40,7 @@ describe('XApiService', () => {
       accessSecret: '',
       bearerToken: 'bearer',
       myUserId: '12345',
+      syncMaxResults: 100,
     };
     const service = new XApiService(cfg);
     expect(service).toBeDefined();
@@ -52,6 +54,7 @@ describe('XApiService', () => {
       accessSecret: '',
       bearerToken: '',
       myUserId: '',
+      syncMaxResults: 100,
     };
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('12345');
@@ -112,11 +115,13 @@ describe('XApiService', () => {
       accessSecret: 'sec',
       bearerToken: '',
       myUserId: '12345',
+      syncMaxResults: 100,
     };
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('12345');
 
     expect(tweets).toHaveLength(2);
+    expect(mockGetPosts).toHaveBeenCalledWith('12345', expect.objectContaining({ max_results: 100 }));
     expect(tweets[0]).toEqual({
       id: 'tweet_1',
       text: 'Hello world tweet',
@@ -140,6 +145,24 @@ describe('XApiService', () => {
     });
   });
 
+  it('should use configured syncMaxResults when limit is not provided', async () => {
+    mockGetPosts.mockResolvedValueOnce({ data: [] });
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '12345',
+      syncMaxResults: 50,
+    };
+    const service = new XApiService(cfg);
+    await service.fetchRecentTimelineTweets('12345');
+
+    expect(mockGetPosts).toHaveBeenCalledWith('12345', expect.objectContaining({ max_results: 50 }));
+  });
+
   it('should handle empty response data gracefully', async () => {
     mockGetPosts.mockResolvedValueOnce({ data: [] });
 
@@ -150,6 +173,7 @@ describe('XApiService', () => {
       accessSecret: 'sec',
       bearerToken: '',
       myUserId: '12345',
+      syncMaxResults: 100,
     };
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('12345');
