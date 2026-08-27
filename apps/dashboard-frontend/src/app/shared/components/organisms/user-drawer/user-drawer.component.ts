@@ -123,42 +123,48 @@ export class UserDrawerComponent implements OnChanges {
   }
 
   /**
-   * Saves the updated profile data to the backend repository.
+   * Saves the modified core profile of the user to the repository.
    */
   onSaveProfile() {
+    if (!this.userId) return;
     const u = this.user();
     if (!u) return;
     this.isSavingProfile.set(true);
-    this.usersRepo.updateMemory(u.id, JSON.stringify(this.parsedProfile())).subscribe({
+    const updatedProfile = JSON.stringify(this.parsedProfile(), null, 2);
+    this.usersRepo.updateMemory(this.userId, updatedProfile).subscribe({
       next: () => {
-        this.toastService.show('Profile updated successfully', 'success');
+        this.user.set({ ...u, coreProfile: updatedProfile });
+        this.toastService.show(`Successfully saved core profile for ${this.userId}`, 'success');
         this.isSavingProfile.set(false);
       },
       error: (err) => {
-        console.error('Failed to update profile:', err);
-        this.toastService.show('Failed to update profile', 'error');
+        console.error('Failed to save core profile:', err);
+        this.toastService.show('Failed to save core profile', 'error');
         this.isSavingProfile.set(false);
       }
     });
   }
 
   /**
-   * Toggles the user's status between blocked and active.
+   * Toggles the blocked status of the currently loaded user.
+   * Persists the change to the repository.
    */
   onBlockUser() {
+    if (!this.userId) return;
     const u = this.user();
     if (!u) return;
-    const newStatus = this.isBlocked() ? UserStatus.ACTIVE : UserStatus.BLOCKED;
+    const targetStatus = this.isBlocked() ? UserStatus.ACTIVE : UserStatus.BLOCKED;
     this.isActionLoading.set(true);
-    this.usersRepo.bulkUpdateStatus([u.id], newStatus).subscribe({
+    this.usersRepo.bulkUpdateStatus([this.userId], targetStatus).subscribe({
       next: () => {
-        this.isBlocked.set(newStatus === UserStatus.BLOCKED);
+        this.isBlocked.set(targetStatus === UserStatus.BLOCKED);
+        this.user.set({ ...u, status: targetStatus });
         this.isActionLoading.set(false);
-        this.toastService.show(`User ${this.isBlocked() ? 'blocked' : 'unblocked'} successfully`, 'success');
+        this.toastService.show(`Successfully ${targetStatus === UserStatus.BLOCKED ? 'blocked' : 'unblocked'} user ${this.userId}`, 'success');
       },
       error: (err) => {
         console.error('Failed to update user status:', err);
-        this.toastService.show('Failed to update status', 'error');
+        this.toastService.show('Failed to update user status', 'error');
         this.isActionLoading.set(false);
       }
     });
