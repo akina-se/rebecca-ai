@@ -419,33 +419,35 @@ test.describe('Dashboard Features E2E Tests', () => {
    * - Capture high-res screenshot of KPI cards and period selector.
    */
   test('Scenario H: KPI Metrics Cards & Quick Period Selector - should render 4 KPI cards and update dynamically on period change', async ({ page }) => {
-    const kpiSection = page.locator('.kpi-grid, .metrics-grid, app-kpi-cards, .grid-cols-4').first();
+    const kpiSection = page.locator('.kpi-grid, .metrics-grid').first();
     await expect(kpiSection).toBeVisible({ timeout: 10000 });
 
-    // Assert 4 KPI Cards are rendered
-    const followersCard = page.locator('.kpi-card, .metric-card', { hasText: /Followers|フォロワー/i }).first();
-    const engagementCard = page.locator('.kpi-card, .metric-card', { hasText: /Engagement|エンゲージメント/i }).first();
-    const dauCard = page.locator('.kpi-card, .metric-card', { hasText: /Daily Active|アクティブ|DAU/i }).first();
-    const apiCallsCard = page.locator('.kpi-card, .metric-card', { hasText: /API Call|API コール/i }).first();
+    // Assert 4 KPI Cards are rendered in .kpi-grid
+    const kpiCards = page.locator('.kpi-grid .card, .kpi-card, .metric-card');
+    await expect(kpiCards).toHaveCount(4);
+
+    const followersCard = kpiCards.filter({ hasText: /Followers|フォロワー/i }).first();
+    const engagementCard = kpiCards.filter({ hasText: /Engagement|エンゲージメント/i }).first();
+    const dauCard = kpiCards.filter({ hasText: /Daily Active|アクティブ|DAU/i }).first();
+    const apiCallsCard = kpiCards.filter({ hasText: /API Call|API コール/i }).first();
 
     await expect(followersCard).toBeVisible();
     await expect(engagementCard).toBeVisible();
     await expect(dauCard).toBeVisible();
     await expect(apiCallsCard).toBeVisible();
 
-    // Verify Quick Period Selector
-    const periodSelector = page.locator('app-period-selector, .period-selector, .quick-period-tabs').first();
-    if (await periodSelector.isVisible()) {
-      const weeklyBtn = periodSelector.locator('button, .tab', { hasText: /Weekly|週間|7D/i }).first();
-      const yearlyBtn = periodSelector.locator('button, .tab', { hasText: /Yearly|年間|1Y/i }).first();
-      
-      if (await weeklyBtn.isVisible()) {
-        await weeklyBtn.click();
-        await page.waitForTimeout(500);
-      }
-      if (await yearlyBtn.isVisible()) {
-        await yearlyBtn.click();
-        await page.waitForTimeout(500);
+    // Verify Period Dropdown Selector
+    const periodDropdown = page.locator('.block-header app-dropdown').first();
+    if (await periodDropdown.isVisible()) {
+      const toggle = periodDropdown.locator('.dropdown-toggle, button').first();
+      if (await toggle.isVisible()) {
+        await toggle.click();
+        await page.waitForTimeout(300);
+        const option = periodDropdown.locator('.dropdown-item').first();
+        if (await option.isVisible()) {
+          await option.click();
+          await page.waitForTimeout(500);
+        }
       }
     }
 
