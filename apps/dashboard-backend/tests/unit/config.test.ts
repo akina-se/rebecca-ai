@@ -1,7 +1,12 @@
 import { Request, Response } from 'express';
 import { ConfigController } from '../../src/features/config/controller';
 import { initializeConfigModule } from '../../src/features/config';
-import packageJson from '../../../package.json';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const packageJson = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8')
+);
 
 describe('Config Feature Unit Tests', () => {
   let controller: ConfigController;

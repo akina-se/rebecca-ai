@@ -1,5 +1,22 @@
 import { Request, Response } from 'express';
-import packageJson from '../../../package.json';
+import * as fs from 'fs';
+import * as path from 'path';
+
+function getAppVersion(): string {
+  if (process.env.npm_package_version) {
+    return process.env.npm_package_version;
+  }
+  try {
+    const pkgPath = path.resolve(__dirname, '../../../package.json');
+    if (fs.existsSync(pkgPath)) {
+      const parsed = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      return parsed.version || '';
+    }
+  } catch {
+    // Graceful fallback if filesystem cannot be read
+  }
+  return '';
+}
 
 /**
  * Controller for returning public runtime configurations to the frontend application.
@@ -8,6 +25,7 @@ import packageJson from '../../../package.json';
  * without requiring hardcoded configuration files in client bundles or Git repositories.
  */
 export class ConfigController {
+  private readonly appVersion = getAppVersion();
   /**
    * Returns public client-side configuration parameters (Firebase public identifiers,
    * API endpoints, and external site URLs).
@@ -26,7 +44,7 @@ export class ConfigController {
         appId: (process.env.FIREBASE_WEB_APP_ID || '').trim(),
       },
       apiUrl: '/api/v1',
-      version: process.env.npm_package_version || packageJson.version,
+      version: this.appVersion,
       publicSiteUrl: process.env.PUBLIC_SITE_URL || 'https://rebecca-ai.net',
       production: isProd,
       useEmulators: !isProd,
