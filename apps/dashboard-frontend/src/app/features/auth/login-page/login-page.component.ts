@@ -20,10 +20,7 @@ export class LoginPageComponent {
     this.isLoading = true;
     this.error = null;
     try {
-      const isLocalHost = typeof window !== 'undefined' && 
-        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-      
-      if (isLocalHost) {
+      if (this.authService.isEmulator) {
         await this.authService.loginWithEmail('admin@example.com', 'password123');
       } else {
         await this.authService.loginWithGoogle();
