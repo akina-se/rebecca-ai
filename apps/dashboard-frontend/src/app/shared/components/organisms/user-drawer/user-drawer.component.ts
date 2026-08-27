@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, inject } from '@angular/core';
+import { Component, Input, OnChanges, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
@@ -37,24 +37,24 @@ export class UserDrawerComponent implements OnChanges {
   @Input() userId: string | null = null;
 
   /** The detailed information of the loaded user. */
-  user?: UserDetail;
+  readonly user = signal<UserDetail | undefined>(undefined);
 
   /** The parsed core profile of the user, organized by category. */
-  parsedProfile: Record<string, string[]> = {
+  readonly parsedProfile = signal<Record<string, string[]>>({
     attributes: [],
     preferences: [],
     concerns: [],
     important_memories: []
-  };
+  });
 
   /** Indicates if a block/unblock action is currently in progress. */
-  isActionLoading = false;
+  readonly isActionLoading = signal<boolean>(false);
   
   /** Indicates if the currently loaded user is blocked. */
-  isBlocked = false;
+  readonly isBlocked = signal<boolean>(false);
   
   /** Indicates if a profile save operation is currently in progress. */
-  isSavingProfile = false;
+  readonly isSavingProfile = signal<boolean>(false);
   private readonly usersRepo = inject(USERS_REPOSITORY);
 
   /**
@@ -65,8 +65,8 @@ export class UserDrawerComponent implements OnChanges {
     if (!this.userId) return;
     this.usersRepo.getById(this.userId).subscribe({
       next: (u) => {
-        this.user = u;
-        this.isBlocked = u.status === UserStatus.BLOCKED;
+        this.user.set(u);
+        this.isBlocked.set(u.status === UserStatus.BLOCKED);
         this.contextService.setFocusedEntity({
           type: 'user',
           id: u.id,
@@ -74,13 +74,14 @@ export class UserDrawerComponent implements OnChanges {
           details: { interactions: u.interactions, status: u.status, firstSeen: u.firstSeen, lastSeen: u.lastSeen }
         });
         try {
-          this.parsedProfile = JSON.parse(u.coreProfile) as Record<string, string[]>;
+          const parsed = JSON.parse(u.coreProfile) as Record<string, string[]>;
           ['attributes', 'preferences', 'concerns', 'important_memories'].forEach(key => {
-            if (!this.parsedProfile[key]) this.parsedProfile[key] = [];
+            if (!parsed[key]) parsed[key] = [];
           });
+          this.parsedProfile.set(parsed);
         } catch (error) {
           console.error('Failed to parse coreProfile JSON', error);
-          this.parsedProfile = { attributes: [], preferences: [], concerns: [], important_memories: [] };
+          this.parsedProfile.set({ attributes: [], preferences: [], concerns: [], important_memories: [] });
         }
       },
       error: (err) => {
@@ -96,66 +97,69 @@ export class UserDrawerComponent implements OnChanges {
    * @param index - The index of the tag to remove within the category array.
    */
   removeTag(category: string, index: number) {
-    this.parsedProfile[category].splice(index, 1);
+    const current = { ...this.parsedProfile() };
+    if (current[category]) {
+      current[category] = current[category].filter((_, i) => i !== index);
+      this.parsedProfile.set(current);
+    }
   }
 
   /**
-   * Adds a new tag to a specific profile category based on user input.
+   * Adds a new tag to a specific profile category.
    * 
-   * @param category - The category to add the new tag to.
-   * @param event - The DOM event triggered by the input field.
+   * @param category - The category to add the tag to.
+   * @param event - The keyboard event or focus out event triggering the addition.
    */
   addTag(category: string, event: Event) {
     const input = event.target as HTMLInputElement;
     const value = input.value.trim();
     if (value) {
-      this.parsedProfile[category].push(value);
+      const current = { ...this.parsedProfile() };
+      if (!current[category]) current[category] = [];
+      current[category] = [...current[category], value];
+      this.parsedProfile.set(current);
       input.value = '';
     }
   }
 
   /**
-   * Toggles the blocked status of the currently loaded user.
-   * Persists the change to the repository.
+   * Saves the updated profile data to the backend repository.
    */
-  async onBlockUser() {
-    if (!this.userId) return;
-    this.isActionLoading = true;
-    const targetStatus = this.isBlocked ? UserStatus.ACTIVE : UserStatus.BLOCKED;
-    this.usersRepo.bulkUpdateStatus([this.userId], targetStatus).subscribe({
-      next: async () => {
-        this.isBlocked = targetStatus === UserStatus.BLOCKED;
-        if (this.user) {
-          this.user.status = targetStatus;
-        }
-        this.toastService.show(`Successfully ${this.isBlocked ? 'blocked' : 'unblocked'} user ${this.userId}`, 'success');
-        this.isActionLoading = false;
+  onSaveProfile() {
+    const u = this.user();
+    if (!u) return;
+    this.isSavingProfile.set(true);
+    this.usersRepo.updateMemory(u.id, JSON.stringify(this.parsedProfile())).subscribe({
+      next: () => {
+        this.toastService.show('Profile updated successfully', 'success');
+        this.isSavingProfile.set(false);
       },
       error: (err) => {
-        console.error('Failed to update user status:', err);
-        this.isActionLoading = false;
+        console.error('Failed to update profile:', err);
+        this.toastService.show('Failed to update profile', 'error');
+        this.isSavingProfile.set(false);
       }
     });
   }
 
   /**
-   * Saves the modified core profile of the user to the repository.
+   * Toggles the user's status between blocked and active.
    */
-  async onSaveProfile() {
-    if (!this.userId) return;
-    this.isSavingProfile = true;
-    const updatedProfile = JSON.stringify(this.parsedProfile, null, 2);
-    this.usersRepo.updateMemory(this.userId, updatedProfile).subscribe({
-      next: async () => {
-        if (this.user) {
-          this.user.coreProfile = updatedProfile;
-        }
-        this.toastService.show(`Successfully saved core profile for ${this.userId}`, 'success');
-        this.isSavingProfile = false;
+  onBlockUser() {
+    const u = this.user();
+    if (!u) return;
+    const newStatus = this.isBlocked() ? UserStatus.ACTIVE : UserStatus.BLOCKED;
+    this.isActionLoading.set(true);
+    this.usersRepo.bulkUpdateStatus([u.id], newStatus).subscribe({
+      next: () => {
+        this.isBlocked.set(newStatus === UserStatus.BLOCKED);
+        this.isActionLoading.set(false);
+        this.toastService.show(`User ${this.isBlocked() ? 'blocked' : 'unblocked'} successfully`, 'success');
       },
       error: (err) => {
-        console.error('Failed to save core profile:', err);
-        this.isSavingProfile = false;
+        console.error('Failed to update user status:', err);
+        this.toastService.show('Failed to update status', 'error');
+        this.isActionLoading.set(false);
       }
     });
   }
@@ -164,8 +168,9 @@ export class UserDrawerComponent implements OnChanges {
    * Opens the user's profile page on X (Twitter) in a new tab.
    */
   onViewOnX(): void {
-    if (!this.user) return;
-    const username = (this.user.username || this.user.id).replace(/^@/, '').trim();
+    const u = this.user();
+    if (!u) return;
+    const username = (u.username || u.id).replace(/^@/, '').trim();
     if (!username) return;
     const url = `https://x.com/${encodeURIComponent(username)}`;
     window.open(url, '_blank', 'noopener,noreferrer');

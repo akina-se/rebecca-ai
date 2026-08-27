@@ -41,11 +41,11 @@ export class DashboardPageComponent implements OnInit {
   topUsersDate = '2026';
 
   // Modal State
-  isRankingModalOpen = false;
-  rankingModalTitle = '';
-  rankingModalColLabel = '';
-  rankingModalColMetric = '';
-  rankingModalType: 'post' | 'user' = 'post';
+  readonly isRankingModalOpen = signal<boolean>(false);
+  readonly rankingModalTitle = signal<string>('');
+  readonly rankingModalColLabel = signal<string>('');
+  readonly rankingModalColMetric = signal<string>('');
+  readonly rankingModalType = signal<'post' | 'user'>('post');
 
   // Drawer State
   readonly isDrawerOpen = signal<boolean>(false);
@@ -157,7 +157,7 @@ export class DashboardPageComponent implements OnInit {
     const isoDate = this.getIsoDate(this.topPostsDate);
     this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(response => {
       this.topPosts.set(response.data);
-      if (this.isRankingModalOpen && this.rankingModalType === 'post') {
+      if (this.isRankingModalOpen() && this.rankingModalType() === 'post') {
         this.openRankingModal('posts');
       }
     });
@@ -167,7 +167,7 @@ export class DashboardPageComponent implements OnInit {
     const isoDate = this.getIsoDate(this.topUsersDate);
     this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(response => {
       this.topUsers.set(response.data);
-      if (this.isRankingModalOpen && this.rankingModalType === 'user') {
+      if (this.isRankingModalOpen() && this.rankingModalType() === 'user') {
         this.openRankingModal('users');
       }
     });
@@ -367,51 +367,51 @@ export class DashboardPageComponent implements OnInit {
     return false;
   }
 
-  rankingModalEntries: { id: string; rank: number; label: string; value: number | string; badge?: string }[] = [];
-  rankingModalCurrentPage = 1;
-  rankingModalTotalPages = 1;
-  rankingModalTotalItems = 0;
+  readonly rankingModalEntries = signal<{ id: string; rank: number; label: string; value: number | string; badge?: string }[]>([]);
+  readonly rankingModalCurrentPage = signal<number>(1);
+  readonly rankingModalTotalPages = signal<number>(1);
+  readonly rankingModalTotalItems = signal<number>(0);
 
   openRankingModal(type: 'posts' | 'users') {
-    this.rankingModalType = type === 'posts' ? 'post' : 'user';
-    this.rankingModalCurrentPage = 1;
+    this.rankingModalType.set(type === 'posts' ? 'post' : 'user');
+    this.rankingModalCurrentPage.set(1);
     this.loadRankingModalData(1);
-    this.isRankingModalOpen = true;
+    this.isRankingModalOpen.set(true);
   }
 
   loadRankingModalData(page: number) {
-    this.rankingModalCurrentPage = page;
-    if (this.rankingModalType === 'post') {
-      this.rankingModalTitle = 'Top Posts by Impressions';
-      this.rankingModalColLabel = 'Post';
-      this.rankingModalColMetric = 'Impressions';
+    this.rankingModalCurrentPage.set(page);
+    if (this.rankingModalType() === 'post') {
+      this.rankingModalTitle.set('Top Posts by Impressions');
+      this.rankingModalColLabel.set('Post');
+      this.rankingModalColMetric.set('Impressions');
       const isoDate = this.getIsoDate(this.topPostsDate);
       this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate, page, 10).subscribe(res => {
-        this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
-        this.rankingModalTotalPages = res.meta?.totalPages || 1;
-        this.rankingModalEntries = res.data.map((p, i) => ({
+        this.rankingModalTotalItems.set(res.meta?.totalItems || res.data.length);
+        this.rankingModalTotalPages.set(res.meta?.totalPages || 1);
+        this.rankingModalEntries.set(res.data.map((p, i) => ({
           id: p.id,
           rank: (page - 1) * 10 + i + 1,
           label: p.snippet,
           value: p.impressions,
           badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
-        }));
+        })));
       });
     } else {
-      this.rankingModalTitle = 'Top Engaged Users';
-      this.rankingModalColLabel = 'User';
-      this.rankingModalColMetric = 'Interactions';
+      this.rankingModalTitle.set('Top Engaged Users');
+      this.rankingModalColLabel.set('User');
+      this.rankingModalColMetric.set('Interactions');
       const isoDate = this.getIsoDate(this.topUsersDate);
       this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate, page, 10).subscribe(res => {
-        this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
-        this.rankingModalTotalPages = res.meta?.totalPages || 1;
-        this.rankingModalEntries = res.data.map((u, i) => ({
+        this.rankingModalTotalItems.set(res.meta?.totalItems || res.data.length);
+        this.rankingModalTotalPages.set(res.meta?.totalPages || 1);
+        this.rankingModalEntries.set(res.data.map((u, i) => ({
           id: u.id,
           rank: (page - 1) * 10 + i + 1,
           label: u.name ? `${u.name}${u.username ? ` (@${u.username})` : ''}` : (u.username ? `@${u.username}` : u.id),
           value: u.interactions,
           badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
-        }));
+        })));
       });
     }
   }

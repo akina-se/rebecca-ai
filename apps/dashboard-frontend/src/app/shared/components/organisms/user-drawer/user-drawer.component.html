@@ -1,4 +1,4 @@
-@if (user) {
+@if (user(); as u) {
   <div class="drawer-content">
     <!-- Profile Header -->
     <div class="glass-panel profile-box">
@@ -7,9 +7,9 @@
           <span class="material-icons">person</span>
         </div>
         <div class="profile-info">
-          <div class="profile-name">{{ user.name || user.username || user.id }}</div>
-          @if (user.username) {
-            <div class="profile-handle">&#64;{{ user.username }}</div>
+          <div class="profile-name">{{ u.name || u.username || u.id }}</div>
+          @if (u.username) {
+            <div class="profile-handle">&#64;{{ u.username }}</div>
           }
         </div>
       </div>
@@ -20,7 +20,7 @@
         <span class="material-icons metric-icon">forum</span>
         <div class="metric-info">
           <div class="metric-title">{{ 'users.table_interactions' | translate }}</div>
-          <div class="metric-value">{{ user.interactions }}</div>
+          <div class="metric-value">{{ u.interactions }}</div>
         </div>
       </div>
     </div>
@@ -28,12 +28,12 @@
     <div class="glass-panel stat-box">
       <div class="timeline-stat">
         <div class="stat-label">{{ 'user_drawer.first_seen' | translate }}</div>
-        <div class="stat-value" [title]="user.firstSeen">{{ user.firstSeen | tzDate }}</div>
+        <div class="stat-value" [title]="u.firstSeen">{{ u.firstSeen | tzDate }}</div>
       </div>
       <div class="divider"></div>
       <div class="timeline-stat">
         <div class="stat-label">{{ 'user_drawer.last_seen' | translate }}</div>
-        <div class="stat-value" [title]="user.lastSeen">{{ user.lastSeen | tzDate }}</div>
+        <div class="stat-value" [title]="u.lastSeen">{{ u.lastSeen | tzDate }}</div>
       </div>
     </div>
     <!-- Core Profile -->
@@ -47,7 +47,7 @@
         <div class="profile-category">
           <div class="category-label">{{ 'user_drawer.attributes' | translate }}</div>
           <div class="tags-container">
-            @for (item of parsedProfile['attributes']; track item; let i = $index) {
+            @for (item of parsedProfile()['attributes']; track item; let i = $index) {
               <div class="profile-tag">
                 {{ item }}
                 <span class="material-icons tag-close" (click)="removeTag('attributes', i)">close</span>
@@ -60,7 +60,7 @@
         <div class="profile-category">
           <div class="category-label">{{ 'user_drawer.preferences' | translate }}</div>
           <div class="tags-container">
-            @for (item of parsedProfile['preferences']; track item; let i = $index) {
+            @for (item of parsedProfile()['preferences']; track item; let i = $index) {
               <div class="profile-tag">
                 {{ item }}
                 <span class="material-icons tag-close" (click)="removeTag('preferences', i)">close</span>
@@ -73,7 +73,7 @@
         <div class="profile-category">
           <div class="category-label">{{ 'user_drawer.concerns' | translate }}</div>
           <div class="tags-container">
-            @for (item of parsedProfile['concerns']; track item; let i = $index) {
+            @for (item of parsedProfile()['concerns']; track item; let i = $index) {
               <div class="profile-tag">
                 {{ item }}
                 <span class="material-icons tag-close" (click)="removeTag('concerns', i)">close</span>
@@ -86,7 +86,7 @@
         <div class="profile-category">
           <div class="category-label">{{ 'user_drawer.important_memories' | translate }}</div>
           <div class="tags-container">
-            @for (item of parsedProfile['important_memories']; track item; let i = $index) {
+            @for (item of parsedProfile()['important_memories']; track item; let i = $index) {
               <div class="profile-tag">
                 {{ item }}
                 <span class="material-icons tag-close" (click)="removeTag('important_memories', i)">close</span>
@@ -96,9 +96,9 @@
           </div>
         </div>
       </div>
-      <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 20px; margin-top: 10px;" (click)="onSaveProfile()" [disabled]="isSavingProfile">
-        <span class="material-icons" [class.spinning]="isSavingProfile">{{ isSavingProfile ? 'sync' : 'save' }}</span>
-        {{ isSavingProfile ? ('common.saving' | translate) : ('user_drawer.save_profile' | translate) }}
+      <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 20px; margin-top: 10px;" (click)="onSaveProfile()" [disabled]="isSavingProfile()">
+        <span class="material-icons" [class.spinning]="isSavingProfile()">{{ isSavingProfile() ? 'sync' : 'save' }}</span>
+        {{ isSavingProfile() ? ('common.saving' | translate) : ('user_drawer.save_profile' | translate) }}
       </button>
     </div>
     <!-- Chat History -->
@@ -108,7 +108,7 @@
         {{ 'user_drawer.past_interactions' | translate }}
       </div>
       <div class="chat-history">
-        @for (msg of user.chatHistory; track msg) {
+        @for (msg of u.chatHistory; track msg) {
           <div class="chat-bubble user" [class.user]="msg.from === 'user'">
             @if (msg.from === 'user') {
               <div class="bubble-content user-bubble">{{ msg.text }}</div>
@@ -133,9 +133,9 @@
         <span class="material-icons">open_in_new</span> {{ 'common.view_on_x' | translate }}
       </button>
       <button class="btn" style="width: 100%; justify-content: center; background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid var(--danger);"
-        (click)="onBlockUser()" [disabled]="isActionLoading">
-        <span class="material-icons" [class.spinning]="isActionLoading">{{ isActionLoading ? 'sync' : 'block' }}</span>
-        {{ isActionLoading ? ('common.loading' | translate) : (isBlocked ? ('user_drawer.unblock_user' | translate) : ('user_drawer.block_user' | translate)) }}
+        (click)="onBlockUser()" [disabled]="isActionLoading()">
+        <span class="material-icons" [class.spinning]="isActionLoading()">{{ isActionLoading() ? 'sync' : 'block' }}</span>
+        {{ isActionLoading() ? ('common.loading' | translate) : (isBlocked() ? ('user_drawer.unblock_user' | translate) : ('user_drawer.block_user' | translate)) }}
       </button>
     </div>
   </div>
