@@ -5,7 +5,6 @@ export const FUNCTION_SECRET_KEYS = [
   'X_ACCESS_TOKEN',
   'X_ACCESS_SECRET',
   'X_BEARER_TOKEN',
-  'X_MY_USER_ID',
 ] as const;
 
 export const X_SECRET_KEYS = FUNCTION_SECRET_KEYS;

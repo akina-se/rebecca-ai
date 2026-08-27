@@ -20,7 +20,6 @@ describe('Functions Config', () => {
       'X_ACCESS_TOKEN',
       'X_ACCESS_SECRET',
       'X_BEARER_TOKEN',
-      'X_MY_USER_ID',
     ]);
     expect(X_SECRET_KEYS).toEqual(FUNCTION_SECRET_KEYS);
   });

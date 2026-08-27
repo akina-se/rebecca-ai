@@ -22,7 +22,7 @@
     "audit:fix": "npm audit fix"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22"
   },
   "dependencies": {
     "@xdevplatform/xdk": "^0.5.0",
