@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/akina-se/rebecca-ai/compare/v1.7.0...v1.7.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **dashboard:** dynamic version metadata and hosting deployment setup ([#86](https://github.com/akina-se/rebecca-ai/issues/86)) ([a334f84](https://github.com/akina-se/rebecca-ai/commit/a334f8441a16d5496eb618590cb65221aa167506))
+
 ## [1.7.0](https://github.com/akina-se/rebecca-ai/compare/v1.6.0...v1.7.0) (2026-08-27)
 
 
