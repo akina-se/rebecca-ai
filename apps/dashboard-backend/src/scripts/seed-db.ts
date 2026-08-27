@@ -46,7 +46,14 @@ async function seedAuth() {
       displayName: 'Rebecca Administrator',
       emailVerified: true,
     });
-    console.log(`Successfully created dummy admin user in Auth Emulator: ${user.email}`);
+    await getAuth().setCustomUserClaims(user.uid, { role: 'SUPER_ADMIN', admin: true });
+    await firestore.collection('admin_users').doc(user.uid).set({
+      email: 'admin@example.com',
+      role: 'SUPER_ADMIN',
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString()
+    });
+    console.log(`Successfully created dummy admin user with SUPER_ADMIN privileges: ${user.email}`);
   } catch (error) {
     console.warn('Auth Emulator seeding skipped (emulator not running):', (error as Error).message || error);
   }
@@ -248,7 +255,12 @@ async function seedFirestore() {
     timeline_summary: 'Rebecca AI is highly active and talking about anime and coding.',
     timelineSummaryUpdatedAt: now.toISOString()
   });
-  console.log('Seeded system/persona document.');
+  await collections.system.doc('preferences').set({
+    language: 'ja',
+    timezone: 'Asia/Tokyo',
+    updatedAt: now.toISOString()
+  });
+  console.log('Seeded system/persona and system/preferences documents.');
 
   // 6. Seed system stats (KPI trends & Global metrics)
   const days = 10;

@@ -1,15 +1,15 @@
-import { Firestore } from '@google-cloud/firestore';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { createApp } from './app';
 import { config } from './config';
 
-/**
- * Application entry point for the Dashboard Backend (BFF).
- * Initializes Firestore and starts the HTTP server using createApp.
- */
-const firestore = new Firestore({
-  projectId: config.gcp.projectId,
-});
+if (!getApps().length) {
+  initializeApp({
+    projectId: config.gcp.projectId || 'rebecca-ai-gal-local',
+  });
+}
 
+const firestore = getFirestore();
 const app = createApp(firestore);
 const port = config.server.port;
 
