@@ -1,10 +1,9 @@
-import { Component, OnInit, inject, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+﻿import { Component, OnInit, inject, ElementRef, ViewChild, AfterViewChecked, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../core/services/drawer.service';
 import { CopilotService } from '../../core/services/copilot.service';
 import { CopilotContextService } from '../../core/services/copilot-context.service';
-import { TzDatePipe } from '../../shared/pipes/tz-date.pipe';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { CopilotAction } from '@rebecca/types';
 
@@ -15,7 +14,7 @@ import { CopilotAction } from '@rebecca/types';
 @Component({
   selector: 'app-ai-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TzDatePipe, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './ai-drawer.component.html',
   styleUrls: ['./ai-drawer.component.css']
 })
@@ -26,15 +25,15 @@ export class AiDrawerComponent implements OnInit, AfterViewChecked {
 
   @ViewChild('chatScroll') private chatScrollContainer?: ElementRef;
 
-  isOpen = false;
+  readonly isOpen = signal<boolean>(false);
   inputMessage = '';
   private shouldScrollToBottom = false;
 
   ngOnInit() {
     this.drawerService.isOpen$.subscribe({
-      next: (isOpen: boolean) => {
-        this.isOpen = isOpen;
-        if (isOpen) {
+      next: (open: boolean) => {
+        this.isOpen.set(open);
+        if (open) {
           this.shouldScrollToBottom = true;
         }
       },

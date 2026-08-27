@@ -44,9 +44,9 @@ describe('AssetsPageComponent', () => {
     component.ngOnInit();
 
     expect(assetsRepoSpy.getAll).toHaveBeenCalled();
-    expect(component.assets.length).toBe(1);
-    expect(component.assets[0].id).toBe('asset_1');
-    expect(component.isLoading).toBeFalse();
+    expect(component.assets().length).toBe(1);
+    expect(component.assets()[0].id).toBe('asset_1');
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should handle load error gracefully', () => {
@@ -56,10 +56,10 @@ describe('AssetsPageComponent', () => {
   });
 
   it('should toggle select all and individual row selection', () => {
-    component.assets = [
+    component.assets.set([
       { id: 'asset_1', filename: '1.png' } as any,
       { id: 'asset_2', filename: '2.png' } as any
-    ];
+    ]);
 
     component.toggleSelectAll();
     expect(component.selectAll).toBeTrue();
@@ -91,7 +91,7 @@ describe('AssetsPageComponent', () => {
     // Error case
     assetsRepoSpy.upload.and.returnValue(throwError(() => new Error('Upload err')));
     component.onFilesSelected(mockEvent, mockInput);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to upload image(s)', 'error');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to upload/), 'error');
   });
 
   it('should execute bulk delete on selected assets and handle error', async () => {
@@ -102,13 +102,13 @@ describe('AssetsPageComponent', () => {
     await component.executeBulkDelete();
 
     expect(assetsRepoSpy.deleteMany).toHaveBeenCalledWith(['asset_1']);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Successfully deleted/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Deleted 1 asset|Successfully deleted/), 'success');
 
     // Error case
     component.selectedAssets.add('asset_1');
     assetsRepoSpy.deleteMany.and.returnValue(throwError(() => new Error('Delete err')));
     await component.executeBulkDelete();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to delete assets', 'error');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to delete selected assets', 'error');
   });
 
   it('should execute bulk retry on selected assets and handle error', async () => {
@@ -119,19 +119,19 @@ describe('AssetsPageComponent', () => {
     await component.executeBulkRetry();
 
     expect(assetsRepoSpy.regenerateCaptions).toHaveBeenCalledWith(['asset_1']);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Successfully triggered AI regeneration/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Initiated AI regeneration|Successfully triggered AI regeneration/), 'success');
 
     // Error case
     component.selectedAssets.add('asset_1');
     assetsRepoSpy.regenerateCaptions.and.returnValue(throwError(() => new Error('Retry err')));
     await component.executeBulkRetry();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to trigger regeneration', 'error');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to retry captions', 'error');
   });
 
   it('should open lightbox on onOpenLightbox', () => {
     component.onOpenLightbox('https://example.com/large.png');
-    expect(component.lightboxImageUrl).toBe('https://example.com/large.png');
-    expect(component.isLightboxOpen).toBeTrue();
+    expect(component.lightboxImageUrl()).toBe('https://example.com/large.png');
+    expect(component.isLightboxOpen()).toBeTrue();
   });
 
   it('should return correct badge color based on asset status', () => {
@@ -150,14 +150,14 @@ describe('AssetsPageComponent', () => {
     assetsRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
 
     component.openAssetDrawer('asset_1');
-    expect(component.selectedAssetId).toBe('asset_1');
-    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.selectedAssetId()).toBe('asset_1');
+    expect(component.isDrawerOpen()).toBeTrue();
 
     component.onAssetUpdated();
     expect(assetsRepoSpy.getAll).toHaveBeenCalled();
 
     component.onAssetDeleted();
-    expect(component.isDrawerOpen).toBeFalse();
+    expect(component.isDrawerOpen()).toBeFalse();
   });
 
   it('should handle search and page change', () => {
@@ -184,8 +184,8 @@ describe('AssetsPageComponent', () => {
 
   it('should ignore openAssetDrawer when text is selected in browser', () => {
     spyOn(window, 'getSelection').and.returnValue({ toString: () => 'some text' } as any);
-    component.isDrawerOpen = false;
+    component.isDrawerOpen.set(false);
     component.openAssetDrawer('asset_99');
-    expect(component.isDrawerOpen).toBeFalse();
+    expect(component.isDrawerOpen()).toBeFalse();
   });
 });

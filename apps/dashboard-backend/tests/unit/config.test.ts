@@ -77,4 +77,44 @@ describe('Config Feature Unit Tests', () => {
     expect(router).toBeDefined();
     expect(router.stack).toBeDefined();
   });
+
+  it('should verify global config object default values', async () => {
+    const { config } = await import('../../src/config');
+    expect(config.server.port).toBeGreaterThan(0);
+    expect(config.gcp.location).toBeDefined();
+    expect(config.gcp.imageBucketName).toBeDefined();
+    expect(config.gemini.model).toBeDefined();
+    expect(config.gemini.embeddingModel).toBeDefined();
+  });
+
+  it('should verify global config with custom environment variables set', () => {
+    jest.isolateModules(() => {
+      process.env.PORT = '9090';
+      process.env.GCP_PROJECT_ID = 'custom-project';
+      process.env.GCP_LOCATION = 'us-central1';
+      process.env.IMAGE_BUCKET_NAME = 'custom-bucket';
+      process.env.BOT_BACKEND_URL = 'http://custom-bot';
+      process.env.GEMINI_API_KEY = 'custom-gemini-key';
+      process.env.GEMINI_MODEL = 'gemini-custom';
+      process.env.GEMINI_EMBEDDING_MODEL = 'embedding-custom';
+      process.env.X_API_KEY = 'custom-x-key';
+      process.env.X_API_SECRET = 'custom-x-secret';
+      process.env.X_ACCESS_TOKEN = 'custom-x-token';
+      process.env.X_ACCESS_TOKEN_SECRET = 'custom-x-token-secret';
+
+      const { config: customConfig } = require('../../src/config');
+      expect(customConfig.server.port).toBe(9090);
+      expect(customConfig.gcp.projectId).toBe('custom-project');
+      expect(customConfig.gcp.location).toBe('us-central1');
+      expect(customConfig.gcp.imageBucketName).toBe('custom-bucket');
+      expect(customConfig.services.botBackendUrl).toBe('http://custom-bot');
+      expect(customConfig.gemini.apiKey).toBe('custom-gemini-key');
+      expect(customConfig.gemini.model).toBe('gemini-custom');
+      expect(customConfig.gemini.embeddingModel).toBe('embedding-custom');
+      expect(customConfig.xApi.appKey).toBe('custom-x-key');
+      expect(customConfig.xApi.appSecret).toBe('custom-x-secret');
+      expect(customConfig.xApi.accessToken).toBe('custom-x-token');
+      expect(customConfig.xApi.accessSecret).toBe('custom-x-token-secret');
+    });
+  });
 });

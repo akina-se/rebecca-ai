@@ -1,8 +1,8 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { DASHBOARD_REPOSITORY, DashboardRepository } from '../../../core/ports/dashboard.repository';
+import { DASHBOARD_REPOSITORY } from '../../../core/ports/dashboard.repository';
 import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
 import { DropdownComponent } from '../../../shared/components/molecules/dropdown/dropdown.component';
@@ -27,10 +27,10 @@ import { TranslationService } from '../../../core/services/translation.service';
 })
 export class DashboardPageComponent implements OnInit {
   translationService = inject(TranslationService);
-  kpiMetrics?: KpiMetrics;
-  topPosts: PostLeaderboard[] = [];
-  topUsers: UserLeaderboard[] = [];
-  systemAlerts: SystemAlert[] = [];
+  readonly kpiMetrics = signal<KpiMetrics | undefined>(undefined);
+  readonly topPosts = signal<PostLeaderboard[]>([]);
+  readonly topUsers = signal<UserLeaderboard[]>([]);
+  readonly systemAlerts = signal<SystemAlert[]>([]);
 
   toastService = inject(ToastService);
 
@@ -41,43 +41,46 @@ export class DashboardPageComponent implements OnInit {
   topUsersDate = '2026';
 
   // Modal State
-  isRankingModalOpen = false;
-  rankingModalTitle = '';
-  rankingModalColLabel = '';
-  rankingModalColMetric = '';
-  rankingModalType: 'post' | 'user' = 'post';
+  readonly isRankingModalOpen = signal<boolean>(false);
+  readonly rankingModalTitle = signal<string>('');
+  readonly rankingModalColLabel = signal<string>('');
+  readonly rankingModalColMetric = signal<string>('');
+  readonly rankingModalType = signal<'post' | 'user'>('post');
 
   // Drawer State
-  isDrawerOpen = false;
-  drawerType: 'post' | 'user' | null = null;
-  drawerTitle = '';
-  drawerIcon = '';
-  selectedItemId: string | null = null;
+  readonly isDrawerOpen = signal<boolean>(false);
+  readonly drawerType = signal<'post' | 'user' | null>(null);
+  readonly drawerTitle = signal<string>('');
+  readonly drawerIcon = signal<string>('');
+  readonly selectedItemId = signal<string | null>(null);
 
   // Lightbox State
-  isLightboxOpen = false;
-  lightboxImageUrl = '';
+  readonly isLightboxOpen = signal<boolean>(false);
+  readonly lightboxImageUrl = signal<string>('');
 
   // Timeline State
   selectAll = false;
   selectedRows = new Set<string>();
-  timelinePosts: PostLeaderboard[] = [];
-  filteredTimelinePosts: PostLeaderboard[] = [];
+  readonly timelinePosts = signal<PostLeaderboard[]>([]);
+  readonly filteredTimelinePosts = signal<PostLeaderboard[]>([]);
   searchQuery = '';
   timelinePage = 1;
   timelineTotalPages = 1;
   timelineTotalItems = 0;
   timelineItemsPerPage = 10;
   isLoadingTimeline = false;
-
-  constructor(@Inject(DASHBOARD_REPOSITORY) private dashboardRepo: DashboardRepository) {}
+  private readonly dashboardRepo = inject(DASHBOARD_REPOSITORY);
 
   ngOnInit(): void {
-    this.dashboardRepo.getKpiMetrics('monthly').subscribe(metrics => this.kpiMetrics = metrics);
+    this.dashboardRepo.getKpiMetrics('monthly').subscribe(metrics => {
+      this.kpiMetrics.set(metrics);
+    });
     this.loadTopPosts();
     this.loadTopUsers();
     this.loadTimeline();
-    this.dashboardRepo.getAlerts().subscribe(alerts => this.systemAlerts = alerts);
+    this.dashboardRepo.getAlerts().subscribe(alerts => {
+      this.systemAlerts.set(alerts);
+    });
   }
 
   // Timeline Sort State
@@ -110,7 +113,7 @@ export class DashboardPageComponent implements OnInit {
           mediaUrls: p.mediaUrls || []
         }));
         
-        this.timelinePosts = mapped;
+        this.timelinePosts.set(mapped);
         this.applyTimelineFilter();
         this.isLoadingTimeline = false;
       },
@@ -143,18 +146,18 @@ export class DashboardPageComponent implements OnInit {
 
   applyTimelineFilter() {
     if (!this.searchQuery) {
-      this.filteredTimelinePosts = [...this.timelinePosts];
+      this.filteredTimelinePosts.set([...this.timelinePosts()]);
     } else {
       const q = this.searchQuery.toLowerCase();
-      this.filteredTimelinePosts = this.timelinePosts.filter(p => p.text?.toLowerCase().includes(q));
+      this.filteredTimelinePosts.set(this.timelinePosts().filter(p => p.text?.toLowerCase().includes(q)));
     }
   }
 
   loadTopPosts() {
     const isoDate = this.getIsoDate(this.topPostsDate);
     this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate).subscribe(response => {
-      this.topPosts = response.data;
-      if (this.isRankingModalOpen && this.rankingModalType === 'post') {
+      this.topPosts.set(response.data);
+      if (this.isRankingModalOpen() && this.rankingModalType() === 'post') {
         this.openRankingModal('posts');
       }
     });
@@ -163,8 +166,8 @@ export class DashboardPageComponent implements OnInit {
   loadTopUsers() {
     const isoDate = this.getIsoDate(this.topUsersDate);
     this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate).subscribe(response => {
-      this.topUsers = response.data;
-      if (this.isRankingModalOpen && this.rankingModalType === 'user') {
+      this.topUsers.set(response.data);
+      if (this.isRankingModalOpen() && this.rankingModalType() === 'user') {
         this.openRankingModal('users');
       }
     });
@@ -208,7 +211,7 @@ export class DashboardPageComponent implements OnInit {
     else if (filter === 'Last 30 Days' || filter === this.translationService.t('dashboard.filter_30d')) mode = 'monthly';
     else if (filter === 'Year to Date' || filter === this.translationService.t('dashboard.filter_ytd')) mode = 'yearly';
     
-    this.dashboardRepo.getKpiMetrics(mode).subscribe(metrics => this.kpiMetrics = metrics);
+    this.dashboardRepo.getKpiMetrics(mode).subscribe(metrics => this.kpiMetrics.set(metrics));
   }
 
   getSparklinePoints(history: number[] = [], height = 20, width = 100): string {
@@ -234,8 +237,8 @@ export class DashboardPageComponent implements OnInit {
   openLightbox(imageUrl = '') {
     // If imageUrl is a thumbnail URL (e.g. contains size=thumbnail), strip size parameter to load full-resolution image
     const fullUrl = imageUrl ? imageUrl.replace(/([?&])size=thumbnail(&|$)/, '$1').replace(/[?&]$/, '') : '';
-    this.lightboxImageUrl = fullUrl || imageUrl;
-    this.isLightboxOpen = true;
+    this.lightboxImageUrl.set(fullUrl || imageUrl);
+    this.isLightboxOpen.set(true);
   }
 
   private getCurrentMonthStr(): string {
@@ -364,51 +367,51 @@ export class DashboardPageComponent implements OnInit {
     return false;
   }
 
-  rankingModalEntries: { id: string; rank: number; label: string; value: number | string; badge?: string }[] = [];
-  rankingModalCurrentPage = 1;
-  rankingModalTotalPages = 1;
-  rankingModalTotalItems = 0;
+  readonly rankingModalEntries = signal<{ id: string; rank: number; label: string; value: number | string; badge?: string }[]>([]);
+  readonly rankingModalCurrentPage = signal<number>(1);
+  readonly rankingModalTotalPages = signal<number>(1);
+  readonly rankingModalTotalItems = signal<number>(0);
 
   openRankingModal(type: 'posts' | 'users') {
-    this.rankingModalType = type === 'posts' ? 'post' : 'user';
-    this.rankingModalCurrentPage = 1;
+    this.rankingModalType.set(type === 'posts' ? 'post' : 'user');
+    this.rankingModalCurrentPage.set(1);
     this.loadRankingModalData(1);
-    this.isRankingModalOpen = true;
+    this.isRankingModalOpen.set(true);
   }
 
   loadRankingModalData(page: number) {
-    this.rankingModalCurrentPage = page;
-    if (this.rankingModalType === 'post') {
-      this.rankingModalTitle = 'Top Posts by Impressions';
-      this.rankingModalColLabel = 'Post';
-      this.rankingModalColMetric = 'Impressions';
+    this.rankingModalCurrentPage.set(page);
+    if (this.rankingModalType() === 'post') {
+      this.rankingModalTitle.set('Top Posts by Impressions');
+      this.rankingModalColLabel.set('Post');
+      this.rankingModalColMetric.set('Impressions');
       const isoDate = this.getIsoDate(this.topPostsDate);
       this.dashboardRepo.getTopPosts(this.topPostsMode, isoDate, page, 10).subscribe(res => {
-        this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
-        this.rankingModalTotalPages = res.meta?.totalPages || 1;
-        this.rankingModalEntries = res.data.map((p, i) => ({
+        this.rankingModalTotalItems.set(res.meta?.totalItems || res.data.length);
+        this.rankingModalTotalPages.set(res.meta?.totalPages || 1);
+        this.rankingModalEntries.set(res.data.map((p, i) => ({
           id: p.id,
           rank: (page - 1) * 10 + i + 1,
           label: p.snippet,
           value: p.impressions,
           badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
-        }));
+        })));
       });
     } else {
-      this.rankingModalTitle = 'Top Engaged Users';
-      this.rankingModalColLabel = 'User';
-      this.rankingModalColMetric = 'Interactions';
+      this.rankingModalTitle.set('Top Engaged Users');
+      this.rankingModalColLabel.set('User');
+      this.rankingModalColMetric.set('Interactions');
       const isoDate = this.getIsoDate(this.topUsersDate);
       this.dashboardRepo.getTopUsers(this.topUsersMode, isoDate, page, 10).subscribe(res => {
-        this.rankingModalTotalItems = res.meta?.totalItems || res.data.length;
-        this.rankingModalTotalPages = res.meta?.totalPages || 1;
-        this.rankingModalEntries = res.data.map((u, i) => ({
+        this.rankingModalTotalItems.set(res.meta?.totalItems || res.data.length);
+        this.rankingModalTotalPages.set(res.meta?.totalPages || 1);
+        this.rankingModalEntries.set(res.data.map((u, i) => ({
           id: u.id,
           rank: (page - 1) * 10 + i + 1,
           label: u.name ? `${u.name}${u.username ? ` (@${u.username})` : ''}` : (u.username ? `@${u.username}` : u.id),
           value: u.interactions,
           badge: (page === 1 && i < 3) ? ['1st', '2nd', '3rd'][i] : undefined,
-        }));
+        })));
       });
     }
   }
@@ -419,26 +422,26 @@ export class DashboardPageComponent implements OnInit {
 
   openPostDrawer(id: string) {
     if ((window.getSelection()?.toString() || '').trim().length > 0) return;
-    this.drawerType = 'post';
-    this.selectedItemId = id;
-    this.drawerTitle = 'Post Details';
-    this.drawerIcon = 'article';
-    this.isDrawerOpen = true;
+    this.drawerType.set('post');
+    this.selectedItemId.set(id);
+    this.drawerTitle.set('Post Details');
+    this.drawerIcon.set('article');
+    this.isDrawerOpen.set(true);
   }
 
   openUserDrawer(id: string) {
     if ((window.getSelection()?.toString() || '').trim().length > 0) return;
-    this.drawerType = 'user';
-    this.selectedItemId = id;
-    this.drawerTitle = 'User Profile';
-    this.drawerIcon = 'person';
-    this.isDrawerOpen = true;
+    this.drawerType.set('user');
+    this.selectedItemId.set(id);
+    this.drawerTitle.set('User Profile');
+    this.drawerIcon.set('person');
+    this.isDrawerOpen.set(true);
   }
 
   toggleSelectAll() {
     this.selectAll = !this.selectAll;
     if (this.selectAll) {
-      this.timelinePosts.forEach(p => this.selectedRows.add(p.id));
+      this.timelinePosts().forEach(p => this.selectedRows.add(p.id));
     } else {
       this.selectedRows.clear();
     }
@@ -451,7 +454,7 @@ export class DashboardPageComponent implements OnInit {
       this.selectAll = false;
     } else {
       this.selectedRows.add(id);
-      if (this.selectedRows.size === this.timelinePosts.length) {
+      if (this.selectedRows.size === this.timelinePosts().length) {
         this.selectAll = true;
       }
     }

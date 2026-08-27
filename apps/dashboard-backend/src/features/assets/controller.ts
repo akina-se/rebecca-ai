@@ -171,8 +171,18 @@ export class AssetsController {
    */
   async deleteMany(req: Request, res: Response): Promise<void> {
     try {
-      const { ids } = req.body;
-      if (!Array.isArray(ids) || ids.length === 0) {
+      let ids: string[] = [];
+      if (Array.isArray(req.body?.ids)) {
+        ids = req.body.ids;
+      } else if (req.params && req.params['id']) {
+        ids = [String(req.params['id'])];
+      } else if (typeof req.query?.['ids'] === 'string') {
+        ids = req.query['ids'].split(',').map(s => s.trim()).filter(Boolean);
+      } else if (typeof req.query?.['id'] === 'string') {
+        ids = [req.query['id']];
+      }
+
+      if (ids.length === 0) {
         res.status(400).json({ error: 'ids must be a non-empty array' });
         return;
       }

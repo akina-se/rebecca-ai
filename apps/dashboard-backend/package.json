@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node-dev src/index.ts",
+    "dev": "ts-node-dev --files src/index.ts",
     "test": "jest --passWithNoTests --coverage",
     "lint": "eslint .",
     "start": "node dist/index.js",
@@ -36,7 +36,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
-    "firebase-admin": "^12.1.0",
+    "firebase-admin": "^14.3.0",
     "helmet": "^8.0.0",
     "luxon": "^3.7.2",
     "multer": "^2.2.0",
@@ -45,18 +45,19 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/jest": "^29.5.12",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
     "@types/luxon": "^3.7.2",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.0",
     "@types/sharp": "^0.31.1",
+    "@types/supertest": "^6.0.3",
     "eslint": "^9.39.1",
-    "jest": "^29.7.0",
+    "jest": "^30.4.2",
     "ts-jest": "^29.2.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "~5.5.2",
+    "typescript": "~6.0.3",
     "typescript-eslint": "^8.63.0"
   }
 }

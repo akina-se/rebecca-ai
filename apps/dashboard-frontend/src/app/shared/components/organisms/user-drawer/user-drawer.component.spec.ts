@@ -59,9 +59,9 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
 
   it('should load user details and parse coreProfile JSON correctly', () => {
     expect(mockUsersRepo.getById).toHaveBeenCalledWith('user_123');
-    expect(component.user).toEqual(mockUserDetail);
-    expect(component.isBlocked).toBeFalse();
-    expect(component.parsedProfile['attributes']).toContain('Gyaru lover');
+    expect(component.user()).toEqual(mockUserDetail);
+    expect(component.isBlocked()).toBeFalse();
+    expect(component.parsedProfile()['attributes']).toContain('Gyaru lover');
   });
 
   it('should handle fetch user error gracefully', () => {
@@ -78,7 +78,7 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     component.userId = 'user_123';
     component.ngOnChanges();
 
-    expect(component.parsedProfile['attributes']).toEqual([]);
+    expect(component.parsedProfile()['attributes']).toEqual([]);
   });
 
   it('should add and remove tags from profile categories', () => {
@@ -87,14 +87,14 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     const fakeEvent = { target: input } as unknown as Event;
 
     component.addTag('preferences', fakeEvent);
-    expect(component.parsedProfile['preferences']).toContain('Gamer');
+    expect(component.parsedProfile()['preferences']).toContain('Gamer');
 
     // Empty tag input
     input.value = '   ';
     component.addTag('preferences', fakeEvent);
 
     component.removeTag('preferences', 0);
-    expect(component.parsedProfile['preferences']).not.toContain('Late night anime');
+    expect(component.parsedProfile()['preferences']).not.toContain('Late night anime');
   });
 
   it('should toggle user status between Active and Blocked', () => {
@@ -103,7 +103,7 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/blocked/i), 'success');
 
     // Unblock branch
-    component.isBlocked = true;
+    component.isBlocked.set(true);
     component.onBlockUser();
     expect(mockUsersRepo.bulkUpdateStatus).toHaveBeenCalledWith(['user_123'], UserStatus.ACTIVE);
   });
@@ -111,42 +111,44 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
   it('should handle block user error', () => {
     mockUsersRepo.bulkUpdateStatus.and.returnValue(throwError(() => new Error('Err')));
     component.onBlockUser();
-    expect(component.isActionLoading).toBeFalse();
+    expect(component.isActionLoading()).toBeFalse();
   });
 
   it('should format JSON and save updated core profile and handle error', () => {
     component.onSaveProfile();
-    const expectedJson = JSON.stringify(component.parsedProfile, null, 2);
+    const expectedJson = JSON.stringify(component.parsedProfile(), null, 2);
     expect(mockUsersRepo.updateMemory).toHaveBeenCalledWith('user_123', expectedJson);
     expect(mockToastService.show).toHaveBeenCalledWith(jasmine.stringMatching(/saved core profile/i), 'success');
 
     // Error branch
     mockUsersRepo.updateMemory.and.returnValue(throwError(() => new Error('Err')));
     component.onSaveProfile();
-    expect(component.isSavingProfile).toBeFalse();
+    expect(component.isSavingProfile()).toBeFalse();
   });
 
   it('should open user profile on X via window.open and handle empty handle', () => {
-    spyOn(window, 'open');
+    const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
     component.onViewOnX();
-    expect(window.open).toHaveBeenCalledWith('https://x.com/alice_gal', '_blank', 'noopener,noreferrer');
+    expect(openSpy).toHaveBeenCalledWith('https://x.com/alice_gal', '_blank', 'noopener,noreferrer');
 
-    component.user = undefined;
+    component.user.set(undefined);
     component.userId = null;
     component.onViewOnX();
-    expect(window.open).toHaveBeenCalledTimes(1);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    openSpy.mockRestore();
   });
 
   it('should handle empty userId on lifecycle changes and early exits', () => {
     component.userId = null;
     component.ngOnChanges();
-    expect(component.user).toBeDefined(); // preserved previous state
+    expect(component.user()).toBeDefined(); // preserved previous state
 
+    component.user.set(undefined);
     component.userId = null;
     component.onBlockUser();
     component.onSaveProfile();
-    expect(component.isActionLoading).toBeFalse();
-    expect(component.isSavingProfile).toBeFalse();
+    expect(component.isActionLoading()).toBeFalse();
+    expect(component.isSavingProfile()).toBeFalse();
   });
 
   it('should set context label with fallback to name and ID when username is missing', () => {
@@ -158,7 +160,7 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     mockUsersRepo.getById.and.returnValue(of(userWithoutUsername));
     component.userId = 'user_no_uname';
     component.ngOnChanges();
-    expect(component.user?.name).toBe('Alice Only');
+    expect(component.user()?.name).toBe('Alice Only');
 
     const userWithIdOnly = {
       ...mockUserDetail,
@@ -168,6 +170,6 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
     mockUsersRepo.getById.and.returnValue(of(userWithIdOnly));
     component.userId = 'user_id_only';
     component.ngOnChanges();
-    expect(component.user?.id).toBe('user_123');
+    expect(component.user()?.id).toBe('user_123');
   });
 });

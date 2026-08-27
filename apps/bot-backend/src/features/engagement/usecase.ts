@@ -139,7 +139,7 @@ ${description}
 
       const generatedText = await this.deps.gemini.generateReply(systemPrompt, [], userInput);
 
-      let finalText = generatedText;
+      let finalText = generatedText.trim();
       if (!finalText.includes(`@${targetUser.username}`)) {
         finalText = `@${targetUser.username}\n${finalText}`;
       }

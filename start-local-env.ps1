@@ -112,9 +112,9 @@ function Test-PortQuickly ([int]$Port) {
     }
 }
 
-# 3. Launch Firebase Emulators (Auth, Firestore, Storage, Functions)
+# 3. Launch Firebase Emulators (Auth, Firestore, Storage)
 Write-Host "[3/7] Starting Firebase Emulators..." -ForegroundColor Yellow
-$EmulatorCommand = "`$env:JAVA_HOME='$JdkVersionDir'; `$env:PATH='$JdkVersionDir\bin;'+`$env:PATH; npx -y firebase-tools emulators:start --only auth,firestore,storage,functions --project rebecca-ai-gal-local"
+$EmulatorCommand = "`$env:JAVA_HOME='$JdkVersionDir'; `$env:PATH='$JdkVersionDir\bin;'+`$env:PATH; npx -y firebase-tools emulators:start --only auth,firestore,storage --project rebecca-ai-gal-local"
 
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $EmulatorCommand -WorkingDirectory $PWD
 Write-Host "-> Firebase Emulators launching in a separate terminal window..." -ForegroundColor Gray
@@ -149,18 +149,18 @@ $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
 $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
 $env:FIREBASE_STORAGE_EMULATOR_HOST = "127.0.0.1:9199"
 $env:GCLOUD_PROJECT = "rebecca-ai-gal-local"
-npx ts-node -T apps/dashboard-backend/src/scripts/seed-db.ts
+npx ts-node -T apps/dashboard-backend/scripts/seed-db.ts
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[WARNING] Seeding script completed with warnings or errors. Check logs." -ForegroundColor Yellow
 } else {
     Write-Host "-> Database seeded successfully with mock timeline posts, active/blocked users, and KPI metrics!" -ForegroundColor Green
 }
 
-# 6. Start Bot Backend (gRPC Server)
+# 6. Start Bot Backend (gRPC Server on port 50051, HTTP port 8082 to avoid Firestore 8080 conflict)
 Write-Host "[6/7] Starting Bot Backend (gRPC Server)..." -ForegroundColor Yellow
-$BotCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; npm run dev --workspace=bot-backend"
+$BotCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; `$env:PORT='8082'; npm run dev --workspace=bot-backend"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $BotCommand -WorkingDirectory $PWD
-Write-Host "-> Bot Backend launched (gRPC port 50051)..." -ForegroundColor Gray
+Write-Host "-> Bot Backend launched (HTTP port 8082, gRPC port 50051)..." -ForegroundColor Gray
 
 # 7. Start Dashboard Backend (BFF Server)
 Write-Host "[7/7] Starting Dashboard Backend (BFF Server)..." -ForegroundColor Yellow

@@ -2,7 +2,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { Firestore } from '@google-cloud/firestore';
+import { Firestore } from 'firebase-admin/firestore';
 
 // Middleware
 import { verifyAuth } from './middleware/auth';

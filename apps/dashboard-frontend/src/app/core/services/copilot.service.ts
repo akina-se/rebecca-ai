@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, effect } from '@angular/core';
+﻿import { Injectable, inject, signal, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { COPILOT_REPOSITORY } from '../ports/copilot.repository';
 import { USERS_REPOSITORY } from '../ports/users.repository';
@@ -50,20 +50,23 @@ export class CopilotService {
       }
     });
 
-    // Reactively update initial greeting if language switches and no user messages exist yet
+    // Clean effect: track ONLY currentLang and read messages untracked to prevent infinite reactive loop
     effect(() => {
       this.translationService.currentLang();
-      const current = this.messages();
+      const current = untracked(() => this.messages());
       if (current.length === 1 && current[0].id === 'initial-greeting') {
-        this.messages.set([
-          {
-            id: 'initial-greeting',
-            role: 'model',
-            text: this.translationService.t('copilot.greeting'),
-            time: new Date().toISOString(),
-            actionStatus: 'pending'
-          }
-        ]);
+        const localizedGreeting = this.translationService.t('copilot.greeting');
+        if (current[0].text !== localizedGreeting) {
+          this.messages.set([
+            {
+              id: 'initial-greeting',
+              role: 'model',
+              text: localizedGreeting,
+              time: new Date().toISOString(),
+              actionStatus: 'pending'
+            }
+          ]);
+        }
       }
     });
   }
@@ -211,6 +214,8 @@ export class CopilotService {
             },
             error: () => this.toastService.show(isEn ? `Failed to unblock user` : `ブロック解除に失敗しました`, 'error')
           });
+        } else {
+          this.toastService.show(isEn ? `No target user specified to block` : `ブロック対象のユーザーが指定されていません`, 'error');
         }
         break;
       }

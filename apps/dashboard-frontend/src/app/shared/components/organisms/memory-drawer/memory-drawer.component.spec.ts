@@ -44,8 +44,8 @@ describe('MemoryDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(memoryRepoSpy.getCoreMemory).toHaveBeenCalled();
-    expect(component.corePrompt).toBe('Core Rebecca Prompt');
-    expect(component.isLoading).toBeFalse();
+    expect(component.corePrompt()).toBe('Core Rebecca Prompt');
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should load Layer 1 Extended Memory when level is 1', () => {
@@ -55,7 +55,7 @@ describe('MemoryDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(memoryRepoSpy.getExtendedMemory).toHaveBeenCalled();
-    expect(component.extendedPrompt).toBe('Extended Persona Tuning');
+    expect(component.extendedPrompt()).toBe('Extended Persona Tuning');
   });
 
   it('should load Layer 2 Global Memory when level is 2', () => {
@@ -65,11 +65,11 @@ describe('MemoryDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(memoryRepoSpy.getGlobalMemory).toHaveBeenCalled();
-    expect(component.timelineSummary).toBe('Global Timeline Summary');
+    expect(component.timelineSummary()).toBe('Global Timeline Summary');
   });
 
   it('should save Layer 1 tuning on onSavePrompt', () => {
-    component.extendedPrompt = 'New Persona Tuning';
+    component.extendedPrompt.set('New Persona Tuning');
     memoryRepoSpy.updateExtendedMemory.and.returnValue(of({ success: true }));
 
     component.onSavePrompt();
@@ -79,7 +79,7 @@ describe('MemoryDrawerComponent', () => {
   });
 
   it('should save Layer 2 summary on onSaveSummary', () => {
-    component.timelineSummary = 'New Global Timeline Summary';
+    component.timelineSummary.set('New Global Timeline Summary');
     memoryRepoSpy.updateGlobalMemory.and.returnValue(of({ success: true }));
 
     component.onSaveSummary();
@@ -95,17 +95,34 @@ describe('MemoryDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to load Persona Core Prompt', 'error');
-    expect(component.isLoading).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
 
     memoryRepoSpy.getExtendedMemory.and.returnValue(throwError(() => new Error('Load failed')));
     component.level = 1;
     component.ngOnChanges();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to load Extended Persona Tuning', 'error');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to load Extended Tuning Prompt', 'error');
 
     memoryRepoSpy.getGlobalMemory.and.returnValue(throwError(() => new Error('Load failed')));
     component.level = 2;
     component.ngOnChanges();
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to load Global Timeline Summary', 'error');
+  });
+
+  it('should handle empty data content across all levels', () => {
+    memoryRepoSpy.getCoreMemory.and.returnValue(of({}));
+    component.level = 0;
+    component.ngOnChanges();
+    expect(component.corePrompt()).toBe('');
+
+    memoryRepoSpy.getExtendedMemory.and.returnValue(of({}));
+    component.level = 1;
+    component.ngOnChanges();
+    expect(component.extendedPrompt()).toBe('');
+
+    memoryRepoSpy.getGlobalMemory.and.returnValue(of({}));
+    component.level = 2;
+    component.ngOnChanges();
+    expect(component.timelineSummary()).toBe('');
   });
 
   it('should handle save prompt and summary errors', () => {

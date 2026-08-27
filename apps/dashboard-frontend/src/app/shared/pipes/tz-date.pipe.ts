@@ -8,7 +8,7 @@ import { SettingsService } from '../../core/services/settings.service';
 @Pipe({
   name: 'tzDate',
   standalone: true,
-  pure: false // Evaluated reactively when timezone signal changes
+  pure: true
 })
 export class TzDatePipe implements PipeTransform {
   private settingsService = inject(SettingsService);
