@@ -35,6 +35,7 @@ describe('ConfigService', () => {
         appId: '1:12345:web:test'
       },
       apiUrl: 'https://admin.rebecca-ai.net/api/v1',
+      version: '1.7.0',
       publicSiteUrl: 'https://rebecca-ai.net',
       production: true,
       useEmulators: false
@@ -50,6 +51,7 @@ describe('ConfigService', () => {
     expect(service.runtimeConfig).toEqual(mockConfig);
     expect(service.firebaseConfig.apiKey).toBe('test-api-key');
     expect(service.apiUrl).toBe('https://admin.rebecca-ai.net/api/v1');
+    expect(service.version()).toBe('1.7.0');
     expect(service.isEmulator).toBeFalse();
 
     mockConfig.useEmulators = true;
@@ -68,6 +70,7 @@ describe('ConfigService', () => {
 
     expect(service.runtimeConfig).not.toBeNull();
     expect(service.publicSiteUrl()).toBe('https://rebecca-ai.net');
+    expect(service.version()).toBe('');
     expect(service.apiUrl).toBeDefined();
     expect(service.firebaseConfig).toBeDefined();
   });

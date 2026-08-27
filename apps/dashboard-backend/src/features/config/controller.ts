@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import packageJson from '../../../package.json';
 
 /**
  * Controller for returning public runtime configurations to the frontend application.
@@ -25,6 +26,7 @@ export class ConfigController {
         appId: (process.env.FIREBASE_WEB_APP_ID || '').trim(),
       },
       apiUrl: '/api/v1',
+      version: process.env.npm_package_version || packageJson.version,
       publicSiteUrl: process.env.PUBLIC_SITE_URL || 'https://rebecca-ai.net',
       production: isProd,
       useEmulators: !isProd,

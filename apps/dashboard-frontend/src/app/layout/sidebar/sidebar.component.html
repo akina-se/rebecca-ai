@@ -8,4 +8,7 @@
     <a [href]="publicSiteUrl()" target="_blank" class="nav-item" style="color: var(--color-primary); text-decoration: none;"><span class="material-icons">open_in_new</span> {{ 'nav.public_site' | translate }}</a>
     <div style="flex: 1;"></div>
     <div class="nav-item" routerLink="/settings" routerLinkActive="active"><span class="material-icons">settings</span> {{ 'nav.settings' | translate }}</div>
+    @if (version()) {
+        <div class="sidebar-version">v{{ version() }}</div>
+    }
 </div>

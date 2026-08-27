@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ConfigController } from '../../src/features/config/controller';
 import { initializeConfigModule } from '../../src/features/config';
+import packageJson from '../../../package.json';
 
 describe('Config Feature Unit Tests', () => {
   let controller: ConfigController;
@@ -66,6 +67,7 @@ describe('Config Feature Unit Tests', () => {
         appId: ''
       },
       apiUrl: '/api/v1',
+      version: packageJson.version,
       publicSiteUrl: 'https://rebecca-ai.net',
       production: true,
       useEmulators: false
