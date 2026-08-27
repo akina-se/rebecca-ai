@@ -17,6 +17,7 @@
     "test:unit": "turbo run test --filter=!dashboard-e2e",
     "test:e2e": "npm run test --workspace=dashboard-e2e",
     "test:coverage-summary": "node scripts/ci-coverage-summary.js",
+    "deploy:hosting": "npm run build --workspace=dashboard-frontend && npx --yes firebase-tools@latest deploy --only hosting --project rebecca-ai-gal",
     "license-check": "turbo run license-check",
     "secret-check": "turbo run secret-check",
     "register-admin": "npm run register-admin --workspace=dashboard-backend --",

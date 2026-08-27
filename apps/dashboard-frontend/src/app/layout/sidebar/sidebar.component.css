@@ -8,3 +8,4 @@
 .nav-item:hover { background-color: var(--bg-surface-hover); color: var(--text-main); }
 .nav-item.active { color: var(--color-primary); background-color: rgba(155, 89, 182, 0.08); border-left: 3px solid var(--color-primary); }
 .nav-divider { height: 1px; background-color: var(--border-color); margin: 1rem 1.5rem; }
+.sidebar-version { padding: 0.8rem 1.5rem 0.2rem 1.5rem; font-size: 0.75rem; color: var(--text-muted); opacity: 0.6; letter-spacing: 0.5px; user-select: none; font-weight: 500; }

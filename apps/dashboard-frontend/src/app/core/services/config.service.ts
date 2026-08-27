@@ -13,6 +13,7 @@ export interface RuntimeConfig {
     appId: string;
   };
   apiUrl: string;
+  version?: string;
   publicSiteUrl: string;
   production: boolean;
   useEmulators: boolean;
@@ -31,6 +32,7 @@ export interface RuntimeConfig {
 export class ConfigService {
   private config: RuntimeConfig | null = null;
   readonly publicSiteUrl = signal<string>('https://rebecca-ai.net');
+  readonly version = signal<string>('');
   private readonly httpBackend = inject(HttpBackend);
 
   /**
@@ -45,6 +47,9 @@ export class ConfigService {
         this.config = data;
         if (data.publicSiteUrl) {
           this.publicSiteUrl.set(data.publicSiteUrl);
+        }
+        if (data.version) {
+          this.version.set(data.version);
         }
       }
     } catch {
