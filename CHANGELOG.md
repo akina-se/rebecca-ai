@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.2](https://github.com/akina-se/rebecca-ai/compare/v1.7.1...v1.7.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* **dashboard:** live metrics aggregation and seed-db safety guardrails ([f1b9ec2](https://github.com/akina-se/rebecca-ai/commit/f1b9ec257d156613488d4abc4bec6413e3163195))
+* **dashboard:** use live collection aggregates for KPI metrics and enforce seed-db emulator guard ([#90](https://github.com/akina-se/rebecca-ai/issues/90)) ([65919b6](https://github.com/akina-se/rebecca-ai/commit/65919b60d264bd5df9ad8a11f112a1e08e7cc95c))
+
 ## [1.7.1](https://github.com/akina-se/rebecca-ai/compare/v1.7.0...v1.7.1) (2026-08-27)
 
 
