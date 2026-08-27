@@ -17,7 +17,7 @@ export interface XApiConfig {
   accessSecret: string;
   bearerToken: string;
   myUserId: string;
-  syncMaxResults: number;
+  syncMaxResults?: number;
 }
 
 export interface FunctionsConfig {
