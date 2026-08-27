@@ -82,6 +82,15 @@ export class StealthOnboardingUseCase {
       }
 
       console.log(`Stealth Onboarding Batch completed. Processed ${processedCount} new followers.`);
+      try {
+        const totalCount = await this.deps.firestore.getProcessedFollowersCount();
+        if (totalCount > 0) {
+          await this.deps.firestore.updateTotalFollowers(totalCount);
+          console.log(`Updated global systemStats total_followers to ${totalCount}`);
+        }
+      } catch (statsErr) {
+        console.error('Failed to update systemStats total_followers:', statsErr);
+      }
       return { status: 'success', processed: processedCount };
     } catch (e) {
       console.error('Error in StealthOnboardingUseCase.execute:', e);

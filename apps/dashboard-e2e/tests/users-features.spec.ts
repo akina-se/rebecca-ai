@@ -93,20 +93,23 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     await expect(userRows.first()).toBeVisible({ timeout: 10000 });
 
     // Select all checkbox
-    const selectAllCheckbox = page.locator('#user-bulk-bar .checkbox-container').first();
+    const selectAllCheckbox = page.locator('#user-bulk-bar .checkbox-container, .bulk-action-bar .checkbox-container').first();
     await selectAllCheckbox.click();
 
     // Verify bulk text shows selected count
-    const bulkText = page.locator('#user-bulk-bar .bulk-text');
+    const bulkText = page.locator('#user-bulk-bar .bulk-text, .bulk-action-bar .bulk-text');
     await expect(bulkText).toContainText(/selected|選択中/);
 
     // Verify action buttons appear
-    const blockBtn = page.locator('#user-bulk-bar button').first();
-    const unblockBtn = page.locator('#user-bulk-bar button').last();
+    const blockBtn = page.locator('#user-bulk-bar button, .bulk-action-bar button').first();
+    const unblockBtn = page.locator('#user-bulk-bar button, .bulk-action-bar button').last();
     await expect(blockBtn).toBeVisible();
     await expect(blockBtn).toContainText(/Block|ブロック/);
     await expect(unblockBtn).toBeVisible();
     await expect(unblockBtn).toContainText(/Unblock|解除/);
+
+    // Capture screenshot of user selection state with Block/Unblock action buttons
+    await page.screenshot({ path: 'screenshots/05a_users_bulk_actions_selected.png' });
   });
 
   test('should support global 1-hour interval timezones and persistence in Settings', async ({ page }) => {
