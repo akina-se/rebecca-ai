@@ -1,51 +1,58 @@
-<div class="modal-backdrop" *ngIf="isOpen" (click)="onBackdropClick($event)">
+@if (isOpen) {
+  <div class="modal-backdrop" (click)="onBackdropClick($event)">
     <div class="modal-container glass-panel" role="dialog" aria-modal="true">
-
-        <!-- Header -->
-        <div class="modal-header">
-            <div class="modal-title">
-                <span class="material-icons">emoji_events</span>
-                {{ title }}
-            </div>
-            <button class="close-btn" (click)="onClose()" aria-label="Close">
-                <span class="material-icons">close</span>
-            </button>
+      <!-- Header -->
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="material-icons">emoji_events</span>
+          {{ title }}
         </div>
-
-        <!-- Table -->
-        <div class="modal-body">
-            <table class="ranking-table">
-                <thead>
-                    <tr>
-                        <th class="rank-col">{{ 'ranking_modal.rank' | translate }}</th>
-                        <th>{{ colLabel }}</th>
-                        <th class="metric-col">{{ colMetric }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let entry of pagedEntries" [class.podium]="entry.rank <= 3" class="clickable" (click)="onRowClick(entry)">
-                        <td class="rank-cell">
-                            <div *ngIf="entry.badge" class="rank-badge" [ngClass]="'rank-' + entry.badge">
-                                <span class="material-icons">emoji_events</span>
-                            </div>
-                            <span *ngIf="!entry.badge" class="rank-number">{{ entry.rank }}</span>
-                        </td>
-                        <td class="label-cell">{{ entry.label }}</td>
-                        <td class="metric-cell">{{ entry.value }}</td>
-                    </tr>
-                </tbody>
-            </table>
+        <button class="close-btn" (click)="onClose()" aria-label="Close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <!-- Table -->
+      <div class="modal-body">
+        <table class="ranking-table">
+          <thead>
+            <tr>
+              <th class="rank-col">{{ 'ranking_modal.rank' | translate }}</th>
+              <th>{{ colLabel }}</th>
+              <th class="metric-col">{{ colMetric }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of pagedEntries; track entry) {
+              <tr [class.podium]="entry.rank <= 3" class="clickable" (click)="onRowClick(entry)">
+                <td class="rank-cell">
+                  @if (entry.badge) {
+                    <div class="rank-badge" [ngClass]="'rank-' + entry.badge">
+                      <span class="material-icons">emoji_events</span>
+                    </div>
+                  }
+                  @if (!entry.badge) {
+                    <span class="rank-number">{{ entry.rank }}</span>
+                  }
+                </td>
+                <td class="label-cell">{{ entry.label }}</td>
+                <td class="metric-cell">{{ entry.value }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      @if (computedTotalPages > 1 || totalItems > 0) {
+        <div class="modal-footer">
+          <app-pagination
+            [currentPage]="currentPage"
+            [totalPages]="computedTotalPages"
+            [totalItems]="totalItems"
+            [showTotalCount]="totalItems > 0"
+            (pageChange)="goToPage($event)">
+          </app-pagination>
         </div>
-
-        <!-- Pagination -->
-        <div class="modal-footer" *ngIf="computedTotalPages > 1 || totalItems > 0">
-            <app-pagination
-                [currentPage]="currentPage"
-                [totalPages]="computedTotalPages"
-                [totalItems]="totalItems"
-                [showTotalCount]="totalItems > 0"
-                (pageChange)="goToPage($event)">
-            </app-pagination>
-        </div>
+      }
     </div>
-</div>
+  </div>
+}

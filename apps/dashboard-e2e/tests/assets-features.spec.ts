@@ -23,6 +23,7 @@ test.describe('Assets Features E2E Tests', () => {
     const totalItemsText = page.locator('.pagination-container .total-items-text');
     await expect(totalItemsText).toBeVisible();
     await expect(totalItemsText).toContainText(/Showing|表示中|全.*件/);
+    await page.screenshot({ path: 'screenshots/07_assets_gallery_page.png' });
 
     const pageInfo = page.locator('.pagination-container .page-info');
     await expect(pageInfo).toContainText(/(Page|ページ) 1 \/ 2/);
@@ -97,6 +98,7 @@ test.describe('Assets Features E2E Tests', () => {
     // 6. Verify Last Used metric box exists and is formatted
     const lastUsedBox = drawer.locator('app-asset-drawer .metric-box').nth(1);
     await expect(lastUsedBox).toBeVisible();
+    await page.screenshot({ path: 'screenshots/08_asset_details_drawer.png' });
 
     // 7. Verify "View Full Size" button opens full-screen Lightbox dialog
     const viewFullSizeBtn = drawer.locator('app-asset-drawer button', { hasText: /View Full Size|原寸表示/ });
@@ -105,6 +107,7 @@ test.describe('Assets Features E2E Tests', () => {
 
     const lightbox = page.locator('app-lightbox .lightbox-overlay');
     await expect(lightbox).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'screenshots/09_asset_lightbox_modal.png' });
     const lightboxImg = lightbox.locator('img');
     await expect(lightboxImg).toBeVisible();
     await lightbox.locator('.close-btn').click();
@@ -181,22 +184,31 @@ test.describe('Assets Features E2E Tests', () => {
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('Scenario F: Bulk Operations - should select all and trigger bulk retry AI gen', async ({ page }) => {
+  test('Scenario F: Bulk Operations - should select assets, display Delete and Retry AI Gen actions, and capture screenshot', async ({ page }) => {
     // 1. Click checkbox on first card
     const firstCard = page.locator('.asset-card').first();
     const firstCheckbox = firstCard.locator('.asset-checkbox-wrapper label.checkbox-container');
     await firstCheckbox.click();
 
     // 2. Verify bulk action bar indicates selection
-    const bulkBarText = page.locator('#asset-bulk-bar .bulk-text');
-    await expect(bulkBarText).toContainText(/1 (items selected|件のアセットを選択中)/);
+    const bulkBar = page.locator('#asset-bulk-bar, .bulk-action-bar').first();
+    await expect(bulkBar).toBeVisible({ timeout: 5000 });
+    const bulkBarText = bulkBar.locator('.bulk-text, .selection-count');
+    await expect(bulkBarText).toContainText(/1 (items selected|件のアセットを選択中|件選択中)/);
 
-    // 3. Click Retry AI Gen button
-    const retryBulkBtn = page.locator('#asset-bulk-bar button', { hasText: /Retry AI Gen|AIキャプション再試行/ });
+    // 3. Verify Delete Asset and Retry AI Gen buttons are visible
+    const deleteBulkBtn = bulkBar.locator('button', { hasText: /Delete|削除/i });
+    const retryBulkBtn = bulkBar.locator('button', { hasText: /Retry AI Gen|AIキャプション再試行|Regenerate/i });
+    await expect(deleteBulkBtn).toBeVisible();
     await expect(retryBulkBtn).toBeVisible();
+
+    // Capture screenshot of asset selection state with action bar
+    await page.screenshot({ path: 'screenshots/08a_assets_bulk_actions_selected.png' });
+
+    // 4. Click Retry AI Gen button
     await retryBulkBtn.click();
 
-    // 4. Verify success toast
+    // 5. Verify success toast
     const successToast = page.locator('.toast', { hasText: /AI regeneration|再生成/ });
     await expect(successToast).toBeVisible({ timeout: 15000 });
   });

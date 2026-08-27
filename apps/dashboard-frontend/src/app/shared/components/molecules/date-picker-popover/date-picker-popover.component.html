@@ -1,18 +1,22 @@
 <div class="time-nav-wrapper">
-    <div class="time-nav" [class.disabled]="mode === 'all-time'" (click)="toggle()">
-        <span class="material-icons nav-btn" (click)="onPrev($event)">chevron_left</span>
-        <span class="current-text">{{ currentText }}</span>
-        <span class="material-icons nav-btn" [class.disabled-icon]="!hasNext" (click)="onNext($event)">chevron_right</span>
-    </div>
+  <div class="time-nav" [class.disabled]="mode === 'all-time'" (click)="toggle()">
+    <span class="material-icons nav-btn" (click)="onPrev($event)">chevron_left</span>
+    <span class="current-text">{{ currentText }}</span>
+    <span class="material-icons nav-btn" [class.disabled-icon]="!hasNext" (click)="onNext($event)">chevron_right</span>
+  </div>
 
-    <div class="popover-menu glass-panel" *ngIf="isOpen">
-        <div class="popover-header">{{ 'common.quick_select' | translate }}</div>
-        <div class="popover-list">
-            <div class="popover-item" *ngFor="let opt of mockOptions"
-                 [class.selected]="opt === currentText"
-                 (click)="select(opt, $event)">
-                {{ opt }}
-            </div>
-        </div>
+  @if (isOpen) {
+    <div class="popover-menu glass-panel">
+      <div class="popover-header">{{ 'common.quick_select' | translate }}</div>
+      <div class="popover-list">
+        @for (opt of mockOptions; track opt) {
+          <div class="popover-item"
+            [class.selected]="opt === currentText"
+            (click)="select(opt, $event)">
+            {{ opt }}
+          </div>
+        }
+      </div>
     </div>
+  }
 </div>

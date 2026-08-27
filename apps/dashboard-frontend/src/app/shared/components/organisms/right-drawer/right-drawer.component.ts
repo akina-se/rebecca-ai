@@ -1,11 +1,11 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+﻿import { Component, EventEmitter, Input, Output, OnInit, inject, signal } from '@angular/core';
+
 import { DrawerService } from '../../../../core/services/drawer.service';
 
 @Component({
   selector: 'app-right-drawer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './right-drawer.component.html',
   styleUrls: ['./right-drawer.component.css']
 })
@@ -16,13 +16,12 @@ export class RightDrawerComponent implements OnInit {
   
   @Output() closeDrawer = new EventEmitter<void>();
 
-  isAiDrawerOpen = false;
-
-  constructor(private drawerService: DrawerService) {}
+  readonly isAiDrawerOpen = signal<boolean>(false);
+  private readonly drawerService = inject(DrawerService);
 
   ngOnInit() {
     this.drawerService.isOpen$.subscribe(isOpen => {
-      this.isAiDrawerOpen = isOpen;
+      this.isAiDrawerOpen.set(isOpen);
     });
   }
 

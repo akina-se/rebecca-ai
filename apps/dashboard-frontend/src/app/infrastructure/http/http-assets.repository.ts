@@ -107,6 +107,9 @@ export class HttpAssetsRepository implements AssetsRepository {
    * @returns Observable resolving when deletion completes.
    */
   deleteMany(ids: string[]): Observable<unknown> {
+    if (ids.length === 1) {
+      return this.http.delete<unknown>(`${this.baseUrl}/images/${ids[0]}`);
+    }
     return this.http.delete<unknown>(`${this.baseUrl}/images`, { body: { ids } });
   }
 

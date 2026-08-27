@@ -1,5 +1,5 @@
 import { beforeUserSignedIn, HttpsError } from 'firebase-functions/v2/identity';
-import * as admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 
 /**
  * Blocking Function that executes before a user is signed in via Firebase Authentication.
@@ -19,7 +19,7 @@ export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
     );
   }
 
-  const db = admin.firestore();
+  const db = getFirestore();
   const adminSnapshot = await db
     .collection('admin_users')
     .where('email', '==', email)

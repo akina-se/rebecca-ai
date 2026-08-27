@@ -1,10 +1,10 @@
-import { Component, Input, Output, EventEmitter, ElementRef, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, Output, EventEmitter, ElementRef, HostListener, inject } from '@angular/core';
+
 
 @Component({
   selector: 'app-dropdown',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './dropdown.component.html',
   styleUrls: ['./dropdown.component.css']
 })
@@ -15,8 +15,7 @@ export class DropdownComponent {
   @Output() selectionChange = new EventEmitter<string>();
 
   isOpen = false;
-
-  constructor(private eRef: ElementRef) {}
+  private readonly eRef = inject(ElementRef);
 
   toggle() {
     this.isOpen = !this.isOpen;

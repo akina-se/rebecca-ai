@@ -1,7 +1,8 @@
-import * as admin from 'firebase-admin';
+import { initializeApp } from 'firebase-admin/app';
 
 // Initialize the Firebase Admin SDK once for all functions
-admin.initializeApp();
+initializeApp();
 
 // Export all triggers
 export * from './triggers/onConversationLogCreated';
+export * from './triggers/scheduledTimelineSync';

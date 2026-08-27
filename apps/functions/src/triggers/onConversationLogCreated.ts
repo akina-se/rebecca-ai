@@ -1,6 +1,5 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
-import * as admin from 'firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -35,7 +34,7 @@ export const onConversationLogCreated = onDocumentCreated(
       return;
     }
 
-    const db = admin.firestore();
+    const db = getFirestore();
     const batch = db.batch();
 
     // Update User Stats (dailyReplyCount and lastReplyDate)

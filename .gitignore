@@ -159,3 +159,5 @@ apps/dashboard-e2e/playwright-report/
 apps/dashboard-e2e/test-results/
 apps/dashboard-e2e/tests/temp_upload/
 apps/dashboard-e2e/tests/temp_upload*
+screenshots/
+**/screenshots/

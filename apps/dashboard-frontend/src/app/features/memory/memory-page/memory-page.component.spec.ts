@@ -41,8 +41,8 @@ describe('MemoryPageComponent', () => {
     component.ngOnInit();
 
     expect(memoryRepoSpy.getLayers).toHaveBeenCalled();
-    expect(component.layers.length).toBe(3);
-    expect(component.isLoading).toBeFalse();
+    expect(component.layers().length).toBe(3);
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should handle load layers error gracefully', () => {
@@ -51,21 +51,21 @@ describe('MemoryPageComponent', () => {
     component.loadLayers();
 
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to load memory layers', 'error');
-    expect(component.isLoading).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should open drawer with correct level, title, and icons', () => {
     component.openDrawer(0);
-    expect(component.drawerLevel).toBe(0);
-    expect(component.drawerIcon).toBe('dns');
+    expect(component.drawerLevel()).toBe(0);
+    expect(component.drawerIcon()).toBe('dns');
 
     component.openDrawer(1);
-    expect(component.drawerLevel).toBe(1);
-    expect(component.drawerIcon).toBe('tune');
+    expect(component.drawerLevel()).toBe(1);
+    expect(component.drawerIcon()).toBe('tune');
 
     component.openDrawer(2);
-    expect(component.drawerLevel).toBe(2);
-    expect(component.drawerIcon).toBe('public');
+    expect(component.drawerLevel()).toBe(2);
+    expect(component.drawerIcon()).toBe('public');
   });
 
   it('should format date strings properly', () => {
