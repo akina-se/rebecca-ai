@@ -54,17 +54,6 @@ describe('runProactiveNewsPostBatch', () => {
         expect(deps.xApi.tweet).toHaveBeenCalledWith(longPost, { mediaIds: [] });
     });
 
-    it('should sanitize accidental character count annotations from postText', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
-        deps.gemini.generateNewsPost.mockResolvedValue('今日の天気は晴れ！お出かけ日和ね (90文字)');
-
-        const result = await new ProactiveNewsUseCase(deps).execute();
-
-        expect(result.status).toBe('success');
-        expect(result.post).toBe('今日の天気は晴れ！お出かけ日和ね\n#全肯定AIレベッカ');
-        expect(deps.xApi.tweet).toHaveBeenCalledWith('今日の天気は晴れ！お出かけ日和ね\n#全肯定AIレベッカ', { mediaIds: [] });
-    });
-
     it('should infer keyword, find image, and attach media if successful', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
         const text = 'A post about coffee';

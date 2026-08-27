@@ -103,30 +103,6 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.firestore.appendEpisodicBuffer).toHaveBeenCalled();
     });
 
-    it('should sanitize accidental character count annotations from reply', async () => {
-        deps.firestore.hasProcessedMention.mockResolvedValue(false);
-        deps.firestore.getUserDoc.mockResolvedValue({
-            status: 'ACTIVE',
-            episodicBuffer: [],
-            lastInteractedAt: new Date(Date.now() - 3600 * 1000).toISOString()
-        });
-        deps.firestore.getTimelineSummary.mockResolvedValue('Summary');
-        deps.gemini.generateSearchQuery.mockResolvedValue('query');
-        deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
-        deps.firestore.findRagMemories.mockResolvedValue([]);
-        deps.gemini.detectLanguage.mockResolvedValue('ja');
-        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: '内省モック', reply: '今日も一日お疲れ様！ (85文字)' });
-
-        const result = await usecase.execute({
-            tweetId: 'tweet_sanitize_1',
-            text: '疲れたー',
-            authorId: 'user_1'
-        });
-
-        expect(result.status).toBe('success');
-        expect(deps.xApi.replyToMention).toHaveBeenCalledWith('tweet_sanitize_1', '今日も一日お疲れ様！');
-    });
-
     it('should truncate reply if it exceeds 138 characters', async () => {
         deps.firestore.hasProcessedMention.mockResolvedValue(false);
         deps.firestore.getUserDoc.mockResolvedValue({

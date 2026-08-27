@@ -53,25 +53,6 @@ describe('Random Engagement Batch', () => {
         expect(deps.firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
     });
 
-    it('should sanitize accidental character count annotations from engagement text', async () => {
-        deps.xApi.getListMembers.mockResolvedValue({
-            data: [{ id: 'user2', username: 'target_user' }]
-        });
-        deps.firestore.getUserDoc.mockResolvedValue({ status: 'ACTIVE' });
-        deps.firestore.getLastListInteraction.mockResolvedValue(null);
-        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
-        deps.xApi.getUserProfile.mockResolvedValue({ data: { description: 'Profile' } });
-        deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 'tweet1', text: 'Text' }] });
-        deps.gemini.analyzeUserProfile.mockResolvedValue({ attributes: [], preferences: [] });
-        deps.gemini.detectLanguage.mockResolvedValue('ja');
-        deps.gemini.generateReply.mockResolvedValue('@target_user 元気にしてる？ (95文字)');
-
-        const result = await new RandomEngagementUseCase(deps).execute();
-
-        expect(result.status).toBe('success');
-        expect(deps.xApi.tweet).toHaveBeenCalledWith('@target_user 元気にしてる？');
-    });
-
     it('should skip blocked user during random engagement selection', async () => {
         deps.xApi.getListMembers.mockResolvedValue({
             data: [
