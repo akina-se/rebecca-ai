@@ -1,4 +1,5 @@
 ﻿import type { DecodedIdToken } from 'firebase-admin/auth';
+import type { Request } from 'express';
 
 /**
  * Strongly-typed payload attached to Express Request by auth middleware.
@@ -10,10 +11,9 @@ export interface AuthenticatedUser extends Partial<DecodedIdToken> {
   admin?: boolean;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthenticatedUser;
-    }
-  }
+/**
+ * Express Request augmented with strongly-typed authenticated user information.
+ */
+export interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
 }
