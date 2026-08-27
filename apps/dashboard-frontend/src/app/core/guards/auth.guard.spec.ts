@@ -5,7 +5,7 @@ import { AuthService } from '../services/auth.service';
 
 describe('authGuard', () => {
   let authServiceSpy: { waitForInit: jest.Mock; currentUser: any };
-  let routerSpy: { parseUrl: jest.Mock };
+  let routerSpy: { parseUrl: jest.Mock; createUrlTree: jest.Mock };
   const mockRoute = {} as ActivatedRouteSnapshot;
   const mockState = {} as RouterStateSnapshot;
 
@@ -17,6 +17,7 @@ describe('authGuard', () => {
 
     routerSpy = {
       parseUrl: jest.fn(),
+      createUrlTree: jest.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -40,10 +41,10 @@ describe('authGuard', () => {
   it('should redirect to /login when user is unauthenticated', async () => {
     authServiceSpy.currentUser = null;
     const mockUrlTree = {} as UrlTree;
-    routerSpy.parseUrl.mockReturnValue(mockUrlTree);
+    routerSpy.createUrlTree.mockReturnValue(mockUrlTree);
 
     const result = await TestBed.runInInjectionContext(() => authGuard(mockRoute, mockState));
     expect(result).toBe(mockUrlTree);
-    expect(routerSpy.parseUrl).toHaveBeenCalledWith('/login');
+    expect(routerSpy.createUrlTree).toHaveBeenCalledWith(['/login']);
   });
 });

@@ -1,6 +1,6 @@
-﻿import { setupZoneTestEnv } from 'jest-preset-angular/setup-env/zone';
+import { setupZonelessTestEnv } from 'jest-preset-angular/setup-env/zoneless';
 
-setupZoneTestEnv();
+setupZonelessTestEnv();
 
 // Polyfill global fetch in jsdom
 if (typeof globalThis.fetch !== 'undefined') {

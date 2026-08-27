@@ -1,17 +1,17 @@
 import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-lightbox',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './lightbox.component.html',
   styleUrls: ['./lightbox.component.css']
 })
 export class LightboxComponent {
   @Input() isOpen = false;
   @Input() imageUrl = '';
-  @Output() close = new EventEmitter<void>();
+  @Output() lightboxClose = new EventEmitter<void>();
 
   @HostListener('document:keydown.escape')
   onKeydownHandler() {
@@ -21,6 +21,6 @@ export class LightboxComponent {
   }
 
   closeLightbox() {
-    this.close.emit();
+    this.lightboxClose.emit();
   }
 }

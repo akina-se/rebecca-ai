@@ -1,5 +1,5 @@
 import { Component, Output, EventEmitter, HostListener, ElementRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DrawerService } from '../../core/services/drawer.service';
@@ -9,7 +9,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 @Component({
   selector: 'app-top-nav',
   standalone: true,
-  imports: [CommonModule, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './top-nav.component.html',
   styleUrls: ['./top-nav.component.css']
 })
@@ -22,12 +22,10 @@ export class TopNavComponent {
   private readonly router = inject(Router);
 
   isUserDropdownOpen = false;
-  user: { displayName?: string | null; email?: string | null } | null = null;
+  readonly currentUser = this.authService.currentUserSignal;
 
-  constructor() {
-    this.authService.currentUser$.subscribe(user => {
-      this.user = user;
-    });
+  get user(): { displayName?: string | null; email?: string | null } | null {
+    return this.currentUser();
   }
 
   get pageTitle(): string {
@@ -39,10 +37,7 @@ export class TopNavComponent {
     return this.translationService.t('nav.dashboard');
   }
 
-  get userAvatarUrl(): string {
-    const name = this.user?.displayName || 'Admin User';
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8A2BE2&color=fff&rounded=true`;
-  }
+  readonly userAvatarUrl = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="18" fill="%238A2BE2"/><text x="18" y="23" font-size="14" text-anchor="middle" fill="white" font-family="sans-serif">A</text></svg>';
 
   toggleDrawer() {
     this.drawerService.toggle();
@@ -55,7 +50,6 @@ export class TopNavComponent {
   }
 
   logout() {
-    console.log('Logging out...');
     this.isUserDropdownOpen = false;
     this.authService.logout();
     this.router.navigate(['/login']);
@@ -63,7 +57,7 @@ export class TopNavComponent {
 
   @HostListener('document:click', ['$event'])
   clickout(event: Event) {
-    if(!this.eRef.nativeElement.contains(event.target)) {
+    if (!this.eRef.nativeElement.contains(event.target)) {
       this.isUserDropdownOpen = false;
     }
   }

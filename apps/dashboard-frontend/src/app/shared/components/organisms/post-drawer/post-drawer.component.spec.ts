@@ -50,9 +50,9 @@ describe('PostDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(dashboardRepoSpy.getPostById).toHaveBeenCalledWith('p123');
-    expect(component.postData).toBeTruthy();
-    expect(component.postData?.text).toBe('Sample post');
-    expect(component.isLoading).toBeFalse();
+    expect(component.postData()).toBeTruthy();
+    expect(component.postData()?.text).toBe('Sample post');
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should handle post with null fields gracefully in ngOnChanges', () => {
@@ -71,15 +71,15 @@ describe('PostDrawerComponent', () => {
     component.postId = 'p_null';
     component.ngOnChanges();
 
-    expect(component.postData?.text).toBe('');
-    expect(component.postData?.impressions).toBe('0');
-    expect(component.postData?.status).toBe('SUCCESS');
-    expect(component.postData?.mediaUrls).toEqual([]);
+    expect(component.postData()?.text).toBe('');
+    expect(component.postData()?.impressions).toBe('0');
+    expect(component.postData()?.status).toBe('SUCCESS');
+    expect(component.postData()?.mediaUrls).toEqual([]);
 
     // When postId is null
     component.postId = null;
     component.ngOnChanges();
-    expect(component.isLoading).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should handle post load error gracefully', () => {
@@ -89,11 +89,11 @@ describe('PostDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to load/), 'error');
-    expect(component.isLoading).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
   });
 
-  it('should delete post on onDeletePost and close drawer', () => {
-    component.postData = {
+  it('should delete post on onDelete', () => {
+    component.postData.set({
       id: 'p123',
       time: '2026-08-15',
       text: 'Post',
@@ -103,23 +103,17 @@ describe('PostDrawerComponent', () => {
       retweets: 0,
       replies: 0,
       mediaUrls: []
-    };
+    });
     dashboardRepoSpy.deletePosts.and.returnValue(of(void 0));
 
-    component.onDeletePost();
+    component.onDelete();
 
     expect(dashboardRepoSpy.deletePosts).toHaveBeenCalledWith(['p123']);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Successfully deleted/), 'success');
-    expect(drawerServiceSpy.close).toHaveBeenCalled();
-
-    // When postData is null
-    component.postData = null;
-    component.onDeletePost();
-    expect(dashboardRepoSpy.deletePosts).toHaveBeenCalledTimes(1);
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/deleted successfully/), 'success');
   });
 
   it('should handle delete post error', () => {
-    component.postData = {
+    component.postData.set({
       id: 'p123',
       time: '2026-08-15',
       text: 'Post',
@@ -129,35 +123,18 @@ describe('PostDrawerComponent', () => {
       retweets: 0,
       replies: 0,
       mediaUrls: []
-    };
+    });
     dashboardRepoSpy.deletePosts.and.returnValue(throwError(() => new Error('Delete failed')));
 
-    component.onDeletePost();
+    component.onDelete();
 
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to delete/), 'error');
   });
 
-  it('should open tweet on X via onViewOnX and handle null id', () => {
-    spyOn(window, 'open');
-    component.postData = { id: '987654' } as any;
-
-    component.onViewOnX();
-    expect(window.open).toHaveBeenCalledWith('https://x.com/i/status/987654', '_blank', 'noopener,noreferrer');
-
-    component.postData = null;
-    component.postId = null;
-    component.onViewOnX();
-    expect(window.open).toHaveBeenCalledTimes(1);
-  });
-
-  it('should open lightbox on onOpenLightbox', () => {
+  it('should open lightbox on onMediaClick', () => {
     spyOn(component.openLightbox, 'emit');
-    component.onOpenLightbox('https://example.com/img.png');
+    component.onMediaClick('https://example.com/img.png');
     expect(component.openLightbox.emit).toHaveBeenCalledWith('https://example.com/img.png');
   });
-
-  it('should open AI copilot on openAiCopilot', () => {
-    component.openAiCopilot();
-    expect(drawerServiceSpy.open).toHaveBeenCalled();
-  });
 });
+

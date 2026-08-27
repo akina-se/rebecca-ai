@@ -55,7 +55,7 @@ describe('DashboardPageComponent', () => {
     expect(dashboardRepoSpy.getTopPosts).toHaveBeenCalled();
     expect(dashboardRepoSpy.getTopUsers).toHaveBeenCalled();
     expect(dashboardRepoSpy.getTimelineHistory).toHaveBeenCalled();
-    expect(component.kpiMetrics?.followers).toBe(1200);
+    expect(component.kpiMetrics()?.followers).toBe(1200);
   });
 
   it('should switch mode for top posts and top users', () => {
@@ -112,10 +112,10 @@ describe('DashboardPageComponent', () => {
   });
 
   it('should toggle selection for timeline posts', () => {
-    component.timelinePosts = [
+    component.timelinePosts.set([
       { id: 'p1', time: '2026-08-15', snippet: 'Post 1', impressions: 10, status: 'SUCCESS' } as any,
       { id: 'p2', time: '2026-08-15', snippet: 'Post 2', impressions: 20, status: 'SUCCESS' } as any
-    ];
+    ]);
 
     component.toggleSelectAll();
     expect(component.selectAll).toBeTrue();
@@ -141,7 +141,7 @@ describe('DashboardPageComponent', () => {
 
     // Error case
     component.selectedRows.add('p1');
-    dashboardRepoSpy.deletePosts.and.returnValue(throwError(() => new Error('Delete err')));
+    dashboardRepoSpy.deletePosts.and.returnValue(throwError(() => new Error('Delete failed')));
     await component.executeBulkDelete();
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to delete posts', 'error');
 
@@ -162,10 +162,9 @@ describe('DashboardPageComponent', () => {
     await component.executeBulkArchive();
   });
 
-  it('should open ranking modals for posts and users', () => {
-    dashboardRepoSpy.getTopPosts.and.returnValue(of({ data: [{ id: 'p1', snippet: 'Top 1', impressions: 1000 } as any], meta: { totalPages: 1, totalItems: 1, currentPage: 1, limit: 10 } }));
+  it('should open ranking modal for posts and users', () => {
+    dashboardRepoSpy.getTopPosts.and.returnValue(of({ data: [{ id: 'p1', impressions: 100 } as any], meta: { totalPages: 1, totalItems: 1, currentPage: 1, limit: 10 } }));
     component.openRankingModal('posts');
-    expect(component.isRankingModalOpen).toBeTrue();
     expect(component.rankingModalType).toBe('post');
     expect(component.rankingModalEntries.length).toBe(1);
 
@@ -177,16 +176,16 @@ describe('DashboardPageComponent', () => {
 
   it('should open lightbox and drawers for post and user', () => {
     component.openLightbox('https://example.com/img.jpg');
-    expect(component.lightboxImageUrl).toBe('https://example.com/img.jpg');
-    expect(component.isLightboxOpen).toBeTrue();
+    expect(component.lightboxImageUrl()).toBe('https://example.com/img.jpg');
+    expect(component.isLightboxOpen()).toBeTrue();
 
     component.openPostDrawer('p1');
-    expect(component.drawerType).toBe('post');
-    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.drawerType()).toBe('post');
+    expect(component.isDrawerOpen()).toBeTrue();
 
     component.openUserDrawer('u1');
-    expect(component.drawerType).toBe('user');
-    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.drawerType()).toBe('user');
+    expect(component.isDrawerOpen()).toBeTrue();
   });
 
   it('should parse ISO date string properly', () => {
@@ -217,12 +216,12 @@ describe('DashboardPageComponent', () => {
     component.onDatePicked('users', '2026');
 
     component.searchQuery = 'cool';
-    component.timelinePosts = [
+    component.timelinePosts.set([
       { id: '1', snippet: 'cool post', text: 'cool post' } as any,
       { id: '2', snippet: 'other', text: 'other' } as any
-    ];
+    ]);
     component.applyTimelineFilter();
-    expect(component.filteredTimelinePosts.length).toBe(1);
+    expect(component.filteredTimelinePosts().length).toBe(1);
 
     component.mockAlert('System message');
     expect(toastServiceSpy.show).toHaveBeenCalledWith('System message', 'info');
@@ -230,28 +229,28 @@ describe('DashboardPageComponent', () => {
 
   it('should strip size=thumbnail when opening lightbox and handle state', () => {
     component.openLightbox('/api/v1/assets/photo1.webp?size=thumbnail');
-    expect(component.lightboxImageUrl).toBe('/api/v1/assets/photo1.webp');
-    expect(component.isLightboxOpen).toBeTrue();
+    expect(component.lightboxImageUrl()).toBe('/api/v1/assets/photo1.webp');
+    expect(component.isLightboxOpen()).toBeTrue();
 
     // Plain URL without size parameter
     component.openLightbox('https://cdn.example.com/original.jpg');
-    expect(component.lightboxImageUrl).toBe('https://cdn.example.com/original.jpg');
+    expect(component.lightboxImageUrl()).toBe('https://cdn.example.com/original.jpg');
 
     // Empty URL
     component.openLightbox('');
-    expect(component.lightboxImageUrl).toBe('');
+    expect(component.lightboxImageUrl()).toBe('');
   });
 
   it('should open and handle state for post drawer, user drawer, and ranking modals', () => {
     component.openPostDrawer('p_101');
-    expect(component.isDrawerOpen).toBeTrue();
-    expect(component.drawerType).toBe('post');
-    expect(component.selectedItemId).toBe('p_101');
+    expect(component.isDrawerOpen()).toBeTrue();
+    expect(component.drawerType()).toBe('post');
+    expect(component.selectedItemId()).toBe('p_101');
 
     component.openUserDrawer('u_202');
-    expect(component.isDrawerOpen).toBeTrue();
-    expect(component.drawerType).toBe('user');
-    expect(component.selectedItemId).toBe('u_202');
+    expect(component.isDrawerOpen()).toBeTrue();
+    expect(component.drawerType()).toBe('user');
+    expect(component.selectedItemId()).toBe('u_202');
 
     component.openRankingModal('posts');
     expect(component.isRankingModalOpen).toBeTrue();

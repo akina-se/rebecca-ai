@@ -1,9 +1,9 @@
-import { Component, Input, OnChanges, inject, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, OnChanges, inject } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
-import { USERS_REPOSITORY, UsersRepository } from '../../../../core/ports/users.repository';
+import { USERS_REPOSITORY } from '../../../../core/ports/users.repository';
 import { UserDetail, UserStatus } from '@rebecca/types';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
@@ -19,7 +19,7 @@ import { CopilotContextService } from '../../../../core/services/copilot-context
 @Component({
   selector: 'app-user-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TzDatePipe, TranslatePipe],
+  imports: [FormsModule, TzDatePipe, TranslatePipe],
   templateUrl: './user-drawer.component.html',
   styleUrls: ['./user-drawer.component.css']
 })

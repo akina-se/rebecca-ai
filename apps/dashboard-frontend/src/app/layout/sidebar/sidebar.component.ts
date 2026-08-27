@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+﻿import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { ConfigService } from '../../core/services/config.service';
@@ -15,4 +15,3 @@ export class SidebarComponent {
   private configService = inject(ConfigService);
   readonly publicSiteUrl = this.configService.publicSiteUrl;
 }
-

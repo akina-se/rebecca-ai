@@ -1,21 +1,22 @@
-@if (isLoading) {
-  <div class="app-loading-screen">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">INTERFACING WITH GEMITEC NETWORKS...</div>
-  </div>
-} @else {
-  @if (isLoggedIn) {
+﻿<div 
+  [class.authenticated-layout]="isLoggedIn()" 
+  [class.login-layout]="!isLoggedIn()"
+  [attr.data-authenticated]="isLoggedIn()">
+  
+  @if (isLoggedIn()) {
     <app-sidebar></app-sidebar>
-    <div class="main-content">
-      <app-top-nav></app-top-nav>
-      <router-outlet></router-outlet>
-      <app-toast></app-toast>
-    </div>
-    <app-ai-drawer></app-ai-drawer>
-  } @else {
-    <div class="login-layout">
-      <router-outlet></router-outlet>
-      <app-toast></app-toast>
-    </div>
   }
-}
+  
+  <div class="main-content">
+    @if (isLoggedIn()) {
+      <app-top-nav></app-top-nav>
+    }
+    
+    <router-outlet></router-outlet>
+    <app-toast></app-toast>
+  </div>
+
+  @if (isLoggedIn()) {
+    <app-ai-drawer></app-ai-drawer>
+  }
+</div>

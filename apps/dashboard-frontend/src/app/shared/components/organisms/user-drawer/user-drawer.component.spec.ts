@@ -127,14 +127,15 @@ describe('UserDrawerComponent (White-box Coverage)', () => {
   });
 
   it('should open user profile on X via window.open and handle empty handle', () => {
-    spyOn(window, 'open');
+    const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
     component.onViewOnX();
-    expect(window.open).toHaveBeenCalledWith('https://x.com/alice_gal', '_blank', 'noopener,noreferrer');
+    expect(openSpy).toHaveBeenCalledWith('https://x.com/alice_gal', '_blank', 'noopener,noreferrer');
 
     component.user = undefined;
     component.userId = null;
     component.onViewOnX();
-    expect(window.open).toHaveBeenCalledTimes(1);
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    openSpy.mockRestore();
   });
 
   it('should handle empty userId on lifecycle changes and early exits', () => {

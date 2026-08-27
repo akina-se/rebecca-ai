@@ -51,10 +51,10 @@ describe('AiDrawerComponent', () => {
 
   it('should react to drawerService open state and close on close()', () => {
     drawerService.open();
-    expect(component.isOpen).toBeTrue();
+    expect(component.isOpen()).toBeTrue();
 
     component.close();
-    expect(component.isOpen).toBeFalse();
+    expect(component.isOpen()).toBeFalse();
   });
 
   it('should send user message on onSendMessage and ignore empty/loading', () => {

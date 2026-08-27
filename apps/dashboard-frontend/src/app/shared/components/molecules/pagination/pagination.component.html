@@ -1,35 +1,40 @@
 <div class="pagination-container" [class.no-total]="!showTotalCount || totalItems === undefined">
-  <span *ngIf="showTotalCount && totalItems !== undefined" class="total-items-text">
-    {{ 'pagination.showing' | translate }} {{ totalItems }} {{ itemsLabel }}
-  </span>
+  @if (showTotalCount && totalItems !== undefined) {
+    <span class="total-items-text">
+      {{ 'pagination.showing' | translate }} {{ totalItems }} {{ itemsLabel }}
+    </span>
+  }
 
   <div class="pagination-controls">
     <!-- Prev Button -->
-    <button 
-      class="page-btn nav-btn" 
-      [disabled]="currentPage <= 1 || isLoading" 
+    <button
+      class="page-btn nav-btn"
+      [disabled]="currentPage <= 1 || isLoading"
       (click)="onPrevious()"
       aria-label="Previous Page">
       <span class="material-icons">chevron_left</span>
     </button>
 
     <!-- Page Number Buttons -->
-    <ng-container *ngFor="let p of pageNumbers">
-      <button 
-        *ngIf="p !== '...'" 
-        class="page-btn num-btn" 
-        [class.active]="p === currentPage" 
-        [disabled]="isLoading"
-        (click)="goToPage(p)">
-        {{ p }}
-      </button>
-      <span *ngIf="p === '...'" class="page-ellipsis">...</span>
-    </ng-container>
+    @for (p of pageNumbers; track p) {
+      @if (p !== '...') {
+        <button
+          class="page-btn num-btn"
+          [class.active]="p === currentPage"
+          [disabled]="isLoading"
+          (click)="goToPage(p)">
+          {{ p }}
+        </button>
+      }
+      @if (p === '...') {
+        <span class="page-ellipsis">...</span>
+      }
+    }
 
     <!-- Next Button -->
-    <button 
-      class="page-btn nav-btn" 
-      [disabled]="currentPage >= totalPages || isLoading" 
+    <button
+      class="page-btn nav-btn"
+      [disabled]="currentPage >= totalPages || isLoading"
       (click)="onNext()"
       aria-label="Next Page">
       <span class="material-icons" [class.spinning]="isLoading">
@@ -38,8 +43,10 @@
     </button>
 
     <!-- Page Info Text -->
-    <span *ngIf="showPageInfo" class="page-info">
-      {{ 'pagination.page' | translate }} {{ currentPage }} / {{ totalPages }}
-    </span>
+    @if (showPageInfo) {
+      <span class="page-info">
+        {{ 'pagination.page' | translate }} {{ currentPage }} / {{ totalPages }}
+      </span>
+    }
   </div>
 </div>
