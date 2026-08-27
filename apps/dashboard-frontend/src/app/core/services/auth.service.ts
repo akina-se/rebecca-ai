@@ -32,15 +32,17 @@ export class AuthService {
   readonly currentUserSignal = signal<User | null>(null);
   public currentUser$: Observable<User | null> = toObservable(this.currentUserSignal);
 
+  get isEmulator(): boolean {
+    return this.configService.isEmulator;
+  }
+
   private ensureAuth(): Auth {
     if (!this.auth) {
       const firebaseConfig = this.configService.firebaseConfig;
       this.app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
       this.auth = getAuth(this.app);
       
-      const isLocalHost = typeof window !== 'undefined' && 
-        (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
-      if (this.configService.isEmulator || isLocalHost) {
+      if (this.configService.isEmulator) {
         connectAuthEmulator(this.auth, 'http://127.0.0.1:9099', { disableWarnings: true });
       }
       
