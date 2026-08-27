@@ -140,7 +140,7 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
             parts: [{ text: userTurnText }]
           });
 
-          const response = await this.ai.models.generateContent({
+          const geminiCall = this.ai.models.generateContent({
             model: config.gemini.model,
             contents,
             config: {
@@ -150,6 +150,13 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
               temperature: 0.7
             }
           });
+
+          // Timeout guard: 3.5s limit to prevent network hangs in test or degraded connection environments
+          const timeoutGuard = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Gemini API request timed out')), 3500)
+          );
+
+          const response = await Promise.race([geminiCall, timeoutGuard]);
 
           if (response.text) {
             const parsed = JSON.parse(response.text) as CopilotResponse;
@@ -291,10 +298,10 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
     } else if (actionType === 'BLOCK_USER') {
       const handle = String(payload['handle'] || payload['userId'] || '').trim();
       const cleanHandle = handle ? (handle.startsWith('@') ? handle : `@${handle}`) : '';
-      if (isEn && containsJa) {
+      if (isEn) {
         title = cleanHandle ? `Block User ${cleanHandle}` : 'Block User';
         description = cleanHandle ? `Block ${cleanHandle} from interacting with Master or replying.` : 'Block user from interacting with Master.';
-      } else if (!isEn && !containsJa) {
+      } else {
         title = cleanHandle ? `ユーザー ${cleanHandle} のブロック` : 'ユーザーのブロック';
         description = cleanHandle ? `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。` : 'ユーザーをブロックします。';
       }

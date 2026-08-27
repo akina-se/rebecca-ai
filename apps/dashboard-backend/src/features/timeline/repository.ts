@@ -74,35 +74,59 @@ export class TimelineRepository {
       startDateIso = d.toISOString();
     }
 
-    let calculatedApiCalls = typeof data.api_calls_today === 'number' ? data.api_calls_today : 342;
+    // 1. Dynamic Total Followers: Prefer aggregated systemStats, fallback to true processedFollowers count
+    let totalFollowers = typeof data.total_followers === 'number' && data.total_followers > 0 ? data.total_followers : 0;
+    if (totalFollowers === 0) {
+      try {
+        const followersSnap = await this.collections.processedFollowers.count().get();
+        totalFollowers = followersSnap.data().count || 0;
+      } catch {
+        totalFollowers = 0;
+      }
+    }
+
+    // 2. Dynamic API Calls: Aggregate actual logs and timeline posts within the selected time window
+    let calculatedApiCalls = typeof data.api_calls_today === 'number' ? data.api_calls_today : 0;
     try {
       if (startDateIso) {
         const [logsCountSnap, postsCountSnap] = await Promise.all([
           this.collections.conversationLogs.where('timestamp', '>=', startDateIso).count().get(),
           this.collections.timelineHistory.where('timestamp', '>=', startDateIso).count().get()
         ]);
-        const count = (logsCountSnap.data().count || 0) + (postsCountSnap.data().count || 0);
-        if (count > 0) {
-          calculatedApiCalls = count;
-        }
+        calculatedApiCalls = (logsCountSnap.data().count || 0) + (postsCountSnap.data().count || 0);
       }
     } catch {
-      calculatedApiCalls = typeof data.api_calls_today === 'number' ? data.api_calls_today : 342;
+      calculatedApiCalls = 0;
     }
 
+    // 3. Dynamic Daily Active Users (DAU): Unique users / interactions in the past 24 hours
+    let calculatedDau = typeof data.dau === 'number' ? data.dau : 0;
+    if (calculatedDau === 0) {
+      try {
+        const yesterdayIso = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+        const dauSnap = await this.collections.conversationLogs.where('timestamp', '>=', yesterdayIso).count().get();
+        calculatedDau = dauSnap.data().count || 0;
+      } catch {
+        calculatedDau = 0;
+      }
+    }
+
+    // 4. Dynamic Engagement Rate
+    const avgEngagementRate = typeof data.avg_engagement_rate === 'number' ? parseFloat(data.avg_engagement_rate.toFixed(1)) : 0;
+
     return {
-      followers: typeof data.total_followers === 'number' ? data.total_followers : 51,
+      followers: totalFollowers,
       followersTrend: typeof data.followers_trend === 'number' ? data.followers_trend : 0,
-      followersHistory: scaleArray(data.followers_history || [42, 44, 45, 47, 48, 50, 51], historyLength),
-      engagementRate: typeof data.avg_engagement_rate === 'number' ? parseFloat(data.avg_engagement_rate.toFixed(1)) : 5.8,
+      followersHistory: scaleArray(data.followers_history || [], historyLength),
+      engagementRate: avgEngagementRate,
       engagementTrend: typeof data.engagement_trend === 'number' ? data.engagement_trend : 0,
-      engagementHistory: scaleArray(data.engagement_history || [4.8, 5.0, 5.2, 5.5, 5.4, 5.7, 5.8], historyLength),
-      dailyActiveUsers: typeof data.dau === 'number' ? data.dau : 12,
+      engagementHistory: scaleArray(data.engagement_history || [], historyLength),
+      dailyActiveUsers: calculatedDau,
       dauTrend: typeof data.dau_trend === 'number' ? data.dau_trend : 0,
-      dauHistory: scaleArray(data.dau_history || [8, 9, 10, 11, 10, 12, 12], historyLength),
+      dauHistory: scaleArray(data.dau_history || [], historyLength),
       apiCalls: calculatedApiCalls,
       apiTrendStatus: data.api_trend_status || 'Steady',
-      apiCallsHistory: scaleArray(data.api_calls_history || [280, 310, 295, 340, 320, 335, 342], historyLength)
+      apiCallsHistory: scaleArray(data.api_calls_history || [], historyLength)
     };
   }
 

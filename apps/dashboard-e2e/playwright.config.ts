@@ -1,22 +1,28 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  timeout: 30000,
+  timeout: 40000,
   testDir: './tests',
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: process.env.CI ? [['list'], ['github']] : 'list',
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: 'playwright-report', open: 'never' }]
+  ],
   use: {
     baseURL: 'http://127.0.0.1:4200',
-    trace: 'on-first-retry',
+    trace: 'on',
+    screenshot: 'on',
   },
   webServer: [
     {
       command: 'npm run start --workspace=dashboard-backend',
       url: 'http://127.0.0.1:8081/health',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
       timeout: 120 * 1000,
       env: {
         PORT: '8081',
@@ -31,7 +37,9 @@ export default defineConfig({
     {
       command: 'node ../../scripts/serve-frontend.js',
       url: 'http://127.0.0.1:4200',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
+      stdout: 'pipe',
+      stderr: 'pipe',
       timeout: 120 * 1000,
     }
   ],

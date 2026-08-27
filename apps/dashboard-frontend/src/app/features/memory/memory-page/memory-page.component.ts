@@ -1,18 +1,18 @@
-import { Component, OnInit, Inject, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+
 import { ToastService } from '../../../shared/services/toast.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { MemoryDrawerComponent } from '../../../shared/components/organisms/memory-drawer/memory-drawer.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
-import { MEMORY_REPOSITORY, MemoryRepository } from '../../../core/ports/memory.repository';
+import { MEMORY_REPOSITORY } from '../../../core/ports/memory.repository';
 import { MemoryLayer } from '@rebecca/types';
 
 @Component({
   selector: 'app-memory-page',
   standalone: true,
-  imports: [CommonModule, RightDrawerComponent, MemoryDrawerComponent, TzDatePipe, TranslatePipe],
+  imports: [RightDrawerComponent, MemoryDrawerComponent, TzDatePipe, TranslatePipe],
   templateUrl: './memory-page.component.html',
   styleUrls: ['./memory-page.component.css']
 })
@@ -20,40 +20,39 @@ export class MemoryPageComponent implements OnInit {
   toastService = inject(ToastService);
   translationService = inject(TranslationService);
   isDreaming = false;
-  isLoading = false;
+  readonly isLoading = signal<boolean>(false);
   
-  isDrawerOpen = false;
-  drawerLevel = 0;
-  drawerTitle = '';
-  drawerIcon = 'dns';
+  readonly isDrawerOpen = signal<boolean>(false);
+  readonly drawerLevel = signal<number>(0);
+  readonly drawerTitle = signal<string>('');
+  readonly drawerIcon = signal<string>('dns');
 
-  layers: MemoryLayer[] = [];
-
-  constructor(@Inject(MEMORY_REPOSITORY) private memoryRepo: MemoryRepository) {}
+  readonly layers = signal<MemoryLayer[]>([]);
+  private readonly memoryRepo = inject(MEMORY_REPOSITORY);
 
   ngOnInit() {
     this.loadLayers();
   }
 
   loadLayers() {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.memoryRepo.getLayers().subscribe({
       next: (layers) => {
-        this.layers = layers;
-        this.isLoading = false;
+        this.layers.set(layers || []);
+        this.isLoading.set(false);
       },
       error: () => {
         this.toastService.show('Failed to load memory layers', 'error');
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }
 
   openDrawer(level: number) {
-    this.drawerLevel = level;
-    this.drawerTitle = `Layer ${level}: ${this.translationService.t(`memory.layer${level}_name`)}`;
-    this.drawerIcon = this.getIconForLayer(level);
-    this.isDrawerOpen = true;
+    this.drawerLevel.set(level);
+    this.drawerTitle.set(`Layer ${level}: ${this.translationService.t(`memory.layer${level}_name`)}`);
+    this.drawerIcon.set(this.getIconForLayer(level));
+    this.isDrawerOpen.set(true);
   }
 
   async forceDreaming() {

@@ -44,6 +44,7 @@ export function initializeAssetsModule(firestore: Firestore): { assetsRouter: Ro
   assetsRouter.get('/:id/image', controller.getImage.bind(controller));
   assetsRouter.get('/:id', controller.getById.bind(controller));
   assetsRouter.put('/:id', controller.update.bind(controller));
+  assetsRouter.delete('/:id', controller.deleteMany.bind(controller));
   assetsRouter.delete('/', controller.deleteMany.bind(controller));
 
   return { assetsRouter, publicImagesRouter };

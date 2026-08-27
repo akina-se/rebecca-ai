@@ -10,5 +10,5 @@ export const environment = {
   },
   useEmulators: true,
   useMock: true,
-  apiUrl: 'http://localhost:8081/api/v1'
+  apiUrl: '/api/v1'
 };

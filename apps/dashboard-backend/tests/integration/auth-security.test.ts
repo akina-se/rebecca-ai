@@ -1,28 +1,30 @@
 import request from 'supertest';
-import * as admin from 'firebase-admin';
 import { createApp } from '../../src/app';
 import { createMockFirestore } from '../unit/testUtils';
 
-jest.mock('firebase-admin', () => {
-  const verifyIdTokenMock = jest.fn();
-  const getMock = jest.fn();
-  const limitMock = jest.fn().mockReturnValue({ get: getMock });
-  const whereMock2 = jest.fn().mockReturnValue({ limit: limitMock, get: getMock });
-  const whereMock1 = jest.fn().mockReturnValue({ where: whereMock2, limit: limitMock, get: getMock });
-  const collectionMock = jest.fn().mockReturnValue({ where: whereMock1 });
-  const firestoreMock = jest.fn().mockReturnValue({ collection: collectionMock });
+const mockVerifyIdToken = jest.fn();
+const mockGet = jest.fn();
+const mockLimit = jest.fn().mockReturnValue({ get: mockGet });
+const mockWhere2 = jest.fn().mockReturnValue({ limit: mockLimit, get: mockGet });
+const mockWhere1 = jest.fn().mockReturnValue({ where: mockWhere2, limit: mockLimit, get: mockGet });
+const mockCollection = jest.fn().mockReturnValue({ where: mockWhere1 });
 
-  return {
-    apps: [{ name: '[DEFAULT]' }],
-    initializeApp: jest.fn(),
-    auth: jest.fn().mockReturnValue({
-      verifyIdToken: verifyIdTokenMock,
-    }),
-    firestore: firestoreMock,
-    __verifyIdTokenMock: verifyIdTokenMock,
-    __firestoreGetMock: getMock,
-  };
-});
+jest.mock('firebase-admin/app', () => ({
+  initializeApp: jest.fn(),
+  getApps: jest.fn().mockReturnValue([{ name: '[DEFAULT]' }]),
+}));
+
+jest.mock('firebase-admin/auth', () => ({
+  getAuth: () => ({
+    verifyIdToken: mockVerifyIdToken,
+  }),
+}));
+
+jest.mock('firebase-admin/firestore', () => ({
+  getFirestore: () => ({
+    collection: mockCollection,
+  }),
+}));
 
 // Mock gRPC client to prevent network calls in integration tests
 jest.mock('../../src/core/grpcClient', () => ({
@@ -42,8 +44,7 @@ jest.mock('@google-cloud/tasks', () => {
 
 describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Tests', () => {
   let app: any;
-  const mockVerifyIdToken = (admin as any).__verifyIdTokenMock;
-  const mockFirestoreGet = (admin as any).__firestoreGetMock;
+  const mockFirestoreGet = mockGet;
 
   const originalEnv = process.env.NODE_ENV;
   const originalNoAuth = process.env.NO_AUTH;

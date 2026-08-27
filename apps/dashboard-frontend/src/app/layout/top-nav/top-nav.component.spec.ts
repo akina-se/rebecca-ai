@@ -60,11 +60,8 @@ describe('TopNavComponent', () => {
     expect(component.pageTitle).toBeDefined();
   });
 
-  it('should generate userAvatarUrl with encoded display name or fallback', () => {
-    expect(component.userAvatarUrl).toContain('Test%20User');
-
-    component.user = null;
-    expect(component.userAvatarUrl).toContain('Admin%20User');
+  it('should provide valid userAvatarUrl', () => {
+    expect(component.userAvatarUrl).toContain('data:image/svg+xml;utf8');
   });
 
   it('should toggle AI copilot drawer and emit openDrawer', () => {

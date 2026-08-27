@@ -41,23 +41,65 @@ describe('RankingModalComponent', () => {
 
   it('should emit rowClick and close on onRowClick', () => {
     spyOn(component.rowClick, 'emit');
-    spyOn(component.close, 'emit');
+    spyOn(component.modalClose, 'emit');
 
     const entry = { id: 'item_5', rank: 6, label: 'Item 6', value: 50 };
     component.onRowClick(entry);
 
     expect(component.rowClick.emit).toHaveBeenCalledWith('item_5');
-    expect(component.close.emit).toHaveBeenCalled();
+    expect(component.modalClose.emit).toHaveBeenCalled();
   });
 
-  it('should close when clicking modal-backdrop', () => {
-    spyOn(component.close, 'emit');
+  it('should compute total pages from totalPages input and totalItems input', () => {
+    component.totalPages = 5;
+    expect(component.computedTotalPages).toBe(5);
+
+    component.totalPages = 1;
+    component.totalItems = 45;
+    component.pageSize = 10;
+    expect(component.computedTotalPages).toBe(5);
+
+    component.totalItems = 0;
+    component.entries = [{ rank: 1, label: 'Single', value: 10 }];
+    expect(component.computedTotalPages).toBe(1);
+    expect(component.pagedEntries.length).toBe(1);
+  });
+
+  it('should ignore invalid page navigation in goToPage', () => {
+    spyOn(component.pageChange, 'emit');
+    component.totalPages = 3;
+    component.goToPage(0);
+    expect(component.pageChange.emit).not.toHaveBeenCalled();
+
+    component.goToPage(10);
+    expect(component.pageChange.emit).not.toHaveBeenCalled();
+  });
+
+  it('should handle text selection and missing id in onRowClick', () => {
+    spyOn(component.rowClick, 'emit');
+    spyOn(component.modalClose, 'emit');
+
+    // Without id
+    component.onRowClick({ rank: 1, label: 'No ID', value: 10 });
+    expect(component.rowClick.emit).not.toHaveBeenCalled();
+
+    // With text selection
+    spyOn(window, 'getSelection').and.returnValue({
+      toString: () => 'selected text'
+    } as any);
+
+    component.onRowClick({ id: 'item_1', rank: 1, label: 'With ID', value: 10 });
+    expect(component.rowClick.emit).not.toHaveBeenCalled();
+  });
+
+  it('should not close when clicking modal content inside backdrop', () => {
+    spyOn(component.modalClose, 'emit');
 
     const mockEvent = {
-      target: { classList: { contains: (cls: string) => cls === 'modal-backdrop' } }
+      target: { classList: { contains: (_cls: string) => false } }
     } as any;
 
     component.onBackdropClick(mockEvent);
-    expect(component.close.emit).toHaveBeenCalled();
+    expect(component.modalClose.emit).not.toHaveBeenCalled();
   });
 });

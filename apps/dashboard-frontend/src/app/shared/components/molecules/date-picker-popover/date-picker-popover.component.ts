@@ -1,5 +1,5 @@
-import { Component, Input, Output, EventEmitter, ElementRef, HostListener, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, NgStyle } from '@angular/common';
+import { Component, Input, Output, EventEmitter, ElementRef, HostListener, ChangeDetectorRef, inject } from '@angular/core';
+
 import { TranslatePipe } from '../../../pipes/translate.pipe';
 
 /**
@@ -16,7 +16,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 @Component({
   selector: 'app-date-picker-popover',
   standalone: true,
-  imports: [CommonModule, NgStyle, TranslatePipe],
+  imports: [TranslatePipe],
   templateUrl: './date-picker-popover.component.html',
   styleUrls: ['./date-picker-popover.component.css'],
 })
@@ -33,7 +33,8 @@ export class DatePickerPopoverComponent {
   /** Fixed-position coordinates for the popover (computed on open). */
   popoverStyle: Record<string, string> = {};
 
-  constructor(private eRef: ElementRef, private cdr: ChangeDetectorRef) {}
+  private readonly eRef = inject(ElementRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   /**
    * Toggles the popover open/closed.

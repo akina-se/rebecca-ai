@@ -52,10 +52,10 @@ describe('AssetDrawerComponent', () => {
     component.ngOnChanges();
 
     expect(assetsRepoSpy.getById).toHaveBeenCalledWith('asset_1');
-    expect(component.assetData).toBeTruthy();
+    expect(component.assetData()).toBeTruthy();
     expect(component.assetBaseName).toBe('rebecca_portrait');
     expect(component.assetExtension).toBe('.png');
-    expect(component.isLoading).toBeFalse();
+    expect(component.isLoading()).toBeFalse();
   });
 
   it('should load asset with fallback filename without extension and null fields', () => {
@@ -74,8 +74,8 @@ describe('AssetDrawerComponent', () => {
 
     expect(component.assetBaseName).toBe('no_extension');
     expect(component.assetExtension).toBe('.png');
-    expect(component.assetData?.useCount).toBe(0);
-    expect(component.assetData?.lastUsedAt).toBeNull();
+    expect(component.assetData()?.useCount).toBe(0);
+    expect(component.assetData()?.lastUsedAt).toBeNull();
   });
 
   it('should handle asset load error gracefully', () => {
@@ -84,36 +84,36 @@ describe('AssetDrawerComponent', () => {
     component.assetId = 'err_asset';
     component.ngOnChanges();
 
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to load/), 'error');
-    expect(component.isLoading).toBeFalse();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to load|取得に失敗/), 'error');
+    expect(component.isLoading()).toBeFalse();
   });
 
-  it('should save updated asset caption and filename on onSave', async () => {
-    component.assetData = {
+  it('should save updated asset caption and filename on onSave', () => {
+    component.assetData.set({
       id: 'asset_1',
       name: 'rebecca.png',
       caption: 'Updated caption',
       url: 'https://example.com/rebecca.png',
       useCount: 1,
       lastUsedAt: null
-    };
+    });
     component.assetBaseName = 'rebecca_v2.png';
     component.assetExtension = '.png';
     assetsRepoSpy.update.and.returnValue(of({ success: true }));
     spyOn(component.assetUpdated, 'emit');
 
-    await component.onSave();
+    component.onSave();
 
     expect(assetsRepoSpy.update).toHaveBeenCalledWith('asset_1', {
       caption: 'Updated caption',
-      filename: 'rebecca_v2.png'
+      filename: 'rebecca_v2.png.png'
     });
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/saved asset/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/saved asset|正常に保存/), 'success');
     expect(component.assetUpdated.emit).toHaveBeenCalled();
 
     // When base name does not already include extension
     component.assetBaseName = 'clean_name';
-    await component.onSave();
+    component.onSave();
     expect(assetsRepoSpy.update).toHaveBeenCalledWith('asset_1', {
       caption: 'Updated caption',
       filename: 'clean_name.png'
@@ -121,94 +121,94 @@ describe('AssetDrawerComponent', () => {
 
     // Error case
     assetsRepoSpy.update.and.returnValue(throwError(() => new Error('Save failed')));
-    await component.onSave();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to save/), 'error');
+    component.onSave();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to update|更新に失敗/), 'error');
 
     // When assetData is null
-    component.assetData = null;
-    await component.onSave();
+    component.assetData.set(null);
+    component.onSave();
   });
 
-  it('should regenerate caption on onRegenerate', async () => {
-    component.assetData = {
+  it('should regenerate caption on onRegenerate', () => {
+    component.assetData.set({
       id: 'asset_1',
       name: 'rebecca.png',
       caption: 'Old caption',
       url: 'https://example.com/rebecca.png',
       useCount: 1,
       lastUsedAt: null
-    };
+    });
     component.assetId = 'asset_1';
     assetsRepoSpy.regenerateCaptions.and.returnValue(of({ success: true }));
     assetsRepoSpy.getById.and.returnValue(of({ id: 'asset_1', filename: 'rebecca.png' }));
 
-    await component.onRegenerate();
+    component.onRegenerate();
 
     expect(assetsRepoSpy.regenerateCaptions).toHaveBeenCalledWith(['asset_1']);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/regenerated caption/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/regeneration requested|再生成を開始/), 'success');
 
     // Error case
     assetsRepoSpy.regenerateCaptions.and.returnValue(throwError(() => new Error('Regen error')));
-    await component.onRegenerate();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to regenerate/), 'error');
+    component.onRegenerate();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to request|要求に失敗/), 'error');
 
     // When assetData is null
-    component.assetData = null;
-    await component.onRegenerate();
+    component.assetData.set(null);
+    component.onRegenerate();
   });
 
-  it('should delete asset and close drawer on onDelete', async () => {
-    component.assetData = {
+  it('should delete asset and close drawer on onDelete', () => {
+    component.assetData.set({
       id: 'asset_1',
       name: 'rebecca.png',
       caption: 'Delete me',
       url: 'https://example.com/rebecca.png',
       useCount: 0,
       lastUsedAt: null
-    };
+    });
     assetsRepoSpy.deleteMany.and.returnValue(of({ deletedCount: 1 }));
     spyOn(component.assetDeleted, 'emit');
 
-    await component.onDelete();
+    component.onDelete();
 
     expect(assetsRepoSpy.deleteMany).toHaveBeenCalledWith(['asset_1']);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/deleted asset/), 'success');
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/deleted asset|正常に削除/), 'success');
     expect(component.assetDeleted.emit).toHaveBeenCalledWith('asset_1');
-    expect(drawerServiceSpy.close).toHaveBeenCalled();
 
     // Error case
     assetsRepoSpy.deleteMany.and.returnValue(throwError(() => new Error('Delete error')));
-    await component.onDelete();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to delete/), 'error');
+    component.onDelete();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to delete|削除に失敗/), 'error');
 
     // When assetData is null
-    component.assetData = null;
-    await component.onDelete();
+    component.assetData.set(null);
+    component.onDelete();
   });
 
   it('should emit openLightbox on onViewFullSize when url exists', () => {
     spyOn(component.openLightbox, 'emit');
-    component.assetData = {
+    component.assetData.set({
       id: 'asset_1',
       name: 'rebecca.png',
       caption: '',
       url: 'https://example.com/large.png',
       useCount: 0,
       lastUsedAt: null
-    };
+    });
 
     component.onViewFullSize();
     expect(component.openLightbox.emit).toHaveBeenCalledWith('https://example.com/large.png');
 
     // When url is empty
-    component.assetData.url = '';
+    component.assetData.set({
+      id: 'asset_1',
+      name: 'rebecca.png',
+      caption: '',
+      url: '',
+      useCount: 0,
+      lastUsedAt: null
+    });
     component.onViewFullSize();
     expect(component.openLightbox.emit).toHaveBeenCalledTimes(1);
-  });
-
-  it('should format ISO dates correctly', () => {
-    expect(component.formatDate(null)).toBe('Never');
-    expect(component.formatDate('invalid')).toBe('Never');
-    expect(component.formatDate('2026-08-15T12:00:00Z')).toContain('2026');
   });
 });

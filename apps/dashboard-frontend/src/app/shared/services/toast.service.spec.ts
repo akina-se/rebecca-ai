@@ -21,13 +21,18 @@ describe('ToastService', () => {
     expect(toasts[0].icon).toBe('check_circle');
   });
 
-  it('should auto-remove toast after timeout', fakeAsync(() => {
-    service.show('Temporary notification', 'info');
-    expect(service.toasts().length).toBe(1);
+  it('should auto-remove toast after timeout', () => {
+    jest.useFakeTimers();
+    try {
+      service.show('Temporary notification', 'info');
+      expect(service.toasts().length).toBe(1);
 
-    tick(4000);
-    expect(service.toasts().length).toBe(0);
-  }));
+      jest.advanceTimersByTime(4000);
+      expect(service.toasts().length).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 
   it('should remove a toast manually by ID', () => {
     service.show('Notification 1');

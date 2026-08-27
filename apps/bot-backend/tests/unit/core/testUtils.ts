@@ -24,6 +24,8 @@ export const createMockDeps = (): AppDependencies => {
             saveExtendedPrompt: jest.fn(),
             hasProcessedFollower: jest.fn(),
             markFollowerProcessed: jest.fn(),
+            getProcessedFollowersCount: jest.fn().mockResolvedValue(0),
+            updateTotalFollowers: jest.fn().mockResolvedValue(undefined),
             getLastListInteraction: jest.fn(),
             updateLastListInteraction: jest.fn(),
             findImageByVector: jest.fn(),
