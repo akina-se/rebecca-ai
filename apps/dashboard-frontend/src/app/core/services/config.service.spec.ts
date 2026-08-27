@@ -35,6 +35,7 @@ describe('ConfigService', () => {
         appId: '1:12345:web:test'
       },
       apiUrl: 'https://admin.rebecca-ai.net/api/v1',
+      version: '1.7.0',
       publicSiteUrl: 'https://rebecca-ai.net',
       production: true,
       useEmulators: false
@@ -50,6 +51,7 @@ describe('ConfigService', () => {
     expect(service.runtimeConfig).toEqual(mockConfig);
     expect(service.firebaseConfig.apiKey).toBe('test-api-key');
     expect(service.apiUrl).toBe('https://admin.rebecca-ai.net/api/v1');
+    expect(service.version()).toBe('1.7.0');
     expect(service.isEmulator).toBeFalse();
 
     mockConfig.useEmulators = true;
@@ -60,6 +62,31 @@ describe('ConfigService', () => {
     expect(service.isEmulator).toBeTrue();
   });
 
+  it('should handle config when optional fields like version or publicSiteUrl are missing', async () => {
+    const mockMinimalConfig = {
+      firebase: {
+        apiKey: 'key',
+        authDomain: 'domain',
+        projectId: 'pid',
+        storageBucket: 'bucket',
+        messagingSenderId: 'mid',
+        appId: 'aid'
+      },
+      apiUrl: '/api',
+      publicSiteUrl: '',
+      production: false,
+      useEmulators: false
+    };
+
+    const loadPromise = service.loadAppConfig();
+    const req = httpMock.expectOne('/api/v1/config');
+    req.flush(mockMinimalConfig);
+    await loadPromise;
+
+    expect(service.runtimeConfig).toEqual(mockMinimalConfig);
+    expect(service.version()).toBe('');
+  });
+
   it('should fall back gracefully to environment defaults when /api/v1/config fails', async () => {
     const loadPromise = service.loadAppConfig();
     const req = httpMock.expectOne('/api/v1/config');
@@ -68,6 +95,7 @@ describe('ConfigService', () => {
 
     expect(service.runtimeConfig).not.toBeNull();
     expect(service.publicSiteUrl()).toBe('https://rebecca-ai.net');
+    expect(service.version()).toBe('');
     expect(service.apiUrl).toBeDefined();
     expect(service.firebaseConfig).toBeDefined();
   });
