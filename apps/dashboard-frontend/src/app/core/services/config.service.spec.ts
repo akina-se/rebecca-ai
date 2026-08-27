@@ -62,6 +62,31 @@ describe('ConfigService', () => {
     expect(service.isEmulator).toBeTrue();
   });
 
+  it('should handle config when optional fields like version or publicSiteUrl are missing', async () => {
+    const mockMinimalConfig = {
+      firebase: {
+        apiKey: 'key',
+        authDomain: 'domain',
+        projectId: 'pid',
+        storageBucket: 'bucket',
+        messagingSenderId: 'mid',
+        appId: 'aid'
+      },
+      apiUrl: '/api',
+      publicSiteUrl: '',
+      production: false,
+      useEmulators: false
+    };
+
+    const loadPromise = service.loadAppConfig();
+    const req = httpMock.expectOne('/api/v1/config');
+    req.flush(mockMinimalConfig);
+    await loadPromise;
+
+    expect(service.runtimeConfig).toEqual(mockMinimalConfig);
+    expect(service.version()).toBe('');
+  });
+
   it('should fall back gracefully to environment defaults when /api/v1/config fails', async () => {
     const loadPromise = service.loadAppConfig();
     const req = httpMock.expectOne('/api/v1/config');
