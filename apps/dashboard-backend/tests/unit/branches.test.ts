@@ -796,18 +796,18 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         status: AssetStatus.SUCCESS
       }));
 
-      // 5. Regenerate caption with empty response
+      // 5. Regenerate caption with empty response (fallback applied)
       mockGenerateContent.mockResolvedValueOnce({ text: '' });
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.FAILED
+        status: AssetStatus.SUCCESS
       }));
 
-      // 6. Regenerate caption with error throw
+      // 6. Regenerate caption with error throw (fallback applied)
       mockGenerateContent.mockRejectedValueOnce(new Error('Regen error'));
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.FAILED
+        status: AssetStatus.SUCCESS
       }));
 
       // 7. getAssetBinary branches

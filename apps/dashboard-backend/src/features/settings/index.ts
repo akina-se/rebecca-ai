@@ -10,12 +10,11 @@ import { SystemSettings } from '@rebecca/types';
  */
 export function initializeSettingsModule(firestore: Firestore): Router {
   const router = Router();
-  const settingsDocRef = firestore.collection('system').doc('preferences');
 
   // GET /api/v1/settings
   router.get('/', async (req, res) => {
     try {
-      const snap = await settingsDocRef.get();
+      const snap = await firestore.collection('system').doc('preferences').get();
       if (!snap.exists) {
         const defaultSettings: SystemSettings = {
           language: 'ja',
@@ -48,9 +47,10 @@ export function initializeSettingsModule(firestore: Firestore): Router {
       if (language) updates.language = language;
       if (timezone) updates.timezone = timezone;
 
-      await settingsDocRef.set(updates, { merge: true });
+      const docRef = firestore.collection('system').doc('preferences');
+      await docRef.set(updates, { merge: true });
 
-      const snap = await settingsDocRef.get();
+      const snap = await docRef.get();
       const data = snap.data() as SystemSettings;
 
       res.json({
