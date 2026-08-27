@@ -52,7 +52,7 @@ ${headlines.join('\n')}
 【追加ルール】
 - 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
 - 【絶対に100文字以内の短文】にすること。
-- 出力はツイートのテキストのみ。`;
+- 出力はツイートのテキストのみとし、「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
         let postText = await this.deps.gemini.generateNewsPost(systemInstruction, newsPrompt);
         if (!postText) {
             console.log("Failed to generate news post.");

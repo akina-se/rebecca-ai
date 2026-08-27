@@ -39,15 +39,13 @@ describe('persona package exports verification', () => {
   });
 
   test('getBasePrompt should return string with context for all branches including copilot', () => {
-    expect(getBasePrompt('reply', 'ja')).toContain('【コンテキスト：マスターとの公開SNS対話（Xリプライ）】');
-    expect(getBasePrompt('random_engagement', 'ja')).toContain('【コンテキスト：新規フォロワーへの突然のメンション】');
-    expect(getBasePrompt('timeline', 'ja')).toContain('【コンテキスト：タイムラインへの自発的ポスト】');
-    expect(getBasePrompt('copilot', 'ja')).toContain('【コンテキスト：管理ダッシュボード・専属コパイロット対話】');
-    expect(getBasePrompt('copilot', 'ja')).toContain('多角的なデータ解析');
+    expect(getBasePrompt('reply', 'ja')).toContain('【文字数注釈・解説の禁止】');
+    expect(getBasePrompt('timeline', 'ja')).toContain('【文字数注釈の禁止】');
+    expect(getBasePrompt('random_engagement', 'ja')).toContain('「(90文字)」などの文字数注釈や解説は一切含めず');
 
-    expect(getBasePrompt('reply', 'en')).toContain('[Context: 1-on-1 Reply on X (Twitter)]');
-    expect(getBasePrompt('random_engagement', 'en')).toContain('[Context: Sudden Mention to a New Follower]');
-    expect(getBasePrompt('timeline', 'en')).toContain('[Context: Spontaneous Timeline Post]');
+    expect(getBasePrompt('reply', 'en')).toContain('[NO CHARACTER COUNT ANNOTATION]');
+    expect(getBasePrompt('timeline', 'en')).toContain('Do not include character count notes');
+    expect(getBasePrompt('random_engagement', 'en')).toContain('Do not include character count annotations');
     expect(getBasePrompt('copilot', 'en')).toContain('[Context: Admin Dashboard Copilot]');
     expect(getBasePrompt('copilot', 'en')).toContain('Comprehensive Data Analytics');
   });
