@@ -27,6 +27,7 @@ test.describe('Memory Features E2E Tests', () => {
     // Assert that no row contains "Invalid Date"
     const tableText = await page.locator('table.data-table').innerText();
     expect(tableText).not.toContain('Invalid Date');
+    await page.screenshot({ path: 'screenshots/11_memory_management_page.png' });
   });
 
   test('Scenario B: Layer 0 Core Prompt - should open read-only drawer with persona prompt', async ({ page }) => {
@@ -37,6 +38,7 @@ test.describe('Memory Features E2E Tests', () => {
     await expect(drawer).toBeVisible();
     await expect(drawer).toHaveClass(/open/);
     await expect(drawer.locator('.drawer-header h3')).toContainText(/Layer 0|Persona Core Prompt|コアプロンプト/);
+    await page.screenshot({ path: 'screenshots/12_memory_layer_drawer.png' });
 
     const textarea = drawer.locator('app-memory-drawer textarea');
     await expect(textarea).toBeVisible({ timeout: 10000 });

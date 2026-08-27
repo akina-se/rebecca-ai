@@ -23,6 +23,7 @@ test.describe('Assets Features E2E Tests', () => {
     const totalItemsText = page.locator('.pagination-container .total-items-text');
     await expect(totalItemsText).toBeVisible();
     await expect(totalItemsText).toContainText(/Showing|表示中|全.*件/);
+    await page.screenshot({ path: 'screenshots/07_assets_gallery_page.png' });
 
     const pageInfo = page.locator('.pagination-container .page-info');
     await expect(pageInfo).toContainText(/(Page|ページ) 1 \/ 2/);
@@ -97,6 +98,7 @@ test.describe('Assets Features E2E Tests', () => {
     // 6. Verify Last Used metric box exists and is formatted
     const lastUsedBox = drawer.locator('app-asset-drawer .metric-box').nth(1);
     await expect(lastUsedBox).toBeVisible();
+    await page.screenshot({ path: 'screenshots/08_asset_details_drawer.png' });
 
     // 7. Verify "View Full Size" button opens full-screen Lightbox dialog
     const viewFullSizeBtn = drawer.locator('app-asset-drawer button', { hasText: /View Full Size|原寸表示/ });
@@ -105,6 +107,7 @@ test.describe('Assets Features E2E Tests', () => {
 
     const lightbox = page.locator('app-lightbox .lightbox-overlay');
     await expect(lightbox).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'screenshots/09_asset_lightbox_modal.png' });
     const lightboxImg = lightbox.locator('img');
     await expect(lightboxImg).toBeVisible();
     await lightbox.locator('.close-btn').click();

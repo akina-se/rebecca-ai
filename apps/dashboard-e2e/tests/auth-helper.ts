@@ -12,6 +12,7 @@ export async function loginWithEmulatorAndSeedDB(page: Page, email = 'admin@exam
   // 2. Click login button
   const loginButton = page.locator('.login-btn');
   await loginButton.waitFor({ state: 'visible', timeout: 15000 });
+  await page.screenshot({ path: 'screenshots/00_login_page.png' });
   await loginButton.click();
 
   // 3. Wait for URL transition to /dashboard
