@@ -155,7 +155,7 @@ jobs:
           npx --yes firebase-tools emulators:exec \
             --only auth,firestore,storage \
             --project rebecca-ai-gal-local \
-            "export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 && export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 && export FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 && export GCLOUD_PROJECT=rebecca-ai-gal-local && npx ts-node -T apps/dashboard-backend/src/scripts/seed-db.ts && npm run test:e2e"
+            "export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 && export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 && export FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 && export GCLOUD_PROJECT=rebecca-ai-gal-local && npx ts-node -T apps/dashboard-backend/scripts/seed-db.ts && npm run test:e2e"
 
       - name: Upload Playwright Test Report
         uses: actions/upload-artifact@v4
