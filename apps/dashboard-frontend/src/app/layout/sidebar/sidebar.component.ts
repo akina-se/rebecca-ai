@@ -1,4 +1,4 @@
-﻿import { Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { ConfigService } from '../../core/services/config.service';
@@ -14,4 +14,5 @@ export class SidebarComponent {
   readonly brandName = 'Rebecca AI';
   private configService = inject(ConfigService);
   readonly publicSiteUrl = this.configService.publicSiteUrl;
+  readonly version = this.configService.version;
 }

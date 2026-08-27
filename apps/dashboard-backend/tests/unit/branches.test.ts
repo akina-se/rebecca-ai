@@ -926,6 +926,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
           appId: 'app:1:123'
         },
         apiUrl: '/api/v1',
+        version: expect.any(String),
         publicSiteUrl: 'https://rebecca-ai.net',
         production: false,
         useEmulators: true
