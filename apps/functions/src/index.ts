@@ -5,4 +5,4 @@ initializeApp();
 
 // Export all triggers
 export * from './triggers/onConversationLogCreated';
-export * from './triggers/scheduledTimelineSync';
+export * from './triggers/batchTimelineSync';
