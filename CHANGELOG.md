@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.4](https://github.com/akina-se/rebecca-ai/compare/v1.7.3...v1.7.4) (2026-08-28)
+
+
+### Bug Fixes
+
+* **dashboard:** unify KPI card trends to percentages, add follower trends, and fix i18n labels ([#96](https://github.com/akina-se/rebecca-ai/issues/96)) ([5838cf4](https://github.com/akina-se/rebecca-ai/commit/5838cf414a77515613756022632398a3a7f3488c))
+
 ## [1.7.3](https://github.com/akina-se/rebecca-ai/compare/v1.7.2...v1.7.3) (2026-08-28)
 
 
