@@ -378,7 +378,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         dailyActiveUsers: 50,
         dauTrend: 2,
         apiCalls: 1200,
-        apiTrendStatus: 'stable'
+        apiCallsTrend: 2.5
       };
       repo.getMetrics.mockResolvedValueOnce(mockMetrics);
 
@@ -555,7 +555,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
           dailyActiveUsers: 60,
           dauTrend: 3,
           apiCalls: 1500,
-          apiTrendStatus: 'stable'
+          apiCallsTrend: 5.0
         }),
         getPosts: jest.fn().mockResolvedValue({
           data: [{ id: 'post_1', snippet: 'Trending tweet', impressions: 500, time: '2026-08-18', hasMedia: false }],
