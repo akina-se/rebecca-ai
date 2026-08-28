@@ -34,6 +34,7 @@ export default {
     accessToken: process.env.X_ACCESS_TOKEN,
     accessSecret: process.env.X_ACCESS_SECRET,
     myUserId: process.env.X_MY_USER_ID,
+    targetListId: process.env.X_TARGET_LIST_ID,
     followersPageSize: Math.max(5, Math.min(100, parseInt(process.env.X_FOLLOWERS_PAGE_SIZE || '10', 10) || 10)),
     followersMaxResults: Math.max(5, Math.min(1000, parseInt(process.env.X_FOLLOWERS_MAX_RESULTS || '50', 10) || 50)),
   },
