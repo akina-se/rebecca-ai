@@ -112,7 +112,7 @@ export interface IXApiService {
   uploadMedia(buffer: Buffer, mimeType: string): Promise<string | null>;
   getUserProfile(userId: string): Promise<{ data: XApiUser } | null>;
   getMentions(sinceId?: string): Promise<XApiMentionResponse>;
-  getFollowers(userId: string, paginationToken?: string): Promise<XApiFollowersResponse>;
+  getFollowers(userId: string, paginationToken?: string, pageSize?: number): Promise<XApiFollowersResponse>;
   addListMember(listId: string, userId: string): Promise<boolean>;
   getListMembers(listId: string): Promise<XApiListMembersResponse>;
   getUserTweets(userId: string, maxResults?: number): Promise<XApiMentionResponse>;

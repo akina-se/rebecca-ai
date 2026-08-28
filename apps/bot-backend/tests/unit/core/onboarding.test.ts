@@ -110,6 +110,65 @@ describe('Stealth Onboarding Batch', () => {
         expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalled();
     });
 
+    it('should paginate with nextToken and stop immediately when processed follower reached (Early Exit)', async () => {
+        // Page 1: 2 new users, has next_token
+        deps.xApi.getFollowers.mockResolvedValueOnce({
+            data: [
+                { id: 'user_p1_1', username: 'p1_1' },
+                { id: 'user_p1_2', username: 'p1_2' }
+            ],
+            meta: { next_token: 'next_page_token' }
+        });
+        // Page 2: 1 new user, 1 already processed user
+        deps.xApi.getFollowers.mockResolvedValueOnce({
+            data: [
+                { id: 'user_p2_1', username: 'p2_1' },
+                { id: 'user_p2_old', username: 'p2_old' } // already processed -> stops!
+            ],
+            meta: { next_token: 'should_not_reach_token' }
+        });
+
+        deps.firestore.hasProcessedFollower.mockImplementation(async (id: string) => {
+            return id === 'user_p2_old';
+        });
+        deps.xApi.addListMember.mockResolvedValue(true);
+        deps.firestore.getProcessedFollowersCount.mockResolvedValue(10);
+
+        const result = await new StealthOnboardingUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(3); // p1_1, p1_2, p2_1
+        expect(deps.xApi.getFollowers).toHaveBeenCalledTimes(2);
+        expect(deps.firestore.updateTotalFollowers).toHaveBeenCalledWith(10);
+    });
+
+    it('should enforce hard limit when total fetched followers reach maxResults', async () => {
+        // Mock 10 followers per page
+        const page1Data = Array.from({ length: 10 }, (_, i) => ({ id: `user_p1_${i}`, username: `p1_${i}` }));
+        const page2Data = Array.from({ length: 10 }, (_, i) => ({ id: `user_p2_${i}`, username: `p2_${i}` }));
+
+        deps.xApi.getFollowers.mockResolvedValueOnce({ data: page1Data, meta: { next_token: 'token_2' } });
+        deps.xApi.getFollowers.mockResolvedValueOnce({ data: page2Data, meta: { next_token: 'token_3' } });
+
+        // Overwrite maxResults temporarily to 15 for test
+        const originalMax = require('../../../src/config').default.xApi.followersMaxResults;
+        const originalPage = require('../../../src/config').default.xApi.followersPageSize;
+        require('../../../src/config').default.xApi.followersMaxResults = 15;
+        require('../../../src/config').default.xApi.followersPageSize = 10;
+
+        deps.firestore.hasProcessedFollower.mockResolvedValue(false);
+        deps.xApi.addListMember.mockResolvedValue(true);
+
+        const result = await new StealthOnboardingUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(15); // stopped at 15 exactly
+        expect(deps.xApi.getFollowers).toHaveBeenCalledTimes(2);
+
+        require('../../../src/config').default.xApi.followersMaxResults = originalMax;
+        require('../../../src/config').default.xApi.followersPageSize = originalPage;
+    });
+
     it('should throw error if underlying api throws', async () => {
         deps.xApi.getFollowers.mockRejectedValue(new Error('api error'));
         await expect(new StealthOnboardingUseCase(deps).execute()).rejects.toThrow('api error');
