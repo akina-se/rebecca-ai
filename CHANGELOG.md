@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.3](https://github.com/akina-se/rebecca-ai/compare/v1.7.2...v1.7.3) (2026-08-28)
+
+
+### Bug Fixes
+
+* **dashboard:** pure dynamic metrics aggregation and strict 0 vs null (N/A) separation ([#93](https://github.com/akina-se/rebecca-ai/issues/93)) ([43423e2](https://github.com/akina-se/rebecca-ai/commit/43423e2c38bdec7b4c0595f5954ef798065d738e))
+
 ## [1.7.2](https://github.com/akina-se/rebecca-ai/compare/v1.7.1...v1.7.2) (2026-08-27)
 
 
