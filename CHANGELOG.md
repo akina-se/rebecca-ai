@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.5](https://github.com/akina-se/rebecca-ai/compare/v1.7.4...v1.7.5) (2026-08-28)
+
+
+### Bug Fixes
+
+* **bot-backend:** optimize stealth onboarding with chunked pagination and early exit ([#99](https://github.com/akina-se/rebecca-ai/issues/99)) ([af9577d](https://github.com/akina-se/rebecca-ai/commit/af9577d34db0edb27431fed5cae4d22c085593b6))
+
 ## [1.7.4](https://github.com/akina-se/rebecca-ai/compare/v1.7.3...v1.7.4) (2026-08-28)
 
 
