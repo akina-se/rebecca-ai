@@ -234,24 +234,23 @@ describe('xApi.ts', () => {
     });
 
     describe('getFollowers', () => {
-        it('should return followers successfully', async () => {
+        it('should return followers successfully with default pageSize', async () => {
             const api = getXApiModule();
-            // Since users.getFollowers doesn't exist on mock instance yet, we must add it
             if (!mockClientInstance.users.getFollowers) mockClientInstance.users.getFollowers = jest.fn();
             mockClientInstance.users.getFollowers.mockResolvedValueOnce({ data: [{ id: 'user1' }], meta: { resultCount: 1 } });
             const result = await api.getFollowers('123');
             expect(result.data).toEqual([{ id: 'user1' }]);
-            expect(mockClientInstance.users.getFollowers).toHaveBeenCalledWith('123', expect.objectContaining({ max_results: 1000 }));
+            expect(mockClientInstance.users.getFollowers).toHaveBeenCalledWith('123', expect.objectContaining({ max_results: 10 }));
         });
 
-        it('should pass paginationToken if provided', async () => {
+        it('should pass paginationToken and custom pageSize if provided', async () => {
             const api = getXApiModule();
             if (!mockClientInstance.users.getFollowers) mockClientInstance.users.getFollowers = jest.fn();
             mockClientInstance.users.getFollowers.mockResolvedValueOnce({ data: [{ id: 'user2' }], meta: { resultCount: 1 } });
-            const result = await api.getFollowers('123', 'token_123');
+            const result = await api.getFollowers('123', 'token_123', 25);
             expect(result.data).toEqual([{ id: 'user2' }]);
             expect(mockClientInstance.users.getFollowers).toHaveBeenCalledWith('123', expect.objectContaining({
-                max_results: 1000,
+                max_results: 25,
                 pagination_token: 'token_123'
             }));
         });
