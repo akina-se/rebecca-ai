@@ -311,7 +311,7 @@ export interface KpiMetrics {
   dauTrend: number | null;
   dauHistory?: number[];
   apiCalls: number;
-  apiTrendStatus: string | null;
+  apiCallsTrend: number | null;
   apiCallsHistory?: number[];
 }
 

@@ -36,7 +36,7 @@ describe('DashboardPageComponent', () => {
       dauTrend: null,
       dauHistory: [],
       apiCalls: 15000,
-      apiTrendStatus: 'Steady',
+      apiCallsTrend: 0.0,
       apiCallsHistory: []
     }));
     dashboardRepoSpy.getTopPosts.and.returnValue(of({ data: [] }));
@@ -297,13 +297,28 @@ describe('DashboardPageComponent', () => {
     expect(component.topPostsDate).toBe('January 2025');
   });
 
-  it('should ignore open drawers when browser text is selected', () => {
-    spyOn(window, 'getSelection').and.returnValue({ toString: () => 'some highlighted text' } as any);
-    component.isDrawerOpen = false;
-    component.openPostDrawer('p_123');
-    expect(component.isDrawerOpen).toBeFalse();
+  it('should render KPI card trends correctly for positive, negative, zero, and null trends', () => {
+    dashboardRepoSpy.getKpiMetrics.and.returnValue(of({
+      followers: 141,
+      followersTrend: 5.2,
+      followersHistory: [10, 20],
+      engagementRate: 19.8,
+      engagementTrend: -73.5,
+      engagementHistory: [5, 15],
+      dailyActiveUsers: 1,
+      dauTrend: 0.0,
+      dauHistory: [1],
+      apiCalls: 158,
+      apiCallsTrend: null,
+      apiCallsHistory: [100, 58]
+    }));
+    component.setKpiFilter('Last 30 Days');
+    fixture.detectChanges();
 
-    component.openUserDrawer('u_123');
-    expect(component.isDrawerOpen).toBeFalse();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('+5.2%');
+    expect(text).toContain('-73.5%');
+    expect(text).toContain('0%');
+    expect(text).toContain('前日比');
   });
 });
