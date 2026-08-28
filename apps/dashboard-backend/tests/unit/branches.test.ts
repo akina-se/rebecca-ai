@@ -379,6 +379,14 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       (repo as any).collections.processedFollowers = {
         count: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) })
+        }),
+        where: jest.fn().mockReturnValue({
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 80 }) })
+          }),
+          get: jest.fn().mockResolvedValue({
+            docs: [{ data: () => ({ timestamp: new Date().toISOString() }) }]
+          })
         })
       };
 
@@ -420,6 +428,12 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       (repo as any).collections.processedFollowers = {
         count: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) })
+        }),
+        where: jest.fn().mockReturnValue({
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) })
+          }),
+          get: jest.fn().mockResolvedValue({ docs: [] })
         })
       };
       (repo as any).collections.conversationLogs = {
@@ -1283,6 +1297,14 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         count: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({
             data: () => ({ count: 120 })
+          })
+        }),
+        where: jest.fn().mockReturnValue({
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) })
+          }),
+          get: jest.fn().mockResolvedValue({
+            docs: [{ data: () => ({ timestamp: new Date().toISOString() }) }]
           })
         })
       };
