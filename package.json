@@ -24,16 +24,16 @@
     "audit:fix": "npm audit fix"
   },
   "devDependencies": {
-    "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.4",
     "@types/jest": "^30.0.0",
-    "eslint": "^9.39.1",
+    "eslint": "^10.9.1",
     "jest": "^30.4.2",
     "license-checker": "^25.0.1",
-    "secretlint": "^13.0.2",
-    "ts-jest": "^29.2.0",
+    "secretlint": "^13.0.4",
+    "ts-jest": "^29.4.12",
     "turbo": "latest",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.63.0"
+    "typescript-eslint": "^8.68.0"
   },
   "overrides": {
     "cross-spawn": "^7.0.6",
