@@ -374,43 +374,80 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(resProd.data[0].id).toBe('p_prod');
     });
 
-    it('getMetrics should test weekly, monthly, yearly, and empty doc data fallback with scaling', async () => {
-      // 1. Yearly metrics
-      (repo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValueOnce({
-          data: () => ({
-            total_followers: 100,
-            followers_trend: 2,
-            followers_history: [50, 100],
-            avg_engagement_rate: 5.0,
-            engagement_trend: 0.1,
-            engagement_history: [4.0, 5.0],
-            dau: 20,
-            dau_trend: 1,
-            dau_history: [10, 20],
-            api_calls_today: 100,
-            api_trend_status: 'Rising',
-            api_calls_history: [50, 100]
-          })
+    it('getMetrics should test weekly, monthly, yearly, and empty collection aggregation with null separation', async () => {
+      // 1. Non-empty
+      (repo as any).collections.processedFollowers = {
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) })
         })
-      });
+      };
+
+      const nowIso = new Date().toISOString();
+      (repo as any).collections.conversationLogs = {
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            docs: [{ data: () => ({ userId: 'u1', timestamp: nowIso }) }],
+            size: 1
+          }),
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+            count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+          }),
+          count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+        })
+      };
+
+      (repo as any).collections.timelineHistory = {
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            docs: [{ data: () => ({ impressions: 200, likes: 10, retweets: 2, replies: 0, timestamp: nowIso }) }],
+            size: 1
+          }),
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+            count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+          }),
+          count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+        })
+      };
 
       const metricsYearly = await repo.getMetrics('yearly');
       expect(metricsYearly.followers).toBe(100);
-      expect(metricsYearly.followersHistory).toHaveLength(12);
-      expect(metricsYearly.dailyActiveUsers).toBe(20);
+      expect(metricsYearly.dailyActiveUsers).toBe(1);
+      expect(metricsYearly.engagementRate).toBe(6);
 
-      // 2. Empty doc fallback (testing scaleArray with empty arr)
-      (repo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValueOnce({
-          data: () => undefined
+      // 2. Empty collections
+      (repo as any).collections.processedFollowers = {
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) })
         })
-      });
+      };
+      (repo as any).collections.conversationLogs = {
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+            count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+          }),
+          count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+        })
+      };
+      (repo as any).collections.timelineHistory = {
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+            count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+          }),
+          count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+        })
+      };
 
       const metricsEmpty = await repo.getMetrics('weekly');
       expect(metricsEmpty.followers).toBe(0);
-      expect(metricsEmpty.followersHistory).toHaveLength(7);
-      expect(metricsEmpty.followersHistory).toEqual([0, 0, 0, 0, 0, 0, 0]);
+      expect(metricsEmpty.followersTrend).toBeNull();
+      expect(metricsEmpty.engagementRate).toBeNull();
+      expect(metricsEmpty.apiCallsHistory).toEqual([]);
     });
 
     it('getPostById should test missing fields and text fallback', async () => {
@@ -534,7 +571,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(ext.content).toContain('Rebecca');
 
       const global = await repo.getGlobalMemory();
-      expect(global.content).toContain('Rebecca AI');
+      expect(global.content).toBe('');
     });
   });
 

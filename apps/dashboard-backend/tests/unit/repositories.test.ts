@@ -323,7 +323,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
     it('getMetrics should aggregate real-time collection metrics and handle 0 and null properly', async () => {
       // 1. Mock processedFollowers
       (timelineRepo as any).collections.processedFollowers.count = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValueOnce({
+        get: jest.fn().mockResolvedValue({
           data: () => ({ count: 141 })
         })
       });
@@ -377,7 +377,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
 
     it('getMetrics should return null for engagementRate when impressions are 0', async () => {
       (timelineRepo as any).collections.processedFollowers.count = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValueOnce({
+        get: jest.fn().mockResolvedValue({
           data: () => ({ count: 0 })
         })
       });
@@ -465,7 +465,10 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
         commit: mockBatchCommit
       });
 
-      (timelineRepo as any).collections.timelineHistory.doc = jest.fn().mockReturnValue({ id: 'p1' });
+      (timelineRepo as any).collections.timelineHistory.doc = jest.fn().mockReturnValue({
+        id: 'p1',
+        get: jest.fn().mockResolvedValue({ exists: false })
+      });
 
       await timelineRepo.deletePosts(['p1', 'p2']);
       expect(mockBatchDelete).toHaveBeenCalledTimes(2);
