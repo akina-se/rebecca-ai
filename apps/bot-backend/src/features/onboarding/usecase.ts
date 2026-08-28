@@ -34,12 +34,17 @@ export class StealthOnboardingUseCase {
         return { status: 'failed', processed: 0, reason: 'Missing X_TARGET_LIST_ID' };
       }
 
+      const pageSize = config.xApi.followersPageSize || 10;
+      const maxResults = config.xApi.followersMaxResults || 50;
+
       let processedCount = 0;
+      let fetchedCount = 0;
       let nextToken: string | undefined = undefined;
       let keepFetching = true;
 
-      while (keepFetching) {
-        const followersResp = await this.deps.xApi.getFollowers(myUserId, nextToken);
+      while (keepFetching && fetchedCount < maxResults) {
+        const batchLimit = Math.min(pageSize, maxResults - fetchedCount);
+        const followersResp = await this.deps.xApi.getFollowers(myUserId, nextToken, batchLimit);
         const followers = followersResp.data || [];
         
         if (followers.length === 0) {
@@ -48,11 +53,12 @@ export class StealthOnboardingUseCase {
         }
 
         for (const follower of followers) {
+          fetchedCount++;
           const hasProcessed = await this.deps.firestore.hasProcessedFollower(follower.id);
           if (hasProcessed) {
             console.log(`Reached already processed follower: ${follower.username}. Stopping fetch.`);
             keepFetching = false;
-            break; // break the for-loop
+            break;
           }
 
           console.log(`New follower detected: ${follower.username} (${follower.id})`);
@@ -60,6 +66,10 @@ export class StealthOnboardingUseCase {
           if (userDoc?.status === 'BLOCKED') {
             console.log(`Follower @${follower.username} (${follower.id}) is blocked by admin. Skipping list addition.`);
             await this.deps.firestore.markFollowerProcessed(follower.id);
+            if (fetchedCount >= maxResults) {
+              keepFetching = false;
+              break;
+            }
             continue;
           }
           const added = await this.deps.xApi.addListMember(targetListId, follower.id);
@@ -70,13 +80,19 @@ export class StealthOnboardingUseCase {
           } else {
             console.error(`Failed to add ${follower.username} to list.`);
           }
+
+          if (fetchedCount >= maxResults) {
+            console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
+            keepFetching = false;
+            break;
+          }
         }
 
         if (keepFetching) {
           nextToken = followersResp.meta?.next_token;
           if (!nextToken) {
             console.log('No next_token found. Reached end of followers list.');
-            break; // no more pages
+            break;
           }
         }
       }
