@@ -27,9 +27,17 @@ describe('DashboardPageComponent', () => {
 
     dashboardRepoSpy.getKpiMetrics.and.returnValue(of({
       followers: 1200,
-      engagementRate: '4.5%',
-      dau: 300,
-      apiCalls: 15000
+      followersTrend: null,
+      followersHistory: [],
+      engagementRate: 4.5,
+      engagementTrend: 0.2,
+      engagementHistory: [],
+      dailyActiveUsers: 300,
+      dauTrend: null,
+      dauHistory: [],
+      apiCalls: 15000,
+      apiTrendStatus: 'Steady',
+      apiCallsHistory: []
     }));
     dashboardRepoSpy.getTopPosts.and.returnValue(of({ data: [] }));
     dashboardRepoSpy.getTopUsers.and.returnValue(of({ data: [] }));

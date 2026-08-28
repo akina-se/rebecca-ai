@@ -4,11 +4,16 @@ export function createMockCollection() {
   const mockUpdate = jest.fn().mockResolvedValue(undefined);
   const mockDelete = jest.fn().mockResolvedValue(undefined);
 
+  const mockCount = jest.fn().mockReturnValue({
+    get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) })
+  });
+
   const queryObj: any = {
     get: mockGet,
     where: jest.fn(),
     orderBy: jest.fn(),
-    limit: jest.fn()
+    limit: jest.fn(),
+    count: mockCount
   };
   queryObj.where.mockReturnValue(queryObj);
   queryObj.orderBy.mockReturnValue(queryObj);
@@ -23,6 +28,7 @@ export function createMockCollection() {
 
   const collectionObj: any = {
     get: mockGet,
+    count: mockCount,
     doc: jest.fn().mockReturnValue(docObj),
     where: jest.fn().mockReturnValue(queryObj),
     orderBy: jest.fn().mockReturnValue(queryObj),
@@ -30,7 +36,7 @@ export function createMockCollection() {
     withConverter: jest.fn().mockReturnThis()
   };
 
-  return { collectionObj, docObj, queryObj, mockGet, mockSet, mockUpdate, mockDelete };
+  return { collectionObj, docObj, queryObj, mockGet, mockSet, mockUpdate, mockDelete, mockCount };
 }
 
 export function createMockFirestore() {
