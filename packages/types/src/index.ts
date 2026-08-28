@@ -302,16 +302,16 @@ export interface PaginatedResponse<T> {
 
 export interface KpiMetrics {
   followers: number;
-  followersTrend: number;
+  followersTrend: number | null;
   followersHistory?: number[];
-  engagementRate: number;
-  engagementTrend: number;
+  engagementRate: number | null;
+  engagementTrend: number | null;
   engagementHistory?: number[];
   dailyActiveUsers: number;
-  dauTrend: number;
+  dauTrend: number | null;
   dauHistory?: number[];
   apiCalls: number;
-  apiTrendStatus: string;
+  apiTrendStatus: string | null;
   apiCallsHistory?: number[];
 }
 

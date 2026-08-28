@@ -3,25 +3,14 @@ import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse
 import { getCollections } from '@rebecca/db';
 import { config } from '../../config';
 
-interface GlobalStatsDoc {
-  total_followers?: number;
-  followers_trend?: number;
-  followers_history?: number[];
-  avg_engagement_rate?: number;
-  engagement_trend?: number;
-  engagement_history?: number[];
-  dau?: number;
-  dau_trend?: number;
-  dau_history?: number[];
-  api_calls_today?: number;
-  api_trend_status?: string;
-  api_calls_history?: number[];
-}
-
 interface TimelinePostDoc {
   created_at?: string;
+  timestamp?: string;
   content?: string;
   impressions?: number;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
   media_urls?: string[];
   status?: string;
 }
@@ -48,83 +37,137 @@ export class TimelineRepository {
    * @returns A promise that resolves to the global KPI metrics.
    */
   async getMetrics(period: string = 'monthly'): Promise<KpiMetrics> {
-    const doc = await this.collections.systemStats.doc('global').get();
-    const data = (doc.data() || {}) as GlobalStatsDoc;
-    
-    const historyLength = period === 'weekly' ? 7 : period === 'yearly' ? 12 : 30;
-    
-    const scaleArray = (arr: number[], length: number) => {
-      if (!arr || arr.length === 0) return new Array(length).fill(0);
-      return Array.from({ length }, (_, i) => {
-        const idx = Math.floor((i / length) * arr.length);
-        return arr[idx];
-      });
-    };
-    
     const now = new Date();
-    let startDateIso = '';
+    const nowMs = now.getTime();
+
+    let periodMs = 30 * 24 * 3600 * 1000;
+    let historyBuckets = 30;
+
     if (period === 'weekly') {
-      const d = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
-      startDateIso = d.toISOString();
-    } else if (period === 'monthly') {
-      const d = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
-      startDateIso = d.toISOString();
+      periodMs = 7 * 24 * 3600 * 1000;
+      historyBuckets = 7;
     } else if (period === 'yearly') {
-      const d = new Date(now.getFullYear(), 0, 1);
-      startDateIso = d.toISOString();
+      periodMs = 365 * 24 * 3600 * 1000;
+      historyBuckets = 12;
     }
 
-    // 1. Dynamic Total Followers: Always source directly from processedFollowers collection
-    let totalFollowers = 0;
-    try {
-      const followersSnap = await this.collections.processedFollowers.count().get();
-      totalFollowers = followersSnap.data().count || 0;
-    } catch {
-      totalFollowers = typeof data.total_followers === 'number' ? data.total_followers : 0;
+    const currentPeriodStartIso = new Date(nowMs - periodMs).toISOString();
+    const previousPeriodStartIso = new Date(nowMs - periodMs * 2).toISOString();
+    const oneDayAgoIso = new Date(nowMs - 24 * 3600 * 1000).toISOString();
+    const twoDaysAgoIso = new Date(nowMs - 48 * 3600 * 1000).toISOString();
+
+    // 1. Total Followers: Direct count from processedFollowers collection
+    const followersSnap = await this.collections.processedFollowers.count().get();
+    const totalFollowers = followersSnap.data().count || 0;
+
+    // 2. API Calls & Volume Trend (Conversation logs + timeline posts)
+    const [currentLogsSnap, currentPostsSnap, prevLogsSnap, prevPostsSnap] = await Promise.all([
+      this.collections.conversationLogs.where('timestamp', '>=', currentPeriodStartIso).get(),
+      this.collections.timelineHistory.where('timestamp', '>=', currentPeriodStartIso).get(),
+      this.collections.conversationLogs.where('timestamp', '>=', previousPeriodStartIso).where('timestamp', '<', currentPeriodStartIso).count().get(),
+      this.collections.timelineHistory.where('timestamp', '>=', previousPeriodStartIso).where('timestamp', '<', currentPeriodStartIso).count().get()
+    ]);
+
+    const currentApiCalls = currentLogsSnap.size + currentPostsSnap.size;
+    const previousApiCalls = (prevLogsSnap.data().count || 0) + (prevPostsSnap.data().count || 0);
+
+    let apiTrendStatus: string | null = null;
+    if (previousApiCalls > 0) {
+      const diffPercent = ((currentApiCalls - previousApiCalls) / previousApiCalls) * 100;
+      if (diffPercent > 5) apiTrendStatus = 'Up';
+      else if (diffPercent < -5) apiTrendStatus = 'Down';
+      else apiTrendStatus = 'Steady';
+    } else if (currentApiCalls > 0) {
+      apiTrendStatus = 'Up';
     }
 
-    // 2. Dynamic API Calls: Aggregate actual logs and timeline posts within the selected time window
-    let calculatedApiCalls = typeof data.api_calls_today === 'number' ? data.api_calls_today : 0;
-    try {
-      if (startDateIso) {
-        const [logsCountSnap, postsCountSnap] = await Promise.all([
-          this.collections.conversationLogs.where('timestamp', '>=', startDateIso).count().get(),
-          this.collections.timelineHistory.where('timestamp', '>=', startDateIso).count().get()
-        ]);
-        calculatedApiCalls = (logsCountSnap.data().count || 0) + (postsCountSnap.data().count || 0);
+    // 3. Daily Active Users (DAU): Distinct users in the past 24 hours
+    const [recentLogsSnap, prevRecentLogsSnap] = await Promise.all([
+      this.collections.conversationLogs.where('timestamp', '>=', oneDayAgoIso).get(),
+      this.collections.conversationLogs.where('timestamp', '>=', twoDaysAgoIso).where('timestamp', '<', oneDayAgoIso).get()
+    ]);
+
+    const currentDauUsers = new Set(recentLogsSnap.docs.map(d => d.data().userId).filter(Boolean));
+    const currentDau = currentDauUsers.size;
+
+    const prevDauUsers = new Set(prevRecentLogsSnap.docs.map(d => d.data().userId).filter(Boolean));
+    const prevDau = prevDauUsers.size;
+
+    let dauTrend: number | null = null;
+    if (prevDau > 0) {
+      dauTrend = parseFloat((((currentDau - prevDau) / prevDau) * 100).toFixed(1));
+    }
+
+    // 4. Engagement Rate: Likes + Retweets + Replies / Impressions across posts in the period
+    let totalEngagements = 0;
+    let totalImpressions = 0;
+    currentPostsSnap.docs.forEach(doc => {
+      const d = doc.data() as TimelinePostDoc;
+      const impressions = Number(d.impressions) || 0;
+      const engagements = (Number(d.likes) || 0) + (Number(d.retweets) || 0) + (Number(d.replies) || 0);
+      totalImpressions += impressions;
+      totalEngagements += engagements;
+    });
+
+    const engagementRate: number | null = totalImpressions > 0
+      ? parseFloat(((totalEngagements / totalImpressions) * 100).toFixed(1))
+      : null;
+
+    // Previous period engagement rate for trend comparison
+    let prevTotalEngagements = 0;
+    let prevTotalImpressions = 0;
+    const prevPostsListSnap = await this.collections.timelineHistory
+      .where('timestamp', '>=', previousPeriodStartIso)
+      .where('timestamp', '<', currentPeriodStartIso)
+      .get();
+
+    prevPostsListSnap.docs.forEach(doc => {
+      const d = doc.data() as TimelinePostDoc;
+      prevTotalImpressions += Number(d.impressions) || 0;
+      prevTotalEngagements += (Number(d.likes) || 0) + (Number(d.retweets) || 0) + (Number(d.replies) || 0);
+    });
+
+    let engagementTrend: number | null = null;
+    if (prevTotalImpressions > 0 && engagementRate !== null) {
+      const prevEngagementRate = (prevTotalEngagements / prevTotalImpressions) * 100;
+      engagementTrend = parseFloat((engagementRate - prevEngagementRate).toFixed(1));
+    }
+
+    // 5. Dynamic Sparkline Histograms from actual timestamps
+    const buildSparklineBuckets = (timestamps: number[], bucketsCount: number, startMs: number, endMs: number): number[] => {
+      if (timestamps.length === 0) return [];
+      const bucketDuration = (endMs - startMs) / bucketsCount;
+      const counts = new Array<number>(bucketsCount).fill(0);
+      for (const t of timestamps) {
+        if (t >= startMs && t <= endMs) {
+          const idx = Math.min(bucketsCount - 1, Math.max(0, Math.floor((t - startMs) / bucketDuration)));
+          counts[idx]++;
+        }
       }
-    } catch {
-      calculatedApiCalls = 0;
-    }
+      return counts;
+    };
 
-    // 3. Dynamic Daily Active Users (DAU): Unique users / interactions in the past 24 hours
-    let calculatedDau = typeof data.dau === 'number' ? data.dau : 0;
-    if (calculatedDau === 0) {
-      try {
-        const yesterdayIso = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
-        const dauSnap = await this.collections.conversationLogs.where('timestamp', '>=', yesterdayIso).count().get();
-        calculatedDau = dauSnap.data().count || 0;
-      } catch {
-        calculatedDau = 0;
-      }
-    }
+    const startMs = nowMs - periodMs;
+    const logTimestamps = [
+      ...currentLogsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime()),
+      ...currentPostsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime())
+    ].filter(t => t > 0);
 
-    // 4. Dynamic Engagement Rate
-    const avgEngagementRate = typeof data.avg_engagement_rate === 'number' ? parseFloat(data.avg_engagement_rate.toFixed(1)) : 0;
+    const apiCallsHistory = buildSparklineBuckets(logTimestamps, historyBuckets, startMs, nowMs);
 
     return {
       followers: totalFollowers,
-      followersTrend: typeof data.followers_trend === 'number' ? data.followers_trend : 0,
-      followersHistory: scaleArray(data.followers_history || [], historyLength),
-      engagementRate: avgEngagementRate,
-      engagementTrend: typeof data.engagement_trend === 'number' ? data.engagement_trend : 0,
-      engagementHistory: scaleArray(data.engagement_history || [], historyLength),
-      dailyActiveUsers: calculatedDau,
-      dauTrend: typeof data.dau_trend === 'number' ? data.dau_trend : 0,
-      dauHistory: scaleArray(data.dau_history || [], historyLength),
-      apiCalls: calculatedApiCalls,
-      apiTrendStatus: data.api_trend_status || 'Steady',
-      apiCallsHistory: scaleArray(data.api_calls_history || [], historyLength)
+      followersTrend: null,
+      followersHistory: [],
+      engagementRate,
+      engagementTrend,
+      engagementHistory: [],
+      dailyActiveUsers: currentDau,
+      dauTrend,
+      dauHistory: [],
+      apiCalls: currentApiCalls,
+      apiTrendStatus,
+      apiCallsHistory
     };
   }
 

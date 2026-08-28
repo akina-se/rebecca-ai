@@ -108,7 +108,7 @@ export class SystemMemoryRepository {
     return {
       level: 2,
       name: 'Layer 2: Global Timeline Summary',
-      content: data?.timeline_summary || 'Default mock system summary. Rebecca AI is functioning normally.',
+      content: typeof data?.timeline_summary === 'string' ? data.timeline_summary : '',
       isReadOnly: false
     };
   }
