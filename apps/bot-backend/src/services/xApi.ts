@@ -241,11 +241,12 @@ const getMentions = async (sinceId?: string): Promise<XApiMentionResponse> => {
  * @returns A Promise resolving to the followers data (`XApiFollowersResponse`).
  * @throws {Error} If the API request fails.
  */
-const getFollowers = async (userId: string, paginationToken?: string): Promise<XApiFollowersResponse> => {
+const getFollowers = async (userId: string, paginationToken?: string, pageSize?: number): Promise<XApiFollowersResponse> => {
     if (!client) return { data: [], meta: { resultCount: 0 } };
     try {
+        const effectivePageSize = pageSize ?? config.xApi.followersPageSize ?? 10;
         const params: Record<string, unknown> = {
-            max_results: config.xApi.followersMaxResults || 1000
+            max_results: effectivePageSize
         };
         if (paginationToken) {
             params.pagination_token = paginationToken;
