@@ -402,11 +402,13 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
 
       const metrics = await timelineRepo.getMetrics('monthly');
       expect(metrics.followers).toBe(0);
+      expect(metrics.followersTrend).toBeNull();
+      expect(metrics.followersHistory).toEqual([]);
       expect(metrics.engagementRate).toBeNull();
       expect(metrics.dailyActiveUsers).toBe(0);
       expect(metrics.dauTrend).toBeNull();
       expect(metrics.apiCalls).toBe(0);
-      expect(metrics.apiTrendStatus).toBeNull();
+      expect(metrics.apiCallsTrend).toBeNull();
       expect(metrics.apiCallsHistory).toEqual([]);
     });
 

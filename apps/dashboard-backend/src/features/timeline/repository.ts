@@ -56,9 +56,19 @@ export class TimelineRepository {
     const oneDayAgoIso = new Date(nowMs - 24 * 3600 * 1000).toISOString();
     const twoDaysAgoIso = new Date(nowMs - 48 * 3600 * 1000).toISOString();
 
-    // 1. Total Followers: Direct count from processedFollowers collection
-    const followersSnap = await this.collections.processedFollowers.count().get();
+    // 1. Total Followers & Period Trend
+    const [followersSnap, prevFollowersSnap, currentFollowersSnap] = await Promise.all([
+      this.collections.processedFollowers.count().get(),
+      this.collections.processedFollowers.where('timestamp', '<', currentPeriodStartIso).count().get(),
+      this.collections.processedFollowers.where('timestamp', '>=', currentPeriodStartIso).get()
+    ]);
     const totalFollowers = followersSnap.data().count || 0;
+    const baselineFollowers = prevFollowersSnap.data().count || 0;
+
+    let followersTrend: number | null = null;
+    if (baselineFollowers > 0) {
+      followersTrend = parseFloat((((totalFollowers - baselineFollowers) / baselineFollowers) * 100).toFixed(1));
+    }
 
     // 2. API Calls & Volume Trend (Conversation logs + timeline posts)
     const [currentLogsSnap, currentPostsSnap, prevLogsSnap, prevPostsSnap] = await Promise.all([
@@ -71,14 +81,9 @@ export class TimelineRepository {
     const currentApiCalls = currentLogsSnap.size + currentPostsSnap.size;
     const previousApiCalls = (prevLogsSnap.data().count || 0) + (prevPostsSnap.data().count || 0);
 
-    let apiTrendStatus: string | null = null;
+    let apiCallsTrend: number | null = null;
     if (previousApiCalls > 0) {
-      const diffPercent = ((currentApiCalls - previousApiCalls) / previousApiCalls) * 100;
-      if (diffPercent > 5) apiTrendStatus = 'Up';
-      else if (diffPercent < -5) apiTrendStatus = 'Down';
-      else apiTrendStatus = 'Steady';
-    } else if (currentApiCalls > 0) {
-      apiTrendStatus = 'Up';
+      apiCallsTrend = parseFloat((((currentApiCalls - previousApiCalls) / previousApiCalls) * 100).toFixed(1));
     }
 
     // 3. Daily Active Users (DAU): Distinct users in the past 24 hours
@@ -148,6 +153,11 @@ export class TimelineRepository {
     };
 
     const startMs = nowMs - periodMs;
+    const followerTimestamps = currentFollowersSnap.docs
+      .map(d => new Date(d.data().timestamp || 0).getTime())
+      .filter(t => t > 0);
+    const followersHistory = buildSparklineBuckets(followerTimestamps, historyBuckets, startMs, nowMs);
+
     const logTimestamps = [
       ...currentLogsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime()),
       ...currentPostsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime())
@@ -157,8 +167,8 @@ export class TimelineRepository {
 
     return {
       followers: totalFollowers,
-      followersTrend: null,
-      followersHistory: [],
+      followersTrend,
+      followersHistory,
       engagementRate,
       engagementTrend,
       engagementHistory: [],
@@ -166,7 +176,7 @@ export class TimelineRepository {
       dauTrend,
       dauHistory: [],
       apiCalls: currentApiCalls,
-      apiTrendStatus,
+      apiCallsTrend,
       apiCallsHistory
     };
   }
