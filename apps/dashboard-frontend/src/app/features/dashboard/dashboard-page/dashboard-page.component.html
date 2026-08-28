@@ -45,50 +45,89 @@
       <div class="card glass-panel">
         <div class="card-title"><span class="material-icons">people</span> {{ 'dashboard.followers' | translate }}</div>
         <div class="card-value">{{ kpiMetrics()!.followers | number }}</div>
-        <div class="card-trend" [class.negative]="kpiMetrics()!.followersTrend < 0">
-          <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.followersTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
-          {{ kpiMetrics()!.followersTrend > 0 ? '+' : '' }}{{ kpiMetrics()!.followersTrend }}% {{ 'dashboard.vs_previous' | translate }}
-        </div>
-        <svg class="sparkline" viewBox="0 0 100 20">
-          <polygon [attr.fill]="kpiMetrics()!.followersTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.followersHistory)" />
-            <polyline fill="none" [attr.stroke]="kpiMetrics()!.followersTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.followersHistory)" />
-            </svg>
+        @if (kpiMetrics()!.followersTrend !== null) {
+          <div class="card-trend" [class.negative]="kpiMetrics()!.followersTrend! < 0">
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.followersTrend! >= 0 ? 'trending_up' : 'trending_down' }}</span>
+            {{ kpiMetrics()!.followersTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.followersTrend }}% {{ 'dashboard.vs_previous' | translate }}
           </div>
-          <div class="card glass-panel">
-            <div class="card-title"><span class="material-icons">favorite</span> {{ 'dashboard.engagement_rate' | translate }}</div>
-            <div class="card-value">{{ kpiMetrics()!.engagementRate }}%</div>
-            <div class="card-trend" [class.negative]="kpiMetrics()!.engagementTrend < 0">
-              <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.engagementTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
-              {{ kpiMetrics()!.engagementTrend > 0 ? '+' : '' }}{{ kpiMetrics()!.engagementTrend }}% {{ 'dashboard.vs_previous' | translate }}
-            </div>
-            <svg class="sparkline" viewBox="0 0 100 20">
-              <polygon [attr.fill]="kpiMetrics()!.engagementTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.engagementHistory)" />
-                <polyline fill="none" [attr.stroke]="kpiMetrics()!.engagementTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.engagementHistory)" />
-                </svg>
-              </div>
-              <div class="card glass-panel">
-                <div class="card-title"><span class="material-icons">chat</span> {{ 'dashboard.dau' | translate }}</div>
-                <div class="card-value">{{ kpiMetrics()!.dailyActiveUsers | number }}</div>
-                <div class="card-trend" [class.negative]="kpiMetrics()!.dauTrend < 0">
-                  <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.dauTrend >= 0 ? 'trending_up' : 'trending_down' }}</span>
-                  {{ kpiMetrics()!.dauTrend > 0 ? '+' : '' }}{{ kpiMetrics()!.dauTrend }}% {{ 'dashboard.vs_previous' | translate }}
-                </div>
-                <svg class="sparkline" viewBox="0 0 100 20">
-                  <polygon [attr.fill]="kpiMetrics()!.dauTrend >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.dauHistory)" />
-                    <polyline fill="none" [attr.stroke]="kpiMetrics()!.dauTrend >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.dauHistory)" />
-                    </svg>
-                  </div>
-                  <div class="card glass-panel">
-                    <div class="card-title"><span class="material-icons">api</span> {{ 'dashboard.api_calls' | translate }}</div>
-                    <div class="card-value">{{ kpiMetrics()!.apiCalls | number }}</div>
-                    <div class="card-trend"><span class="material-icons" style="font-size: 1rem">trending_flat</span> {{ 'dashboard.steady' | translate }}</div>
-                    <svg class="sparkline" viewBox="0 0 100 20">
-                      <polygon fill="url(#spark-warning)" [attr.points]="getSparklinePolygon(kpiMetrics()!.apiCallsHistory)" />
-                      <polyline fill="none" stroke="var(--warning)" [attr.points]="getSparklinePoints(kpiMetrics()!.apiCallsHistory)" />
-                    </svg>
-                  </div>
-                </div>
-              }
+        } @else {
+          <div class="card-trend" style="color: var(--text-muted);">
+            <span class="material-icons" style="font-size: 1rem">remove</span>
+            — {{ 'dashboard.vs_previous' | translate }}
+          </div>
+        }
+        @if (kpiMetrics()!.followersHistory && kpiMetrics()!.followersHistory!.length > 0) {
+          <svg class="sparkline" viewBox="0 0 100 20">
+            <polygon [attr.fill]="(kpiMetrics()!.followersTrend || 0) >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.followersHistory)" />
+            <polyline fill="none" [attr.stroke]="(kpiMetrics()!.followersTrend || 0) >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.followersHistory)" />
+          </svg>
+        }
+      </div>
+      <div class="card glass-panel">
+        <div class="card-title"><span class="material-icons">favorite</span> {{ 'dashboard.engagement_rate' | translate }}</div>
+        <div class="card-value">{{ kpiMetrics()!.engagementRate !== null ? kpiMetrics()!.engagementRate + '%' : '—' }}</div>
+        @if (kpiMetrics()!.engagementTrend !== null) {
+          <div class="card-trend" [class.negative]="kpiMetrics()!.engagementTrend! < 0">
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.engagementTrend! >= 0 ? 'trending_up' : 'trending_down' }}</span>
+            {{ kpiMetrics()!.engagementTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.engagementTrend }}% {{ 'dashboard.vs_previous' | translate }}
+          </div>
+        } @else {
+          <div class="card-trend" style="color: var(--text-muted);">
+            <span class="material-icons" style="font-size: 1rem">remove</span>
+            — {{ 'dashboard.vs_previous' | translate }}
+          </div>
+        }
+        @if (kpiMetrics()!.engagementHistory && kpiMetrics()!.engagementHistory!.length > 0) {
+          <svg class="sparkline" viewBox="0 0 100 20">
+            <polygon [attr.fill]="(kpiMetrics()!.engagementTrend || 0) >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.engagementHistory)" />
+            <polyline fill="none" [attr.stroke]="(kpiMetrics()!.engagementTrend || 0) >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.engagementHistory)" />
+          </svg>
+        }
+      </div>
+      <div class="card glass-panel">
+        <div class="card-title"><span class="material-icons">chat</span> {{ 'dashboard.dau' | translate }}</div>
+        <div class="card-value">{{ kpiMetrics()!.dailyActiveUsers | number }}</div>
+        @if (kpiMetrics()!.dauTrend !== null) {
+          <div class="card-trend" [class.negative]="kpiMetrics()!.dauTrend! < 0">
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.dauTrend! >= 0 ? 'trending_up' : 'trending_down' }}</span>
+            {{ kpiMetrics()!.dauTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.dauTrend }}% {{ 'dashboard.vs_previous' | translate }}
+          </div>
+        } @else {
+          <div class="card-trend" style="color: var(--text-muted);">
+            <span class="material-icons" style="font-size: 1rem">remove</span>
+            — {{ 'dashboard.vs_previous' | translate }}
+          </div>
+        }
+        @if (kpiMetrics()!.dauHistory && kpiMetrics()!.dauHistory!.length > 0) {
+          <svg class="sparkline" viewBox="0 0 100 20">
+            <polygon [attr.fill]="(kpiMetrics()!.dauTrend || 0) >= 0 ? 'url(#spark-success)' : 'url(#spark-danger)'" [attr.points]="getSparklinePolygon(kpiMetrics()!.dauHistory)" />
+            <polyline fill="none" [attr.stroke]="(kpiMetrics()!.dauTrend || 0) >= 0 ? 'var(--success)' : 'var(--danger)'" [attr.points]="getSparklinePoints(kpiMetrics()!.dauHistory)" />
+          </svg>
+        }
+      </div>
+      <div class="card glass-panel">
+        <div class="card-title"><span class="material-icons">api</span> {{ 'dashboard.api_calls' | translate }}</div>
+        <div class="card-value">{{ kpiMetrics()!.apiCalls | number }}</div>
+        @if (kpiMetrics()!.apiTrendStatus) {
+          <div class="card-trend">
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.apiTrendStatus === 'Up' ? 'trending_up' : kpiMetrics()!.apiTrendStatus === 'Down' ? 'trending_down' : 'trending_flat' }}</span>
+            {{ (kpiMetrics()!.apiTrendStatus === 'Up' ? 'dashboard.trend_up' : kpiMetrics()!.apiTrendStatus === 'Down' ? 'dashboard.trend_down' : 'dashboard.steady') | translate }}
+          </div>
+        } @else {
+          <div class="card-trend" style="color: var(--text-muted);">
+            <span class="material-icons" style="font-size: 1rem">remove</span>
+            —
+          </div>
+        }
+        @if (kpiMetrics()!.apiCallsHistory && kpiMetrics()!.apiCallsHistory!.length > 0) {
+          <svg class="sparkline" viewBox="0 0 100 20">
+            <polygon fill="url(#spark-warning)" [attr.points]="getSparklinePolygon(kpiMetrics()!.apiCallsHistory)" />
+            <polyline fill="none" stroke="var(--warning)" [attr.points]="getSparklinePoints(kpiMetrics()!.apiCallsHistory)" />
+          </svg>
+        }
+      </div>
+    </div>
+  }
 
               <!-- Block 2: Rankings -->
               <div class="block-header">

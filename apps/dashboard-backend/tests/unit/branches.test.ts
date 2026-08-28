@@ -999,22 +999,19 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const timelineRepo = new TimelineRepository(mock.firestore as any);
 
       // 1. getMetrics for monthly and yearly
-      (timelineRepo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
+      (timelineRepo as any).collections.processedFollowers.count = jest.fn().mockReturnValue({
         get: jest.fn().mockResolvedValue({
-          data: () => ({
-            total_followers: 500,
-            avg_engagement_rate: 6.2,
-            dau: 35,
-            api_calls_today: 999
-          })
+          data: () => ({ count: 500 })
         })
       });
 
       const monthlyMetrics = await timelineRepo.getMetrics('monthly');
-      expect(monthlyMetrics.followersHistory).toHaveLength(30);
+      expect(monthlyMetrics.followers).toBe(500);
+      expect(monthlyMetrics.followersHistory).toEqual([]);
 
       const yearlyMetrics = await timelineRepo.getMetrics('yearly');
-      expect(yearlyMetrics.followersHistory).toHaveLength(12);
+      expect(yearlyMetrics.followers).toBe(500);
+      expect(yearlyMetrics.followersHistory).toEqual([]);
 
       // 2. getPosts with sorting by time, created_at, impressions, and status
       const mockTimelineDocs = [
@@ -1245,39 +1242,60 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
     it('TimelineRepository.getMetrics with calculated API call counts from collections', async () => {
       const timelineRepo = new TimelineRepository(mock.firestore as any);
 
-      (timelineRepo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValue({
-          data: () => ({
-            total_followers: 120,
-            avg_engagement_rate: 4.5,
-            dau: 18,
-            api_calls_today: 100
+      (timelineRepo as any).collections.processedFollowers = {
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            data: () => ({ count: 120 })
           })
         })
-      });
+      };
 
-      // Mock conversationLogs and timelineHistory count queries
+      // Mock conversationLogs and timelineHistory queries
       (timelineRepo as any).collections.conversationLogs = {
         where: jest.fn().mockReturnValue({
-          count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            docs: new Array(150).fill({ data: () => ({ userId: 'u', timestamp: new Date().toISOString() }) }),
+            size: 150
+          }),
+          where: jest.fn().mockReturnValue({
+            count: jest.fn().mockReturnValue({
+              get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) })
+            }),
             get: jest.fn().mockResolvedValue({
-              data: () => ({ count: 150 })
+              docs: new Array(100).fill({ data: () => ({ userId: 'u_prev' }) }),
+              size: 100
             })
+          }),
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 100 }) })
           })
         })
       };
       (timelineRepo as any).collections.timelineHistory = {
         where: jest.fn().mockReturnValue({
-          count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({
+            docs: new Array(50).fill({ data: () => ({ impressions: 500, likes: 10, retweets: 5, replies: 2, timestamp: new Date().toISOString() }) }),
+            size: 50
+          }),
+          where: jest.fn().mockReturnValue({
+            count: jest.fn().mockReturnValue({
+              get: jest.fn().mockResolvedValue({ data: () => ({ count: 30 }) })
+            }),
             get: jest.fn().mockResolvedValue({
-              data: () => ({ count: 50 })
+              docs: new Array(30).fill({ data: () => ({ impressions: 300, likes: 5, retweets: 2, replies: 1 }) }),
+              size: 30
             })
+          }),
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 30 }) })
           })
         })
       };
 
       const metricsWeekly = await timelineRepo.getMetrics('weekly');
       expect(metricsWeekly.apiCalls).toBe(200); // 150 + 50
+      expect(metricsWeekly.followers).toBe(120);
+      expect(metricsWeekly.engagementRate).toBeDefined();
     });
 
     it('UsersRepository.getById with beforeTimestamp and limit options', async () => {

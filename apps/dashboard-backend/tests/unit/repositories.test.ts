@@ -320,29 +320,94 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       timelineRepo = new TimelineRepository(mock.firestore);
     });
 
-    it('getMetrics should scale data based on weekly, monthly, and yearly periods', async () => {
-      (timelineRepo as any).collections.systemStats.doc = jest.fn().mockReturnValue({
+    it('getMetrics should aggregate real-time collection metrics and handle 0 and null properly', async () => {
+      // 1. Mock processedFollowers
+      (timelineRepo as any).collections.processedFollowers.count = jest.fn().mockReturnValue({
         get: jest.fn().mockResolvedValueOnce({
-          data: () => ({
-            total_followers: 200,
-            followers_trend: 10,
-            avg_engagement_rate: 4.5,
-            engagement_trend: 0.5,
-            dau: 80,
-            dau_trend: 5,
-            api_calls_today: 1200,
-            api_trend_status: 'stable',
-            followers_history: [100, 150, 200],
-            engagement_history: [3.0, 4.0, 4.5],
-            dau_history: [50, 60, 80],
-            api_calls_history: [1000, 1100, 1200]
-          })
+          data: () => ({ count: 141 })
         })
       });
 
-      const metrics = await timelineRepo.getMetrics('weekly');
-      expect(metrics.followers).toBe(200);
-      expect(metrics.followersHistory).toHaveLength(7);
+      // 2. Mock conversationLogs & timelineHistory queries
+      const nowIso = new Date().toISOString();
+      const mockLogs = [
+        { data: () => ({ userId: 'u1', timestamp: nowIso }) },
+        { data: () => ({ userId: 'u2', timestamp: nowIso }) }
+      ];
+      const mockPosts = [
+        { data: () => ({ impressions: 1000, likes: 50, retweets: 20, replies: 10, timestamp: nowIso }) }
+      ];
+
+      (timelineRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ docs: mockLogs, size: mockLogs.length }),
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ docs: mockLogs, size: mockLogs.length }),
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 5 }) })
+          })
+        }),
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 5 }) })
+        })
+      });
+
+      (timelineRepo as any).collections.timelineHistory.where = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ docs: mockPosts, size: mockPosts.length }),
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ docs: mockPosts, size: mockPosts.length }),
+          count: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({ data: () => ({ count: 2 }) })
+          })
+        }),
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 2 }) })
+        })
+      });
+
+      const metricsWeekly = await timelineRepo.getMetrics('weekly');
+      expect(metricsWeekly.followers).toBe(141);
+      expect(metricsWeekly.followersTrend).toBeNull();
+      expect(metricsWeekly.dailyActiveUsers).toBe(2);
+      expect(metricsWeekly.engagementRate).toBe(8);
+      expect(metricsWeekly.apiCalls).toBe(3);
+
+      const metricsYearly = await timelineRepo.getMetrics('yearly');
+      expect(metricsYearly.apiCallsHistory).toBeDefined();
+    });
+
+    it('getMetrics should return null for engagementRate when impressions are 0', async () => {
+      (timelineRepo as any).collections.processedFollowers.count = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValueOnce({
+          data: () => ({ count: 0 })
+        })
+      });
+
+      (timelineRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+          count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+        }),
+        count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+      });
+
+      (timelineRepo as any).collections.timelineHistory.where = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+        where: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ docs: [], size: 0 }),
+          count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+        }),
+        count: jest.fn().mockReturnValue({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }) })
+      });
+
+      const metrics = await timelineRepo.getMetrics('monthly');
+      expect(metrics.followers).toBe(0);
+      expect(metrics.engagementRate).toBeNull();
+      expect(metrics.dailyActiveUsers).toBe(0);
+      expect(metrics.dauTrend).toBeNull();
+      expect(metrics.apiCalls).toBe(0);
+      expect(metrics.apiTrendStatus).toBeNull();
+      expect(metrics.apiCallsHistory).toEqual([]);
     });
 
     it('getPosts should query and map timeline posts with pagination and period filter', async () => {
