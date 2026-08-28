@@ -18,6 +18,7 @@ describe('Config', () => {
         delete process.env.PUBLIC_IP_RATE_LIMIT;
         delete process.env.EVOLUTION_LOOKBACK_DAYS;
         delete process.env.BATCH_SECRET_KEY;
+        delete process.env.X_FOLLOWERS_PAGE_SIZE;
         delete process.env.X_FOLLOWERS_MAX_RESULTS;
 
         const config = require('../../src/config/index').default;
@@ -34,7 +35,8 @@ describe('Config', () => {
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);
         expect(Number(config.limits.publicIpRateLimit)).toBe(100);
         expect(Number(config.evolution.lookbackDays)).toBe(7);
-        expect(Number(config.xApi.followersMaxResults)).toBe(1000);
+        expect(Number(config.xApi.followersPageSize)).toBe(10);
+        expect(Number(config.xApi.followersMaxResults)).toBe(50);
         expect(config.batchSecret).toBeUndefined();
     });
 
@@ -52,6 +54,7 @@ describe('Config', () => {
         process.env.PUBLIC_IP_RATE_LIMIT = '50';
         process.env.EVOLUTION_LOOKBACK_DAYS = '14';
         process.env.BATCH_SECRET_KEY = 'secret';
+        process.env.X_FOLLOWERS_PAGE_SIZE = '25';
         process.env.X_FOLLOWERS_MAX_RESULTS = '500';
 
         const config = require('../../src/config/index').default;
@@ -69,6 +72,7 @@ describe('Config', () => {
         expect(Number(config.limits.publicIpRateLimit)).toBe(50);
         expect(Number(config.evolution.lookbackDays)).toBe(14);
         expect(config.batchSecret).toBe('secret');
+        expect(Number(config.xApi.followersPageSize)).toBe(25);
         expect(Number(config.xApi.followersMaxResults)).toBe(500);
     });
 });
