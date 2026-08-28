@@ -5,8 +5,12 @@ import { config } from '../../config';
 
 interface TimelinePostDoc {
   created_at?: string;
+  timestamp?: string;
   content?: string;
   impressions?: number;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
   media_urls?: string[];
   status?: string;
 }
@@ -146,7 +150,7 @@ export class TimelineRepository {
     const startMs = nowMs - periodMs;
     const logTimestamps = [
       ...currentLogsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime()),
-      ...currentPostsSnap.docs.map(d => new Date(d.data().timestamp || d.data().created_at || 0).getTime())
+      ...currentPostsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime())
     ].filter(t => t > 0);
 
     const apiCallsHistory = buildSparklineBuckets(logTimestamps, historyBuckets, startMs, nowMs);
