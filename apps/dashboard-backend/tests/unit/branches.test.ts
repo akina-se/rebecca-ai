@@ -268,7 +268,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         dailyActiveUsers: 0,
         dauTrend: 0,
         apiCalls: 0,
-        apiTrendStatus: 'stable'
+        apiCallsTrend: 0
       });
 
       const metrics = await useCase.getMetrics();

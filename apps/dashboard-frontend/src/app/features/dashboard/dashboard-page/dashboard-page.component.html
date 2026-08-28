@@ -47,14 +47,11 @@
         <div class="card-value">{{ kpiMetrics()!.followers | number }}</div>
         @if (kpiMetrics()!.followersTrend !== null) {
           <div class="card-trend" [class.negative]="kpiMetrics()!.followersTrend! < 0">
-            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.followersTrend! >= 0 ? 'trending_up' : 'trending_down' }}</span>
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.followersTrend! > 0 ? 'trending_up' : kpiMetrics()!.followersTrend! < 0 ? 'trending_down' : 'trending_flat' }}</span>
             {{ kpiMetrics()!.followersTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.followersTrend }}% {{ 'dashboard.vs_previous' | translate }}
           </div>
         } @else {
-          <div class="card-trend" style="color: var(--text-muted);">
-            <span class="material-icons" style="font-size: 1rem">remove</span>
-            — {{ 'dashboard.vs_previous' | translate }}
-          </div>
+          <div class="card-trend" style="color: var(--text-muted);">—</div>
         }
         @if (kpiMetrics()!.followersHistory && kpiMetrics()!.followersHistory!.length > 0) {
           <svg class="sparkline" viewBox="0 0 100 20">
@@ -68,14 +65,11 @@
         <div class="card-value">{{ kpiMetrics()!.engagementRate !== null ? kpiMetrics()!.engagementRate + '%' : '—' }}</div>
         @if (kpiMetrics()!.engagementTrend !== null) {
           <div class="card-trend" [class.negative]="kpiMetrics()!.engagementTrend! < 0">
-            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.engagementTrend! >= 0 ? 'trending_up' : 'trending_down' }}</span>
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.engagementTrend! > 0 ? 'trending_up' : kpiMetrics()!.engagementTrend! < 0 ? 'trending_down' : 'trending_flat' }}</span>
             {{ kpiMetrics()!.engagementTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.engagementTrend }}% {{ 'dashboard.vs_previous' | translate }}
           </div>
         } @else {
-          <div class="card-trend" style="color: var(--text-muted);">
-            <span class="material-icons" style="font-size: 1rem">remove</span>
-            — {{ 'dashboard.vs_previous' | translate }}
-          </div>
+          <div class="card-trend" style="color: var(--text-muted);">—</div>
         }
         @if (kpiMetrics()!.engagementHistory && kpiMetrics()!.engagementHistory!.length > 0) {
           <svg class="sparkline" viewBox="0 0 100 20">
@@ -89,14 +83,11 @@
         <div class="card-value">{{ kpiMetrics()!.dailyActiveUsers | number }}</div>
         @if (kpiMetrics()!.dauTrend !== null) {
           <div class="card-trend" [class.negative]="kpiMetrics()!.dauTrend! < 0">
-            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.dauTrend! >= 0 ? 'trending_up' : 'trending_down' }}</span>
-            {{ kpiMetrics()!.dauTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.dauTrend }}% {{ 'dashboard.vs_previous' | translate }}
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.dauTrend! > 0 ? 'trending_up' : kpiMetrics()!.dauTrend! < 0 ? 'trending_down' : 'trending_flat' }}</span>
+            {{ kpiMetrics()!.dauTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.dauTrend }}% {{ 'dashboard.vs_yesterday' | translate }}
           </div>
         } @else {
-          <div class="card-trend" style="color: var(--text-muted);">
-            <span class="material-icons" style="font-size: 1rem">remove</span>
-            — {{ 'dashboard.vs_previous' | translate }}
-          </div>
+          <div class="card-trend" style="color: var(--text-muted);">—</div>
         }
         @if (kpiMetrics()!.dauHistory && kpiMetrics()!.dauHistory!.length > 0) {
           <svg class="sparkline" viewBox="0 0 100 20">
@@ -108,16 +99,13 @@
       <div class="card glass-panel">
         <div class="card-title"><span class="material-icons">api</span> {{ 'dashboard.api_calls' | translate }}</div>
         <div class="card-value">{{ kpiMetrics()!.apiCalls | number }}</div>
-        @if (kpiMetrics()!.apiTrendStatus) {
-          <div class="card-trend">
-            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.apiTrendStatus === 'Up' ? 'trending_up' : kpiMetrics()!.apiTrendStatus === 'Down' ? 'trending_down' : 'trending_flat' }}</span>
-            {{ (kpiMetrics()!.apiTrendStatus === 'Up' ? 'dashboard.trend_up' : kpiMetrics()!.apiTrendStatus === 'Down' ? 'dashboard.trend_down' : 'dashboard.steady') | translate }}
+        @if (kpiMetrics()!.apiCallsTrend !== null) {
+          <div class="card-trend" [class.negative]="kpiMetrics()!.apiCallsTrend! < 0">
+            <span class="material-icons" style="font-size: 1rem">{{ kpiMetrics()!.apiCallsTrend! > 0 ? 'trending_up' : kpiMetrics()!.apiCallsTrend! < 0 ? 'trending_down' : 'trending_flat' }}</span>
+            {{ kpiMetrics()!.apiCallsTrend! > 0 ? '+' : '' }}{{ kpiMetrics()!.apiCallsTrend }}% {{ 'dashboard.vs_previous' | translate }}
           </div>
         } @else {
-          <div class="card-trend" style="color: var(--text-muted);">
-            <span class="material-icons" style="font-size: 1rem">remove</span>
-            —
-          </div>
+          <div class="card-trend" style="color: var(--text-muted);">—</div>
         }
         @if (kpiMetrics()!.apiCallsHistory && kpiMetrics()!.apiCallsHistory!.length > 0) {
           <svg class="sparkline" viewBox="0 0 100 20">
