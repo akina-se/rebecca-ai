@@ -1,5 +1,4 @@
 import { AppDependencies } from '../../types';
-import config from '../../config';
 import { getBasePrompt } from '@rebecca/persona';
 import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
 import { downloadImage } from '../../utils/image';
@@ -31,16 +30,10 @@ export class RandomEngagementUseCase {
   async execute(): Promise<{ status: string; processedUser?: string; reason?: string }> {
     console.log('Starting Random Engagement Batch...');
     try {
-      const targetListId = config.xApi.targetListId;
-      if (!targetListId) {
-        return { status: 'failed', reason: 'Missing X_TARGET_LIST_ID' };
-      }
+      const members = await this.deps.firestore.getListMembersFromCache();
 
-      const membersResp = await this.deps.xApi.getListMembers(targetListId);
-      const members = membersResp.data || [];
-      
       if (members.length === 0) {
-        console.log('List is empty.');
+        console.log('List cache is empty.');
         return { status: 'success' };
       }
 
@@ -56,7 +49,7 @@ export class RandomEngagementUseCase {
       for (const user of shuffled) {
         const userDoc = await this.deps.firestore.getUserDoc(user.id);
         if (userDoc?.status === 'BLOCKED') {
-          console.log(`User @${user.username} (${user.id}) is blocked by admin. Skipping random engagement.`);
+          console.log(`User (${user.id}) is blocked by admin. Skipping random engagement.`);
           continue;
         }
         const lastInteraction = await this.deps.firestore.getLastListInteraction(user.id);
@@ -71,7 +64,7 @@ export class RandomEngagementUseCase {
         return { status: 'success' };
       }
 
-      console.log(`Targeting user for random engagement: @${targetUser.username} (${targetUser.id})`);
+      console.log(`Targeting user for random engagement: (${targetUser.id})`);
 
       const rateLimitResult = await checkAndIncrementRateLimits(this.deps, targetUser.id);
       if (!rateLimitResult.allowed) {
@@ -80,7 +73,9 @@ export class RandomEngagementUseCase {
       }
 
       const profileResp = await this.deps.xApi.getUserProfile(targetUser.id);
+      const username = profileResp.data.username;
       const description = profileResp.data.description || '';
+      console.log(`Resolved username for random engagement: @${username} (${targetUser.id})`);
       
       const profilePrompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
 【プロフィール文】
@@ -135,13 +130,13 @@ ${description}
       const lang = await this.deps.gemini.detectLanguage(detectPrompt);
 
       const systemPrompt = getBasePrompt('random_engagement', lang);
-      const userInput = `【ターゲットユーザー情報】\nユーザー名: @${targetUser.username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
+      const userInput = `【ターゲットユーザー情報】\nユーザー名: @${username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
 
       const generatedText = await this.deps.gemini.generateReply(systemPrompt, [], userInput);
 
       let finalText = generatedText.trim();
-      if (!finalText.includes(`@${targetUser.username}`)) {
-        finalText = `@${targetUser.username}\n${finalText}`;
+      if (!finalText.includes(`@${username}`)) {
+        finalText = `@${username}\n${finalText}`;
       }
 
       console.log(`Generated Engagement Text:\n${finalText}`);
@@ -150,7 +145,7 @@ ${description}
 
       await this.deps.firestore.updateLastListInteraction(targetUser.id);
 
-      return { status: 'success', processedUser: targetUser.username };
+      return { status: 'success', processedUser: username };
     } catch (e) {
       console.error('Error in RandomEngagementUseCase.execute:', e);
       throw e;

@@ -5,7 +5,6 @@ import type {
     XApiMentionResponse, 
     XApiUser, 
     XApiFollowersResponse,
-    XApiListMembersResponse,
     XApiTweetDetailsResponse
 } from '../types';
 
@@ -170,7 +169,7 @@ const tweet = async (text: string, options?: { mediaIds?: string[], quote_tweet_
  * @throws {Error} If the request fails.
  */
 const getUserProfile = async (userId: string): Promise<{ data: XApiUser }> => {
-    if (!client) return { data: { id: userId, name: 'Dummy', username: 'dummy', description: 'ダミーのプロフィール文です。仕事に疲れています。' } };
+    if (!client) throw new Error('X API client is not initialized');
     try {
         const response = await client.users.getById(userId, {
             'user.fields': ['description']
@@ -296,37 +295,6 @@ const addListMember = async (listId: string, userId: string): Promise<boolean> =
     }
 };
 
-/**
- * Retrieves the current members belonging to a specified X list.
- *
- * Queries up to 100 members per request. Built using standard `fetch` with OAuth 1.0a signatures.
- *
- * @param listId - The unique identifier of the target list.
- * @returns A Promise resolving to the list's member data (`XApiListMembersResponse`).
- * @throws {Error} If the list cannot be fetched or the user lacks authorization.
- */
-const getListMembers = async (listId: string): Promise<XApiListMembersResponse> => {
-    if (!client) return { data: [], meta: { resultCount: 0 } };
-    try {
-        if (!oauth1Client) throw new Error('OAuth1 client required');
-        const url = `https://api.twitter.com/2/lists/${listId}/members?max_results=100`;
-        const authHeader = await oauth1Client.buildRequestHeader('GET', url);
-        
-        const res = await fetch(url, {
-            method: 'GET',
-            headers: { 'Authorization': authHeader }
-        });
-        if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(`Failed to get list members: ${JSON.stringify(errData)}`);
-        }
-        const data = await res.json();
-        return data as XApiListMembersResponse;
-    } catch (error) {
-        console.error('Error getting list members:', error);
-        throw error;
-    }
-};
 
 /**
  * Retrieves recent original tweets authored by a specific user.
@@ -409,7 +377,6 @@ export {
   getMentions,
   getFollowers,
   addListMember,
-  getListMembers,
   getUserTweets,
   deleteTweet,
   cachedNumericMyUserId
