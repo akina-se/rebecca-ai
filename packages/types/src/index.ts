@@ -264,14 +264,6 @@ export interface XApiFollowersResponse {
   };
 }
 
-/** Response envelope for list member endpoints. */
-export interface XApiListMembersResponse {
-  data?: XApiUser[];
-  meta?: {
-    resultCount: number;
-    next_token?: string;
-  };
-}
 
 /** Response envelope for tweet creation endpoints. */
 export interface XApiCreateResponse {
@@ -317,6 +309,7 @@ export interface KpiMetrics {
 
 export interface PostLeaderboard {
   id: string;
+  tweetId?: string;
   time: string;
   snippet: string;
   text?: string;
@@ -328,6 +321,7 @@ export interface PostLeaderboard {
 
 export interface PostDetail {
   id: string;
+  tweetId?: string;
   time: string;
   content: string;
   impressions: number;
