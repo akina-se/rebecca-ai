@@ -199,19 +199,28 @@ describe('xApi.ts', () => {
     });
 
     describe('Missing Credentials Fallback (!client)', () => {
-        it('should return mock responses when client is not initialized', async () => {
+        it('should return safe empty responses for passive operations when client is not initialized', async () => {
             const originalAppKey = config.xApi.appKey;
             config.xApi.appKey = ''; // trigger !client condition
             const api = getXApiModule();
-            
+
             expect(await api.replyToMention('123', 'Hi')).toEqual({ data: { id: 'mock_tweet_id', text: 'Hi' } });
             expect(await api.tweet('Test')).toEqual({ data: { id: 'mock_tweet_id', text: 'Test' } });
             expect(await api.getTweetDetails('123')).toEqual({ });
-            expect(await api.getUserProfile('user1')).toEqual({ data: { id: 'user1', name: 'Dummy', username: 'dummy', description: 'ダミーのプロフィール文です。仕事に疲れています。' } });
             expect(await api.getMentions()).toEqual({ data: [], meta: { resultCount: 0 } });
-            
+
             config.xApi.appKey = originalAppKey;
-    });
+        });
+
+        it('should throw when getUserProfile is called without an initialized client', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = ''; // trigger !client condition
+            const api = getXApiModule();
+
+            await expect(api.getUserProfile('user1')).rejects.toThrow('X API client is not initialized');
+
+            config.xApi.appKey = originalAppKey;
+        });
     });
 
     describe('uploadMedia', () => {

@@ -9,6 +9,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 
 interface PostDataModel {
   id: string;
+  tweetId?: string;
   time: string;
   text: string;
   impressions: string;
@@ -52,6 +53,7 @@ export class PostDrawerComponent implements OnChanges {
       next: (post) => {
         const postData = {
           id: post.id,
+          tweetId: post.tweetId,
           time: post.time,
           text: post.content || '',
           impressions: post.impressions?.toString() || '0',
@@ -105,8 +107,11 @@ export class PostDrawerComponent implements OnChanges {
   }
 
   onViewOnX(): void {
-    const tweetId = this.postData()?.id || this.postId;
-    if (!tweetId) return;
+    const tweetId = this.postData()?.tweetId;
+    if (!tweetId) {
+      this.toastService.show('Tweet ID is not available for this post', 'info');
+      return;
+    }
     const url = `https://x.com/i/status/${tweetId}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }
