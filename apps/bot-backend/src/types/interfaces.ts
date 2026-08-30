@@ -15,7 +15,6 @@ import type {
   XApiMentionResponse,
   XApiTweetDetailsResponse,
   XApiFollowersResponse,
-  XApiListMembersResponse,
   XApiCreateResponse,
   XApiUser,
 } from '@rebecca/types';
@@ -68,6 +67,7 @@ export interface IFirestoreService {
   updateTotalFollowers(count: number): Promise<void>;
   getLastListInteraction(userId: string): Promise<Date | null>;
   updateLastListInteraction(userId: string): Promise<void>;
+  getListMembersFromCache(): Promise<Pick<XApiUser, 'id'>[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +114,6 @@ export interface IXApiService {
   getMentions(sinceId?: string): Promise<XApiMentionResponse>;
   getFollowers(userId: string, paginationToken?: string, pageSize?: number): Promise<XApiFollowersResponse>;
   addListMember(listId: string, userId: string): Promise<boolean>;
-  getListMembers(listId: string): Promise<XApiListMembersResponse>;
   getUserTweets(userId: string, maxResults?: number): Promise<XApiMentionResponse>;
   cachedNumericMyUserId: string | null;
 }

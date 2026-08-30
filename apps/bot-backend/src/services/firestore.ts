@@ -25,6 +25,7 @@ import type {
   ImageDocWithId,
   ProcessedFollower,
   ListInteraction,
+  XApiUser,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -412,9 +413,8 @@ const saveTimelinePost = async (
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp.
     mediaUrls: mediaList,
-    media_urls: mediaList,
     ...(options?.assetId ? { assetId: options.assetId } : {}),
-    ...(options?.tweetId ? { tweetId: options.tweetId, tweet_id: options.tweetId } : {}),
+    ...(options?.tweetId ? { tweetId: options.tweetId } : {}),
     impressions: 0,
     likes: 0,
     reposts: 0,
@@ -771,6 +771,24 @@ const updateLastListInteraction = async (userId: string): Promise<void> => {
 };
 
 // ---------------------------------------------------------------------------
+// List Members Cache
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns all processed followers as minimal user stubs from Firestore.
+ *
+ * Replaces the X API `getListMembers` call for the random engagement batch.
+ * The `username` field is intentionally omitted here; callers must resolve
+ * the actual username via `getUserProfile()` to guarantee freshness.
+ *
+ * @returns An array of partial XApiUser objects containing only the user ID.
+ */
+const getListMembersFromCache = async (): Promise<Pick<XApiUser, 'id'>[]> => {
+  const snapshot = await db.processedFollowers.get();
+  return snapshot.docs.map(doc => ({ id: doc.data().userId }));
+};
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -813,4 +831,5 @@ export {
   updateTotalFollowers,
   getLastListInteraction,
   updateLastListInteraction,
+  getListMembersFromCache,
 };

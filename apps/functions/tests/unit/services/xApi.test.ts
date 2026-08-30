@@ -1,4 +1,5 @@
 const mockGetPosts = jest.fn();
+const mockGetMe = jest.fn();
 
 jest.mock('@xdevplatform/xdk', () => ({
   OAuth1: jest.fn().mockImplementation(() => ({})),
@@ -6,6 +7,7 @@ jest.mock('@xdevplatform/xdk', () => ({
     config,
     users: {
       getPosts: mockGetPosts,
+      getMe: mockGetMe,
     },
   })),
 }));
@@ -30,6 +32,7 @@ describe('XApiService', () => {
     };
     const service = new XApiService(cfg);
     expect(service).toBeDefined();
+    expect(service.cachedMyUserId).toBe('12345');
   });
 
   it('should initialize Client with bearerToken when only bearerToken is available', () => {
@@ -61,7 +64,69 @@ describe('XApiService', () => {
     expect(tweets).toEqual([]);
   });
 
-  it('should return empty array if userId is empty', async () => {
+  it('should resolve user ID via getMyUserId if not configured, and cache it', async () => {
+    mockGetMe.mockResolvedValueOnce({ data: { id: 'resolved_user_999' } });
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '',
+    };
+    const service = new XApiService(cfg);
+    expect(service.cachedMyUserId).toBeNull();
+
+    const userId = await service.getMyUserId();
+    expect(userId).toBe('resolved_user_999');
+    expect(service.cachedMyUserId).toBe('resolved_user_999');
+
+    // Second call should return cached ID without invoking getMe again
+    const secondUserId = await service.getMyUserId();
+    expect(secondUserId).toBe('resolved_user_999');
+    expect(mockGetMe).toHaveBeenCalledTimes(1);
+  });
+
+  it('should handle getMyUserId error gracefully and return null', async () => {
+    mockGetMe.mockRejectedValueOnce(new Error('Auth failed'));
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '',
+    };
+    const service = new XApiService(cfg);
+    const userId = await service.getMyUserId();
+    expect(userId).toBeNull();
+  });
+
+  it('should auto-resolve userId when fetching tweets if userId argument is omitted', async () => {
+    mockGetMe.mockResolvedValueOnce({ data: { id: 'auto_id_123' } });
+    mockGetPosts.mockResolvedValueOnce({ data: [{ id: 'tweet_auto', text: 'Auto resolved text' }] });
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '',
+    };
+    const service = new XApiService(cfg);
+    const tweets = await service.fetchRecentTimelineTweets();
+
+    expect(mockGetPosts).toHaveBeenCalledWith('auto_id_123', expect.anything());
+    expect(tweets).toHaveLength(1);
+    expect(tweets[0].id).toBe('tweet_auto');
+  });
+
+  it('should return empty array if userId is omitted and cannot be resolved', async () => {
+    mockGetMe.mockRejectedValueOnce(new Error('Network error'));
+
     const cfg: XApiConfig = {
       apiKey: 'k',
       apiSecret: 's',
@@ -75,34 +140,30 @@ describe('XApiService', () => {
     expect(tweets).toEqual([]);
   });
 
-  it('should fetch, normalize, and attach media URLs correctly', async () => {
+  it('should correctly parse SDK camelCase publicMetrics and attachments', async () => {
     mockGetPosts.mockResolvedValueOnce({
       data: [
         {
-          id: 'tweet_1',
-          text: 'Hello world tweet',
-          created_at: '2026-08-25T10:00:00.000Z',
-          public_metrics: {
-            impression_count: 100,
-            like_count: 5,
-            retweet_count: 2,
-            reply_count: 1,
+          id: 'tweet_camel',
+          text: 'CamelCase tweet metrics',
+          createdAt: '2026-08-28T12:00:00.000Z',
+          publicMetrics: {
+            impressionCount: 350,
+            likeCount: 15,
+            retweetCount: 4,
+            replyCount: 2,
           },
           attachments: {
-            media_keys: ['mk_1'],
+            mediaKeys: ['mk_camel_1'],
           },
-        },
-        {
-          id: 'tweet_2',
-          text: 'Tweet without attachments or metrics',
         },
       ],
       includes: {
         media: [
           {
-            media_key: 'mk_1',
+            mediaKey: 'mk_camel_1',
             type: 'photo',
-            url: 'https://pbs.twimg.com/media/img1.jpg',
+            url: 'https://pbs.twimg.com/media/camel.jpg',
           },
         ],
       },
@@ -120,22 +181,45 @@ describe('XApiService', () => {
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('12345');
 
-    expect(tweets).toHaveLength(2);
-    expect(mockGetPosts).toHaveBeenCalledWith('12345', expect.objectContaining({ max_results: 100 }));
+    expect(tweets).toHaveLength(1);
     expect(tweets[0]).toEqual({
-      id: 'tweet_1',
-      text: 'Hello world tweet',
-      createdAt: '2026-08-25T10:00:00.000Z',
-      impressions: 100,
-      likes: 5,
-      reposts: 2,
-      replies: 1,
-      mediaUrls: ['https://pbs.twimg.com/media/img1.jpg'],
+      id: 'tweet_camel',
+      text: 'CamelCase tweet metrics',
+      createdAt: '2026-08-28T12:00:00.000Z',
+      impressions: 350,
+      likes: 15,
+      reposts: 4,
+      replies: 2,
+      mediaUrls: ['https://pbs.twimg.com/media/camel.jpg'],
+    });
+  });
+
+  it('should handle tweets without publicMetrics or attachments gracefully', async () => {
+    mockGetPosts.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'tweet_bare',
+          text: 'Bare tweet without metrics or attachments',
+        },
+      ],
     });
 
-    expect(tweets[1]).toEqual({
-      id: 'tweet_2',
-      text: 'Tweet without attachments or metrics',
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '12345',
+      syncMaxResults: 100,
+    };
+    const service = new XApiService(cfg);
+    const tweets = await service.fetchRecentTimelineTweets('12345');
+
+    expect(tweets).toHaveLength(1);
+    expect(tweets[0]).toEqual({
+      id: 'tweet_bare',
+      text: 'Bare tweet without metrics or attachments',
       createdAt: undefined,
       impressions: 0,
       likes: 0,
