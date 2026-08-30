@@ -255,6 +255,7 @@ export class TimelineRepository {
 
       return {
         id: doc.id,
+        tweetId: typeof d.tweetId === 'string' ? d.tweetId : undefined,
         time,
         snippet: content ? content.substring(0, 50) + '...' : '',
         impressions: typeof d.impressions === 'number' ? d.impressions : 0,
@@ -302,6 +303,7 @@ export class TimelineRepository {
 
     return {
       id: doc.id,
+      tweetId: typeof data.tweetId === 'string' ? data.tweetId : undefined,
       time: String(data.timestamp || data.created_at || new Date().toISOString()),
       content: String(data.content || data.text || ''),
       impressions: typeof data.impressions === 'number' ? data.impressions : 0,
