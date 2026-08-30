@@ -197,6 +197,7 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
     const data = snapshot.data();
     return {
       text: data['text'],
+      tweetId: data['tweetId'] ?? data['tweet_id'],
       timestamp: data['timestamp'],
       expireAt: toIsoString(data['expireAt']) ?? '',
       status: data['status'],
