@@ -353,7 +353,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     await postViewOnXBtn.click();
     const postOpenUrl = await page.evaluate(() => (window as any).__capturedOpenUrl as string | null);
     expect(postOpenUrl).toBeTruthy();
-    expect(postOpenUrl).toMatch(/x\.com\/i\/status\/\d+/);
+    expect(postOpenUrl).toMatch(/^https?:\/\/(?:www\.)?x\.com\/i\/status\/\d+(?:[/?#].*)?$/);
 
     // 4. Close Post Details drawer
     await closeBtn.click();
@@ -370,7 +370,7 @@ test.describe('Dashboard Features E2E Tests', () => {
   test('Scenario F: Full Ranking Modal - should display full ranking modal with handles and server-side pagination', async ({ page }) => {
     const topUsersHeader = page.locator('.table-header-container', { hasText: /Top Engaged Users|エンゲージメント上位ユーザー/ });
     const topUsersContainer = topUsersHeader.locator('..');
-    
+
     // Ensure table data is loaded before opening modal
     await expect(topUsersContainer.locator('table.glass-panel tbody tr').first()).toBeVisible({ timeout: 10000 });
 
@@ -392,7 +392,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     // Test server-side pagination inside ranking modal
     const modalPagination = modal.locator('.modal-footer app-pagination');
     await expect(modalPagination).toBeVisible();
-    
+
     const page2Btn = modalPagination.locator('.pagination-controls button.num-btn', { hasText: '2' });
     if (await page2Btn.isVisible()) {
       await page2Btn.click();
@@ -489,16 +489,16 @@ test.describe('Dashboard Features E2E Tests', () => {
 
     const timelineTable = page.locator('table.data-table').nth(2);
     const firstCheckbox = timelineTable.locator('tbody tr input[type="checkbox"]').first();
-    
+
     if (await firstCheckbox.isVisible()) {
       await firstCheckbox.check();
-      
+
       // Locate Bulk Action Bar
       const deleteActionBtn = page.locator('button', { hasText: /Delete from X|Xから削除|Delete|削除/i }).first();
       await expect(deleteActionBtn).toBeVisible({ timeout: 5000 });
 
       await page.screenshot({ path: 'screenshots/03a_timeline_delete_from_x_action.png' });
-      
+
       // Uncheck to restore state
       await firstCheckbox.uncheck();
     }
