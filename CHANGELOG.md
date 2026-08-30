@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.6](https://github.com/akina-se/rebecca-ai/compare/v1.7.5...v1.7.6) (2026-08-30)
+
+
+### Bug Fixes
+
+* add timeline repository for implement post-drawer component for dashboard timeline data ([2c5bc64](https://github.com/akina-se/rebecca-ai/commit/2c5bc64827b82ddc3665e125877a4d9b7782db0e))
+* add tweetId on fromFirestore ([1b6dda2](https://github.com/akina-se/rebecca-ai/commit/1b6dda231ffef2d3743bf8c76f8bb1a44b877d53))
+* **functions,dashboard:** auto-resolve userId for timeline sync and use verified tweetId for X links ([293f6b9](https://github.com/akina-se/rebecca-ai/commit/293f6b9b9c312fca3e0cca1baf90f54488113f18))
+* **functions,dashboard:** auto-resolve userId for timeline sync and use verified tweetId for X links ([4cfefd8](https://github.com/akina-se/rebecca-ai/commit/4cfefd8678c699fef2dd0b8c3a134ceb8c1fddbc))
+* implement Firestore metrics repository, onboarding use case, and dashboard E2E test suite ([d40fb7c](https://github.com/akina-se/rebecca-ai/commit/d40fb7c003678785c6ef0546372cf1892ceddfdd))
+* implement TimelineRepository to handle KPI metrics and post leaderboard data access in Firestore ([3e2ef95](https://github.com/akina-se/rebecca-ai/commit/3e2ef9508efa32be36cc72f2b3ff10572cfc53ff))
+* **timeline,engagement,e2e,dashboard:** auto-resolve userId, eliminate getListMembers API call, fix E2E popup detection, canonical post links ([5b22fa8](https://github.com/akina-se/rebecca-ai/commit/5b22fa8de82398af10858e310656e335cbfefd96))
+* **timeline,engagement,e2e,dashboard:** auto-resolve userId, eliminate getListMembers API call, fix E2E popup detection, canonical post links ([51b2185](https://github.com/akina-se/rebecca-ai/commit/51b218592f03f48881088003b382b0817a3709d0))
+
 ## [1.7.5](https://github.com/akina-se/rebecca-ai/compare/v1.7.4...v1.7.5) (2026-08-28)
 
 
