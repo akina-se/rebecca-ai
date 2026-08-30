@@ -11,8 +11,8 @@ export class StealthOnboardingUseCase {
    * 
    * @param deps The application dependencies.
    */
-  constructor(private deps: AppDependencies) {}
-    
+  constructor(private deps: AppDependencies) { }
+
   /**
    * Executes the stealth onboarding background job.
    * Checks for new followers, marks them as processed, and adds them to a target list.
@@ -46,7 +46,7 @@ export class StealthOnboardingUseCase {
         const batchLimit = Math.min(pageSize, maxResults - fetchedCount);
         const followersResp = await this.deps.xApi.getFollowers(myUserId, nextToken, batchLimit);
         const followers = followersResp.data || [];
-        
+
         if (followers.length === 0) {
           console.log('No more followers retrieved.');
           break;
@@ -89,7 +89,7 @@ export class StealthOnboardingUseCase {
         }
 
         if (keepFetching) {
-          nextToken = followersResp.meta?.nextToken;
+          nextToken = followersResp.meta?.next_token;
           if (!nextToken) {
             console.log('No nextToken found. Reached end of followers list.');
             break;
