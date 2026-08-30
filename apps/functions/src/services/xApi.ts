@@ -13,7 +13,33 @@ export interface TimelineTweetDto {
 }
 
 export interface IXApiService {
-  fetchRecentTimelineTweets(userId: string, limit?: number): Promise<TimelineTweetDto[]>;
+  fetchRecentTimelineTweets(userId?: string, limit?: number): Promise<TimelineTweetDto[]>;
+  getMyUserId(): Promise<string | null>;
+  cachedMyUserId: string | null;
+}
+
+interface XdkTweetResponse {
+  data?: Array<{
+    id: string;
+    text: string;
+    createdAt?: string;
+    attachments?: {
+      mediaKeys?: string[];
+    };
+    publicMetrics?: {
+      impressionCount?: number;
+      likeCount?: number;
+      retweetCount?: number;
+      replyCount?: number;
+    };
+  }>;
+  includes?: {
+    media?: Array<{
+      mediaKey: string;
+      url?: string;
+      previewImageUrl?: string;
+    }>;
+  };
 }
 
 /**
@@ -22,9 +48,13 @@ export interface IXApiService {
  */
 export class XApiService implements IXApiService {
   private client: Client | null = null;
+  public cachedMyUserId: string | null = null;
 
   constructor(private xApiConfig: XApiConfig) {
     this.client = this.createClient(xApiConfig);
+    if (xApiConfig.myUserId) {
+      this.cachedMyUserId = xApiConfig.myUserId;
+    }
   }
 
   private createClient(cfg: XApiConfig): Client | null {
@@ -49,76 +79,80 @@ export class XApiService implements IXApiService {
   }
 
   /**
+   * Resolves the authenticated user ID via getMe() and caches it.
+   */
+  async getMyUserId(): Promise<string | null> {
+    if (this.cachedMyUserId) {
+      return this.cachedMyUserId;
+    }
+    if (!this.client?.users?.getMe) {
+      return null;
+    }
+    try {
+      const meResponse = await this.client.users.getMe();
+      const resolvedId = meResponse?.data?.id;
+      if (resolvedId) {
+        this.cachedMyUserId = resolvedId;
+        return resolvedId;
+      }
+    } catch (error) {
+      console.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe:', error);
+    }
+    return null;
+  }
+
+  /**
    * Fetches recent timeline posts authored by the specified user, excluding retweets and replies.
    *
-   * @param userId - The X user ID whose tweets are to be fetched.
+   * @param userId - Optional. The X user ID whose tweets are to be fetched. If omitted, auto-resolves via getMyUserId().
    * @param limit - Maximum number of tweets to fetch (defaults to configured syncMaxResults, max 100).
    * @returns Array of normalized TimelineTweetDto items.
    */
-  async fetchRecentTimelineTweets(userId: string, limit?: number): Promise<TimelineTweetDto[]> {
+  async fetchRecentTimelineTweets(userId?: string, limit?: number): Promise<TimelineTweetDto[]> {
     if (!this.client) {
       console.warn('[XApiService] X API client is not configured.');
       return [];
     }
 
-    if (!userId) {
-      console.warn('[XApiService] Target userId is not specified.');
+    const targetUserId = userId || this.cachedMyUserId || (await this.getMyUserId());
+    if (!targetUserId) {
+      console.warn('[XApiService] Target userId is not specified and could not be resolved.');
       return [];
     }
 
     const effectiveLimit = limit ?? this.xApiConfig.syncMaxResults ?? 100;
 
-    const response = (await this.client.users.getPosts(userId, {
+    const response = (await this.client.users.getPosts(targetUserId, {
       max_results: effectiveLimit,
       exclude: ['retweets', 'replies'],
       'tweet.fields': ['created_at', 'public_metrics', 'attachments', 'text'],
       expansions: ['attachments.media_keys'],
       'media.fields': ['url', 'preview_image_url', 'type'],
-    } as Parameters<typeof this.client.users.getPosts>[1])) as {
-      data?: Array<{
-        id: string;
-        text: string;
-        created_at?: string;
-        public_metrics?: {
-          impression_count?: number;
-          like_count?: number;
-          retweet_count?: number;
-          reply_count?: number;
-        };
-        attachments?: {
-          media_keys?: string[];
-        };
-      }>;
-      includes?: {
-        media?: Array<{
-          media_key: string;
-          url?: string;
-          preview_image_url?: string;
-        }>;
-      };
-    };
+    } as Parameters<typeof this.client.users.getPosts>[1])) as XdkTweetResponse;
 
     const tweets = response?.data || [];
     if (tweets.length === 0) {
       return [];
     }
 
-    // Build media map for fast lookups
+    // Build media map for fast lookups (SDK returns mediaKey and url / previewImageUrl in camelCase)
     const mediaMap = new Map<string, string>();
     if (response.includes?.media) {
       for (const media of response.includes.media) {
-        const mediaUrl = media.url || media.preview_image_url;
-        if (media.media_key && mediaUrl) {
-          mediaMap.set(media.media_key, mediaUrl);
+        const mediaUrl = media.url || media.previewImageUrl;
+        if (media.mediaKey && mediaUrl) {
+          mediaMap.set(media.mediaKey, mediaUrl);
         }
       }
     }
 
     return tweets.map((tweet) => {
-      const metrics = tweet.public_metrics || {};
+      const pm = tweet.publicMetrics;
+      const mediaKeys = tweet.attachments?.mediaKeys;
+
       const mediaUrls: string[] = [];
-      if (tweet.attachments?.media_keys) {
-        for (const key of tweet.attachments.media_keys) {
+      if (Array.isArray(mediaKeys)) {
+        for (const key of mediaKeys) {
           const url = mediaMap.get(key);
           if (url) mediaUrls.push(url);
         }
@@ -127,11 +161,11 @@ export class XApiService implements IXApiService {
       return {
         id: tweet.id,
         text: tweet.text,
-        createdAt: tweet.created_at,
-        impressions: typeof metrics.impression_count === 'number' ? metrics.impression_count : 0,
-        likes: typeof metrics.like_count === 'number' ? metrics.like_count : 0,
-        reposts: typeof metrics.retweet_count === 'number' ? metrics.retweet_count : 0,
-        replies: typeof metrics.reply_count === 'number' ? metrics.reply_count : 0,
+        createdAt: tweet.createdAt,
+        impressions: pm?.impressionCount ?? 0,
+        likes: pm?.likeCount ?? 0,
+        reposts: pm?.retweetCount ?? 0,
+        replies: pm?.replyCount ?? 0,
         mediaUrls,
       };
     });

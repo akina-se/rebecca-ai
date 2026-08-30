@@ -200,6 +200,7 @@ async function seedFirestore() {
 
     posts.push({
       id: `p${i}`,
+      tweetId: `209231106640355755${i % 10}`,
       text: `${topic} (No. ${i})`,
       content: `${topic} (No. ${i})`,
       timestamp: postDate.toISOString(),

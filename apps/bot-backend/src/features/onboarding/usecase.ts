@@ -89,9 +89,9 @@ export class StealthOnboardingUseCase {
         }
 
         if (keepFetching) {
-          nextToken = followersResp.meta?.next_token;
+          nextToken = followersResp.meta?.nextToken;
           if (!nextToken) {
-            console.log('No next_token found. Reached end of followers list.');
+            console.log('No nextToken found. Reached end of followers list.');
             break;
           }
         }

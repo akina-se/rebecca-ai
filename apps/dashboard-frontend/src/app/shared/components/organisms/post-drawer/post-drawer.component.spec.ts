@@ -137,12 +137,29 @@ describe('PostDrawerComponent', () => {
     expect(component.openLightbox.emit).toHaveBeenCalledWith('https://example.com/img.png');
   });
 
-  it('should open tweet on X via window.open on onViewOnX', () => {
+  it('should open tweet on X via window.open on onViewOnX when tweetId is present', () => {
     const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
-    component.postId = 'tweet_123';
+    component.postData.set({
+      id: 'doc_123',
+      tweetId: 'tweet_123',
+      time: '2026-08-15',
+      text: 'Post',
+      impressions: '100',
+      status: 'SUCCESS',
+      likes: 1,
+      retweets: 0,
+      replies: 0,
+      mediaUrls: []
+    });
     component.onViewOnX();
     expect(openSpy).toHaveBeenCalledWith('https://x.com/i/status/tweet_123', '_blank', 'noopener,noreferrer');
     openSpy.mockRestore();
+  });
+
+  it('should show toast notification when tweetId is missing on onViewOnX', () => {
+    component.postData.set(null);
+    component.onViewOnX();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Tweet ID is not available/), 'info');
   });
 });
 

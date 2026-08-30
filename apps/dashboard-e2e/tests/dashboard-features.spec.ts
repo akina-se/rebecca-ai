@@ -67,6 +67,13 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(dateText).toHaveText('2026');
     await expect(topPostsTable.locator('tbody tr').first()).toBeVisible();
 
+    // 5. Verify TopNav user avatar reflects authenticated user initial (A for admin@example.com)
+    const topNavAvatar = page.locator('.topbar .avatar');
+    await expect(topNavAvatar).toBeVisible();
+    const avatarSrc = await topNavAvatar.getAttribute('src');
+    expect(avatarSrc).toBeTruthy();
+    expect(decodeURIComponent(avatarSrc || '')).toContain('A');
+
     await page.screenshot({ path: 'screenshots/01_dashboard_leaderboards.png' });
   });
 
@@ -284,16 +291,23 @@ test.describe('Dashboard Features E2E Tests', () => {
     expect(profileName.length).toBeGreaterThan(0);
     expect(profileName).not.toBe('Unknown');
 
-    // Verify "View on X" button in User drawer triggers navigation to x.com profile
+    // Verify "View on X" button in User drawer navigates to x.com profile.
+    // Note: window.open with noopener/noreferrer prevents Playwright popup detection,
+    // so we stub window.open to capture the URL argument instead.
     const userViewOnXBtn = userDrawerContent.locator('button', { hasText: /View on X|Xで見る/ });
     await expect(userViewOnXBtn).toBeVisible();
     await page.screenshot({ path: 'screenshots/02_user_profile_drawer.png' });
-    const [userPopup] = await Promise.all([
-      page.waitForEvent('popup'),
-      userViewOnXBtn.click(),
-    ]);
-    expect(userPopup.url()).toContain('x.com/');
-    await userPopup.close();
+    await page.evaluate(() => {
+      (window as any).__capturedOpenUrl = null;
+      window.open = (url?: string | URL) => {
+        (window as any).__capturedOpenUrl = String(url ?? '');
+        return null;
+      };
+    });
+    await userViewOnXBtn.click();
+    const userOpenUrl = await page.evaluate(() => (window as any).__capturedOpenUrl as string | null);
+    expect(userOpenUrl).toBeTruthy();
+    expect(userOpenUrl).toContain('x.com/');
 
     // 2. Close drawer
     const closeBtn = drawer.locator('.drawer-header .close-btn');
@@ -323,16 +337,23 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(postDrawerContent).toBeVisible({ timeout: 10000 });
     await expect(postDrawerContent.locator('.content-box')).toContainText(postSnippetPrefix);
 
-    // Verify "View on X" button in Post Details drawer triggers navigation to x.com post
+    // Verify "View on X" button in Post Details drawer navigates to x.com post.
+    // Note: window.open with noopener/noreferrer prevents Playwright popup detection,
+    // so we stub window.open to capture the URL argument instead.
     const postViewOnXBtn = postDrawerContent.locator('button', { hasText: /View on X|Xで見る/ });
     await expect(postViewOnXBtn).toBeVisible();
     await page.screenshot({ path: 'screenshots/03_post_details_drawer.png' });
-    const [postPopup] = await Promise.all([
-      page.waitForEvent('popup'),
-      postViewOnXBtn.click(),
-    ]);
-    expect(postPopup.url()).toContain('x.com/i/status/');
-    await postPopup.close();
+    await page.evaluate(() => {
+      (window as any).__capturedOpenUrl = null;
+      window.open = (url?: string | URL) => {
+        (window as any).__capturedOpenUrl = String(url ?? '');
+        return null;
+      };
+    });
+    await postViewOnXBtn.click();
+    const postOpenUrl = await page.evaluate(() => (window as any).__capturedOpenUrl as string | null);
+    expect(postOpenUrl).toBeTruthy();
+    expect(postOpenUrl).toMatch(/x\.com\/i\/status\/\d+/);
 
     // 4. Close Post Details drawer
     await closeBtn.click();

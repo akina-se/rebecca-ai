@@ -35,14 +35,17 @@ describe('SyncTimelineUseCase', () => {
     jest.clearAllMocks();
     mockXApiService = {
       fetchRecentTimelineTweets: jest.fn(),
+      getMyUserId: jest.fn(),
+      cachedMyUserId: null,
     };
     useCase = new SyncTimelineUseCase(mockXApiService, mockDb);
   });
 
-  it('should return zero metrics if userId is empty', async () => {
+  it('should delegate to xApiService when userId is empty and return zero if no tweets found', async () => {
+    mockXApiService.fetchRecentTimelineTweets.mockResolvedValueOnce([]);
     const result = await useCase.execute('');
     expect(result).toEqual({ processed: 0, updated: 0, created: 0, errors: 0 });
-    expect(mockXApiService.fetchRecentTimelineTweets).not.toHaveBeenCalled();
+    expect(mockXApiService.fetchRecentTimelineTweets).toHaveBeenCalledWith('', undefined);
   });
 
   it('should return zero metrics if no tweets are returned from X API', async () => {
