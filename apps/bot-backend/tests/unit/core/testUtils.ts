@@ -1,4 +1,4 @@
-import { AppDependencies } from '../../../src/types';
+﻿import { AppDependencies } from '../../../src/types';
 
 export const createMockDeps = (): AppDependencies => {
     return {
@@ -28,6 +28,7 @@ export const createMockDeps = (): AppDependencies => {
             updateTotalFollowers: jest.fn().mockResolvedValue(undefined),
             getLastListInteraction: jest.fn(),
             updateLastListInteraction: jest.fn(),
+            getListMembersFromCache: jest.fn().mockResolvedValue([]),
             findImageByVector: jest.fn(),
             updateImageLastUsed: jest.fn(),
             saveTimelinePost: jest.fn(),
@@ -55,7 +56,6 @@ export const createMockDeps = (): AppDependencies => {
             replyToMention: jest.fn(),
             getFollowers: jest.fn(),
             addListMember: jest.fn(),
-            getListMembers: jest.fn(),
             getUserTweets: jest.fn(),
             tweet: jest.fn(),
             uploadMedia: jest.fn(),

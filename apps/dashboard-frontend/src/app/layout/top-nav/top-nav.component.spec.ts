@@ -9,15 +9,20 @@ import { of } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
+import { signal, WritableSignal } from '@angular/core';
+
 describe('TopNavComponent', () => {
   let component: TopNavComponent;
   let fixture: ComponentFixture<TopNavComponent>;
   let mockAuthService: jasmine.SpyObj<AuthService>;
   let mockRouter: jasmine.SpyObj<Router>;
+  let userSignal: WritableSignal<any>;
   let drawerService: DrawerService;
 
   beforeEach(async () => {
+    userSignal = signal({ displayName: 'Test User', email: 'test@example.com', photoURL: null });
     mockAuthService = jasmine.createSpyObj('AuthService', ['logout'], {
+      currentUserSignal: userSignal,
       currentUser$: of({ displayName: 'Test User', email: 'test@example.com' })
     });
     mockRouter = jasmine.createSpyObj('Router', ['navigate'], { url: '/dashboard' });
@@ -60,8 +65,31 @@ describe('TopNavComponent', () => {
     expect(component.pageTitle).toBeDefined();
   });
 
-  it('should provide valid userAvatarUrl', () => {
+  it('should calculate dynamic userInitial from displayName or email', () => {
+    // Default fallback
+    userSignal.set(null);
+    expect(component.userInitial).toBe('A');
+
+    // From displayName
+    userSignal.set({ displayName: 'Rebecca Master', email: 'master@example.com' });
+    expect(component.userInitial).toBe('R');
+
+    // From email when displayName is missing
+    userSignal.set({ displayName: null, email: 'alice@example.com' });
+    expect(component.userInitial).toBe('A');
+
+    // Handle whitespace/empty gracefully
+    userSignal.set({ displayName: '   ', email: '' });
+    expect(component.userInitial).toBe('A');
+  });
+
+  it('should provide photoURL when available, or generated SVG with initial', () => {
+    userSignal.set({ photoURL: 'https://example.com/avatar.jpg' });
+    expect(component.userAvatarUrl).toBe('https://example.com/avatar.jpg');
+
+    userSignal.set({ displayName: 'Taro', photoURL: null });
     expect(component.userAvatarUrl).toContain('data:image/svg+xml;utf8');
+    expect(component.userAvatarUrl).toContain('T');
   });
 
   it('should toggle AI copilot drawer and emit openDrawer', () => {

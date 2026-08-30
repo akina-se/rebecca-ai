@@ -21,6 +21,7 @@ jest.mock('../../src/services/firestore', () => ({
     markFollowerProcessed: jest.fn().mockResolvedValue(undefined),
     getLastListInteraction: jest.fn().mockResolvedValue(null),
     updateLastListInteraction: jest.fn().mockResolvedValue(undefined),
+    getListMembersFromCache: jest.fn().mockResolvedValue([]),
     hasProcessedMention: jest.fn().mockResolvedValue(false),
     markMentionProcessed: jest.fn().mockResolvedValue(undefined),
     getExtendedPrompt: jest.fn().mockResolvedValue(''),
@@ -57,10 +58,9 @@ jest.mock('../../src/services/xApi', () => ({
     getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
     getFollowers: jest.fn().mockResolvedValue({ data: [] }),
     addListMember: jest.fn().mockResolvedValue(true),
-    getListMembers: jest.fn().mockResolvedValue({ data: [] }),
     getTweetDetails: jest.fn().mockResolvedValue({ data: { text: '' }, includes: { media: [] } }),
     tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
-    getUserProfile: jest.fn().mockResolvedValue({ data: { description: 'bio' } }),
+    getUserProfile: jest.fn().mockResolvedValue({ data: { id: 'target_1', username: 'target_user', name: 'Target', description: 'bio' } }),
     getUserTweets: jest.fn().mockResolvedValue({ data: [{ id: 'tweet_123', text: 'today was fun' }] }),
 }));
 
@@ -329,18 +329,16 @@ describe('Integration Tests', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
             require('../../src/config').default.xApi.myUserId = 'test_my_user_id';
-            require('../../src/config').default.xApi.targetListId = 'test_target_list_id';
         });
         it('should process random engagement successfully', async () => {
-            (xApi.getListMembers as jest.Mock).mockResolvedValueOnce({ data: [{ id: 'target_1', username: 'target_user' }] });
-            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({ data: [], meta: { resultCount: 0 } }); // mock get user tweets (reusing getMentions mock shape for simplicity here)
+            (firestore.getListMembersFromCache as jest.Mock).mockResolvedValueOnce([{ id: 'target_1' }]);
             (gemini.generateReply as jest.Mock).mockResolvedValueOnce('Mock Engagement Reply');
-            
+
             const response = await request(app).get('/batch/random-engagement').set('x-batch-secret', 'test_secret');
-            
+
             expect(response.status).toBe(200);
-            expect(xApi.getListMembers).toHaveBeenCalled();
-            // xApi.tweet is used for engagement (replying to target)
+            expect(firestore.getListMembersFromCache).toHaveBeenCalled();
+            // xApi.tweet is used for engagement (posting to target)
             expect(xApi.tweet).toHaveBeenCalled();
         });
     });

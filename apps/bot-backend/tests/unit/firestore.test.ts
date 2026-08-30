@@ -571,4 +571,27 @@ describe('Firestore Service Unit Tests', () => {
       expect(mockDocSet).toHaveBeenCalled();
     });
   });
+
+  describe('getListMembersFromCache', () => {
+    it('should return all processed followers mapped to {id} stubs', async () => {
+      mockQueryGet.mockResolvedValueOnce({
+        docs: [
+          { data: () => ({ userId: 'user1', timestamp: '2024-01-01T00:00:00Z' }) },
+          { data: () => ({ userId: 'user2', timestamp: '2024-01-02T00:00:00Z' }) },
+        ],
+      });
+
+      const result = await firestoreService.getListMembersFromCache();
+
+      expect(result).toEqual([{ id: 'user1' }, { id: 'user2' }]);
+    });
+
+    it('should return an empty array when the processed_followers collection is empty', async () => {
+      mockQueryGet.mockResolvedValueOnce({ docs: [] });
+
+      const result = await firestoreService.getListMembersFromCache();
+
+      expect(result).toEqual([]);
+    });
+  });
 });
