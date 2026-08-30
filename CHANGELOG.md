@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.7.5](https://github.com/akina-se/rebecca-ai/compare/v1.7.4...v1.7.5) (2026-08-28)
+
+
+### Bug Fixes
+
+* **bot-backend:** optimize stealth onboarding with chunked pagination and early exit ([#99](https://github.com/akina-se/rebecca-ai/issues/99)) ([af9577d](https://github.com/akina-se/rebecca-ai/commit/af9577d34db0edb27431fed5cae4d22c085593b6))
+
+## [1.7.4](https://github.com/akina-se/rebecca-ai/compare/v1.7.3...v1.7.4) (2026-08-28)
+
+
+### Bug Fixes
+
+* **dashboard:** unify KPI card trends to percentages, add follower trends, and fix i18n labels ([#96](https://github.com/akina-se/rebecca-ai/issues/96)) ([5838cf4](https://github.com/akina-se/rebecca-ai/commit/5838cf414a77515613756022632398a3a7f3488c))
+
+## [1.7.3](https://github.com/akina-se/rebecca-ai/compare/v1.7.2...v1.7.3) (2026-08-28)
+
+
+### Bug Fixes
+
+* **dashboard:** pure dynamic metrics aggregation and strict 0 vs null (N/A) separation ([#93](https://github.com/akina-se/rebecca-ai/issues/93)) ([43423e2](https://github.com/akina-se/rebecca-ai/commit/43423e2c38bdec7b4c0595f5954ef798065d738e))
+
 ## [1.7.2](https://github.com/akina-se/rebecca-ai/compare/v1.7.1...v1.7.2) (2026-08-27)
 
 
