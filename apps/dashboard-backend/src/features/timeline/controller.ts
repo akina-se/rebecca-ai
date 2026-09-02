@@ -1,5 +1,13 @@
 import { Request, Response } from 'express';
 import { TimelineUseCase } from './usecase';
+import { logger } from '../../utils/logger';
+
+function getTraceHeader(req: Request): string | undefined {
+  if (typeof req.header === 'function') {
+    return req.header('x-cloud-trace-context');
+  }
+  return req.headers?.['x-cloud-trace-context'] as string | undefined;
+}
 
 /**
  * Controller responsible for handling HTTP requests related to the timeline and system metrics.
@@ -21,12 +29,13 @@ export class TimelineController {
    * @returns A promise that resolves when the response is sent.
    */
   async getMetrics(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
     try {
       const period = req.query.period as string || 'monthly';
       const metrics = await this.useCase.getMetrics(period);
       res.json(metrics);
     } catch (err) {
-      console.error('Failed to fetch metrics:', err);
+      logger.error('Failed to fetch metrics', err, { period: req.query.period }, traceHeader);
       res.status(500).json({ error: 'Failed to fetch metrics' });
     }
   }
@@ -39,6 +48,7 @@ export class TimelineController {
    * @returns A promise that resolves when the response is sent.
    */
   async getPosts(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
     try {
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
@@ -50,7 +60,7 @@ export class TimelineController {
       const result = await this.useCase.getPosts({ page, limit, sortBy, sortOrder, period, date });
       res.json(result);
     } catch (err) {
-      console.error('Failed to fetch posts:', err);
+      logger.error('Failed to fetch posts', err, { query: req.query }, traceHeader);
       res.status(500).json({ error: 'Failed to fetch posts' });
     }
   }
@@ -63,6 +73,7 @@ export class TimelineController {
    * @returns A promise that resolves when the response is sent.
    */
   async getPostById(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
     const { id } = req.params;
     try {
       const post = await this.useCase.getPostById(id as string);
@@ -72,7 +83,7 @@ export class TimelineController {
       }
       res.json(post);
     } catch (err) {
-      console.error('Failed to fetch post details:', err);
+      logger.error('Failed to fetch post details', err, { postId: id }, traceHeader);
       res.status(500).json({ error: 'Failed to fetch post details' });
     }
   }
@@ -85,6 +96,7 @@ export class TimelineController {
    * @returns A promise that resolves when the response is sent.
    */
   async deletePosts(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
     const { ids } = req.body;
     if (!Array.isArray(ids)) {
       res.status(400).json({ error: 'ids must be an array' });
@@ -94,7 +106,7 @@ export class TimelineController {
       await this.useCase.deletePosts(ids);
       res.json({ success: true });
     } catch (err) {
-      console.error('Failed to delete posts:', err);
+      logger.error('Failed to delete posts', err, { ids }, traceHeader);
       res.status(500).json({ error: 'Failed to delete posts' });
     }
   }
@@ -107,11 +119,12 @@ export class TimelineController {
    * @returns A promise that resolves when the response is sent.
    */
   async getAlerts(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
     try {
       const alerts = await this.useCase.getAlerts();
       res.json(alerts);
     } catch (err) {
-      console.error('Failed to fetch alerts:', err);
+      logger.error('Failed to fetch alerts', err, undefined, traceHeader);
       res.status(500).json({ error: 'Failed to fetch alerts' });
     }
   }

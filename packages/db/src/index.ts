@@ -186,8 +186,17 @@ const conversationLogConverter: FirestoreDataConverter<RawConversationLog> = {
  */
 const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
   toFirestore(post: TimelinePost): DocumentData {
+    const repostCount = Number(post.reposts ?? post.retweets ?? 0);
+    const mediaUrls = post.mediaUrls ?? post.media_urls ?? [];
+    const tweetId = post.tweetId ?? post.tweet_id ?? '';
     return {
       ...post,
+      reposts: repostCount,
+      retweets: repostCount,
+      mediaUrls,
+      media_urls: mediaUrls,
+      tweetId,
+      tweet_id: tweetId,
       expireAt: post.expireAt
         ? Timestamp.fromDate(new Date(post.expireAt))
         : null,
@@ -195,21 +204,34 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): TimelinePost {
     const data = snapshot.data();
+    const repostCount = Number(data['reposts'] ?? data['retweets'] ?? 0);
+    const mediaList = (Array.isArray(data['mediaUrls'])
+      ? data['mediaUrls']
+      : Array.isArray(data['media_urls'])
+      ? data['media_urls']
+      : []) as string[];
+    const tweetId = String(data['tweetId'] ?? data['tweet_id'] ?? '');
+    const timestamp = String(data['timestamp'] ?? data['created_at'] ?? '');
+
     return {
-      text: data['text'],
-      tweetId: data['tweetId'] ?? data['tweet_id'],
-      timestamp: data['timestamp'],
+      text: String(data['text'] ?? ''),
+      tweetId,
+      tweet_id: tweetId,
+      timestamp,
       expireAt: toIsoString(data['expireAt']) ?? '',
       status: data['status'],
-      impressions: data['impressions'],
-      likes: data['likes'],
-      retweets: data['retweets'],
-      replies: data['replies'],
-      mediaUrls: data['mediaUrls'] || data['media_urls'] || [],
+      impressions: Number(data['impressions'] ?? 0),
+      likes: Number(data['likes'] ?? 0),
+      reposts: repostCount,
+      retweets: repostCount,
+      replies: Number(data['replies'] ?? 0),
+      mediaUrls: mediaList,
+      media_urls: mediaList,
       authorId: data['authorId'],
       authorName: data['authorName'],
       authorHandle: data['authorHandle'],
       authorAvatarUrl: data['authorAvatarUrl'],
+      assetId: data['assetId'],
     };
   },
 };
