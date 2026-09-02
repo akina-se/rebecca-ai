@@ -457,6 +457,19 @@ test.describe('Dashboard Features E2E Tests', () => {
     await expect(dauCard).toBeVisible();
     await expect(apiCallsCard).toBeVisible();
 
+    // Assert all 4 KPI Cards render valid SVG sparkline trend polylines without NaN or empty points
+    for (const card of [followersCard, engagementCard, dauCard, apiCallsCard]) {
+      const sparklineSvg = card.locator('svg.sparkline');
+      await expect(sparklineSvg).toBeVisible({ timeout: 5000 });
+
+      const polyline = sparklineSvg.locator('polyline');
+      await expect(polyline).toBeAttached();
+      const pointsAttr = await polyline.getAttribute('points');
+      expect(pointsAttr).toBeTruthy();
+      expect(pointsAttr).not.toContain('NaN');
+      expect(pointsAttr).toMatch(/\d+,\d+/);
+    }
+
     // Verify Period Dropdown Selector
     const periodDropdown = page.locator('.block-header app-dropdown').first();
     if (await periodDropdown.isVisible()) {
@@ -468,6 +481,15 @@ test.describe('Dashboard Features E2E Tests', () => {
         if (await option.isVisible()) {
           await option.click();
           await page.waitForTimeout(500);
+
+          // Verify sparklines still render after period change
+          for (const card of [followersCard, engagementCard, dauCard, apiCallsCard]) {
+            const polyline = card.locator('svg.sparkline polyline');
+            await expect(polyline).toBeAttached();
+            const pointsAttr = await polyline.getAttribute('points');
+            expect(pointsAttr).toBeTruthy();
+            expect(pointsAttr).not.toContain('NaN');
+          }
         }
       }
     }
