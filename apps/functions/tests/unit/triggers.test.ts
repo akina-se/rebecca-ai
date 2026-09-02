@@ -25,7 +25,8 @@ jest.mock('firebase-functions/v2/firestore', () => ({
 
 const mockBatchSet = jest.fn();
 const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
-const mockDoc = jest.fn().mockReturnValue({ id: 'mock-doc-id' });
+const mockDocGet = jest.fn().mockResolvedValue({ exists: false });
+const mockDoc = jest.fn().mockReturnValue({ id: 'mock-doc-id', get: mockDocGet });
 const mockWhere = jest.fn().mockReturnThis();
 const mockLimit = jest.fn().mockReturnThis();
 const mockGet = jest.fn();
@@ -52,6 +53,7 @@ jest.mock('firebase-admin/firestore', () => ({
   FieldValue: {
     increment: jest.fn().mockImplementation((n) => ({ increment: n })),
     arrayUnion: jest.fn().mockImplementation((val) => ({ arrayUnion: val })),
+    serverTimestamp: jest.fn().mockReturnValue({ _methodName: 'serverTimestamp' }),
   },
 }));
 
@@ -194,6 +196,49 @@ describe('Firebase Cloud Functions Unit Tests', () => {
 
       expect(mockDoc).toHaveBeenCalledWith('user_456');
       expect(mockBatchSet).toHaveBeenCalledTimes(2);
+      expect(mockBatchCommit).toHaveBeenCalledTimes(1);
+    });
+
+    it('should skip processing if event has already been processed (idempotency)', async () => {
+      const event = {
+        id: 'evt_duplicate_123',
+        data: {
+          data: () => ({
+            userId: 'user_duplicate',
+            userText: 'duplicate message',
+          }),
+        },
+      };
+
+      // Mock eventDoc exists: true
+      mockDocGet.mockResolvedValueOnce({ exists: true });
+
+      await firestoreTriggerHandler(event);
+
+      expect(mockDoc).toHaveBeenCalledWith('evt_duplicate_123');
+      expect(mockBatchCommit).not.toHaveBeenCalled();
+    });
+
+    it('should record eventId in processed_events on fresh event', async () => {
+      const event = {
+        id: 'evt_fresh_456',
+        params: { logId: 'log_456' },
+        data: {
+          id: 'log_456',
+          data: () => ({
+            userId: 'user_fresh',
+            userText: 'fresh message',
+          }),
+        },
+      };
+
+      // Mock eventDoc exists: false
+      mockDocGet.mockResolvedValueOnce({ exists: false });
+
+      await firestoreTriggerHandler(event);
+
+      expect(mockDoc).toHaveBeenCalledWith('evt_fresh_456');
+      expect(mockBatchSet).toHaveBeenCalledTimes(3); // processed_event + user + dau
       expect(mockBatchCommit).toHaveBeenCalledTimes(1);
     });
   });

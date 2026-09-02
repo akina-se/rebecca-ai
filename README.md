@@ -129,12 +129,15 @@ X_MY_USER_ID=your-bot-twitter-user-id
 
 # Gemini API Models
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.1-flash-lite
+GEMINI_MODEL=gemini-3.5-flash-lite
 GEMINI_JUDGE_MODEL=gemma-4-31b-it
 GEMINI_LANGUAGE_MODEL=gemma-4-31b-it
 GEMINI_EMBEDDING_MODEL=text-embedding-004
-GEMINI_VISION_MODEL=gemini-3.1-flash-lite
-GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.1-flash-lite
+GEMINI_VISION_MODEL=gemini-3.5-flash-lite
+GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.5-flash-lite
+
+# CORS Configuration (Dashboard BFF)
+CORS_ALLOWED_ORIGINS=http://localhost:4200,https://your-dashboard-app.web.app
 
 # Rate Limits
 GLOBAL_DAILY_LIMIT=500
@@ -172,6 +175,9 @@ npm run lint
 
 # Run all unit and integration test suites
 npm run test
+
+# Run Playwright End-to-End (E2E) tests against emulator & dashboard
+npm run test:e2e
 
 # Perform security audit checks for exposed secrets
 npm run secret-check
