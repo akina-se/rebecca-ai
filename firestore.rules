@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Secure by Default: Direct client access is completely disabled.
+    // All Firestore read/write operations must go through backend services (Cloud Run, Cloud Functions)
+    // authorized via the Firebase Admin SDK and Google Cloud IAM service accounts.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -2,7 +2,9 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
-      allow read, write: if true;
+      // Secure by Default: Direct client access is completely disabled.
+      // Media assets must be managed and streamed securely through the Backend-for-Frontend (BFF) using Admin SDK credentials.
+      allow read, write: if false;
     }
   }
 }
