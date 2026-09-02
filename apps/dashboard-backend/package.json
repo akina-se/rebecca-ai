@@ -1,6 +1,6 @@
 {
   "name": "dashboard-backend",
-  "version": "1.7.8",
+  "version": "1.7.9",
   "description": "Backend-for-Frontend (BFF) for the Admin Dashboard",
   "main": "dist/index.js",
   "scripts": {
