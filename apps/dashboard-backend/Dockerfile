@@ -1,5 +1,5 @@
 # Stage 1: Build all workspaces and dependencies
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
@@ -13,7 +13,7 @@ RUN npm ci
 RUN npm run build --workspace=@rebecca/types --workspace=@rebecca/db --workspace=@rebecca/persona --workspace=dashboard-backend
 
 # Stage 2: Minimal production image
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

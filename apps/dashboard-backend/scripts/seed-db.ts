@@ -86,6 +86,7 @@ async function seedFirestore() {
     images: firestore.collection('images'),
     system: firestore.collection('system'),
     systemStats: firestore.collection('system_stats'),
+    processedFollowers: firestore.collection('processed_followers'),
   };
 
   const now = new Date();
@@ -209,6 +210,7 @@ async function seedFirestore() {
       impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500 + Math.random() * 1000) + 1,
       likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
       retweets: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),
+      reposts: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),
       replies: Math.floor(8 + (120 - i) * 1 + Math.random() * 5),
       mediaUrls: i % 4 === 0 ? [`https://picsum.photos/seed/post${i}/600/400`] : [],
       authorId: author.id,
@@ -223,6 +225,21 @@ async function seedFirestore() {
     await collections.timeline.doc(id).set(data);
   }
   console.log(`Seeded ${posts.length} timeline posts across 365 days.`);
+
+  // 3.5 Seed processed followers for dynamic KPI sparklines
+  const totalFollowersSeed = 120;
+  for (let i = 1; i <= totalFollowersSeed; i++) {
+    const daysOffset = Math.floor((i / totalFollowersSeed) * 365);
+    const followerDate = new Date(Date.now() - daysOffset * 24 * 3600000);
+    await collections.processedFollowers.doc(`follower_${i}`).set({
+      userId: `follower_uid_${i}`,
+      username: `follower_user_${i}`,
+      timestamp: followerDate.toISOString(),
+      processedAt: followerDate.toISOString(),
+      source: 'auto_sync'
+    });
+  }
+  console.log(`Seeded ${totalFollowersSeed} processed followers across 365 days.`);
 
   // 4. Seed images (assets library - 35 assets for pagination & filter testing)
   const images = [];
