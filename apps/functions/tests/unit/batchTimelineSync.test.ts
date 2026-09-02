@@ -21,9 +21,10 @@ jest.mock('../../src/services/xApi', () => ({
 import { batchTimelineSync, validateAuth } from '../../src/triggers/batchTimelineSync';
 
 describe('validateAuth helper', () => {
-  it('should return true if no configured secret is present (GCP IAM mode)', () => {
-    expect(validateAuth(undefined, undefined)).toBe(true);
-    expect(validateAuth('secret', undefined)).toBe(true);
+  it('should return false if no configured secret is present (fail-closed security)', () => {
+    expect(validateAuth(undefined, undefined)).toBe(false);
+    expect(validateAuth('secret', undefined)).toBe(false);
+    expect(validateAuth('secret', '')).toBe(false);
   });
 
   it('should return false if configured secret is set but request secret is missing', () => {

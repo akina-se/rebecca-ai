@@ -14,8 +14,8 @@ This system is built with a highly scalable, fully serverless architecture that 
 - **Image Storage**: Cloud Storage (GCS)
 - **Scheduled Batch Processing**: Cloud Scheduler
 - **LLM Engine**: 
-  - Main Conversation, Memory Consolidation, Inference: `gemini-3.1-flash-lite`
-  - Image Recognition (Vision): `gemini-3.1-flash-lite`
+  - Main Conversation, Memory Consolidation, Inference: `gemini-3.5-flash-lite`
+  - Image Recognition (Vision): `gemini-3.5-flash-lite`
   - Language Detection & Safety Audit (LLM-as-a-Judge): `gemma-4-31b-it`
   - Vectorization: `text-embedding-004`
 - **Integration API**: X (Twitter) API v2 (Library: `@xdevplatform/xdk`)

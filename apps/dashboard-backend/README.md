@@ -42,6 +42,8 @@ Copy or configure the following environment variables in `.env` or pass them in 
 | `FIRESTORE_EMULATOR_HOST` | Host + Port for Firestore Emulator | `127.0.0.1:8080` |
 | `FIREBASE_AUTH_EMULATOR_HOST` | Host + Port for Firebase Auth Emulator | `127.0.0.1:9099` |
 | `BOT_BACKEND_URL` | Endpoint of the bot execution engine | `http://localhost:50051` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed CORS origins | `http://localhost:4200` |
+
 
 ---
 
