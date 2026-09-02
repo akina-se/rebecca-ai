@@ -140,7 +140,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Java (for Firebase Emulators)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -165,7 +165,7 @@ jobs:
             "export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 && export FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 && export FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 && export GCLOUD_PROJECT=rebecca-ai-gal-local && npx ts-node -T apps/dashboard-backend/scripts/seed-db.ts && npm run test:e2e"
 
       - name: Upload Playwright UI Screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-ui-screenshots
@@ -173,7 +173,7 @@ jobs:
           retention-days: 14
 
       - name: Post E2E Screenshots Summary to PR Thread
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         if: github.event_name == 'pull_request' && always()
         with:
           script: |
