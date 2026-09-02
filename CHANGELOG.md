@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.9](https://github.com/akina-se/rebecca-ai/compare/v1.7.8...v1.7.9) (2026-09-02)
+
+
+### Bug Fixes
+
+* enhance enterprise security boundaries, data integrity, and error handling ([7e30b6e](https://github.com/akina-se/rebecca-ai/commit/7e30b6ec9e73d83925370aa1442c464205e0c8c1))
+* enhance enterprise security boundaries, data integrity, and error handling ([#117](https://github.com/akina-se/rebecca-ai/issues/117)) ([6a2d9a4](https://github.com/akina-se/rebecca-ai/commit/6a2d9a4de9aa38a0a65725519c99f3185a808948))
+
 ## [1.7.8](https://github.com/akina-se/rebecca-ai/compare/v1.7.7...v1.7.8) (2026-09-02)
 
 
