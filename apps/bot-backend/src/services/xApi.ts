@@ -98,8 +98,7 @@ const getTweetDetails = async (tweetId: string): Promise<XApiTweetDetailsRespons
  */
 const uploadMedia = async (buffer: Buffer, mimeType: string) => {
     if (!client || !oauth1Client) {
-        console.warn('Twitter API client not initialized. Mocking media upload.');
-        return 'mock_media_id';
+        throw new Error('Twitter API client not initialized');
     }
     try {
         const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
@@ -334,9 +333,11 @@ const getUserTweets = async (userId: string, maxResults: number = 5): Promise<XA
  * @throws {Error} If the deletion request fails or no valid client is available.
  */
 const deleteTweet = async (tweetId: string): Promise<boolean> => {
-    if (!client || !/^\d+$/.test(tweetId)) {
-        console.warn(`Twitter API client not initialized or test ID detected (${tweetId}). Mocking tweet deletion.`);
-        return true;
+    if (!tweetId || !/^\d+$/.test(tweetId)) {
+        throw new Error(`Invalid tweet ID: expected numeric ID string, received "${tweetId}"`);
+    }
+    if (!client && !oauth1Client) {
+        throw new Error('Twitter API client not initialized');
     }
     try {
         const postsObj = client.posts as unknown as Record<string, unknown>;

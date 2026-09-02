@@ -289,8 +289,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
           exists: true,
           id: 'p_mix',
           data: () => ({
-            content: 'Mix',
-            media_urls: ['https://already.http/img.jpg', 'gs://bucket/photo.jpg']
+            text: 'Mix',
+            mediaUrls: ['https://already.http/img.jpg', 'gs://bucket/photo.jpg']
           })
         })
       });
@@ -408,7 +408,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       (repo as any).collections.timelineHistory = {
         where: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({
-            docs: [{ data: () => ({ impressions: 200, likes: 10, retweets: 2, replies: 0, timestamp: nowIso }) }],
+            docs: [{ data: () => ({ impressions: 200, likes: 10, reposts: 2, retweets: 2, replies: 0, timestamp: nowIso }) }],
             size: 1
           }),
           where: jest.fn().mockReturnValue({
@@ -461,7 +461,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(metricsEmpty.followers).toBe(0);
       expect(metricsEmpty.followersTrend).toBeNull();
       expect(metricsEmpty.engagementRate).toBeNull();
-      expect(metricsEmpty.apiCallsHistory).toEqual([]);
+      expect(metricsEmpty.apiCallsHistory).toEqual(new Array(7).fill(0));
     });
 
     it('getPostById should test missing fields and text fallback', async () => {
@@ -1058,22 +1058,22 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
 
       const monthlyMetrics = await timelineRepo.getMetrics('monthly');
       expect(monthlyMetrics.followers).toBe(500);
-      expect(monthlyMetrics.followersHistory).toEqual([]);
+      expect(monthlyMetrics.followersHistory).toEqual(new Array(30).fill(0));
 
       const yearlyMetrics = await timelineRepo.getMetrics('yearly');
       expect(yearlyMetrics.followers).toBe(500);
-      expect(yearlyMetrics.followersHistory).toEqual([]);
+      expect(yearlyMetrics.followersHistory).toEqual(new Array(12).fill(0));
 
       // 2. getPosts with sorting by time, created_at, impressions, and status
       const mockTimelineDocs = [
         {
           id: 'p_1',
           data: () => ({
-            created_at: '2026-08-01T00:00:00Z',
-            content: 'First post',
+            timestamp: '2026-08-01T00:00:00Z',
+            text: 'First post',
             impressions: 100,
             status: 'SUCCESS',
-            media_urls: ['gs://rebecca-ai-gal-images/images/p1.jpg']
+            mediaUrls: ['gs://rebecca-ai-gal-images/images/p1.jpg']
           })
         },
         {
@@ -1083,7 +1083,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
             text: 'Second post',
             impressions: 500,
             status: 'FAILED',
-            media_urls: ['https://cdn.example.com/external.png']
+            mediaUrls: ['https://cdn.example.com/external.png']
           })
         }
       ];

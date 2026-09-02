@@ -5,6 +5,7 @@ const COLLECTIONS = {
   USERS: 'users',
   CONVERSATION_LOGS: 'conversation_logs',
   SYSTEM_STATS: 'system_stats',
+  PROCESSED_EVENTS: 'processed_events',
 } as const;
 
 interface RawConversationLog {
@@ -18,6 +19,7 @@ interface RawConversationLog {
 /**
  * Cloud Function trigger that executes when a new conversation log document is created in Firestore.
  * Updates user statistics (daily reply count, last reply date) and Daily Active Users (DAU) system stats.
+ * Guarantees idempotency against Eventarc redeliveries via processed_events tracking.
  */
 export const onConversationLogCreated = onDocumentCreated(
   `${COLLECTIONS.CONVERSATION_LOGS}/{logId}`,
@@ -35,7 +37,29 @@ export const onConversationLogCreated = onDocumentCreated(
     }
 
     const db = getFirestore();
+
+    // Idempotency Guard: Check if this CloudEvent has already been processed
+    const eventId = event.id;
+    if (eventId) {
+      const eventRef = db.collection(COLLECTIONS.PROCESSED_EVENTS).doc(eventId);
+      const eventDoc = await eventRef.get();
+      if (eventDoc?.exists) {
+        console.log(`Event ${eventId} has already been processed. Skipping to maintain idempotency.`);
+        return;
+      }
+    }
+
     const batch = db.batch();
+
+    // Record processed event to prevent duplicate processing on Eventarc retries
+    if (eventId) {
+      const eventRef = db.collection(COLLECTIONS.PROCESSED_EVENTS).doc(eventId);
+      batch.set(eventRef, {
+        processedAt: FieldValue.serverTimestamp(),
+        type: 'conversation_log_created',
+        logId: event.params?.logId || snapshot.id,
+      });
+    }
 
     // Update User Stats (dailyReplyCount and lastReplyDate)
     const userRef = db.collection(COLLECTIONS.USERS).doc(log.userId);

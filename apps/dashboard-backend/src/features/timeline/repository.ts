@@ -1,22 +1,10 @@
 import { Firestore, Query } from '@google-cloud/firestore';
-import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse } from '@rebecca/types';
+import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse, TimelinePost } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
-import { config } from '../../config';
-
-interface TimelinePostDoc {
-  created_at?: string;
-  timestamp?: string;
-  content?: string;
-  impressions?: number;
-  likes?: number;
-  retweets?: number;
-  replies?: number;
-  media_urls?: string[];
-  status?: string;
-}
 
 /**
  * Repository responsible for data access operations related to timeline history, leaderboard posts, and system KPI metrics in Firestore.
+ * Strictly adheres to canonical schema and leverages @rebecca/db converters for typed normalization.
  */
 export class TimelineRepository {
   private collections;
@@ -31,9 +19,9 @@ export class TimelineRepository {
   }
 
   /**
-   * Retrieves global system KPI metrics.
+   * Retrieves global system KPI metrics with historical trends and sparkline distributions.
    * 
-   * @param period The time period for metrics (e.g., 'weekly', 'monthly', 'yearly')
+   * @param period The time period for metrics ('weekly' | 'monthly' | 'yearly')
    * @returns A promise that resolves to the global KPI metrics.
    */
   async getMetrics(period: string = 'monthly'): Promise<KpiMetrics> {
@@ -103,13 +91,14 @@ export class TimelineRepository {
       dauTrend = parseFloat((((currentDau - prevDau) / prevDau) * 100).toFixed(1));
     }
 
-    // 4. Engagement Rate: Likes + Retweets + Replies / Impressions across posts in the period
+    // 4. Engagement Rate: Likes + Reposts + Replies / Impressions across posts in the period
     let totalEngagements = 0;
     let totalImpressions = 0;
     currentPostsSnap.docs.forEach(doc => {
-      const d = doc.data() as TimelinePostDoc;
+      const d = doc.data();
       const impressions = Number(d.impressions) || 0;
-      const engagements = (Number(d.likes) || 0) + (Number(d.retweets) || 0) + (Number(d.replies) || 0);
+      const reposts = Number(d.reposts) || 0;
+      const engagements = (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
       totalImpressions += impressions;
       totalEngagements += engagements;
     });
@@ -127,9 +116,10 @@ export class TimelineRepository {
       .get();
 
     prevPostsListSnap.docs.forEach(doc => {
-      const d = doc.data() as TimelinePostDoc;
+      const d = doc.data();
       prevTotalImpressions += Number(d.impressions) || 0;
-      prevTotalEngagements += (Number(d.likes) || 0) + (Number(d.retweets) || 0) + (Number(d.replies) || 0);
+      const reposts = Number(d.reposts) || 0;
+      prevTotalEngagements += (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
     });
 
     let engagementTrend: number | null = null;
@@ -138,32 +128,85 @@ export class TimelineRepository {
       engagementTrend = parseFloat((engagementRate - prevEngagementRate).toFixed(1));
     }
 
-    // 5. Dynamic Sparkline Histograms from actual timestamps
-    const buildSparklineBuckets = (timestamps: number[], bucketsCount: number, startMs: number, endMs: number): number[] => {
-      if (timestamps.length === 0) return [];
-      const bucketDuration = (endMs - startMs) / bucketsCount;
-      const counts = new Array<number>(bucketsCount).fill(0);
-      for (const t of timestamps) {
-        if (t >= startMs && t <= endMs) {
-          const idx = Math.min(bucketsCount - 1, Math.max(0, Math.floor((t - startMs) / bucketDuration)));
-          counts[idx]++;
-        }
-      }
-      return counts;
+    // 5. Dynamic Sparkline Histograms
+    const startMs = nowMs - periodMs;
+    const bucketDuration = periodMs / historyBuckets;
+
+    const getBucketIndex = (timestampMs: number): number => {
+      if (timestampMs < startMs || timestampMs > nowMs) return -1;
+      return Math.min(historyBuckets - 1, Math.max(0, Math.floor((timestampMs - startMs) / bucketDuration)));
     };
 
-    const startMs = nowMs - periodMs;
-    const followerTimestamps = currentFollowersSnap.docs
-      .map(d => new Date(d.data().timestamp || 0).getTime())
-      .filter(t => t > 0);
-    const followersHistory = buildSparklineBuckets(followerTimestamps, historyBuckets, startMs, nowMs);
+    // 5.1 Followers History (Cumulative Stock)
+    const followerIncrements = new Array<number>(historyBuckets).fill(0);
+    currentFollowersSnap.docs.forEach(doc => {
+      const t = new Date(doc.data().timestamp || 0).getTime();
+      const idx = getBucketIndex(t);
+      if (idx !== -1) {
+        followerIncrements[idx]++;
+      }
+    });
 
-    const logTimestamps = [
-      ...currentLogsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime()),
-      ...currentPostsSnap.docs.map(d => new Date(d.data().timestamp || 0).getTime())
-    ].filter(t => t > 0);
+    let runningFollowers = baselineFollowers;
+    const followersHistory = followerIncrements.map(increment => {
+      runningFollowers += increment;
+      return runningFollowers;
+    });
 
-    const apiCallsHistory = buildSparklineBuckets(logTimestamps, historyBuckets, startMs, nowMs);
+    // 5.2 API Calls History (Activity Count)
+    const apiCallsHistory = new Array<number>(historyBuckets).fill(0);
+    currentLogsSnap.docs.forEach(doc => {
+      const t = new Date(doc.data().timestamp || 0).getTime();
+      const idx = getBucketIndex(t);
+      if (idx !== -1) {
+        apiCallsHistory[idx]++;
+      }
+    });
+    currentPostsSnap.docs.forEach(doc => {
+      const d = doc.data();
+      const t = new Date(d.timestamp || 0).getTime();
+      const idx = getBucketIndex(t);
+      if (idx !== -1) {
+        apiCallsHistory[idx]++;
+      }
+    });
+
+    // 5.3 DAU History (Unique Active Users per Bucket)
+    const dauUserSets: Set<string>[] = Array.from({ length: historyBuckets }, () => new Set<string>());
+    currentLogsSnap.docs.forEach(doc => {
+      const data = doc.data();
+      const userId = data.userId;
+      if (typeof userId === 'string' && userId) {
+        const t = new Date(data.timestamp || 0).getTime();
+        const idx = getBucketIndex(t);
+        if (idx !== -1) {
+          dauUserSets[idx].add(userId);
+        }
+      }
+    });
+    const dauHistory = dauUserSets.map(userSet => userSet.size);
+
+    // 5.4 Engagement Rate History (Percentage per Bucket)
+    const bucketImpressions = new Array<number>(historyBuckets).fill(0);
+    const bucketEngagements = new Array<number>(historyBuckets).fill(0);
+
+    currentPostsSnap.docs.forEach(doc => {
+      const d = doc.data();
+      const t = new Date(d.timestamp || 0).getTime();
+      const idx = getBucketIndex(t);
+      if (idx !== -1) {
+        const impressions = Number(d.impressions) || 0;
+        const reposts = Number(d.reposts) || 0;
+        const engagements = (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
+        bucketImpressions[idx] += impressions;
+        bucketEngagements[idx] += engagements;
+      }
+    });
+
+    const engagementHistory = bucketImpressions.map((impressions, idx) => {
+      if (impressions === 0) return 0;
+      return parseFloat(((bucketEngagements[idx] / impressions) * 100).toFixed(1));
+    });
 
     return {
       followers: totalFollowers,
@@ -171,10 +214,10 @@ export class TimelineRepository {
       followersHistory,
       engagementRate,
       engagementTrend,
-      engagementHistory: [],
+      engagementHistory,
       dailyActiveUsers: currentDau,
       dauTrend,
-      dauHistory: [],
+      dauHistory,
       apiCalls: currentApiCalls,
       apiCallsTrend,
       apiCallsHistory
@@ -182,13 +225,13 @@ export class TimelineRepository {
   }
 
   /**
-   * Retrieves leaderboard posts ordered by impressions descending, limited to 50 posts by default, supporting pagination.
+   * Retrieves leaderboard posts ordered by impressions descending, supporting pagination and sorting.
    * 
    * @returns A promise that resolves to an array of leaderboard posts.
    */
   async getPosts(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<PaginatedResponse<PostLeaderboard>> {
-    let query: Query = this.collections.timelineHistory;
-    
+    let query = this.collections.timelineHistory as Query<TimelinePost>;
+
     let startDate = '';
     let endDate = '';
     if (params?.period && params?.date && params.period !== 'all-time') {
@@ -214,21 +257,22 @@ export class TimelineRepository {
     const limit = params?.limit || 50;
     const page = params?.page || 1;
 
-    // Fetch snapshot safely
+    // Fetch snapshot with normalized converter
     const snapshot = await query.get();
-    let docs = snapshot.docs.map(doc => ({ id: doc.id, data: (doc.data() || {}) as Record<string, unknown> }));
+    let docs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
 
-    // Memory-safe sorting ensures documents without explicit 'impressions' fields are never dropped
+    // Memory-safe sorting
     docs.sort((a, b) => {
       let numA = 0;
       let numB = 0;
 
       if (sortBy === 'time' || sortBy === 'created_at' || sortBy === 'timestamp') {
-        numA = new Date(String(a.data.created_at || a.data.timestamp || 0)).getTime();
-        numB = new Date(String(b.data.created_at || b.data.timestamp || 0)).getTime();
+        numA = new Date(a.data.timestamp || 0).getTime();
+        numB = new Date(b.data.timestamp || 0).getTime();
       } else {
-        numA = typeof a.data[sortBy] === 'number' ? (a.data[sortBy] as number) : 0;
-        numB = typeof b.data[sortBy] === 'number' ? (b.data[sortBy] as number) : 0;
+        const key = sortBy as keyof TimelinePost;
+        numA = typeof a.data[key] === 'number' ? (a.data[key] as number) : 0;
+        numB = typeof b.data[key] === 'number' ? (b.data[key] as number) : 0;
       }
 
       if (sortOrder === 'desc') return numB < numA ? -1 : numB > numA ? 1 : 0;
@@ -238,29 +282,28 @@ export class TimelineRepository {
     const totalItems = docs.length;
     const totalPages = Math.ceil(totalItems / limit) || 1;
     docs = docs.slice((page - 1) * limit, page * limit);
-    
+
     const data: PostLeaderboard[] = docs.map(doc => {
       const d = doc.data;
-      const time = String(d.created_at || d.timestamp || new Date().toISOString());
-      const content = String(d.content || d.text || '');
-      const rawMedia = (d.media_urls || d.mediaUrls || []) as string[];
-      const media = rawMedia.map(url => {
+      const media = (d.mediaUrls || []).map(url => {
         if (typeof url === 'string' && url.startsWith('gs://')) {
           const parts = url.split('/');
           const filename = parts.pop() || '';
           return `/api/v1/assets/${filename}/image?size=thumbnail`;
         }
         return typeof url === 'string' ? url : '';
-      }).filter(url => Boolean(url));
+      }).filter(Boolean);
+
+      const content = d.text || '';
 
       return {
         id: doc.id,
-        tweetId: typeof d.tweetId === 'string' ? d.tweetId : undefined,
-        time,
-        snippet: content ? content.substring(0, 50) + '...' : '',
+        tweetId: d.tweetId || undefined,
+        time: d.timestamp,
+        snippet: content.length > 50 ? content.substring(0, 50) + '...' : content,
         impressions: typeof d.impressions === 'number' ? d.impressions : 0,
         status: String(d.status || 'SUCCESS'),
-        hasMedia: !!media && media.length > 0,
+        hasMedia: media.length > 0,
         mediaUrls: media
       };
     });
@@ -287,30 +330,27 @@ export class TimelineRepository {
   async getPostById(id: string): Promise<PostDetail | null> {
     const doc = await this.collections.timelineHistory.doc(id).get();
     if (!doc.exists) return null;
-    
-    const data = (doc.data() || {}) as Record<string, unknown>;
-    const rawMediaUrls: string[] = (data.mediaUrls || data.media_urls || []) as string[];
-    
-    // Normalize GCS paths to secure backend streaming API endpoint (/api/v1/assets/:id/image)
-    const resolvedMediaUrls = rawMediaUrls.map(url => {
+
+    const data = doc.data()!;
+    const mediaUrls = (data.mediaUrls || []).map(url => {
       if (typeof url === 'string' && url.startsWith('gs://')) {
         const parts = url.split('/');
         const filename = parts.pop() || '';
         return `/api/v1/assets/${filename}/image`;
       }
       return typeof url === 'string' ? url : '';
-    });
+    }).filter(Boolean);
 
     return {
       id: doc.id,
-      tweetId: typeof data.tweetId === 'string' ? data.tweetId : undefined,
-      time: String(data.timestamp || data.created_at || new Date().toISOString()),
-      content: String(data.content || data.text || ''),
+      tweetId: data.tweetId || undefined,
+      time: data.timestamp,
+      content: data.text || '',
       impressions: typeof data.impressions === 'number' ? data.impressions : 0,
-      mediaUrls: resolvedMediaUrls.filter(url => Boolean(url)),
+      mediaUrls,
       status: String(data.status || 'SUCCESS'),
       likes: typeof data.likes === 'number' ? data.likes : 0,
-      retweets: typeof data.retweets === 'number' ? data.retweets : 0,
+      retweets: typeof data.reposts === 'number' ? data.reposts : 0,
       replies: typeof data.replies === 'number' ? data.replies : 0
     };
   }
@@ -320,17 +360,17 @@ export class TimelineRepository {
    */
   async getAlerts(): Promise<SystemAlert[]> {
     const alerts: SystemAlert[] = [];
-    
+
     // 1. Count images with failed/empty caption or status FAILED
     const imagesSnapshot = await this.collections.images.get();
     let failedCaptionsCount = 0;
     imagesSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      if (!data.caption || data.status === 'FAILED') {
+      if (!data.caption || String(data.status).toUpperCase() === 'FAILED') {
         failedCaptionsCount++;
       }
     });
-    
+
     if (failedCaptionsCount > 0) {
       alerts.push({
         id: 'failed_captions',
@@ -339,17 +379,17 @@ export class TimelineRepository {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // 2. Count failed posts
     const postsSnapshot = await this.collections.timelineHistory.get();
     let failedPostsCount = 0;
     postsSnapshot.docs.forEach(doc => {
-      const data = doc.data() as TimelinePostDoc;
-      if (data.status === 'FAILED') {
+      const data = doc.data();
+      if (String(data.status).toUpperCase() === 'FAILED') {
         failedPostsCount++;
       }
     });
-    
+
     if (failedPostsCount > 0) {
       alerts.push({
         id: 'failed_posts',
@@ -358,45 +398,51 @@ export class TimelineRepository {
         timestamp: new Date().toISOString()
       });
     }
-    
+
+    const [xApiStateDoc, personaDoc] = await Promise.all([
+      this.collections.system.doc('x_api_state').get(),
+      this.collections.system.doc('persona').get()
+    ]);
+
+    if (xApiStateDoc.exists) {
+      const state = xApiStateDoc.data() as unknown as Record<string, unknown> | undefined;
+      if (state && (state.is_rate_limited || state.isRateLimited)) {
+        alerts.push({
+          id: 'rate_limit',
+          type: 'error',
+          message: 'X API rate limit active. Autonomous operations may be throttled.',
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    if (!personaDoc.exists) {
+      alerts.push({
+        id: 'missing_persona',
+        type: 'warning',
+        message: 'System persona configuration is missing.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     return alerts;
   }
 
   /**
-   * Deletes multiple posts by their IDs, also removing from X platform if a Tweet ID is present.
+   * Deletes multiple posts by their IDs.
    * 
-   * @param ids - The array of post IDs to delete.
-   * @returns A promise that resolves when the deletion is complete.
+   * @param ids - An array of post IDs to delete.
+   * @returns A promise that resolves when the batch delete is committed.
    */
   async deletePosts(ids: string[]): Promise<void> {
+    if (!ids || ids.length === 0) return;
+
     const batch = this.firestore.batch();
-    for (const id of ids) {
-      try {
-        const doc = await this.collections.timelineHistory.doc(id).get();
-        if (doc.exists) {
-          const data = doc.data() as { tweetId?: string; tweet_id?: string };
-          const tweetId = data?.tweetId || data?.tweet_id;
-          if (tweetId && config.xApi?.appKey) {
-            const { Client, OAuth1 } = await import('@xdevplatform/xdk');
-            const oauth1Client = new OAuth1({
-              apiKey: config.xApi.appKey,
-              apiSecret: config.xApi.appSecret,
-              callback: 'oob',
-              accessToken: config.xApi.accessToken,
-              accessTokenSecret: config.xApi.accessSecret,
-            });
-            const client = new Client({ oauth1: oauth1Client });
-            await client.posts.delete(tweetId);
-            const safeTweetId = String(tweetId).replace(/[\r\n\u2028\u2029]/g, '');
-            console.log('Deleted tweet %s from X API.', safeTweetId);
-          }
-        }
-      } catch (err) {
-        const safeId = String(id).replace(/[\r\n\u2028\u2029]/g, '');
-        console.warn('Could not delete post %s from X:', safeId, err);
-      }
-      batch.delete(this.collections.timelineHistory.doc(id));
-    }
+    ids.forEach(id => {
+      const ref = this.collections.timelineHistory.doc(id);
+      batch.delete(ref);
+    });
+
     await batch.commit();
   }
 }

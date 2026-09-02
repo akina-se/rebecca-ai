@@ -204,6 +204,32 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       );
     });
 
+    it('should reject invalid language with 400 Bad Request', async () => {
+      const router = initializeSettingsModule(mockFirestore);
+
+      const req = { body: { language: 'fr' } } as Request;
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() } as unknown as Response;
+
+      const patchLayer = (router as any).stack.find((layer: any) => layer.route?.methods?.patch);
+      await patchLayer.route.stack[0].handle(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid language: must be "ja" or "en"' });
+    });
+
+    it('should reject invalid timezone with 400 Bad Request', async () => {
+      const router = initializeSettingsModule(mockFirestore);
+
+      const req = { body: { timezone: 'Invalid/Zone_Name' } } as Request;
+      const res = { json: jest.fn(), status: jest.fn().mockReturnThis() } as unknown as Response;
+
+      const patchLayer = (router as any).stack.find((layer: any) => layer.route?.methods?.patch);
+      await patchLayer.route.stack[0].handle(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid timezone: must be a valid IANA timezone identifier' });
+    });
+
     it('should handle errors on PATCH settings', async () => {
       mockSet.mockRejectedValueOnce(new Error('Firestore write error'));
       const router = initializeSettingsModule(mockFirestore);

@@ -1,25 +1,31 @@
+import crypto from 'crypto';
 import { onRequest } from 'firebase-functions/v2/https';
 import { getConfig, FUNCTION_SECRET_KEYS } from '../config';
 import { XApiService } from '../services/xApi';
 import { SyncTimelineUseCase } from '../usecases/syncTimelineUseCase';
 
 /**
- * Validates request authorization.
- * Allows execution if:
- * 1. An explicit BATCH_SECRET_KEY is configured and provided via `X-Batch-Secret` or `Authorization: Bearer <secret>` header.
- * 2. Or, if called internally in GCP emulator / test environments where secret is not configured.
+ * Validates request authorization using timing-safe comparison.
+ * Fails closed: Rejects execution if BATCH_SECRET_KEY is not configured or token does not match.
  */
 export const validateAuth = (reqSecret: string | string[] | undefined, configuredSecret?: string): boolean => {
-  if (!configuredSecret) {
-    // If no shared secret is configured in the environment, fallback to GCP IAM / OIDC invocation
-    return true;
+  if (!configuredSecret || configuredSecret.trim().length === 0) {
+    // Fail-Closed: Never allow unauthenticated execution when secret is unconfigured
+    return false;
   }
   if (!reqSecret) {
     return false;
   }
   const secretStr = Array.isArray(reqSecret) ? reqSecret[0] : reqSecret;
   const bearerToken = secretStr.startsWith('Bearer ') ? secretStr.slice(7).trim() : secretStr.trim();
-  return bearerToken === configuredSecret;
+  
+  const tokenBuf = Buffer.from(bearerToken);
+  const configBuf = Buffer.from(configuredSecret.trim());
+
+  if (tokenBuf.length !== configBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(tokenBuf, configBuf);
 };
 
 /**
@@ -62,8 +68,14 @@ export const batchTimelineSync = onRequest(
       const xApiService = new XApiService(currentConfig.xApi);
       const useCase = new SyncTimelineUseCase(xApiService);
 
-      const customLimit = req.query.limit ? parseInt(String(req.query.limit), 10) : undefined;
-      const result = await useCase.execute(currentConfig.xApi.myUserId, isNaN(Number(customLimit)) ? undefined : customLimit);
+      let parsedLimit: number | undefined;
+      if (req.query.limit) {
+        const rawLimit = parseInt(String(req.query.limit), 10);
+        if (!isNaN(rawLimit)) {
+          parsedLimit = Math.min(Math.max(rawLimit, 5), 100);
+        }
+      }
+      const result = await useCase.execute(currentConfig.xApi.myUserId, parsedLimit);
 
       console.log(`[batchTimelineSync] Completed successfully. Updated: ${result.updated}, Created: ${result.created}`);
       res.status(200).json({

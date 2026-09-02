@@ -211,7 +211,17 @@ const getUserMinuteLimit = async (userId: string, timeKey: string): Promise<numb
 const getDailyActiveUsersCount = async (dateStr: string): Promise<number> => {
   const docRef = firestore.collection(COLLECTIONS.SYSTEM_STATS).doc(`dau_${dateStr}`);
   const doc = await docRef.get();
-  return doc.exists ? (doc.data()?.['count'] || 1) : 1;
+  if (!doc.exists) {
+    return 1;
+  }
+  const data = doc.data();
+  if (Array.isArray(data?.['active_users'])) {
+    return Math.max(data['active_users'].length, 1);
+  }
+  if (typeof data?.['count'] === 'number') {
+    return Math.max(data['count'], 1);
+  }
+  return 1;
 };
 
 /**
@@ -291,8 +301,8 @@ const checkAndConsumeRateLimit = async (
 // ---------------------------------------------------------------------------
 
 /**
- * Persists a raw conversation turn.  Documents expire automatically after
- * 30 days via Firestore's TTL policy on the `expireAt` field.
+ * Persists a raw conversation turn. Documents expire automatically after
+ * 5 years via Firestore's TTL policy on the `expireAt` field.
  *
  * @param userId   - The participant user's ID.
  * @param userText - The user's message text.
