@@ -403,13 +403,15 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       const metrics = await timelineRepo.getMetrics('monthly');
       expect(metrics.followers).toBe(0);
       expect(metrics.followersTrend).toBeNull();
-      expect(metrics.followersHistory).toEqual([]);
+      expect(metrics.followersHistory).toEqual(new Array(30).fill(0));
+      expect(metrics.apiCallsHistory).toEqual(new Array(30).fill(0));
+      expect(metrics.dauHistory).toEqual(new Array(30).fill(0));
+      expect(metrics.engagementHistory).toEqual(new Array(30).fill(0));
       expect(metrics.engagementRate).toBeNull();
       expect(metrics.dailyActiveUsers).toBe(0);
       expect(metrics.dauTrend).toBeNull();
       expect(metrics.apiCalls).toBe(0);
       expect(metrics.apiCallsTrend).toBeNull();
-      expect(metrics.apiCallsHistory).toEqual([]);
     });
 
     it('getPosts should query and map timeline posts with pagination and period filter', async () => {

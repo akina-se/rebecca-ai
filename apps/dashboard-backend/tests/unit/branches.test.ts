@@ -461,7 +461,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(metricsEmpty.followers).toBe(0);
       expect(metricsEmpty.followersTrend).toBeNull();
       expect(metricsEmpty.engagementRate).toBeNull();
-      expect(metricsEmpty.apiCallsHistory).toEqual([]);
+      expect(metricsEmpty.apiCallsHistory).toEqual(new Array(7).fill(0));
     });
 
     it('getPostById should test missing fields and text fallback', async () => {
@@ -1058,11 +1058,11 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
 
       const monthlyMetrics = await timelineRepo.getMetrics('monthly');
       expect(monthlyMetrics.followers).toBe(500);
-      expect(monthlyMetrics.followersHistory).toEqual([]);
+      expect(monthlyMetrics.followersHistory).toEqual(new Array(30).fill(0));
 
       const yearlyMetrics = await timelineRepo.getMetrics('yearly');
       expect(yearlyMetrics.followers).toBe(500);
-      expect(yearlyMetrics.followersHistory).toEqual([]);
+      expect(yearlyMetrics.followersHistory).toEqual(new Array(12).fill(0));
 
       // 2. getPosts with sorting by time, created_at, impressions, and status
       const mockTimelineDocs = [
