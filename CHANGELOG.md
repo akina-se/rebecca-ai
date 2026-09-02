@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.7](https://github.com/akina-se/rebecca-ai/compare/v1.7.6...v1.7.7) (2026-09-02)
+
+
+### Bug Fixes
+
+* **dashboard:** resolve KPI sparkline rendering and enforce canonical schema ([#108](https://github.com/akina-se/rebecca-ai/issues/108)) ([afc30f4](https://github.com/akina-se/rebecca-ai/commit/afc30f4b5f1fe89f29a365e2045bd307e04b0a14))
+
 ## [1.7.6](https://github.com/akina-se/rebecca-ai/compare/v1.7.5...v1.7.6) (2026-08-30)
 
 
