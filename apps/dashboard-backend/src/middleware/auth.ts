@@ -87,7 +87,8 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
 
     // 1. Check custom claims if present
     if (decodedToken.role === 'SUPER_ADMIN' || decodedToken.role === 'ADMIN' || decodedToken.admin === true) {
-      req.user = decodedToken;
+      const role = decodedToken.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN';
+      req.user = { ...decodedToken, role };
       next();
       return;
     }

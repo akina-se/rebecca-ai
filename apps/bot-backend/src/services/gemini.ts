@@ -33,8 +33,7 @@ if (config.gemini.apiKey) {
  */
 const generateReply = async (systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string> => {
     if (!ai) {
-        console.warn('Gemini API client not initialized. Mocking response.');
-        return "Mock AI response";
+        throw new Error('Gemini API client not initialized');
     }
     try {
         const contents: Content[] = [];
@@ -122,8 +121,7 @@ const generateReply = async (systemInstruction: string, history: ConversationLog
  */
 const generateDreaming = async (systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile> => {
     if (!ai) {
-        console.warn('Gemini API client not initialized. Mocking dreaming.');
-        return { attributes: [], preferences: [], concerns: [], important_memories: [] };
+        throw new Error('Gemini API client not initialized');
     }
     try {
         const prompt = `
@@ -461,8 +459,7 @@ const generateStructuredReply = async (
     userInput: string
 ): Promise<StructuredPersonaResponse> => {
     if (!ai) {
-        console.warn('Gemini API client not initialized. Mocking structured reply.');
-        return { thought: 'モック内省', reply: 'Mock AI response' };
+        throw new Error('Gemini API client not initialized');
     }
 
     try {

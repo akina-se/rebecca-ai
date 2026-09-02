@@ -225,21 +225,29 @@ describe('xApi.ts', () => {
     });
 
     describe('uploadMedia', () => {
-        it('should return mock_media_id when client not initialized', async () => {
+        it('should throw error when client not initialized', async () => {
             const originalAppKey = config.xApi.appKey;
-            config.xApi.appKey = ''; // trigger !client condition
-            const api = getXApiModule();
-            const result = await api.uploadMedia(Buffer.from('test'), 'image/jpeg');
-            expect(result).toBe('mock_media_id');
-            config.xApi.appKey = originalAppKey;
+            try {
+                config.xApi.appKey = ''; // trigger !client condition
+                const api = getXApiModule();
+                await expect(api.uploadMedia(Buffer.from('test'), 'image/jpeg')).rejects.toThrow('Twitter API client not initialized');
+            } finally {
+                config.xApi.appKey = originalAppKey;
+            }
         });
 
         it('should throw error when fetch fails', async () => {
+            const originalAppKey = config.xApi.appKey;
+            config.xApi.appKey = 'test_key';
             const api = getXApiModule();
             const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockRejectedValue(new Error('fetch error'));
-            await expect(api.uploadMedia(Buffer.from('test'), 'image/jpeg')).rejects.toThrow('fetch error');
-            global.fetch = originalFetch;
+            try {
+                global.fetch = jest.fn().mockRejectedValue(new Error('fetch error'));
+                await expect(api.uploadMedia(Buffer.from('test'), 'image/jpeg')).rejects.toThrow('fetch error');
+            } finally {
+                global.fetch = originalFetch;
+                config.xApi.appKey = originalAppKey;
+            }
         });
     });
 
@@ -332,10 +340,9 @@ describe('xApi.ts', () => {
     });
 
     describe('deleteTweet', () => {
-        it('should mock tweet deletion for non-numeric tweet ID (test safety guard)', async () => {
+        it('should throw Error for non-numeric tweet ID', async () => {
             const api = getXApiModule();
-            const res = await api.deleteTweet('test_tweet_id'); // non-numeric → mock path
-            expect(res).toBe(true);
+            await expect(api.deleteTweet('test_tweet_id')).rejects.toThrow('Invalid tweet ID');
         });
 
         it('should call posts.destroy if available for a valid numeric tweet ID', async () => {
