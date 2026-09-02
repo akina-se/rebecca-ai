@@ -100,7 +100,7 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       const next = jest.fn() as NextFunction;
 
       await verifyAuth(req, res, next);
-      expect((req as any).user).toEqual({ uid: 'admin_2', email: 'admin2@rebecca.ai', admin: true });
+      expect((req as any).user).toEqual({ uid: 'admin_2', email: 'admin2@rebecca.ai', admin: true, role: 'ADMIN' });
       expect(next).toHaveBeenCalledTimes(1);
     });
 

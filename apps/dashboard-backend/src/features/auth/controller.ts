@@ -12,15 +12,15 @@ export class AuthController {
    * @param res - The Express Response object.
    */
   public getMe(req: AuthenticatedRequest, res: Response): void {
-    if (!req.user || !req.user.email) {
-      res.status(401).json({ error: 'Unauthorized: User authentication context missing' });
+    if (!req.user || !req.user.email || !req.user.role) {
+      res.status(401).json({ error: 'Unauthorized: User authentication context or role missing' });
       return;
     }
 
     res.status(200).json({
       uid: req.user.uid,
       email: req.user.email,
-      role: req.user.role || 'ADMIN',
+      role: req.user.role,
     });
   }
 }

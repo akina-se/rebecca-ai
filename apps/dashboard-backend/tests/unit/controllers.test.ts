@@ -466,7 +466,15 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       const { req, res } = createMockReqRes();
       controller.getMe(req as any, res);
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: User authentication context missing' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: User authentication context or role missing' });
+    });
+
+    it('getMe should return 401 Unauthorized if role is missing in req.user', () => {
+      const { req, res } = createMockReqRes();
+      (req as any).user = { uid: 'user_123', email: 'verified@example.com' };
+      controller.getMe(req as any, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: User authentication context or role missing' });
     });
   });
 });
