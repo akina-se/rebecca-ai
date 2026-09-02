@@ -10,9 +10,36 @@ info:
     Aggregation endpoints (like `/posts`) handle JST (Japan Standard Time, UTC+09:00) conversions internally when using the `period` and `isoDate` query parameters to prevent date boundary alignment bugs.
   version: 1.0.0
 servers:
-  - url: http://localhost:8081/api/v1/dashboard
+  - url: http://localhost:8081/api/v1
     description: Local Dev Server
+security:
+  - BearerAuth: []
 paths:
+  /auth/me:
+    get:
+      summary: Get current authenticated admin user profile
+      description: Retrieves user ID, verified email address, and role from the decoded Firebase Auth ID token.
+      responses:
+        '200':
+          description: Authenticated user details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                    example: "firebase_user_abc123"
+                  email:
+                    type: string
+                    format: email
+                    example: "admin@example.com"
+                  role:
+                    type: string
+                    example: "ADMIN"
+        '401':
+          description: Unauthorized or token missing/invalid
+
   /alerts:
     get:
       summary: Get dynamic system warnings and alerts
@@ -577,6 +604,9 @@ components:
         id:
           type: string
           example: p1
+        tweetId:
+          type: string
+          example: "1934600616791482369"
         time:
           type: string
           format: date-time
@@ -584,12 +614,92 @@ components:
         snippet:
           type: string
           example: "Hello world!"
+        text:
+          type: string
+          example: "Hello world! Full post text"
         impressions:
           type: integer
           example: 450
         hasMedia:
           type: boolean
           example: false
+        mediaUrls:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          example: "ACTIVE"
+
+    PostDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          example: p1
+        tweetId:
+          type: string
+          example: "1934600616791482369"
+        time:
+          type: string
+          format: date-time
+          example: "2026-07-18T13:35:28.000Z"
+        content:
+          type: string
+          example: "Full detailed post content"
+        impressions:
+          type: integer
+          example: 450
+        mediaUrls:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          example: "ACTIVE"
+        likes:
+          type: integer
+          example: 12
+        retweets:
+          type: integer
+          example: 3
+        reposts:
+          type: integer
+          example: 3
+        replies:
+          type: integer
+          example: 5
+
+    UserLeaderboard:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1934600616791482369"
+        username:
+          type: string
+          example: "se_akina"
+        name:
+          type: string
+          example: "AKINA"
+        interactions:
+          type: integer
+          example: 25
+
+    SystemSettings:
+      type: object
+      properties:
+        language:
+          type: string
+          enum: [ja, en]
+          example: "ja"
+        timezone:
+          type: string
+          example: "Asia/Tokyo"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-07-18T13:35:28.000Z"
 
     ImageAsset:
       type: object
@@ -658,3 +768,10 @@ components:
       type: string
       enum: [SUCCESS, FAILED, PROCESSING]
       example: SUCCESS
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase Authentication ID Token (Bearer JWT)

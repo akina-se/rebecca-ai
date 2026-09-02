@@ -35,10 +35,9 @@ describe('Cloud Tasks Service', () => {
         config.gcp = originalConfig;
     });
 
-    it('should return mock task id if config is missing', async () => {
+    it('should throw Error if config is missing', async () => {
         config.gcp.projectId = '';
-        const result = await enqueueReplyTask({ test: 'payload' });
-        expect(result).toEqual({ name: 'mock_task_id' });
+        await expect(enqueueReplyTask({ test: 'payload' })).rejects.toThrow('Cloud Tasks configuration missing');
     });
 
     it('should create task without delay', async () => {
