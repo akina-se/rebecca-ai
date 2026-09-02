@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.8](https://github.com/akina-se/rebecca-ai/compare/v1.7.7...v1.7.8) (2026-09-02)
+
+
+### Bug Fixes
+
+* **deps:** unify firebase-admin to ^13.2.0 satisfying firebase-functions peer dependency ([#111](https://github.com/akina-se/rebecca-ai/issues/111)) ([11855af](https://github.com/akina-se/rebecca-ai/commit/11855af36d86b54cc554e0a6ef044cfecda5c838))
+
 ## [1.7.7](https://github.com/akina-se/rebecca-ai/compare/v1.7.6...v1.7.7) (2026-09-02)
 
 
