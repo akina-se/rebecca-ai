@@ -1,6 +1,9 @@
 const mockBatchSet = jest.fn();
 const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
 const mockTimelineGet = jest.fn();
+const mockTimelineWhere = jest.fn().mockReturnValue({
+  get: mockTimelineGet,
+});
 const mockTimelineDoc = jest.fn().mockImplementation((id?: string) => ({
   id: id || 'generated-doc-id',
 }));
@@ -10,6 +13,7 @@ const mockDb: any = {
     if (name === 'timeline_history') {
       return {
         get: mockTimelineGet,
+        where: mockTimelineWhere,
         doc: mockTimelineDoc,
       };
     }
@@ -117,6 +121,7 @@ describe('SyncTimelineUseCase', () => {
         cb({
           id: 'doc_existing_3',
           data: () => ({
+            tweetId: 'tweet_text_matched_3',
             content: 'Matched by content text',
             mediaUrls: ['https://already.present/url.jpg'],
           }),

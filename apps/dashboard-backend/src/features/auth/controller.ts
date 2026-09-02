@@ -1,28 +1,26 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../../types/auth';
 
 /**
  * Controller for handling authentication-related requests.
  */
 export class AuthController {
   /**
-   * Retrieves the currently authenticated user's details.
+   * Retrieves the currently authenticated user's details from the verified Firebase Auth token.
    * 
-   * Parses the Identity-Aware Proxy (IAP) headers to determine the user's email.
-   * 
-   * @param req - The Express Request object.
+   * @param req - The AuthenticatedRequest containing verified token payload.
    * @param res - The Express Response object.
    */
-  public getMe(req: Request, res: Response): void {
-    const iapEmailHeader = req.headers['x-goog-authenticated-user-email'] as string | undefined;
-    
-    let email = 'admin@example.com'; 
-    if (iapEmailHeader) {
-      const parts = iapEmailHeader.split(':');
-      email = parts.length > 1 ? parts[1] : iapEmailHeader;
+  public getMe(req: AuthenticatedRequest, res: Response): void {
+    if (!req.user || !req.user.email || !req.user.role) {
+      res.status(401).json({ error: 'Unauthorized: User authentication context or role missing' });
+      return;
     }
 
     res.status(200).json({
-      email,
+      uid: req.user.uid,
+      email: req.user.email,
+      role: req.user.role,
     });
   }
 }
