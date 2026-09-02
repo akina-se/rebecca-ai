@@ -335,7 +335,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
         { data: () => ({ userId: 'u2', timestamp: nowIso }) }
       ];
       const mockPosts = [
-        { data: () => ({ impressions: 1000, likes: 50, retweets: 20, replies: 10, timestamp: nowIso }) }
+        { data: () => ({ impressions: 1000, likes: 50, reposts: 20, retweets: 20, replies: 10, timestamp: nowIso }) }
       ];
 
       (timelineRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
@@ -419,10 +419,10 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
         {
           id: 'post_1',
           data: () => ({
-            content: 'Hello Twitter!',
-            created_at: '2026-08-18T12:00:00Z',
+            text: 'Hello Twitter!',
+            timestamp: '2026-08-18T12:00:00Z',
             impressions: 300,
-            media_urls: ['https://img.png']
+            mediaUrls: ['https://img.png']
           })
         }
       ];
@@ -447,10 +447,10 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
             exists: true,
             id: 'post_1',
             data: () => ({
-              content: 'Image tweet',
-              created_at: '2026-08-18T12:00:00Z',
+              text: 'Image tweet',
+              timestamp: '2026-08-18T12:00:00Z',
               impressions: 150,
-              media_urls: ['gs://rebecca-ai-gal-images/media_assets/photo.jpg']
+              mediaUrls: ['gs://rebecca-ai-gal-images/media_assets/photo.jpg']
             })
           })
         })

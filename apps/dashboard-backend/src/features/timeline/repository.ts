@@ -97,7 +97,7 @@ export class TimelineRepository {
     currentPostsSnap.docs.forEach(doc => {
       const d = doc.data();
       const impressions = Number(d.impressions) || 0;
-      const reposts = Number(d.reposts ?? d.retweets ?? 0);
+      const reposts = Number(d.reposts) || 0;
       const engagements = (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
       totalImpressions += impressions;
       totalEngagements += engagements;
@@ -118,7 +118,7 @@ export class TimelineRepository {
     prevPostsListSnap.docs.forEach(doc => {
       const d = doc.data();
       prevTotalImpressions += Number(d.impressions) || 0;
-      const reposts = Number(d.reposts ?? d.retweets ?? 0);
+      const reposts = Number(d.reposts) || 0;
       prevTotalEngagements += (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
     });
 
@@ -196,7 +196,7 @@ export class TimelineRepository {
       const idx = getBucketIndex(t);
       if (idx !== -1) {
         const impressions = Number(d.impressions) || 0;
-        const reposts = Number(d.reposts ?? d.retweets ?? 0);
+        const reposts = Number(d.reposts) || 0;
         const engagements = (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
         bucketImpressions[idx] += impressions;
         bucketEngagements[idx] += engagements;
@@ -285,24 +285,21 @@ export class TimelineRepository {
 
     const data: PostLeaderboard[] = docs.map(doc => {
       const d = doc.data;
-      const rawData = doc.data as unknown as Record<string, unknown>;
-      const rawMedia = ((d.mediaUrls as string[]) || (rawData['media_urls'] as string[]) || []) as string[];
-      const media = rawMedia.map(url => {
+      const media = (d.mediaUrls || []).map(url => {
         if (typeof url === 'string' && url.startsWith('gs://')) {
           const parts = url.split('/');
           const filename = parts.pop() || '';
           return `/api/v1/assets/${filename}/image?size=thumbnail`;
         }
         return typeof url === 'string' ? url : '';
-      }).filter(url => Boolean(url));
+      }).filter(Boolean);
 
-      const content = String(d.text || rawData['content'] || '');
-      const time = String(d.timestamp || rawData['created_at'] || '');
+      const content = d.text || '';
 
       return {
         id: doc.id,
-        tweetId: typeof d.tweetId === 'string' ? d.tweetId : (typeof rawData['tweet_id'] === 'string' ? (rawData['tweet_id'] as string) : undefined),
-        time,
+        tweetId: d.tweetId || undefined,
+        time: d.timestamp,
         snippet: content.length > 50 ? content.substring(0, 50) + '...' : content,
         impressions: typeof d.impressions === 'number' ? d.impressions : 0,
         status: String(d.status || 'SUCCESS'),
@@ -334,31 +331,26 @@ export class TimelineRepository {
     const doc = await this.collections.timelineHistory.doc(id).get();
     if (!doc.exists) return null;
 
-    const data = (doc.data() || {}) as Record<string, unknown>;
-    const rawMediaUrls: string[] = ((data.mediaUrls as string[]) || (data.media_urls as string[]) || []) as string[];
-
-    // Normalize GCS paths to secure backend streaming API endpoint (/api/v1/assets/:id/image), preserving http/https
-    const resolvedMediaUrls = rawMediaUrls.map(url => {
+    const data = doc.data()!;
+    const mediaUrls = (data.mediaUrls || []).map(url => {
       if (typeof url === 'string' && url.startsWith('gs://')) {
         const parts = url.split('/');
         const filename = parts.pop() || '';
         return `/api/v1/assets/${filename}/image`;
       }
       return typeof url === 'string' ? url : '';
-    });
-
-    const repostCount = typeof data.reposts === 'number' ? data.reposts : (typeof data.retweets === 'number' ? data.retweets : 0);
+    }).filter(Boolean);
 
     return {
       id: doc.id,
-      tweetId: typeof data.tweetId === 'string' ? data.tweetId : (typeof data.tweet_id === 'string' ? data.tweet_id : undefined),
-      time: String(data.timestamp || data.created_at || new Date().toISOString()),
-      content: String(data.text || data.content || ''),
+      tweetId: data.tweetId || undefined,
+      time: data.timestamp,
+      content: data.text || '',
       impressions: typeof data.impressions === 'number' ? data.impressions : 0,
-      mediaUrls: resolvedMediaUrls.filter(url => Boolean(url)),
+      mediaUrls,
       status: String(data.status || 'SUCCESS'),
       likes: typeof data.likes === 'number' ? data.likes : 0,
-      retweets: repostCount,
+      retweets: typeof data.reposts === 'number' ? data.reposts : 0,
       replies: typeof data.replies === 'number' ? data.replies : 0
     };
   }

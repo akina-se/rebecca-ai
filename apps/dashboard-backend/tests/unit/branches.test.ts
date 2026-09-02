@@ -289,8 +289,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
           exists: true,
           id: 'p_mix',
           data: () => ({
-            content: 'Mix',
-            media_urls: ['https://already.http/img.jpg', 'gs://bucket/photo.jpg']
+            text: 'Mix',
+            mediaUrls: ['https://already.http/img.jpg', 'gs://bucket/photo.jpg']
           })
         })
       });
@@ -408,7 +408,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       (repo as any).collections.timelineHistory = {
         where: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({
-            docs: [{ data: () => ({ impressions: 200, likes: 10, retweets: 2, replies: 0, timestamp: nowIso }) }],
+            docs: [{ data: () => ({ impressions: 200, likes: 10, reposts: 2, retweets: 2, replies: 0, timestamp: nowIso }) }],
             size: 1
           }),
           where: jest.fn().mockReturnValue({
@@ -1069,11 +1069,11 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         {
           id: 'p_1',
           data: () => ({
-            created_at: '2026-08-01T00:00:00Z',
-            content: 'First post',
+            timestamp: '2026-08-01T00:00:00Z',
+            text: 'First post',
             impressions: 100,
             status: 'SUCCESS',
-            media_urls: ['gs://rebecca-ai-gal-images/images/p1.jpg']
+            mediaUrls: ['gs://rebecca-ai-gal-images/images/p1.jpg']
           })
         },
         {
@@ -1083,7 +1083,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
             text: 'Second post',
             impressions: 500,
             status: 'FAILED',
-            media_urls: ['https://cdn.example.com/external.png']
+            mediaUrls: ['https://cdn.example.com/external.png']
           })
         }
       ];
