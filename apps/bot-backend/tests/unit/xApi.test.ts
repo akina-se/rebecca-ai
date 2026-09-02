@@ -84,7 +84,7 @@ describe('xApi.ts', () => {
             expect(result).toEqual({ data: { id: 'new_tweet_id' } });
             expect(mockClientInstance.posts.create).toHaveBeenCalledWith({
                 text: 'Hello',
-                reply: { in_reply_to_tweet_id: '12345' }
+                reply: { inReplyToTweetId: '12345' }
             });
         });
 
