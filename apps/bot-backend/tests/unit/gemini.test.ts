@@ -439,26 +439,28 @@ describe('gemini.ts', () => {
         });
     });
 
-    describe('Missing Credentials Fallback (!ai)', () => {
-        it('should return mock responses when API key is missing', async () => {
+    describe('Missing Credentials Guard (!ai)', () => {
+        it('should throw explicit error for core generation operations when API key is missing', async () => {
             const originalKey = config.gemini.apiKey;
-            config.gemini.apiKey = '';
-            const { gemini } = getGeminiModule();
+            try {
+                config.gemini.apiKey = '';
+                const { gemini } = getGeminiModule();
 
-            expect(await gemini.generateReply('sys', [], 'test')).toBe('Mock AI response');
-            expect(await gemini.generateStructuredReply('sys', [], 'test')).toEqual({ thought: 'モック内省', reply: 'Mock AI response' });
-            expect(await gemini.verifyImageRelevance('caption', 'post')).toBe(false);
-            expect(await gemini.generateDreaming('sys', [], {})).toEqual({ attributes: [], preferences: [], concerns: [], important_memories: [] });
-            expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
-            expect(await gemini.auditEvolutionPrompt('cand', 'audit')).toEqual({ pass: true });
-            expect(await gemini.analyzeUserProfile('desc')).toEqual({});
-            expect(await gemini.generateNewsPost('sys', ['news'])).toBe('');
-            expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
-            expect(await gemini.detectLanguage('test')).toBe('ja');
-            expect(await gemini.generateEmbedding('test')).toEqual([]);
-            expect(await gemini.generateSearchQuery('ctx', 'in')).toBe('in');
-
-            config.gemini.apiKey = originalKey;
+                await expect(gemini.generateReply('sys', [], 'test')).rejects.toThrow('Gemini API client not initialized');
+                await expect(gemini.generateStructuredReply('sys', [], 'test')).rejects.toThrow('Gemini API client not initialized');
+                await expect(gemini.generateDreaming('sys', [], {})).rejects.toThrow('Gemini API client not initialized');
+                expect(await gemini.verifyImageRelevance('caption', 'post')).toBe(false);
+                expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
+                expect(await gemini.auditEvolutionPrompt('cand', 'audit')).toEqual({ pass: true });
+                expect(await gemini.analyzeUserProfile('desc')).toEqual({});
+                expect(await gemini.generateNewsPost('sys', ['news'])).toBe('');
+                expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
+                expect(await gemini.detectLanguage('test')).toBe('ja');
+                expect(await gemini.generateEmbedding('test')).toEqual([]);
+                expect(await gemini.generateSearchQuery('ctx', 'in')).toBe('in');
+            } finally {
+                config.gemini.apiKey = originalKey;
+            }
         });
     });
 });

@@ -451,25 +451,30 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       controller = new AuthController();
     });
 
-    it('getMe should parse IAP header or fallback to admin email', () => {
-      // With full IAP accounts header
-      const { req: reqIap, res: resIap } = createMockReqRes({
-        headers: { 'x-goog-authenticated-user-email': 'accounts.google.com:superadmin@company.com' }
+    it('getMe should return authenticated user details from req.user', () => {
+      const { req, res } = createMockReqRes();
+      (req as any).user = { uid: 'user_123', email: 'verified@example.com', role: 'ADMIN' };
+      controller.getMe(req as any, res);
+      expect(res.json).toHaveBeenCalledWith({
+        uid: 'user_123',
+        email: 'verified@example.com',
+        role: 'ADMIN',
       });
-      controller.getMe(reqIap, resIap);
-      expect(resIap.json).toHaveBeenCalledWith({ email: 'superadmin@company.com' });
+    });
 
-      // With plain email header
-      const { req: reqPlain, res: resPlain } = createMockReqRes({
-        headers: { 'x-goog-authenticated-user-email': 'plain@company.com' }
-      });
-      controller.getMe(reqPlain, resPlain);
-      expect(resPlain.json).toHaveBeenCalledWith({ email: 'plain@company.com' });
+    it('getMe should return 401 Unauthorized if user context is missing', () => {
+      const { req, res } = createMockReqRes();
+      controller.getMe(req as any, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: User authentication context or role missing' });
+    });
 
-      // With no header
-      const { req: reqNone, res: resNone } = createMockReqRes();
-      controller.getMe(reqNone, resNone);
-      expect(resNone.json).toHaveBeenCalledWith({ email: 'admin@example.com' });
+    it('getMe should return 401 Unauthorized if role is missing in req.user', () => {
+      const { req, res } = createMockReqRes();
+      (req as any).user = { uid: 'user_123', email: 'verified@example.com' };
+      controller.getMe(req as any, res);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: User authentication context or role missing' });
     });
   });
 });
