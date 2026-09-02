@@ -14,8 +14,8 @@
 - **画像ストレージ**: Cloud Storage (GCS)
 - **定期バッチ処理**: Cloud Scheduler
 - **LLMエンジン**: 
-  - メイン会話・記憶統合・キーワード推論: Gemini 3.1 Flash Lite
-  - 画像認識 (Vision): Gemini 3.1 Flash Lite
+  - メイン会話・記憶統合・キーワード推論: Gemini 3.5 Flash Lite
+  - 画像認識 (Vision): Gemini 3.5 Flash Lite
   - 言語判定・安全性監査 (LLM-as-a-Judge): Gemma 4 31B IT
   - ベクトル化処理: text-embedding-004
 - **連携API**: X (Twitter) API v2 (ライブラリ: `@xdevplatform/xdk`)

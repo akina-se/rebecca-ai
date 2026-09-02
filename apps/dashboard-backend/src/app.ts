@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { Firestore } from 'firebase-admin/firestore';
 
+import { config } from './config';
+
 // Middleware
 import { verifyAuth } from './middleware/auth';
 
@@ -31,7 +33,19 @@ export function createApp(firestore: Firestore): Express {
 
   // Middleware
   app.use(helmet());
-  app.use(cors());
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like curl, mobile apps, or same-origin)
+        if (!origin) return callback(null, true);
+        if (config.cors.allowedOrigins.includes('*') || config.cors.allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+      },
+      credentials: true,
+    })
+  );
   app.use(express.json());
 
   // Rate Limiting (Protection for BFF: 100 req/min average, burst up to 1500 per 15m)
@@ -55,7 +69,6 @@ export function createApp(firestore: Firestore): Express {
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);
-  app.use('/api/v1/auth', authRouter);
 
   // Mount Public Image Streaming (unauthenticated streaming for browser <img> & CSS assets)
   app.use('/api/v1/assets', publicImagesRouter);
@@ -67,6 +80,7 @@ export function createApp(firestore: Firestore): Express {
   });
 
   // Mount Protected Routes with verifyAuth middleware
+  app.use('/api/v1/auth', verifyAuth, authRouter);
   app.use('/api/v1/copilot', verifyAuth, copilotRouter);
   app.use('/api/v1', verifyAuth, timelineRouter);
   app.use('/api/v1/posts', verifyAuth, postsRouter);

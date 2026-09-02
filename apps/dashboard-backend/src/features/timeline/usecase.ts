@@ -50,9 +50,7 @@ export class TimelineUseCase {
    * @returns A promise that resolves when the deletion is complete.
    */
   async deletePosts(ids: string[]): Promise<void> {
-    await this.repo.deletePosts(ids);
-    
-    // Call bot-backend via gRPC to delete the tweets on X
+    // Call bot-backend via gRPC to delete the tweets on X prior to database removal
     await Promise.all(
       ids.map(async (id) => {
         const safeId = String(id || '').replace(/[\r\n]/g, '');
@@ -65,6 +63,9 @@ export class TimelineUseCase {
         }
       })
     );
+
+    // After external deletion, remove documents from Firestore repository
+    await this.repo.deletePosts(ids);
   }
 
   /**

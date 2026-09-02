@@ -77,16 +77,13 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty('firebase');
     });
-
-    it('GET /api/v1/auth/me should return 200 OK without Authorization header', async () => {
-      const res = await request(app).get('/api/v1/auth/me');
-      expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('email');
-    });
   });
 
   describe('Protected Endpoints Security Gate (Unauthenticated Access Must Be Blocked)', () => {
     const protectedEndpoints = [
+      // Auth
+      { method: 'get', path: '/api/v1/auth/me' },
+
       // Timeline & Metrics
       { method: 'get', path: '/api/v1/metrics' },
       { method: 'get', path: '/api/v1/alerts' },

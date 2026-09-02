@@ -2,6 +2,15 @@ import { Router } from 'express';
 import { Firestore } from '@google-cloud/firestore';
 import { SystemSettings } from '@rebecca/types';
 
+function isValidTimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Initializes the Settings module with routes for managing global application preferences.
  * 
@@ -41,6 +50,17 @@ export function initializeSettingsModule(firestore: Firestore): Router {
   router.patch('/', async (req, res) => {
     try {
       const { language, timezone } = req.body;
+
+      if (language !== undefined && language !== 'ja' && language !== 'en') {
+        return res.status(400).json({ error: 'Invalid language: must be "ja" or "en"' });
+      }
+
+      if (timezone !== undefined) {
+        if (typeof timezone !== 'string' || !isValidTimezone(timezone)) {
+          return res.status(400).json({ error: 'Invalid timezone: must be a valid IANA timezone identifier' });
+        }
+      }
+
       const updates: Partial<SystemSettings> = {
         updatedAt: new Date().toISOString()
       };

@@ -35,5 +35,12 @@ export const config = {
     appSecret: process.env.X_API_SECRET || '',
     accessToken: process.env.X_ACCESS_TOKEN || '',
     accessSecret: process.env.X_ACCESS_TOKEN_SECRET || '',
-  }
+  },
+  /** CORS Configuration */
+  cors: {
+    allowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:4200')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
+  },
 } as const;

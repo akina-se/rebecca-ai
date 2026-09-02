@@ -49,12 +49,13 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
     const url = `${config.gcp.workerUrl}/worker/reply`;
 
     if (!project || !queue || !location || !config.gcp.workerUrl) {
-        console.warn('Cloud Tasks configuration missing. Mocking enqueue.');
-        return { name: 'mock_task_id' };
+        throw new Error('Cloud Tasks configuration missing (projectId, queueName, location, or workerUrl not set)');
     }
 
     const cTasksClient = getClient();
-    if (!cTasksClient) return { name: 'mock_task_id' };
+    if (!cTasksClient) {
+        throw new Error('Cloud Tasks client not initialized');
+    }
 
     const parent = cTasksClient.queuePath(project, location, queue);
 

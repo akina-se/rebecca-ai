@@ -38,30 +38,32 @@ export class SyncTimelineUseCase {
         return { processed: 0, updated: 0, created: 0, errors: 0 };
       }
 
-      // 2. Fetch existing Firestore timeline documents for lookup
+      // 2. Fetch only existing Firestore documents matching fetched tweet IDs in chunks of up to 30
       const timelineRef = this.db.collection(COLLECTIONS.TIMELINE_HISTORY);
-      const existingSnap = await timelineRef.get();
+      const tweetIds = tweets.map((t) => t.id).filter((id): id is string => Boolean(id));
 
       const existingByTweetId = new Map<string, { id: string; data: Record<string, unknown> }>();
-      const existingByText = new Map<string, { id: string; data: Record<string, unknown> }>();
 
-      existingSnap.forEach((doc) => {
-        const data = doc.data();
-        if (data.tweetId) existingByTweetId.set(String(data.tweetId), { id: doc.id, data });
-        if (data.tweet_id) existingByTweetId.set(String(data.tweet_id), { id: doc.id, data });
-
-        const content = String(data.text || data.content || '').trim();
-        if (content) {
-          existingByText.set(content, { id: doc.id, data });
+      if (tweetIds.length > 0) {
+        const chunkSize = 30;
+        for (let i = 0; i < tweetIds.length; i += chunkSize) {
+          const chunk = tweetIds.slice(i, i + chunkSize);
+          const chunkSnap = await timelineRef.where('tweetId', 'in', chunk).get();
+          chunkSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data.tweetId) existingByTweetId.set(String(data.tweetId), { id: doc.id, data });
+            if (data.tweet_id) existingByTweetId.set(String(data.tweet_id), { id: doc.id, data });
+          });
         }
-      });
+      }
 
       let updatedCount = 0;
       let createdCount = 0;
       const batch = this.db.batch();
 
       for (const tweet of tweets) {
-        const existing = existingByTweetId.get(tweet.id) || existingByText.get(tweet.text.trim());
+        // Look up strictly by unique tweet ID
+        const existing = existingByTweetId.get(tweet.id);
 
         if (existing) {
           // Update existing document with verified metrics & ensure tweetId is set
@@ -86,11 +88,11 @@ export class SyncTimelineUseCase {
           batch.set(docRef, updatePayload, { merge: true });
           updatedCount++;
         } else {
-          // Create new document for manual/untracked tweet
+          // Create new document for untracked tweet
           const newDocRef = timelineRef.doc();
           const tweetDate = tweet.createdAt ? new Date(tweet.createdAt) : new Date();
           const expireAt = new Date(tweetDate);
-          expireAt.setFullYear(expireAt.getFullYear() + 5);
+          expireAt.setDate(expireAt.getDate() + 30); // 30-day TTL
 
           batch.set(newDocRef, {
             text: tweet.text,

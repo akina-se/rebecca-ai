@@ -10,9 +10,36 @@ info:
     Aggregation endpoints (like `/posts`) handle JST (Japan Standard Time, UTC+09:00) conversions internally when using the `period` and `isoDate` query parameters to prevent date boundary alignment bugs.
   version: 1.0.0
 servers:
-  - url: http://localhost:8081/api/v1/dashboard
+  - url: http://localhost:8081/api/v1
     description: Local Dev Server
+security:
+  - BearerAuth: []
 paths:
+  /auth/me:
+    get:
+      summary: Get current authenticated admin user profile
+      description: Retrieves user ID, verified email address, and role from the decoded Firebase Auth ID token.
+      responses:
+        '200':
+          description: Authenticated user details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid:
+                    type: string
+                    example: "firebase_user_abc123"
+                  email:
+                    type: string
+                    format: email
+                    example: "admin@example.com"
+                  role:
+                    type: string
+                    example: "ADMIN"
+        '401':
+          description: Unauthorized or token missing/invalid
+
   /alerts:
     get:
       summary: Get dynamic system warnings and alerts
@@ -658,3 +685,10 @@ components:
       type: string
       enum: [SUCCESS, FAILED, PROCESSING]
       example: SUCCESS
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase Authentication ID Token (Bearer JWT)

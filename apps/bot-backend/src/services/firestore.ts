@@ -211,7 +211,17 @@ const getUserMinuteLimit = async (userId: string, timeKey: string): Promise<numb
 const getDailyActiveUsersCount = async (dateStr: string): Promise<number> => {
   const docRef = firestore.collection(COLLECTIONS.SYSTEM_STATS).doc(`dau_${dateStr}`);
   const doc = await docRef.get();
-  return doc.exists ? (doc.data()?.['count'] || 1) : 1;
+  if (!doc.exists) {
+    return 1;
+  }
+  const data = doc.data();
+  if (Array.isArray(data?.['active_users'])) {
+    return Math.max(data['active_users'].length, 1);
+  }
+  if (typeof data?.['count'] === 'number') {
+    return Math.max(data['count'], 1);
+  }
+  return 1;
 };
 
 /**
@@ -302,7 +312,7 @@ const saveRawConversationLog = async (userId: string, userText: string, aiText: 
   const logRef = db.conversationLogs.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setFullYear(expireAt.getFullYear() + 5);
+  expireAt.setDate(expireAt.getDate() + 30);
 
   const log: RawConversationLog = {
     userId,
@@ -405,7 +415,7 @@ const saveTimelinePost = async (
   const ref = db.timelineHistory.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setFullYear(expireAt.getFullYear() + 5);
+  expireAt.setDate(expireAt.getDate() + 30);
 
   const mediaList = options?.mediaUrls || [];
   await ref.set({
