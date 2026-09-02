@@ -38,10 +38,23 @@ export function createApp(firestore: Firestore): Express {
       origin: (origin, callback) => {
         // Allow requests with no origin (like curl, mobile apps, or same-origin)
         if (!origin) return callback(null, true);
+
+        // Allow localhost and 127.0.0.1 in non-production environments
+        if (process.env.NODE_ENV !== 'production') {
+          try {
+            const url = new URL(origin);
+            if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+              return callback(null, true);
+            }
+          } catch {
+            // ignore URL parse errors
+          }
+        }
+
         if (config.cors.allowedOrigins.includes('*') || config.cors.allowedOrigins.includes(origin)) {
           return callback(null, true);
         }
-        return callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+        return callback(null, false);
       },
       credentials: true,
     })

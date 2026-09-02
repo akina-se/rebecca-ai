@@ -38,7 +38,7 @@ export const config = {
   },
   /** CORS Configuration */
   cors: {
-    allowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:4200')
+    allowedOrigins: (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:4200,http://127.0.0.1:4200')
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean),
