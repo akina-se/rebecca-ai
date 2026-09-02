@@ -92,7 +92,7 @@ export class SyncTimelineUseCase {
           const newDocRef = timelineRef.doc();
           const tweetDate = tweet.createdAt ? new Date(tweet.createdAt) : new Date();
           const expireAt = new Date(tweetDate);
-          expireAt.setDate(expireAt.getDate() + 30); // 30-day TTL
+          expireAt.setFullYear(expireAt.getFullYear() + 5); // 5-year TTL
 
           batch.set(newDocRef, {
             text: tweet.text,

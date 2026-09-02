@@ -301,8 +301,8 @@ const checkAndConsumeRateLimit = async (
 // ---------------------------------------------------------------------------
 
 /**
- * Persists a raw conversation turn.  Documents expire automatically after
- * 30 days via Firestore's TTL policy on the `expireAt` field.
+ * Persists a raw conversation turn. Documents expire automatically after
+ * 5 years via Firestore's TTL policy on the `expireAt` field.
  *
  * @param userId   - The participant user's ID.
  * @param userText - The user's message text.
@@ -312,7 +312,7 @@ const saveRawConversationLog = async (userId: string, userText: string, aiText: 
   const logRef = db.conversationLogs.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setDate(expireAt.getDate() + 30);
+  expireAt.setFullYear(expireAt.getFullYear() + 5);
 
   const log: RawConversationLog = {
     userId,
@@ -415,7 +415,7 @@ const saveTimelinePost = async (
   const ref = db.timelineHistory.doc();
   const now = new Date();
   const expireAt = new Date(now);
-  expireAt.setDate(expireAt.getDate() + 30);
+  expireAt.setFullYear(expireAt.getFullYear() + 5);
 
   const mediaList = options?.mediaUrls || [];
   await ref.set({
