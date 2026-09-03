@@ -169,6 +169,32 @@
     border-bottom-left-radius: 4px;
 }
 
+.chat-inner-thought {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(10, 10, 20, 0.45);
+    border-left: 2px solid #00f2fe;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.chat-thought-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #00f2fe;
+    width: fit-content;
+}
+
+.chat-thought-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    font-style: italic;
+}
+
 .bubble-time {
     font-size: 0.75rem;
     color: var(--text-muted);

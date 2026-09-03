@@ -29,7 +29,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(mockSoliloquy.execute).toHaveBeenCalled();
         expect(result.status).toBe('success');
         expect(result.post).toContain('独り言テスト');
-        expect(deps.gemini.generateNewsPost).not.toHaveBeenCalled();
+        expect(deps.gemini.generateStructuredNewsPost).not.toHaveBeenCalled();
     });
 
     it('should fall back to soliloquy if all headlines are duplicates of recent news', async () => {
@@ -44,7 +44,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
 
         expect(mockSoliloquy.execute).toHaveBeenCalled();
         expect(result.status).toBe('success');
-        expect(deps.gemini.generateNewsPost).not.toHaveBeenCalled();
+        expect(deps.gemini.generateStructuredNewsPost).not.toHaveBeenCalled();
     });
 
     it('should filter out duplicate headlines and post fresh headline', async () => {
@@ -60,7 +60,10 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             .mockResolvedValueOnce([1, 0])
             .mockResolvedValueOnce([0, 1]);
 
-        deps.gemini.generateNewsPost.mockResolvedValue('新作ゲーム楽しみね！');
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
+            reply: '新作ゲーム楽しみね！',
+        });
 
         const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
 
@@ -68,15 +71,15 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(mockSoliloquy.execute).not.toHaveBeenCalled();
         expect(result.status).toBe('success');
         expect(result.post).toBe('新作ゲーム楽しみね！\n#全肯定AIレベッカ');
-        expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('完全新作ゲーム発表！'),
         );
-        expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('【直近のタイムライン要約】'),
         );
-        expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('【拡張ペルソナ・近況】'),
         );
@@ -84,6 +87,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             expect.stringContaining('新作ゲーム楽しみね！'),
             expect.objectContaining({
                 postType: 'news',
+                thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
                 newsTitle: '完全新作ゲーム発表！',
             }),
         );
@@ -91,7 +95,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
 
     it('should fall back to soliloquy if generation fails', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
-        deps.gemini.generateNewsPost.mockResolvedValue('');
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: '', reply: '' });
 
         const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
         expect(mockSoliloquy.execute).toHaveBeenCalled();
@@ -101,7 +105,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     it('should append hashtag if total length <= 140', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
         const shortPost = 'A short news post.';
-        deps.gemini.generateNewsPost.mockResolvedValue(shortPost);
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'short thought', reply: shortPost });
 
         const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
 
@@ -113,7 +117,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     it('should omit hashtag if total length > 140', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
         const longPost = 'A'.repeat(135);
-        deps.gemini.generateNewsPost.mockResolvedValue(longPost);
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'long thought', reply: longPost });
 
         const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
 
@@ -125,7 +129,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     it('should attach media when image inference succeeds', async () => {
         deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
         const text = 'A post about coffee';
-        deps.gemini.generateNewsPost.mockResolvedValue(text);
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'coffee thought', reply: text });
         deps.firestore.getTimelineSummary.mockResolvedValue('summary');
         deps.gemini.inferImageSearchQuery.mockResolvedValue('coffee');
         deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);

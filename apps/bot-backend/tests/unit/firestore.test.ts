@@ -327,8 +327,15 @@ describe('Firestore Service Unit Tests', () => {
 
   describe('Logs, Extended Prompts & Timeline Summaries', () => {
     it('saveRawConversationLog should save log to conversation_logs', async () => {
-      await firestoreService.saveRawConversationLog('u1', 'hi', 'hello');
-      expect(mockDocSet).toHaveBeenCalled();
+      await firestoreService.saveRawConversationLog('u1', 'hi', 'hello', '本音テスト');
+      expect(mockDocSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'u1',
+          userText: 'hi',
+          aiText: 'hello',
+          thought: '本音テスト',
+        }),
+      );
     });
 
     it('getRecentConversationLogs should query logs ordered by timestamp desc', async () => {
@@ -375,6 +382,7 @@ describe('Firestore Service Unit Tests', () => {
 
     it('saveTimelinePost and getRecentTimelinePosts', async () => {
       await firestoreService.saveTimelinePost('Post content', {
+        thought: 'タイムライン本音',
         postType: 'news',
         newsTitle: 'Sample Title',
         newsEmbedding: [0.1, 0.2],
@@ -382,6 +390,7 @@ describe('Firestore Service Unit Tests', () => {
       expect(mockDocSet).toHaveBeenCalledWith(
         expect.objectContaining({
           text: 'Post content',
+          thought: 'タイムライン本音',
           postType: 'news',
           newsTitle: 'Sample Title',
           newsEmbedding: [0.1, 0.2],
@@ -389,11 +398,12 @@ describe('Firestore Service Unit Tests', () => {
       );
 
       mockQueryGet.mockResolvedValueOnce({
-        forEach: (cb: any) => [{ data: () => ({ text: 'Post content' }) }].forEach(cb),
-        docs: [{ data: () => ({ text: 'Post content' }) }],
+        forEach: (cb: any) => [{ data: () => ({ text: 'Post content', thought: 'タイムライン本音' }) }].forEach(cb),
+        docs: [{ data: () => ({ text: 'Post content', thought: 'タイムライン本音' }) }],
       });
       const posts = await firestoreService.getRecentTimelinePosts(3);
       expect(posts).toHaveLength(1);
+      expect(posts[0]).toContain('Post content (内心: タイムライン本音)');
     });
 
     it('getRecentNewsEmbeddings should return titles and embeddings within cutoff', async () => {

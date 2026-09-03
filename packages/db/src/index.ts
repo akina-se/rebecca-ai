@@ -162,6 +162,7 @@ const conversationLogConverter: FirestoreDataConverter<RawConversationLog> = {
   toFirestore(log: RawConversationLog): DocumentData {
     return {
       ...log,
+      thought: log.thought ?? null,
       // Store as a real Timestamp so Firestore TTL policy can fire correctly.
       expireAt: log.expireAt
         ? Timestamp.fromDate(new Date(log.expireAt))
@@ -174,6 +175,7 @@ const conversationLogConverter: FirestoreDataConverter<RawConversationLog> = {
       userId: data['userId'],
       userText: data['userText'],
       aiText: data['aiText'],
+      thought: data['thought'],
       timestamp: data['timestamp'],
       expireAt: toIsoString(data['expireAt']) ?? '',
     };
@@ -191,6 +193,7 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
     const tweetId = post.tweetId ?? post.tweet_id ?? '';
     return {
       ...post,
+      thought: post.thought ?? null,
       reposts: repostCount,
       retweets: repostCount,
       mediaUrls,
@@ -215,6 +218,7 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
 
     return {
       text: String(data['text'] ?? ''),
+      thought: data['thought'],
       tweetId,
       tweet_id: tweetId,
       timestamp,

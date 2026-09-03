@@ -308,7 +308,7 @@ const checkAndConsumeRateLimit = async (
  * @param userText - The user's message text.
  * @param aiText   - The AI's response text.
  */
-const saveRawConversationLog = async (userId: string, userText: string, aiText: string): Promise<void> => {
+const saveRawConversationLog = async (userId: string, userText: string, aiText: string, thought?: string): Promise<void> => {
   const logRef = db.conversationLogs.doc();
   const now = new Date();
   const expireAt = new Date(now);
@@ -318,6 +318,7 @@ const saveRawConversationLog = async (userId: string, userText: string, aiText: 
     userId,
     userText,
     aiText,
+    thought: thought || undefined,
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp to Firestore.
   };
@@ -411,6 +412,7 @@ const saveTimelineSummary = async (summaryText: string): Promise<void> => {
 const saveTimelinePost = async (
   text: string,
   options?: {
+    thought?: string;
     mediaUrls?: string[];
     assetId?: string;
     tweetId?: string;
@@ -430,6 +432,7 @@ const saveTimelinePost = async (
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp.
     mediaUrls: mediaList,
+    ...(options?.thought ? { thought: options.thought } : {}),
     ...(options?.assetId ? { assetId: options.assetId } : {}),
     ...(options?.tweetId ? { tweetId: options.tweetId } : {}),
     ...(options?.postType ? { postType: options.postType } : {}),
@@ -493,7 +496,10 @@ const getRecentTimelinePosts = async (limit = 3): Promise<string[]> => {
             month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo'
           })
         : '';
-      posts.push(dateStr ? `[${dateStr}] ${data.text}` : data.text);
+      const textWithThought = data.thought
+        ? `${data.text} (内心: ${data.thought})`
+        : data.text;
+      posts.push(dateStr ? `[${dateStr}] ${textWithThought}` : textWithThought);
     }
   });
   return posts.reverse();

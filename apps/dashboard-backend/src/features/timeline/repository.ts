@@ -346,6 +346,7 @@ export class TimelineRepository {
       tweetId: data.tweetId || undefined,
       time: data.timestamp,
       content: data.text || '',
+      thought: data.thought || undefined,
       impressions: typeof data.impressions === 'number' ? data.impressions : 0,
       mediaUrls,
       status: String(data.status || 'SUCCESS'),
