@@ -20,7 +20,12 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 - **User Absence**: Detects if a user has been inactive for several days and changes the greeting tone (e.g., teasing or expressing worry).
 - **Keyword Triggers**: Injects specific comfort responses when keywords like "overtime", "boss", or "tired" are detected.
 
-### 3. Proactive Image Attachment & Vision
+### 3. Proactive News Deduplication & Autonomous Soliloquy Mode
+- **Vector-based Deduplication**: Before posting news headlines from RSS feeds, candidate headlines are vectorized and compared via cosine similarity against news posted within the lookback window (`NEWS_DEDUP_LOOKBACK_DAYS`, default 30 days). Headlines exceeding `NEWS_DEDUP_SIMILARITY_THRESHOLD` (default 0.82) are deterministically excluded.
+- **Autonomous Soliloquy Fallback & Scheduled Posts**: If zero fresh news headlines remain after deduplication, or when invoked directly via `/batch/soliloquy-post` (or scheduled via Cloud Scheduler), Rebecca generates spontaneous daily thoughts and Master-affirming messages based on her episodic timeline memory (`timelineSummary`), self-evolution traits (`extendedPrompt`), and `APP_TIMEZONE` time-of-day greeting context.
+- **Unified Timeline Publishing**: Both news and soliloquy posts share a common pipeline (`timelinePublisher.ts`) that infers emotional context, matches asset images via vector search, uploads media, tweets, and records metadata in `timeline_history`.
+
+### 4. Proactive Image Attachment & Vision
 - Automatically analyzes uploaded graphics using `gemini-3.1-flash-lite` (Vision mode) and generates alt-text metadata.
 - Alt-text captions are vectorized using `text-embedding-004` and stored in Firestore.
 - Proactive timeline updates query these embeddings using Firestore Vector Search (KNN) to attach contextually relevant images to auto-generated posts.
@@ -69,6 +74,11 @@ Configure these variables in your local `.env` or deployment configuration:
 ```env
 # Server settings
 PORT=8080
+APP_TIMEZONE=Asia/Tokyo
+
+# News Deduplication
+NEWS_DEDUP_LOOKBACK_DAYS=30
+NEWS_DEDUP_SIMILARITY_THRESHOLD=0.82
 
 # Secrets & Keys
 BATCH_SECRET_KEY=your-secret-key-for-batch-verification
