@@ -3,6 +3,7 @@ import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
 import { getWorkingMemory, saveInteraction } from '../../core/memory';
 import { buildSystemPrompt } from '../../core/contextInjector';
 import { downloadImage } from '../../utils/image';
+import { extractCleanTextForLanguageDetection } from '../../utils/text';
 import { buildPersonaFewShotPrompt, findTopPersonaPatterns } from '@rebecca/persona';
 import { getPersonaPatternEmbeddings } from '../../core/personaEmbeddingCache';
 
@@ -137,9 +138,12 @@ ${processedText}
             ragMemories = await deps.firestore.findRagMemories(authorId, queryEmb);
         }
 
-        const detectPrompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
-テキスト: "${processedText}"`;
-        const lang = await deps.gemini.detectLanguage(detectPrompt);
+        const cleanUserText = extractCleanTextForLanguageDetection(text);
+        let lang: 'ja' | 'en' = 'ja';
+        if (cleanUserText) {
+            const detectPrompt = `このテキストは何語ですか？日本語（ローマ字表記を含む）であれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。\nテキスト: "${cleanUserText}"`;
+            lang = await deps.gemini.detectLanguage(detectPrompt);
+        }
         // Dynamic Few-Shot Persona Anchors
         let personaFewShotPrompt = '';
         try {

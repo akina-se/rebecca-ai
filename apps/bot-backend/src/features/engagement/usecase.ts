@@ -125,8 +125,7 @@ ${description}
         return { status: 'skipped', reason: 'No valid tweets to engage with' };
       }
 
-      const detectPrompt = `このテキストは何語ですか？日本語が含まれていれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。
-テキスト: "${description + tweetContext}"`;
+      const detectPrompt = `このテキストは何語ですか？日本語（ローマ字表記を含む）であれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。\nテキスト: "${description + tweetContext}"`;
       const lang = await this.deps.gemini.detectLanguage(detectPrompt);
 
       const systemPrompt = getBasePrompt('random_engagement', lang);
