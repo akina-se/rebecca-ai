@@ -52,8 +52,8 @@ const replyToMention = async (tweetId: string, text: string): Promise<XApiCreate
     try {
     const response = await client.posts.create({
       text,
-      reply: { in_reply_to_tweet_id: tweetId }
-    } as Parameters<typeof client.posts.create>[0]);
+      reply: { inReplyToTweetId: tweetId }
+    });
     return response as unknown as XApiCreateResponse;
   } catch (error) {
     console.error('Error replying to mention:', error);
