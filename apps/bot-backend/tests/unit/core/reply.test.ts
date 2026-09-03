@@ -84,7 +84,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         deps.firestore.getExtendedPrompt.mockResolvedValue('Extended tuning');
         deps.firestore.getTimelineSummary.mockResolvedValue('Summary');
         deps.gemini.generateSearchQuery.mockResolvedValue('query');
-        deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
+        deps.gemini.generateEmbedding.mockResolvedValue(new Array(768).fill(0.1));
         deps.firestore.findRagMemories.mockResolvedValue([]);
         deps.gemini.detectLanguage.mockResolvedValue('ja');
         deps.gemini.generateStructuredReply.mockResolvedValue({ thought: '内省モック', reply: 'よろしくね！' });

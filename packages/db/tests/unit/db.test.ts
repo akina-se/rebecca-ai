@@ -210,12 +210,18 @@ describe('@rebecca/db Unit Tests', () => {
           authorName: 'Rebecca',
           authorHandle: 'rebecca_ai',
           authorAvatarUrl: '',
+          postType: 'news',
+          newsTitle: 'IT Passport',
+          newsEmbedding: [0.1, 0.2],
         }),
       } as any;
 
       const post = timelinePostConverter.fromFirestore(mockSnapshot);
       expect(post.mediaUrls).toEqual(['https://image.png']);
       expect(post.expireAt).toBe('');
+      expect(post.postType).toBe('news');
+      expect(post.newsTitle).toBe('IT Passport');
+      expect(post.newsEmbedding).toEqual([0.1, 0.2]);
     });
 
     it('toFirestore should handle alternate fields and null expireAt', () => {

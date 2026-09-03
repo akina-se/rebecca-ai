@@ -14,7 +14,7 @@ if (!projectId || !serviceUrl) {
 
 console.log(`Setting up Cloud Scheduler jobs for ${projectId} in ${region}...`);
 
-const timeZone = 'Asia/Tokyo';
+const timeZone = process.env.APP_TIMEZONE || 'Asia/Tokyo';
 
 const jobs = [
     {
@@ -46,6 +46,11 @@ const jobs = [
         name: 'rebecca-news-batch',
         schedule: '0 8,12,18,21 * * *', // 8:00, 12:00, 18:00, 21:00 JST (4 times/day)
         url: `${serviceUrl}/batch/news-post`
+    },
+    {
+        name: 'rebecca-soliloquy-batch',
+        schedule: '0 19 * * *', // Daily at 19:00 JST (evening thought & Master-affirming soliloquy)
+        url: `${serviceUrl}/batch/soliloquy-post`
     }
 ];
 

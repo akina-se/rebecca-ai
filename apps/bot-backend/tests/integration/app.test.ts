@@ -34,6 +34,7 @@ jest.mock('../../src/services/firestore', () => ({
     saveTimelinePost: jest.fn().mockResolvedValue(undefined),
     findImageByVector: jest.fn().mockResolvedValue(null),
     updateImageLastUsed: jest.fn().mockResolvedValue(undefined),
+    getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
@@ -303,6 +304,22 @@ describe('Integration Tests', () => {
             expect(response.status).toBe(200);
             expect(gemini.generateNewsPost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock News Post'), expect.any(Object));
+        }, 15000);
+    });
+
+    describe('GET /batch/soliloquy-post', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should process soliloquy-post successfully', async () => {
+            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('Mock Soliloquy Post');
+            (xApi.tweet as jest.Mock).mockResolvedValueOnce({ data: { id: 'mock_tweet_soliloquy' } });
+
+            const response = await request(app).get('/batch/soliloquy-post').set('x-batch-secret', 'test_secret');
+
+            expect(response.status).toBe(200);
+            expect(gemini.generateNewsPost).toHaveBeenCalled();
+            expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Post'), expect.any(Object));
         }, 15000);
     });
 

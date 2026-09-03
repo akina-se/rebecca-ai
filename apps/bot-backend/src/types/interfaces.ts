@@ -48,9 +48,17 @@ export interface IFirestoreService {
   saveTimelineSummary(summaryText: string): Promise<void>;
   saveTimelinePost(
     text: string,
-    options?: { mediaUrls?: string[]; assetId?: string; tweetId?: string },
+    options?: {
+      mediaUrls?: string[];
+      assetId?: string;
+      tweetId?: string;
+      postType?: 'news' | 'soliloquy';
+      newsTitle?: string;
+      newsEmbedding?: number[];
+    },
   ): Promise<void>;
   getRecentTimelinePosts(limit?: number): Promise<string[]>;
+  getRecentNewsEmbeddings(days?: number): Promise<Array<{ title: string; embedding: number[] }>>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
   findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;
   getLastMentionId(): Promise<string | null>;

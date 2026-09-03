@@ -374,8 +374,19 @@ describe('Firestore Service Unit Tests', () => {
     });
 
     it('saveTimelinePost and getRecentTimelinePosts', async () => {
-      await firestoreService.saveTimelinePost('Post content');
-      expect(mockDocSet).toHaveBeenCalled();
+      await firestoreService.saveTimelinePost('Post content', {
+        postType: 'news',
+        newsTitle: 'Sample Title',
+        newsEmbedding: [0.1, 0.2],
+      });
+      expect(mockDocSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Post content',
+          postType: 'news',
+          newsTitle: 'Sample Title',
+          newsEmbedding: [0.1, 0.2],
+        }),
+      );
 
       mockQueryGet.mockResolvedValueOnce({
         forEach: (cb: any) => [{ data: () => ({ text: 'Post content' }) }].forEach(cb),
@@ -383,6 +394,19 @@ describe('Firestore Service Unit Tests', () => {
       });
       const posts = await firestoreService.getRecentTimelinePosts(3);
       expect(posts).toHaveLength(1);
+    });
+
+    it('getRecentNewsEmbeddings should return titles and embeddings within cutoff', async () => {
+      mockQueryGet.mockResolvedValueOnce({
+        forEach: (cb: any) => [
+          { data: () => ({ newsTitle: 'News 1', newsEmbedding: [0.1, 0.2] }) },
+          { data: () => ({ newsTitle: null }) }, // skipped
+        ].forEach(cb),
+      });
+
+      const items = await firestoreService.getRecentNewsEmbeddings(30);
+      expect(items).toHaveLength(1);
+      expect(items[0]).toEqual({ title: 'News 1', embedding: [0.1, 0.2] });
     });
   });
 
