@@ -132,4 +132,53 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             'あ'.repeat(137) + '…'
         );
     });
+
+    it('should detect language using clean text without mentions and URLs', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.xApi.getTweetDetails.mockResolvedValue({ data: {} });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.detectLanguage.mockResolvedValue('en');
+        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: 'thinking', reply: 'Hey babe!' });
+
+        await usecase.execute({
+            tweetId: 'tweet_en',
+            text: '@rebecca_ai_gal Well hello gorgeous https://t.co/abc',
+            authorId: 'user_en'
+        });
+
+        expect(deps.gemini.detectLanguage).toHaveBeenCalledWith(
+            expect.stringContaining('テキスト: "Well hello gorgeous"')
+        );
+        expect(deps.xApi.replyToMention).toHaveBeenCalledWith('tweet_en', 'Hey babe!');
+    });
+
+    it('should default to ja and skip detectLanguage when clean text is empty', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.xApi.getTweetDetails.mockResolvedValue({ data: {} });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: 'thinking', reply: 'どうしたの？' });
+
+        await usecase.execute({
+            tweetId: 'tweet_empty',
+            text: '@rebecca_ai_gal',
+            authorId: 'user_empty'
+        });
+
+        expect(deps.gemini.detectLanguage).not.toHaveBeenCalled();
+        expect(deps.xApi.replyToMention).toHaveBeenCalledWith('tweet_empty', 'どうしたの？');
+    });
 });
