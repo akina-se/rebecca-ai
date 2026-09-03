@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.7.10](https://github.com/akina-se/rebecca-ai/compare/v1.7.9...v1.7.10) (2026-09-03)
+
+
+### Bug Fixes
+
+* **bot-backend:** adapt to inReplyToTweetId property in updated @xdevplatform/xdk ([c93cfab](https://github.com/akina-se/rebecca-ai/commit/c93cfab133c58df145879ffff8fee238714c4e20))
+* **ci:** synchronize functions lockfile and enforce verification in CI ([#121](https://github.com/akina-se/rebecca-ai/issues/121)) ([8febff2](https://github.com/akina-se/rebecca-ai/commit/8febff216e969cbd4cfbd1faf2283d99b81ee4d3))
+* **dashboard-backend:** eliminate useless variable assignments for ESLint 9 ([0b3e375](https://github.com/akina-se/rebecca-ai/commit/0b3e37544cca03d771e4acbe04bb151d8da1526e))
+
 ## [1.7.9](https://github.com/akina-se/rebecca-ai/compare/v1.7.8...v1.7.9) (2026-09-02)
 
 
