@@ -15,6 +15,7 @@
   },
   "keywords": [],
   "author": "AKINA",
+  "license": "MIT",
   "dependencies": {
     "@rebecca/types": "*"
   },
