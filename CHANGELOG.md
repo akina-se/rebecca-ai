@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.2](https://github.com/akina-se/rebecca-ai/compare/v1.8.1...v1.8.2) (2026-09-03)
+
+
+### Bug Fixes
+
+* **monorepo:** hoist @google-cloud/firestore to root dependencies ([4370ab1](https://github.com/akina-se/rebecca-ai/commit/4370ab168473f012599b8de49d2bb3e9f4ad5409))
+* **monorepo:** hoist @google-cloud/firestore to root dependencies to resolve container runtime resolution ([7ad1d45](https://github.com/akina-se/rebecca-ai/commit/7ad1d45415d3443b069ba3a120e1f88fcb75b036))
+
 ## [1.8.1](https://github.com/akina-se/rebecca-ai/compare/v1.8.0...v1.8.1) (2026-09-03)
 
 
