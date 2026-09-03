@@ -1,4 +1,4 @@
-﻿import { AppDependencies } from '../../types';
+import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
 import { getJSTDate } from '../../utils/time';
 import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
@@ -20,7 +20,12 @@ export interface SoliloquyResult {
  * @returns Period label and situational context.
  */
 export const getTimeOfDayGreetingContext = (date: Date): { period: string; context: string } => {
-  const hour = date.getHours();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Tokyo',
+    hour: 'numeric',
+    hour12: false,
+  });
+  const hour = parseInt(formatter.format(date), 10);
   if (hour >= 5 && hour < 11) {
     return {
       period: '朝',
