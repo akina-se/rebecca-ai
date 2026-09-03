@@ -42,6 +42,11 @@ jobs:
       - name: Run Monorepo Secret Leak Scan
         run: npm run secret-check
 
+      - name: Verify apps/functions lockfile sync
+        run: |
+          npm run sync:functions-lock
+          git diff --exit-code apps/functions/package-lock.json
+
   build-and-test:
     name: test
     runs-on: ubuntu-latest

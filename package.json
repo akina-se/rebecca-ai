@@ -25,6 +25,7 @@
     "license-check": "turbo run license-check",
     "secret-check": "turbo run secret-check",
     "register-admin": "npm run register-admin --workspace=dashboard-backend --",
+    "sync:functions-lock": "npm --prefix apps/functions install --package-lock-only",
     "audit:fix": "npm audit fix"
   },
   "devDependencies": {
