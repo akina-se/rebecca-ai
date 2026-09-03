@@ -1,4 +1,4 @@
-﻿import { AppDependencies } from '../../../src/types';
+import { AppDependencies } from '../../../src/types';
 
 export const createMockDeps = (): AppDependencies => {
     return {
@@ -32,6 +32,7 @@ export const createMockDeps = (): AppDependencies => {
             findImageByVector: jest.fn(),
             updateImageLastUsed: jest.fn(),
             saveTimelinePost: jest.fn(),
+            getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),

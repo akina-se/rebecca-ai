@@ -124,6 +124,9 @@ export interface TimelinePost {
   authorName?: string;
   authorHandle?: string;
   authorAvatarUrl?: string;
+  postType?: 'news' | 'soliloquy';
+  newsTitle?: string;
+  newsEmbedding?: number[];
 }
 
 /** Rate-limit tracking document for a user within a time window. */
