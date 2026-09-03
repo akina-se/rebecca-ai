@@ -444,16 +444,16 @@ const saveTimelinePost = async (
 };
 
 /**
- * Retrieves the titles and embeddings of recent news posts within the specified time window.
+ * Retrieves the titles and embeddings of recent news posts within the specified lookback days.
  * Used for deterministic duplicate detection before generating proactive news posts.
  *
- * @param hours - The lookback window in hours. Defaults to 48 hours.
+ * @param days - The lookback window in days. Defaults to 30 days.
  * @returns Array of recent news items with title and embedding.
  */
 const getRecentNewsEmbeddings = async (
-  hours = 48,
+  days = 30,
 ): Promise<Array<{ title: string; embedding: number[] }>> => {
-  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const snapshot = await db.timelineHistory
     .where('timestamp', '>=', cutoff)
     .orderBy('timestamp', 'desc')

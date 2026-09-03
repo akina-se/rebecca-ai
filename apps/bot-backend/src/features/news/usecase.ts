@@ -1,13 +1,8 @@
-﻿import { AppDependencies } from '../../types';
+import { AppDependencies } from '../../types';
 import { getBasePrompt, cosineSimilarity } from '@rebecca/persona';
+import config from '../../config';
 import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
 import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
-
-/**
- * Similarity threshold for determining whether a candidate news headline
- * is semantically duplicate with a recently posted news item.
- */
-export const DUPLICATE_SIMILARITY_THRESHOLD = 0.82;
 
 /**
  * Interface representing the result of a proactive news execution.
@@ -59,8 +54,10 @@ export class ProactiveNewsUseCase {
 
       console.log('Fetched headlines:\n', rawHeadlines.join('\n'));
 
-      // Retrieve recent news embeddings (past 48 hours) for deterministic deduplication
-      const recentNews = await this.deps.firestore.getRecentNewsEmbeddings(48);
+      // Retrieve recent news embeddings for deterministic deduplication (lookback window from config)
+      const lookbackDays = config.news.dedupLookbackDays;
+      const similarityThreshold = config.news.dedupSimilarityThreshold;
+      const recentNews = await this.deps.firestore.getRecentNewsEmbeddings(lookbackDays);
 
       const candidateHeadlines: Array<{ headline: string; embedding: number[] }> = [];
 
@@ -74,9 +71,9 @@ export class ProactiveNewsUseCase {
             if (embedding.length > 0) {
               for (const past of recentNews) {
                 const sim = cosineSimilarity(embedding, past.embedding);
-                if (sim >= DUPLICATE_SIMILARITY_THRESHOLD) {
+                if (sim >= similarityThreshold) {
                   console.log(
-                    `Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${DUPLICATE_SIMILARITY_THRESHOLD}): "${headline}" matches past: "${past.title}"`,
+                    `Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${headline}" matches past: "${past.title}"`,
                   );
                   isDuplicate = true;
                   break;

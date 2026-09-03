@@ -58,7 +58,7 @@ export interface IFirestoreService {
     },
   ): Promise<void>;
   getRecentTimelinePosts(limit?: number): Promise<string[]>;
-  getRecentNewsEmbeddings(hours?: number): Promise<Array<{ title: string; embedding: number[] }>>;
+  getRecentNewsEmbeddings(days?: number): Promise<Array<{ title: string; embedding: number[] }>>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
   findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;
   getLastMentionId(): Promise<string | null>;

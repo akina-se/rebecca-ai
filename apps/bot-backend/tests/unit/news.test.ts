@@ -1,4 +1,4 @@
-﻿import { ProactiveNewsUseCase } from '../../src/features/news/usecase';
+import { ProactiveNewsUseCase } from '../../src/features/news/usecase';
 import { createMockDeps } from './core/testUtils';
 
 describe('ProactiveNewsUseCase Unit Tests', () => {
@@ -62,6 +62,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
 
         const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
 
+        expect(deps.firestore.getRecentNewsEmbeddings).toHaveBeenCalledWith(30);
         expect(mockSoliloquy.execute).not.toHaveBeenCalled();
         expect(result.status).toBe('success');
         expect(result.post).toBe('新作ゲーム楽しみね！\n#全肯定AIレベッカ');

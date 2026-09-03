@@ -404,7 +404,7 @@ describe('Firestore Service Unit Tests', () => {
         ].forEach(cb),
       });
 
-      const items = await firestoreService.getRecentNewsEmbeddings(48);
+      const items = await firestoreService.getRecentNewsEmbeddings(30);
       expect(items).toHaveLength(1);
       expect(items[0]).toEqual({ title: 'News 1', embedding: [0.1, 0.2] });
     });

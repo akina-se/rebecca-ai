@@ -1,6 +1,6 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
-import { getJSTDate } from '../../utils/time';
+import config from '../../config';
 import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
 
 /**
@@ -14,14 +14,18 @@ export interface SoliloquyResult {
 }
 
 /**
- * Returns contextual description based on Japan Standard Time (JST) hour.
+ * Returns contextual description based on the application time zone hour.
  *
- * @param date - The JST date.
+ * @param date - The date to evaluate.
+ * @param timezone - IANA time zone identifier (e.g. 'Asia/Tokyo'). Defaults to config.appTimezone.
  * @returns Period label and situational context.
  */
-export const getTimeOfDayGreetingContext = (date: Date): { period: string; context: string } => {
+export const getTimeOfDayGreetingContext = (
+  date: Date,
+  timezone: string = config.appTimezone,
+): { period: string; context: string } => {
   const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Tokyo',
+    timeZone: timezone,
     hour: 'numeric',
     hour12: false,
   });
@@ -65,8 +69,8 @@ export class SoliloquyUseCase {
   async execute(): Promise<SoliloquyResult> {
     console.log('Starting Autonomous Soliloquy Post...');
     try {
-      const nowJST = getJSTDate();
-      const timeContext = getTimeOfDayGreetingContext(nowJST);
+      const now = new Date();
+      const timeContext = getTimeOfDayGreetingContext(now, config.appTimezone);
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
 
