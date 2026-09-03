@@ -34,6 +34,7 @@ jest.mock('../../src/services/firestore', () => ({
     saveTimelinePost: jest.fn().mockResolvedValue(undefined),
     findImageByVector: jest.fn().mockResolvedValue(null),
     updateImageLastUsed: jest.fn().mockResolvedValue(undefined),
+    getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('../../src/services/gemini', () => ({
@@ -43,7 +44,8 @@ jest.mock('../../src/services/gemini', () => ({
     generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
     detectLanguage: jest.fn().mockResolvedValue('ja'),
-    generateNewsPost: jest.fn().mockResolvedValue('Mock News Post'),
+    generateStructuredNewsPost: jest.fn().mockResolvedValue({ thought: 'ニュース思考', reply: 'Mock News Post' }),
+    generateStructuredSoliloquyPost: jest.fn().mockResolvedValue({ thought: '独り言思考', reply: 'Mock Soliloquy Post' }),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
     inferImageSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEvolutionPrompt: jest.fn().mockResolvedValue('Mock Prompt'),
@@ -294,15 +296,37 @@ describe('Integration Tests', () => {
             global.fetch = jest.fn().mockResolvedValue({
                 text: jest.fn().mockResolvedValue('<rss><channel><item><title>Test News</title><link>http://example.com</link><description>Test</description></item></channel></rss>')
             }) as any;
-            (gemini.generateNewsPost as jest.Mock).mockResolvedValueOnce('Mock News Post');
+            (gemini.generateStructuredNewsPost as jest.Mock).mockResolvedValueOnce({
+                thought: 'ニュース思考',
+                reply: 'Mock News Post',
+            });
             (xApi.tweet as jest.Mock).mockResolvedValueOnce({ data: { id: 'mock_tweet_id' } });
             
             const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
             
             global.fetch = originalFetch;
             expect(response.status).toBe(200);
-            expect(gemini.generateNewsPost).toHaveBeenCalled();
+            expect(gemini.generateStructuredNewsPost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock News Post'), expect.any(Object));
+        }, 15000);
+    });
+
+    describe('GET /batch/soliloquy-post', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should process soliloquy-post successfully', async () => {
+            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValueOnce({
+                thought: '独り言思考',
+                reply: 'Mock Soliloquy Post',
+            });
+            (xApi.tweet as jest.Mock).mockResolvedValueOnce({ data: { id: 'mock_tweet_soliloquy' } });
+
+            const response = await request(app).get('/batch/soliloquy-post').set('x-batch-secret', 'test_secret');
+
+            expect(response.status).toBe(200);
+            expect(gemini.generateStructuredSoliloquyPost).toHaveBeenCalled();
+            expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Post'), expect.any(Object));
         }, 15000);
     });
 

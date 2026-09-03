@@ -40,6 +40,9 @@ describe('evolution.ts', () => {
             
             expect(result.status).toBe('success');
             expect(result.prompt).toBe('new rule');
+            expect(deps.gemini.generateEvolutionPrompt).toHaveBeenCalledWith(
+                expect.stringContaining('400〜500文字程度'),
+            );
             expect(deps.firestore.saveExtendedPrompt).toHaveBeenCalledWith('new rule');
         });
 

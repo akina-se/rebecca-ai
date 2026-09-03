@@ -12,6 +12,17 @@
       <span [title]="postData()!.time || ''">{{ postData()!.time | tzDate }}</span>
     </div>
   </div>
+  <!-- Inner Thought (Persona Reflection) -->
+  @if (postData()!.thought) {
+  <div class="glass-panel inner-thought-box">
+    <div class="inner-thought-header">
+      <span class="inner-thought-badge">INNER THOUGHT</span>
+    </div>
+    <div class="inner-thought-text">
+      {{ postData()!.thought }}
+    </div>
+  </div>
+  }
   <!-- Attached Media -->
   @if (postData()!.mediaUrls && postData()!.mediaUrls.length > 0) {
   <div>

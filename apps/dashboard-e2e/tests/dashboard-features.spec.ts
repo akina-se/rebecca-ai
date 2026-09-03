@@ -291,6 +291,15 @@ test.describe('Dashboard Features E2E Tests', () => {
     expect(profileName.length).toBeGreaterThan(0);
     expect(profileName).not.toBe('Unknown');
 
+    // Verify Inner Thought in Rebecca's chat messages
+    const rebeccaThought = userDrawerContent.locator('.chat-inner-thought');
+    if (await rebeccaThought.count() > 0) {
+      await expect(rebeccaThought.first()).toBeVisible();
+      await expect(rebeccaThought.first().locator('.chat-thought-badge')).toHaveText('INNER THOUGHT');
+      const thoughtContent = await rebeccaThought.first().locator('.chat-thought-text').innerText();
+      expect(thoughtContent.trim().length).toBeGreaterThan(0);
+    }
+
     // Verify "View on X" button in User drawer navigates to x.com profile.
     // Note: window.open with noopener/noreferrer prevents Playwright popup detection,
     // so we stub window.open to capture the URL argument instead.
@@ -336,6 +345,13 @@ test.describe('Dashboard Features E2E Tests', () => {
     const postDrawerContent = drawer.locator('app-post-drawer .drawer-content');
     await expect(postDrawerContent).toBeVisible({ timeout: 10000 });
     await expect(postDrawerContent.locator('.content-box')).toContainText(postSnippetPrefix);
+
+    // Verify Inner Thought in Post Details drawer
+    const postInnerThought = postDrawerContent.locator('.inner-thought-box');
+    await expect(postInnerThought).toBeVisible();
+    await expect(postInnerThought.locator('.inner-thought-badge')).toHaveText('INNER THOUGHT');
+    const thoughtText = await postInnerThought.locator('.inner-thought-text').innerText();
+    expect(thoughtText.trim().length).toBeGreaterThan(0);
 
     // Verify "View on X" button in Post Details drawer navigates to x.com post.
     // Note: window.open with noopener/noreferrer prevents Playwright popup detection,

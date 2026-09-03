@@ -4,8 +4,7 @@ import { getWorkingMemory, saveInteraction } from '../../core/memory';
 import { buildSystemPrompt } from '../../core/contextInjector';
 import { downloadImage } from '../../utils/image';
 import { extractCleanTextForLanguageDetection } from '../../utils/text';
-import { buildPersonaFewShotPrompt, findTopPersonaPatterns } from '@rebecca/persona';
-import { getPersonaPatternEmbeddings } from '../../core/personaEmbeddingCache';
+import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
 const sanitizeForLog = (value: unknown): string => {
     return String(value).replace(/[\r\n\u2028\u2029]/g, '');
@@ -145,15 +144,12 @@ ${processedText}
             lang = await deps.gemini.detectLanguage(detectPrompt);
         }
         // Dynamic Few-Shot Persona Anchors
-        let personaFewShotPrompt = '';
-        try {
-            const patternVectors = getPersonaPatternEmbeddings();
-            const userVector = await deps.gemini.generateEmbedding(processedText);
-            const topPatterns = findTopPersonaPatterns(userVector, patternVectors, 3);
-            personaFewShotPrompt = buildPersonaFewShotPrompt(topPatterns, lang);
-        } catch (e) {
-            console.warn('Failed to generate dynamic few-shot persona anchors:', e);
-        }
+        const personaFewShotPrompt = await resolveSituationalPersonaAnchors(
+            deps.gemini,
+            [processedText],
+            lang,
+            3
+        );
 
         const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang, personaFewShotPrompt);
 
@@ -188,7 +184,7 @@ ${processedText}
         }
 
         // Preserve the raw logs for future analysis or model evolution
-        await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
+        await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText, internalThought);
 
         console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
         return { status: 'success' };

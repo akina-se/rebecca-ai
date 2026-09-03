@@ -12,6 +12,7 @@ interface PostDataModel {
   tweetId?: string;
   time: string;
   text: string;
+  thought?: string;
   impressions: string;
   status: string;
   likes: number;
@@ -56,6 +57,7 @@ export class PostDrawerComponent implements OnChanges {
           tweetId: post.tweetId,
           time: post.time,
           text: post.content || '',
+          thought: post.thought,
           impressions: post.impressions?.toString() || '0',
           status: String(post.status || 'SUCCESS'),
           likes: post.likes || 0,

@@ -252,6 +252,7 @@ export class UsersRepository {
         chatHistory.push({
           from: 'rebecca',
           text: String(log.aiText),
+          thought: log.thought ? String(log.thought) : undefined,
           time: String(log.timestamp || '')
         });
       }
@@ -259,11 +260,12 @@ export class UsersRepository {
 
     // Fallback: If chatHistory is sparse, also check episodicBuffer or rag_memories
     if (chatHistory.length === 0 && Array.isArray(data.episodicBuffer)) {
-      for (const entry of data.episodicBuffer as Array<{ role: string; content: string; timestamp?: string }>) {
+      for (const entry of data.episodicBuffer as Array<{ role: string; content: string; thought?: string; timestamp?: string }>) {
         if (entry.content) {
           chatHistory.push({
             from: entry.role === 'user' ? 'user' : 'rebecca',
             text: entry.content,
+            thought: entry.role !== 'user' && entry.thought ? String(entry.thought) : undefined,
             time: entry.timestamp || String(data.last_reply_date || '')
           });
         }

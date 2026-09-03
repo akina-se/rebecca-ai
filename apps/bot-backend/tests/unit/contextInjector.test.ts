@@ -14,13 +14,13 @@ describe('Context Injector', () => {
     it('should inject morning context during 7:00-9:00', () => {
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-01T08:00:00'));
         const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [] }, 'こんにちは');
-        expect(prompt).toContain('現在時刻は朝です');
+        expect(prompt).toContain('現在時刻は朝（8時台）です。');
     });
 
     it('should inject night context during 22:00-2:00', () => {
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-01T23:00:00'));
         const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [] }, 'こんばんは');
-        expect(prompt).toContain('現在時刻は深夜です');
+        expect(prompt).toContain('現在時刻は深夜（23時台）です。');
     });
 
     it('should inject absence context if over 3 days', () => {
@@ -34,13 +34,13 @@ describe('Context Injector', () => {
     it('should inject English morning context during 7:00-9:00 when lang is en', () => {
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-01T08:00:00'));
         const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [] }, 'Hello', '', '', [], 'en');
-        expect(prompt).toContain('[Time Context: Morning]');
+        expect(prompt).toContain('[Time Context: Morning (8:00)]');
     });
 
     it('should inject English night context during 22:00-2:00 when lang is en', () => {
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-01T23:00:00'));
         const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [] }, 'Good evening', '', '', [], 'en');
-        expect(prompt).toContain('[Time Context: Late Night]');
+        expect(prompt).toContain('[Time Context: Late Night (23:00)]');
     });
 
     it('should inject English absence context if over 3 days when lang is en', () => {

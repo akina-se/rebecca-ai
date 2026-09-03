@@ -1,6 +1,27 @@
 import 'dotenv/config';
 
 /**
+ * Validates whether the provided string is a valid IANA time zone identifier (RFC 6557 / ECMA-402).
+ * Falls back to 'Asia/Tokyo' if undefined, empty, or invalid.
+ *
+ * @param tz - Timezone string to validate.
+ * @returns A validated IANA timezone string.
+ */
+export const getValidatedTimezone = (tz?: string): string => {
+  if (!tz || tz.trim() === '') {
+    return 'Asia/Tokyo';
+  }
+  const trimmed = tz.trim();
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: trimmed });
+    return trimmed;
+  } catch {
+    console.warn(`[Config] Invalid IANA timezone "${trimmed}". Falling back to default "Asia/Tokyo".`);
+    return 'Asia/Tokyo';
+  }
+};
+
+/**
  * Application configuration settings.
  */
 export default { 
@@ -8,6 +29,11 @@ export default {
    * The port on which the application runs.
    */
   port: process.env.PORT || 8080,
+
+  /**
+   * Standard IANA application time zone (e.g., 'Asia/Tokyo', 'America/New_York').
+   */
+  appTimezone: getValidatedTimezone(process.env.APP_TIMEZONE),
 
   /**
    * Secret key for batch endpoints when not using OIDC.
@@ -82,5 +108,13 @@ export default {
    */
   evolution: {
     lookbackDays: parseInt(process.env.EVOLUTION_LOOKBACK_DAYS || '7', 10),
+  },
+
+  /**
+   * Configuration for proactive news deduplication and posting.
+   */
+  news: {
+    dedupLookbackDays: Math.max(1, parseInt(process.env.NEWS_DEDUP_LOOKBACK_DAYS || '30', 10) || 30),
+    dedupSimilarityThreshold: Math.max(0.1, Math.min(1.0, parseFloat(process.env.NEWS_DEDUP_SIMILARITY_THRESHOLD || '0.82') || 0.82)),
   },
 };

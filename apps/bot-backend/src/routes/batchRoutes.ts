@@ -8,6 +8,7 @@ import { createGlobalEvolutionModule } from '../features/evolution';
 import { createProactiveNewsModule } from '../features/news';
 import { createStealthOnboardingModule } from '../features/onboarding';
 import { createRandomEngagementModule } from '../features/engagement';
+import { createSoliloquyModule } from '../features/soliloquy';
 
 export const createBatchRoutes = (deps: AppDependencies): Router => {
     const router = Router();
@@ -19,6 +20,7 @@ export const createBatchRoutes = (deps: AppDependencies): Router => {
     router.use('/dreaming', createGlobalDreamingModule(deps));
     router.use('/evolution', createGlobalEvolutionModule(deps));
     router.use('/news-post', createProactiveNewsModule(deps));
+    router.use('/soliloquy-post', createSoliloquyModule(deps));
     router.use('/stealth-onboarding', createStealthOnboardingModule(deps));
     router.use('/random-engagement', createRandomEngagementModule(deps));
 
