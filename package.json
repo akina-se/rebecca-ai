@@ -28,9 +28,6 @@
     "sync:functions-lock": "npm --prefix apps/functions install --package-lock-only",
     "audit:fix": "npm audit fix"
   },
-  "dependencies": {
-    "@google-cloud/firestore": "^9.0.0"
-  },
   "devDependencies": {
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
     "@types/jest": "^30.0.0",
