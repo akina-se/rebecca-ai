@@ -162,6 +162,7 @@ async function seedFirestore() {
         userId: u.id,
         userText: `ユーザーの質問 #${j + 1}: ${topic}について教えて！`,
         aiText: `レベッカの回答 #${j + 1}: ${topic}は本当に素晴らしいよね！私も大好きだよ。`,
+        thought: `マスターが${topic}に興味持ってくれて嬉しい。もっと深掘りして喜ばせたいな。`,
         timestamp: logTime.toISOString(),
         expireAt: new Date(logTime.getTime() + 30 * 24 * 3600000).toISOString()
       });
@@ -198,15 +199,25 @@ async function seedFirestore() {
     const postDate = new Date(Date.now() - daysOffset * 24 * 3600000 - (i % 12) * 3600000);
     const authorIndex = (i - 1) % mockUsers.length;
     const author = mockUsers[authorIndex];
+    const isNews = i % 2 === 0;
+    const postType = isNews ? 'news' : 'soliloquy';
+    const newsTitle = isNews ? `${topic}に関する最新ニュース速報` : undefined;
+    const newsEmbedding = isNews ? Array.from({ length: 16 }, (_, idx) => Math.sin(i + idx)) : undefined;
 
     posts.push({
       id: `p${i}`,
       tweetId: `209231106640355755${i % 10}`,
       text: `${topic} (No. ${i})`,
       content: `${topic} (No. ${i})`,
+      thought: isNews
+        ? `このニュース、マスターの仕事や関心に関係ありそう。共有して元気出してもらおう。`
+        : `ふと浮かんだ本音。マスターがこれ見てちょっとでも笑ってくれたらいいな。`,
       timestamp: postDate.toISOString(),
       expireAt: new Date(postDate.getTime() + 30 * 24 * 3600000).toISOString(),
       status: 'SUCCESS',
+      postType,
+      ...(newsTitle ? { newsTitle } : {}),
+      ...(newsEmbedding ? { newsEmbedding } : {}),
       impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500 + Math.random() * 1000) + 1,
       likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
       retweets: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),

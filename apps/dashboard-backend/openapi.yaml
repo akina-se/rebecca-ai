@@ -593,6 +593,10 @@ components:
         text:
           type: string
           example: "Hello Rebecca!"
+        thought:
+          type: string
+          description: Inner thoughts and reflection of the persona
+          example: "本当は心配だけど、素直に言えないわね"
         time:
           type: string
           format: date-time
@@ -630,6 +634,17 @@ components:
         status:
           type: string
           example: "ACTIVE"
+        thought:
+          type: string
+          description: Inner thoughts and reflection of the persona
+          example: "マスターが喜びそうな話題を選んでみたわ"
+        postType:
+          type: string
+          enum: [news, soliloquy]
+          example: "news"
+        newsTitle:
+          type: string
+          example: "ITパスポート最新シラバス公開"
 
     PostDetail:
       type: object
@@ -647,6 +662,10 @@ components:
         content:
           type: string
           example: "Full detailed post content"
+        thought:
+          type: string
+          description: Inner thoughts and reflection of the persona
+          example: "マスターが喜びそうな話題を選んでみたわ"
         impressions:
           type: integer
           example: 450
@@ -669,6 +688,13 @@ components:
         replies:
           type: integer
           example: 5
+        postType:
+          type: string
+          enum: [news, soliloquy]
+          example: "news"
+        newsTitle:
+          type: string
+          example: "ITパスポート最新シラバス公開"
 
     UserLeaderboard:
       type: object

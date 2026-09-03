@@ -308,7 +308,7 @@ const checkAndConsumeRateLimit = async (
  * @param userText - The user's message text.
  * @param aiText   - The AI's response text.
  */
-const saveRawConversationLog = async (userId: string, userText: string, aiText: string): Promise<void> => {
+const saveRawConversationLog = async (userId: string, userText: string, aiText: string, thought?: string): Promise<void> => {
   const logRef = db.conversationLogs.doc();
   const now = new Date();
   const expireAt = new Date(now);
@@ -318,6 +318,7 @@ const saveRawConversationLog = async (userId: string, userText: string, aiText: 
     userId,
     userText,
     aiText,
+    thought: thought || undefined,
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp to Firestore.
   };
@@ -410,7 +411,15 @@ const saveTimelineSummary = async (summaryText: string): Promise<void> => {
  */
 const saveTimelinePost = async (
   text: string,
-  options?: { mediaUrls?: string[]; assetId?: string; tweetId?: string },
+  options?: {
+    thought?: string;
+    mediaUrls?: string[];
+    assetId?: string;
+    tweetId?: string;
+    postType?: 'news' | 'soliloquy';
+    newsTitle?: string;
+    newsEmbedding?: number[];
+  },
 ): Promise<void> => {
   const ref = db.timelineHistory.doc();
   const now = new Date();
@@ -423,14 +432,47 @@ const saveTimelinePost = async (
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp.
     mediaUrls: mediaList,
+    ...(options?.thought ? { thought: options.thought } : {}),
     ...(options?.assetId ? { assetId: options.assetId } : {}),
     ...(options?.tweetId ? { tweetId: options.tweetId } : {}),
+    ...(options?.postType ? { postType: options.postType } : {}),
+    ...(options?.newsTitle ? { newsTitle: options.newsTitle } : {}),
+    ...(options?.newsEmbedding ? { newsEmbedding: options.newsEmbedding } : {}),
     impressions: 0,
     likes: 0,
     reposts: 0,
     replies: 0,
     status: PostStatus.SUCCESS,
   });
+};
+
+/**
+ * Retrieves the titles and embeddings of recent news posts within the specified lookback days.
+ * Used for deterministic duplicate detection before generating proactive news posts.
+ *
+ * @param days - The lookback window in days. Defaults to 30 days.
+ * @returns Array of recent news items with title and embedding.
+ */
+const getRecentNewsEmbeddings = async (
+  days = 30,
+): Promise<Array<{ title: string; embedding: number[] }>> => {
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const snapshot = await db.timelineHistory
+    .where('timestamp', '>=', cutoff)
+    .orderBy('timestamp', 'desc')
+    .get();
+
+  const newsItems: Array<{ title: string; embedding: number[] }> = [];
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data?.newsTitle && Array.isArray(data?.newsEmbedding) && data.newsEmbedding.length > 0) {
+      newsItems.push({
+        title: data.newsTitle,
+        embedding: data.newsEmbedding,
+      });
+    }
+  });
+  return newsItems;
 };
 
 /**
@@ -454,7 +496,10 @@ const getRecentTimelinePosts = async (limit = 3): Promise<string[]> => {
             month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo'
           })
         : '';
-      posts.push(dateStr ? `[${dateStr}] ${data.text}` : data.text);
+      const textWithThought = data.thought
+        ? `${data.text} (内心: ${data.thought})`
+        : data.text;
+      posts.push(dateStr ? `[${dateStr}] ${textWithThought}` : textWithThought);
     }
   });
   return posts.reverse();
@@ -825,6 +870,7 @@ export {
   saveTimelineSummary,
   saveTimelinePost,
   getRecentTimelinePosts,
+  getRecentNewsEmbeddings,
   saveRagMemory,
   findRagMemories,
   getLastMentionId,

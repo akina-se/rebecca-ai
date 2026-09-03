@@ -157,12 +157,15 @@ Tracks random engagement history for list members.
 3. Passes the existing `coreProfile` and `episodicBuffer` to Gemini to compress and rebuild a new `coreProfile` JSON (with strict PII masking enforced).
 4. Clears the `episodicBuffer` upon successful update.
 
-### 5.5 Proactive News Post Flow
+### 5.5 Proactive News & Autonomous Soliloquy Flow
 1. Triggered periodically multiple times a day.
 2. Fetches an RSS feed (e.g., Yahoo! News) and extracts top news from a random category.
-3. Gemini selects a relevant story and generates a Gyaru-perspective tweet using a timeline monologue prompt.
-4. Infers an image search query from the text, runs a vector search (KNN) against images in Firestore, and fetches a matching image from GCS.
-5. Uploads the image to X and posts it alongside the text.
+3. **Vector Deduplication**: Fetches embeddings of news posted in the past 48 hours (`newsEmbedding`) and computes cosine similarity (`cosineSimilarity >= 0.82`) against candidate headlines to deterministically exclude previously covered topics.
+4. **Fallback to Autonomous Soliloquy**:
+   - If 0 fresh headlines remain after deduplication (or when invoked directly via `/batch/soliloquy-post`), generates an autonomous "soliloquy / thought tweet" incorporating Rebecca's episodic memory (`timelineSummary`), evolutionary persona (`extendedPrompt`), and current JST time of day.
+5. **News Tweet Generation**: If fresh headlines exist, Gemini selects a story and generates a Gyaru-perspective tweet.
+6. Infers an image search query from the text, runs a vector search (KNN) against images in Firestore, and fetches a matching image from GCS.
+7. Uploads the image to X and posts it alongside the text, saving `postType`, `newsTitle`, and `newsEmbedding` to `timeline_history`.
 
 ## 6. Rate Limit Handling Specifications
 When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.

@@ -93,6 +93,8 @@ export interface RawConversationLog {
   userId: string;
   userText: string;
   aiText: string;
+  /** Inner thought of the persona during response generation */
+  thought?: string;
   /** ISO 8601 datetime string */
   timestamp: string;
   /** ISO 8601 datetime string (TTL expiry) */
@@ -105,6 +107,8 @@ export interface RawConversationLog {
  */
 export interface TimelinePost {
   text: string;
+  /** Inner thought of the persona during post generation */
+  thought?: string;
   /** ISO 8601 datetime string */
   timestamp: string;
   /** ISO 8601 datetime string (TTL expiry) */
@@ -124,6 +128,9 @@ export interface TimelinePost {
   authorName?: string;
   authorHandle?: string;
   authorAvatarUrl?: string;
+  postType?: 'news' | 'soliloquy';
+  newsTitle?: string;
+  newsEmbedding?: number[];
 }
 
 /** Rate-limit tracking document for a user within a time window. */
@@ -324,6 +331,8 @@ export interface PostDetail {
   tweetId?: string;
   time: string;
   content: string;
+  /** Inner thought of the persona during post generation */
+  thought?: string;
   impressions: number;
   mediaUrls: string[];
   status?: PostStatus | string;
@@ -343,6 +352,8 @@ export interface UserLeaderboard {
 export interface ChatMessage {
   from: 'user' | 'rebecca';
   text: string;
+  /** Inner thought of the persona during response generation (if from rebecca) */
+  thought?: string;
   time: string;
 }
 
