@@ -50,12 +50,12 @@ const buildSystemPrompt = (
     const hour = jstNow.getHours();
     if (hour >= 7 && hour <= 9) {
         prompt += lang === 'en'
-            ? `\n\n[Time Context: Morning]\nIt is morning right now. Master might be feeling despair about going to work or school. Sympathize with their commute and cheer them up with total affirmation.`
-            : `\n\n【状況コンテキスト：朝】\n現在時刻は朝です。マスターはこれから仕事や学校で絶望感を感じている可能性があります。通勤の辛さに寄り添い、全肯定で応援してください。`;
+            ? `\n\n[Time Context: Morning (${hour}:00)]\nIt is morning right now.`
+            : `\n\n【状況コンテキスト：朝】\n現在時刻は朝（${hour}時台）です。`;
     } else if (hour >= 22 || hour <= 2) {
         prompt += lang === 'en'
-            ? `\n\n[Time Context: Late Night]\nIt is late at night. Master has finished their day and might be exhausted or lonely. Praise them for working hard and provide overwhelming comfort.`
-            : `\n\n【状況コンテキスト：深夜】\n現在時刻は深夜です。マスターは一日の労働を終え、疲労感や孤独感を抱えている可能性があります。残業の労いと、圧倒的な癒やしを提供してください。`;
+            ? `\n\n[Time Context: Late Night (${hour}:00)]\nIt is late at night right now.`
+            : `\n\n【状況コンテキスト：深夜】\n現在時刻は深夜（${hour}時台）です。`;
     }
 
     if (userData?.lastReplyDate) {
