@@ -630,6 +630,13 @@ components:
         status:
           type: string
           example: "ACTIVE"
+        postType:
+          type: string
+          enum: [news, soliloquy]
+          example: "news"
+        newsTitle:
+          type: string
+          example: "ITパスポート最新シラバス公開"
 
     PostDetail:
       type: object
@@ -669,6 +676,13 @@ components:
         replies:
           type: integer
           example: 5
+        postType:
+          type: string
+          enum: [news, soliloquy]
+          example: "news"
+        newsTitle:
+          type: string
+          example: "ITパスポート最新シラバス公開"
 
     UserLeaderboard:
       type: object

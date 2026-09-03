@@ -410,7 +410,14 @@ const saveTimelineSummary = async (summaryText: string): Promise<void> => {
  */
 const saveTimelinePost = async (
   text: string,
-  options?: { mediaUrls?: string[]; assetId?: string; tweetId?: string },
+  options?: {
+    mediaUrls?: string[];
+    assetId?: string;
+    tweetId?: string;
+    postType?: 'news' | 'soliloquy';
+    newsTitle?: string;
+    newsEmbedding?: number[];
+  },
 ): Promise<void> => {
   const ref = db.timelineHistory.doc();
   const now = new Date();
@@ -425,12 +432,44 @@ const saveTimelinePost = async (
     mediaUrls: mediaList,
     ...(options?.assetId ? { assetId: options.assetId } : {}),
     ...(options?.tweetId ? { tweetId: options.tweetId } : {}),
+    ...(options?.postType ? { postType: options.postType } : {}),
+    ...(options?.newsTitle ? { newsTitle: options.newsTitle } : {}),
+    ...(options?.newsEmbedding ? { newsEmbedding: options.newsEmbedding } : {}),
     impressions: 0,
     likes: 0,
     reposts: 0,
     replies: 0,
     status: PostStatus.SUCCESS,
   });
+};
+
+/**
+ * Retrieves the titles and embeddings of recent news posts within the specified lookback days.
+ * Used for deterministic duplicate detection before generating proactive news posts.
+ *
+ * @param days - The lookback window in days. Defaults to 30 days.
+ * @returns Array of recent news items with title and embedding.
+ */
+const getRecentNewsEmbeddings = async (
+  days = 30,
+): Promise<Array<{ title: string; embedding: number[] }>> => {
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const snapshot = await db.timelineHistory
+    .where('timestamp', '>=', cutoff)
+    .orderBy('timestamp', 'desc')
+    .get();
+
+  const newsItems: Array<{ title: string; embedding: number[] }> = [];
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data?.newsTitle && Array.isArray(data?.newsEmbedding) && data.newsEmbedding.length > 0) {
+      newsItems.push({
+        title: data.newsTitle,
+        embedding: data.newsEmbedding,
+      });
+    }
+  });
+  return newsItems;
 };
 
 /**
@@ -825,6 +864,7 @@ export {
   saveTimelineSummary,
   saveTimelinePost,
   getRecentTimelinePosts,
+  getRecentNewsEmbeddings,
   saveRagMemory,
   findRagMemories,
   getLastMentionId,

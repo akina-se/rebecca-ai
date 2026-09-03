@@ -198,6 +198,10 @@ async function seedFirestore() {
     const postDate = new Date(Date.now() - daysOffset * 24 * 3600000 - (i % 12) * 3600000);
     const authorIndex = (i - 1) % mockUsers.length;
     const author = mockUsers[authorIndex];
+    const isNews = i % 2 === 0;
+    const postType = isNews ? 'news' : 'soliloquy';
+    const newsTitle = isNews ? `${topic}に関する最新ニュース速報` : undefined;
+    const newsEmbedding = isNews ? Array.from({ length: 16 }, (_, idx) => Math.sin(i + idx)) : undefined;
 
     posts.push({
       id: `p${i}`,
@@ -207,6 +211,9 @@ async function seedFirestore() {
       timestamp: postDate.toISOString(),
       expireAt: new Date(postDate.getTime() + 30 * 24 * 3600000).toISOString(),
       status: 'SUCCESS',
+      postType,
+      ...(newsTitle ? { newsTitle } : {}),
+      ...(newsEmbedding ? { newsEmbedding } : {}),
       impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500 + Math.random() * 1000) + 1,
       likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
       retweets: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),

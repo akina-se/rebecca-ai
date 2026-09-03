@@ -1,4 +1,4 @@
-﻿import { AppDependencies } from '../../../src/types';
+import { AppDependencies } from '../../../src/types';
 
 export const createMockDeps = (): AppDependencies => {
     return {
@@ -32,12 +32,13 @@ export const createMockDeps = (): AppDependencies => {
             findImageByVector: jest.fn(),
             updateImageLastUsed: jest.fn(),
             saveTimelinePost: jest.fn(),
+            getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),
             analyzeImageCaption: jest.fn(),
             generateSearchQuery: jest.fn(),
-            generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2]),
+            generateEmbedding: jest.fn().mockResolvedValue(new Array(768).fill(0.1)),
             detectLanguage: jest.fn().mockResolvedValue('ja'),
             generateReply: jest.fn().mockResolvedValue('Mock response'),
             generateStructuredReply: jest.fn().mockResolvedValue({ thought: '内省モック', reply: 'Mock response' }),

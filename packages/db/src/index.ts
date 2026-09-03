@@ -232,6 +232,9 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
       authorHandle: data['authorHandle'],
       authorAvatarUrl: data['authorAvatarUrl'],
       assetId: data['assetId'],
+      postType: data['postType'],
+      newsTitle: data['newsTitle'],
+      newsEmbedding: data['newsEmbedding'],
     };
   },
 };
