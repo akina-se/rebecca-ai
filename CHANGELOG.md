@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.1](https://github.com/akina-se/rebecca-ai/compare/v1.8.0...v1.8.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **db:** move firestore to peerDependencies and deduplicate monorepo dependencies ([323c7d5](https://github.com/akina-se/rebecca-ai/commit/323c7d5622af4bf4f6d991e856f9544c2d9cc2e4))
+* **persona:** align Japanese and English reply guardrails with strict parity ([327aaa5](https://github.com/akina-se/rebecca-ai/commit/327aaa5252fba74bc9d586ee461130841e9042bc))
+* **persona:** relocate non-coercive guardrails from core identity to reply context ([#132](https://github.com/akina-se/rebecca-ai/issues/132)) ([ea4845b](https://github.com/akina-se/rebecca-ai/commit/ea4845b307165403ed99e52bad6a4d5a16ace1b3))
+
 ## [1.8.0](https://github.com/akina-se/rebecca-ai/compare/v1.7.11...v1.8.0) (2026-09-03)
 
 
