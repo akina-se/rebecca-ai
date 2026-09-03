@@ -16,7 +16,9 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             }),
         };
         deps.firestore.getRecentNewsEmbeddings.mockResolvedValue([]);
-        deps.gemini.generateEmbedding.mockResolvedValue([1, 0]);
+        deps.firestore.getTimelineSummary.mockResolvedValue('Recent timeline events');
+        deps.firestore.getExtendedPrompt.mockResolvedValue('User loves coffee');
+        deps.gemini.generateEmbedding.mockResolvedValue(new Array(768).fill(0.1));
         deps.xApi.tweet.mockResolvedValue({ data: { id: 'tweet_news_123' } });
     });
 
@@ -69,6 +71,14 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('完全新作ゲーム発表！'),
+        );
+        expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('【直近のタイムライン要約】'),
+        );
+        expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('【拡張ペルソナ・近況】'),
         );
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
             expect.stringContaining('新作ゲーム楽しみね！'),

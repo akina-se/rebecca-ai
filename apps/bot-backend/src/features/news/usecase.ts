@@ -3,6 +3,7 @@ import { getBasePrompt, cosineSimilarity } from '@rebecca/persona';
 import config from '../../config';
 import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
 import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
+import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
 /**
  * Interface representing the result of a proactive news execution.
@@ -98,12 +99,23 @@ export class ProactiveNewsUseCase {
       const freshHeadlineTexts = candidateHeadlines.map((c) => c.headline);
       console.log('Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
 
+      const timelineSummary = await this.deps.firestore.getTimelineSummary();
+      const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
+
+      const personaFewShotPrompt = await resolveSituationalPersonaAnchors(this.deps.gemini, [
+        `【今日のニュース候補】\n${freshHeadlineTexts.join('\n')}`,
+        extendedPrompt ? `【近況・気分】${extendedPrompt}` : '',
+        timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
+      ]);
+
       const systemInstruction = getBasePrompt('timeline', 'ja');
       const newsPrompt = `以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
 
 【今日のニュース】
 ${freshHeadlineTexts.join('\n')}
-
+${timelineSummary ? `\n【直近のタイムライン要約】\n${timelineSummary}\n` : ''}
+${extendedPrompt ? `\n【拡張ペルソナ・近況】\n${extendedPrompt}\n` : ''}
+${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【追加ルール】
 - 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
 - 【絶対に100文字以内の短文】にすること。

@@ -38,7 +38,7 @@ export const createMockDeps = (): AppDependencies => {
             analyzeUserProfile: jest.fn(),
             analyzeImageCaption: jest.fn(),
             generateSearchQuery: jest.fn(),
-            generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2]),
+            generateEmbedding: jest.fn().mockResolvedValue(new Array(768).fill(0.1)),
             detectLanguage: jest.fn().mockResolvedValue('ja'),
             generateReply: jest.fn().mockResolvedValue('Mock response'),
             generateStructuredReply: jest.fn().mockResolvedValue({ thought: '内省モック', reply: 'Mock response' }),

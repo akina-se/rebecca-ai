@@ -78,9 +78,18 @@ describe('Soliloquy Unit Tests', () => {
       expect(result.status).toBe('success');
       expect(result.post).toContain('今日も無理せずファイトよ♡');
       expect(result.post).toContain('#全肯定AIレベッカ');
+      expect(deps.gemini.generateEmbedding).toHaveBeenCalled();
       expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【現在の時間帯】'),
+      );
+      expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('【直近のタイムライン要約】'),
+      );
+      expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('【拡張ペルソナ・近況】'),
       );
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
         expect.stringContaining('#全肯定AIレベッカ'),

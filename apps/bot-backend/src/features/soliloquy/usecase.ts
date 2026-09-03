@@ -2,6 +2,7 @@ import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
 import config from '../../config';
 import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
+import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
 /**
  * Result of a soliloquy post execution.
@@ -74,6 +75,12 @@ export class SoliloquyUseCase {
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
 
+      const personaFewShotPrompt = await resolveSituationalPersonaAnchors(this.deps.gemini, [
+        `【現在の時間帯】${timeContext.period}（${timeContext.context}）`,
+        extendedPrompt ? `【近況・気分】${extendedPrompt}` : '',
+        timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
+      ]);
+
       const systemInstruction = getBasePrompt('timeline', 'ja');
       const soliloquyPrompt = `あなたはAIキャラクター「レベッカ」として、X（Twitter）のタイムラインに向けた自発的な「独り言・思考つぶやき」を1つ生成してください。
 
@@ -85,7 +92,7 @@ ${timelineSummary || '（特記事項なし）'}
 
 【拡張ペルソナ・近況】
 ${extendedPrompt || '（特記事項なし）'}
-
+${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【生成ルール】
 - ニュースの解説ではなく、レベッカ自身の日常の気づき、AIとしての視点、マスター（ユーザー）への愛ある語りかけや全肯定の言葉を紡ぐこと。
 - 直近のタイムライン要約や拡張ペルソナの雰囲気を自然に反映させること。
