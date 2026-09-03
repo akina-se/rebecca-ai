@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.11](https://github.com/akina-se/rebecca-ai/compare/v1.7.10...v1.7.11) (2026-09-03)
+
+
+### Bug Fixes
+
+* **bot-backend:** optimize AI language detection and sanitize input text ([#123](https://github.com/akina-se/rebecca-ai/issues/123)) ([eebd0e0](https://github.com/akina-se/rebecca-ai/commit/eebd0e0e18f20d4084b00d0d033bc8adf280bb03))
+
 ## [1.7.10](https://github.com/akina-se/rebecca-ai/compare/v1.7.9...v1.7.10) (2026-09-03)
 
 
