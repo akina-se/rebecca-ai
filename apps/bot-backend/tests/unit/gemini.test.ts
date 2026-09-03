@@ -286,6 +286,15 @@ describe('gemini.ts', () => {
             const result = await gemini.detectLanguage('Hello');
             expect(result).toBe('ja');
         });
+
+        it('should call generateContent with maxOutputTokens: 300', async () => {
+            const { gemini } = getGeminiModule();
+            mockGenerateContent.mockResolvedValueOnce({ text: 'en' });
+            await gemini.detectLanguage('Hello');
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+                config: { maxOutputTokens: 300 }
+            }));
+        });
     });
 
     describe('generateNewsPost', () => {
