@@ -151,9 +151,8 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
             }
           });
 
-          // Timeout guard: 3.5s limit to prevent network hangs in test or degraded connection environments
           const timeoutGuard = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Gemini API request timed out')), 3500)
+            setTimeout(() => reject(new Error('Gemini API request timed out')), config.gemini.timeoutMs)
           );
 
           const response = await Promise.race([geminiCall, timeoutGuard]);

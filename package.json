@@ -41,6 +41,7 @@
     "typescript-eslint": "^8.68.0"
   },
   "overrides": {
+    "@google-cloud/firestore": "^9.0.0",
     "cross-spawn": "^7.0.6",
     "micromatch": "^4.0.8",
     "brace-expansion": "^2.0.2",
