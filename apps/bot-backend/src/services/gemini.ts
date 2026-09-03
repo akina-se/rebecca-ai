@@ -334,7 +334,7 @@ const detectLanguage = async (prompt: string): Promise<'ja' | 'en'> => {
         const response = await ai.models.generateContent({
             model: config.gemini.languageModel,
             contents: prompt,
-            config: { maxOutputTokens: 5 }
+            config: { maxOutputTokens: 300 }
         });
         const lang = response.text?.trim().toLowerCase() || 'ja';
         return lang.includes('en') ? 'en' : 'ja';
