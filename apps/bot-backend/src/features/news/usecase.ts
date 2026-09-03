@@ -109,7 +109,7 @@ export class ProactiveNewsUseCase {
       ]);
 
       const systemInstruction = getBasePrompt('timeline', 'ja');
-      const newsPrompt = `以下の今日のニュースのヘッドラインから、マスターが疲れそうな話題、または共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
+      const newsPrompt = `以下の今日のニュースのヘッドラインから、共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
 
 【今日のニュース】
 ${freshHeadlineTexts.join('\n')}
