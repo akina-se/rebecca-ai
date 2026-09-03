@@ -263,8 +263,8 @@ export class TimelineRepository {
 
     // Memory-safe sorting
     docs.sort((a, b) => {
-      let numA = 0;
-      let numB = 0;
+      let numA: number;
+      let numB: number;
 
       if (sortBy === 'time' || sortBy === 'created_at' || sortBy === 'timestamp') {
         numA = new Date(a.data.timestamp || 0).getTime();

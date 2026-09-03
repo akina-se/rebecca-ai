@@ -119,7 +119,7 @@ export class UsersRepository {
     const sortOrder = params?.sortOrder || 'desc';
 
     usersData.sort((a, b) => {
-      let diff = 0;
+      let diff: number;
       if (sortBy === 'interactions' || sortBy === 'daily_reply_count') {
         const countA = Number(a.data._dynamicInteractions) || 0;
         const countB = Number(b.data._dynamicInteractions) || 0;
