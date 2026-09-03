@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/akina-se/rebecca-ai/compare/v1.7.11...v1.8.0) (2026-09-03)
+
+
+### Features
+
+* **bot-backend:** news dedup, soliloquy mode, and unified 4-tier cognitive architecture ([#127](https://github.com/akina-se/rebecca-ai/issues/127)) ([7de7d66](https://github.com/akina-se/rebecca-ai/commit/7de7d66fbf55ed9115c3260560a330e45d00e27f))
+* **core:** integrate dual-layer cognitive thoughts across all pipelines and admin dashboard ([#130](https://github.com/akina-se/rebecca-ai/issues/130)) ([4e26a31](https://github.com/akina-se/rebecca-ai/commit/4e26a315d0bd5dfac71b2fdf4700d8ef959dd037))
+
+
+### Bug Fixes
+
+* **persona:** add non-coercive guardrails to prevent sinister mind control outputs in greetings ([8dd45ce](https://github.com/akina-se/rebecca-ai/commit/8dd45ce25d1c324d4bbd30fcb8b38c90c88025f4))
+
 ## [1.7.11](https://github.com/akina-se/rebecca-ai/compare/v1.7.10...v1.7.11) (2026-09-03)
 
 
