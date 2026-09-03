@@ -119,6 +119,12 @@
                 <img src="rebecca_icon.png" alt="Rebecca" class="rebecca-icon">
                 <div>
                   <div class="bubble-content rebecca-bubble">{{ msg.text }}</div>
+                  @if (msg.thought) {
+                    <div class="chat-inner-thought">
+                      <span class="chat-thought-badge">INNER THOUGHT</span>
+                      <span class="chat-thought-text">{{ msg.thought }}</span>
+                    </div>
+                  }
                   <div class="bubble-time" [title]="msg.time">{{ msg.time | tzDate }}</div>
                 </div>
               </div>

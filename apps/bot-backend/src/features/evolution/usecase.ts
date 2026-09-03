@@ -43,7 +43,10 @@ export class GlobalEvolutionUseCase {
             return { status: 'skipped', reason: 'No logs found' };
         }
 
-        const logsText = logs.map(l => `User: ${l.userText}\nAI: ${l.aiText}`).join('\n---\n');
+        const logsText = logs.map(l => {
+            const aiPart = l.thought ? `AI (Thought: ${l.thought}): ${l.aiText}` : `AI: ${l.aiText}`;
+            return `User: ${l.userText}\n${aiPart}`;
+        }).join('\n---\n');
 
         console.log(`Generating evolution prompt from ${logs.length} logs...`);
         const evoPrompt = `あなたはAIキャラクターのプロンプトエンジニアです。

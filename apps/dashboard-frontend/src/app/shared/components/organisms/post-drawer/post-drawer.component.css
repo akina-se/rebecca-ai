@@ -11,6 +11,38 @@
     border-left: 4px solid var(--color-primary);
 }
 
+/* ---- Inner Thought Box ---- */
+.inner-thought-box {
+    padding: 16px 20px;
+    background: rgba(10, 10, 20, 0.45);
+    border-left: 3px solid #00f2fe;
+    border-radius: 8px;
+}
+
+.inner-thought-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.inner-thought-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(0, 242, 254, 0.12);
+    color: #00f2fe;
+    border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.inner-thought-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 /* ---- Media Grid ---- */
 .media-grid {
     display: grid;

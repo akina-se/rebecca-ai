@@ -13,7 +13,10 @@ describe('Soliloquy Unit Tests', () => {
     useCase = new SoliloquyUseCase(deps);
     (deps.firestore.getTimelineSummary as jest.Mock).mockResolvedValue('Recent timeline events');
     (deps.firestore.getExtendedPrompt as jest.Mock).mockResolvedValue('User loves coffee');
-    (deps.gemini.generateNewsPost as jest.Mock).mockResolvedValue('今日も無理せずファイトよ♡');
+    (deps.gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValue({
+      thought: '今日も頑張るマスターを応援したいな',
+      reply: '今日も無理せずファイトよ♡',
+    });
     (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue(null);
     (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'soliloquy_tweet_1' } });
   });
@@ -79,15 +82,15 @@ describe('Soliloquy Unit Tests', () => {
       expect(result.post).toContain('今日も無理せずファイトよ♡');
       expect(result.post).toContain('#全肯定AIレベッカ');
       expect(deps.gemini.generateEmbedding).toHaveBeenCalled();
-      expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【現在の時間帯】'),
       );
-      expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【直近のタイムライン要約】'),
       );
-      expect(deps.gemini.generateNewsPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【拡張ペルソナ・近況】'),
       );
@@ -99,13 +102,14 @@ describe('Soliloquy Unit Tests', () => {
         expect.stringContaining('#全肯定AIレベッカ'),
         expect.objectContaining({
           postType: 'soliloquy',
+          thought: '今日も頑張るマスターを応援したいな',
           tweetId: 'soliloquy_tweet_1',
         }),
       );
     });
 
     it('should return failed when gemini generation returns empty', async () => {
-      (deps.gemini.generateNewsPost as jest.Mock).mockResolvedValue('');
+      (deps.gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValue({ thought: '', reply: '' });
 
       const result = await useCase.execute();
 

@@ -18,6 +18,7 @@ import type {
   XApiCreateResponse,
   XApiUser,
 } from '@rebecca/types';
+import type { StructuredPersonaResponse } from '@rebecca/persona';
 
 // ---------------------------------------------------------------------------
 // Firestore Service
@@ -40,7 +41,7 @@ export interface IFirestoreService {
     limits: { globalDaily: number; spamMinute: number },
   ): Promise<{ allowed: boolean; reason?: string }>;
   getAllUsers(): Promise<FirestoreUser[]>;
-  saveRawConversationLog(userId: string, userText: string, aiText: string): Promise<void>;
+  saveRawConversationLog(userId: string, userText: string, aiText: string, thought?: string): Promise<void>;
   getRecentConversationLogs(limit?: number, days?: number, somethingElse?: unknown): Promise<RawConversationLog[]>;
   getExtendedPrompt(): Promise<string>;
   saveExtendedPrompt(promptText: string): Promise<void>;
@@ -49,6 +50,7 @@ export interface IFirestoreService {
   saveTimelinePost(
     text: string,
     options?: {
+      thought?: string;
       mediaUrls?: string[];
       assetId?: string;
       tweetId?: string;
@@ -58,7 +60,7 @@ export interface IFirestoreService {
     },
   ): Promise<void>;
   getRecentTimelinePosts(limit?: number): Promise<string[]>;
-  getRecentNewsEmbeddings(days?: number): Promise<Array<{ title: string; embedding: number[] }>>;
+  getRecentNewsEmbeddings(days?: number): Promise<Array<{ title?: string; embedding: number[] }>>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
   findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;
   getLastMentionId(): Promise<string | null>;
@@ -70,7 +72,7 @@ export interface IFirestoreService {
   findImageByVector(queryVector: number[], similarityThreshold?: number): Promise<ImageDocWithId | null>;
   updateImageLastUsed(hash: string): Promise<void>;
   hasProcessedFollower(followerId: string): Promise<boolean>;
-  markFollowerProcessed(followerId: string): Promise<void>;
+  markFollowerProcessed(followerId: string, username?: string): Promise<void>;
   getProcessedFollowersCount(): Promise<number>;
   updateTotalFollowers(count: number): Promise<void>;
   getLastListInteraction(userId: string): Promise<Date | null>;
@@ -89,13 +91,14 @@ export interface IFirestoreService {
  */
 export interface IGeminiService {
   generateReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string>;
-  generateStructuredReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<{ thought: string; reply: string }>;
+  generateStructuredReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<StructuredPersonaResponse>;
   verifyImageRelevance(imageCaption: string, postText: string): Promise<boolean>;
   generateDreaming(systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile>;
   generateEvolutionPrompt(prompt: string): Promise<string>;
   auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;
   analyzeUserProfile(prompt: string): Promise<UserCoreProfile>;
-  generateNewsPost(systemInstruction: string, prompt: string): Promise<string>;
+  generateStructuredNewsPost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
+  generateStructuredSoliloquyPost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
   generateTimelineSummary(prompt: string): Promise<string>;
   detectLanguage(prompt: string): Promise<'ja' | 'en'>;
   generateEmbedding(text: string): Promise<number[]>;

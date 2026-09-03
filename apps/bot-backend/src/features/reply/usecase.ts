@@ -184,7 +184,7 @@ ${processedText}
         }
 
         // Preserve the raw logs for future analysis or model evolution
-        await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText);
+        await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText, internalThought);
 
         console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
         return { status: 'success' };

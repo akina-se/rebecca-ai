@@ -99,7 +99,10 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 - 【絶対に100文字以内の短文】にすること。
 - 出力はツイートのテキストのみとし、「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
 
-      let postText = await this.deps.gemini.generateNewsPost(systemInstruction, soliloquyPrompt);
+      const structuredPost = await this.deps.gemini.generateStructuredSoliloquyPost(systemInstruction, soliloquyPrompt);
+      let postText = structuredPost.reply;
+      const thought = structuredPost.thought;
+
       if (!postText) {
         console.log('Failed to generate soliloquy post.');
         return { status: 'failed', reason: 'Generation failed' };
@@ -111,9 +114,11 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       }
 
       console.log('Generated Soliloquy Post:', postText);
+      console.log('Generated Soliloquy Thought:', thought);
 
       const publishResult: PublishTimelinePostResult = await publishTimelinePost(this.deps, {
         postText,
+        thought,
         postType: 'soliloquy',
       });
 
