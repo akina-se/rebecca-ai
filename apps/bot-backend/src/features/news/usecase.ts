@@ -121,7 +121,10 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 - 【絶対に100文字以内の短文】にすること。
 - 出力はツイートのテキストのみとし、「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
 
-      let postText = await this.deps.gemini.generateNewsPost(systemInstruction, newsPrompt);
+      const structuredPost = await this.deps.gemini.generateStructuredNewsPost(systemInstruction, newsPrompt);
+      let postText = structuredPost.reply;
+      const thought = structuredPost.thought;
+
       if (!postText) {
         console.log('Failed to generate news post. Falling back to soliloquy...');
         return await this.soliloquy.execute();
@@ -133,6 +136,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       }
 
       console.log('Generated Post:', postText);
+      console.log('Generated Thought:', thought);
 
       // Identify which headline was referenced (for persistence in timeline_history)
       const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline)) || candidateHeadlines[0];
@@ -148,6 +152,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
       const publishResult: PublishTimelinePostResult = await publishTimelinePost(this.deps, {
         postText,
+        thought,
         postType: 'news',
         newsTitle: matchedHeadline?.headline,
         newsEmbedding: chosenEmbedding && chosenEmbedding.length > 0 ? chosenEmbedding : undefined,

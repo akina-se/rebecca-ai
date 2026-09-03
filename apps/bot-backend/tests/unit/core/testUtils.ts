@@ -47,7 +47,8 @@ export const createMockDeps = (): AppDependencies => {
             generateTimelineSummary: jest.fn(),
             generateEvolutionPrompt: jest.fn(),
             auditEvolutionPrompt: jest.fn(),
-            generateNewsPost: jest.fn(),
+            generateStructuredNewsPost: jest.fn(),
+            generateStructuredSoliloquyPost: jest.fn(),
             inferImageSearchQuery: jest.fn(),
         } as any,
         xApi: {

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @fileoverview Unified publisher for proactive timeline posts (News and Soliloquy).
  * Handles multimodal image inference, vector retrieval, re-ranking, asset upload,
  * tweet publication, and timeline history persistence.
@@ -7,6 +7,7 @@ import { AppDependencies } from '../types';
 
 export interface PublishTimelinePostOptions {
   postText: string;
+  thought?: string;
   postType: 'news' | 'soliloquy';
   newsTitle?: string;
   newsEmbedding?: number[];
@@ -30,7 +31,7 @@ export const publishTimelinePost = async (
   deps: AppDependencies,
   options: PublishTimelinePostOptions,
 ): Promise<PublishTimelinePostResult> => {
-  const { postText, postType, newsTitle, newsEmbedding } = options;
+  const { postText, thought, postType, newsTitle, newsEmbedding } = options;
 
   const timelineSummary = await deps.firestore.getTimelineSummary();
   const searchPrompt = `あなたはAIキャラクター「レベッカ」の心情を分析するAIです。
@@ -94,6 +95,7 @@ ${postText}
   const assetId = bestImage ? bestImage.id : undefined;
 
   await deps.firestore.saveTimelinePost(postText, {
+    thought,
     mediaUrls: mediaIds.length > 0 && attachedUrl ? [attachedUrl] : [],
     assetId: mediaIds.length > 0 ? assetId : undefined,
     tweetId,

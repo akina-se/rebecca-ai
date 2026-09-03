@@ -224,14 +224,16 @@ const analyzeUserProfile = async (prompt: string): Promise<Record<string, unknow
 }
 
 /**
- * Generates a short, engaging post based on current news headlines and system persona rules.
- * 
- * @param systemInstruction - The system persona instruction.
- * @param prompt - The formatted instruction with the headlines.
- * @returns A promise resolving to the generated post text.
+ * Internal helper to generate structured persona post (thought + reply) via Gemini.
  */
-const generateNewsPost = async (systemInstruction: string, prompt: string | string[]): Promise<string> => {
-    if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) return "";
+const generateStructuredPostInternal = async (
+    systemInstruction: string,
+    prompt: string | string[],
+    maxOutputTokens = 180
+): Promise<StructuredPersonaResponse> => {
+    if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) {
+        return { thought: '', reply: '' };
+    }
     try {
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
         const response = await ai.models.generateContent({
@@ -239,15 +241,37 @@ const generateNewsPost = async (systemInstruction: string, prompt: string | stri
             contents: contentStr,
             config: {
                 systemInstruction: systemInstruction,
-                maxOutputTokens: 100,
+                maxOutputTokens: maxOutputTokens,
+                responseMimeType: 'application/json',
+                responseSchema: PERSONA_RESPONSE_SCHEMA,
                 safetySettings: [] as never[]
             }
         });
-        return response.text?.trim() || "";
+        return parsePersonaResponse(response.text?.trim() || '');
     } catch (e) {
-        console.error('Error generating news post:', e);
-        return "";
+        console.error('Error generating structured timeline post:', e);
+        return { thought: '', reply: '' };
     }
+};
+
+/**
+ * Generates a structured news post (inner thought and public tweet text) based on news headlines.
+ */
+const generateStructuredNewsPost = async (
+    systemInstruction: string,
+    prompt: string | string[]
+): Promise<StructuredPersonaResponse> => {
+    return generateStructuredPostInternal(systemInstruction, prompt, 180);
+};
+
+/**
+ * Generates a structured soliloquy post (inner thought and public tweet text) based on situational context.
+ */
+const generateStructuredSoliloquyPost = async (
+    systemInstruction: string,
+    prompt: string | string[]
+): Promise<StructuredPersonaResponse> => {
+    return generateStructuredPostInternal(systemInstruction, prompt, 180);
 };
 
 /**
@@ -465,7 +489,14 @@ const generateStructuredReply = async (
     try {
         const contents: Content[] = [];
         for (const msg of history) {
-            contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] });
+            if (msg.role === 'model') {
+                const modelText = msg.thought
+                    ? `【思考・本音】${msg.thought}\n【発話】${msg.content}`
+                    : msg.content;
+                contents.push({ role: 'model', parts: [{ text: modelText }] });
+            } else {
+                contents.push({ role: 'user', parts: [{ text: msg.content }] });
+            }
         }
         contents.push({ role: 'user', parts: [{ text: userInput }] });
 
@@ -545,7 +576,8 @@ export {
     generateEvolutionPrompt,
     auditEvolutionPrompt,
     analyzeUserProfile,
-    generateNewsPost,
+    generateStructuredNewsPost,
+    generateStructuredSoliloquyPost,
     generateTimelineSummary,
     detectLanguage,
     generateEmbedding,
