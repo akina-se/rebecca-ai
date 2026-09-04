@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.7](https://github.com/akina-se/rebecca-ai/compare/v1.8.6...v1.8.7) (2026-09-04)
+
+
+### Bug Fixes
+
+* **bot-backend:** terminate onboarding pagination on full batch processed ([#149](https://github.com/akina-se/rebecca-ai/issues/149)) ([c43306e](https://github.com/akina-se/rebecca-ai/commit/c43306e192658aca4fc498eb12946f5d1eb3d0bd))
+
 ## [1.8.6](https://github.com/akina-se/rebecca-ai/compare/v1.8.5...v1.8.6) (2026-09-04)
 
 
