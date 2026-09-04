@@ -80,6 +80,20 @@ const indexes: IndexDefinition[] = [
                 order: 'ascending'
             }
         ]
+    },
+    {
+        collectionGroup: 'processed_followers',
+        description: 'Index for querying failed follower onboarding by timestamp for FIFO retries',
+        fields: [
+            {
+                fieldPath: 'listStatus',
+                order: 'ascending'
+            },
+            {
+                fieldPath: 'timestamp',
+                order: 'ascending'
+            }
+        ]
     }
 ];
 
