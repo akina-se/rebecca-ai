@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.3](https://github.com/akina-se/rebecca-ai/compare/v1.8.2...v1.8.3) (2026-09-04)
+
+
+### Bug Fixes
+
+* **bot-backend:** streamline soliloquy time context and eliminate fatigue bias from news prompt ([#137](https://github.com/akina-se/rebecca-ai/issues/137)) ([9bcad40](https://github.com/akina-se/rebecca-ai/commit/9bcad40261348d7a708ae18ec369d3ef02885fb3))
+* **persona:** strictly prohibit private intimacy promises and all kiss emojis in reply rules ([d697d5d](https://github.com/akina-se/rebecca-ai/commit/d697d5d05ab43d0ae896e16db1417a5ed316ddcc))
+
 ## [1.8.2](https://github.com/akina-se/rebecca-ai/compare/v1.8.1...v1.8.2) (2026-09-03)
 
 
