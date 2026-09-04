@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.5](https://github.com/akina-se/rebecca-ai/compare/v1.8.4...v1.8.5) (2026-09-04)
+
+
+### Bug Fixes
+
+* **functions:** use official XDK postFields and GET method for timeline metrics sync ([#143](https://github.com/akina-se/rebecca-ai/issues/143)) ([7b74278](https://github.com/akina-se/rebecca-ai/commit/7b742784e1aaed6d5cadf841cacbdfb6f4776b46))
+
 ## [1.8.4](https://github.com/akina-se/rebecca-ai/compare/v1.8.3...v1.8.4) (2026-09-04)
 
 
