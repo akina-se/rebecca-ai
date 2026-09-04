@@ -345,7 +345,7 @@ describe('Integration Tests', () => {
             expect(response.status).toBe(200);
             expect(xApi.getFollowers).toHaveBeenCalled();
             expect(xApi.addListMember).toHaveBeenCalledWith(expect.any(String), 'follower_1');
-            expect(firestore.markFollowerProcessed).toHaveBeenCalledWith('follower_1');
+            expect(firestore.markFollowerProcessed).toHaveBeenCalledWith('follower_1', 'ADDED');
         });
     });
 

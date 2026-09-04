@@ -24,6 +24,8 @@ export const createMockDeps = (): AppDependencies => {
             saveExtendedPrompt: jest.fn(),
             hasProcessedFollower: jest.fn(),
             markFollowerProcessed: jest.fn(),
+            getFailedFollowers: jest.fn().mockResolvedValue([]),
+            updateFollowerListStatus: jest.fn().mockResolvedValue(undefined),
             getProcessedFollowersCount: jest.fn().mockResolvedValue(0),
             updateTotalFollowers: jest.fn().mockResolvedValue(undefined),
             getLastListInteraction: jest.fn(),

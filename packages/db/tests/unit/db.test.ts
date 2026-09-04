@@ -13,7 +13,7 @@ import {
   personaConverter,
   xApiStateConverter,
 } from '../../src/index';
-import { UserStatus, PostStatus, AssetStatus, FirestoreUser, TimelinePost, ImageDoc } from '@rebecca/types';
+import { UserStatus, PostStatus, AssetStatus, FirestoreUser, TimelinePost, ImageDoc, ProcessedFollower } from '@rebecca/types';
 
 describe('@rebecca/db Unit Tests', () => {
   describe('COLLECTIONS constants', () => {
@@ -353,7 +353,7 @@ describe('@rebecca/db Unit Tests', () => {
 
   describe('processedFollowerConverter & listInteractionConverter', () => {
     it('processedFollowerConverter should convert data correctly', () => {
-      const follower = { userId: 'f1', timestamp: '2026-04-01T00:00:00Z' };
+      const follower: ProcessedFollower = { userId: 'f1', timestamp: '2026-04-01T00:00:00Z', listStatus: 'ADDED' };
       expect(processedFollowerConverter.toFirestore(follower)).toEqual(follower);
       expect(processedFollowerConverter.fromFirestore({ data: () => follower } as any)).toEqual(follower);
     });

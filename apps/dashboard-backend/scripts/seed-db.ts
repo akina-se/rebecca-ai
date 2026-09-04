@@ -242,12 +242,14 @@ async function seedFirestore() {
   for (let i = 1; i <= totalFollowersSeed; i++) {
     const daysOffset = Math.floor((i / totalFollowersSeed) * 365);
     const followerDate = new Date(Date.now() - daysOffset * 24 * 3600000);
+    const listStatus = i % 25 === 0 ? 'REJECTED' : i % 15 === 0 ? 'FAILED' : 'ADDED';
     await collections.processedFollowers.doc(`follower_${i}`).set({
       userId: `follower_uid_${i}`,
       username: `follower_user_${i}`,
       timestamp: followerDate.toISOString(),
       processedAt: followerDate.toISOString(),
-      source: 'auto_sync'
+      source: 'auto_sync',
+      listStatus
     });
   }
   console.log(`Seeded ${totalFollowersSeed} processed followers across 365 days.`);

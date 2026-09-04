@@ -301,6 +301,7 @@ const processedFollowerConverter: FirestoreDataConverter<ProcessedFollower> = {
     return {
       userId: data['userId'],
       timestamp: data['timestamp'],
+      listStatus: data['listStatus'] ?? 'ADDED',
     };
   },
 };
