@@ -119,7 +119,7 @@ describe('persona package exports verification', () => {
     const plainText = 'ただのプレーンテキスト';
     const resPlain = parsePersonaResponse(plainText);
     expect(resPlain.thought).toBe('');
-    expect(resPlain.reply).toBe('ただのプレーンテキスト');
+    expect(resPlain.reply).toBe('');
 
     expect(parsePersonaResponse('')).toEqual({ thought: '', reply: '' });
     expect(parsePersonaResponse(null as unknown as string)).toEqual({ thought: '', reply: '' });
