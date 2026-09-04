@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.4](https://github.com/akina-se/rebecca-ai/compare/v1.8.3...v1.8.4) (2026-09-04)
+
+
+### Bug Fixes
+
+* **bot-backend:** neutralize memory consolidation timeline summary and persona evolution prompts ([#140](https://github.com/akina-se/rebecca-ai/issues/140)) ([b00d309](https://github.com/akina-se/rebecca-ai/commit/b00d309e46893571ac3a7425b0f3cb09d80aa3ee))
+
 ## [1.8.3](https://github.com/akina-se/rebecca-ai/compare/v1.8.2...v1.8.3) (2026-09-04)
 
 
