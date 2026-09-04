@@ -34,10 +34,45 @@ export class StealthOnboardingUseCase {
         return { status: 'failed', processed: 0, reason: 'Missing X_TARGET_LIST_ID' };
       }
 
+      // -----------------------------------------------------------------------
+      // Phase 1: Self-Healing Retry for previously FAILED followers
+      // -----------------------------------------------------------------------
+      try {
+        const failedFollowers = await this.deps.firestore.getFailedFollowers(10);
+        if (failedFollowers.length > 0) {
+          console.log(`Found ${failedFollowers.length} previously FAILED followers. Retrying list addition...`);
+          for (const failed of failedFollowers) {
+            try {
+              const added = await this.deps.xApi.addListMember(targetListId, failed.userId);
+              if (added) {
+                await this.deps.firestore.updateFollowerListStatus(failed.userId, 'ADDED');
+                console.log(`Self-healing retry succeeded for follower (${failed.userId}): transitioned to ADDED.`);
+                processedCount++;
+              }
+            } catch (retryErr: unknown) {
+              const errStr = String(retryErr);
+              if (errStr.includes('"status":403') || errStr.includes('Forbidden')) {
+                await this.deps.firestore.updateFollowerListStatus(failed.userId, 'REJECTED');
+                console.log(`Self-healing retry for follower (${failed.userId}) got 403: transitioned to REJECTED.`);
+              } else if (errStr.includes('"status":429') || errStr.includes('Too Many Requests')) {
+                console.warn(`X API rate limit (429) encountered during self-healing retry. Halting retry phase.`);
+                break;
+              } else {
+                console.error(`Self-healing retry error for follower (${failed.userId}):`, retryErr);
+              }
+            }
+          }
+        }
+      } catch (retryPhaseErr) {
+        console.error('Error during self-healing retry phase:', retryPhaseErr);
+      }
+
+      // -----------------------------------------------------------------------
+      // Phase 2: Ingest New Followers (Paginated)
+      // -----------------------------------------------------------------------
       const pageSize = config.xApi.followersPageSize || 10;
       const maxResults = config.xApi.followersMaxResults || 50;
 
-      let processedCount = 0;
       let fetchedCount = 0;
       let nextToken: string | undefined = undefined;
       let keepFetching = true;
@@ -72,7 +107,7 @@ export class StealthOnboardingUseCase {
           const userDoc = await this.deps.firestore.getUserDoc(follower.id);
           if (userDoc?.status === 'BLOCKED') {
             console.log(`Follower @${follower.username} (${follower.id}) is blocked by admin. Skipping list addition.`);
-            await this.deps.firestore.markFollowerProcessed(follower.id);
+            await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
             if (fetchedCount >= maxResults) {
               console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
               keepFetching = false;
@@ -84,14 +119,22 @@ export class StealthOnboardingUseCase {
           try {
             const added = await this.deps.xApi.addListMember(targetListId, follower.id);
             if (added) {
-              await this.deps.firestore.markFollowerProcessed(follower.id);
+              await this.deps.firestore.markFollowerProcessed(follower.id, 'ADDED');
               console.log(`Successfully onboarded (added to list): ${follower.username}`);
               processedCount++;
             } else {
               console.error(`Failed to add ${follower.username} to list: addListMember returned false.`);
+              await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
             }
-          } catch (listErr) {
-            console.error(`Error adding follower @${follower.username} (${follower.id}) to list:`, listErr);
+          } catch (listErr: unknown) {
+            const errStr = String(listErr);
+            if (errStr.includes('"status":403') || errStr.includes('Forbidden')) {
+              console.log(`Follower @${follower.username} (${follower.id}) rejected list addition (403). Marking REJECTED.`);
+              await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
+            } else {
+              console.error(`Error adding follower @${follower.username} (${follower.id}) to list. Marking FAILED:`, listErr);
+              await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
+            }
           }
 
           if (fetchedCount >= maxResults) {
@@ -108,7 +151,7 @@ export class StealthOnboardingUseCase {
         }
 
         if (keepFetching) {
-          nextToken = followersResp.meta?.next_token;
+          nextToken = followersResp.meta?.nextToken || followersResp.meta?.next_token;
           if (!nextToken) {
             console.log('No nextToken found. Reached end of followers list.');
             break;

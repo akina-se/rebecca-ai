@@ -49,11 +49,11 @@ describe('Stealth Onboarding Batch', () => {
         
         // user1 should be added and marked
         expect(deps.xApi.addListMember).toHaveBeenCalledWith('list_abc', 'user1');
-        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user1');
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user1', 'ADDED');
         
         // user2 should be skipped
         expect(deps.xApi.addListMember).not.toHaveBeenCalledWith('list_abc', 'user2');
-        expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalledWith('user2');
+        expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalledWith('user2', 'ADDED');
     });
 
     it('should skip adding follower to list if follower is blocked by admin', async () => {
@@ -70,7 +70,7 @@ describe('Stealth Onboarding Batch', () => {
         expect(result.status).toBe('success');
         expect(result.processed).toBe(0);
         expect(deps.xApi.addListMember).not.toHaveBeenCalled();
-        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('blocked_user');
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('blocked_user', 'REJECTED');
     });
 
     it('should return successfully with 0 processed if there are no followers', async () => {
@@ -140,22 +140,22 @@ describe('Stealth Onboarding Batch', () => {
         expect(result.processed).toBe(1); // only user_p1_new
         expect(deps.xApi.getFollowers).toHaveBeenCalledTimes(2);
         expect(deps.xApi.addListMember).toHaveBeenCalledWith('list_abc', 'user_p1_new');
-        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_p1_new');
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_p1_new', 'ADDED');
         expect(deps.firestore.updateTotalFollowers).toHaveBeenCalledWith(10);
     });
 
-    it('should not abort batch when addListMember throws an error for a user', async () => {
+    it('should mark follower as REJECTED when addListMember throws 403 Forbidden', async () => {
         deps.xApi.getFollowers.mockResolvedValueOnce({
             data: [
-                { id: 'user_err', username: 'err_user' },
+                { id: 'user_403', username: 'forbidden_user' },
                 { id: 'user_ok', username: 'ok_user' }
             ]
         });
 
         deps.firestore.hasProcessedFollower.mockResolvedValue(false);
         deps.xApi.addListMember.mockImplementation(async (_listId: string, userId: string) => {
-            if (userId === 'user_err') {
-                throw new Error('403 Forbidden: You are not allowed to add members to this List.');
+            if (userId === 'user_403') {
+                throw new Error('{"detail":"You are not allowed to add members to this List.","status":403,"title":"Forbidden"}');
             }
             return true;
         });
@@ -164,8 +164,48 @@ describe('Stealth Onboarding Batch', () => {
 
         expect(result.status).toBe('success');
         expect(result.processed).toBe(1); // user_ok succeeded
-        expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalledWith('user_err');
-        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_ok');
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_403', 'REJECTED');
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_ok', 'ADDED');
+    });
+
+    it('should mark follower as FAILED when addListMember throws a transient error (e.g. 429)', async () => {
+        deps.xApi.getFollowers.mockResolvedValueOnce({
+            data: [
+                { id: 'user_429', username: 'rate_limited_user' }
+            ]
+        });
+
+        deps.firestore.hasProcessedFollower.mockResolvedValue(false);
+        deps.xApi.addListMember.mockRejectedValue(new Error('{"detail":"Too Many Requests","status":429}'));
+
+        const result = await new StealthOnboardingUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(0);
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_429', 'FAILED');
+    });
+
+    it('should execute self-healing retries for previously FAILED followers at start of batch', async () => {
+        deps.firestore.getFailedFollowers.mockResolvedValueOnce([
+            { userId: 'failed_retry_ok', timestamp: '2026-09-01T00:00:00Z', listStatus: 'FAILED' },
+            { userId: 'failed_retry_403', timestamp: '2026-09-01T00:00:00Z', listStatus: 'FAILED' }
+        ]);
+
+        deps.xApi.addListMember.mockImplementation(async (_listId: string, userId: string) => {
+            if (userId === 'failed_retry_403') {
+                throw new Error('{"status":403,"title":"Forbidden"}');
+            }
+            return true;
+        });
+
+        deps.xApi.getFollowers.mockResolvedValueOnce({ data: [] });
+
+        const result = await new StealthOnboardingUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(1); // 1 retried user succeeded
+        expect(deps.firestore.updateFollowerListStatus).toHaveBeenCalledWith('failed_retry_ok', 'ADDED');
+        expect(deps.firestore.updateFollowerListStatus).toHaveBeenCalledWith('failed_retry_403', 'REJECTED');
     });
 
     it('should enforce hard limit when total fetched followers reach maxResults', async () => {
