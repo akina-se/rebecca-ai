@@ -1,6 +1,6 @@
 {
   "name": "@rebecca/types",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "description": "Shared data model types for the Rebecca AI monorepo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
