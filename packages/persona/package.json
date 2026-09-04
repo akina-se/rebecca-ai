@@ -1,6 +1,6 @@
 {
   "name": "@rebecca/persona",
-  "version": "1.8.7",
+  "version": "1.9.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
