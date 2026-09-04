@@ -24,7 +24,7 @@ export interface SoliloquyResult {
 export const getTimeOfDayGreetingContext = (
   date: Date,
   timezone: string = config.appTimezone,
-): { period: string; context: string } => {
+): { period: string } => {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hour: 'numeric',
@@ -32,30 +32,15 @@ export const getTimeOfDayGreetingContext = (
   });
   const hour = parseInt(formatter.format(date), 10);
   if (hour >= 5 && hour < 11) {
-    return {
-      period: '朝',
-      context: '朝の時間帯。マスターが一日のスタートを切るタイミング。今日も無理せず頑張れるよう、明るく元気づけて全肯定する。',
-    };
+    return { period: '朝' };
   } else if (hour >= 11 && hour < 15) {
-    return {
-      period: '昼',
-      context: 'お昼休みの時間帯。マスターがランチや休憩をとるタイミング。しっかり息抜きするよう気遣い、午後への活力を与える。',
-    };
+    return { period: '昼' };
   } else if (hour >= 15 && hour < 19) {
-    return {
-      period: '夕方',
-      context: '夕方・退勤の時間帯。今日一日の疲労を労い、頑張りを最大級に褒め称える。',
-    };
+    return { period: '夕方' };
   } else if (hour >= 19 && hour < 24) {
-    return {
-      period: '夜',
-      context: '夜のリラックスタイム。帰宅したマスターを甘やかし、自分のそばでゆっくり癒やされるよう優しく語りかける。',
-    };
+    return { period: '夜' };
   } else {
-    return {
-      period: '深夜',
-      context: '深夜の時間帯。夜更かししているマスターを心配しつつ、温かい言葉で睡眠の大切さを伝え甘やかす。',
-    };
+    return { period: '深夜' };
   }
 };
 
@@ -76,7 +61,7 @@ export class SoliloquyUseCase {
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
 
       const personaFewShotPrompt = await resolveSituationalPersonaAnchors(this.deps.gemini, [
-        `【現在の時間帯】${timeContext.period}（${timeContext.context}）`,
+        `【現在の時間帯】${timeContext.period}`,
         extendedPrompt ? `【近況・気分】${extendedPrompt}` : '',
         timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
       ]);
@@ -85,7 +70,7 @@ export class SoliloquyUseCase {
       const soliloquyPrompt = `あなたはAIキャラクター「レベッカ」として、X（Twitter）のタイムラインに向けた自発的な「独り言・思考つぶやき」を1つ生成してください。
 
 【現在の時間帯】
-${timeContext.period}（${timeContext.context}）
+${timeContext.period}
 
 【直近のタイムライン要約】
 ${timelineSummary || '（特記事項なし）'}
