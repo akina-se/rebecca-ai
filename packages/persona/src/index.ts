@@ -365,11 +365,17 @@ export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => 
     if (parsed && typeof parsed === 'object') {
       const thought = typeof parsed.thought === 'string' ? parsed.thought.trim() : '';
       const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : (typeof parsed.text === 'string' ? parsed.text.trim() : '');
-      return { thought, reply: reply || cleaned };
+      return { thought, reply };
     }
   } catch {
-    // If not JSON, treat entire content as reply
+    // If output looks like JSON or code block but failed to parse (truncated/corrupted), fail-fast by returning empty
+    if (cleaned.startsWith('{') || cleaned.startsWith('[') || raw.includes('```')) {
+      console.error('Failed to parse structured persona response JSON (truncated or malformed):', raw);
+      return { thought: '', reply: '' };
+    }
   }
+
+  // Only treat purely non-JSON plaintext as reply
   return { thought: '', reply: cleaned };
 };
 

@@ -111,6 +111,11 @@ describe('persona package exports verification', () => {
     const resText = parsePersonaResponse(textFallback);
     expect(resText.reply).toBe('テキストのみ');
 
+    const truncatedJson = '{\n "thought": "バスケ女子の劇的な逆転勝ちのニュースを見て...ノイズ';
+    const resTruncated = parsePersonaResponse(truncatedJson);
+    expect(resTruncated.thought).toBe('');
+    expect(resTruncated.reply).toBe('');
+
     const plainText = 'ただのプレーンテキスト';
     const resPlain = parsePersonaResponse(plainText);
     expect(resPlain.thought).toBe('');
