@@ -140,7 +140,7 @@ describe('XApiService', () => {
     expect(tweets).toEqual([]);
   });
 
-  it('should correctly parse SDK camelCase publicMetrics and attachments', async () => {
+  it('should correctly pass postFields and parse SDK camelCase publicMetrics and attachments', async () => {
     mockGetPosts.mockResolvedValueOnce({
       data: [
         {
@@ -181,6 +181,16 @@ describe('XApiService', () => {
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('12345');
 
+    expect(mockGetPosts).toHaveBeenCalledWith(
+      '12345',
+      expect.objectContaining({
+        maxResults: 100,
+        exclude: ['retweets', 'replies'],
+        postFields: ['created_at', 'public_metrics', 'attachments', 'text'],
+        expansions: ['attachments.media_keys'],
+        mediaFields: ['url', 'preview_image_url', 'type'],
+      })
+    );
     expect(tweets).toHaveLength(1);
     expect(tweets[0]).toEqual({
       id: 'tweet_camel',
@@ -244,7 +254,7 @@ describe('XApiService', () => {
     const service = new XApiService(cfg);
     await service.fetchRecentTimelineTweets('12345');
 
-    expect(mockGetPosts).toHaveBeenCalledWith('12345', expect.objectContaining({ max_results: 50 }));
+    expect(mockGetPosts).toHaveBeenCalledWith('12345', expect.objectContaining({ maxResults: 50 }));
   });
 
   it('should handle empty response data gracefully', async () => {

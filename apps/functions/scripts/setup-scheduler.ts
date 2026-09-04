@@ -29,7 +29,7 @@ const createJob = (jobConfig: { name: string; schedule: string; url: string }) =
             '--schedule', `"${jobConfig.schedule}"`,
             '--time-zone', timeZone,
             '--uri', jobConfig.url,
-            '--http-method', 'POST',
+            '--http-method', 'GET',
             '--location', region,
             '--project', projectId,
         ];
@@ -56,7 +56,7 @@ const createJob = (jobConfig: { name: string; schedule: string; url: string }) =
                 '--schedule', `"${jobConfig.schedule}"`,
                 '--time-zone', timeZone,
                 '--uri', jobConfig.url,
-                '--http-method', 'POST',
+                '--http-method', 'GET',
                 '--location', region,
                 '--project', projectId,
             ];
