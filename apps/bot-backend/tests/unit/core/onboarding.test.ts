@@ -99,7 +99,7 @@ describe('Stealth Onboarding Batch', () => {
         require('../../../src/config').default.xApi.targetListId = originalList;
     });
 
-    it('should not mark follower as processed if addListMember fails', async () => {
+    it('should mark follower as FAILED if addListMember fails', async () => {
         deps.xApi.getFollowers.mockResolvedValue({ data: [{ id: 'user3', username: 'smith' }] });
         deps.firestore.hasProcessedFollower.mockResolvedValue(false);
         deps.xApi.addListMember.mockResolvedValue(false); // fails!
@@ -107,7 +107,7 @@ describe('Stealth Onboarding Batch', () => {
         const result = await new StealthOnboardingUseCase(deps).execute();
 
         expect(result.processed).toBe(0);
-        expect(deps.firestore.markFollowerProcessed).not.toHaveBeenCalled();
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user3', 'FAILED');
     });
 
     it('should paginate with nextToken, skip processed followers in mixed batch, and stop when an entire batch is already processed', async () => {
