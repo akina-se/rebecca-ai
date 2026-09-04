@@ -26,6 +26,7 @@ import type {
   ProcessedFollower,
   ListInteraction,
   XApiUser,
+  FollowerListStatus,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -755,13 +756,51 @@ const hasProcessedFollower = async (userId: string): Promise<boolean> => {
 };
 
 /**
- * Records a follower as processed.
+ * Records a follower as processed with an explicit list status.
  *
  * @param userId - The follower's X user ID.
+ * @param status - Status of the list addition ('ADDED' | 'FAILED' | 'REJECTED'). Defaults to 'ADDED'.
  */
-const markFollowerProcessed = async (userId: string): Promise<void> => {
-  const follower: ProcessedFollower = { userId, timestamp: new Date().toISOString() };
+const markFollowerProcessed = async (userId: string, status: FollowerListStatus = 'ADDED'): Promise<void> => {
+  const follower: ProcessedFollower = {
+    userId,
+    timestamp: new Date().toISOString(),
+    listStatus: status,
+  };
   await db.processedFollowers.doc(userId).set(follower);
+};
+
+/**
+ * Retrieves followers whose onboarding failed (e.g. rate-limited) for self-healing retries.
+ *
+ * @param limit - Maximum number of failed followers to retrieve (defaults to 10).
+ * @returns Array of ProcessedFollower documents in ascending order of timestamp.
+ */
+const getFailedFollowers = async (limit: number = 10): Promise<ProcessedFollower[]> => {
+  try {
+    const snapshot = await db.processedFollowers
+      .where('listStatus', '==', 'FAILED')
+      .orderBy('timestamp', 'asc')
+      .limit(limit)
+      .get();
+    return snapshot.docs.map(doc => doc.data());
+  } catch (error) {
+    console.error('Failed to get failed followers for retry:', error);
+    return [];
+  }
+};
+
+/**
+ * Updates the list status of an existing processed follower.
+ *
+ * @param userId - The follower's X user ID.
+ * @param status - The new FollowerListStatus.
+ */
+const updateFollowerListStatus = async (userId: string, status: FollowerListStatus): Promise<void> => {
+  await db.processedFollowers.doc(userId).set(
+    { listStatus: status } as unknown as ProcessedFollower,
+    { merge: true },
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -883,6 +922,8 @@ export {
   updateImageLastUsed,
   hasProcessedFollower,
   markFollowerProcessed,
+  getFailedFollowers,
+  updateFollowerListStatus,
   getProcessedFollowersCount,
   updateTotalFollowers,
   getLastListInteraction,

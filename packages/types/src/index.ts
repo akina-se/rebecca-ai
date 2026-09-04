@@ -188,11 +188,16 @@ export interface ImageDocWithId extends ImageDoc {
 // Social Graph Models
 // ---------------------------------------------------------------------------
 
+/** Membership status of a follower in the curated X List. */
+export type FollowerListStatus = 'ADDED' | 'FAILED' | 'REJECTED';
+
 /** Tracks a follower that has been processed by the onboarding pipeline. */
 export interface ProcessedFollower {
   userId: string;
   /** ISO 8601 datetime string */
   timestamp: string;
+  /** Membership status in the curated list */
+  listStatus: FollowerListStatus;
 }
 
 /**
