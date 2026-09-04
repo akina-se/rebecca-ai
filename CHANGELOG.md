@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/akina-se/rebecca-ai/compare/v1.8.7...v1.9.0) (2026-09-04)
+
+
+### Features
+
+* **onboarding:** implement 3-state follower machine with self-healing retry ([#152](https://github.com/akina-se/rebecca-ai/issues/152)) ([0a64599](https://github.com/akina-se/rebecca-ai/commit/0a645991b82172f8d3fc71488c49cd815f6eb044))
+
 ## [1.8.7](https://github.com/akina-se/rebecca-ai/compare/v1.8.6...v1.8.7) (2026-09-04)
 
 
