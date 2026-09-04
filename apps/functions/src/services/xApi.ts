@@ -38,6 +38,7 @@ interface XdkTweetResponse {
       mediaKey: string;
       url?: string;
       previewImageUrl?: string;
+      type?: string;
     }>;
   };
 }
@@ -123,11 +124,11 @@ export class XApiService implements IXApiService {
     const effectiveLimit = limit ?? this.xApiConfig.syncMaxResults ?? 100;
 
     const response = (await this.client.users.getPosts(targetUserId, {
-      max_results: effectiveLimit,
+      maxResults: effectiveLimit,
       exclude: ['retweets', 'replies'],
-      'tweet.fields': ['created_at', 'public_metrics', 'attachments', 'text'],
+      postFields: ['created_at', 'public_metrics', 'attachments', 'text'],
       expansions: ['attachments.media_keys'],
-      'media.fields': ['url', 'preview_image_url', 'type'],
+      mediaFields: ['url', 'preview_image_url', 'type'],
     } as Parameters<typeof this.client.users.getPosts>[1])) as XdkTweetResponse;
 
     const tweets = response?.data || [];
@@ -135,7 +136,7 @@ export class XApiService implements IXApiService {
       return [];
     }
 
-    // Build media map for fast lookups (SDK returns mediaKey and url / previewImageUrl in camelCase)
+    // Build media map for fast lookups
     const mediaMap = new Map<string, string>();
     if (response.includes?.media) {
       for (const media of response.includes.media) {
