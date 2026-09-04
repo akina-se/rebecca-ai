@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.6](https://github.com/akina-se/rebecca-ai/compare/v1.8.5...v1.8.6) (2026-09-04)
+
+
+### Bug Fixes
+
+* **persona:** add public safety and platform guardrails to random engagement prompt ([#146](https://github.com/akina-se/rebecca-ai/issues/146)) ([81a2817](https://github.com/akina-se/rebecca-ai/commit/81a2817ce975b1c0ea9080eb59e2e96440ea6949))
+
 ## [1.8.5](https://github.com/akina-se/rebecca-ai/compare/v1.8.4...v1.8.5) (2026-09-04)
 
 
