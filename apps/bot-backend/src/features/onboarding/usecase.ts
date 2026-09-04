@@ -52,33 +52,46 @@ export class StealthOnboardingUseCase {
           break;
         }
 
+        let batchHasNewFollower = false;
+
         for (const follower of followers) {
           fetchedCount++;
           const hasProcessed = await this.deps.firestore.hasProcessedFollower(follower.id);
           if (hasProcessed) {
-            console.log(`Reached already processed follower: ${follower.username}. Stopping fetch.`);
-            keepFetching = false;
-            break;
+            console.log(`Follower @${follower.username} (${follower.id}) already processed. Skipping.`);
+            if (fetchedCount >= maxResults) {
+              console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
+              keepFetching = false;
+              break;
+            }
+            continue;
           }
 
+          batchHasNewFollower = true;
           console.log(`New follower detected: ${follower.username} (${follower.id})`);
           const userDoc = await this.deps.firestore.getUserDoc(follower.id);
           if (userDoc?.status === 'BLOCKED') {
             console.log(`Follower @${follower.username} (${follower.id}) is blocked by admin. Skipping list addition.`);
             await this.deps.firestore.markFollowerProcessed(follower.id);
             if (fetchedCount >= maxResults) {
+              console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
               keepFetching = false;
               break;
             }
             continue;
           }
-          const added = await this.deps.xApi.addListMember(targetListId, follower.id);
-          if (added) {
-            await this.deps.firestore.markFollowerProcessed(follower.id);
-            console.log(`Successfully onboarded (added to list): ${follower.username}`);
-            processedCount++;
-          } else {
-            console.error(`Failed to add ${follower.username} to list.`);
+
+          try {
+            const added = await this.deps.xApi.addListMember(targetListId, follower.id);
+            if (added) {
+              await this.deps.firestore.markFollowerProcessed(follower.id);
+              console.log(`Successfully onboarded (added to list): ${follower.username}`);
+              processedCount++;
+            } else {
+              console.error(`Failed to add ${follower.username} to list: addListMember returned false.`);
+            }
+          } catch (listErr) {
+            console.error(`Error adding follower @${follower.username} (${follower.id}) to list:`, listErr);
           }
 
           if (fetchedCount >= maxResults) {
@@ -86,6 +99,12 @@ export class StealthOnboardingUseCase {
             keepFetching = false;
             break;
           }
+        }
+
+        if (!batchHasNewFollower) {
+          console.log('All followers in the current batch have already been processed. Stopping fetch.');
+          keepFetching = false;
+          break;
         }
 
         if (keepFetching) {
