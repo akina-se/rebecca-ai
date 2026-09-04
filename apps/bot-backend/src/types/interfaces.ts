@@ -17,6 +17,8 @@ import type {
   XApiFollowersResponse,
   XApiCreateResponse,
   XApiUser,
+  FollowerListStatus,
+  ProcessedFollower,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 
@@ -72,7 +74,9 @@ export interface IFirestoreService {
   findImageByVector(queryVector: number[], similarityThreshold?: number): Promise<ImageDocWithId | null>;
   updateImageLastUsed(hash: string): Promise<void>;
   hasProcessedFollower(followerId: string): Promise<boolean>;
-  markFollowerProcessed(followerId: string, username?: string): Promise<void>;
+  markFollowerProcessed(followerId: string, status?: FollowerListStatus): Promise<void>;
+  getFailedFollowers(limit?: number): Promise<ProcessedFollower[]>;
+  updateFollowerListStatus(userId: string, status: FollowerListStatus): Promise<void>;
   getProcessedFollowersCount(): Promise<number>;
   updateTotalFollowers(count: number): Promise<void>;
   getLastListInteraction(userId: string): Promise<Date | null>;
