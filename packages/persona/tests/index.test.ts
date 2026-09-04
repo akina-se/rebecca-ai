@@ -41,11 +41,13 @@ describe('persona package exports verification', () => {
   test('getBasePrompt should return string with context for all branches including copilot', () => {
     expect(getBasePrompt('reply', 'ja')).toContain('【文字数注釈・解説の禁止】');
     expect(getBasePrompt('timeline', 'ja')).toContain('【文字数注釈の禁止】');
-    expect(getBasePrompt('random_engagement', 'ja')).toContain('「(90文字)」などの文字数注釈や解説は一切含めず');
+    expect(getBasePrompt('random_engagement', 'ja')).toContain('【公開SNSにおける健全性と節度】');
+    expect(getBasePrompt('random_engagement', 'ja')).toContain('【Xプラットフォーム制約】');
 
     expect(getBasePrompt('reply', 'en')).toContain('[NO CHARACTER COUNT ANNOTATION]');
     expect(getBasePrompt('timeline', 'en')).toContain('Do not include character count notes');
-    expect(getBasePrompt('random_engagement', 'en')).toContain('Do not include character count annotations');
+    expect(getBasePrompt('random_engagement', 'en')).toContain('[Public Etiquette & Non-Coercive Stance]');
+    expect(getBasePrompt('random_engagement', 'en')).toContain('[No URLs]');
     expect(getBasePrompt('copilot', 'en')).toContain('[Context: Admin Dashboard Copilot]');
     expect(getBasePrompt('copilot', 'en')).toContain('Comprehensive Data Analytics');
   });
