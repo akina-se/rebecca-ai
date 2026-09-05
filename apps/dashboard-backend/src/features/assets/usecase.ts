@@ -284,13 +284,46 @@ export class AssetsUseCase {
 
   /**
    * Updates an asset with partial data.
+   * If caption is being updated, attempts to synchronously generate a new embedding.
+   * On failure, removes the stale embedding using FieldValue.delete() to avoid semantic mismatch,
+   * while preserving the updated caption and marking status as FAILED.
    * 
    * @param id - The ID of the asset to update.
    * @param updates - The partial asset fields to update.
    * @returns A promise that resolves when the update is complete.
    */
   async updateAsset(id: string, updates: Partial<Asset>): Promise<void> {
-    await this.repo.update(id, updates);
+    const repoUpdates: Parameters<AssetsRepository['update']>[1] = { ...updates };
+
+    if (typeof updates.caption === 'string') {
+      const trimmedCaption = updates.caption.trim();
+      if (trimmedCaption.length > 0) {
+        try {
+          const emb = await this.generateEmbedding(trimmedCaption);
+          if (emb && emb.length > 0) {
+            repoUpdates.embedding = emb;
+            if (updates.status === undefined) {
+              repoUpdates.status = AssetStatus.SUCCESS;
+            }
+          } else {
+            repoUpdates.embedding = null;
+            repoUpdates.status = AssetStatus.FAILED;
+          }
+        } catch (err) {
+          const safeId = String(id).replace(/[\r\n%]/g, '');
+          console.error('Failed to generate embedding during updateAsset for %s:', safeId, err);
+          repoUpdates.embedding = null;
+          repoUpdates.status = AssetStatus.FAILED;
+        }
+      } else {
+        repoUpdates.embedding = null;
+        if (updates.status === undefined) {
+          repoUpdates.status = AssetStatus.FAILED;
+        }
+      }
+    }
+
+    await this.repo.update(id, repoUpdates);
   }
 
   /**
@@ -318,17 +351,21 @@ export class AssetsUseCase {
 
       const imageUrl = await this.saveToStorage(file, hash);
       const { caption, embedding, status } = await this.analyzeImage(file);
+      const now = new Date().toISOString();
 
-      const assetData = {
+      const assetData: Record<string, unknown> = {
         filename: file.originalname,
         url: imageUrl,
         caption,
-        embedding,
         useCount: 0,
         lastUsedAt: null,
         status,
-        createdAt: new Date().toISOString()
+        createdAt: now
       };
+
+      if (embedding && embedding.length > 0) {
+        assetData.embedding = embedding;
+      }
 
       await this.repo.create(docId, assetData);
 
@@ -336,9 +373,10 @@ export class AssetsUseCase {
         id: docId,
         filename: file.originalname,
         caption,
-        usedCount: 0,
+        useCount: 0,
         status,
-        url: imageUrl
+        url: imageUrl,
+        createdAt: now
       });
     }
 
@@ -357,12 +395,18 @@ export class AssetsUseCase {
     for (const asset of targetAssets) {
       const { caption, embedding, status } = await this.generateCaptionForAsset(asset.filename, asset.id);
 
-      await this.repo.update(asset.id, {
+      const updates: Parameters<AssetsRepository['update']>[1] = {
         caption,
         status,
-        usedCount: asset.usedCount,
-        ...(embedding.length > 0 ? { embedding } : {})
-      });
+      };
+
+      if (embedding && embedding.length > 0) {
+        updates.embedding = embedding;
+      } else {
+        updates.embedding = null;
+      }
+
+      await this.repo.update(asset.id, updates);
     }
   }
 
@@ -370,14 +414,15 @@ export class AssetsUseCase {
    * Helper: Saves uploaded file buffer to GCS or falls back to data URI.
    */
   private async saveToStorage(file: UploadedFile, hash: string): Promise<string> {
+    const bucketName = config.gcp.imageBucketName;
     try {
-      const bucket = this.storage.bucket(config.gcp.imageBucketName);
+      const bucket = this.storage.bucket(bucketName);
       const gcsFile = bucket.file(`media_assets/${hash}_${file.originalname}`);
       await gcsFile.save(file.buffer, {
         contentType: file.mimetype,
         resumable: false
       });
-      return `https://storage.googleapis.com/${config.gcp.imageBucketName}/media_assets/${hash}_${file.originalname}`;
+      return `gs://${bucketName}/media_assets/${hash}_${file.originalname}`;
     } catch {
       const base64Data = file.buffer.toString('base64');
       return `data:${file.mimetype};base64,${base64Data}`;
@@ -421,7 +466,8 @@ export class AssetsUseCase {
       }
 
       const embedding = await this.generateEmbedding(caption);
-      return { caption, embedding, status: AssetStatus.SUCCESS };
+      const status = embedding.length > 0 ? AssetStatus.SUCCESS : AssetStatus.FAILED;
+      return { caption, embedding, status };
     } catch (visionErr) {
       const safeName = String(file.originalname || '').replace(/[\r\n]/g, '');
       console.error('Gemini Vision analysis failed for %s:', safeName, visionErr);
@@ -435,7 +481,7 @@ export class AssetsUseCase {
   private async generateCaptionForAsset(filename: string, assetId: string): Promise<{ caption: string; embedding: number[]; status: AssetStatus }> {
     if (!this.ai || !config.gemini.apiKey) {
       const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
-      return { caption: fallbackCaption, embedding: [], status: AssetStatus.SUCCESS };
+      return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
     }
 
     try {
@@ -466,15 +512,16 @@ export class AssetsUseCase {
       const caption = response.text?.trim() || '';
       if (!caption) {
         const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
-        return { caption: fallbackCaption, embedding: [], status: AssetStatus.SUCCESS };
+        return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
       }
 
       const embedding = await this.generateEmbedding(caption);
-      return { caption, embedding, status: AssetStatus.SUCCESS };
+      const status = embedding.length > 0 ? AssetStatus.SUCCESS : AssetStatus.FAILED;
+      return { caption, embedding, status };
     } catch (e) {
       console.warn(`Gemini Vision regenerate caption error for asset ${assetId}, using fallback:`, e);
       const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
-      return { caption: fallbackCaption, embedding: [], status: AssetStatus.SUCCESS };
+      return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
     }
   }
 
@@ -486,7 +533,8 @@ export class AssetsUseCase {
     try {
       const embResponse = await this.ai.models.embedContent({
         model: config.gemini.embeddingModel,
-        contents: text
+        contents: text,
+        config: { outputDimensionality: 768 }
       });
       return embResponse.embeddings?.[0]?.values || [];
     } catch (embErr) {

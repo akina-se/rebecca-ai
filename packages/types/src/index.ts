@@ -176,6 +176,7 @@ export interface ImageDoc {
   lastUsedAt: string | null;
   useCount: number;
   status?: AssetStatus;
+  createdAt?: string;
 }
 
 
@@ -401,11 +402,12 @@ export interface Asset {
   id: string;
   filename: string;
   caption: string;
-  usedCount: number;
+  useCount: number;
   status: AssetStatus;
   url?: string;
   thumbnailUrl?: string;
   lastUsedAt?: string | null;
+  createdAt?: string;
 }
 
 export type CopilotActionType = 
