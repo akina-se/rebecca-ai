@@ -71,8 +71,13 @@ gcloud run deploy rebecca-dashboard-bff `
     --quiet
 
 # Step 6: Firebase Hosting & Functions Deployment
-Write-Host "`n🔥 [5/5] Deploying Firebase Hosting and Cloud Functions..." -ForegroundColor Cyan
+Write-Host "`n🔥 [5/6] Deploying Firebase Hosting and Cloud Functions..." -ForegroundColor Cyan
 npx -y firebase-tools deploy --only hosting,functions --project $ProjectId
+
+# Step 7: Cloud Scheduler Jobs Synchronization
+Write-Host "`n⏰ [6/6] Cloud Scheduler synchronization guide..." -ForegroundColor Cyan
+Write-Host "To update Cloud Scheduler jobs for bot-backend batches, run:" -ForegroundColor Yellow
+Write-Host "  npm run setup:scheduler" -ForegroundColor Yellow
 
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "🎉 Monorepo deployment completed successfully!" -ForegroundColor Green

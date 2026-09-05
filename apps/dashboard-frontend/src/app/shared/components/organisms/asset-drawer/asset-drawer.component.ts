@@ -1,4 +1,4 @@
-﻿import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
@@ -71,7 +71,7 @@ export class AssetDrawerComponent implements OnChanges {
           name: asset.filename,
           caption: asset.caption || '',
           url: asset.url || '',
-          useCount: asset.usedCount || 0,
+          useCount: asset.useCount || 0,
           lastUsedAt: asset.lastUsedAt || null,
         });
 
@@ -79,7 +79,7 @@ export class AssetDrawerComponent implements OnChanges {
           type: 'asset',
           id: asset.id,
           label: asset.filename,
-          details: { status: asset.status, useCount: asset.usedCount, caption: asset.caption }
+          details: { status: asset.status, useCount: asset.useCount, caption: asset.caption }
         });
 
         this.isLoading.set(false);

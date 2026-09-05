@@ -650,6 +650,7 @@ const saveImageMetadata = async (
     embedding: FieldValue.vector(embedding), // VectorValue – must bypass converter.
     lastUsedAt: null,
     useCount: 0,
+    createdAt: new Date().toISOString(),
   });
 };
 
@@ -736,6 +737,49 @@ const findImageByVector = async (
 const updateImageLastUsed = async (hash: string): Promise<void> => {
   await firestore.collection(COLLECTIONS.IMAGES).doc(hash).set(
     { lastUsedAt: FieldValue.serverTimestamp(), useCount: FieldValue.increment(1) },
+    { merge: true },
+  );
+};
+
+/**
+ * Retrieves image assets that have a non-empty caption but are missing an embedding vector.
+ *
+ * @returns Array of image document IDs and their captions.
+ */
+const getAssetsPendingEmbedding = async (): Promise<Array<{ id: string; caption: string }>> => {
+  const snapshot = await firestore.collection(COLLECTIONS.IMAGES).get();
+  if (snapshot.empty) return [];
+
+  const pending: Array<{ id: string; caption: string }> = [];
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const caption = typeof data['caption'] === 'string' ? data['caption'].trim() : '';
+    if (caption.length > 0) {
+      const embedding = data['embedding'];
+      const hasValidEmbedding =
+        embedding !== undefined &&
+        embedding !== null &&
+        (Array.isArray(embedding) ? embedding.length > 0 : true);
+      if (!hasValidEmbedding) {
+        pending.push({ id: doc.id, caption });
+      }
+    }
+  }
+  return pending;
+};
+
+/**
+ * Updates an asset's embedding with a Firestore VectorValue and sets status to SUCCESS.
+ *
+ * @param id - The document ID of the image asset.
+ * @param embedding - Array of numbers representing the embedding vector.
+ */
+const updateAssetEmbedding = async (id: string, embedding: number[]): Promise<void> => {
+  await firestore.collection(COLLECTIONS.IMAGES).doc(id).set(
+    {
+      embedding: FieldValue.vector(embedding),
+      status: 'SUCCESS',
+    },
     { merge: true },
   );
 };
@@ -920,6 +964,8 @@ export {
   getImageByHash,
   findImageByVector,
   updateImageLastUsed,
+  getAssetsPendingEmbedding,
+  updateAssetEmbedding,
   hasProcessedFollower,
   markFollowerProcessed,
   getFailedFollowers,

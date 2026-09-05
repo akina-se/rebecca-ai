@@ -1,4 +1,4 @@
-import { Firestore } from '@google-cloud/firestore';
+import { Firestore, FieldValue } from '@google-cloud/firestore';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 
@@ -85,11 +85,12 @@ export class AssetsRepository {
       id,
       filename,
       caption: typeof data.caption === 'string' ? data.caption : '',
-      usedCount: typeof data.useCount === 'number' ? data.useCount : (typeof data.usedCount === 'number' ? data.usedCount : 0),
+      useCount: typeof data.useCount === 'number' ? data.useCount : 0,
       status,
       url,
       thumbnailUrl,
-      lastUsedAt: typeof data.lastUsedAt === 'string' ? data.lastUsedAt : null
+      lastUsedAt: typeof data.lastUsedAt === 'string' ? data.lastUsedAt : null,
+      createdAt: typeof data.createdAt === 'string' ? data.createdAt : undefined,
     };
   }
 
@@ -187,34 +188,47 @@ export class AssetsRepository {
 
   /**
    * Creates or overwrites an asset in Firestore.
+   * Wraps numerical embeddings in Firestore FieldValue.vector (VectorValue) for vector indexing.
    * 
    * @param id - Document ID.
    * @param data - Document data.
    */
   async create(id: string, data: Record<string, unknown>): Promise<void> {
-    await this.firestore.collection('images').doc(id).set(data);
+    const docData = { ...data };
+    if (Array.isArray(docData.embedding) && docData.embedding.length > 0) {
+      docData.embedding = FieldValue.vector(docData.embedding as number[]);
+    } else {
+      delete docData.embedding;
+    }
+    await this.firestore.collection('images').doc(id).set(docData);
   }
 
   /**
    * Updates an asset's fields in the database.
    * 
    * @param id - The ID of the asset to update.
-   * @param updates - The partial asset fields to update (including optional vector embedding).
+   * @param updates - The partial asset fields to update. If embedding is null, deletes the field; if number[], stores as FieldValue.vector.
    * @returns A promise that resolves when the update is complete.
    */
-  async update(id: string, updates: Partial<Asset> & { embedding?: number[] }): Promise<void> {
+  async update(id: string, updates: Partial<Asset> & { embedding?: number[] | null }): Promise<void> {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.caption !== undefined) {
       dbUpdates.caption = updates.caption;
-      // If caption is updated and was previously empty, update status to SUCCESS
-      if (updates.caption.trim().length > 0 && (!updates.status || updates.status === AssetStatus.FAILED)) {
+      // If caption is updated and was previously empty, update status to SUCCESS if not explicitly set
+      if (updates.caption.trim().length > 0 && updates.status === undefined) {
         dbUpdates.status = AssetStatus.SUCCESS;
       }
     }
-    if (updates.usedCount !== undefined) dbUpdates.useCount = updates.usedCount;
+    if (updates.useCount !== undefined) dbUpdates.useCount = updates.useCount;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.filename !== undefined) dbUpdates.filename = updates.filename;
-    if (updates.embedding !== undefined) dbUpdates.embedding = updates.embedding;
+    if (updates.embedding !== undefined) {
+      if (updates.embedding === null) {
+        dbUpdates.embedding = FieldValue.delete();
+      } else {
+        dbUpdates.embedding = FieldValue.vector(updates.embedding);
+      }
+    }
     
     await this.collections.images.doc(id).set(dbUpdates, { merge: true });
   }

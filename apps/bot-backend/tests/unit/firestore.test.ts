@@ -525,6 +525,51 @@ describe('Firestore Service Unit Tests', () => {
       expect(mockDocSet).toHaveBeenCalled();
     });
 
+    it('getAssetsPendingEmbedding and updateAssetEmbedding', async () => {
+      // 1. When collection is empty
+      mockQueryGet.mockResolvedValueOnce({ empty: true, docs: [] });
+      const emptyResult = await firestoreService.getAssetsPendingEmbedding();
+      expect(emptyResult).toEqual([]);
+
+      // 2. Docs with various caption & embedding combinations
+      mockQueryGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [
+          // Doc without caption -> should be skipped
+          { id: 'img_no_caption', data: () => ({ caption: '', embedding: null }) },
+          // Doc with non-string caption -> should be skipped
+          { id: 'img_invalid_caption', data: () => ({ caption: 123, embedding: null }) },
+          // Doc with caption and null embedding -> should be included
+          { id: 'img_pending_1', data: () => ({ caption: 'A girl smiling', embedding: null }) },
+          // Doc with caption and undefined embedding -> should be included
+          { id: 'img_pending_2', data: () => ({ caption: ' A cafe scene  ' }) },
+          // Doc with caption and empty array embedding -> should be included
+          { id: 'img_pending_3', data: () => ({ caption: 'Sunset beach', embedding: [] }) },
+          // Doc with caption and valid array embedding -> should be skipped
+          { id: 'img_with_array', data: () => ({ caption: 'Already has vector', embedding: [0.1, 0.2] }) },
+          // Doc with caption and valid Firestore VectorValue object -> should be skipped
+          { id: 'img_with_vector_obj', data: () => ({ caption: 'Has vector obj', embedding: { _type: 'vector' } }) },
+        ],
+      });
+
+      const pending = await firestoreService.getAssetsPendingEmbedding();
+      expect(pending).toEqual([
+        { id: 'img_pending_1', caption: 'A girl smiling' },
+        { id: 'img_pending_2', caption: 'A cafe scene' },
+        { id: 'img_pending_3', caption: 'Sunset beach' },
+      ]);
+
+      // 3. updateAssetEmbedding
+      await firestoreService.updateAssetEmbedding('img_pending_1', [0.1, 0.2, 0.3]);
+      expect(mockDocSet).toHaveBeenCalledWith(
+        {
+          embedding: expect.objectContaining({ _type: 'vector' }),
+          status: 'SUCCESS',
+        },
+        { merge: true },
+      );
+    });
+
     it('saveRagMemory should prune oldest memories when exceeding maxMemories', async () => {
       mockQueryGet.mockResolvedValueOnce({
         size: 105,

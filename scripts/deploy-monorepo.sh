@@ -70,8 +70,13 @@ gcloud run deploy rebecca-dashboard-bff \
     --quiet
 
 # Step 6: Firebase Hosting & Functions Deployment
-echo -e "\n\033[0;36m🔥 [5/5] Deploying Firebase Hosting and Cloud Functions...\033[0m"
+echo -e "\n\033[0;36m🔥 [5/6] Deploying Firebase Hosting and Cloud Functions...\033[0m"
 npx -y firebase-tools deploy --only hosting,functions --project "${PROJECT_ID}"
+
+# Step 7: Cloud Scheduler Jobs Synchronization
+echo -e "\n\033[0;36m⏰ [6/6] Cloud Scheduler synchronization guide...\033[0m"
+echo -e "To update Cloud Scheduler jobs for bot-backend batches, run:"
+echo -e "  npm run setup:scheduler"
 
 echo -e "\n\033[0;32m==========================================================\033[0m"
 echo -e "\033[0;32m🎉 Monorepo deployment completed successfully!            \033[0m"
