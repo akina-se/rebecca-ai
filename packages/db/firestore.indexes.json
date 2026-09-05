@@ -43,6 +43,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "processed_followers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "listStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
