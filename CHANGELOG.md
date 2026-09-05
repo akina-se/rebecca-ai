@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.0](https://github.com/akina-se/rebecca-ai/compare/v1.9.0...v1.10.0) (2026-09-05)
+
+
+### Features
+
+* **bot-backend:** standardize random engagement with structured thought and remove legacy generateReply ([#160](https://github.com/akina-se/rebecca-ai/issues/160)) ([99487f8](https://github.com/akina-se/rebecca-ai/commit/99487f8c2060c00e43699f3e8dbef5756e30171b))
+
+
+### Bug Fixes
+
+* **bot-backend:** define systemPrompt in prompt eval test ([f4fffd8](https://github.com/akina-se/rebecca-ai/commit/f4fffd8c28e9e4530f24349c3e43b28a060b3157))
+* **persona:** fail-fast on malformed JSON and expand timeline maxOutputTokens ([#154](https://github.com/akina-se/rebecca-ai/issues/154)) ([0f1f6f4](https://github.com/akina-se/rebecca-ai/commit/0f1f6f4c461dd967555b6dc6d9fb3b4444d42dd5))
+
 ## [1.9.0](https://github.com/akina-se/rebecca-ai/compare/v1.8.7...v1.9.0) (2026-09-04)
 
 
