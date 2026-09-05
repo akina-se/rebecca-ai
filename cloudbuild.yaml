@@ -97,15 +97,15 @@ steps:
       - '--quiet'
 
   # ----------------------------------------------------------------------------
-  # Step 6: Deploy Firebase Hosting (Angular SPA), Functions, and Firestore Indexes
+  # Step 6: Deploy Firebase Hosting (Angular SPA), Functions, and Firestore (Rules + Indexes)
   # ----------------------------------------------------------------------------
   - name: 'node:22-alpine'
-    id: 'Deploy Firebase Hosting, Functions, and Firestore Indexes'
+    id: 'Deploy Firebase Hosting, Functions, and Firestore'
     entrypoint: 'sh'
     args:
       - '-c'
       - |
-        npx -y firebase-tools deploy --only hosting,functions,firestore:indexes --project $PROJECT_ID --non-interactive --force
+        npx -y firebase-tools deploy --only hosting,functions,firestore --project $PROJECT_ID --non-interactive --force
 
 substitutions:
   _AR_HOSTNAME: 'asia-northeast1-docker.pkg.dev'
