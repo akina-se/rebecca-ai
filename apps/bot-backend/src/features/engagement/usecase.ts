@@ -131,16 +131,27 @@ ${description}
       const systemPrompt = getBasePrompt('random_engagement', lang);
       const userInput = `【ターゲットユーザー情報】\nユーザー名: @${username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
 
-      const generatedText = await this.deps.gemini.generateReply(systemPrompt, [], userInput);
+      const structured = await this.deps.gemini.generateStructuredReply(systemPrompt, [], userInput);
+      let finalText = (structured.reply || '').trim();
+      const thought = structured.thought;
 
-      let finalText = generatedText.trim();
       if (!finalText.includes(`@${username}`)) {
         finalText = `@${username}\n${finalText}`;
       }
 
       console.log(`Generated Engagement Text:\n${finalText}`);
+      if (thought) {
+        console.log(`Generated Engagement Thought:\n${thought}`);
+      }
 
-      await this.deps.xApi.tweet(finalText);
+      const tweetRes = await this.deps.xApi.tweet(finalText);
+      const tweetId = (tweetRes as { data?: { id?: string } })?.data?.id;
+
+      await this.deps.firestore.saveTimelinePost(finalText, {
+        thought,
+        tweetId,
+        postType: 'random_engagement',
+      });
 
       await this.deps.firestore.updateLastListInteraction(targetUser.id);
 
