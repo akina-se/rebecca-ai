@@ -341,36 +341,29 @@ export const PERSONA_RESPONSE_SCHEMA = {
 };
 
 /**
- * Robust parser for structured persona responses.
+ * Parses structured persona responses from Gemini.
+ * Fails fast and returns empty strings if the output is not valid JSON conforming to the schema.
  */
 export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => {
   if (!raw || typeof raw !== 'string') {
     return { thought: '', reply: '' };
   }
-  let cleaned = raw.trim();
-  if (cleaned.startsWith('```json')) {
-    cleaned = cleaned.slice(7).trim();
-    if (cleaned.endsWith('```')) {
-      cleaned = cleaned.slice(0, -3).trim();
-    }
-  } else if (cleaned.startsWith('```')) {
-    cleaned = cleaned.slice(3).trim();
-    if (cleaned.endsWith('```')) {
-      cleaned = cleaned.slice(0, -3).trim();
-    }
-  }
+
+  // Strip optional markdown code block fencing if present
+  const cleaned = raw.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
 
   try {
     const parsed = JSON.parse(cleaned);
     if (parsed && typeof parsed === 'object') {
       const thought = typeof parsed.thought === 'string' ? parsed.thought.trim() : '';
       const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : (typeof parsed.text === 'string' ? parsed.text.trim() : '');
-      return { thought, reply: reply || cleaned };
+      return { thought, reply };
     }
-  } catch {
-    // If not JSON, treat entire content as reply
+  } catch (err) {
+    console.error('Failed to parse structured persona response JSON:', err);
   }
-  return { thought: '', reply: cleaned };
+
+  return { thought: '', reply: '' };
 };
 
 /**
