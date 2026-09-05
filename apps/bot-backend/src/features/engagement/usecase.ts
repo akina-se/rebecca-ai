@@ -140,9 +140,6 @@ ${description}
       }
 
       console.log(`Generated Engagement Text:\n${finalText}`);
-      if (thought) {
-        console.log(`Generated Engagement Thought:\n${thought}`);
-      }
 
       const tweetRes = await this.deps.xApi.tweet(finalText);
       const tweetId = (tweetRes as { data?: { id?: string } })?.data?.id;
