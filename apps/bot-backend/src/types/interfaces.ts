@@ -73,6 +73,8 @@ export interface IFirestoreService {
   getImageByHash(hash: string): Promise<ImageDocWithId | null>;
   findImageByVector(queryVector: number[], similarityThreshold?: number): Promise<ImageDocWithId | null>;
   updateImageLastUsed(hash: string): Promise<void>;
+  getAssetsPendingEmbedding(): Promise<Array<{ id: string; caption: string }>>;
+  updateAssetEmbedding(id: string, embedding: number[]): Promise<void>;
   hasProcessedFollower(followerId: string): Promise<boolean>;
   markFollowerProcessed(followerId: string, status?: FollowerListStatus): Promise<void>;
   getFailedFollowers(limit?: number): Promise<ProcessedFollower[]>;
