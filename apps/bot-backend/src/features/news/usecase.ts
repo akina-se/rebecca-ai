@@ -118,8 +118,9 @@ ${extendedPrompt ? `\n【拡張ペルソナ・近況】\n${extendedPrompt}\n` : 
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【追加ルール】
 - 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
-- 【絶対に100文字以内の短文】にすること。
-- 出力はツイートのテキストのみとし、「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
+- thought（内省思考）は150文字以内の自然な独白とすること。
+- reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
+- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
 
       const structuredPost = await this.deps.gemini.generateStructuredNewsPost(systemInstruction, newsPrompt);
       let postText = structuredPost.reply;
