@@ -1,4 +1,4 @@
-﻿import { RandomEngagementUseCase } from '../../../src/features/engagement/usecase';
+import { RandomEngagementUseCase } from '../../../src/features/engagement/usecase';
 import { checkAndIncrementRateLimits } from '../../../src/core/rateLimiter';
 import { downloadImage } from '../../../src/utils/image';
 import { createMockDeps } from './testUtils';
@@ -37,13 +37,23 @@ describe('Random Engagement Batch', () => {
 
         deps.gemini.analyzeUserProfile.mockResolvedValue({ attributes: [], preferences: ['games'] });
         deps.gemini.detectLanguage.mockResolvedValue('ja');
-        deps.gemini.generateReply.mockResolvedValue('Hey @target_user, playing games again?');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: 'ゲームの話題に共感しつつ突っ込む',
+            reply: 'Hey @target_user, playing games again?'
+        });
 
         const result = await new RandomEngagementUseCase(deps).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
         expect(deps.xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?');
+        expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
+            'Hey @target_user, playing games again?',
+            expect.objectContaining({
+                thought: 'ゲームの話題に共感しつつ突っ込む',
+                postType: 'random_engagement',
+            })
+        );
         expect(deps.firestore.updateLastListInteraction).toHaveBeenCalledWith('user2');
     });
 
@@ -66,7 +76,10 @@ describe('Random Engagement Batch', () => {
         deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't2', text: 'hi' }] });
         deps.gemini.analyzeUserProfile.mockResolvedValue({});
         deps.gemini.detectLanguage.mockResolvedValue('ja');
-        deps.gemini.generateReply.mockResolvedValue('@active_u2 Hello!');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: 'アクティブユーザーに挨拶する',
+            reply: '@active_u2 Hello!'
+        });
 
         const result = await new RandomEngagementUseCase(deps).execute();
 
@@ -116,7 +129,10 @@ describe('Random Engagement Batch', () => {
         deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't2', text: 'hi' }] });
         deps.gemini.analyzeUserProfile.mockResolvedValue({});
         deps.gemini.detectLanguage.mockResolvedValue('ja');
-        deps.gemini.generateReply.mockResolvedValue('Hello without mention'); // missing @target2
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: 'メンションなしで挨拶',
+            reply: 'Hello without mention'
+        }); // missing @target2
 
         await new RandomEngagementUseCase(deps).execute();
 
@@ -144,7 +160,10 @@ describe('Random Engagement Batch', () => {
         deps.gemini.analyzeUserProfile.mockResolvedValue({});
         deps.gemini.detectLanguage.mockResolvedValue('ja');
         deps.gemini.analyzeImageCaption.mockResolvedValue('a nice photo');
-        deps.gemini.generateReply.mockResolvedValue('@media_user cool photo!');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '写真にコメントする',
+            reply: '@media_user cool photo!'
+        });
 
         await new RandomEngagementUseCase(deps).execute();
 

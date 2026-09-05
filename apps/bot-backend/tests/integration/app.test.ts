@@ -38,7 +38,6 @@ jest.mock('../../src/services/firestore', () => ({
 }));
 
 jest.mock('../../src/services/gemini', () => ({
-    generateReply: jest.fn().mockResolvedValue('Mock AI Reply'),
     generateStructuredReply: jest.fn().mockResolvedValue({ thought: '内省モック', reply: 'Mock AI Reply' }),
     verifyImageRelevance: jest.fn().mockResolvedValue(true),
     generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
@@ -163,8 +162,8 @@ describe('Integration Tests', () => {
             // Check if reply was generated
             expect(gemini.generateStructuredReply).toHaveBeenCalled();
             
-            const generateReplyCalls = (gemini.generateStructuredReply as jest.Mock).mock.calls;
-            const lastCall = generateReplyCalls[generateReplyCalls.length - 1];
+            const generateStructuredReplyCalls = (gemini.generateStructuredReply as jest.Mock).mock.calls;
+            const lastCall = generateStructuredReplyCalls[generateStructuredReplyCalls.length - 1];
             expect(lastCall[0]).toContain('developed by Gemitech'); // BASE_SYSTEM_PROMPT_EN starts or contains this
 
             // Check if reply was posted
@@ -176,7 +175,7 @@ describe('Integration Tests', () => {
             const payload = { tweetId: 'dup', text: 'hello', authorId: 'user_1' };
             const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
             expect(response.status).toBe(200);
-            expect(gemini.generateReply).not.toHaveBeenCalled();
+            expect(gemini.generateStructuredReply).not.toHaveBeenCalled();
         });
 
         it('should process reply task with image attachment', async () => {
@@ -356,7 +355,7 @@ describe('Integration Tests', () => {
         });
         it('should process random engagement successfully', async () => {
             (firestore.getListMembersFromCache as jest.Mock).mockResolvedValueOnce([{ id: 'target_1' }]);
-            (gemini.generateReply as jest.Mock).mockResolvedValueOnce('Mock Engagement Reply');
+            (gemini.generateStructuredReply as jest.Mock).mockResolvedValueOnce({ thought: '内省モック', reply: 'Mock Engagement Reply' });
 
             const response = await request(app).get('/batch/random-engagement').set('x-batch-secret', 'test_secret');
 

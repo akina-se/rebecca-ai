@@ -63,7 +63,11 @@ const run = async () => {
         const systemPrompt = getBasePrompt('random_engagement', lang);
         const userInput = `【ターゲットユーザー情報】\nユーザー名: @akina_se\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最新の投稿に対して不意打ちで引用リポスト（話しかけ）を行ってください。`;
         
-        const generatedText = await gemini.generateReply(systemPrompt, [], userInput);
+        const structured = await gemini.generateStructuredReply(systemPrompt, [], userInput);
+        const generatedText = structured.reply;
+        if (structured.thought) {
+            console.log(`Generated Quote Retweet Thought:\n${structured.thought}`);
+        }
         
         let finalText = generatedText;
         if (!finalText.includes(`@akina_se`)) {
