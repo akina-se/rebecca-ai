@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/akina-se/rebecca-ai/compare/v1.10.0...v1.11.0) (2026-09-05)
+
+
+### Features
+
+* **assets:** standardize persistence to gs:// and vector embeddings with self-healing batch ([#162](https://github.com/akina-se/rebecca-ai/issues/162)) ([cd05858](https://github.com/akina-se/rebecca-ai/commit/cd0585822eea3d358d552901ed8c8bd00edb0402))
+
 ## [1.10.0](https://github.com/akina-se/rebecca-ai/compare/v1.9.0...v1.10.0) (2026-09-05)
 
 
