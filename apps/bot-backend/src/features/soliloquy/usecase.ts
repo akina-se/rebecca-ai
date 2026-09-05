@@ -100,7 +100,6 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       }
 
       console.log('Generated Soliloquy Post:', postText);
-      console.log('Generated Soliloquy Thought:', thought);
 
       const publishResult: PublishTimelinePostResult = await publishTimelinePost(this.deps, {
         postText,

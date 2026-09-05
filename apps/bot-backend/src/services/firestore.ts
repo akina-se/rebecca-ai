@@ -417,7 +417,7 @@ const saveTimelinePost = async (
     mediaUrls?: string[];
     assetId?: string;
     tweetId?: string;
-    postType?: 'news' | 'soliloquy';
+    postType?: 'news' | 'soliloquy' | 'random_engagement';
     newsTitle?: string;
     newsEmbedding?: number[];
   },
