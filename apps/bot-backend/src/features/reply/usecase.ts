@@ -158,7 +158,6 @@ ${processedText}
         let aiResponseText = structuredReply.reply;
         const internalThought = structuredReply.thought;
 
-        console.log(`Generated AI Thought for tweet ${sanitizeForLog(tweetId)}: ${sanitizeForLog(internalThought)}`);
         console.log(`Generated AI Reply for tweet ${sanitizeForLog(tweetId)}: ${sanitizeForLog(aiResponseText)}`);
 
         // Fallback: X API limits Japanese text effectively to 140 characters.
