@@ -229,7 +229,7 @@ const analyzeUserProfile = async (prompt: string): Promise<Record<string, unknow
 const generateStructuredPostInternal = async (
     systemInstruction: string,
     prompt: string | string[],
-    maxOutputTokens = 180
+    maxOutputTokens = 500
 ): Promise<StructuredPersonaResponse> => {
     if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) {
         return { thought: '', reply: '' };
@@ -261,7 +261,7 @@ const generateStructuredNewsPost = async (
     systemInstruction: string,
     prompt: string | string[]
 ): Promise<StructuredPersonaResponse> => {
-    return generateStructuredPostInternal(systemInstruction, prompt, 180);
+    return generateStructuredPostInternal(systemInstruction, prompt, 500);
 };
 
 /**
@@ -271,7 +271,7 @@ const generateStructuredSoliloquyPost = async (
     systemInstruction: string,
     prompt: string | string[]
 ): Promise<StructuredPersonaResponse> => {
-    return generateStructuredPostInternal(systemInstruction, prompt, 180);
+    return generateStructuredPostInternal(systemInstruction, prompt, 500);
 };
 
 /**
