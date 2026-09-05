@@ -268,12 +268,13 @@ const ragMemoryConverter: FirestoreDataConverter<RagMemory> = {
  */
 const imageDocConverter: FirestoreDataConverter<ImageDoc> = {
   toFirestore(image: ImageDoc): DocumentData {
-    return {
-      ...image,
-      lastUsedAt: image.lastUsedAt
+    const data: DocumentData = { ...image };
+    if (image.lastUsedAt !== undefined) {
+      data['lastUsedAt'] = image.lastUsedAt
         ? Timestamp.fromDate(new Date(image.lastUsedAt))
-        : null,
-    };
+        : null;
+    }
+    return data;
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): ImageDoc {
     const data = snapshot.data();
@@ -285,6 +286,7 @@ const imageDocConverter: FirestoreDataConverter<ImageDoc> = {
       lastUsedAt: toIsoString(data['lastUsedAt']),
       useCount: data['useCount'] ?? 0,
       status: data['status'],
+      createdAt: data['createdAt'] || null,
     };
   },
 };

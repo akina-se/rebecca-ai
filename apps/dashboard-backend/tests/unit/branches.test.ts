@@ -780,8 +780,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const assetsRepo = {
         create: jest.fn().mockResolvedValue(undefined),
         save: jest.fn().mockImplementation((a) => Promise.resolve(a)),
-        getAll: jest.fn().mockResolvedValue([{ id: 'img_test', filename: 'test.jpg', usedCount: 1, caption: '' }]),
-        getById: jest.fn().mockResolvedValue({ id: 'img_test', filename: 'test.jpg', usedCount: 1, caption: '' }),
+        getAll: jest.fn().mockResolvedValue([{ id: 'img_test', filename: 'test.jpg', useCount: 1, caption: '' }]),
+        getById: jest.fn().mockResolvedValue({ id: 'img_test', filename: 'test.jpg', useCount: 1, caption: '' }),
         update: jest.fn().mockResolvedValue(undefined)
       } as any;
 
@@ -835,7 +835,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
         caption: '再生成キャプション',
-        status: AssetStatus.SUCCESS
+        status: AssetStatus.FAILED
       }));
 
       // 4b. Regenerate caption when image binary is null (fallback text prompt)
@@ -852,14 +852,14 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       mockGenerateContent.mockResolvedValueOnce({ text: '' });
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.SUCCESS
+        status: AssetStatus.FAILED
       }));
 
       // 6. Regenerate caption with error throw (fallback applied)
       mockGenerateContent.mockRejectedValueOnce(new Error('Regen error'));
       await assetsUseCase.regenerateCaptions(['img_test']);
       expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.SUCCESS
+        status: AssetStatus.FAILED
       }));
 
       // 7. getAssetBinary branches

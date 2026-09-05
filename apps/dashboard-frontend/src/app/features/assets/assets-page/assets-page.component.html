@@ -77,7 +77,7 @@
         <div class="asset-info">
           <div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" [title]="asset.filename">{{ asset.filename }}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-            <span>{{ 'assets.used_count' | translate }}: {{ asset.usedCount || 0 }}</span>
+            <span>{{ 'assets.used_count' | translate }}: {{ asset.useCount || 0 }}</span>
             <span [style.color]="getStatusBadgeColor(asset.status)" style="font-weight: 600;">
               {{ asset.status || 'SUCCESS' }}
             </span>

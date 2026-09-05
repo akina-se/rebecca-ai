@@ -8,6 +8,7 @@ import { SystemMemoryUseCase } from '../../src/features/system-memory/usecase';
 import { SystemMemoryRepository } from '../../src/features/system-memory/repository';
 import { CopilotUseCase } from '../../src/features/copilot/usecase';
 import { UserStatus, AssetStatus, PostLeaderboard, PostDetail, SystemAlert, KpiMetrics, Asset, MemoryLayer, MemoryContent, UserDetail } from '@rebecca/types';
+import { FieldValue } from '@google-cloud/firestore';
 import { config } from '../../src/config';
 
 // Mock gRPC Client
@@ -144,7 +145,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         id: 'a1',
         filename: 'test.jpg',
         caption: 'A sunny day',
-        usedCount: 0,
+        useCount: 0,
         status: AssetStatus.SUCCESS,
         url: 'http://test.jpg'
       };
@@ -164,7 +165,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         id: 'a1',
         filename: 'test.jpg',
         caption: 'A sunny day',
-        usedCount: 0,
+        useCount: 0,
         status: AssetStatus.SUCCESS,
         url: 'http://test.jpg'
       }];
@@ -180,7 +181,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         id: 'a1',
         filename: 'test.jpg',
         caption: 'A sunny day',
-        usedCount: 0,
+        useCount: 0,
         status: AssetStatus.SUCCESS,
         url: 'http://test.jpg'
       };
@@ -191,11 +192,54 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res).toEqual(mockAsset);
     });
 
-    it('updateAsset should delegate to repository', async () => {
+    it('updateAsset should delegate to repository without regenerating embedding when caption is not updated', async () => {
       repo.update.mockResolvedValueOnce(undefined);
 
       await useCase.updateAsset('a1', { status: AssetStatus.PENDING });
       expect(repo.update).toHaveBeenCalledWith('a1', { status: AssetStatus.PENDING });
+      expect(mockEmbedContent).not.toHaveBeenCalled();
+    });
+
+    it('updateAsset should generate embedding and set SUCCESS status when caption is updated', async () => {
+      repo.update.mockResolvedValueOnce(undefined);
+      mockEmbedContent.mockResolvedValueOnce({
+        embeddings: [{ values: [0.1, 0.2, 0.3] }]
+      });
+
+      await useCase.updateAsset('a1', { caption: '青空の下のレベッカ' });
+      expect(mockEmbedContent).toHaveBeenCalledWith(expect.objectContaining({
+        contents: '青空の下のレベッカ',
+        config: { outputDimensionality: 768 }
+      }));
+      expect(repo.update).toHaveBeenCalledWith('a1', {
+        caption: '青空の下のレベッカ',
+        embedding: [0.1, 0.2, 0.3],
+        status: AssetStatus.SUCCESS
+      });
+    });
+
+    it('updateAsset should delete embedding with FieldValue.delete(), preserve caption, and set FAILED status when embedding generation fails', async () => {
+      repo.update.mockResolvedValueOnce(undefined);
+      mockEmbedContent.mockRejectedValueOnce(new Error('Gemini embedding error'));
+
+      await useCase.updateAsset('a1', { caption: 'エラーになるキャプション' });
+      expect(repo.update).toHaveBeenCalledWith('a1', {
+        caption: 'エラーになるキャプション',
+        embedding: FieldValue.delete(),
+        status: AssetStatus.FAILED
+      });
+    });
+
+    it('updateAsset should delete embedding with FieldValue.delete() and set FAILED status when caption is cleared', async () => {
+      repo.update.mockResolvedValueOnce(undefined);
+
+      await useCase.updateAsset('a1', { caption: '   ' });
+      expect(repo.update).toHaveBeenCalledWith('a1', {
+        caption: '   ',
+        embedding: FieldValue.delete(),
+        status: AssetStatus.FAILED
+      });
+      expect(mockEmbedContent).not.toHaveBeenCalled();
     });
 
     it('deleteAssets should delegate to repository', async () => {
@@ -224,13 +268,18 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res[0].filename).toBe('summer_vibes.png');
       expect(res[0].status).toBe(AssetStatus.SUCCESS);
       expect(res[0].caption).toBe('青空の下で微笑むレベッカのイラスト');
+      expect(res[0].useCount).toBe(0);
+      expect(res[0].url).toMatch(/^gs:\/\/rebecca-ai-gal-images\/media_assets\//);
       expect(repo.create).toHaveBeenCalledWith(
         expect.stringMatching(/^img_/),
         expect.objectContaining({
           filename: 'summer_vibes.png',
+          url: expect.stringMatching(/^gs:\/\/rebecca-ai-gal-images\/media_assets\//),
           caption: '青空の下で微笑むレベッカのイラスト',
           embedding: [0.1, 0.2, 0.3],
-          status: AssetStatus.SUCCESS
+          useCount: 0,
+          status: AssetStatus.SUCCESS,
+          createdAt: expect.any(String)
         })
       );
     });
@@ -250,6 +299,41 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res[0].status).toBe(AssetStatus.FAILED);
       expect(res[0].caption).toBe('');
       expect(res[0].url).toContain('data:image/png;base64,');
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.stringMatching(/^img_/),
+        expect.objectContaining({
+          filename: 'error.png',
+          caption: '',
+          useCount: 0,
+          status: AssetStatus.FAILED,
+          createdAt: expect.any(String)
+        })
+      );
+      const createData = repo.create.mock.calls[0][1];
+      expect(createData.embedding).toBeUndefined();
+    });
+
+    it('uploadImages should omit embedding field and set FAILED status when embedding generation fails', async () => {
+      const file: UploadedFile = {
+        originalname: 'no_emb.png',
+        mimetype: 'image/png',
+        buffer: Buffer.from('fake_data')
+      };
+
+      mockGenerateContent.mockResolvedValueOnce({
+        text: 'キャプションはあるが埋め込みが失敗する画像'
+      });
+      mockEmbedContent.mockRejectedValueOnce(new Error('Embedding service unavailable'));
+
+      const res = await useCase.uploadImages([file]);
+      expect(res).toHaveLength(1);
+      expect(res[0].status).toBe(AssetStatus.FAILED);
+      expect(res[0].caption).toBe('キャプションはあるが埋め込みが失敗する画像');
+
+      const createData = repo.create.mock.calls[0][1];
+      expect(createData.caption).toBe('キャプションはあるが埋め込みが失敗する画像');
+      expect(createData.embedding).toBeUndefined();
+      expect(createData.status).toBe(AssetStatus.FAILED);
     });
 
     it('regenerateCaptions should update existing assets with new captions and embeddings using image binary', async () => {
@@ -258,7 +342,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
           id: 'img_123',
           filename: 'rebecca_smile.png',
           caption: 'Old caption',
-          usedCount: 3,
+          useCount: 3,
           status: AssetStatus.SUCCESS,
           url: 'http://img1.png'
         }
@@ -293,7 +377,6 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(repo.update).toHaveBeenCalledWith('img_123', {
         caption: '新しく生成された高画質なレベッカの笑顔イラスト',
         status: AssetStatus.SUCCESS,
-        usedCount: 3,
         embedding: [0.5, 0.6, 0.7]
       });
     });
@@ -304,7 +387,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
           id: 'img_no_bin',
           filename: 'fallback_icon.png',
           caption: 'Old caption',
-          usedCount: 0,
+          useCount: 0,
           status: AssetStatus.SUCCESS,
           url: 'http://img_no_bin.png'
         }
@@ -341,16 +424,18 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
           id: 'img_fallback',
           filename: 'fallback.png',
           caption: 'Old',
-          usedCount: 0,
+          useCount: 0,
           status: AssetStatus.FAILED,
           url: 'http://fallback.png'
         }
       ]);
 
       await noAiUseCase.regenerateCaptions(['img_fallback']);
-      expect(repo.update).toHaveBeenCalledWith('img_fallback', expect.objectContaining({
-        status: AssetStatus.SUCCESS
-      }));
+      expect(repo.update).toHaveBeenCalledWith('img_fallback', {
+        caption: expect.stringContaining('fallback.png'),
+        status: AssetStatus.FAILED,
+        embedding: FieldValue.delete()
+      });
     });
   });
 
@@ -572,7 +657,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
 
       assetsRepo = {
         getAll: jest.fn().mockResolvedValue([
-          { id: 'a1', filename: 'failed.png', caption: '', status: AssetStatus.FAILED, usedCount: 0, url: 'http://test' }
+          { id: 'a1', filename: 'failed.png', caption: '', status: AssetStatus.FAILED, useCount: 0, url: 'http://test' }
         ])
       } as unknown as jest.Mocked<AssetsRepository>;
 
