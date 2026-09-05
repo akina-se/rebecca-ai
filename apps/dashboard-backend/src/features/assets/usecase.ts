@@ -4,7 +4,6 @@ import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
-import { FieldValue } from '@google-cloud/firestore';
 import { config } from '../../config';
 
 export interface UploadedFile {
@@ -307,16 +306,16 @@ export class AssetsUseCase {
               repoUpdates.status = AssetStatus.SUCCESS;
             }
           } else {
-            repoUpdates.embedding = FieldValue.delete();
+            repoUpdates.embedding = null;
             repoUpdates.status = AssetStatus.FAILED;
           }
         } catch (err) {
           console.error(`Failed to generate embedding during updateAsset for ${id}:`, err);
-          repoUpdates.embedding = FieldValue.delete();
+          repoUpdates.embedding = null;
           repoUpdates.status = AssetStatus.FAILED;
         }
       } else {
-        repoUpdates.embedding = FieldValue.delete();
+        repoUpdates.embedding = null;
         if (updates.status === undefined) {
           repoUpdates.status = AssetStatus.FAILED;
         }
@@ -403,7 +402,7 @@ export class AssetsUseCase {
       if (embedding && embedding.length > 0) {
         updates.embedding = embedding;
       } else {
-        updates.embedding = FieldValue.delete();
+        updates.embedding = null;
       }
 
       await this.repo.update(asset.id, updates);

@@ -270,9 +270,14 @@ const imageDocConverter: FirestoreDataConverter<ImageDoc> = {
   toFirestore(image: ImageDoc): DocumentData {
     const data: DocumentData = { ...image };
     if (image.lastUsedAt !== undefined) {
-      data['lastUsedAt'] = image.lastUsedAt
-        ? Timestamp.fromDate(new Date(image.lastUsedAt))
-        : null;
+      if (image.lastUsedAt) {
+        const parsedDate = new Date(image.lastUsedAt);
+        data['lastUsedAt'] = !isNaN(parsedDate.getTime())
+          ? Timestamp.fromDate(parsedDate)
+          : null;
+      } else {
+        data['lastUsedAt'] = null;
+      }
     }
     return data;
   },

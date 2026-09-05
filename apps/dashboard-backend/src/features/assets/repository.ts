@@ -207,10 +207,10 @@ export class AssetsRepository {
    * Updates an asset's fields in the database.
    * 
    * @param id - The ID of the asset to update.
-   * @param updates - The partial asset fields to update (including optional vector embedding or FieldValue).
+   * @param updates - The partial asset fields to update. If embedding is null, deletes the field; if number[], stores as FieldValue.vector.
    * @returns A promise that resolves when the update is complete.
    */
-  async update(id: string, updates: Partial<Asset> & { embedding?: number[] | FieldValue }): Promise<void> {
+  async update(id: string, updates: Partial<Asset> & { embedding?: number[] | null }): Promise<void> {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.caption !== undefined) {
       dbUpdates.caption = updates.caption;
@@ -223,14 +223,10 @@ export class AssetsRepository {
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.filename !== undefined) dbUpdates.filename = updates.filename;
     if (updates.embedding !== undefined) {
-      if (Array.isArray(updates.embedding)) {
-        if (updates.embedding.length > 0) {
-          dbUpdates.embedding = FieldValue.vector(updates.embedding);
-        } else {
-          dbUpdates.embedding = FieldValue.delete();
-        }
+      if (updates.embedding === null) {
+        dbUpdates.embedding = FieldValue.delete();
       } else {
-        dbUpdates.embedding = updates.embedding;
+        dbUpdates.embedding = FieldValue.vector(updates.embedding);
       }
     }
     

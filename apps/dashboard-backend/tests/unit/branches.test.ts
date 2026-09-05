@@ -561,6 +561,36 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(res.data[2].status).toBe(AssetStatus.PROCESSING);
       expect(res.data[2].filename).toBe('a3.png');
     });
+
+    it('update should handle caption, status, useCount, and embedding (vector and null deletion)', async () => {
+      const mockSet = jest.fn().mockResolvedValue(undefined);
+      (repo as any).collections.images.doc = jest.fn().mockReturnValue({ set: mockSet });
+
+      // 1. Update with embedding array
+      await repo.update('a1', {
+        caption: '新しいキャプション',
+        useCount: 5,
+        filename: 'new.png',
+        embedding: [0.1, 0.2]
+      });
+      expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({
+        caption: '新しいキャプション',
+        status: AssetStatus.SUCCESS,
+        useCount: 5,
+        filename: 'new.png',
+        embedding: expect.anything()
+      }), { merge: true });
+
+      // 2. Update with embedding null (deletion)
+      await repo.update('a1', {
+        embedding: null,
+        status: AssetStatus.FAILED
+      });
+      expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({
+        status: AssetStatus.FAILED,
+        embedding: expect.anything()
+      }), { merge: true });
+    });
   });
 
   describe('SystemMemoryRepository Branches', () => {

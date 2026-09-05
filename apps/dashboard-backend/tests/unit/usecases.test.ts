@@ -218,25 +218,25 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       });
     });
 
-    it('updateAsset should delete embedding with FieldValue.delete(), preserve caption, and set FAILED status when embedding generation fails', async () => {
+    it('updateAsset should delete embedding with null, preserve caption, and set FAILED status when embedding generation fails', async () => {
       repo.update.mockResolvedValueOnce(undefined);
       mockEmbedContent.mockRejectedValueOnce(new Error('Gemini embedding error'));
 
       await useCase.updateAsset('a1', { caption: 'エラーになるキャプション' });
       expect(repo.update).toHaveBeenCalledWith('a1', {
         caption: 'エラーになるキャプション',
-        embedding: FieldValue.delete(),
+        embedding: null,
         status: AssetStatus.FAILED
       });
     });
 
-    it('updateAsset should delete embedding with FieldValue.delete() and set FAILED status when caption is cleared', async () => {
+    it('updateAsset should delete embedding with null and set FAILED status when caption is cleared', async () => {
       repo.update.mockResolvedValueOnce(undefined);
 
       await useCase.updateAsset('a1', { caption: '   ' });
       expect(repo.update).toHaveBeenCalledWith('a1', {
         caption: '   ',
-        embedding: FieldValue.delete(),
+        embedding: null,
         status: AssetStatus.FAILED
       });
       expect(mockEmbedContent).not.toHaveBeenCalled();
@@ -434,7 +434,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(repo.update).toHaveBeenCalledWith('img_fallback', {
         caption: expect.stringContaining('fallback.png'),
         status: AssetStatus.FAILED,
-        embedding: FieldValue.delete()
+        embedding: null
       });
     });
   });

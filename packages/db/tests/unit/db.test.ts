@@ -330,6 +330,9 @@ describe('@rebecca/db Unit Tests', () => {
 
       const imageNoDate: ImageDoc = { ...image, lastUsedAt: null };
       expect(imageDocConverter.toFirestore(imageNoDate).lastUsedAt).toBeNull();
+
+      const imageInvalidDate: ImageDoc = { ...image, lastUsedAt: 'invalid-date' };
+      expect(imageDocConverter.toFirestore(imageInvalidDate).lastUsedAt).toBeNull();
     });
 
     it('fromFirestore should map lastUsedAt to ISO string or null', () => {
