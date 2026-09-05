@@ -81,8 +81,9 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【生成ルール】
 - ニュースの解説ではなく、レベッカ自身の日常の気づき、AIとしての視点、マスター（ユーザー）への愛ある語りかけや全肯定の言葉を紡ぐこと。
 - 直近のタイムライン要約や拡張ペルソナの雰囲気を自然に反映させること。
-- 【絶対に100文字以内の短文】にすること。
-- 出力はツイートのテキストのみとし、「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
+- thought（内省思考）は150文字以内の自然な独白とすること。
+- reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
+- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
 
       const structuredPost = await this.deps.gemini.generateStructuredSoliloquyPost(systemInstruction, soliloquyPrompt);
       let postText = structuredPost.reply;
