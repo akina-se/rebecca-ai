@@ -49,42 +49,6 @@ describe('gemini.ts', () => {
         });
         return { gemini, news: newsFetcher };
     };
-
-    describe('generateReply', () => {
-        it('should generate a reply successfully (normal case)', async () => {
-            const { gemini } = getGeminiModule();
-            mockGenerateContent.mockResolvedValueOnce({ text: 'Hello Master' });
-
-            const history = [{ role: 'user', content: 'Hi' }];
-            const result = await gemini.generateReply('System instruction', history, 'How are you?');
-
-            expect(result).toBe('Hello Master');
-            expect(mockGenerateContent).toHaveBeenCalledTimes(1);
-        });
-
-        it('should handle function calling (search_news) successfully', async () => {
-            const { gemini, news } = getGeminiModule();
-            mockGenerateContent.mockResolvedValueOnce({
-                functionCalls: [{ name: 'search_news' }],
-                candidates: [{ content: { role: 'model', parts: [{ functionCall: { name: 'search_news' } }] } }]
-            });
-            news.fetchYahooNewsHeadlines.mockResolvedValueOnce(['News 1', 'News 2']);
-            mockGenerateContent.mockResolvedValueOnce({ text: 'Here is the news' });
-
-            const result = await gemini.generateReply('System instruction', [], 'News?');
-
-            expect(result).toBe('Here is the news');
-            expect(news.fetchYahooNewsHeadlines).toHaveBeenCalled();
-            expect(mockGenerateContent).toHaveBeenCalledTimes(2);
-        });
-
-        it('should handle API errors (abnormal case)', async () => {
-            const { gemini } = getGeminiModule();
-            mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
-            await expect(gemini.generateReply('sys', [], 'test')).rejects.toThrow('API quota exceeded');
-        });
-    });
-
     describe('generateDreaming', () => {
         it('should generate dreaming data successfully', async () => {
             const { gemini } = getGeminiModule();
@@ -455,7 +419,6 @@ describe('gemini.ts', () => {
                 config.gemini.apiKey = '';
                 const { gemini } = getGeminiModule();
 
-                await expect(gemini.generateReply('sys', [], 'test')).rejects.toThrow('Gemini API client not initialized');
                 await expect(gemini.generateStructuredReply('sys', [], 'test')).rejects.toThrow('Gemini API client not initialized');
                 await expect(gemini.generateDreaming('sys', [], {})).rejects.toThrow('Gemini API client not initialized');
                 expect(await gemini.verifyImageRelevance('caption', 'post')).toBe(false);

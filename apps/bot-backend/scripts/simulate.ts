@@ -99,7 +99,11 @@ const runSimulation = async () => {
             // For simplicity, test with BASE systemPrompt as is (inject dummy data if needed)
             const systemPrompt = getBasePrompt('reply', 'ja'); 
             
-            const rebeccaText = await withRetry(() => gemini.generateReply(systemPrompt, workingMemory, userText));
+            const structured = await withRetry(() => gemini.generateStructuredReply(systemPrompt, workingMemory, userText));
+            const rebeccaText = structured.reply;
+            if (structured.thought) {
+                reportMd += `> *Thought:* ${structured.thought}\n\n`;
+            }
             episodicBuffer.push({ role: 'model', content: rebeccaText });
             reportMd += `**Rebecca:** ${rebeccaText}\n\n`;
 

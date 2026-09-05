@@ -137,7 +137,6 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       }
 
       console.log('Generated Post:', postText);
-      console.log('Generated Thought:', thought);
 
       // Identify which headline was referenced (for persistence in timeline_history)
       const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline)) || candidateHeadlines[0];

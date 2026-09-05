@@ -56,7 +56,7 @@ export interface IFirestoreService {
       mediaUrls?: string[];
       assetId?: string;
       tweetId?: string;
-      postType?: 'news' | 'soliloquy';
+      postType?: 'news' | 'soliloquy' | 'random_engagement';
       newsTitle?: string;
       newsEmbedding?: number[];
     },
@@ -94,7 +94,6 @@ export interface IFirestoreService {
  * embedding creation, and image analysis.
  */
 export interface IGeminiService {
-  generateReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string>;
   generateStructuredReply(systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<StructuredPersonaResponse>;
   verifyImageRelevance(imageCaption: string, postText: string): Promise<boolean>;
   generateDreaming(systemPrompt: string, episodicBuffer: ConversationLogEntry[], coreProfile: UserCoreProfile): Promise<UserCoreProfile>;

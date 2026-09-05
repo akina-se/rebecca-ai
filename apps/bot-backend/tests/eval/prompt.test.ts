@@ -110,7 +110,8 @@ runEval('LLM as a Judge: Prompt Evaluation', () => {
         const userData = { episodicBuffer: [] }; // Mock empty memory
         const lang: Language = (tc.lang as Language) || 'ja';
         const systemPrompt = buildSystemPrompt('reply', userData as unknown as any, tc.input, '', '', [], lang);
-        const reply = await retryAsync(() => gemini.generateReply(systemPrompt, [], tc.input));
+        const structured = await retryAsync(() => gemini.generateStructuredReply(systemPrompt, [], tc.input));
+        const reply = structured.reply;
 
         // 2. Evaluate with Judge with retry
         const evalResult = await retryAsync(() => evaluateResponse(tc.input, reply, tc.rule));
