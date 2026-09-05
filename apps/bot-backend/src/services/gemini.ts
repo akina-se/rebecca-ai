@@ -20,97 +20,6 @@ if (config.gemini.apiKey) {
 }
 
 /**
- * Generates a conversational reply using the Gemini AI model.
- * 
- * Incorporates system persona instructions, historical conversation context, and the latest user input.
- * Includes support for tool calling, specifically fetching news headlines if requested by the model.
- * 
- * @param systemInstruction - The system persona and behavioral guidelines.
- * @param history - A chronological sequence of previous conversation log entries.
- * @param userInput - The most recent text input provided by the user.
- * @returns A promise that resolves to the generated AI response string.
- * @throws {Error} If the underlying Gemini API call fails.
- */
-const generateReply = async (systemInstruction: string, history: ConversationLogEntry[], userInput: string): Promise<string> => {
-    if (!ai) {
-        throw new Error('Gemini API client not initialized');
-    }
-    try {
-        const contents: Content[] = [];
-        
-        for (const msg of history) {
-            contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] });
-        }
-        
-        contents.push({ role: 'user', parts: [{ text: userInput }] });
-
-        const baseConfig = {
-            systemInstruction: systemInstruction,
-            maxOutputTokens: 120,
-            safetySettings: [] as never[]
-        };
-
-        const response = await ai.models.generateContent({
-            model: config.gemini.model,
-            contents: contents,
-            config: {
-                ...baseConfig,
-                tools: [{
-                    functionDeclarations: [
-                        {
-                            name: "search_news",
-                            description: "Fetches the latest news headlines. Useful when the user asks about current events, news, or today's topics."
-                        }
-                    ]
-                }]
-            }
-        });
-
-        if (response.functionCalls && response.functionCalls.length > 0) {
-            const call = response.functionCalls[0];
-            if (call.name === 'search_news') {
-                const headlines = await fetchYahooNewsHeadlines();
-                const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
-                
-                if (response.candidates && response.candidates[0].content) {
-                    contents.push(response.candidates[0].content);
-                }
-                
-                contents.push({
-                    role: 'user',
-                    parts: [{
-                        functionResponse: {
-                            name: call.name,
-                            response: { result: newsResult }
-                        }
-                    }]
-                });
-
-                const finalResponse = await ai.models.generateContent({
-                    model: config.gemini.model,
-                    contents: contents,
-                    config: baseConfig
-                });
-                const finalText = finalResponse.text?.trim();
-                if (!finalText) {
-                    throw new Error('Gemini API returned empty response after function execution.');
-                }
-                return finalText;
-            }
-        }
-
-        const replyText = response.text?.trim();
-        if (!replyText) {
-            throw new Error('Gemini API returned empty response or content was filtered.');
-        }
-        return replyText;
-    } catch (error) {
-        console.error('Error generating reply with Gemini:', error);
-        throw error;
-    }
-};
-
-/**
  * Generates an updated core profile by assimilating recent episodic memories.
  * 
  * @param systemPrompt - The system instruction defining the profiling and dreaming protocol.
@@ -569,7 +478,6 @@ const generateStructuredReply = async (
 };
 
 export { 
-    generateReply,
     generateStructuredReply,
     verifyImageRelevance,
     generateDreaming,

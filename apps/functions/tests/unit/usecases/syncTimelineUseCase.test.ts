@@ -152,6 +152,13 @@ describe('SyncTimelineUseCase', () => {
       { merge: true }
     );
 
+    // Verify existing doc 1 does not have its thought overwritten or cleared by sync
+    const updateCallForDoc1 = mockBatchSet.mock.calls.find(
+      (call: any[]) => call[0]?.id === 'doc_existing_1'
+    );
+    expect(updateCallForDoc1).toBeDefined();
+    expect(updateCallForDoc1[1]).not.toHaveProperty('thought');
+
     // Verify manual doc 2 creation
     expect(mockBatchSet).toHaveBeenCalledWith(
       expect.any(Object),

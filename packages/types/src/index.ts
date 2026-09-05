@@ -128,7 +128,7 @@ export interface TimelinePost {
   authorName?: string;
   authorHandle?: string;
   authorAvatarUrl?: string;
-  postType?: 'news' | 'soliloquy';
+  postType?: 'news' | 'soliloquy' | 'random_engagement';
   newsTitle?: string;
   newsEmbedding?: number[];
 }
