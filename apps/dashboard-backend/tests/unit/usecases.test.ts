@@ -8,7 +8,6 @@ import { SystemMemoryUseCase } from '../../src/features/system-memory/usecase';
 import { SystemMemoryRepository } from '../../src/features/system-memory/repository';
 import { CopilotUseCase } from '../../src/features/copilot/usecase';
 import { UserStatus, AssetStatus, PostLeaderboard, PostDetail, SystemAlert, KpiMetrics, Asset, MemoryLayer, MemoryContent, UserDetail } from '@rebecca/types';
-import { FieldValue } from '@google-cloud/firestore';
 import { config } from '../../src/config';
 
 // Mock gRPC Client

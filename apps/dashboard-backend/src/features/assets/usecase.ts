@@ -310,7 +310,8 @@ export class AssetsUseCase {
             repoUpdates.status = AssetStatus.FAILED;
           }
         } catch (err) {
-          console.error(`Failed to generate embedding during updateAsset for ${id}:`, err);
+          const safeId = String(id).replace(/[\r\n%]/g, '');
+          console.error('Failed to generate embedding during updateAsset for %s:', safeId, err);
           repoUpdates.embedding = null;
           repoUpdates.status = AssetStatus.FAILED;
         }
