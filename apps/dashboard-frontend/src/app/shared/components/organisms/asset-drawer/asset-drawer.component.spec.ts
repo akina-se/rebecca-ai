@@ -43,7 +43,7 @@ describe('AssetDrawerComponent', () => {
       filename: 'rebecca_portrait.png',
       caption: 'A lovely portrait of Rebecca',
       url: 'https://example.com/rebecca.png',
-      usedCount: 12,
+      useCount: 12,
       lastUsedAt: '2026-08-15T00:00:00Z',
       status: 'SUCCESS'
     }));
@@ -64,7 +64,7 @@ describe('AssetDrawerComponent', () => {
       filename: 'no_extension',
       caption: null,
       url: null,
-      usedCount: null,
+      useCount: null,
       lastUsedAt: null,
       status: null
     }));

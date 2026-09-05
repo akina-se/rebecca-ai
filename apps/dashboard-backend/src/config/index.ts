@@ -27,7 +27,7 @@ export const config = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY || '',
     model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004',
+    embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
     timeoutMs: parseInt(process.env.GEMINI_TIMEOUT_MS || '15000', 10),
   },
   /** X API Configuration */

@@ -51,6 +51,11 @@ const jobs = [
         name: 'rebecca-soliloquy-batch',
         schedule: '0 19 * * *', // Daily at 19:00 JST (evening thought & Master-affirming soliloquy)
         url: `${serviceUrl}/batch/soliloquy-post`
+    },
+    {
+        name: 'rebecca-asset-embeddings',
+        schedule: process.env.ASSET_EMBEDDINGS_SCHEDULE || '30 3,9,15,21 * * *', // 3:30, 9:30, 15:30, 21:30 JST (4 times/day self-healing backfill)
+        url: `${serviceUrl}/batch/asset-embeddings`
     }
 ];
 
