@@ -319,6 +319,6 @@ describe('DashboardPageComponent', () => {
     expect(text).toContain('+5.2%');
     expect(text).toContain('-73.5%');
     expect(text).toContain('0%');
-    expect(text).toContain('前日比');
+    expect(text).toContain('前期間比');
   });
 });
