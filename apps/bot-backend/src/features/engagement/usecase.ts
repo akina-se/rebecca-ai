@@ -1,6 +1,7 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
 import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
+import { publishPost } from '../../core/postPublisher';
 import { downloadImage } from '../../utils/image';
 
 /**
@@ -141,12 +142,18 @@ ${description}
 
       console.log(`Generated Engagement Text:\n${finalText}`);
 
-      const tweetRes = await this.deps.xApi.tweet(finalText);
-      const tweetId = (tweetRes as { data?: { id?: string } })?.data?.id;
+      const publishResult = await publishPost(this.deps, {
+        text: finalText,
+        attachImage: true,
+        context: `相手ユーザー: @${username}\nプロフィール: ${description}\n投稿コンテキスト: ${tweetContext}`,
+      });
 
-      await this.deps.firestore.saveTimelinePost(finalText, {
+      await this.deps.firestore.saveTimelinePost({
+        text: finalText,
         thought,
-        tweetId,
+        tweetId: publishResult.tweetId,
+        mediaUrls: publishResult.mediaUrls,
+        assetId: publishResult.assetId,
         postType: 'random_engagement',
       });
 

@@ -2,6 +2,7 @@ import { AppDependencies } from '../../types';
 import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
 import { getWorkingMemory, saveInteraction } from '../../core/memory';
 import { buildSystemPrompt } from '../../core/contextInjector';
+import { publishPost } from '../../core/postPublisher';
 import { downloadImage } from '../../utils/image';
 import { extractCleanTextForLanguageDetection } from '../../utils/text';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
@@ -166,8 +167,12 @@ ${processedText}
             console.log(`Truncated AI Reply to 138 characters: ${sanitizeForLog(aiResponseText)}`);
         }
 
-        // Publish ONLY the reply back to the user on X (thought is private)
-        await deps.xApi.replyToMention(tweetId, aiResponseText);
+        // Publish the reply back to the user on X via unified PostPublisher (thought is private; image is disabled for replies)
+        await publishPost(deps, {
+            text: aiResponseText,
+            inReplyToTweetId: tweetId,
+            attachImage: false,
+        });
         
         // Record the mention as processed to ensure idempotency
         await deps.firestore.markMentionProcessed(tweetId);
