@@ -381,7 +381,8 @@ describe('Firestore Service Unit Tests', () => {
     });
 
     it('saveTimelinePost and getRecentTimelinePosts', async () => {
-      await firestoreService.saveTimelinePost('Post content', {
+      await firestoreService.saveTimelinePost({
+        text: 'Post content',
         thought: 'タイムライン本音',
         postType: 'news',
         newsTitle: 'Sample Title',

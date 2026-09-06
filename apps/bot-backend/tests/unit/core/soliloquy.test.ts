@@ -99,8 +99,8 @@ describe('Soliloquy Unit Tests', () => {
         { mediaIds: [] },
       );
       expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
-        expect.stringContaining('#全肯定AIレベッカ'),
         expect.objectContaining({
+          text: expect.stringContaining('#全肯定AIレベッカ'),
           postType: 'soliloquy',
           thought: '今日も頑張るマスターを応援したいな',
           tweetId: 'soliloquy_tweet_1',

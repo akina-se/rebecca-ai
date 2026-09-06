@@ -84,8 +84,8 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             expect.stringContaining('【拡張ペルソナ・近況】'),
         );
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
-            expect.stringContaining('新作ゲーム楽しみね！'),
             expect.objectContaining({
+                text: expect.stringContaining('新作ゲーム楽しみね！'),
                 postType: 'news',
                 thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
                 newsTitle: '完全新作ゲーム発表！',

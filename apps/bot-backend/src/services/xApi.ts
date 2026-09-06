@@ -44,16 +44,24 @@ if (config.xApi.appKey) {
  * @returns A Promise that resolves to the newly created tweet data (`XApiCreateResponse`).
  * @throws {Error} If the API request fails unexpectedly.
  */
-const replyToMention = async (tweetId: string, text: string): Promise<XApiCreateResponse> => {
+const replyToMention = async (
+  tweetId: string,
+  text: string,
+  options?: { mediaIds?: string[] }
+): Promise<XApiCreateResponse> => {
   if (!client) {
       console.warn('Twitter API client not initialized. Skipping actual API call.');
       return { data: { id: 'mock_tweet_id', text } };
   }
-    try {
-    const response = await client.posts.create({
+  try {
+    const payload: Record<string, unknown> = {
       text,
       reply: { inReplyToTweetId: tweetId }
-    });
+    };
+    if (options?.mediaIds && options.mediaIds.length > 0) {
+      payload.media = { media_ids: options.mediaIds };
+    }
+    const response = await client.posts.create(payload as Parameters<typeof client.posts.create>[0]);
     return response as unknown as XApiCreateResponse;
   } catch (error) {
     console.error('Error replying to mention:', error);

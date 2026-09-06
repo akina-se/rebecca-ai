@@ -404,41 +404,43 @@ const saveTimelineSummary = async (summaryText: string): Promise<void> => {
 // ---------------------------------------------------------------------------
 
 /**
- * Saves a timeline post to history, including media URLs, asset identifiers, and tweet ID.
- * Expires automatically after 30 days.
- *
- * @param text    - The post text content.
- * @param options - Optional mediaUrls, assetId, and tweetId.
+ * Parameters for persisting a timeline post.
  */
-const saveTimelinePost = async (
-  text: string,
-  options?: {
-    thought?: string;
-    mediaUrls?: string[];
-    assetId?: string;
-    tweetId?: string;
-    postType?: 'news' | 'soliloquy' | 'random_engagement';
-    newsTitle?: string;
-    newsEmbedding?: number[];
-  },
-): Promise<void> => {
+export interface SaveTimelinePostParams {
+  text: string;
+  thought?: string;
+  mediaUrls?: string[];
+  assetId?: string;
+  tweetId?: string;
+  postType?: 'news' | 'soliloquy' | 'random_engagement';
+  newsTitle?: string;
+  newsEmbedding?: number[];
+}
+
+/**
+ * Saves a timeline post to history, including media URLs, asset identifiers, and tweet ID.
+ * Expires automatically after 5 years (TTL).
+ *
+ * @param params - Structured timeline post parameters.
+ */
+const saveTimelinePost = async (params: SaveTimelinePostParams): Promise<void> => {
   const ref = db.timelineHistory.doc();
   const now = new Date();
   const expireAt = new Date(now);
   expireAt.setFullYear(expireAt.getFullYear() + 5);
 
-  const mediaList = options?.mediaUrls || [];
+  const mediaList = params.mediaUrls || [];
   await ref.set({
-    text,
+    text: params.text,
     timestamp: now.toISOString(),
     expireAt: expireAt.toISOString(), // Converter writes this as a Timestamp.
     mediaUrls: mediaList,
-    ...(options?.thought ? { thought: options.thought } : {}),
-    ...(options?.assetId ? { assetId: options.assetId } : {}),
-    ...(options?.tweetId ? { tweetId: options.tweetId } : {}),
-    ...(options?.postType ? { postType: options.postType } : {}),
-    ...(options?.newsTitle ? { newsTitle: options.newsTitle } : {}),
-    ...(options?.newsEmbedding ? { newsEmbedding: options.newsEmbedding } : {}),
+    ...(params.thought ? { thought: params.thought } : {}),
+    ...(params.assetId ? { assetId: params.assetId } : {}),
+    ...(params.tweetId ? { tweetId: params.tweetId } : {}),
+    ...(params.postType ? { postType: params.postType } : {}),
+    ...(params.newsTitle ? { newsTitle: params.newsTitle } : {}),
+    ...(params.newsEmbedding ? { newsEmbedding: params.newsEmbedding } : {}),
     impressions: 0,
     likes: 0,
     reposts: 0,

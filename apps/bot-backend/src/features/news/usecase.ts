@@ -1,7 +1,7 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt, cosineSimilarity } from '@rebecca/persona';
 import config from '../../config';
-import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
+import { publishPost, PublishPostResult } from '../../core/postPublisher';
 import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
@@ -150,9 +150,17 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         }
       }
 
-      const publishResult: PublishTimelinePostResult = await publishTimelinePost(this.deps, {
-        postText,
+      const publishResult: PublishPostResult = await publishPost(this.deps, {
+        text: postText,
+        context: `ニュース見出し: ${matchedHeadline?.headline || '最新ニュース'}\nタイムライン状況: ${timelineSummary}`,
+      });
+
+      await this.deps.firestore.saveTimelinePost({
+        text: postText,
         thought,
+        tweetId: publishResult.tweetId,
+        mediaUrls: publishResult.mediaUrls,
+        assetId: publishResult.assetId,
         postType: 'news',
         newsTitle: matchedHeadline?.headline,
         newsEmbedding: chosenEmbedding && chosenEmbedding.length > 0 ? chosenEmbedding : undefined,
@@ -160,7 +168,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
       return {
         status: 'success',
-        post: publishResult.post,
+        post: publishResult.text,
         attachedMedia: publishResult.attachedMedia,
       };
     } catch (e) {
