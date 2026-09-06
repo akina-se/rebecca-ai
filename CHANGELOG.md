@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/akina-se/rebecca-ai/compare/v1.13.0...v1.13.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **deps:** resolve Dependabot security vulnerabilities in monorepo dependencies ([#171](https://github.com/akina-se/rebecca-ai/issues/171)) ([50eedd5](https://github.com/akina-se/rebecca-ai/commit/50eedd5d49677ac7952a74e3e031be59251bd6fe))
+
 ## [1.13.0](https://github.com/akina-se/rebecca-ai/compare/v1.12.0...v1.13.0) (2026-09-06)
 
 
