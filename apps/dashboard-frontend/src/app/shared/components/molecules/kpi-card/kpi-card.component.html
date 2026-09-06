@@ -1,0 +1,27 @@
+<div class="card glass-panel">
+  <div class="card-title">
+    <span class="material-icons">{{ icon }}</span> {{ title }}
+  </div>
+  <div class="card-value">{{ formattedValue }}</div>
+  @if (trend !== null && trend !== undefined) {
+    <div class="card-trend" [class.negative]="!isPositiveTrend">
+      <span class="material-icons" style="font-size: 1rem">{{ trendIcon }}</span>
+      {{ trend > 0 ? '+' : '' }}{{ trend }}% {{ trendLabel }}
+    </div>
+  } @else {
+    <div class="card-trend" style="color: var(--text-muted);">—</div>
+  }
+  @if (history && history.length > 0) {
+    <svg class="sparkline" viewBox="0 0 100 20">
+      <polygon
+        [attr.fill]="isPositiveTrend ? 'url(#spark-success)' : 'url(#spark-danger)'"
+        [attr.points]="getSparklinePolygon(history)"
+      />
+      <polyline
+        fill="none"
+        [attr.stroke]="isPositiveTrend ? 'var(--success)' : 'var(--danger)'"
+        [attr.points]="getSparklinePoints(history)"
+      />
+    </svg>
+  }
+</div>

@@ -3,6 +3,21 @@ import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse
 import { getCollections } from '@rebecca/db';
 
 /**
+ * Computes the relative percentage change between current and baseline metrics.
+ * Returns null if the baseline is zero or invalid.
+ *
+ * @param current - Current period metric value.
+ * @param baseline - Previous period baseline metric value.
+ * @returns Relative percentage change rounded to one decimal place, or null.
+ */
+export function calculateRelativeTrend(current: number, baseline: number): number | null {
+  if (baseline <= 0 || !Number.isFinite(baseline) || !Number.isFinite(current)) {
+    return null;
+  }
+  return parseFloat((((current - baseline) / baseline) * 100).toFixed(1));
+}
+
+/**
  * Repository responsible for data access operations related to timeline history, leaderboard posts, and system KPI metrics in Firestore.
  * Strictly adheres to canonical schema and leverages @rebecca/db converters for typed normalization.
  */
@@ -41,8 +56,6 @@ export class TimelineRepository {
 
     const currentPeriodStartIso = new Date(nowMs - periodMs).toISOString();
     const previousPeriodStartIso = new Date(nowMs - periodMs * 2).toISOString();
-    const oneDayAgoIso = new Date(nowMs - 24 * 3600 * 1000).toISOString();
-    const twoDaysAgoIso = new Date(nowMs - 48 * 3600 * 1000).toISOString();
 
     // 1. Total Followers & Period Trend
     const [followersSnap, prevFollowersSnap, currentFollowersSnap] = await Promise.all([
@@ -53,10 +66,7 @@ export class TimelineRepository {
     const totalFollowers = followersSnap.data().count || 0;
     const baselineFollowers = prevFollowersSnap.data().count || 0;
 
-    let followersTrend: number | null = null;
-    if (baselineFollowers > 0) {
-      followersTrend = parseFloat((((totalFollowers - baselineFollowers) / baselineFollowers) * 100).toFixed(1));
-    }
+    const followersTrend = calculateRelativeTrend(totalFollowers, baselineFollowers);
 
     // 2. API Calls & Volume Trend (Conversation logs + timeline posts)
     const [currentLogsSnap, currentPostsSnap, prevLogsSnap, prevPostsSnap] = await Promise.all([
@@ -69,27 +79,54 @@ export class TimelineRepository {
     const currentApiCalls = currentLogsSnap.size + currentPostsSnap.size;
     const previousApiCalls = (prevLogsSnap.data().count || 0) + (prevPostsSnap.data().count || 0);
 
-    let apiCallsTrend: number | null = null;
-    if (previousApiCalls > 0) {
-      apiCallsTrend = parseFloat((((currentApiCalls - previousApiCalls) / previousApiCalls) * 100).toFixed(1));
-    }
+    const apiCallsTrend = calculateRelativeTrend(currentApiCalls, previousApiCalls);
 
-    // 3. Daily Active Users (DAU): Distinct users in the past 24 hours
-    const [recentLogsSnap, prevRecentLogsSnap] = await Promise.all([
-      this.collections.conversationLogs.where('timestamp', '>=', oneDayAgoIso).get(),
-      this.collections.conversationLogs.where('timestamp', '>=', twoDaysAgoIso).where('timestamp', '<', oneDayAgoIso).get()
-    ]);
+    // 3. Daily Active Users (DAU): Average distinct users per day in current period vs previous period
+    const prevLogsListSnap = await this.collections.conversationLogs
+      .where('timestamp', '>=', previousPeriodStartIso)
+      .where('timestamp', '<', currentPeriodStartIso)
+      .get();
 
-    const currentDauUsers = new Set(recentLogsSnap.docs.map(d => d.data().userId).filter(Boolean));
-    const currentDau = currentDauUsers.size;
+    const currentDauMap = new Map<string, Set<string>>();
+    currentLogsSnap.docs.forEach(doc => {
+      const data = doc.data();
+      const userId = data.userId;
+      const ts = data.timestamp;
+      if (userId && ts) {
+        const dateKey = ts.substring(0, 10);
+        if (!currentDauMap.has(dateKey)) {
+          currentDauMap.set(dateKey, new Set<string>());
+        }
+        currentDauMap.get(dateKey)!.add(userId);
+      }
+    });
 
-    const prevDauUsers = new Set(prevRecentLogsSnap.docs.map(d => d.data().userId).filter(Boolean));
-    const prevDau = prevDauUsers.size;
+    const prevDauMap = new Map<string, Set<string>>();
+    prevLogsListSnap.docs.forEach(doc => {
+      const data = doc.data();
+      const userId = data.userId;
+      const ts = data.timestamp;
+      if (userId && ts) {
+        const dateKey = ts.substring(0, 10);
+        if (!prevDauMap.has(dateKey)) {
+          prevDauMap.set(dateKey, new Set<string>());
+        }
+        prevDauMap.get(dateKey)!.add(userId);
+      }
+    });
 
-    let dauTrend: number | null = null;
-    if (prevDau > 0) {
-      dauTrend = parseFloat((((currentDau - prevDau) / prevDau) * 100).toFixed(1));
-    }
+    const periodDays = Math.max(1, Math.round(periodMs / (24 * 3600 * 1000)));
+    const totalCurrentDailyUsers = Array.from(currentDauMap.values()).reduce((sum, set) => sum + set.size, 0);
+    const totalPrevDailyUsers = Array.from(prevDauMap.values()).reduce((sum, set) => sum + set.size, 0);
+
+    const currentDau = currentDauMap.size > 0
+      ? Math.round(totalCurrentDailyUsers / currentDauMap.size)
+      : 0;
+
+    const dauTrend = calculateRelativeTrend(
+      totalCurrentDailyUsers / periodDays,
+      totalPrevDailyUsers / periodDays
+    );
 
     // 4. Engagement Rate: Likes + Reposts + Replies / Impressions across posts in the period
     let totalEngagements = 0;
@@ -122,11 +159,13 @@ export class TimelineRepository {
       prevTotalEngagements += (Number(d.likes) || 0) + reposts + (Number(d.replies) || 0);
     });
 
-    let engagementTrend: number | null = null;
-    if (prevTotalImpressions > 0 && engagementRate !== null) {
-      const prevEngagementRate = (prevTotalEngagements / prevTotalImpressions) * 100;
-      engagementTrend = parseFloat((engagementRate - prevEngagementRate).toFixed(1));
-    }
+    const prevEngagementRate: number | null = prevTotalImpressions > 0
+      ? parseFloat(((prevTotalEngagements / prevTotalImpressions) * 100).toFixed(1))
+      : null;
+
+    const engagementTrend = (engagementRate !== null && prevEngagementRate !== null)
+      ? calculateRelativeTrend(engagementRate, prevEngagementRate)
+      : null;
 
     // 5. Dynamic Sparkline Histograms
     const startMs = nowMs - periodMs;
