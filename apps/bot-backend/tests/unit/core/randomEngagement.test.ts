@@ -46,10 +46,10 @@ describe('Random Engagement Batch', () => {
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
-        expect(deps.xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('Hey @target_user, playing games again?', { mediaIds: [] });
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
-            'Hey @target_user, playing games again?',
             expect.objectContaining({
+                text: 'Hey @target_user, playing games again?',
                 thought: 'ゲームの話題に共感しつつ突っ込む',
                 postType: 'random_engagement',
             })
@@ -85,7 +85,7 @@ describe('Random Engagement Batch', () => {
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('active_u2');
-        expect(deps.xApi.tweet).toHaveBeenCalledWith('@active_u2 Hello!');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('@active_u2 Hello!', { mediaIds: [] });
     });
 
     it('should skip if all users have already been engaged', async () => {
@@ -136,7 +136,7 @@ describe('Random Engagement Batch', () => {
 
         await new RandomEngagementUseCase(deps).execute();
 
-        expect(deps.xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention', { mediaIds: [] });
     });
 
     it('should handle tweets with attached media and analyze them', async () => {
@@ -168,6 +168,6 @@ describe('Random Engagement Batch', () => {
         await new RandomEngagementUseCase(deps).execute();
 
         expect(deps.gemini.analyzeImageCaption).toHaveBeenCalled();
-        expect(deps.xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!');
+        expect(deps.xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!', { mediaIds: [] });
     });
 });

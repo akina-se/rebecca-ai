@@ -21,8 +21,8 @@ import * as xApi from '../src/services/xApi';
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(firestore as any).saveTimelinePost = async (text: string) => {
-    console.log(`[MOCK DB] Saved timeline post: ${text}`);
+(firestore as any).saveTimelinePost = async (params: { text: string }) => {
+    console.log(`[MOCK DB] Saved timeline post: ${params.text}`);
 };
 
 const run = async () => {

@@ -90,7 +90,7 @@ export default {
    */
   images: {
     cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '3', 10),
-    similarityThreshold: parseFloat(process.env.IMAGE_SIMILARITY_THRESHOLD || '0.75'),
+    similarityThreshold: parseFloat(process.env.IMAGE_SIMILARITY_THRESHOLD || '0.35'),
     bucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
   },
 
