@@ -561,7 +561,9 @@ const findRagMemories = async (userId: string, queryVector: number[], limit = 3)
     const snapshot = await firestore
       .collection(COLLECTIONS.RAG_MEMORIES)
       .where('userId', '==', userId)
-      .findNearest('embedding', FieldValue.vector(queryVector), {
+      .findNearest({
+        vectorField: 'embedding',
+        queryVector: FieldValue.vector(queryVector),
         limit,
         distanceMeasure: 'COSINE',
       })
@@ -684,11 +686,13 @@ const findImageByVector = async (
   try {
     const snapshot = await firestore
       .collection(COLLECTIONS.IMAGES)
-      .findNearest('embedding', FieldValue.vector(queryVector), {
+      .findNearest({
+        vectorField: 'embedding',
+        queryVector: FieldValue.vector(queryVector),
         limit: 10,
         distanceMeasure: 'COSINE',
         distanceResultField: 'vectorDistance',
-      } as unknown as { limit: number; distanceMeasure: 'COSINE'; distanceResultField?: string })
+      })
       .get();
 
     if (snapshot.empty) return null;

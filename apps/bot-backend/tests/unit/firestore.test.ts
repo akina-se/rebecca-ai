@@ -513,7 +513,7 @@ describe('Firestore Service Unit Tests', () => {
             id: 'img_low',
             data: () => ({
               filename: 'low.png',
-              vectorDistance: 0.4, // similarity = 0.6 < 0.75
+              vectorDistance: 0.7, // similarity = 0.3 < 0.35
               lastUsedAt: null,
             }),
           },
