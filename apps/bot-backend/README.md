@@ -23,7 +23,7 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 ### 3. Proactive News Deduplication & Autonomous Soliloquy Mode
 - **Vector-based Deduplication**: Before posting news headlines from RSS feeds, candidate headlines are vectorized and compared via cosine similarity against news posted within the lookback window (`NEWS_DEDUP_LOOKBACK_DAYS`, default 30 days). Headlines exceeding `NEWS_DEDUP_SIMILARITY_THRESHOLD` (default 0.82) are deterministically excluded.
 - **Autonomous Soliloquy Fallback & Scheduled Posts**: If zero fresh news headlines remain after deduplication, or when invoked directly via `/batch/soliloquy-post` (or scheduled via Cloud Scheduler), Rebecca generates spontaneous daily thoughts and Master-affirming messages based on her episodic timeline memory (`timelineSummary`), self-evolution traits (`extendedPrompt`), and `APP_TIMEZONE` time-of-day greeting context.
-- **Unified Timeline Publishing**: Both news and soliloquy posts share a common pipeline (`timelinePublisher.ts`) that infers emotional context, matches asset images via vector search, uploads media, tweets, and records metadata in `timeline_history`.
+- **Unified Post Publishing**: All outgoing X posts (news, soliloquy, random engagement, and reply) share a common delivery engine (`postPublisher.ts`) that infers emotional context using optional injected background context, matches asset images via vector search, uploads media, and dispatches tweets or replies. Persistence remains cleanly decoupled within each domain use case.
 
 ### 4. Proactive Image Attachment & Vision
 - Automatically analyzes uploaded graphics using `gemini-3.1-flash-lite` (Vision mode) and generates alt-text metadata.
