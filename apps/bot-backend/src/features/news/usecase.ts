@@ -141,7 +141,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       // Identify which headline was referenced (for persistence in timeline_history)
       const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline)) || candidateHeadlines[0];
 
-      let chosenEmbedding = matchedHeadline?.embedding;
+      let chosenEmbedding = matchedHeadline.embedding;
       if (!chosenEmbedding || chosenEmbedding.length === 0) {
         try {
           chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedHeadline.headline);
@@ -152,7 +152,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
       const publishResult: PublishPostResult = await publishPost(this.deps, {
         text: postText,
-        context: `ニュース見出し: ${matchedHeadline?.headline || '最新ニュース'}\nタイムライン状況: ${timelineSummary}`,
+        context: `ニュース見出し: ${matchedHeadline.headline}\nタイムライン状況: ${timelineSummary}`,
       });
 
       await this.deps.firestore.saveTimelinePost({
@@ -162,7 +162,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         mediaUrls: publishResult.mediaUrls,
         assetId: publishResult.assetId,
         postType: 'news',
-        newsTitle: matchedHeadline?.headline,
+        newsTitle: matchedHeadline.headline,
         newsEmbedding: chosenEmbedding && chosenEmbedding.length > 0 ? chosenEmbedding : undefined,
       });
 
