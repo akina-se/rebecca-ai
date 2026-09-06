@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/akina-se/rebecca-ai/compare/v1.12.0...v1.13.0) (2026-09-06)
+
+
+### Features
+
+* **dashboard:** unify KPI overview calculation and extract reusable card component ([#168](https://github.com/akina-se/rebecca-ai/issues/168)) ([492a733](https://github.com/akina-se/rebecca-ai/commit/492a733d3b45282b82fc1244e8eb8274c2452e9d))
+
 ## [1.12.0](https://github.com/akina-se/rebecca-ai/compare/v1.11.0...v1.12.0) (2026-09-06)
 
 
