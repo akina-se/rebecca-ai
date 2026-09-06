@@ -49,18 +49,16 @@ export interface IFirestoreService {
   saveExtendedPrompt(promptText: string): Promise<void>;
   getTimelineSummary(): Promise<string>;
   saveTimelineSummary(summaryText: string): Promise<void>;
-  saveTimelinePost(
-    text: string,
-    options?: {
-      thought?: string;
-      mediaUrls?: string[];
-      assetId?: string;
-      tweetId?: string;
-      postType?: 'news' | 'soliloquy' | 'random_engagement';
-      newsTitle?: string;
-      newsEmbedding?: number[];
-    },
-  ): Promise<void>;
+  saveTimelinePost(params: {
+    text: string;
+    thought?: string;
+    mediaUrls?: string[];
+    assetId?: string;
+    tweetId?: string;
+    postType?: 'news' | 'soliloquy' | 'random_engagement';
+    newsTitle?: string;
+    newsEmbedding?: number[];
+  }): Promise<void>;
   getRecentTimelinePosts(limit?: number): Promise<string[]>;
   getRecentNewsEmbeddings(days?: number): Promise<Array<{ title?: string; embedding: number[] }>>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
@@ -122,7 +120,7 @@ export interface IGeminiService {
  * managing lists, and retrieving user profiles.
  */
 export interface IXApiService {
-  replyToMention(tweetId: string, text: string, mediaIds?: string[]): Promise<XApiCreateResponse>;
+  replyToMention(tweetId: string, text: string, options?: { mediaIds?: string[] }): Promise<XApiCreateResponse>;
   getTweetDetails(tweetId: string): Promise<XApiTweetDetailsResponse>;
   tweet(text: string, options?: { mediaIds?: string[]; quote_tweet_id?: string }): Promise<XApiCreateResponse>;
   uploadMedia(buffer: Buffer, mimeType: string): Promise<string | null>;

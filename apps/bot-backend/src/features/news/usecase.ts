@@ -1,7 +1,7 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt, cosineSimilarity } from '@rebecca/persona';
 import config from '../../config';
-import { publishTimelinePost, PublishTimelinePostResult } from '../../core/timelinePublisher';
+import { publishPost, PublishPostResult } from '../../core/postPublisher';
 import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
@@ -141,7 +141,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       // Identify which headline was referenced (for persistence in timeline_history)
       const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline)) || candidateHeadlines[0];
 
-      let chosenEmbedding = matchedHeadline?.embedding;
+      let chosenEmbedding = matchedHeadline.embedding;
       if (!chosenEmbedding || chosenEmbedding.length === 0) {
         try {
           chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedHeadline.headline);
@@ -150,17 +150,25 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         }
       }
 
-      const publishResult: PublishTimelinePostResult = await publishTimelinePost(this.deps, {
-        postText,
+      const publishResult: PublishPostResult = await publishPost(this.deps, {
+        text: postText,
+        context: `ニュース見出し: ${matchedHeadline.headline}\nタイムライン状況: ${timelineSummary}`,
+      });
+
+      await this.deps.firestore.saveTimelinePost({
+        text: postText,
         thought,
+        tweetId: publishResult.tweetId,
+        mediaUrls: publishResult.mediaUrls,
+        assetId: publishResult.assetId,
         postType: 'news',
-        newsTitle: matchedHeadline?.headline,
+        newsTitle: matchedHeadline.headline,
         newsEmbedding: chosenEmbedding && chosenEmbedding.length > 0 ? chosenEmbedding : undefined,
       });
 
       return {
         status: 'success',
-        post: publishResult.post,
+        post: publishResult.text,
         attachedMedia: publishResult.attachedMedia,
       };
     } catch (e) {
