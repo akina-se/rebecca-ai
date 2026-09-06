@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/akina-se/rebecca-ai/compare/v1.11.0...v1.12.0) (2026-09-06)
+
+
+### Features
+
+* **bot-backend:** unify post publishing via PostPublisher and decouple persistence ([#165](https://github.com/akina-se/rebecca-ai/issues/165)) ([39c0bdb](https://github.com/akina-se/rebecca-ai/commit/39c0bdbb2e56c4d53941a5908105f65339a63f0e))
+
 ## [1.11.0](https://github.com/akina-se/rebecca-ai/compare/v1.10.0...v1.11.0) (2026-09-05)
 
 
