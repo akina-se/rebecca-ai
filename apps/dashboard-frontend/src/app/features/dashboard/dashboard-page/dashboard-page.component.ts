@@ -14,6 +14,7 @@ import { ActionHelperService } from '../../../shared/services/action-helper.serv
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { RankingModalComponent } from '../../../shared/components/organisms/ranking-modal/ranking-modal.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
+import { KpiCardComponent } from '../../../shared/components/molecules/kpi-card/kpi-card.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -21,7 +22,7 @@ import { TranslationService } from '../../../core/services/translation.service';
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, TzDatePipe, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, KpiCardComponent, TzDatePipe, TranslatePipe],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })
