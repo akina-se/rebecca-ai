@@ -28,11 +28,6 @@ const jobs = [
         url: `${serviceUrl}/batch/stealth-onboarding`
     },
     {
-        name: 'rebecca-random-engagement',
-        schedule: '0 10,14,18,22 * * *', // 10:00, 14:00, 18:00, 22:00 JST (4 times/day)
-        url: `${serviceUrl}/batch/random-engagement`
-    },
-    {
         name: 'rebecca-dreaming-batch',
         schedule: '0 4 * * *', // Daily at 4:00 AM JST
         url: `${serviceUrl}/batch/dreaming`
@@ -43,13 +38,23 @@ const jobs = [
         url: `${serviceUrl}/batch/evolution`
     },
     {
+        name: 'rebecca-anniversary-batch',
+        schedule: '0 7 * * *', // Daily at 7:00 AM JST (morning anniversary of the day post)
+        url: `${serviceUrl}/batch/anniversary-post`
+    },
+    {
         name: 'rebecca-news-batch',
-        schedule: '0 8,12,18,21 * * *', // 8:00, 12:00, 18:00, 21:00 JST (4 times/day)
+        schedule: '0 12 * * *', // Daily at 12:00 JST (lunchtime news post)
         url: `${serviceUrl}/batch/news-post`
     },
     {
+        name: 'rebecca-random-engagement',
+        schedule: '0 15,18 * * *', // 15:00, 18:00 JST (2 times/day afternoon break & evening commute)
+        url: `${serviceUrl}/batch/random-engagement`
+    },
+    {
         name: 'rebecca-soliloquy-batch',
-        schedule: '0 19 * * *', // Daily at 19:00 JST (evening thought & Master-affirming soliloquy)
+        schedule: '0 22 * * *', // Daily at 22:00 JST (night reflection & Master-affirming soliloquy)
         url: `${serviceUrl}/batch/soliloquy-post`
     },
     {

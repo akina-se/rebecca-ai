@@ -1,19 +1,16 @@
 import { ProactiveNewsUseCase } from '../../src/features/news/usecase';
+import { INewsProvider } from '../../src/features/news/types';
 import { createMockDeps } from './core/testUtils';
 
 describe('ProactiveNewsUseCase Unit Tests', () => {
     let deps: any;
-    let mockSoliloquy: { execute: jest.Mock };
+    let mockNewsProvider: jest.Mocked<INewsProvider>;
 
     beforeEach(() => {
         jest.clearAllMocks();
         deps = createMockDeps();
-        mockSoliloquy = {
-            execute: jest.fn().mockResolvedValue({
-                status: 'success',
-                post: '独り言テスト #全肯定AIレベッカ',
-                attachedMedia: false,
-            }),
+        mockNewsProvider = {
+            getHeadlines: jest.fn(),
         };
         deps.firestore.getRecentNewsEmbeddings.mockResolvedValue([]);
         deps.firestore.getTimelineSummary.mockResolvedValue('Recent timeline events');
@@ -22,33 +19,32 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         deps.xApi.tweet.mockResolvedValue({ data: { id: 'tweet_news_123' } });
     });
 
-    it('should fall back to soliloquy if no headlines are fetched', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue([]);
+    it('should return skipped status if no headlines are fetched', async () => {
+        mockNewsProvider.getHeadlines.mockResolvedValue([]);
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
-        expect(mockSoliloquy.execute).toHaveBeenCalled();
-        expect(result.status).toBe('success');
-        expect(result.post).toContain('独り言テスト');
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        expect(result.status).toBe('skipped');
+        expect(result.reason).toBe('no_headlines');
         expect(deps.gemini.generateStructuredNewsPost).not.toHaveBeenCalled();
     });
 
-    it('should fall back to soliloquy if all headlines are duplicates of recent news', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['ITパスポート シラバス案公開']);
+    it('should return skipped status if all headlines are duplicates of recent news', async () => {
+        mockNewsProvider.getHeadlines.mockResolvedValue(['ITパスポート シラバス案公開']);
         // Past news has same embedding [1, 0], cosine similarity is 1.0 >= 0.82
         deps.firestore.getRecentNewsEmbeddings.mockResolvedValue([
             { title: 'ITパスポート 新シラバス', embedding: [1, 0] },
         ]);
         deps.gemini.generateEmbedding.mockResolvedValue([1, 0]);
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
-        expect(mockSoliloquy.execute).toHaveBeenCalled();
-        expect(result.status).toBe('success');
+        expect(result.status).toBe('skipped');
+        expect(result.reason).toBe('all_duplicates');
         expect(deps.gemini.generateStructuredNewsPost).not.toHaveBeenCalled();
     });
 
     it('should filter out duplicate headlines and post fresh headline', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue([
+        mockNewsProvider.getHeadlines.mockResolvedValue([
             'ITパスポート 重複ニュース',
             '完全新作ゲーム発表！',
         ]);
@@ -62,15 +58,14 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
 
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
             thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
-            reply: '新作ゲーム楽しみね！',
+            reply: '完全新作ゲーム発表！楽しみね！',
         });
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
         expect(deps.firestore.getRecentNewsEmbeddings).toHaveBeenCalledWith(30);
-        expect(mockSoliloquy.execute).not.toHaveBeenCalled();
         expect(result.status).toBe('success');
-        expect(result.post).toBe('新作ゲーム楽しみね！\n#全肯定AIレベッカ');
+        expect(result.post).toBe('完全新作ゲーム発表！楽しみね！\n#全肯定AIレベッカ');
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('完全新作ゲーム発表！'),
@@ -85,7 +80,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         );
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
             expect.objectContaining({
-                text: expect.stringContaining('新作ゲーム楽しみね！'),
+                text: expect.stringContaining('完全新作ゲーム発表！楽しみね！'),
                 postType: 'news',
                 thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
                 newsTitle: '完全新作ゲーム発表！',
@@ -93,21 +88,21 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         );
     });
 
-    it('should fall back to soliloquy if generation fails', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+    it('should return skipped status if generation fails', async () => {
+        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: '', reply: '' });
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
-        expect(mockSoliloquy.execute).toHaveBeenCalled();
-        expect(result.status).toBe('success');
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        expect(result.status).toBe('skipped');
+        expect(result.reason).toBe('generation_failed');
     });
 
     it('should append hashtag if total length <= 140', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
         const shortPost = 'A short news post.';
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'short thought', reply: shortPost });
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
         expect(result.status).toBe('success');
         expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
@@ -115,11 +110,11 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should omit hashtag if total length > 140', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
         const longPost = 'A'.repeat(135);
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'long thought', reply: longPost });
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
         expect(result.status).toBe('success');
         expect(result.post).toBe(longPost);
@@ -127,7 +122,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should attach media when image inference succeeds', async () => {
-        deps.newsFetcher.fetchYahooNewsHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
         const text = 'A post about coffee';
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'coffee thought', reply: text });
         deps.firestore.getTimelineSummary.mockResolvedValue('summary');
@@ -141,7 +136,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         deps.storage.downloadImage.mockResolvedValue(Buffer.from('image'));
         deps.xApi.uploadMedia.mockResolvedValue('media_123');
 
-        const result = await new ProactiveNewsUseCase(deps, mockSoliloquy).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
         expect(result.status).toBe('success');
         expect(result.attachedMedia).toBe(true);

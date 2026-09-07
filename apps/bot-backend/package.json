@@ -20,6 +20,7 @@
     "test:eval": "jest tests/eval",
     "batch:evolution": "npx ts-node scripts/run-evolution.ts",
     "batch:news": "npx ts-node scripts/run-news.ts",
+    "batch:anniversary": "npx ts-node scripts/run-anniversary.ts",
     "batch:onboard": "npx ts-node scripts/run-onboarding.ts",
     "batch:engage": "npx ts-node scripts/run-engagement.ts",
     "simulate": "npx ts-node scripts/simulate.ts",
