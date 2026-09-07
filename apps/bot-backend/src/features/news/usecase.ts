@@ -4,56 +4,54 @@ import config from '../../config';
 import { publishPost, PublishPostResult } from '../../core/postPublisher';
 import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
+import { INewsProvider, NewsResult } from './types';
+import { YahooNewsProvider } from './providers/yahoo';
 
-/**
- * Interface representing the result of a proactive news execution.
- */
-export interface NewsResult {
-  /** The execution status of the news job. */
-  status: 'skipped' | 'success' | 'failed';
-  /** A descriptive reason if the status is skipped or failed. */
-  reason?: string;
-  /** The content of the tweet that was posted, if successful. */
-  post?: string;
-  /** Indicates whether media (e.g., an image) was attached to the post. */
-  attachedMedia?: boolean;
-}
+export * from './types';
 
 /**
  * Executes a batch job to proactively post a news-related tweet.
- * It fetches headlines, filters out recent duplicates via vector cosine similarity,
- * generates a post, and delegates publishing. If no fresh headlines are available,
- * it seamlessly falls back to the autonomous soliloquy mode.
+ *
+ * It retrieves candidate headlines via an injected INewsProvider (defaults to YahooNewsProvider),
+ * filters out recent duplicates using deterministic vector cosine similarity against a lookback
+ * window, generates a persona-grounded post, and publishes it to X. If no fresh headlines are
+ * available, it cleanly falls back to SoliloquyUseCase without failing the batch job.
  */
 export class ProactiveNewsUseCase {
+  private newsProvider: INewsProvider;
   private soliloquy: { execute: () => Promise<SoliloquyResult> };
 
   /**
    * Initializes the ProactiveNewsUseCase.
+   *
    * @param deps Application dependencies.
+   * @param newsProvider Optional custom news provider implementation (defaults to YahooNewsProvider).
    * @param soliloquyUseCase Optional injected soliloquy use case for testing.
    */
   constructor(
     private deps: AppDependencies,
+    newsProvider?: INewsProvider,
     soliloquyUseCase?: { execute: () => Promise<SoliloquyResult> },
   ) {
+    this.newsProvider = newsProvider || new YahooNewsProvider();
     this.soliloquy = soliloquyUseCase || new SoliloquyUseCase(deps);
   }
 
   /**
    * Executes the proactive news post process.
+   *
    * @returns A promise resolving to a NewsResult object.
    */
   async execute(): Promise<NewsResult> {
     console.log('Starting Proactive News Post Batch...');
     try {
-      const rawHeadlines = await this.deps.newsFetcher.fetchYahooNewsHeadlines();
+      const rawHeadlines = await this.newsProvider.getHeadlines();
       if (!rawHeadlines || rawHeadlines.length === 0) {
-        console.log('No headlines fetched. Falling back to soliloquy post...');
+        console.log('[ProactiveNewsUseCase] No headlines fetched. Falling back to soliloquy post...');
         return await this.soliloquy.execute();
       }
 
-      console.log('Fetched headlines:\n', rawHeadlines.join('\n'));
+      console.log('[ProactiveNewsUseCase] Fetched headlines:\n', rawHeadlines.join('\n'));
 
       // Retrieve recent news embeddings for deterministic deduplication (lookback window from config)
       const lookbackDays = config.news.dedupLookbackDays;
@@ -74,7 +72,7 @@ export class ProactiveNewsUseCase {
                 const sim = cosineSimilarity(embedding, past.embedding);
                 if (sim >= similarityThreshold) {
                   console.log(
-                    `Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${headline}" matches past: "${past.title}"`,
+                    `[ProactiveNewsUseCase] Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${headline}" matches past: "${past.title}"`,
                   );
                   isDuplicate = true;
                   break;
@@ -82,7 +80,7 @@ export class ProactiveNewsUseCase {
               }
             }
           } catch (e) {
-            console.warn('Failed to compute embedding for headline deduplication:', e);
+            console.warn('[ProactiveNewsUseCase] Failed to compute embedding for headline deduplication:', e);
           }
         }
 
@@ -92,12 +90,12 @@ export class ProactiveNewsUseCase {
       }
 
       if (candidateHeadlines.length === 0) {
-        console.log('All candidate headlines were duplicates of recent posts. Falling back to soliloquy post...');
+        console.log('[ProactiveNewsUseCase] All candidate headlines were duplicates of recent posts. Falling back to soliloquy post...');
         return await this.soliloquy.execute();
       }
 
       const freshHeadlineTexts = candidateHeadlines.map((c) => c.headline);
-      console.log('Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
+      console.log('[ProactiveNewsUseCase] Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
 
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
@@ -127,7 +125,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       const thought = structuredPost.thought;
 
       if (!postText) {
-        console.log('Failed to generate news post. Falling back to soliloquy...');
+        console.log('[ProactiveNewsUseCase] Failed to generate news post. Falling back to soliloquy...');
         return await this.soliloquy.execute();
       }
 
@@ -136,7 +134,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         postText += hashtag;
       }
 
-      console.log('Generated Post:', postText);
+      console.log('[ProactiveNewsUseCase] Generated Post:', postText);
 
       // Identify which headline was referenced (for persistence in timeline_history)
       const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline)) || candidateHeadlines[0];
@@ -146,7 +144,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         try {
           chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedHeadline.headline);
         } catch (e) {
-          console.warn('Failed to generate embedding for selected headline:', e);
+          console.warn('[ProactiveNewsUseCase] Failed to generate embedding for selected headline:', e);
         }
       }
 
@@ -172,7 +170,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         attachedMedia: publishResult.attachedMedia,
       };
     } catch (e) {
-      console.error('Error in ProactiveNewsUseCase:', e);
+      console.error('[ProactiveNewsUseCase] Error in ProactiveNewsUseCase:', e);
       throw e;
     }
   }
