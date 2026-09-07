@@ -55,9 +55,10 @@ export interface IFirestoreService {
     mediaUrls?: string[];
     assetId?: string;
     tweetId?: string;
-    postType?: 'news' | 'soliloquy' | 'random_engagement';
+    postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
     newsTitle?: string;
     newsEmbedding?: number[];
+    anniversaryTitle?: string;
   }): Promise<void>;
   getRecentTimelinePosts(limit?: number): Promise<string[]>;
   getRecentNewsEmbeddings(days?: number): Promise<Array<{ title?: string; embedding: number[] }>>;
