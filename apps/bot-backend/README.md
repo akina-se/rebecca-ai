@@ -68,6 +68,7 @@ The following helper scripts are available to developers for manual maintenance 
 | `npm run simulate` | Simulates X timeline mentions and prints Rebecca's mock replies |
 | `npm run batch:evolution` | Triggers the daily "Dreaming" memory compression batch |
 | `npm run batch:news` | Triggers timeline news lookup & posting batch |
+| `npm run batch:anniversary` | Triggers timeline memorial day / anniversary post batch |
 | `npm run batch:onboard` | Triggers greeting messages to newly configured users |
 | `npm run batch:engage` | Runs proactive engagement targeting list members |
 | `npm run tool:upload-images` | Bulk uploads local images to GCS and triggers captioning |
