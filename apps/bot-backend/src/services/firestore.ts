@@ -412,9 +412,10 @@ export interface SaveTimelinePostParams {
   mediaUrls?: string[];
   assetId?: string;
   tweetId?: string;
-  postType?: 'news' | 'soliloquy' | 'random_engagement';
+  postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
   newsTitle?: string;
   newsEmbedding?: number[];
+  anniversaryTitle?: string;
 }
 
 /**
@@ -441,6 +442,7 @@ const saveTimelinePost = async (params: SaveTimelinePostParams): Promise<void> =
     ...(params.postType ? { postType: params.postType } : {}),
     ...(params.newsTitle ? { newsTitle: params.newsTitle } : {}),
     ...(params.newsEmbedding ? { newsEmbedding: params.newsEmbedding } : {}),
+    ...(params.anniversaryTitle ? { anniversaryTitle: params.anniversaryTitle } : {}),
     impressions: 0,
     likes: 0,
     reposts: 0,

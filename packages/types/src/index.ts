@@ -128,9 +128,10 @@ export interface TimelinePost {
   authorName?: string;
   authorHandle?: string;
   authorAvatarUrl?: string;
-  postType?: 'news' | 'soliloquy' | 'random_engagement';
+  postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
   newsTitle?: string;
   newsEmbedding?: number[];
+  anniversaryTitle?: string;
 }
 
 /** Rate-limit tracking document for a user within a time window. */

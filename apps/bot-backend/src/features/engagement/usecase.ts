@@ -1,7 +1,7 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
 import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
-import { publishPost } from '../../core/postPublisher';
+import { executePostPipeline } from '../../core/postPipeline';
 import { downloadImage } from '../../utils/image';
 
 /**
@@ -142,19 +142,11 @@ ${description}
 
       console.log(`Generated Engagement Text:\n${finalText}`);
 
-      const publishResult = await publishPost(this.deps, {
-        text: finalText,
-        attachImage: true,
-        context: `相手ユーザー: @${username}\nプロフィール: ${description}\n投稿コンテキスト: ${tweetContext}`,
-      });
-
-      await this.deps.firestore.saveTimelinePost({
+      await executePostPipeline(this.deps, {
+        postType: 'random_engagement',
         text: finalText,
         thought,
-        tweetId: publishResult.tweetId,
-        mediaUrls: publishResult.mediaUrls,
-        assetId: publishResult.assetId,
-        postType: 'random_engagement',
+        imageContext: `相手ユーザー: @${username}\nプロフィール: ${description}\n投稿コンテキスト: ${tweetContext}`,
       });
 
       await this.deps.firestore.updateLastListInteraction(targetUser.id);

@@ -234,6 +234,7 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
       postType: data['postType'],
       newsTitle: data['newsTitle'],
       newsEmbedding: data['newsEmbedding'],
+      anniversaryTitle: data['anniversaryTitle'],
     };
   },
 };

@@ -1,7 +1,7 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
 import config from '../../config';
-import { publishPost, PublishPostResult } from '../../core/postPublisher';
+import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
 /**
@@ -101,24 +101,17 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
       console.log('Generated Soliloquy Post:', postText);
 
-      const publishResult: PublishPostResult = await publishPost(this.deps, {
-        text: postText,
-        context: timelineSummary,
-      });
-
-      await this.deps.firestore.saveTimelinePost({
+      const pipelineResult = await executePostPipeline(this.deps, {
+        postType: 'soliloquy',
         text: postText,
         thought,
-        tweetId: publishResult.tweetId,
-        mediaUrls: publishResult.mediaUrls,
-        assetId: publishResult.assetId,
-        postType: 'soliloquy',
+        imageContext: timelineSummary,
       });
 
       return {
         status: 'success',
-        post: publishResult.text,
-        attachedMedia: publishResult.attachedMedia,
+        post: pipelineResult.post,
+        attachedMedia: pipelineResult.attachedMedia,
       };
     } catch (e) {
       console.error('Error in SoliloquyUseCase:', e);
