@@ -10,6 +10,7 @@ import { createStealthOnboardingModule } from '../features/onboarding';
 import { createRandomEngagementModule } from '../features/engagement';
 import { createSoliloquyModule } from '../features/soliloquy';
 import { createAssetEmbeddingsModule } from '../features/assets';
+import { createProactiveAnniversaryModule } from '../features/anniversary';
 
 export const createBatchRoutes = (deps: AppDependencies): Router => {
     const router = Router();
@@ -22,6 +23,7 @@ export const createBatchRoutes = (deps: AppDependencies): Router => {
     router.use('/evolution', createGlobalEvolutionModule(deps));
     router.use('/news-post', createProactiveNewsModule(deps));
     router.use('/soliloquy-post', createSoliloquyModule(deps));
+    router.use('/anniversary-post', createProactiveAnniversaryModule(deps));
     router.use('/stealth-onboarding', createStealthOnboardingModule(deps));
     router.use('/random-engagement', createRandomEngagementModule(deps));
     router.use('/asset-embeddings', createAssetEmbeddingsModule(deps));

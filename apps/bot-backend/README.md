@@ -26,7 +26,13 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 - **Autonomous Soliloquy Fallback & Scheduled Posts**: If zero fresh news headlines remain after deduplication, or when invoked directly via `/batch/soliloquy-post` (or scheduled via Cloud Scheduler), Rebecca generates spontaneous daily thoughts and Master-affirming messages based on her episodic timeline memory (`timelineSummary`), self-evolution traits (`extendedPrompt`), and `APP_TIMEZONE` time-of-day greeting context.
 - **Unified Post Publishing**: All outgoing X posts (news, soliloquy, random engagement, and reply) share a common delivery engine (`postPublisher.ts`) that infers emotional context using optional injected background context, matches asset images via vector search, uploads media, and dispatches tweets or replies. Persistence remains cleanly decoupled within each domain use case.
 
-### 4. Proactive Image Attachment & Vision
+### 4. Proactive Anniversary Post Engine ("◯◯の日")
+- **DIP-Compliant Anniversary Provider**: Decouples anniversary sourcing through `IAnniversaryProvider`. The primary implementation `WikipediaAnniversaryProvider` queries Japanese Wikipedia's day pages (`M月D日`) for verified "記念日・年中行事" sections with a strict timeout and wikitext sanitization.
+- **Persona Contextualization**: Uses Gemini to select the most culturally resonant, positive, and lifestyle-oriented memorial day candidate, generating an open timeline post in Rebecca's signature Gyaru persona while preventing hallucinations.
+- **Fail-Safe Soliloquy Fallback**: If Wikipedia times out, errors, or yields zero matching items, the execution immediately and cleanly falls back to `SoliloquyUseCase` with zero unhandled exceptions.
+- **Dedicated Batch Endpoint**: Mounted at `/batch/anniversary-post`, authenticated via `batchAuth`.
+
+### 5. Proactive Image Attachment & Vision
 - Automatically analyzes uploaded graphics using `gemini-3.1-flash-lite` (Vision mode) and generates alt-text metadata.
 - Alt-text captions are vectorized using `text-embedding-004` and stored in Firestore.
 - Proactive timeline updates query these embeddings using Firestore Vector Search (KNN) to attach contextually relevant images to auto-generated posts.
