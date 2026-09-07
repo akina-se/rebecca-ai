@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ProactiveNewsController } from './controller';
 import { ProactiveNewsUseCase } from './usecase';
+import { SoliloquyUseCase } from '../soliloquy';
 import { AppDependencies } from '../../types';
 import { createProactiveNewsRouter } from './routes';
 
@@ -17,6 +18,7 @@ export * from './providers/yahoo';
  */
 export const createProactiveNewsModule = (deps: AppDependencies): Router => {
     const useCase = new ProactiveNewsUseCase(deps);
-    const controller = new ProactiveNewsController(useCase);
+    const soliloquyUseCase = new SoliloquyUseCase(deps);
+    const controller = new ProactiveNewsController(useCase, soliloquyUseCase);
     return createProactiveNewsRouter(controller);
 };

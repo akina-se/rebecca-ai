@@ -1,40 +1,38 @@
 import { AppDependencies } from '../../types';
-import { getBasePrompt, cosineSimilarity } from '@rebecca/persona';
+import { getBasePrompt } from '@rebecca/persona';
 import config from '../../config';
-import { publishPost, PublishPostResult } from '../../core/postPublisher';
-import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
+import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { INewsProvider, NewsResult } from './types';
 import { YahooNewsProvider } from './providers/yahoo';
+import { filterFreshHeadlines } from './deduplicator';
 
 export * from './types';
+export * from './deduplicator';
 
 /**
  * Executes a batch job to proactively post a news-related tweet.
  *
- * It retrieves candidate headlines via an injected INewsProvider (defaults to YahooNewsProvider),
- * filters out recent duplicates using deterministic vector cosine similarity against a lookback
- * window, generates a persona-grounded post, and publishes it to X. If no fresh headlines are
- * available, it cleanly falls back to SoliloquyUseCase without failing the batch job.
+ * Retrieves headlines via an injected INewsProvider (defaults to YahooNewsProvider),
+ * filters out recent duplicates using vector cosine similarity, generates a persona-grounded
+ * post, and delivers it via the unified PostPipeline.
+ *
+ * If no fresh headlines are available, it returns a skipped status without coupling to fallback logic.
  */
 export class ProactiveNewsUseCase {
   private newsProvider: INewsProvider;
-  private soliloquy: { execute: () => Promise<SoliloquyResult> };
 
   /**
    * Initializes the ProactiveNewsUseCase.
    *
    * @param deps Application dependencies.
    * @param newsProvider Optional custom news provider implementation (defaults to YahooNewsProvider).
-   * @param soliloquyUseCase Optional injected soliloquy use case for testing.
    */
   constructor(
     private deps: AppDependencies,
     newsProvider?: INewsProvider,
-    soliloquyUseCase?: { execute: () => Promise<SoliloquyResult> },
   ) {
     this.newsProvider = newsProvider || new YahooNewsProvider();
-    this.soliloquy = soliloquyUseCase || new SoliloquyUseCase(deps);
   }
 
   /**
@@ -47,51 +45,22 @@ export class ProactiveNewsUseCase {
     try {
       const rawHeadlines = await this.newsProvider.getHeadlines();
       if (!rawHeadlines || rawHeadlines.length === 0) {
-        console.log('[ProactiveNewsUseCase] No headlines fetched. Falling back to soliloquy post...');
-        return await this.soliloquy.execute();
+        console.log('[ProactiveNewsUseCase] No headlines fetched.');
+        return { status: 'skipped', reason: 'no_headlines' };
       }
 
       console.log('[ProactiveNewsUseCase] Fetched headlines:\n', rawHeadlines.join('\n'));
 
-      // Retrieve recent news embeddings for deterministic deduplication (lookback window from config)
-      const lookbackDays = config.news.dedupLookbackDays;
-      const similarityThreshold = config.news.dedupSimilarityThreshold;
-      const recentNews = await this.deps.firestore.getRecentNewsEmbeddings(lookbackDays);
-
-      const candidateHeadlines: Array<{ headline: string; embedding: number[] }> = [];
-
-      for (const headline of rawHeadlines) {
-        let isDuplicate = false;
-        let embedding: number[] = [];
-
-        if (recentNews.length > 0) {
-          try {
-            embedding = await this.deps.gemini.generateEmbedding(headline);
-            if (embedding.length > 0) {
-              for (const past of recentNews) {
-                const sim = cosineSimilarity(embedding, past.embedding);
-                if (sim >= similarityThreshold) {
-                  console.log(
-                    `[ProactiveNewsUseCase] Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${headline}" matches past: "${past.title}"`,
-                  );
-                  isDuplicate = true;
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            console.warn('[ProactiveNewsUseCase] Failed to compute embedding for headline deduplication:', e);
-          }
-        }
-
-        if (!isDuplicate) {
-          candidateHeadlines.push({ headline, embedding });
-        }
-      }
+      const candidateHeadlines = await filterFreshHeadlines(
+        this.deps,
+        rawHeadlines,
+        config.news.dedupLookbackDays,
+        config.news.dedupSimilarityThreshold,
+      );
 
       if (candidateHeadlines.length === 0) {
-        console.log('[ProactiveNewsUseCase] All candidate headlines were duplicates of recent posts. Falling back to soliloquy post...');
-        return await this.soliloquy.execute();
+        console.log('[ProactiveNewsUseCase] All candidate headlines were duplicates of recent posts.');
+        return { status: 'skipped', reason: 'all_duplicates' };
       }
 
       const freshHeadlineTexts = candidateHeadlines.map((c) => c.headline);
@@ -125,8 +94,8 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       const thought = structuredPost.thought;
 
       if (!postText) {
-        console.log('[ProactiveNewsUseCase] Failed to generate news post. Falling back to soliloquy...');
-        return await this.soliloquy.execute();
+        console.log('[ProactiveNewsUseCase] Failed to generate news post.');
+        return { status: 'skipped', reason: 'generation_failed' };
       }
 
       const hashtag = '\n#全肯定AIレベッカ';
@@ -136,7 +105,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
       console.log('[ProactiveNewsUseCase] Generated Post:', postText);
 
-      // Identify which headline was referenced (for persistence in timeline_history)
+      // Identify which headline was referenced
       const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline));
       const newsTitle = matchedHeadline ? matchedHeadline.headline : undefined;
 
@@ -152,28 +121,23 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         }
       }
 
-      const publishResult: PublishPostResult = await publishPost(this.deps, {
-        text: postText,
-        context: matchedHeadline
-          ? `ニュース見出し: ${matchedHeadline.headline}\nタイムライン状況: ${timelineSummary}`
-          : `タイムライン状況: ${timelineSummary}`,
-      });
-
-      await this.deps.firestore.saveTimelinePost({
+      const pipelineResult = await executePostPipeline(this.deps, {
+        postType: 'news',
         text: postText,
         thought,
-        tweetId: publishResult.tweetId,
-        mediaUrls: publishResult.mediaUrls,
-        assetId: publishResult.assetId,
-        postType: 'news',
-        ...(newsTitle ? { newsTitle } : {}),
-        ...(chosenEmbedding && chosenEmbedding.length > 0 ? { newsEmbedding: chosenEmbedding } : {}),
+        imageContext: matchedHeadline
+          ? `ニュース見出し: ${matchedHeadline.headline}\nタイムライン状況: ${timelineSummary}`
+          : `タイムライン状況: ${timelineSummary}`,
+        metadata: {
+          newsTitle,
+          newsEmbedding: chosenEmbedding && chosenEmbedding.length > 0 ? chosenEmbedding : undefined,
+        },
       });
 
       return {
         status: 'success',
-        post: publishResult.text,
-        attachedMedia: publishResult.attachedMedia,
+        post: pipelineResult.post,
+        attachedMedia: pipelineResult.attachedMedia,
       };
     } catch (e) {
       console.error('[ProactiveNewsUseCase] Error in ProactiveNewsUseCase:', e);
