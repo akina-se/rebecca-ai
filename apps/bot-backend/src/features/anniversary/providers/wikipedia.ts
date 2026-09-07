@@ -14,8 +14,13 @@ const WIKIPEDIA_API_TIMEOUT_MS = 4000;
  * @returns Sanitized plain text string.
  */
 export const sanitizeWikiText = (text: string): string => {
-  return text
-    .replace(/<!--[\s\S]*?-->/g, '')
+  let cleaned = text;
+  while (cleaned.includes('<!--')) {
+    const next = cleaned.replace(/<!--[\s\S]*?-->/g, '');
+    if (next === cleaned) break;
+    cleaned = next;
+  }
+  return cleaned
     .replace(/<ref[\s\S]*?<\/ref>/gi, '')
     .replace(/<ref[\s\S]*?\/>/gi, '')
     .replace(/{{(?:JPN|USA|GBR|FRA|GER|ITA|CAN|RUS|CHN|KOR|BRA|AUS|PAK|AND|MLT|MOZ|[A-Z]{3})}}/gi, '')

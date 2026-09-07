@@ -101,11 +101,14 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       console.log('[ProactiveAnniversaryUseCase] Generated Post:', postText);
 
       // Identify which anniversary name was referenced
-      const matchedItem = anniversaries.find((a) => postText.includes(a.name)) || anniversaries[0];
+      const matchedItem = anniversaries.find((a) => postText.includes(a.name));
+      const anniversaryTitle = matchedItem ? matchedItem.name : undefined;
 
       const publishResult: PublishPostResult = await publishPost(this.deps, {
         text: postText,
-        context: `記念日: ${matchedItem.name}\n内容: ${matchedItem.description}\nタイムライン状況: ${timelineSummary}`,
+        context: matchedItem
+          ? `記念日: ${matchedItem.name}\n内容: ${matchedItem.description}\nタイムライン状況: ${timelineSummary}`
+          : `タイムライン状況: ${timelineSummary}`,
       });
 
       await this.deps.firestore.saveTimelinePost({
@@ -115,14 +118,14 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         mediaUrls: publishResult.mediaUrls,
         assetId: publishResult.assetId,
         postType: 'anniversary',
-        anniversaryTitle: matchedItem.name,
+        ...(anniversaryTitle ? { anniversaryTitle } : {}),
       });
 
       return {
         status: 'success',
         post: publishResult.text,
         attachedMedia: publishResult.attachedMedia,
-        anniversaryTitle: matchedItem.name,
+        ...(anniversaryTitle ? { anniversaryTitle } : {}),
       };
     } catch (error) {
       console.error('[ProactiveAnniversaryUseCase] Unexpected error during execution:', error);
