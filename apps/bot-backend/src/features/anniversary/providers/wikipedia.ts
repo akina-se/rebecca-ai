@@ -23,13 +23,15 @@ export const sanitizeWikiText = (text: string): string => {
   return cleaned
     .replace(/<ref[\s\S]*?<\/ref>/gi, '')
     .replace(/<ref[\s\S]*?\/>/gi, '')
-    .replace(/{{(?:JPN|USA|GBR|FRA|GER|ITA|CAN|RUS|CHN|KOR|BRA|AUS|PAK|AND|MLT|MOZ|[A-Z]{3})}}/gi, '')
-    .replace(/{{(?:仮リンク\|)?([^|}]+)(?:\|[^}]+)?}}/g, '$1')
+    .replace(/{{仮リンク\|([^|}]+)(?:\|[^}]+)?}}/g, (match, p1) => {
+      const labelMatch = match.match(/\|label=([^|}]+)/);
+      return labelMatch ? labelMatch[1] : p1;
+    })
     .replace(/{{[^}]+}}/g, '')
     .replace(/\[\[(?:[^|\]]+\|)?([^\]]+)\]\]/g, '$1')
     .replace(/'''?/g, '')
     .replace(/\s+/g, ' ')
-    .replace(/（\s*）|\(\s*\)/g, '')
+    .replace(/（\s*[・、,\s]*\s*）|\(\s*[・、,\s]*\s*\)/g, '')
     .trim();
 };
 
@@ -46,12 +48,12 @@ export const parseAnniversarySection = (sectionText: string): AnniversaryItem[] 
 
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
-    if (trimmed.startsWith('* ') || trimmed.startsWith('*[[')) {
+    if (trimmed.startsWith('*') && !/^\*+:/.test(trimmed)) {
       if (currentItem) {
         items.push(currentItem);
         currentItem = null;
       }
-      const rawContent = trimmed.replace(/^\*\s*/, '');
+      const rawContent = trimmed.replace(/^\*+\s*/, '');
       const cleanName = sanitizeWikiText(rawContent);
       if (cleanName.length > 0) {
         currentItem = {
@@ -59,8 +61,8 @@ export const parseAnniversarySection = (sectionText: string): AnniversaryItem[] 
           description: '',
         };
       }
-    } else if (trimmed.startsWith('*:') && currentItem) {
-      const descContent = trimmed.replace(/^\*:\s*/, '');
+    } else if (/^\*+:/.test(trimmed) && currentItem) {
+      const descContent = trimmed.replace(/^\*+:\s*/, '');
       const cleanDesc = sanitizeWikiText(descContent);
       if (cleanDesc.length > 0) {
         currentItem.description = currentItem.description
@@ -119,8 +121,8 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
         return [];
       }
 
-      // Locate the "記念日・年中行事" section within the wikitext
-      const sectionMatch = fullWikitext.match(/==\s*(?:記念日|年中行事)[^\n]*\n([\s\S]*?)(?=\n==|$)/);
+      // Locate the "記念日・年中行事" section within the wikitext (stops at next level-2 header ==, preserving level-3 === subsections)
+      const sectionMatch = fullWikitext.match(/==\s*(?:記念日|年中行事)[^\n]*\n([\s\S]*?)(?=\n==(?!=)|$)/);
       if (!sectionMatch || !sectionMatch[1]) {
         console.warn(`[WikipediaAnniversaryProvider] No anniversary section found for ${pageTitle}`);
         return [];

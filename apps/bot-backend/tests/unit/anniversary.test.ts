@@ -11,10 +11,16 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
       expect(output).toBe('白露（では2007年） ※日付不定');
     });
 
-    it('should extract label from piped wiki links', () => {
-      const input = '[[コマーシャルソング|CMソング]]の日';
+    it('should extract label from piped wiki links and kari-links', () => {
+      const input = '[[コマーシャルソング|CMソング]]の日と{{仮リンク|記事名|en|元の記事名|label=勝利の日}}';
       const output = sanitizeWikiText(input);
-      expect(output).toBe('CMソングの日');
+      expect(output).toBe('CMソングの日と勝利の日');
+    });
+
+    it('should strip language templates and clean dangling empty parentheses', () => {
+      const input = '戦没者追悼記念日（{{lang-en|Remembrance Day}}）（{{GBR}}・{{CAN}}）';
+      const output = sanitizeWikiText(input);
+      expect(output).toBe('戦没者追悼記念日');
     });
   });
 
@@ -32,6 +38,20 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
       expect(items[0].description).toContain('語呂合せ');
       expect(items[1].name).toBe('CMソングの日');
       expect(items[1].description).toContain('1951年');
+    });
+
+    it('should support nested bullets (**) and multi-colon descriptions (**:) accurately', () => {
+      const wikitext = `
+* 第一次世界大戦休戦記念日
+*: 1918年の停戦記念。
+** [[リメンブランス・デー]]
+**: 戦没者を追悼する日。
+`;
+      const items = parseAnniversarySection(wikitext);
+      expect(items).toHaveLength(2);
+      expect(items[0].name).toBe('第一次世界大戦休戦記念日');
+      expect(items[1].name).toBe('リメンブランス・デー');
+      expect(items[1].description).toBe('戦没者を追悼する日。');
     });
 
     it('should handle empty section text safely', () => {
@@ -71,6 +91,27 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('ポッキーの日');
       expect(result[0].description).toBe('11月11日の記念日。');
+    });
+
+    it('should parse across level-3 subheadings without premature termination', async () => {
+      const mockContentResponse = {
+        parse: {
+          wikitext: {
+            '*': '== 記念日・年中行事 ==\n=== 海外 ===\n* [[聖マルティヌスの日]]\n*: 収穫祭。\n=== 日本 ===\n* [[ポッキー&プリッツの日]]\n*: グリコが制定。\n== 脚注 ==\n* 脚注リスト',
+          },
+        },
+      };
+
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockContentResponse,
+      } as Response);
+
+      const provider = new WikipediaAnniversaryProvider();
+      const result = await provider.getAnniversaries(new Date('2026-11-11T00:00:00Z'));
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('聖マルティヌスの日');
+      expect(result[1].name).toBe('ポッキー&プリッツの日');
     });
   });
 });
