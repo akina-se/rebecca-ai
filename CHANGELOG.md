@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.0](https://github.com/akina-se/rebecca-ai/compare/v1.13.1...v1.14.0) (2026-09-07)
+
+
+### Features
+
+* **bot-backend:** add anniversary batch to cloud scheduler and cli runner ([531e384](https://github.com/akina-se/rebecca-ai/commit/531e384ef57cb7b40a6f94f8b44c5bf5a1b6bf29))
+* **bot-backend:** implement resilient anniversary post engine ([#174](https://github.com/akina-se/rebecca-ai/issues/174)) ([4667d94](https://github.com/akina-se/rebecca-ai/commit/4667d9482c838ffd2c380150fa944d52db1b498c))
+
+
+### Bug Fixes
+
+* **anniversary:** preserve level-3 subsections, nested bullets, and precise template sanitization ([e2a2241](https://github.com/akina-se/rebecca-ai/commit/e2a2241e58f09c237e3456f00a7b90a4b93efccb))
+
 ## [1.13.1](https://github.com/akina-se/rebecca-ai/compare/v1.13.0...v1.13.1) (2026-09-06)
 
 
