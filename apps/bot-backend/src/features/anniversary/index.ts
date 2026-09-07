@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ProactiveAnniversaryController } from './controller';
 import { ProactiveAnniversaryUseCase } from './usecase';
+import { SoliloquyUseCase } from '../soliloquy';
 import { AppDependencies } from '../../types';
 import { createProactiveAnniversaryRouter } from './routes';
 import { IAnniversaryProvider } from './types';
@@ -23,6 +24,7 @@ export const createProactiveAnniversaryModule = (
   provider?: IAnniversaryProvider,
 ): Router => {
   const useCase = new ProactiveAnniversaryUseCase(deps, provider);
-  const controller = new ProactiveAnniversaryController(useCase);
+  const soliloquyUseCase = new SoliloquyUseCase(deps);
+  const controller = new ProactiveAnniversaryController(useCase, soliloquyUseCase);
   return createProactiveAnniversaryRouter(controller);
 };

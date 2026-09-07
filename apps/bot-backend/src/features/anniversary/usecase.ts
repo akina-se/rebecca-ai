@@ -1,36 +1,33 @@
 import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
-import { publishPost, PublishPostResult } from '../../core/postPublisher';
-import { SoliloquyUseCase, SoliloquyResult } from '../soliloquy';
+import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { IAnniversaryProvider, AnniversaryItem, AnniversaryResult } from './types';
 import { WikipediaAnniversaryProvider } from './providers/wikipedia';
+
+export * from './types';
 
 /**
  * Executes a batch job to proactively post about today's memorial days / anniversaries ("◯◯の日").
  *
  * It queries an IAnniversaryProvider (defaults to WikipediaAnniversaryProvider) for the current
- * date in the application timezone. If no valid anniversaries are retrieved, it cleanly falls back
- * to SoliloquyUseCase without failing the batch job.
+ * date in the application timezone, generates a persona-grounded post, and publishes it via PostPipeline.
+ * If no valid anniversaries are retrieved, it returns a skipped status without coupling to fallback logic.
  */
 export class ProactiveAnniversaryUseCase {
   private anniversaryProvider: IAnniversaryProvider;
-  private soliloquy: { execute: () => Promise<SoliloquyResult> };
 
   /**
    * Initializes the ProactiveAnniversaryUseCase.
    *
    * @param deps Application dependencies.
    * @param provider Optional custom anniversary provider (defaults to WikipediaAnniversaryProvider).
-   * @param soliloquyUseCase Optional injected soliloquy use case for testing or custom fallbacks.
    */
   constructor(
     private deps: AppDependencies,
     provider?: IAnniversaryProvider,
-    soliloquyUseCase?: { execute: () => Promise<SoliloquyResult> },
   ) {
     this.anniversaryProvider = provider || new WikipediaAnniversaryProvider();
-    this.soliloquy = soliloquyUseCase || new SoliloquyUseCase(deps);
   }
 
   /**
@@ -45,8 +42,8 @@ export class ProactiveAnniversaryUseCase {
       const anniversaries: AnniversaryItem[] = await this.anniversaryProvider.getAnniversaries(now);
 
       if (!anniversaries || anniversaries.length === 0) {
-        console.log('[ProactiveAnniversaryUseCase] No anniversaries found for today. Falling back to soliloquy post...');
-        return await this.soliloquy.execute();
+        console.log('[ProactiveAnniversaryUseCase] No anniversaries found for today.');
+        return { status: 'skipped', reason: 'no_anniversaries' };
       }
 
       console.log(
@@ -89,8 +86,8 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       const thought = structuredPost.thought;
 
       if (!postText) {
-        console.log('[ProactiveAnniversaryUseCase] Failed to generate anniversary post. Falling back to soliloquy...');
-        return await this.soliloquy.execute();
+        console.log('[ProactiveAnniversaryUseCase] Failed to generate anniversary post.');
+        return { status: 'skipped', reason: 'generation_failed' };
       }
 
       const hashtag = '\n#全肯定AIレベッカ';
@@ -104,27 +101,22 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       const matchedItem = anniversaries.find((a) => postText.includes(a.name));
       const anniversaryTitle = matchedItem ? matchedItem.name : undefined;
 
-      const publishResult: PublishPostResult = await publishPost(this.deps, {
-        text: postText,
-        context: matchedItem
-          ? `記念日: ${matchedItem.name}\n内容: ${matchedItem.description}\nタイムライン状況: ${timelineSummary}`
-          : `タイムライン状況: ${timelineSummary}`,
-      });
-
-      await this.deps.firestore.saveTimelinePost({
+      const pipelineResult = await executePostPipeline(this.deps, {
+        postType: 'anniversary',
         text: postText,
         thought,
-        tweetId: publishResult.tweetId,
-        mediaUrls: publishResult.mediaUrls,
-        assetId: publishResult.assetId,
-        postType: 'anniversary',
-        ...(anniversaryTitle ? { anniversaryTitle } : {}),
+        imageContext: matchedItem
+          ? `記念日: ${matchedItem.name}\n内容: ${matchedItem.description}\nタイムライン状況: ${timelineSummary}`
+          : `タイムライン状況: ${timelineSummary}`,
+        metadata: {
+          anniversaryTitle,
+        },
       });
 
       return {
         status: 'success',
-        post: publishResult.text,
-        attachedMedia: publishResult.attachedMedia,
+        post: pipelineResult.post,
+        attachedMedia: pipelineResult.attachedMedia,
         ...(anniversaryTitle ? { anniversaryTitle } : {}),
       };
     } catch (error) {

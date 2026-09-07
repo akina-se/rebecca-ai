@@ -53,55 +53,34 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
     });
 
     it('should parse section when Wikipedia API returns valid payload', async () => {
-      const mockSectionsResponse = {
-        parse: {
-          sections: [
-            { index: '1', line: 'できごと' },
-            { index: '2', line: '記念日・年中行事' },
-          ],
-        },
-      };
-
       const mockContentResponse = {
         parse: {
           wikitext: {
-            '*': '* [[ポッキーの日]]\n*: 11月11日の記念日。',
+            '*': '== 記念日・年中行事 ==\n* [[ポッキーの日]]\n*: 11月11日の記念日。',
           },
         },
       };
 
-      jest.spyOn(global, 'fetch')
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockSectionsResponse,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockContentResponse,
-        } as Response);
+      jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockContentResponse,
+      } as Response);
 
       const provider = new WikipediaAnniversaryProvider();
       const result = await provider.getAnniversaries(new Date('2026-11-11T00:00:00Z'));
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('ポッキーの日');
+      expect(result[0].description).toBe('11月11日の記念日。');
     });
   });
 });
 
 describe('ProactiveAnniversaryUseCase Unit Tests', () => {
   let deps: any;
-  let mockSoliloquy: { execute: jest.Mock };
 
   beforeEach(() => {
     jest.clearAllMocks();
     deps = createMockDeps();
-    mockSoliloquy = {
-      execute: jest.fn().mockResolvedValue({
-        status: 'success',
-        post: '独り言フォールバック #全肯定AIレベッカ',
-        attachedMedia: false,
-      }),
-    };
 
     deps.firestore.getTimelineSummary.mockResolvedValue('Timeline is calm.');
     deps.firestore.getExtendedPrompt.mockResolvedValue('Excited for autumn.');
@@ -111,17 +90,16 @@ describe('ProactiveAnniversaryUseCase Unit Tests', () => {
     deps.xApi.tweet.mockResolvedValue({ data: { id: 'tweet_anni_123' } });
   });
 
-  it('should fall back to soliloquy if provider returns zero anniversaries', async () => {
+  it('should return skipped status if provider returns zero anniversaries', async () => {
     const mockProvider: IAnniversaryProvider = {
       getAnniversaries: jest.fn().mockResolvedValue([]),
     };
 
-    const useCase = new ProactiveAnniversaryUseCase(deps, mockProvider, mockSoliloquy);
+    const useCase = new ProactiveAnniversaryUseCase(deps, mockProvider);
     const result = await useCase.execute();
 
-    expect(mockSoliloquy.execute).toHaveBeenCalled();
-    expect(result.status).toBe('success');
-    expect(result.post).toContain('独り言フォールバック');
+    expect(result.status).toBe('skipped');
+    expect(result.reason).toBe('no_anniversaries');
     expect(deps.gemini.generateStructuredNewsPost).not.toHaveBeenCalled();
   });
 
@@ -139,7 +117,7 @@ describe('ProactiveAnniversaryUseCase Unit Tests', () => {
       reply: '今日はクレバの日ね！最高のリズムで心拍数あげてこ♡',
     });
 
-    const useCase = new ProactiveAnniversaryUseCase(deps, mockProvider, mockSoliloquy);
+    const useCase = new ProactiveAnniversaryUseCase(deps, mockProvider);
     const result = await useCase.execute();
 
     expect(result.status).toBe('success');
@@ -153,5 +131,80 @@ describe('ProactiveAnniversaryUseCase Unit Tests', () => {
         tweetId: 'tweet_anni_123',
       }),
     );
+  });
+});
+
+describe('ProactiveAnniversaryController Unit Tests', () => {
+  let mockUseCase: { execute: jest.Mock };
+  let mockSoliloquyUseCase: { execute: jest.Mock };
+  let req: any;
+  let res: any;
+
+  beforeEach(() => {
+    mockUseCase = { execute: jest.fn() };
+    mockSoliloquyUseCase = { execute: jest.fn() };
+    req = {};
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
+  });
+
+  it('should return 200 with result when useCase succeeds', async () => {
+    const { ProactiveAnniversaryController } = await import('../../src/features/anniversary/controller');
+    mockUseCase.execute.mockResolvedValue({
+      status: 'success',
+      post: 'Anniversary post #全肯定AIレベッカ',
+    });
+
+    const controller = new ProactiveAnniversaryController(
+      mockUseCase as any,
+      mockSoliloquyUseCase as any,
+    );
+    await controller.handle(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'success' }),
+    );
+    expect(mockSoliloquyUseCase.execute).not.toHaveBeenCalled();
+  });
+
+  it('should fall back to soliloquyUseCase when anniversary useCase returns skipped', async () => {
+    const { ProactiveAnniversaryController } = await import('../../src/features/anniversary/controller');
+    mockUseCase.execute.mockResolvedValue({
+      status: 'skipped',
+      reason: 'no_anniversaries',
+    });
+    mockSoliloquyUseCase.execute.mockResolvedValue({
+      status: 'success',
+      post: 'Soliloquy fallback #全肯定AIレベッカ',
+    });
+
+    const controller = new ProactiveAnniversaryController(
+      mockUseCase as any,
+      mockSoliloquyUseCase as any,
+    );
+    await controller.handle(req, res);
+
+    expect(mockSoliloquyUseCase.execute).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ post: 'Soliloquy fallback #全肯定AIレベッカ' }),
+    );
+  });
+
+  it('should return 500 when useCase throws an error', async () => {
+    const { ProactiveAnniversaryController } = await import('../../src/features/anniversary/controller');
+    mockUseCase.execute.mockRejectedValue(new Error('Fatal error'));
+
+    const controller = new ProactiveAnniversaryController(
+      mockUseCase as any,
+      mockSoliloquyUseCase as any,
+    );
+    await controller.handle(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
   });
 });

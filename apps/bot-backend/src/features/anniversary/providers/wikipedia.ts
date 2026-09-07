@@ -83,6 +83,7 @@ export const parseAnniversarySection = (sectionText: string): AnniversaryItem[] 
 export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
   /**
    * Fetches and parses anniversary items for the provided date from Japanese Wikipedia.
+   * Uses a single HTTP request to fetch wikitext and extracts the memorial section.
    *
    * @param date - The date to fetch anniversaries for.
    * @returns List of parsed anniversary items, or an empty list upon error/timeout.
@@ -94,60 +95,38 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
       const pageTitle = `${month}月${day}日`;
       const encodedTitle = encodeURIComponent(pageTitle);
 
-      // Step 1: Query sections to locate "記念日・年中行事"
-      const sectionsUrl = `https://ja.wikipedia.org/w/api.php?action=parse&page=${encodedTitle}&prop=sections&format=json`;
-      const sectionsRes = await fetch(sectionsUrl, {
+      const url = `https://ja.wikipedia.org/w/api.php?action=parse&page=${encodedTitle}&prop=wikitext&format=json`;
+      const response = await fetch(url, {
         signal: AbortSignal.timeout(WIKIPEDIA_API_TIMEOUT_MS),
         headers: {
           'User-Agent': 'RebeccaBot/1.0 (https://github.com/akina-se/rebecca-ai)',
         },
       });
 
-      if (!sectionsRes.ok) {
-        console.warn(`[WikipediaAnniversaryProvider] Failed to fetch sections: HTTP ${sectionsRes.status}`);
+      if (!response.ok) {
+        console.warn(`[WikipediaAnniversaryProvider] Failed to fetch wikitext: HTTP ${response.status}`);
         return [];
       }
 
-      const sectionsJson = (await sectionsRes.json()) as {
-        parse?: {
-          sections?: Array<{ index: string; line: string }>;
-        };
-      };
-
-      const sections = sectionsJson.parse?.sections || [];
-      const anniversarySection = sections.find((s) => s.line.includes('記念日') || s.line.includes('年中行事'));
-
-      if (!anniversarySection) {
-        console.warn(`[WikipediaAnniversaryProvider] No anniversary section found for ${pageTitle}`);
-        return [];
-      }
-
-      // Step 2: Fetch wikitext of that exact section
-      const contentUrl = `https://ja.wikipedia.org/w/api.php?action=parse&page=${encodedTitle}&prop=wikitext&section=${anniversarySection.index}&format=json`;
-      const contentRes = await fetch(contentUrl, {
-        signal: AbortSignal.timeout(WIKIPEDIA_API_TIMEOUT_MS),
-        headers: {
-          'User-Agent': 'RebeccaBot/1.0 (https://github.com/akina-se/rebecca-ai)',
-        },
-      });
-
-      if (!contentRes.ok) {
-        console.warn(`[WikipediaAnniversaryProvider] Failed to fetch section content: HTTP ${contentRes.status}`);
-        return [];
-      }
-
-      const contentJson = (await contentRes.json()) as {
+      const json = (await response.json()) as {
         parse?: {
           wikitext?: { '*': string };
         };
       };
 
-      const wikitext = contentJson.parse?.wikitext?.['*'];
-      if (!wikitext) {
+      const fullWikitext = json.parse?.wikitext?.['*'];
+      if (!fullWikitext) {
         return [];
       }
 
-      return parseAnniversarySection(wikitext);
+      // Locate the "記念日・年中行事" section within the wikitext
+      const sectionMatch = fullWikitext.match(/==\s*(?:記念日|年中行事)[^\n]*\n([\s\S]*?)(?=\n==|$)/);
+      if (!sectionMatch || !sectionMatch[1]) {
+        console.warn(`[WikipediaAnniversaryProvider] No anniversary section found for ${pageTitle}`);
+        return [];
+      }
+
+      return parseAnniversarySection(sectionMatch[1]);
     } catch (error) {
       console.warn('[WikipediaAnniversaryProvider] Error fetching anniversaries from Wikipedia:', error);
       return [];
