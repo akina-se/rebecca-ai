@@ -1,6 +1,5 @@
 import { ProactiveNewsUseCase } from '../../src/features/news/usecase';
 import { INewsProvider } from '../../src/features/news/types';
-import { YahooNewsProvider } from '../../src/features/news/providers/yahoo';
 import { createMockDeps } from './core/testUtils';
 
 describe('ProactiveNewsUseCase Unit Tests', () => {
@@ -68,7 +67,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
 
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
             thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
-            reply: '新作ゲーム楽しみね！',
+            reply: '完全新作ゲーム発表！楽しみね！',
         });
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, mockSoliloquy).execute();
@@ -76,7 +75,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(deps.firestore.getRecentNewsEmbeddings).toHaveBeenCalledWith(30);
         expect(mockSoliloquy.execute).not.toHaveBeenCalled();
         expect(result.status).toBe('success');
-        expect(result.post).toBe('新作ゲーム楽しみね！\n#全肯定AIレベッカ');
+        expect(result.post).toBe('完全新作ゲーム発表！楽しみね！\n#全肯定AIレベッカ');
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('完全新作ゲーム発表！'),
@@ -91,7 +90,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         );
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
             expect.objectContaining({
-                text: expect.stringContaining('新作ゲーム楽しみね！'),
+                text: expect.stringContaining('完全新作ゲーム発表！楽しみね！'),
                 postType: 'news',
                 thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
                 newsTitle: '完全新作ゲーム発表！',
