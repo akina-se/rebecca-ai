@@ -344,9 +344,10 @@ const inferImageSearchQuery = async (prompt: string): Promise<string | null> => 
 const verifyImageRelevance = async (imageCaption: string, postText: string): Promise<boolean> => {
     if (!ai || !imageCaption || !postText) return false;
     try {
-        const prompt = `あなたはSNS投稿と添付画像の文脈整合性を判定する厳格なモデレーターAIです。
-以下の「投稿テキスト」と「画像キャプション」を比較し、この投稿にこの画像を添付することが文脈上自然かつ適切かどうかを判定してください。
-無関係な画像（例: ニュースの内容と全く関係のない日常風景、料理、キャラ画像など）は絶対に除外（false）してください。
+        const prompt = `あなたはAIキャラクター「レベッカ」のSNS投稿と添付画像の整合性を判定する審査AIです。
+以下の「投稿テキスト」に対し、「画像」がレベッカ自身の感情、リアクション、または世界観を表現するキャラクターイラストとして自然に調和しているかを判定してください。
+投稿の話題に直結する活動や持ち物、またはその投稿をしているレベッカの感情・状況としてポジティブにマッチしていれば true と判定してください。
+文脈や感情が完全に不自然・ミスマッチな場合のみ false としてください。
 
 【投稿テキスト】
 ${postText}
