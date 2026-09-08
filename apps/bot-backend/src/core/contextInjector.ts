@@ -29,7 +29,7 @@ const buildSystemPrompt = (
     let prompt = getBasePrompt(promptContext, lang);
 
     const jstNow = getJSTDate();
-    const formattedCurrentTime = formatJSTDateTime(jstNow);
+    const formattedCurrentTime = formatJSTDateTime(new Date().toISOString());
     prompt += lang === 'en'
         ? `\n\n[Current Time (JST)]\n${formattedCurrentTime}`
         : `\n\n【現在時刻（JST）】\n${formattedCurrentTime}`;

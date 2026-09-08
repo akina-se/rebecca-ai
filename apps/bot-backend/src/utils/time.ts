@@ -11,11 +11,14 @@ const getJSTDate = () => {
 };
 
 /**
- * Formats a Date or ISO date string into standard JST format: YYYY-MM-DD HH:mm JST.
+ * Formats an ISO-8601 datetime string into a human-readable JST string: YYYY-MM-DD HH:mm JST.
+ *
+ * @param isoString - ISO-8601 string representing UTC or zoned timestamp.
+ * @returns Formatted JST date string, or empty string if input is falsy or invalid.
  */
-const formatJSTDateTime = (dateOrIso?: Date | string | null): string => {
-  if (!dateOrIso) return '';
-  const date = typeof dateOrIso === 'string' ? new Date(dateOrIso) : dateOrIso;
+const formatJSTDateTime = (isoString?: string | null): string => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
   if (isNaN(date.getTime())) return '';
 
   const formatter = new Intl.DateTimeFormat('ja-JP', {

@@ -47,12 +47,6 @@ describe('Time Utils - getJSTDate and formatJSTDateTime', () => {
         expect(formatted).toBe('2026-09-08 21:02 JST');
     });
 
-    it('should format a valid Date object into JST format', () => {
-        const date = new Date('2026-09-08T12:02:00.000Z');
-        const formatted = formatJSTDateTime(date);
-        expect(formatted).toBe('2026-09-08 21:02 JST');
-    });
-
     it('should return empty string for falsy or invalid input', () => {
         expect(formatJSTDateTime(null)).toBe('');
         expect(formatJSTDateTime(undefined)).toBe('');
