@@ -64,7 +64,7 @@ describe('Memory Module', () => {
                 await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
                 
                 expect(deps.gemini.generateDreaming).toHaveBeenCalled();
-                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] });
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] }, [{ role: 'user', content: 'hi' }]);
             });
 
             it('should catch and log error if generateDreaming fails (abnormal case)', async () => {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Firestore } from '@google-cloud/firestore';
 import { SystemSettings } from '@rebecca/types';
+import { COLLECTIONS } from '@rebecca/db/schema';
 
 function isValidTimezone(tz: string): boolean {
   try {
@@ -23,7 +24,7 @@ export function initializeSettingsModule(firestore: Firestore): Router {
   // GET /api/v1/settings
   router.get('/', async (req, res) => {
     try {
-      const snap = await firestore.collection('system').doc('preferences').get();
+      const snap = await firestore.collection(COLLECTIONS.SYSTEM).doc('preferences').get();
       if (!snap.exists) {
         const defaultSettings: SystemSettings = {
           language: 'ja',
@@ -67,7 +68,7 @@ export function initializeSettingsModule(firestore: Firestore): Router {
       if (language) updates.language = language;
       if (timezone) updates.timezone = timezone;
 
-      const docRef = firestore.collection('system').doc('preferences');
+      const docRef = firestore.collection(COLLECTIONS.SYSTEM).doc('preferences');
       await docRef.set(updates, { merge: true });
 
       const snap = await docRef.get();

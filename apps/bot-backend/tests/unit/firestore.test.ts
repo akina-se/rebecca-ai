@@ -133,10 +133,14 @@ describe('Firestore Service Unit Tests', () => {
       expect(mockDocSet).toHaveBeenCalled();
     });
 
-    it('updateCoreProfile should replace coreProfile and reset episodicBuffer', async () => {
+    it('updateCoreProfile should replace coreProfile and retain episodicBuffer sliding window', async () => {
       const profile = { name: 'Test', affinityScore: 10, interests: ['coding'] } as any;
-      await firestoreService.updateCoreProfile('u1', profile);
-      expect(mockDocSet).toHaveBeenCalled();
+      const retained = [{ role: 'user' as const, content: 'hi' }];
+      await firestoreService.updateCoreProfile('u1', profile, retained);
+      expect(mockDocSet).toHaveBeenCalledWith(
+        { coreProfile: profile, episodicBuffer: retained },
+        { merge: true }
+      );
     });
 
     it('getAllUsers should return all users from collection snapshot', async () => {
@@ -436,11 +440,12 @@ describe('Firestore Service Unit Tests', () => {
         forEach: function (cb: (doc: any) => void) {
           this.docs.forEach(cb);
         },
-        docs: [{ id: 'doc_rag_1', data: () => ({ text: 'Fact: Loves coffee' }) }],
+        docs: [{ id: 'doc_rag_1', data: () => ({ text: 'Fact: Loves coffee', timestamp: '2026-09-03T21:27:00.000Z' }) }],
       });
       const memories = await firestoreService.findRagMemories('u1', [0.1, 0.2], 3);
       expect(memories).toHaveLength(1);
-      expect(memories[0]).toBe('Fact: Loves coffee');
+      expect(memories[0]).toContain('Fact: Loves coffee');
+      expect(memories[0]).toMatch(/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2} JST\]/);
     });
 
     it('getLastMentionId and setLastMentionId', async () => {
