@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/akina-se/rebecca-ai/compare/v1.16.0...v1.16.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **functions:** sync package-lock.json version with 1.16.0 ([#187](https://github.com/akina-se/rebecca-ai/issues/187)) ([709479e](https://github.com/akina-se/rebecca-ai/commit/709479e4264745f45074785e257de14d1e6f2159))
+
 ## [1.16.0](https://github.com/akina-se/rebecca-ai/compare/v1.15.1...v1.16.0) (2026-09-08)
 
 
