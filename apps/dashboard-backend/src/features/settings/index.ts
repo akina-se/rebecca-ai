@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Firestore } from '@google-cloud/firestore';
 import { SystemSettings } from '@rebecca/types';
-import { COLLECTIONS } from '@rebecca/db';
+import { COLLECTIONS } from '@rebecca/db/schema';
 
 function isValidTimezone(tz: string): boolean {
   try {

@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { COLLECTIONS } from '@rebecca/db';
+import { COLLECTIONS } from '@rebecca/db/schema';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types/auth';
 
 export { AuthenticatedRequest, AuthenticatedUser };
