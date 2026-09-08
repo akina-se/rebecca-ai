@@ -70,7 +70,11 @@ export interface IFirestoreService {
   markMentionProcessed(tweetId: string): Promise<void>;
   saveImageMetadata(hash: string, url: string, description: string, vector: number[]): Promise<void>;
   getImageByHash(hash: string): Promise<ImageDocWithId | null>;
-  findImageByVector(queryVector: number[], similarityThreshold?: number): Promise<ImageDocWithId | null>;
+  findImagesByVector(
+    queryVector: number[],
+    similarityThreshold?: number,
+    limit?: number,
+  ): Promise<ImageDocWithId[]>;
   updateImageLastUsed(hash: string): Promise<void>;
   getAssetsPendingEmbedding(): Promise<Array<{ id: string; caption: string }>>;
   updateAssetEmbedding(id: string, embedding: number[]): Promise<void>;

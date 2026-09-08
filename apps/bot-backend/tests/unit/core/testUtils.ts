@@ -31,7 +31,7 @@ export const createMockDeps = (): AppDependencies => {
             getLastListInteraction: jest.fn(),
             updateLastListInteraction: jest.fn(),
             getListMembersFromCache: jest.fn().mockResolvedValue([]),
-            findImageByVector: jest.fn(),
+            findImagesByVector: jest.fn().mockResolvedValue([]),
             updateImageLastUsed: jest.fn(),
             saveTimelinePost: jest.fn(),
             getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),

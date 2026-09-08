@@ -6,7 +6,7 @@
  * Database persistence is deliberately decoupled from this service; callers (use cases)
  * retain responsibility for persisting timeline posts or conversation logs.
  */
-import { AppDependencies } from '../types';
+import { AppDependencies, ImageDocWithId } from '../types';
 
 export interface PublishPostOptions {
   /** The text content to post. */
@@ -49,21 +49,21 @@ export const publishPost = async (
   const { text, inReplyToTweetId, attachImage = true, context } = options;
 
   const mediaIds: string[] = [];
-  let bestImage: { id: string; url: string; caption?: string; description?: string } | null = null;
+  let bestImage: ImageDocWithId | null = null;
 
   if (attachImage) {
     try {
       const searchPrompt = `あなたはAIキャラクター「レベッカ」の投稿に添えるイラスト画像を検索するAIです。
-画像データベースには、様々な情景を描いたレベッカのイラストと、その視覚的描写（キャプション）が登録されています。
+画像データベースには、様々な衣装やシチュエーションで描かれたレベッカのイラストと、その視覚的描写（キャプション）が登録されています。
 
-以下のツイート文${context ? 'と参考文脈' : ''}から、投稿に最もふさわしいイラスト検索クエリ（20〜40文字程度の日本語）を1行で生成してください。
+以下のツイート文${context ? 'と参考文脈' : ''}から、投稿のビジュアルとして最も調和するイラスト検索クエリ（20〜40文字程度の日本語）を1行で生成してください。
 
 【クエリ生成の指針】
-1. 視覚的情景への変換:
-   投稿の話題・文脈から「もしこの投稿にレベッカのイラストを添えるなら、彼女がどこで、何をして、どんな表情をしているか」を具体的にイメージしてください。
-   ※ 画面や文字を読んでいる姿ではなく、その話題の世界観や状況の中にレベッカ自身が存在している情景にしてください。
-2. 一般名詞での描写:
-   固有名詞（企業名、製品名、サービス名など）や抽象的な感情語の羅列は避け、一般的な「場所・環境」「具体的な持ち物や動作」「表情・雰囲気」を組み合わせて情景を描写してください。
+1. 視覚的アクション・シチュエーションの具体化:
+   投稿の話題・文脈から「レベッカがどこで、何をして、どんな表情をしているか」を具体的にイメージしてください。
+   （例：音楽の話題なら演奏やライブ・歌唱、スポーツならスタジアムや観戦・応援、日常なら部屋でくつろぐ姿など、その話題の核心を視覚化した情景にする）
+2. 構成要素のバランス:
+   「場所や舞台」「具体的な動作や衣装・身につけている物」「表情や雰囲気」を自然に組み合わせて描写してください。
 3. 画像不要の判定:
    純粋なシステム通知や事務連絡など、キャラクターイラストの添付が不自然な投稿の場合は "null" と出力してください。
 
@@ -78,20 +78,27 @@ ${text}
         console.log(`[PostPublisher] Inferred image search query: ${searchQuery}`);
         const queryVector = await deps.gemini.generateEmbedding(searchQuery);
 
-        bestImage = queryVector.length > 0 ? await deps.firestore.findImageByVector(queryVector) : null;
+        const candidates = queryVector.length > 0 ? await deps.firestore.findImagesByVector(queryVector, undefined, 3) : [];
 
-        if (bestImage) {
-          console.log(`[PostPublisher] Found matching image candidate: ${bestImage.url}`);
-          const isRelevant = await deps.gemini.verifyImageRelevance(
-            bestImage.caption || bestImage.description || '',
-            text,
-          );
+        if (candidates.length > 0) {
+          for (let i = 0; i < candidates.length; i++) {
+            const candidate = candidates[i];
+            console.log(`[PostPublisher] Evaluating image candidate ${i + 1}/${candidates.length}: ${candidate.url}`);
+            const isRelevant = await deps.gemini.verifyImageRelevance(
+              candidate.caption || '',
+              text,
+            );
 
-          if (!isRelevant) {
-            console.log('[PostPublisher] Image rejected by LLM re-ranking (irrelevant to context). Fallback to text-only.');
-            bestImage = null;
-          } else {
-            console.log('[PostPublisher] Image approved by LLM re-ranking.');
+            if (isRelevant) {
+              console.log(`[PostPublisher] Image approved by LLM re-ranking (candidate ${i + 1}).`);
+              bestImage = candidate;
+              break;
+            } else {
+              console.log(`[PostPublisher] Image candidate ${i + 1} rejected by LLM re-ranking.`);
+            }
+          }
+
+          if (bestImage) {
             try {
               const buffer = await deps.storage.downloadImage(bestImage.url);
               let mimeType = 'image/jpeg';
@@ -107,6 +114,8 @@ ${text}
             } catch (e) {
               console.error('[PostPublisher] Failed to upload media to X:', e);
             }
+          } else {
+            console.log('[PostPublisher] All image candidates rejected by LLM re-ranking. Fallback to text-only.');
           }
         } else {
           console.log('[PostPublisher] No matching image found or all are in cooldown.');
