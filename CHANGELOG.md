@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/akina-se/rebecca-ai/compare/v1.15.1...v1.16.0) (2026-09-08)
+
+
+### Features
+
+* **bot-backend:** enhance 3-tier memory with temporal grounding and sliding buffer ([#184](https://github.com/akina-se/rebecca-ai/issues/184)) ([6d4e6f7](https://github.com/akina-se/rebecca-ai/commit/6d4e6f7705f921747f822aceb96b7844f205263a))
+
 ## [1.15.1](https://github.com/akina-se/rebecca-ai/compare/v1.15.0...v1.15.1) (2026-09-08)
 
 
