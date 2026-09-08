@@ -1,4 +1,4 @@
-﻿# Firestore Database Schema & 3-Tier Memory Architecture
+# Firestore Database Schema & 3-Tier Memory Architecture
 
 ## 1. Overview & Architectural Principles
 
@@ -352,6 +352,111 @@ Metrics and trend data queried by Dashboard BFF.
 
 ---
 
+### 4.9 `processed_followers`
+Onboarding status and list curation idempotency tracking for account followers.
+- **Document ID**: Follower's X User ID (`userId`).
+- **Converter**: `processedFollowerConverter` in `@rebecca/db`.
+- **Composite Index**: `listStatus` ASC + `timestamp` ASC (`firestore.indexes.json`).
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `userId` | `string` | Target follower's X user ID (matches document ID). |
+| `timestamp` | `string` (ISO 8601) | Timestamp when follower was detected and onboarded. |
+| `listStatus` | `'ADDED' \| 'FAILED' \| 'REJECTED'` | Curation list membership status. |
+
+*Self-healing*: Followers with `listStatus == 'FAILED'` are automatically retried via `getFailedFollowers` during batch cycles.
+
+---
+
+### 4.10 `list_interaction_history`
+Cooldown tracker for automated interactions with curated X list members in `RandomEngagementUseCase`.
+- **Document ID**: Target member's X User ID (`userId`).
+- **Converter**: `listInteractionConverter` in `@rebecca/db`.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `userId` | `string` | Target user's X ID (matches document ID). |
+| `lastInteractionAt` | `Timestamp` (stored) / `string` (code) | Datetime of most recent proactive interaction. |
+
+---
+
+### 4.11 `rate_limits`
+Atomic sliding-window rate limit counters to protect API quotas and prevent spam.
+- **Document ID**: Formatted key indicating window and target:
+  - Global daily: `global_{type}_{YYYY-MM-DD}` (e.g. `global_daily_2026-07-14`)
+  - User daily: `user_daily_{userId}_{YYYY-MM-DD}`
+  - User per-minute: `user_minute_{userId}_{YYYY-MM-DDTHH:mm}`
+- **Converter**: `rateLimitConverter` (`makePassThroughConverter<RateLimitDoc>`) in `@rebecca/db`.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `count` | `number` | Request count incremented atomically via `FieldValue.increment(1)`. |
+
+*Enforcement Order*:
+1. User per-minute spam guard (`user_minute_...`).
+2. Global daily system cap (`global_daily_...`).
+3. Dynamic per-user daily quota derived from `globalDaily / DAU` (`user_daily_...`, minimum 3).
+
+---
+
+### 4.12 `processed_mentions`
+Idempotency registry preventing duplicate responses to the same X mention tweet.
+- **Document ID**: X Tweet ID (`tweetId`).
+- **Converter**: `makePassThroughConverter` in `@rebecca/db`.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `processedAt` | `Timestamp` | Server execution timestamp set via `FieldValue.serverTimestamp()`. |
+
+---
+
+### 4.13 `system`
+Global system configuration and operational state singletons.
+- **Document ID**: Singleton identifier (`persona`, `x_api_state`, `preferences`).
+- **Converter**: `personaConverter`, `xApiStateConverter`, or pass-through in `@rebecca/db`.
+
+#### Document: `/system/persona`
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `extended_prompt` | `string` | Dynamic character instructions prepended to Gemini system prompt. |
+| `updatedAt` | `string` (ISO 8601) | Last update timestamp of extended prompt. |
+| `timeline_summary` | `string` | Summarized recent timeline activity for contextual awareness. |
+| `timelineSummaryUpdatedAt` | `string` (ISO 8601) | Timestamp when timeline summary was refreshed. |
+
+#### Document: `/system/x_api_state`
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `last_mention_id` | `string \| null` | Highest X Tweet ID processed during mention polling. |
+| `updatedAt` | `string` (ISO 8601) | Timestamp of last mention sync. |
+
+#### Document: `/system/preferences`
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `language` | `'ja' \| 'en'` | Default language for Dashboard display. |
+| `timezone` | `string` (IANA) | System timezone (e.g. `'Asia/Tokyo'`). |
+| `updatedAt` | `string` (ISO 8601) | Last modification timestamp. |
+
+---
+
+### 4.14 Nested Substructures
+
+#### `ConversationLogEntry` (Used in `users.working_memory` and `users.episodicBuffer`)
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `role` | `'user' \| 'model'` | Turn speaker identity. |
+| `content` | `string` | Dialogue turn message text (with timestamp prefix for model turns). |
+| `thought` | `string \| undefined` | Persona internal thought monologue. |
+| `timestamp` | `string \| undefined` (ISO 8601) | Datetime when the turn occurred. |
+
+#### `UserCoreProfile` (Used in `users.coreProfile`)
+Synthesized by the Dreaming batch engine (`apps/bot-backend/src/usecases/dreamingUseCase.ts`). Stored as a schema-flexible JSON object:
+- `summary`: High-level narrative summary of who the user is and their relationship with Rebecca.
+- `facts`: Array of factual attributes learned about the user (e.g. occupation, hobbies, birthday).
+- `preferences`: User preferences, likes, and dislikes.
+- `relationship`: Intimacy level, shared memories, recurring conversation themes.
+
+---
+
 ## 5. Indexing Policies (`firestore.indexes.json`)
 
 1. **Vector Indexes**:
@@ -359,7 +464,29 @@ Metrics and trend data queried by Dashboard BFF.
    - `images`: Vector index on `embedding` (768 dimensions, Cosine).
 2. **Composite Indexes**:
    - `rag_memories`: `userId` ASC + `timestamp` ASC (enables FIFO memory pruning).
-   - `processed_followers`: `listStatus` ASC + `timestamp` ASC.
+   - `processed_followers`: `listStatus` ASC + `timestamp` ASC (enables self-healing retries).
 3. **TTL Policies**:
-   - `conversation_logs.expireAt`: Enabled.
-   - `timeline_history.expireAt`: Enabled.
+   - `conversation_logs.expireAt`: Enabled (5-year automatic expiration).
+   - `timeline_history.expireAt`: Enabled (5-year automatic expiration).
+
+---
+
+## 6. Security Rules & Access Topology (`firestore.rules`)
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+- **Zero Direct Client Access**: Client SDKs (Web, Mobile) have zero direct access to Firestore (`allow read, write: if false;`).
+- **IAM-Gated Access**: All reads and writes are strictly mediated by backend microservices:
+  - `rebecca-ai-gal` (Cloud Run Bot Backend): Reads/writes via Firebase Admin SDK with Least-Privilege Service Account.
+  - `rebecca-dashboard-bff` (Cloud Run Dashboard BFF): Authenticates users via Firebase Auth ID tokens, verifies `admin_users` collection for RBAC permissions, and issues Firestore operations through Admin SDK.
+  - Cloud Functions (Eventarc / Auth triggers): Process background events (`onConversationLogCreated`, `beforeUserCreated`, `beforeUserSignedIn`).
+- **Flat Architecture**: The database employs a 100% flat root-level collection architecture with zero nested subcollections, simplifying security rule evaluation and global index querying.
