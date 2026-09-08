@@ -31,8 +31,8 @@ jest.mock('../../src/services/firestore', () => ({
     saveRagMemory: jest.fn().mockResolvedValue(undefined),
     getLastMentionId: jest.fn().mockResolvedValue(undefined),
     setLastMentionId: jest.fn().mockResolvedValue(undefined),
+    findImagesByVector: jest.fn().mockResolvedValue([]),
     saveTimelinePost: jest.fn().mockResolvedValue(undefined),
-    findImageByVector: jest.fn().mockResolvedValue(null),
     updateImageLastUsed: jest.fn().mockResolvedValue(undefined),
     getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
 }));

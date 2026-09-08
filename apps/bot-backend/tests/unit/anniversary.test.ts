@@ -127,7 +127,7 @@ describe('ProactiveAnniversaryUseCase Unit Tests', () => {
     deps.firestore.getExtendedPrompt.mockResolvedValue('Excited for autumn.');
     deps.gemini.generateEmbedding.mockResolvedValue(new Array(768).fill(0.1));
     deps.gemini.inferImageSearchQuery.mockResolvedValue('音楽を楽しむ女性');
-    deps.firestore.findImageByVector.mockResolvedValue(null);
+    deps.firestore.findImagesByVector.mockResolvedValue([]);
     deps.xApi.tweet.mockResolvedValue({ data: { id: 'tweet_anni_123' } });
   });
 

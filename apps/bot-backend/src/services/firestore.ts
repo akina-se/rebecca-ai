@@ -674,38 +674,40 @@ const getImageByHash = async (hash: string): Promise<ImageDocWithId | null> => {
 };
 
 /**
- * Performs a vector search across the images collection and returns the best
- * available image that meets the similarity threshold and is past its cooldown period.
+ * Searches image documents using vector nearest-neighbor search, filtering out images
+ * currently in cooldown, and returns matching candidates sorted by similarity descending.
  *
  * @param queryVector - Query embedding for semantic image matching.
  * @param similarityThreshold - Minimum cosine similarity required (default: from config).
- * @returns A randomly-selected `ImageDocWithId` from available matches, or `null`.
+ * @param limit - Maximum number of matching candidates to return (default: 3).
+ * @returns An array of matching `ImageDocWithId` candidates sorted by similarity descending.
  */
-const findImageByVector = async (
+const findImagesByVector = async (
   queryVector: number[],
-  similarityThreshold = config.images.similarityThreshold
-): Promise<ImageDocWithId | null> => {
+  similarityThreshold = config.images.similarityThreshold,
+  limit = 3,
+): Promise<ImageDocWithId[]> => {
   try {
     const snapshot = await firestore
       .collection(COLLECTIONS.IMAGES)
       .findNearest({
         vectorField: 'embedding',
         queryVector: FieldValue.vector(queryVector),
-        limit: 10,
+        limit: Math.max(limit, 10),
         distanceMeasure: 'COSINE',
         distanceResultField: 'vectorDistance',
       })
       .get();
 
-    if (snapshot.empty) return null;
+    if (snapshot.empty) return [];
 
     const now = new Date();
     const cooldownMs = config.images.cooldownDays * 24 * 60 * 60 * 1000;
-    const availableImages: ImageDocWithId[] = [];
+    const availableImages: Array<ImageDocWithId & { similarity: number }> = [];
 
     for (const doc of snapshot.docs) {
       const data = doc.data() as ImageDoc & { vectorDistance?: number };
-      const vectorDistance = typeof data.vectorDistance === 'number' ? data.vectorDistance : 0;
+      const vectorDistance = typeof data.vectorDistance === 'number' ? data.vectorDistance : 1;
       const similarity = 1 - vectorDistance;
 
       if (similarity < similarityThreshold) {
@@ -723,17 +725,17 @@ const findImageByVector = async (
           : null;
 
       if (!lastUsed || now.getTime() - lastUsed.getTime() > cooldownMs) {
-        availableImages.push({ id: doc.id, ...data });
+        availableImages.push({ id: doc.id, ...data, similarity });
       }
     }
 
-    if (availableImages.length === 0) return null;
+    // Sort candidates by similarity descending (highest match first)
+    availableImages.sort((a, b) => b.similarity - a.similarity);
 
-    const randomIndex = Math.floor(Math.random() * availableImages.length);
-    return availableImages[randomIndex];
+    return availableImages.slice(0, limit);
   } catch (e) {
     console.error('[FirestoreService] Image vector search failed:', e);
-    return null;
+    return [];
   }
 };
 
@@ -970,7 +972,7 @@ export {
   markMentionProcessed,
   saveImageMetadata,
   getImageByHash,
-  findImageByVector,
+  findImagesByVector,
   updateImageLastUsed,
   getAssetsPendingEmbedding,
   updateAssetEmbedding,

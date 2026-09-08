@@ -484,25 +484,35 @@ describe('Firestore Service Unit Tests', () => {
       expect(await firestoreService.getImageByHash('none')).toBeNull();
     });
 
-    it('findImageByVector and updateImageLastUsed', async () => {
+    it('findImagesByVector and updateImageLastUsed', async () => {
       mockQueryGet.mockResolvedValueOnce({
         empty: false,
-        size: 1,
+        size: 2,
         docs: [
           {
-            id: 'img1',
+            id: 'img_second',
             data: () => ({
-              filename: 'test.png',
-              vectorDistance: 0.1, // similarity = 0.9 >= 0.75
+              filename: 'second.png',
+              vectorDistance: 0.2, // similarity = 0.8
+              lastUsedAt: null,
+            }),
+          },
+          {
+            id: 'img_first',
+            data: () => ({
+              filename: 'first.png',
+              vectorDistance: 0.05, // similarity = 0.95
               lastUsedAt: null,
             }),
           },
         ],
       });
 
-      const img = await firestoreService.findImageByVector([0.1, 0.2]);
-      expect(img).toBeDefined();
-      expect(img?.id).toBe('img1');
+      const images = await firestoreService.findImagesByVector([0.1, 0.2], 0.35, 3);
+      expect(images).toHaveLength(2);
+      // Verify sorting descending by similarity: img_first (0.95) should be first
+      expect(images[0].id).toBe('img_first');
+      expect(images[1].id).toBe('img_second');
 
       // Test below threshold
       mockQueryGet.mockResolvedValueOnce({
@@ -519,10 +529,10 @@ describe('Firestore Service Unit Tests', () => {
           },
         ],
       });
-      const lowImg = await firestoreService.findImageByVector([0.1, 0.2]);
-      expect(lowImg).toBeNull();
+      const lowImages = await firestoreService.findImagesByVector([0.1, 0.2], 0.35, 3);
+      expect(lowImages).toEqual([]);
 
-      await firestoreService.updateImageLastUsed('img1');
+      await firestoreService.updateImageLastUsed('img_first');
       expect(mockDocSet).toHaveBeenCalled();
     });
 
@@ -588,13 +598,13 @@ describe('Firestore Service Unit Tests', () => {
       expect(memories).toEqual([]);
     });
 
-    it('findImageByVector should return null on vector search error', async () => {
+    it('findImagesByVector should return empty array on vector search error', async () => {
       mockQueryGet.mockRejectedValueOnce(new Error('Vector search failed'));
-      const img = await firestoreService.findImageByVector([0.1, 0.2]);
-      expect(img).toBeNull();
+      const imgs = await firestoreService.findImagesByVector([0.1, 0.2]);
+      expect(imgs).toEqual([]);
     });
 
-    it('findImageByVector should skip images within cooldown period', async () => {
+    it('findImagesByVector should skip images within cooldown period', async () => {
       const recentDate = new Date(); // just used
       mockQueryGet.mockResolvedValueOnce({
         empty: false,
@@ -610,8 +620,8 @@ describe('Firestore Service Unit Tests', () => {
         ],
       });
 
-      const img = await firestoreService.findImageByVector([0.1, 0.2]);
-      expect(img).toBeNull();
+      const imgs = await firestoreService.findImagesByVector([0.1, 0.2]);
+      expect(imgs).toEqual([]);
     });
 
     it('hasProcessedFollower, markFollowerProcessed, getLastListInteraction, updateLastListInteraction', async () => {
