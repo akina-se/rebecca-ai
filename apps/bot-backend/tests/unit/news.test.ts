@@ -128,10 +128,12 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         deps.firestore.getTimelineSummary.mockResolvedValue('summary');
         deps.gemini.inferImageSearchQuery.mockResolvedValue('coffee');
         deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
-        deps.firestore.findImageByVector.mockResolvedValue({
-            id: 'hash123',
-            url: 'gs://bucket/images/hash123.jpg',
-        });
+        deps.firestore.findImagesByVector.mockResolvedValue([
+            {
+                id: 'hash123',
+                url: 'gs://bucket/images/hash123.jpg',
+            },
+        ]);
         deps.gemini.verifyImageRelevance.mockResolvedValue(true);
         deps.storage.downloadImage.mockResolvedValue(Buffer.from('image'));
         deps.xApi.uploadMedia.mockResolvedValue('media_123');

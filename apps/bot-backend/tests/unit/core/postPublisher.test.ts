@@ -11,11 +11,13 @@ describe('PostPublisher Unit Tests', () => {
   it('should publish top-level tweet with attached image when image is found and relevant', async () => {
     (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('happy gal');
     (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([0.1, 0.2]);
-    (deps.firestore.findImageByVector as jest.Mock).mockResolvedValue({
-      id: 'img_1',
-      url: 'https://storage.googleapis.com/test.png',
-      caption: 'smiling rebecca',
-    });
+    (deps.firestore.findImagesByVector as jest.Mock).mockResolvedValue([
+      {
+        id: 'img_1',
+        url: 'https://storage.googleapis.com/test.png',
+        caption: 'smiling rebecca',
+      },
+    ]);
     (deps.gemini.verifyImageRelevance as jest.Mock).mockResolvedValue(true);
     (deps.storage.downloadImage as jest.Mock).mockResolvedValue(Buffer.from('fake'));
     (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('media_123');
@@ -35,6 +37,7 @@ describe('PostPublisher Unit Tests', () => {
     expect(deps.gemini.inferImageSearchQuery).toHaveBeenCalledWith(
       expect.stringContaining('【参考文脈】\nタイムラインの直近状況'),
     );
+    expect(deps.firestore.findImagesByVector).toHaveBeenCalledWith([0.1, 0.2], undefined, 3);
     expect(deps.xApi.uploadMedia).toHaveBeenCalledWith(expect.any(Buffer), 'image/png');
     expect(deps.firestore.updateImageLastUsed).toHaveBeenCalledWith('img_1');
     expect(deps.xApi.tweet).toHaveBeenCalledWith(
@@ -44,6 +47,40 @@ describe('PostPublisher Unit Tests', () => {
     // DB persistence and timeline summary fetching are decoupled from PostPublisher
     expect(deps.firestore.getTimelineSummary).not.toHaveBeenCalled();
     expect(deps.firestore.saveTimelinePost).not.toHaveBeenCalled();
+  });
+
+  it('should cascade to next candidate when candidate 1 is rejected and candidate 2 is approved', async () => {
+    (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('concert query');
+    (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([0.1, 0.2]);
+    (deps.firestore.findImagesByVector as jest.Mock).mockResolvedValue([
+      {
+        id: 'img_rejected_1',
+        url: 'https://storage.googleapis.com/rejected.png',
+        caption: 'unrelated image',
+      },
+      {
+        id: 'img_approved_2',
+        url: 'https://storage.googleapis.com/approved.png',
+        caption: 'guitar playing rebecca',
+      },
+    ]);
+    (deps.gemini.verifyImageRelevance as jest.Mock)
+      .mockResolvedValueOnce(false) // 1st candidate rejected
+      .mockResolvedValueOnce(true); // 2nd candidate approved
+    (deps.storage.downloadImage as jest.Mock).mockResolvedValue(Buffer.from('fake'));
+    (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('media_cascade');
+    (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_cascade' } });
+
+    const result = await publishPost(deps, {
+      text: 'ライブ最高だったわ！ #全肯定AIレベッカ',
+    });
+
+    expect(result.attachedMedia).toBe(true);
+    expect(result.assetId).toBe('img_approved_2');
+    expect(result.mediaUrls).toEqual(['https://storage.googleapis.com/approved.png']);
+    expect(deps.gemini.verifyImageRelevance).toHaveBeenCalledTimes(2);
+    expect(deps.firestore.updateImageLastUsed).toHaveBeenCalledWith('img_approved_2');
+    expect(deps.xApi.uploadMedia).toHaveBeenCalledWith(expect.any(Buffer), 'image/png');
   });
 
   it('should publish replyToMention with attachImage: false (bypassing image inference completely)', async () => {
@@ -63,7 +100,7 @@ describe('PostPublisher Unit Tests', () => {
     // Verify image pipeline is completely bypassed
     expect(deps.firestore.getTimelineSummary).not.toHaveBeenCalled();
     expect(deps.gemini.inferImageSearchQuery).not.toHaveBeenCalled();
-    expect(deps.firestore.findImageByVector).not.toHaveBeenCalled();
+    expect(deps.firestore.findImagesByVector).not.toHaveBeenCalled();
     expect(deps.xApi.uploadMedia).not.toHaveBeenCalled();
 
     expect(deps.xApi.replyToMention).toHaveBeenCalledWith(
@@ -73,13 +110,19 @@ describe('PostPublisher Unit Tests', () => {
     expect(deps.xApi.tweet).not.toHaveBeenCalled();
   });
 
-  it('should publish text-only post when image is rejected by re-ranking', async () => {
+  it('should publish text-only post when all candidates are rejected by re-ranking', async () => {
     (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('query');
     (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([0.1]);
-    (deps.firestore.findImageByVector as jest.Mock).mockResolvedValue({
-      id: 'img_2',
-      url: 'https://storage.googleapis.com/test.jpg',
-    });
+    (deps.firestore.findImagesByVector as jest.Mock).mockResolvedValue([
+      {
+        id: 'img_cand_1',
+        url: 'https://storage.googleapis.com/cand1.jpg',
+      },
+      {
+        id: 'img_cand_2',
+        url: 'https://storage.googleapis.com/cand2.jpg',
+      },
+    ]);
     (deps.gemini.verifyImageRelevance as jest.Mock).mockResolvedValue(false);
     (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_text_only' } });
 
@@ -89,6 +132,7 @@ describe('PostPublisher Unit Tests', () => {
 
     expect(result.attachedMedia).toBe(false);
     expect(result.mediaUrls).toEqual([]);
+    expect(deps.gemini.verifyImageRelevance).toHaveBeenCalledTimes(2);
     expect(deps.xApi.uploadMedia).not.toHaveBeenCalled();
     expect(deps.xApi.tweet).toHaveBeenCalledWith('ニュース投稿 #全肯定AIレベッカ', { mediaIds: [] });
   });
@@ -102,17 +146,19 @@ describe('PostPublisher Unit Tests', () => {
     });
 
     expect(result.attachedMedia).toBe(false);
-    expect(deps.firestore.findImageByVector).not.toHaveBeenCalled();
+    expect(deps.firestore.findImagesByVector).not.toHaveBeenCalled();
     expect(deps.xApi.tweet).toHaveBeenCalledWith('独り言 #全肯定AIレベッカ', { mediaIds: [] });
   });
 
   it('should publish in-reply-to tweet with media when attachImage is true and image is found', async () => {
     (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('relevant query');
     (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([0.1, 0.2]);
-    (deps.firestore.findImageByVector as jest.Mock).mockResolvedValue({
-      id: 'img_reply_1',
-      url: 'https://storage.googleapis.com/reply.gif',
-    });
+    (deps.firestore.findImagesByVector as jest.Mock).mockResolvedValue([
+      {
+        id: 'img_reply_1',
+        url: 'https://storage.googleapis.com/reply.gif',
+      },
+    ]);
     (deps.gemini.verifyImageRelevance as jest.Mock).mockResolvedValue(true);
     (deps.storage.downloadImage as jest.Mock).mockResolvedValue(Buffer.from('gif-bytes'));
     (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('media_reply_gif');
