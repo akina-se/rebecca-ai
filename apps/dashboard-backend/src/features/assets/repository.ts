@@ -1,6 +1,6 @@
 import { Firestore, FieldValue } from '@google-cloud/firestore';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
-import { getCollections } from '@rebecca/db';
+import { getCollections, COLLECTIONS } from '@rebecca/db';
 
 export interface AssetQueryParams {
   page?: number;
@@ -200,7 +200,7 @@ export class AssetsRepository {
     } else {
       delete docData.embedding;
     }
-    await this.firestore.collection('images').doc(id).set(docData);
+    await this.firestore.collection(COLLECTIONS.IMAGES).doc(id).set(docData);
   }
 
   /**

@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { COLLECTIONS } from '@rebecca/db/schema';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types/auth';
 
 export { AuthenticatedRequest, AuthenticatedUser };
@@ -33,7 +34,7 @@ async function resolveAdminRole(email: string): Promise<{ authorized: boolean; r
   }
 
   const snapshot = await getFirestore()
-    .collection('admin_users')
+    .collection(COLLECTIONS.ADMIN_USERS)
     .where('email', '==', email)
     .where('status', '==', 'ACTIVE')
     .limit(1)

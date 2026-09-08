@@ -1,4 +1,4 @@
-﻿import { extractCleanTextForLanguageDetection } from '../../src/utils/text';
+import { extractCleanTextForLanguageDetection } from '../../src/utils/text';
 
 describe('Text Utils - extractCleanTextForLanguageDetection', () => {
     it('should strip mentions and URLs from text', () => {
@@ -29,5 +29,28 @@ describe('Text Utils - extractCleanTextForLanguageDetection', () => {
         expect(extractCleanTextForLanguageDetection('')).toBe('');
         expect(extractCleanTextForLanguageDetection(null as unknown as string)).toBe('');
         expect(extractCleanTextForLanguageDetection(undefined as unknown as string)).toBe('');
+    });
+});
+
+import { getJSTDate, formatJSTDateTime } from '../../src/utils/time';
+
+describe('Time Utils - getJSTDate and formatJSTDateTime', () => {
+    it('should return a valid Date object in JST timezone', () => {
+        const date = getJSTDate();
+        expect(date).toBeInstanceOf(Date);
+        expect(isNaN(date.getTime())).toBe(false);
+    });
+
+    it('should format a valid ISO string into JST format', () => {
+        const iso = '2026-09-08T12:02:00.000Z'; // 21:02 in JST
+        const formatted = formatJSTDateTime(iso);
+        expect(formatted).toBe('2026-09-08 21:02 JST');
+    });
+
+    it('should return empty string for falsy or invalid input', () => {
+        expect(formatJSTDateTime(null)).toBe('');
+        expect(formatJSTDateTime(undefined)).toBe('');
+        expect(formatJSTDateTime('')).toBe('');
+        expect(formatJSTDateTime('invalid-date')).toBe('');
     });
 });
