@@ -7,6 +7,7 @@
 import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
 import { fetchYahooNewsHeadlines } from '../utils/newsFetcher';
+import { formatJSTDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 
@@ -410,13 +411,14 @@ const generateStructuredReply = async (
     try {
         const contents: Content[] = [];
         for (const msg of history) {
+            const timePrefix = msg.timestamp ? `[${formatJSTDateTime(msg.timestamp)}] ` : '';
             if (msg.role === 'model') {
-                const modelText = msg.thought
+                const modelBody = msg.thought
                     ? `【思考・本音】${msg.thought}\n【発話】${msg.content}`
                     : msg.content;
-                contents.push({ role: 'model', parts: [{ text: modelText }] });
+                contents.push({ role: 'model', parts: [{ text: `${timePrefix}${modelBody}` }] });
             } else {
-                contents.push({ role: 'user', parts: [{ text: msg.content }] });
+                contents.push({ role: 'user', parts: [{ text: `${timePrefix}${msg.content}` }] });
             }
         }
         contents.push({ role: 'user', parts: [{ text: userInput }] });

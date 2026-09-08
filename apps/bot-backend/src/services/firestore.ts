@@ -16,6 +16,7 @@
 import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';
 import { getCollections, COLLECTIONS } from '@rebecca/db';
 import config from '../config';
+import { formatJSTDateTime } from '../utils/time';
 import type {
   FirestoreUser,
   ConversationLogEntry,
@@ -103,14 +104,19 @@ const appendEpisodicBuffer = async (userId: string, logEntry: ConversationLogEnt
 };
 
 /**
- * Replaces a user's core profile and clears the episodic buffer.
+ * Updates a user's core profile and retains a sliding window of recent episodic buffer turns.
  *
- * @param userId      - Target user's document ID.
- * @param profileData - New core profile object.
+ * @param userId         - Target user's document ID.
+ * @param profileData    - New core profile object.
+ * @param retainedBuffer - The sliding window of recent conversation turns to retain (defaults to empty).
  */
-const updateCoreProfile = async (userId: string, profileData: UserCoreProfile): Promise<void> => {
+const updateCoreProfile = async (
+  userId: string,
+  profileData: UserCoreProfile,
+  retainedBuffer: ConversationLogEntry[] = [],
+): Promise<void> => {
   await db.users.doc(userId).set(
-    { coreProfile: profileData, episodicBuffer: [] } as unknown as FirestoreUser,
+    { coreProfile: profileData, episodicBuffer: retainedBuffer } as unknown as FirestoreUser,
     { merge: true },
   );
 };
@@ -573,8 +579,12 @@ const findRagMemories = async (userId: string, queryVector: number[], limit = 3)
 
     const memories: string[] = [];
     snapshot.forEach((doc) => {
-      const text = doc.data()?.['text'];
-      if (text) memories.push(text);
+      const data = doc.data();
+      const text = data?.['text'];
+      if (text) {
+        const timeHeader = data?.['timestamp'] ? `[${formatJSTDateTime(data['timestamp'])}]\n` : '';
+        memories.push(`${timeHeader}${text}`);
+      }
     });
     return memories;
   } catch (e) {
