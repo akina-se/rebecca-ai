@@ -96,6 +96,18 @@ export const COLLECTIONS = {
    * Doc ID = X user ID.
    */
   LIST_INTERACTION_HISTORY: 'list_interaction_history',
+
+  /**
+   * Authorized dashboard administrators for RBAC.
+   * Doc ID = Firebase Auth UID.
+   */
+  ADMIN_USERS: 'admin_users',
+
+  /**
+   * Idempotency log: records Eventarc event IDs processed by Cloud Functions.
+   * Doc ID = Eventarc eventId.
+   */
+  PROCESSED_EVENTS: 'processed_events',
 } as const;
 
 // Derive a union type for all collection name values (useful for generic helpers).
@@ -449,6 +461,22 @@ export function getCollections(db: Firestore) {
      */
     processedMentions: db
       .collection(COLLECTIONS.PROCESSED_MENTIONS)
+      .withConverter(makePassThroughConverter()),
+
+    /**
+     * Pass-through admin users documents for RBAC.
+     * Doc ID = Firebase Auth UID.
+     */
+    adminUsers: db
+      .collection(COLLECTIONS.ADMIN_USERS)
+      .withConverter(makePassThroughConverter()),
+
+    /**
+     * Pass-through processed Eventarc events idempotency documents.
+     * Doc ID = Eventarc eventId.
+     */
+    processedEvents: db
+      .collection(COLLECTIONS.PROCESSED_EVENTS)
       .withConverter(makePassThroughConverter()),
   } as const;
 }
