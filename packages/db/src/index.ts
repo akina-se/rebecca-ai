@@ -23,83 +23,19 @@ import {
   QueryDocumentSnapshot,
 } from '@google-cloud/firestore';
 
-import type {
-  FirestoreUser,
-  RawConversationLog,
-  TimelinePost,
-  RagMemory,
-  ImageDoc,
-  ProcessedFollower,
-  ListInteraction,
-  RateLimitDoc,
-  PersonaDoc,
-  XApiStateDoc,
-} from '@rebecca/types';
-
-// ---------------------------------------------------------------------------
-// Collection name constants
-// Single source of truth – never use raw strings outside this file.
-// ---------------------------------------------------------------------------
-
-/** All Firestore collection identifiers used across the Rebecca AI system. */
-export const COLLECTIONS = {
-  /** Primary user documents: profiles, episodic buffers, working memory. */
-  USERS: 'users',
-
-  /** TTL-based raw conversation logs (5-year expiry). */
-  CONVERSATION_LOGS: 'conversation_logs',
-
-  /** TTL-based timeline post history (5-year expiry). */
-  TIMELINE_HISTORY: 'timeline_history',
-
-  /** Vector-indexed RAG memory entries per user. */
-  RAG_MEMORIES: 'rag_memories',
-
-  /**
-   * Rate-limit counters (global daily, user daily, user per-minute).
-   * Doc IDs follow the pattern: `global_<date>`, `user_<id>_<date>`, etc.
-   */
-  RATE_LIMITS: 'rate_limits',
-
-  /**
-   * System singleton documents.
-   * Known doc IDs: `persona`, `x_api_state`.
-   */
-  SYSTEM: 'system',
-
-  /**
-   * System-wide statistics (e.g., daily active users).
-   * Known doc IDs: `dau_<YYYY-MM-DD>`.
-   */
-  SYSTEM_STATS: 'system_stats',
-
-  /**
-   * Idempotency log: records mention tweet IDs that have been processed.
-   * Doc ID = tweet ID.
-   */
-  PROCESSED_MENTIONS: 'processed_mentions',
-
-  /**
-   * Vector-indexed image asset metadata.
-   * Doc ID = image hash (SHA-256 or similar).
-   */
-  IMAGES: 'images',
-
-  /**
-   * Tracks followers that have been through the onboarding pipeline.
-   * Doc ID = follower's X user ID.
-   */
-  PROCESSED_FOLLOWERS: 'processed_followers',
-
-  /**
-   * Tracks the last list-interaction timestamp per user.
-   * Doc ID = X user ID.
-   */
-  LIST_INTERACTION_HISTORY: 'list_interaction_history',
-} as const;
-
-// Derive a union type for all collection name values (useful for generic helpers).
-export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
+import {
+  COLLECTIONS,
+  type FirestoreUser,
+  type RawConversationLog,
+  type TimelinePost,
+  type RagMemory,
+  type ImageDoc,
+  type ProcessedFollower,
+  type ListInteraction,
+  type RateLimitDoc,
+  type PersonaDoc,
+  type XApiStateDoc,
+} from './schema';
 
 // ---------------------------------------------------------------------------
 // Helper: safe Timestamp → ISO string conversion
@@ -450,6 +386,22 @@ export function getCollections(db: Firestore) {
     processedMentions: db
       .collection(COLLECTIONS.PROCESSED_MENTIONS)
       .withConverter(makePassThroughConverter()),
+
+    /**
+     * Pass-through admin users documents for RBAC.
+     * Doc ID = Firebase Auth UID.
+     */
+    adminUsers: db
+      .collection(COLLECTIONS.ADMIN_USERS)
+      .withConverter(makePassThroughConverter()),
+
+    /**
+     * Pass-through processed Eventarc events idempotency documents.
+     * Doc ID = Eventarc eventId.
+     */
+    processedEvents: db
+      .collection(COLLECTIONS.PROCESSED_EVENTS)
+      .withConverter(makePassThroughConverter()),
   } as const;
 }
 
@@ -466,3 +418,7 @@ export {
   processedFollowerConverter,
   listInteractionConverter,
 };
+
+// Re-export all schema models and collection constants.
+export * from './schema';
+

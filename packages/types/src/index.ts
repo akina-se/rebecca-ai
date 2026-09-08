@@ -51,6 +51,27 @@ export enum AssetStatus {
   FAILED = 'FAILED',
 }
 
+/** Roles assigned to dashboard administrator accounts. */
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN';
+
+/** Status of an administrator account. */
+export type AdminUserStatus = 'ACTIVE' | 'REVOKED';
+
+/** Represents an administrator account authorized to access the dashboard. */
+export interface AdminUser {
+  email: string;
+  role: AdminRole;
+  status: AdminUserStatus;
+  createdAt: string;
+}
+
+/** Idempotency record for Eventarc cloud events processed by Cloud Functions. */
+export interface ProcessedEvent {
+  processedAt: string;
+  type: string;
+  logId?: string;
+}
+
 
 /**
  * Represents a user document as stored in Firestore.

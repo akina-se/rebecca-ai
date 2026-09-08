@@ -1,4 +1,4 @@
-import { getJSTDate } from '../utils/time';
+import { getJSTDate, formatJSTDateTime } from '../utils/time';
 import { getBasePrompt, PromptContext, Language } from '@rebecca/persona';
 import { FirestoreUser } from '../types';
 
@@ -28,6 +28,12 @@ const buildSystemPrompt = (
 ): string => {
     let prompt = getBasePrompt(promptContext, lang);
 
+    const jstNow = getJSTDate();
+    const formattedCurrentTime = formatJSTDateTime(new Date().toISOString());
+    prompt += lang === 'en'
+        ? `\n\n[Current Time (JST)]\n${formattedCurrentTime}`
+        : `\n\n【現在時刻（JST）】\n${formattedCurrentTime}`;
+
     if (personaFewShotPrompt) {
         prompt += `\n\n${personaFewShotPrompt}`;
     }
@@ -41,12 +47,11 @@ const buildSystemPrompt = (
 
     if (ragMemories && ragMemories.length > 0) {
         prompt += lang === 'en'
-            ? `\n\n[RAG Memories (Past Episodes)]\nHere are raw logs of past conversations related to the current context. Keep them in mind when replying:\n`
-            : `\n\n【関連する過去のエピソード記憶（RAG Memories）】\n現在の会話の文脈に関連する過去のやり取りの生ログです。これらを踏まえて返答してください。\n`;
+            ? `\n\n[RAG Memories (Past Episodes)]\nHere are past conversation logs retrieved by topic similarity. Notice their recorded timestamps: they represent past history, distinct from the immediate conversation turns (Contents). Keep them in mind when replying:\n`
+            : `\n\n【関連する過去のエピソード記憶（RAG Memories）】\n話題の類似度によって取得された過去の会話ログです。記録された日時に着目してください（直前の対話履歴Contentsとは異なり、過去の出来事です）。これらを踏まえて返答してください。\n`;
         prompt += ragMemories.join('\n\n');
     }
 
-    const jstNow = getJSTDate();
     const hour = jstNow.getHours();
     if (hour >= 7 && hour <= 9) {
         prompt += lang === 'en'
