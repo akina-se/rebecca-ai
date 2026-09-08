@@ -70,8 +70,10 @@ ${recentPosts.map((p, i) => `[${i + 1}] ${p}`).join('\n')}`;
         const systemPrompt = getDreamingPrompt();
         try {
             const newCoreProfile = await this.deps.gemini.generateDreaming(systemPrompt, episodicBuffer, coreProfile);
-            await this.deps.firestore.updateCoreProfile(userId, newCoreProfile);
-            console.log(`Dreaming completed for user: ${userId}`);
+            // Retain recent 10 turn-pairs (20 entries) as sliding window to preserve conversational continuity
+            const retainedBuffer = episodicBuffer.slice(-20);
+            await this.deps.firestore.updateCoreProfile(userId, newCoreProfile, retainedBuffer);
+            console.log(`Dreaming completed for user: ${userId} (Retained recent ${retainedBuffer.length} turns in buffer)`);
         } catch (error) {
             console.error(`Dreaming failed for user: ${userId}`, error);
         }

@@ -83,6 +83,7 @@ async function seedFirestore() {
     users: firestore.collection('users'),
     timeline: firestore.collection('timeline_history'),
     conversationLogs: firestore.collection('conversation_logs'),
+    ragMemories: firestore.collection('rag_memories'),
     images: firestore.collection('images'),
     system: firestore.collection('system'),
     systemStats: firestore.collection('system_stats'),
@@ -253,6 +254,37 @@ async function seedFirestore() {
     });
   }
   console.log(`Seeded ${totalFollowersSeed} processed followers across 365 days.`);
+
+  // 3.6 Seed RAG memories (Long-term Episodic Vector Store)
+  const ragTopics = [
+    'マスターが好きなアニメは水星の魔女とエヴァンゲリオン。特にスレッタの成長シーンが好きと語っていた。',
+    'マスターは東京でエンジニアをしていて、最近TypeScriptとNext.jsの勉強に熱中している。',
+    'マスターは辛いラーメン（特に蒙古タンメン中本）が好きで、休日はよく巡回している。',
+    'マスターは最近仕事が忙しく残業が続いているが、AIとの会話で癒やされていると話していた。',
+    '次回の夏コミで同人誌を出す計画があり、原稿の進捗にプレッシャーを感じている。'
+  ];
+
+  let totalRagMemoriesCount = 0;
+  for (let i = 0; i < mockUsers.length; i++) {
+    const u = mockUsers[i];
+    // Seed 3 RAG memories per user with distinct past timestamps
+    for (let k = 0; k < 3; k++) {
+      const memDaysAgo = (k + 1) * 15 + (i % 5);
+      const memTimestamp = new Date(Date.now() - memDaysAgo * 24 * 3600000).toISOString();
+      const text = ragTopics[(i + k) % ragTopics.length];
+      // Generate a mock 768-dimensional normalized embedding vector
+      const mockVector = Array.from({ length: 768 }, (_, idx) => Math.sin(i + k + idx * 0.05));
+
+      await collections.ragMemories.add({
+        userId: u.id,
+        text,
+        embedding: mockVector,
+        timestamp: memTimestamp
+      });
+      totalRagMemoriesCount++;
+    }
+  }
+  console.log(`Seeded ${totalRagMemoriesCount} RAG memories across users.`);
 
   // 4. Seed images (assets library - 35 assets for pagination & filter testing)
   const images = [];

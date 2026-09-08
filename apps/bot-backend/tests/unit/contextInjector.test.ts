@@ -2,9 +2,10 @@ import { buildSystemPrompt  } from '../../src/core/contextInjector';
 
 // Mock time for deterministic tests
 jest.mock('../../src/utils/time', () => ({
-    getJSTDate: jest.fn()
+    getJSTDate: jest.fn(),
+    formatJSTDateTime: jest.fn((date) => '2024-01-01 08:00 JST')
 }));
-import { getJSTDate  } from '../../src/utils/time';
+import { getJSTDate, formatJSTDateTime } from '../../src/utils/time';
 
 describe('Context Injector', () => {
     beforeEach(() => {
@@ -13,8 +14,10 @@ describe('Context Injector', () => {
 
     it('should inject morning context during 7:00-9:00', () => {
         (getJSTDate as jest.Mock).mockReturnValue(new Date('2024-01-01T08:00:00'));
+        (formatJSTDateTime as jest.Mock).mockReturnValue('2024-01-01 08:00 JST');
         const prompt = buildSystemPrompt('reply', { coreProfile: {}, episodicBuffer: [] }, 'こんにちは');
         expect(prompt).toContain('現在時刻は朝（8時台）です。');
+        expect(prompt).toContain('【現在時刻（JST）】\n2024-01-01 08:00 JST');
     });
 
     it('should inject night context during 22:00-2:00', () => {
