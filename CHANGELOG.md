@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/akina-se/rebecca-ai/compare/v1.14.0...v1.15.0) (2026-09-08)
+
+
+### Features
+
+* **bot-backend:** implement HyDE query inference and cascade image re-ranking ([#178](https://github.com/akina-se/rebecca-ai/issues/178)) ([fd33be3](https://github.com/akina-se/rebecca-ai/commit/fd33be3695268860e0b6a3a1b57d6ff3a2407acb))
+
 ## [1.14.0](https://github.com/akina-se/rebecca-ai/compare/v1.13.1...v1.14.0) (2026-09-07)
 
 
