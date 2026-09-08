@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/akina-se/rebecca-ai/compare/v1.15.0...v1.15.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **bot-backend:** calibrate image relevance re-ranking prompt for character resonance ([#181](https://github.com/akina-se/rebecca-ai/issues/181)) ([3ea353e](https://github.com/akina-se/rebecca-ai/commit/3ea353ebb604a40bd9a5959157c600cc8e08c85c))
+
 ## [1.15.0](https://github.com/akina-se/rebecca-ai/compare/v1.14.0...v1.15.0) (2026-09-08)
 
 
