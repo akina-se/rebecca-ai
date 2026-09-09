@@ -3,26 +3,28 @@
  */
 
 /**
- * Interface representing a news headline item.
+ * Interface representing a structured news item.
  */
 export interface NewsItem {
   /** The headline title. */
   title: string;
-  /** The URL source of the news item, if available. */
-  url?: string;
+  /** Brief summary or background of the news. */
+  summary: string;
+  /** Category/genre of the news (e.g. エンタメ, トレンド, グルメ). */
+  category: string;
 }
 
 /**
- * Abstract provider interface for retrieving real-time news headlines.
+ * Abstract provider interface for retrieving real-time news items.
  * Adheres to the Dependency Inversion Principle (DIP).
  */
 export interface INewsProvider {
   /**
-   * Fetches latest candidate news headlines.
+   * Fetches latest structured news items containing titles, summaries, and categories.
    *
-   * @returns Array of headline strings (or NewsItem titles).
+   * @returns Array of NewsItem objects.
    */
-  getHeadlines(): Promise<string[]>;
+  getNews(): Promise<NewsItem[]>;
 }
 
 /**

@@ -72,10 +72,12 @@ export default {
     apiKey: process.env.GEMINI_API_KEY,
     model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
-    judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemma-4-31b-it',
-    languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-31b-it',
+    judgeModel: process.env.GEMINI_JUDGE_MODEL || 'gemma-4-26b-a4b-it',
+    languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-26b-a4b-it',
     visionModel: process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
     imageInferenceModel: process.env.GEMINI_IMAGE_INFERENCE_MODEL || 'gemini-3.5-flash-lite',
+    newsSearchModel: process.env.GEMINI_NEWS_SEARCH_MODEL || 'gemini-2.5-flash',
+    newsPostModel: process.env.GEMINI_NEWS_POST_MODEL || 'gemini-3.5-flash-lite',
   },
 
   /**

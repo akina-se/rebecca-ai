@@ -28,8 +28,8 @@ describe('Config', () => {
         expect(config.gcp.queueName).toBe('rebecca-reply-queue');
         expect(config.gemini.model).toBe('gemini-3.5-flash-lite');
         expect(config.gemini.embeddingModel).toBe('gemini-embedding-2');
-        expect(config.gemini.judgeModel).toBe('gemma-4-31b-it');
-        expect(config.gemini.languageModel).toBe('gemma-4-31b-it');
+        expect(config.gemini.judgeModel).toBe('gemma-4-26b-a4b-it');
+        expect(config.gemini.languageModel).toBe('gemma-4-26b-a4b-it');
         expect(Number(config.rag.maxMemories)).toBe(100);
         expect(Number(config.limits.globalDailyLimit)).toBe(500);
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);

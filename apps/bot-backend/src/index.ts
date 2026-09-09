@@ -11,7 +11,6 @@ import * as geminiService from './services/gemini';
 import * as xApiService from './services/xApi';
 import * as tasksService from './services/tasks';
 import * as storageService from './services/storage';
-import * as newsFetcherUtility from './utils/newsFetcher';
 import { AppDependencies } from './types';
 
 import { createBatchRoutes } from './routes/batchRoutes';
@@ -25,7 +24,6 @@ const deps: AppDependencies = {
     xApi: xApiService,
     tasks: tasksService,
     storage: storageService,
-    newsFetcher: newsFetcherUtility
 };
 
 import path from 'path';

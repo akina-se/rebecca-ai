@@ -69,6 +69,14 @@ jest.mock('../../src/services/tasks', () => ({
     enqueueReplyTask: jest.fn().mockResolvedValue({ name: 'mock_task' }),
 }));
 
+jest.mock('../../src/features/news/providers/geminiSearch', () => ({
+    GeminiSearchNewsProvider: jest.fn().mockImplementation(() => ({
+        getNews: jest.fn().mockResolvedValue([
+            { title: 'Test News Headline', summary: 'Test News Summary', category: 'General' },
+        ]),
+    })),
+}));
+
 describe('Integration Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -291,10 +299,6 @@ describe('Integration Tests', () => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
         it('should process news-post successfully', async () => {
-            const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockResolvedValue({
-                text: jest.fn().mockResolvedValue('<rss><channel><item><title>Test News</title><link>http://example.com</link><description>Test</description></item></channel></rss>')
-            }) as any;
             (gemini.generateStructuredNewsPost as jest.Mock).mockResolvedValueOnce({
                 thought: 'ニュース思考',
                 reply: 'Mock News Post',
@@ -303,7 +307,6 @@ describe('Integration Tests', () => {
             
             const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
             
-            global.fetch = originalFetch;
             expect(response.status).toBe(200);
             expect(gemini.generateStructuredNewsPost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock News Post'), expect.any(Object));
