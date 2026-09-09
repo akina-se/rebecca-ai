@@ -454,8 +454,10 @@ const generateStructuredReply = async (
             const call = response.functionCalls[0];
             if (call.name === 'search_news') {
                 const newsProvider = new GeminiSearchNewsProvider(undefined, ai || undefined);
-                const headlines = await newsProvider.getHeadlines();
-                const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
+                const newsItems = await newsProvider.getNews();
+                const newsResult = newsItems.length > 0
+                    ? newsItems.map((n) => `【${n.category}】${n.title}: ${n.summary}`).join('\n')
+                    : "ニュースを取得できませんでした。";
 
                 if (response.candidates && response.candidates[0].content) {
                     contents.push(response.candidates[0].content);

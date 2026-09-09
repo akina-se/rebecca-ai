@@ -23,7 +23,25 @@ Google検索を利用して、日本の今日の最新トレンド、エンタ�
 - Markdownコードブロックや余計な前置き・解説は一切含めず、純粋なJSON文字列のみを出力すること。`;
 
 /**
- * News provider that fetches real-time headlines using Google Search Grounding via Gemini API.
+ * Validates whether an unknown value conforms to the NewsItem structure.
+ */
+const isValidNewsItem = (item: unknown): item is NewsItem => {
+  if (typeof item !== 'object' || item === null) {
+    return false;
+  }
+  const candidate = item as Record<string, unknown>;
+  return (
+    typeof candidate.title === 'string' &&
+    candidate.title.trim().length > 0 &&
+    typeof candidate.summary === 'string' &&
+    candidate.summary.trim().length > 0 &&
+    typeof candidate.category === 'string' &&
+    candidate.category.trim().length > 0
+  );
+};
+
+/**
+ * News provider that fetches real-time news using Google Search Grounding via Gemini API.
  */
 export class GeminiSearchNewsProvider implements INewsProvider {
   private ai: GoogleGenAI | null = null;
@@ -41,9 +59,9 @@ export class GeminiSearchNewsProvider implements INewsProvider {
   /**
    * Fetches latest structured news items using Google Search Grounding.
    *
-   * @returns Array of NewsItem objects (up to 5), or empty array upon failure.
+   * @returns Array of valid NewsItem objects (up to 5), or empty array upon failure.
    */
-  async getNewsItems(): Promise<NewsItem[]> {
+  async getNews(): Promise<NewsItem[]> {
     if (!this.ai) {
       console.warn('[GeminiSearchNewsProvider] Gemini client is not initialized.');
       return [];
@@ -81,11 +99,11 @@ export class GeminiSearchNewsProvider implements INewsProvider {
       }
 
       const items: NewsItem[] = parsed
-        .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).title === 'string' && ((item as Record<string, unknown>).title as string).trim().length > 0)
+        .filter(isValidNewsItem)
         .map((item) => ({
-          title: String(item.title).trim(),
-          summary: typeof item.summary === 'string' ? item.summary.trim() : undefined,
-          category: typeof item.category === 'string' ? item.category.trim() : undefined,
+          title: item.title.trim(),
+          summary: item.summary.trim(),
+          category: item.category.trim(),
         }));
 
       console.log(`[GeminiSearchNewsProvider] Successfully fetched ${items.length} structured news items.`);
@@ -94,15 +112,5 @@ export class GeminiSearchNewsProvider implements INewsProvider {
       console.error('[GeminiSearchNewsProvider] Error fetching structured news via search grounding:', error);
       return [];
     }
-  }
-
-  /**
-   * Fetches latest fresh headlines using Google Search Grounding.
-   *
-   * @returns Array of headline strings (up to 5), or empty array upon failure.
-   */
-  async getHeadlines(): Promise<string[]> {
-    const items = await this.getNewsItems();
-    return items.map((item) => item.title);
   }
 }

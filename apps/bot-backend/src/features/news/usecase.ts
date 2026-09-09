@@ -5,7 +5,7 @@ import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { INewsProvider, NewsResult } from './types';
 import { GeminiSearchNewsProvider } from './providers/geminiSearch';
-import { filterFreshHeadlines } from './deduplicator';
+import { filterFreshNews } from './deduplicator';
 
 export * from './types';
 export * from './deduplicator';
@@ -26,7 +26,7 @@ export class ProactiveNewsUseCase {
   /**
    * Initializes the ProactiveNewsUseCase.
    *
-   * @param deps Application dependencies.
+   * @param deps Injected application dependencies.
    * @param newsProvider Optional custom news provider implementation (defaults to GeminiSearchNewsProvider).
    */
   constructor(
@@ -44,40 +44,32 @@ export class ProactiveNewsUseCase {
   async execute(): Promise<NewsResult> {
     console.log('Starting Proactive News Post Batch...');
     try {
-      const rawNewsItems = this.newsProvider.getNewsItems
-        ? await this.newsProvider.getNewsItems()
-        : (await this.newsProvider.getHeadlines()).map((h) => ({ title: h }));
+      const rawNewsItems = await this.newsProvider.getNews();
 
-      if (!rawNewsItems || rawNewsItems.length === 0) {
+      if (rawNewsItems.length === 0) {
         console.log('[ProactiveNewsUseCase] No news items fetched.');
         return { status: 'skipped', reason: 'no_headlines' };
       }
 
       console.log('[ProactiveNewsUseCase] Fetched news items count:', rawNewsItems.length);
 
-      const candidateHeadlines = await filterFreshHeadlines(
+      const candidateNews = await filterFreshNews(
         this.deps,
         rawNewsItems,
         config.news.dedupLookbackDays,
         config.news.dedupSimilarityThreshold,
       );
 
-      if (candidateHeadlines.length === 0) {
+      if (candidateNews.length === 0) {
         console.log('[ProactiveNewsUseCase] All candidate headlines were duplicates of recent posts.');
         return { status: 'skipped', reason: 'all_duplicates' };
       }
 
-      const freshHeadlineTexts = candidateHeadlines.map((c) => c.headline);
+      const freshHeadlineTexts = candidateNews.map((c) => c.headline);
       console.log('[ProactiveNewsUseCase] Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
 
-      const formattedNewsContext = candidateHeadlines
-        .map((c) => {
-          const item = c.item;
-          if (item && item.summary) {
-            return `・【${item.category || 'ニュース'}】${item.title}\n  概要: ${item.summary}`;
-          }
-          return `・${c.headline}`;
-        })
+      const formattedNewsContext = candidateNews
+        .map((c) => `・【${c.item.category}】${c.item.title}\n  概要: ${c.item.summary}`)
         .join('\n');
 
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
@@ -120,15 +112,15 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       console.log('[ProactiveNewsUseCase] Generated Post:', postText);
 
       // Identify which headline was referenced
-      const matchedHeadline = candidateHeadlines.find((c) => postText.includes(c.headline));
-      const newsTitle = matchedHeadline ? matchedHeadline.headline : undefined;
+      const matchedNews = candidateNews.find((c) => postText.includes(c.headline));
+      const newsTitle = matchedNews ? matchedNews.headline : undefined;
 
       let chosenEmbedding: number[] | undefined;
-      if (matchedHeadline) {
-        chosenEmbedding = matchedHeadline.embedding;
+      if (matchedNews) {
+        chosenEmbedding = matchedNews.embedding;
         if (!chosenEmbedding || chosenEmbedding.length === 0) {
           try {
-            chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedHeadline.headline);
+            chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedNews.headline);
           } catch (e) {
             console.warn('[ProactiveNewsUseCase] Failed to generate embedding for selected headline:', e);
           }
@@ -139,8 +131,8 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         postType: 'news',
         text: postText,
         thought,
-        imageContext: matchedHeadline
-          ? `ニュース見出し: ${matchedHeadline.headline}\nタイムライン状況: ${timelineSummary}`
+        imageContext: matchedNews
+          ? `ニュース見出し: ${matchedNews.headline}\nタイムライン状況: ${timelineSummary}`
           : `タイムライン状況: ${timelineSummary}`,
         metadata: {
           newsTitle,

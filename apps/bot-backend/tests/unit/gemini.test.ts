@@ -20,11 +20,11 @@ jest.mock('@google/genai', () => {
     };
 });
 
-const mockGetHeadlines = jest.fn();
+const mockGetNews = jest.fn();
 jest.mock('../../src/features/news/providers/geminiSearch', () => {
     return {
         GeminiSearchNewsProvider: jest.fn().mockImplementation(() => ({
-            getHeadlines: mockGetHeadlines,
+            getNews: mockGetNews,
         })),
     };
 });
@@ -368,7 +368,7 @@ describe('gemini.ts', () => {
 
         it('should handle tool calling with news search in structured reply', async () => {
             const { gemini } = getGeminiModule();
-            mockGetHeadlines.mockResolvedValueOnce(['AI最新動向']);
+            mockGetNews.mockResolvedValueOnce([{ title: 'AI最新動向', summary: 'AI技術の最新動向です', category: 'IT' }]);
 
             mockGenerateContent
                 .mockResolvedValueOnce({
@@ -382,7 +382,7 @@ describe('gemini.ts', () => {
             const res = await gemini.generateStructuredReply('System', [], '最新ニュース教えて');
             expect(res.thought).toBe('最新ニュースね');
             expect(res.reply).toBe('AIニュース確認したわ！');
-            expect(mockGetHeadlines).toHaveBeenCalled();
+            expect(mockGetNews).toHaveBeenCalled();
         });
     });
 

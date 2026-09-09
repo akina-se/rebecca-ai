@@ -71,7 +71,9 @@ jest.mock('../../src/services/tasks', () => ({
 
 jest.mock('../../src/features/news/providers/geminiSearch', () => ({
     GeminiSearchNewsProvider: jest.fn().mockImplementation(() => ({
-        getHeadlines: jest.fn().mockResolvedValue(['Test News Headline']),
+        getNews: jest.fn().mockResolvedValue([
+            { title: 'Test News Headline', summary: 'Test News Summary', category: 'General' },
+        ]),
     })),
 }));
 

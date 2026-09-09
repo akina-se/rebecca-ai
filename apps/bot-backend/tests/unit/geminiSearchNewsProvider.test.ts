@@ -24,8 +24,8 @@ describe('GeminiSearchNewsProvider', () => {
     // Force ai client to null
     (provider as any).ai = null;
 
-    const headlines = await provider.getHeadlines();
-    expect(headlines).toEqual([]);
+    const news = await provider.getNews();
+    expect(news).toEqual([]);
   });
 
   it('should fetch and parse structured news items from search grounding JSON output', async () => {
@@ -54,7 +54,7 @@ describe('GeminiSearchNewsProvider', () => {
     });
 
     const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
-    const items = await provider.getNewsItems();
+    const items = await provider.getNews();
 
     expect(mockGenerateContent).toHaveBeenCalledWith({
       model: 'gemini-2.5-flash',
@@ -76,22 +76,15 @@ describe('GeminiSearchNewsProvider', () => {
       summary: '新9ブランドの手土産スイーツが登場。',
       category: 'グルメ',
     });
-
-    // Test getHeadlines extracts titles
-    mockGenerateContent.mockResolvedValueOnce({
-      text: JSON.stringify([{ title: 'スタバ新作フラペチーノ' }]),
-    });
-    const headlines = await provider.getHeadlines();
-    expect(headlines).toEqual(['スタバ新作フラペチーノ']);
   });
 
   it('should handle API errors gracefully and return an empty array', async () => {
     mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
 
     const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
-    const headlines = await provider.getHeadlines();
+    const news = await provider.getNews();
 
-    expect(headlines).toEqual([]);
+    expect(news).toEqual([]);
   });
 
   it('should handle empty text response gracefully', async () => {
@@ -100,8 +93,8 @@ describe('GeminiSearchNewsProvider', () => {
     });
 
     const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
-    const headlines = await provider.getHeadlines();
+    const news = await provider.getNews();
 
-    expect(headlines).toEqual([]);
+    expect(news).toEqual([]);
   });
 });
