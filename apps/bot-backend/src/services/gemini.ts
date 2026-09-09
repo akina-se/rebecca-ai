@@ -6,10 +6,10 @@
 
 import { GoogleGenAI, Content } from '@google/genai';
 import config from '../config';
-import { fetchYahooNewsHeadlines } from '../utils/newsFetcher';
 import { formatJSTDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
+import { GeminiSearchNewsProvider } from '../features/news/providers/geminiSearch';
 
 /**
  * Global Gemini API client instance.
@@ -139,15 +139,17 @@ const analyzeUserProfile = async (prompt: string): Promise<Record<string, unknow
 const generateStructuredPostInternal = async (
     systemInstruction: string,
     prompt: string | string[],
-    maxOutputTokens = 500
+    maxOutputTokens = 500,
+    modelOverride?: string,
 ): Promise<StructuredPersonaResponse> => {
     if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) {
         return { thought: '', reply: '' };
     }
     try {
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
+        const modelToUse = modelOverride || config.gemini.model;
         const response = await ai.models.generateContent({
-            model: config.gemini.model,
+            model: modelToUse,
             contents: contentStr,
             config: {
                 systemInstruction: systemInstruction,
@@ -169,9 +171,10 @@ const generateStructuredPostInternal = async (
  */
 const generateStructuredNewsPost = async (
     systemInstruction: string,
-    prompt: string | string[]
+    prompt: string | string[],
+    modelOverride?: string,
 ): Promise<StructuredPersonaResponse> => {
-    return generateStructuredPostInternal(systemInstruction, prompt, 500);
+    return generateStructuredPostInternal(systemInstruction, prompt, 500, modelOverride || config.gemini.newsPostModel);
 };
 
 /**
@@ -450,7 +453,8 @@ const generateStructuredReply = async (
         if (response.functionCalls && response.functionCalls.length > 0) {
             const call = response.functionCalls[0];
             if (call.name === 'search_news') {
-                const headlines = await fetchYahooNewsHeadlines();
+                const newsProvider = new GeminiSearchNewsProvider(undefined, ai || undefined);
+                const headlines = await newsProvider.getHeadlines();
                 const newsResult = headlines.length > 0 ? headlines.join('\n') : "ニュースを取得できませんでした。";
 
                 if (response.candidates && response.candidates[0].content) {

@@ -21,7 +21,6 @@ import {
   IXApiService,
   ITasksService,
   IStorageService,
-  INewsFetcherService,
 } from './interfaces';
 
 /** Aggregates all service dependencies injected at the application root. */
@@ -31,5 +30,4 @@ export interface AppDependencies {
   xApi: IXApiService;
   tasks: ITasksService;
   storage: IStorageService;
-  newsFetcher: INewsFetcherService;
 }
