@@ -72,8 +72,5 @@ export const createMockDeps = (): AppDependencies => {
         storage: {
             downloadImage: jest.fn(),
         } as any,
-        newsFetcher: {
-            fetchYahooNewsHeadlines: jest.fn(),
-        } as any,
     };
 };

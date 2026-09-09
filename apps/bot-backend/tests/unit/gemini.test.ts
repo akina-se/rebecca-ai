@@ -5,7 +5,8 @@ jest.mock('../../src/config', () => ({
     default: {
         gemini: {
             apiKey: 'test-key',
-            model: 'test-model'
+            model: 'test-model',
+            newsPostModel: 'test-news-post-model',
         },
         gcp: {
             projectId: 'test-project'
@@ -19,9 +20,14 @@ jest.mock('@google/genai', () => {
     };
 });
 
-jest.mock('../../src/utils/newsFetcher', () => ({
-    fetchYahooNewsHeadlines: jest.fn()
-}));
+const mockGetNews = jest.fn();
+jest.mock('../../src/features/news/providers/geminiSearch', () => {
+    return {
+        GeminiSearchNewsProvider: jest.fn().mockImplementation(() => ({
+            getNews: mockGetNews,
+        })),
+    };
+});
 
 describe('gemini.ts', () => {
     let mockGenerateContent: jest.Mock;
@@ -42,12 +48,10 @@ describe('gemini.ts', () => {
 
     const getGeminiModule = () => {
         let gemini: any;
-        let newsFetcher: any;
         jest.isolateModules(() => {
             gemini = require('../../src/services/gemini');
-            newsFetcher = require('../../src/utils/newsFetcher');
         });
-        return { gemini, news: newsFetcher };
+        return { gemini };
     };
     describe('generateDreaming', () => {
         it('should generate dreaming data successfully', async () => {
@@ -363,8 +367,8 @@ describe('gemini.ts', () => {
         });
 
         it('should handle tool calling with news search in structured reply', async () => {
-            const { gemini, news } = getGeminiModule();
-            news.fetchYahooNewsHeadlines.mockResolvedValueOnce(['AI最新動向']);
+            const { gemini } = getGeminiModule();
+            mockGetNews.mockResolvedValueOnce([{ title: 'AI最新動向', summary: 'AI技術の最新動向です', category: 'IT' }]);
 
             mockGenerateContent
                 .mockResolvedValueOnce({
@@ -378,7 +382,7 @@ describe('gemini.ts', () => {
             const res = await gemini.generateStructuredReply('System', [], '最新ニュース教えて');
             expect(res.thought).toBe('最新ニュースね');
             expect(res.reply).toBe('AIニュース確認したわ！');
-            expect(news.fetchYahooNewsHeadlines).toHaveBeenCalled();
+            expect(mockGetNews).toHaveBeenCalled();
         });
     });
 
