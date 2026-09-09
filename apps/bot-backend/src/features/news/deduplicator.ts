@@ -1,47 +1,50 @@
 import { AppDependencies } from '../../types';
 import { cosineSimilarity } from '@rebecca/persona';
 
-export interface CandidateHeadline {
+import { NewsItem } from './types';
+
+export interface CandidateNewsItem {
   headline: string;
   embedding: number[];
+  item: NewsItem;
 }
 
 /**
- * Evaluates candidate headlines against recent news postings using vector cosine similarity.
- * Returns only fresh headlines that do not exceed the similarity threshold.
+ * Evaluates candidate news items against recent news postings using vector cosine similarity.
+ * Returns only fresh news items that do not exceed the similarity threshold.
  *
  * @param deps - Injected application dependencies containing firestore and gemini services.
- * @param rawHeadlines - Array of raw headline strings retrieved from the news provider.
+ * @param rawNews - Array of raw NewsItem objects retrieved from the news provider.
  * @param lookbackDays - Number of days to inspect for past news posts.
  * @param similarityThreshold - Cosine similarity cutoff above which a headline is deemed duplicate.
- * @returns Array of fresh candidate headlines with their generated embeddings.
+ * @returns Array of fresh candidate news items with their generated embeddings.
  */
-export const filterFreshHeadlines = async (
+export const filterFreshNews = async (
   deps: AppDependencies,
-  rawHeadlines: string[],
+  rawNews: NewsItem[],
   lookbackDays: number,
   similarityThreshold: number,
-): Promise<CandidateHeadline[]> => {
-  if (rawHeadlines.length === 0) {
+): Promise<CandidateNewsItem[]> => {
+  if (rawNews.length === 0) {
     return [];
   }
 
   const recentNews = await deps.firestore.getRecentNewsEmbeddings(lookbackDays);
-  const candidates: CandidateHeadline[] = [];
+  const candidates: CandidateNewsItem[] = [];
 
-  for (const headline of rawHeadlines) {
+  for (const item of rawNews) {
     let isDuplicate = false;
     let embedding: number[] = [];
 
     if (recentNews.length > 0) {
       try {
-        embedding = await deps.gemini.generateEmbedding(headline);
+        embedding = await deps.gemini.generateEmbedding(item.title);
         if (embedding.length > 0) {
           for (const past of recentNews) {
             const sim = cosineSimilarity(embedding, past.embedding);
             if (sim >= similarityThreshold) {
               console.log(
-                `[NewsDeduplicator] Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${headline}" matches past: "${past.title}"`,
+                `[NewsDeduplicator] Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${item.title}" matches past: "${past.title}"`,
               );
               isDuplicate = true;
               break;
@@ -54,7 +57,7 @@ export const filterFreshHeadlines = async (
     }
 
     if (!isDuplicate) {
-      candidates.push({ headline, embedding });
+      candidates.push({ headline: item.title, embedding, item });
     }
   }
 

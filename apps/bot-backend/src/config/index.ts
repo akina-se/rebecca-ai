@@ -76,6 +76,8 @@ export default {
     languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemma-4-31b-it',
     visionModel: process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
     imageInferenceModel: process.env.GEMINI_IMAGE_INFERENCE_MODEL || 'gemini-3.5-flash-lite',
+    newsSearchModel: process.env.GEMINI_NEWS_SEARCH_MODEL || 'gemini-2.5-flash',
+    newsPostModel: process.env.GEMINI_NEWS_POST_MODEL || 'gemini-3.5-flash-lite',
   },
 
   /**

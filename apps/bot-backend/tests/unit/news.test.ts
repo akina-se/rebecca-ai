@@ -10,7 +10,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         jest.clearAllMocks();
         deps = createMockDeps();
         mockNewsProvider = {
-            getHeadlines: jest.fn(),
+            getNews: jest.fn(),
         };
         deps.firestore.getRecentNewsEmbeddings.mockResolvedValue([]);
         deps.firestore.getTimelineSummary.mockResolvedValue('Recent timeline events');
@@ -20,7 +20,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should return skipped status if no headlines are fetched', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue([]);
+        mockNewsProvider.getNews.mockResolvedValue([]);
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
         expect(result.status).toBe('skipped');
@@ -29,7 +29,9 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should return skipped status if all headlines are duplicates of recent news', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue(['ITパスポート シラバス案公開']);
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'ITパスポート シラバス案公開', summary: '新シラバス公開', category: 'IT' },
+        ]);
         // Past news has same embedding [1, 0], cosine similarity is 1.0 >= 0.82
         deps.firestore.getRecentNewsEmbeddings.mockResolvedValue([
             { title: 'ITパスポート 新シラバス', embedding: [1, 0] },
@@ -44,9 +46,9 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should filter out duplicate headlines and post fresh headline', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue([
-            'ITパスポート 重複ニュース',
-            '完全新作ゲーム発表！',
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'ITパスポート 重複ニュース', summary: '既出内容', category: 'IT' },
+            { title: '完全新作ゲーム発表！', summary: '新作ゲームが発表されました。', category: 'エンタメ' },
         ]);
         deps.firestore.getRecentNewsEmbeddings.mockResolvedValue([
             { title: 'ITパスポート 既出', embedding: [1, 0] },
@@ -88,8 +90,33 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         );
     });
 
+    it('should format structured news items with category and summary into prompt', async () => {
+        mockNewsProvider.getNews.mockResolvedValue([
+            {
+                title: 'ブルボン新商品',
+                summary: '秋の味覚を楽しめる新商品4品が登場。',
+                category: '新商品',
+            },
+        ]);
+
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            thought: '秋スイーツ美味しそう！',
+            reply: 'ブルボン新商品楽しみね！',
+        });
+
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+
+        expect(result.status).toBe('success');
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('・【新商品】ブルボン新商品\n  概要: 秋の味覚を楽しめる新商品4品が登場。'),
+        );
+    });
+
     it('should return skipped status if generation fails', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'News 1', summary: 'Summary 1', category: 'General' },
+        ]);
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: '', reply: '' });
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
@@ -98,7 +125,9 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should append hashtag if total length <= 140', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'News 1', summary: 'Summary 1', category: 'General' },
+        ]);
         const shortPost = 'A short news post.';
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'short thought', reply: shortPost });
 
@@ -110,7 +139,9 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should omit hashtag if total length > 140', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'News 1', summary: 'Summary 1', category: 'General' },
+        ]);
         const longPost = 'A'.repeat(135);
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'long thought', reply: longPost });
 
@@ -122,7 +153,9 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     });
 
     it('should attach media when image inference succeeds', async () => {
-        mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'News 1', summary: 'Summary 1', category: 'General' },
+        ]);
         const text = 'A post about coffee';
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'coffee thought', reply: text });
         deps.firestore.getTimelineSummary.mockResolvedValue('summary');
