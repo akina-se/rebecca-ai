@@ -1,9 +1,12 @@
 import { AppDependencies } from '../../types';
 import { cosineSimilarity } from '@rebecca/persona';
 
+import { NewsItem } from './types';
+
 export interface CandidateHeadline {
   headline: string;
   embedding: number[];
+  item?: NewsItem;
 }
 
 /**
@@ -18,7 +21,7 @@ export interface CandidateHeadline {
  */
 export const filterFreshHeadlines = async (
   deps: AppDependencies,
-  rawHeadlines: string[],
+  rawHeadlines: (string | NewsItem)[],
   lookbackDays: number,
   similarityThreshold: number,
 ): Promise<CandidateHeadline[]> => {
@@ -29,7 +32,9 @@ export const filterFreshHeadlines = async (
   const recentNews = await deps.firestore.getRecentNewsEmbeddings(lookbackDays);
   const candidates: CandidateHeadline[] = [];
 
-  for (const headline of rawHeadlines) {
+  for (const entry of rawHeadlines) {
+    const headline = typeof entry === 'string' ? entry : entry.title;
+    const item = typeof entry === 'string' ? undefined : entry;
     let isDuplicate = false;
     let embedding: number[] = [];
 
@@ -54,7 +59,7 @@ export const filterFreshHeadlines = async (
     }
 
     if (!isDuplicate) {
-      candidates.push({ headline, embedding });
+      candidates.push({ headline, embedding, item });
     }
   }
 

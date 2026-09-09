@@ -88,6 +88,29 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         );
     });
 
+    it('should format structured news items with category and summary into prompt', async () => {
+        mockNewsProvider.getNewsItems = jest.fn().mockResolvedValue([
+            {
+                title: 'ブルボン新商品',
+                summary: '秋の味覚を楽しめる新商品4品が登場。',
+                category: '新商品',
+            },
+        ]);
+
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            thought: '秋スイーツ美味しそう！',
+            reply: 'ブルボン新商品楽しみね！',
+        });
+
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+
+        expect(result.status).toBe('success');
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('・【新商品】ブルボン新商品\n  概要: 秋の味覚を楽しめる新商品4品が登場。'),
+        );
+    });
+
     it('should return skipped status if generation fails', async () => {
         mockNewsProvider.getHeadlines.mockResolvedValue(['News 1']);
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: '', reply: '' });

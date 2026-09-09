@@ -28,15 +28,22 @@ describe('GeminiSearchNewsProvider', () => {
     expect(headlines).toEqual([]);
   });
 
-  it('should fetch and parse clean headlines from search grounding output', async () => {
+  it('should fetch and parse structured news items from search grounding JSON output', async () => {
     mockGenerateContent.mockResolvedValueOnce({
-      text: `
-1. 「アメ横AIコンシェルジュ」β版を公開！4カ国語で加盟店を案内
-2. 日本橋三越本店の洋菓子エリアがリニューアル、新9ブランド手土産スイーツ
-- 伊藤園「TULLY'S COFFEE BOTTLE-IN COFFEE」が新発売
-4. 全国 お出かけスポット 週末の天気・紫外線情報
-5. スタバ新作フラペチーノがSNSで話題沸騰
-      `,
+      text: `\`\`\`json
+[
+  {
+    "title": "「アメ横AIコンシェルジュ」β版を公開",
+    "summary": "4カ国語で加盟店を案内する新サービスが開始。",
+    "category": "トレンド"
+  },
+  {
+    "title": "日本橋三越の洋菓子エリアがリニューアル",
+    "summary": "新9ブランドの手土産スイーツが登場。",
+    "category": "グルメ"
+  }
+]
+\`\`\``,
       candidates: [
         {
           groundingMetadata: {
@@ -47,7 +54,7 @@ describe('GeminiSearchNewsProvider', () => {
     });
 
     const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
-    const headlines = await provider.getHeadlines();
+    const items = await provider.getNewsItems();
 
     expect(mockGenerateContent).toHaveBeenCalledWith({
       model: 'gemini-2.5-flash',
@@ -58,12 +65,24 @@ describe('GeminiSearchNewsProvider', () => {
       },
     });
 
-    expect(headlines).toHaveLength(5);
-    expect(headlines[0]).toBe('「アメ横AIコンシェルジュ」β版を公開！4カ国語で加盟店を案内');
-    expect(headlines[1]).toBe('日本橋三越本店の洋菓子エリアがリニューアル、新9ブランド手土産スイーツ');
-    expect(headlines[2]).toBe('伊藤園「TULLY\'S COFFEE BOTTLE-IN COFFEE」が新発売');
-    expect(headlines[3]).toBe('全国 お出かけスポット 週末の天気・紫外線情報');
-    expect(headlines[4]).toBe('スタバ新作フラペチーノがSNSで話題沸騰');
+    expect(items).toHaveLength(2);
+    expect(items[0]).toEqual({
+      title: '「アメ横AIコンシェルジュ」β版を公開',
+      summary: '4カ国語で加盟店を案内する新サービスが開始。',
+      category: 'トレンド',
+    });
+    expect(items[1]).toEqual({
+      title: '日本橋三越の洋菓子エリアがリニューアル',
+      summary: '新9ブランドの手土産スイーツが登場。',
+      category: 'グルメ',
+    });
+
+    // Test getHeadlines extracts titles
+    mockGenerateContent.mockResolvedValueOnce({
+      text: JSON.stringify([{ title: 'スタバ新作フラペチーノ' }]),
+    });
+    const headlines = await provider.getHeadlines();
+    expect(headlines).toEqual(['スタバ新作フラペチーノ']);
   });
 
   it('should handle API errors gracefully and return an empty array', async () => {

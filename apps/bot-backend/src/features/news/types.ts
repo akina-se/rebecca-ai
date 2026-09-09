@@ -8,6 +8,10 @@
 export interface NewsItem {
   /** The headline title. */
   title: string;
+  /** Brief summary or background of the news. */
+  summary?: string;
+  /** Category/genre of the news (e.g. エンタメ, トレンド, グルメ). */
+  category?: string;
   /** The URL source of the news item, if available. */
   url?: string;
 }
@@ -23,6 +27,13 @@ export interface INewsProvider {
    * @returns Array of headline strings (or NewsItem titles).
    */
   getHeadlines(): Promise<string[]>;
+
+  /**
+   * Fetches latest structured news items containing titles, summaries, and categories.
+   *
+   * @returns Array of NewsItem objects.
+   */
+  getNewsItems?(): Promise<NewsItem[]>;
 }
 
 /**

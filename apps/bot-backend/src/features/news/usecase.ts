@@ -44,17 +44,20 @@ export class ProactiveNewsUseCase {
   async execute(): Promise<NewsResult> {
     console.log('Starting Proactive News Post Batch...');
     try {
-      const rawHeadlines = await this.newsProvider.getHeadlines();
-      if (!rawHeadlines || rawHeadlines.length === 0) {
-        console.log('[ProactiveNewsUseCase] No headlines fetched.');
+      const rawNewsItems = this.newsProvider.getNewsItems
+        ? await this.newsProvider.getNewsItems()
+        : (await this.newsProvider.getHeadlines()).map((h) => ({ title: h }));
+
+      if (!rawNewsItems || rawNewsItems.length === 0) {
+        console.log('[ProactiveNewsUseCase] No news items fetched.');
         return { status: 'skipped', reason: 'no_headlines' };
       }
 
-      console.log('[ProactiveNewsUseCase] Fetched headlines:\n', rawHeadlines.join('\n'));
+      console.log('[ProactiveNewsUseCase] Fetched news items count:', rawNewsItems.length);
 
       const candidateHeadlines = await filterFreshHeadlines(
         this.deps,
-        rawHeadlines,
+        rawNewsItems,
         config.news.dedupLookbackDays,
         config.news.dedupSimilarityThreshold,
       );
@@ -67,6 +70,16 @@ export class ProactiveNewsUseCase {
       const freshHeadlineTexts = candidateHeadlines.map((c) => c.headline);
       console.log('[ProactiveNewsUseCase] Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
 
+      const formattedNewsContext = candidateHeadlines
+        .map((c) => {
+          const item = c.item;
+          if (item && item.summary) {
+            return `・【${item.category || 'ニュース'}】${item.title}\n  概要: ${item.summary}`;
+          }
+          return `・${c.headline}`;
+        })
+        .join('\n');
+
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
 
@@ -77,15 +90,15 @@ export class ProactiveNewsUseCase {
       ]);
 
       const systemInstruction = getBasePrompt('timeline', 'ja');
-      const newsPrompt = `以下の今日のニュースのヘッドラインから、共感・興奮しそうな話題（エンタメ・IT・スポーツ・気象など）を【1つだけ】選び、それに言及しながらツイートを生成してください。
+      const newsPrompt = `以下の今日の最新ニュースから、共感・興奮しそうな話題（エンタメ・IT・スイーツ・カルチャー・新商品・気象など）を【1つだけ】選び、ニュースの概要や背景に触れながらツイートを生成してください。
 
 【今日のニュース】
-${freshHeadlineTexts.join('\n')}
+${formattedNewsContext}
 ${timelineSummary ? `\n【直近のタイムライン要約】\n${timelineSummary}\n` : ''}
 ${extendedPrompt ? `\n【拡張ペルソナ・近況】\n${extendedPrompt}\n` : ''}
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【追加ルール】
-- 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、スポーツなどを選んでください。
+- 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、カルチャーなどを選んでください。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
 - 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
