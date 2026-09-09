@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.17.0](https://github.com/akina-se/rebecca-ai/compare/v1.16.1...v1.17.0) (2026-09-09)
+
+
+### Features
+
+* **bot-backend:** migrate to google search grounding for proactive news ([#193](https://github.com/akina-se/rebecca-ai/issues/193)) ([2543bd2](https://github.com/akina-se/rebecca-ai/commit/2543bd208d71b5888b07e974bf16c3319c3f0971))
+
+
+### Bug Fixes
+
+* **bot-backend:** migrate judge and language models to gemma-4-26b-a4b-it ([#195](https://github.com/akina-se/rebecca-ai/issues/195)) ([e11c5d2](https://github.com/akina-se/rebecca-ai/commit/e11c5d2edec5ebd93c9c695f945a7eb44147bcbe))
+
 ## [1.16.1](https://github.com/akina-se/rebecca-ai/compare/v1.16.0...v1.16.1) (2026-09-08)
 
 
