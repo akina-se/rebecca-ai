@@ -34,14 +34,14 @@
   "devDependencies": {
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
     "@types/jest": "^30.0.0",
-    "eslint": "^10.9.1",
-    "jest": "^30.5.0",
+    "eslint": "^10.10.0",
+    "jest": "^30.5.1",
     "license-checker": "^25.0.1",
     "secretlint": "^13.0.5",
     "ts-jest": "^29.4.12",
     "turbo": "latest",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.68.0"
+    "typescript-eslint": "^8.69.0"
   },
   "overrides": {
     "@google-cloud/firestore": "^9.0.0",
