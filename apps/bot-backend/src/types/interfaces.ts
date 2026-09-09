@@ -105,7 +105,7 @@ export interface IGeminiService {
   generateEvolutionPrompt(prompt: string): Promise<string>;
   auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;
   analyzeUserProfile(prompt: string): Promise<UserCoreProfile>;
-  generateStructuredNewsPost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
+  generateStructuredNewsPost(systemInstruction: string, prompt: string, modelOverride?: string): Promise<StructuredPersonaResponse>;
   generateStructuredSoliloquyPost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
   generateTimelineSummary(prompt: string): Promise<string>;
   detectLanguage(prompt: string): Promise<'ja' | 'en'>;
@@ -160,16 +160,4 @@ export interface ITasksService {
 export interface IStorageService {
   downloadImage(gsUri: string): Promise<Buffer>;
   uploadImage(hash: string, buffer: Buffer, mimeType: string): Promise<string>;
-}
-
-// ---------------------------------------------------------------------------
-// News Fetcher Service
-// ---------------------------------------------------------------------------
-
-/**
- * Utility service for fetching external news feeds (e.g., Yahoo News RSS).
- * Provides the AI with real-world events for proactive engagement.
- */
-export interface INewsFetcherService {
-  fetchYahooNewsHeadlines(): Promise<string[]>;
 }

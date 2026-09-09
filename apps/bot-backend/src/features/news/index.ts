@@ -9,7 +9,7 @@ export * from './types';
 export * from './usecase';
 export * from './controller';
 export * from './routes';
-export * from './providers/yahoo';
+export * from './providers/geminiSearch';
 
 /**
  * Creates and configures the router module for the Proactive News feature.
