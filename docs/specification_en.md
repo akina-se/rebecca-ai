@@ -16,7 +16,7 @@ This system is built with a highly scalable, fully serverless architecture that 
 - **LLM Engine**: 
   - Main Conversation, Memory Consolidation, Inference: `gemini-3.5-flash-lite`
   - Image Recognition (Vision): `gemini-3.5-flash-lite`
-  - Language Detection & Safety Audit (LLM-as-a-Judge): `gemma-4-31b-it`
+  - Language Detection & Safety Audit (LLM-as-a-Judge): `gemma-4-26b-a4b-it`
   - Vectorization: `text-embedding-004`
 - **Integration API**: X (Twitter) API v2 (Library: `@xdevplatform/xdk`)
 
