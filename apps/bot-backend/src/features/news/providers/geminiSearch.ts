@@ -110,7 +110,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
       return items.slice(0, 5);
     } catch (error) {
       console.error('[GeminiSearchNewsProvider] Error fetching structured news via search grounding:', error);
-      return [];
+      throw error;
     }
   }
 }

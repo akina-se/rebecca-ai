@@ -34,8 +34,11 @@ export class ProactiveNewsController {
             }
             res.status(200).json(result);
         } catch (e) {
-            console.error("news error:", e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            console.error('[ProactiveNewsController] Batch encountered transient failure, returning 503 for Scheduler retry:', e);
+            res.status(503).json({
+                error: 'Service Unavailable',
+                message: (e as Error).message || 'Service Unavailable',
+            });
         }
     };
 }

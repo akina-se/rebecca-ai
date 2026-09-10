@@ -235,7 +235,7 @@ describe('ProactiveAnniversaryController Unit Tests', () => {
     );
   });
 
-  it('should return 500 when useCase throws an error', async () => {
+  it('should return 503 when useCase throws an error for Cloud Scheduler retry', async () => {
     const { ProactiveAnniversaryController } = await import('../../src/features/anniversary/controller');
     mockUseCase.execute.mockRejectedValue(new Error('Fatal error'));
 
@@ -245,7 +245,10 @@ describe('ProactiveAnniversaryController Unit Tests', () => {
     );
     await controller.handle(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Service Unavailable',
+      message: 'Fatal error',
+    });
   });
 });
