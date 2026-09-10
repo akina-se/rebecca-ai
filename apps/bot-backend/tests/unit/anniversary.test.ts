@@ -65,11 +65,10 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
       jest.restoreAllMocks();
     });
 
-    it('should return empty array on fetch failure', async () => {
+    it('should throw error on fetch failure so transient errors propagate', async () => {
       jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
       const provider = new WikipediaAnniversaryProvider();
-      const result = await provider.getAnniversaries(new Date('2026-09-08T00:00:00Z'));
-      expect(result).toEqual([]);
+      await expect(provider.getAnniversaries(new Date('2026-09-08T00:00:00Z'))).rejects.toThrow('Network error');
     });
 
     it('should parse section when Wikipedia API returns valid payload', async () => {
@@ -235,9 +234,9 @@ describe('ProactiveAnniversaryController Unit Tests', () => {
     );
   });
 
-  it('should return 500 when useCase throws an error', async () => {
+  it('should return 500 Internal Server Error when useCase throws an error', async () => {
     const { ProactiveAnniversaryController } = await import('../../src/features/anniversary/controller');
-    mockUseCase.execute.mockRejectedValue(new Error('Fatal error'));
+    mockUseCase.execute.mockRejectedValue(new Error('Transient downstream failure'));
 
     const controller = new ProactiveAnniversaryController(
       mockUseCase as any,
@@ -247,5 +246,6 @@ describe('ProactiveAnniversaryController Unit Tests', () => {
 
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+    expect(mockSoliloquyUseCase.execute).not.toHaveBeenCalled();
   });
 });
