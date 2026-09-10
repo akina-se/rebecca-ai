@@ -329,15 +329,14 @@ describe('Integration Tests', () => {
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Alternate Post'), expect.any(Object));
         }, 15000);
 
-        it('should return 503 Service Unavailable when news provider throws transient error', async () => {
-            mockGetNews.mockRejectedValueOnce(new Error('This model is currently experiencing high demand.'));
+        it('should return 500 Internal Server Error when news provider throws an error', async () => {
+            mockGetNews.mockRejectedValueOnce(new Error('Downstream API failure'));
 
             const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
 
-            expect(response.status).toBe(503);
+            expect(response.status).toBe(500);
             expect(response.body).toEqual({
-                error: 'Service Unavailable',
-                message: 'This model is currently experiencing high demand.',
+                error: 'Internal Server Error',
             });
             expect(gemini.generateStructuredSoliloquyPost).not.toHaveBeenCalled();
         }, 15000);

@@ -4,13 +4,13 @@ import { SoliloquyUseCase } from '../soliloquy';
 
 /**
  * Controller for the Proactive News feature.
- * Adapts HTTP requests and coordinates fallback to SoliloquyUseCase if no fresh news is available.
+ * Handles HTTP batch trigger requests and coordinates alternate soliloquy posting when news posting is skipped.
  */
 export class ProactiveNewsController {
     /**
      * Initializes the ProactiveNewsController.
      * @param useCase The use case responsible for executing proactive news posting.
-     * @param soliloquyUseCase The fallback usecase to execute when news posting is skipped.
+     * @param soliloquyUseCase The fallback use case to execute when news posting is skipped.
      */
     constructor(
         private useCase: ProactiveNewsUseCase,
@@ -27,18 +27,15 @@ export class ProactiveNewsController {
         try {
             const result = await this.useCase.execute();
             if (result.status === 'skipped') {
-                console.log(`[ProactiveNewsController] News post skipped (${result.reason}). Executing soliloquy fallback...`);
+                console.log(`[ProactiveNewsController] News post skipped (${result.reason}). Executing alternate soliloquy post...`);
                 const fallbackResult = await this.soliloquyUseCase.execute();
                 res.status(200).json(fallbackResult);
                 return;
             }
             res.status(200).json(result);
-        } catch (e) {
-            console.error('[ProactiveNewsController] Batch encountered transient failure, returning 503 for Scheduler retry:', e);
-            res.status(503).json({
-                error: 'Service Unavailable',
-                message: (e as Error).message || 'Service Unavailable',
-            });
+        } catch (error) {
+            console.error('[ProactiveNewsController] Batch execution failed:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
         }
     };
 }
