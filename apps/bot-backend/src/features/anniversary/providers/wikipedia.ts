@@ -106,8 +106,7 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
       });
 
       if (!response.ok) {
-        console.warn(`[WikipediaAnniversaryProvider] Failed to fetch wikitext: HTTP ${response.status}`);
-        return [];
+        throw new Error(`Wikipedia API responded with HTTP ${response.status}`);
       }
 
       const json = (await response.json()) as {
@@ -130,8 +129,8 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
 
       return parseAnniversarySection(sectionMatch[1]);
     } catch (error) {
-      console.warn('[WikipediaAnniversaryProvider] Error fetching anniversaries from Wikipedia:', error);
-      return [];
+      console.error('[WikipediaAnniversaryProvider] Error fetching anniversaries from Wikipedia:', error);
+      throw error;
     }
   }
 }
