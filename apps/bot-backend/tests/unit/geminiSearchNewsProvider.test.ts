@@ -78,13 +78,11 @@ describe('GeminiSearchNewsProvider', () => {
     });
   });
 
-  it('should handle API errors gracefully and return an empty array', async () => {
+  it('should rethrow API errors so transient errors can propagate to controller', async () => {
     mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
 
     const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
-    const news = await provider.getNews();
-
-    expect(news).toEqual([]);
+    await expect(provider.getNews()).rejects.toThrow('API quota exceeded');
   });
 
   it('should handle empty text response gracefully', async () => {
