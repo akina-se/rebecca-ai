@@ -69,11 +69,13 @@ jest.mock('../../src/services/tasks', () => ({
     enqueueReplyTask: jest.fn().mockResolvedValue({ name: 'mock_task' }),
 }));
 
+const mockGetNews = jest.fn().mockResolvedValue([
+    { title: 'Test News Headline', summary: 'Test News Summary', category: 'General' },
+]);
+
 jest.mock('../../src/features/news/providers/geminiSearch', () => ({
     GeminiSearchNewsProvider: jest.fn().mockImplementation(() => ({
-        getNews: jest.fn().mockResolvedValue([
-            { title: 'Test News Headline', summary: 'Test News Summary', category: 'General' },
-        ]),
+        getNews: (...args: any[]) => mockGetNews(...args),
     })),
 }));
 
@@ -311,6 +313,34 @@ describe('Integration Tests', () => {
             expect(gemini.generateStructuredNewsPost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock News Post'), expect.any(Object));
         }, 15000);
+
+        it('should execute alternate soliloquy post and return 200 when news is skipped (no headlines)', async () => {
+            mockGetNews.mockResolvedValueOnce([]);
+            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValueOnce({
+                thought: 'ニュースないから独り言',
+                reply: 'Mock Soliloquy Alternate Post',
+            });
+            (xApi.tweet as jest.Mock).mockResolvedValueOnce({ data: { id: 'mock_tweet_id' } });
+
+            const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
+
+            expect(response.status).toBe(200);
+            expect(gemini.generateStructuredSoliloquyPost).toHaveBeenCalled();
+            expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Alternate Post'), expect.any(Object));
+        }, 15000);
+
+        it('should return 503 Service Unavailable when news provider throws transient error', async () => {
+            mockGetNews.mockRejectedValueOnce(new Error('This model is currently experiencing high demand.'));
+
+            const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
+
+            expect(response.status).toBe(503);
+            expect(response.body).toEqual({
+                error: 'Service Unavailable',
+                message: 'This model is currently experiencing high demand.',
+            });
+            expect(gemini.generateStructuredSoliloquyPost).not.toHaveBeenCalled();
+        }, 15000);
     });
 
     describe('GET /batch/soliloquy-post', () => {
@@ -375,6 +405,7 @@ describe('Integration Tests', () => {
             { method: 'get', path: '/batch/dreaming' },
             { method: 'get', path: '/batch/evolution' },
             { method: 'get', path: '/batch/news-post' },
+            { method: 'get', path: '/batch/anniversary-post' },
             { method: 'get', path: '/batch/stealth-onboarding' },
             { method: 'get', path: '/batch/random-engagement' },
         ];

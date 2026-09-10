@@ -36,8 +36,11 @@ export class ProactiveAnniversaryController {
       }
       res.status(200).json(result);
     } catch (error) {
-      console.error('[ProactiveAnniversaryController] Batch error:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      console.error('[ProactiveAnniversaryController] Batch encountered transient failure, returning 503 for Scheduler retry:', error);
+      res.status(503).json({
+        error: 'Service Unavailable',
+        message: (error as Error).message || 'Service Unavailable',
+      });
     }
   };
 }
