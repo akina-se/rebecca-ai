@@ -29,14 +29,14 @@ export class ProactiveAnniversaryController {
     try {
       const result = await this.useCase.execute();
       if (result.status === 'skipped') {
-        console.log(`[ProactiveAnniversaryController] Anniversary post skipped (${result.reason}). Executing soliloquy fallback...`);
+        console.log(`[ProactiveAnniversaryController] Anniversary post skipped (${result.reason}). Executing alternate soliloquy post...`);
         const fallbackResult = await this.soliloquyUseCase.execute();
         res.status(200).json(fallbackResult);
         return;
       }
       res.status(200).json(result);
     } catch (error) {
-      console.error('[ProactiveAnniversaryController] Batch error:', error);
+      console.error('[ProactiveAnniversaryController] Batch execution failed:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };

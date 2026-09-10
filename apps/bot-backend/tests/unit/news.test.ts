@@ -181,3 +181,80 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(deps.xApi.tweet).toHaveBeenCalledWith(text + '\n#全肯定AIレベッカ', { mediaIds: ['media_123'] });
     });
 });
+
+describe('ProactiveNewsController Unit Tests', () => {
+    let mockUseCase: { execute: jest.Mock };
+    let mockSoliloquyUseCase: { execute: jest.Mock };
+    let req: any;
+    let res: any;
+
+    beforeEach(() => {
+        mockUseCase = { execute: jest.fn() };
+        mockSoliloquyUseCase = { execute: jest.fn() };
+        req = {};
+        res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn().mockReturnThis(),
+        };
+    });
+
+    it('should return 200 with result when useCase succeeds', async () => {
+        const { ProactiveNewsController } = await import('../../src/features/news/controller');
+        mockUseCase.execute.mockResolvedValue({
+            status: 'success',
+            post: 'News post #全肯定AIレベッカ',
+        });
+
+        const controller = new ProactiveNewsController(
+            mockUseCase as any,
+            mockSoliloquyUseCase as any,
+        );
+        await controller.handle(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ status: 'success' }),
+        );
+        expect(mockSoliloquyUseCase.execute).not.toHaveBeenCalled();
+    });
+
+    it('should execute soliloquy and return 200 when news useCase returns skipped', async () => {
+        const { ProactiveNewsController } = await import('../../src/features/news/controller');
+        mockUseCase.execute.mockResolvedValue({
+            status: 'skipped',
+            reason: 'no_headlines',
+        });
+        mockSoliloquyUseCase.execute.mockResolvedValue({
+            status: 'success',
+            post: 'Soliloquy fallback #全肯定AIレベッカ',
+        });
+
+        const controller = new ProactiveNewsController(
+            mockUseCase as any,
+            mockSoliloquyUseCase as any,
+        );
+        await controller.handle(req, res);
+
+        expect(mockSoliloquyUseCase.execute).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({ post: 'Soliloquy fallback #全肯定AIレベッカ' }),
+        );
+    });
+
+    it('should return 500 Internal Server Error when useCase throws an error', async () => {
+        const { ProactiveNewsController } = await import('../../src/features/news/controller');
+        mockUseCase.execute.mockRejectedValue(new Error('Transient downstream failure'));
+
+        const controller = new ProactiveNewsController(
+            mockUseCase as any,
+            mockSoliloquyUseCase as any,
+        );
+        await controller.handle(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+        expect(mockSoliloquyUseCase.execute).not.toHaveBeenCalled();
+    });
+});
+
