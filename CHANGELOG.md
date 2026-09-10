@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.17.1](https://github.com/akina-se/rebecca-ai/compare/v1.17.0...v1.17.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **batch:** improve cloud scheduler retry propagation and normal-branch fallback ([624935e](https://github.com/akina-se/rebecca-ai/commit/624935e14095094609966bb80d9e3d75b051bb61))
+* **batch:** return 503 on transient failures for cloud scheduler retry and handle normal branch skips ([#198](https://github.com/akina-se/rebecca-ai/issues/198)) ([c8268ad](https://github.com/akina-se/rebecca-ai/commit/c8268ad523a3b2b9e64ca17ab48849d37cb8cce9))
+* **batch:** simplify batch error handling to 500 and propagate network exceptions ([#199](https://github.com/akina-se/rebecca-ai/issues/199)) ([00f5f4b](https://github.com/akina-se/rebecca-ai/commit/00f5f4b9668a6183219ba33a5cdd65d1bc13a50d))
+
 ## [1.17.0](https://github.com/akina-se/rebecca-ai/compare/v1.16.1...v1.17.0) (2026-09-09)
 
 
