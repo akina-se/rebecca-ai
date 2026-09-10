@@ -242,9 +242,9 @@ describe('ProactiveNewsController Unit Tests', () => {
         );
     });
 
-    it('should return 503 Service Unavailable when useCase throws an error for Cloud Scheduler retry', async () => {
+    it('should return 500 Internal Server Error when useCase throws an error', async () => {
         const { ProactiveNewsController } = await import('../../src/features/news/controller');
-        mockUseCase.execute.mockRejectedValue(new Error('Gemini API 503 UNAVAILABLE'));
+        mockUseCase.execute.mockRejectedValue(new Error('Transient downstream failure'));
 
         const controller = new ProactiveNewsController(
             mockUseCase as any,
@@ -252,11 +252,8 @@ describe('ProactiveNewsController Unit Tests', () => {
         );
         await controller.handle(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(503);
-        expect(res.json).toHaveBeenCalledWith({
-            error: 'Service Unavailable',
-            message: 'Gemini API 503 UNAVAILABLE',
-        });
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
         expect(mockSoliloquyUseCase.execute).not.toHaveBeenCalled();
     });
 });
