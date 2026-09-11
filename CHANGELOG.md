@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.18.0](https://github.com/akina-se/rebecca-ai/compare/v1.17.1...v1.18.0) (2026-09-11)
+
+
+### Features
+
+* **persona:** add chat PromptContext and exhaustive 24h time context ([#210](https://github.com/akina-se/rebecca-ai/issues/210)) ([c9f255a](https://github.com/akina-se/rebecca-ai/commit/c9f255aea1f9e530f703401f887c6e2b0f2632b8))
+* **prompts:** enforce interactive engagement and closing inquiries in broadcast use cases ([#205](https://github.com/akina-se/rebecca-ai/issues/205)) ([0d8b7be](https://github.com/akina-se/rebecca-ai/commit/0d8b7beb569a455163dc18346c1c907673edee14))
+* **prompts:** enforce interactive engagement and closing inquiries in broadcast use cases ([#205](https://github.com/akina-se/rebecca-ai/issues/205)) ([#206](https://github.com/akina-se/rebecca-ai/issues/206)) ([0f8c49e](https://github.com/akina-se/rebecca-ai/commit/0f8c49ec9fc09d58a83f46c0b10e1d710360da0a))
+
+
+### Bug Fixes
+
+* **dashboard-frontend:** use signals for save states in MemoryDrawerComponent ([#208](https://github.com/akina-se/rebecca-ai/issues/208)) ([32a75bc](https://github.com/akina-se/rebecca-ai/commit/32a75bc19a8965582f6567d65d7db028c96aab98))
+* **dashboard-frontend:** use signals for save states in MemoryDrawerComponent ([#209](https://github.com/akina-se/rebecca-ai/issues/209)) ([290c6e5](https://github.com/akina-se/rebecca-ai/commit/290c6e53bb09f3c9e72fa09f83c8a180f73d78ca))
+* **gemini:** eliminate userInput fallback and enforce strict query validation for search_web ([#211](https://github.com/akina-se/rebecca-ai/issues/211)) ([cec4496](https://github.com/akina-se/rebecca-ai/commit/cec449654609cf16f66793ac4b859ee44ce99069))
+
 ## [1.17.1](https://github.com/akina-se/rebecca-ai/compare/v1.17.0...v1.17.1) (2026-09-10)
 
 
