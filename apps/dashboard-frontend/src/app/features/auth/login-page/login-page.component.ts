@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ConfigService } from '../../../core/services/config.service';
 
 @Component({
   selector: 'app-login-page',
@@ -13,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class LoginPageComponent {
   error: string | null = null;
   isLoading = false;
+  readonly configService = inject(ConfigService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 

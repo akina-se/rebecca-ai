@@ -5,6 +5,7 @@ import { SoliloquyUseCase } from '../soliloquy';
 import { AppDependencies } from '../../types';
 import { createProactiveAnniversaryRouter } from './routes';
 import { IAnniversaryProvider } from './types';
+import { WikipediaAnniversaryProvider } from './providers/wikipedia';
 
 export * from './types';
 export * from './usecase';
@@ -23,7 +24,8 @@ export const createProactiveAnniversaryModule = (
   deps: AppDependencies,
   provider?: IAnniversaryProvider,
 ): Router => {
-  const useCase = new ProactiveAnniversaryUseCase(deps, provider);
+  const anniversaryProvider = provider ?? new WikipediaAnniversaryProvider(deps.persona.metadata.userAgent);
+  const useCase = new ProactiveAnniversaryUseCase(deps, anniversaryProvider);
   const soliloquyUseCase = new SoliloquyUseCase(deps);
   const controller = new ProactiveAnniversaryController(useCase, soliloquyUseCase);
   return createProactiveAnniversaryRouter(controller);

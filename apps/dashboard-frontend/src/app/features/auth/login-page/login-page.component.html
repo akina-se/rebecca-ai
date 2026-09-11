@@ -1,4 +1,4 @@
-﻿<div class="login-container">
+<div class="login-container">
   <div class="glass-panel login-card">
     <div class="logo-container">
       <div class="logo-dot"></div>
@@ -6,8 +6,8 @@
     </div>
     
     <div class="welcome-text">
-      <h2>REBECCA AI CORE ADMIN</h2>
-      <p>Authorized access only. Please authenticate to interface with the Rebecca Core administration console.</p>
+      <h2>{{ configService.adminTitle() }}</h2>
+      <p>Authorized access only. Please authenticate to interface with the {{ configService.brandName() }} administration console.</p>
     </div>
 
     @if (error) {

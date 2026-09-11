@@ -8,7 +8,8 @@ import {
   buildPersonaFewShotPrompt,
   getFormattedPersonaPatternsText,
   PERSONA_RESPONSE_SCHEMA,
-  parsePersonaResponse
+  parsePersonaResponse,
+  getActivePersona
 } from '../src/index';
 
 describe('persona package exports verification', () => {
@@ -129,5 +130,48 @@ describe('persona package exports verification', () => {
     const dreamingPrompt = getDreamingPrompt();
     expect(dreamingPrompt).toContain('記憶の統合（Dreaming）');
     expect(dreamingPrompt).toContain('JSONのフォーマットは以下のキーを持つ');
+  });
+
+  describe('getActivePersona registry resolver', () => {
+    test('should return rebeccaPersona by default or when rebecca is specified', () => {
+      expect(getActivePersona()).toBeDefined();
+      expect(getActivePersona().metadata.id).toBe('rebecca');
+      expect(getActivePersona('rebecca').metadata.id).toBe('rebecca');
+      expect(getActivePersona('  REBECCA  ').metadata.id).toBe('rebecca');
+    });
+
+    test('should throw an explicit error on unknown persona ID (Fail-Fast)', () => {
+      expect(() => getActivePersona('alice')).toThrow('Unknown persona ID: "alice". Registered personas: ["rebecca"].');
+      expect(() => getActivePersona('unknown_persona')).toThrow('Unknown persona ID: "unknown_persona".');
+    });
+  });
+
+  describe('Persona method branch tests', () => {
+    test('formatAbsenceInstruction should generate correct instructions for JA and EN', () => {
+      const p = getActivePersona('rebecca');
+      const ja = p.formatAbsenceInstruction(5, 'ja');
+      expect(ja).toContain('5日ぶり');
+      expect(ja).toContain('何日放置してんのよ');
+
+      const en = p.formatAbsenceInstruction(5, 'en');
+      expect(en).toContain('5 days');
+      expect(en).toContain('why did you ignore me');
+    });
+
+    test('findTopPatterns should fallback to slice when queryVector is missing', () => {
+      const p = getActivePersona('rebecca');
+      const fallback = p.findTopPatterns([], 2);
+      expect(fallback.length).toBe(2);
+      expect(fallback[0].id).toBe(1);
+    });
+
+    test('getBasePrompt should support fallback contexts for both languages', () => {
+      const p = getActivePersona('rebecca');
+      const jaTimeline = p.getBasePrompt('timeline', 'ja');
+      expect(jaTimeline).toContain('【コンテキスト：タイムラインへの自発的ポスト】');
+
+      const enTimeline = p.getBasePrompt('timeline', 'en');
+      expect(enTimeline).toContain('[Context: Spontaneous Timeline Post]');
+    });
   });
 });

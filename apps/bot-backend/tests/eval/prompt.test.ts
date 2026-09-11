@@ -1,22 +1,36 @@
 import 'dotenv/config';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import * as gemini from '../../src/services/gemini';
 import { buildSystemPrompt } from '../../src/core/contextInjector';
-import { Language } from '@rebecca/persona';
+import { Language, getActivePersona } from '@rebecca/persona';
+import config from '../../src/config';
 
 const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'mock_api_key' && process.env.GEMINI_API_KEY !== 'test-key');
 const ai = hasApiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
-const JUDGE_MODEL = process.env.JUDGE_MODEL || 'gemini-3.5-flash-lite';
+const JUDGE_MODEL = process.env.JUDGE_MODEL || config.gemini.judgeModel || 'gemma-4-26b-a4b-it';
+const persona = getActivePersona(config.persona.activeId);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 3000): Promise<T> => {
+const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 4, initialDelay = 3000): Promise<T> => {
     let delay = initialDelay;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error: any) {
-            const isTransient = error?.status === 503 || error?.status === 429 || error?.code === 503 || error?.code === 429 || String(error?.message || '').includes('high demand') || String(error?.message || '').includes('UNAVAILABLE');
+            const isTransient =
+                error?.status === 503 ||
+                error?.status === 500 ||
+                error?.status === 429 ||
+                error?.code === 503 ||
+                error?.code === 500 ||
+                error?.code === 429 ||
+                String(error?.message || '').includes('500') ||
+                String(error?.message || '').includes('503') ||
+                String(error?.message || '').includes('429') ||
+                String(error?.message || '').includes('Internal error') ||
+                String(error?.message || '').includes('high demand') ||
+                String(error?.message || '').includes('UNAVAILABLE');
             if (attempt < maxRetries && isTransient) {
                 console.warn(`[Eval Retry] Transient Gemini API error (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
                 await sleep(delay);
@@ -42,31 +56,37 @@ ${response}
 
 【評価ルール】
 ${rule}
+`;
 
-以下のJSONフォーマットのみを出力してください（Markdownの修飾やその他のテキストは一切含めないでください）。
-{
-  "pass": true または false,
-  "reason": "判定の理由（簡潔に）"
-}`;
+    const result = await ai!.models.generateContent({
+        model: JUDGE_MODEL,
+        contents: judgePrompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    pass: { type: Type.BOOLEAN, description: "Whether the response satisfies the evaluation rule" },
+                    reason: { type: Type.STRING, description: "Concise reason for pass or fail" }
+                },
+                required: ["pass", "reason"]
+            }
+        }
+    });
+
+    let rawText = result.text?.trim() || '{}';
+    const fenceMatch = rawText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+    if (fenceMatch) {
+        rawText = fenceMatch[1].trim();
+    }
 
     try {
-        const result = await ai!.models.generateContent({
-            model: JUDGE_MODEL,
-            contents: judgePrompt,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
-        
-        let jsonStr = result.text?.trim() || '{}';
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-        } else if (jsonStr.startsWith('```')) {
-            jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
-        }
-        return JSON.parse(jsonStr);
-    } catch (e: any) {
-        return { pass: false, reason: `Judge Error (${JUDGE_MODEL}): ${e.message}` };
+        const parsed = JSON.parse(rawText);
+        const pass = parsed.pass === true || parsed.pass === 'true' || parsed.passed === true || parsed.status === 'pass';
+        const reason = parsed.reason || parsed.explanation || parsed.comment || parsed.reasoning || JSON.stringify(parsed);
+        return { pass, reason };
+    } catch {
+        return { pass: false, reason: `Invalid JSON from Judge (${JUDGE_MODEL}): ${rawText}` };
     }
 };
 
@@ -101,15 +121,15 @@ runEval('LLM as a Judge: Prompt Evaluation', () => {
     ];
 
     beforeEach(async () => {
-        // Add a 3-second delay between tests to avoid TPM/RPM limits
-        await sleep(3000);
+        // Add a 5-second delay between tests to avoid TPM/RPM limits
+        await sleep(5000);
     });
 
     test.each(testCases)('should pass eval: $name', async (tc) => {
         // 1. Generate Rebecca's response with retry
         const userData = { episodicBuffer: [] }; // Mock empty memory
         const lang: Language = (tc.lang as Language) || 'ja';
-        const systemPrompt = buildSystemPrompt('reply', userData as unknown as any, tc.input, '', '', [], lang);
+        const systemPrompt = buildSystemPrompt(persona, 'reply', userData as unknown as any, tc.input, '', '', [], lang);
         const structured = await retryAsync(() => gemini.generateStructuredReply(systemPrompt, [], tc.input));
         const reply = structured.reply;
 

@@ -87,7 +87,10 @@ ${desc}
                     const parsedProfile = await deps.gemini.analyzeUserProfile(profilePrompt);
                     userData.coreProfile = parsedProfile;
                     // Inject a single history log hinting that the profile has been read
-                    userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
+                    userData.episodicBuffer.push({
+                        role: 'model',
+                        content: `（${deps.persona.metadata.displayName}はユーザーのプロフィール文を確認した）`,
+                    });
                 }
             } catch(e) {
                 console.error("Failed to fetch/analyze user profile", e);
@@ -152,7 +155,7 @@ ${processedText}
             3
         );
 
-        const systemPrompt = buildSystemPrompt('reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang, personaFewShotPrompt);
+        const systemPrompt = buildSystemPrompt(this.deps.persona, 'reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang, personaFewShotPrompt);
 
         // Generate the structured AI response (thought + reply) based on the contextualized prompt
         const structuredReply = await deps.gemini.generateStructuredReply(systemPrompt, workingMemory, processedText);
@@ -181,7 +184,8 @@ ${processedText}
         await saveInteraction(this.deps, authorId, processedText, aiResponseText, internalThought);
 
         // Store a vectorized representation of the interaction for long-term retrieval
-        const combinedText = `User: ${processedText}\nRebecca: ${aiResponseText}`;
+        const personaEnglishName = this.deps.persona.metadata.englishName;
+        const combinedText = `User: ${processedText}\n${personaEnglishName}: ${aiResponseText}`;
         const memoryVector = await deps.gemini.generateEmbedding(combinedText);
         if (memoryVector && memoryVector.length > 0) {
             await deps.firestore.saveRagMemory(authorId, combinedText, memoryVector);

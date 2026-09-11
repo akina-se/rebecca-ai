@@ -1,7 +1,9 @@
 import { AppDependencies } from '../../../src/types';
+import { rebeccaPersona } from '@rebecca/persona';
 
 export const createMockDeps = (): AppDependencies => {
     return {
+        persona: rebeccaPersona,
         firestore: {
             getLastMentionId: jest.fn(),
             setLastMentionId: jest.fn(),

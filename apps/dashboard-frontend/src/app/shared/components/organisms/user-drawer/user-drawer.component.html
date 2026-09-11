@@ -109,14 +109,13 @@
       </div>
       <div class="chat-history">
         @for (msg of u.chatHistory; track msg) {
-          <div class="chat-bubble user" [class.user]="msg.from === 'user'">
-            @if (msg.from === 'user') {
+          <div class="chat-bubble user" [class.user]="msg.role === 'user'">
+            @if (msg.role === 'user') {
               <div class="bubble-content user-bubble">{{ msg.text }}</div>
               <div class="bubble-time" style="text-align: right;" [title]="msg.time">{{ msg.time | tzDate }}</div>
-            }
-            @if (msg.from === 'rebecca') {
+            } @else {
               <div class="bubble-rebecca-wrapper">
-                <img src="rebecca_icon.png" alt="Rebecca" class="rebecca-icon">
+                <img src="rebecca_icon.png" alt="AI Character" class="rebecca-icon">
                 <div>
                   <div class="bubble-content rebecca-bubble">{{ msg.text }}</div>
                   @if (msg.thought) {

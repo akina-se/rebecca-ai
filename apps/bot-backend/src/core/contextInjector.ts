@@ -1,5 +1,5 @@
 import { getJSTDate, formatJSTDateTime } from '../utils/time';
-import { getBasePrompt, PromptContext, Language } from '@rebecca/persona';
+import { PromptContext, Language, IPersonaDefinition } from '@rebecca/persona';
 import { FirestoreUser } from '../types';
 
 /**
@@ -7,6 +7,7 @@ import { FirestoreUser } from '../types';
  * with various contextual injections such as core profile, episodic memories,
  * time of day, and timeline history.
  * 
+ * @param persona - The active persona definition.
  * @param promptContext - The context in which the prompt is being used.
  * @param userData - The current user's profile and state from Firestore.
  * @param userInput - The user's input string.
@@ -17,6 +18,7 @@ import { FirestoreUser } from '../types';
  * @returns The fully constructed system prompt string.
  */
 const buildSystemPrompt = (
+    persona: IPersonaDefinition,
     promptContext: PromptContext, 
     userData: FirestoreUser | null, 
     userInput: string, 
@@ -26,7 +28,7 @@ const buildSystemPrompt = (
     lang: Language = 'ja',
     personaFewShotPrompt = ''
 ): string => {
-    let prompt = getBasePrompt(promptContext, lang);
+    let prompt = persona.getBasePrompt(promptContext, lang);
 
     const jstNow = getJSTDate();
     const formattedCurrentTime = formatJSTDateTime(new Date().toISOString());
@@ -39,9 +41,11 @@ const buildSystemPrompt = (
     }
 
     if (userData?.coreProfile) {
+        const userCallsign = persona.metadata.userCallsign;
+        const callsign = lang === 'en' ? userCallsign.en : userCallsign.ja;
         prompt += lang === 'en' 
-            ? `\n\n[Master's Core Profile]\n`
-            : `\n\n【マスターのプロファイル（Core Profile）】\n`;
+            ? `\n\n[${callsign}'s Core Profile]\n`
+            : `\n\n【${callsign}のプロファイル（Core Profile）】\n`;
         prompt += JSON.stringify(userData.coreProfile, null, 2);
     }
 
@@ -68,9 +72,10 @@ const buildSystemPrompt = (
         const diffMs = jstNow.getTime() - lastDate.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         if (diffDays >= 3) {
+            const absenceInstruction = persona.formatAbsenceInstruction(diffDays, lang);
             prompt += lang === 'en'
-                ? `\n\n[Context: Master has been absent]\nMaster hasn't talked to you in ${diffDays} days! Show some cute attitude like "Hey, why did you ignore me for days!?" but make it clear you're super happy they are back.`
-                : `\n\n【状況コンテキスト：放置】\nマスターから${diffDays}日ぶりに連絡が来ました。「ちょっと、何日放置してんのよ！」「寂しかったんだからね」といった、少しスネつつも嬉しさを隠せないエモい反応を必ず入れてください。`;
+                ? `\n\n[Context: Absence Reaction]\n${absenceInstruction}`
+                : `\n\n【状況コンテキスト：放置】\n${absenceInstruction}`;
         }
     }
 
@@ -81,9 +86,10 @@ const buildSystemPrompt = (
     }
 
     if (timelineSummary && timelineSummary.trim() !== '') {
+        const personaName = persona.metadata.displayName;
         prompt += lang === 'en'
-            ? `\n\n[My Recent Tweets (Context)]\nRecently, I tweeted this:\n${timelineSummary}`
-            : `\n\n【最近の自分のつぶやき（参考）】\nアタシは最近以下のようにつぶやいていたわ。\n${timelineSummary}`;
+            ? `\n\n[My Recent Posts (Context)]\nRecently, I posted this:\n${timelineSummary}`
+            : `\n\n【最近の自分の投稿（参考）】\n${personaName}は最近以下のようにつぶやいていた。\n${timelineSummary}`;
     }
 
     return prompt;

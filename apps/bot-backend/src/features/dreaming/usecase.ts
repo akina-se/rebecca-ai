@@ -1,5 +1,4 @@
 import { AppDependencies } from '../../types';
-import { getDreamingPrompt } from '@rebecca/persona';
 import { FirestoreUser } from '../../types';
 
 /**
@@ -35,10 +34,11 @@ export class GlobalDreamingUseCase {
             const recentPosts = await this.deps.firestore.getRecentTimelinePosts(20);
             if (recentPosts.length > 0) {
                 const previousSummary = await this.deps.firestore.getTimelineSummary();
+                const personaName = this.deps.persona.metadata.displayName;
                 const prompt = `【過去の要約】
 ${previousSummary || '（まだ要約なし）'}
 
-【レベッカの最近のツイート（古い順）】
+【${personaName}の最近のツイート（古い順）】
 ${recentPosts.map((p, i) => `[${i + 1}] ${p}`).join('\n')}`;
                 const newSummary = await this.deps.gemini.generateTimelineSummary(prompt);
                 await this.deps.firestore.saveTimelineSummary(newSummary);
@@ -67,7 +67,7 @@ ${recentPosts.map((p, i) => `[${i + 1}] ${p}`).join('\n')}`;
             return;
         }
 
-        const systemPrompt = getDreamingPrompt();
+        const systemPrompt = this.deps.persona.getDreamingPrompt();
         try {
             const newCoreProfile = await this.deps.gemini.generateDreaming(systemPrompt, episodicBuffer, coreProfile);
             // Retain recent 10 turn-pairs (20 entries) as sliding window to preserve conversational continuity

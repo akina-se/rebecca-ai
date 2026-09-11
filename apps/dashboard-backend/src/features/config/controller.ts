@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { config as appConfig } from '../../config';
+import { getActivePersona } from '@rebecca/persona';
+
 function getAppVersion(): string {
   if (process.env.npm_package_version) {
     return process.env.npm_package_version;
@@ -33,6 +36,7 @@ export class ConfigController {
   getConfig = (req: Request, res: Response): void => {
     const projectId = process.env.GCP_PROJECT_ID || 'rebecca-ai-gal';
     const isProd = process.env.NODE_ENV === 'production';
+    const activePersona = getActivePersona(appConfig.persona.activeId);
 
     const config = {
       firebase: {
@@ -48,6 +52,14 @@ export class ConfigController {
       publicSiteUrl: process.env.PUBLIC_SITE_URL || 'https://rebecca-ai.net',
       production: isProd,
       useEmulators: !isProd,
+      persona: {
+        id: activePersona.metadata.id,
+        displayName: activePersona.metadata.displayName,
+        englishName: activePersona.metadata.englishName,
+        adminTitle: activePersona.metadata.adminTitle,
+        brandName: activePersona.metadata.brandName,
+        avatarUrl: activePersona.metadata.avatarUrl,
+      },
     };
 
     res.status(200).json(config);

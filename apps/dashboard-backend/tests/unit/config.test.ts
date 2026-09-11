@@ -75,7 +75,15 @@ describe('Config Feature Unit Tests', () => {
       version: packageJson.version,
       publicSiteUrl: 'https://rebecca-ai.net',
       production: true,
-      useEmulators: false
+      useEmulators: false,
+      persona: {
+        id: 'rebecca',
+        displayName: 'レベッカ',
+        englishName: 'Rebecca',
+        adminTitle: 'REBECCA AI CORE ADMIN',
+        brandName: 'Rebecca AI',
+        avatarUrl: 'rebecca_icon.png',
+      },
     });
   });
 

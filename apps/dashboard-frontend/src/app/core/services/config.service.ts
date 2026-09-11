@@ -17,6 +17,14 @@ export interface RuntimeConfig {
   publicSiteUrl: string;
   production: boolean;
   useEmulators: boolean;
+  persona?: {
+    id: string;
+    displayName: string;
+    englishName: string;
+    adminTitle: string;
+    brandName: string;
+    avatarUrl: string;
+  };
 }
 
 /**
@@ -33,6 +41,10 @@ export class ConfigService {
   private config: RuntimeConfig | null = null;
   readonly publicSiteUrl = signal<string>('https://rebecca-ai.net');
   readonly version = signal<string>('');
+  readonly brandName = signal<string>('Rebecca AI');
+  readonly adminTitle = signal<string>('REBECCA AI CORE ADMIN');
+  readonly personaName = signal<string>('Rebecca');
+  readonly avatarUrl = signal<string>('rebecca_icon.png');
   private readonly httpBackend = inject(HttpBackend);
 
   /**
@@ -50,6 +62,12 @@ export class ConfigService {
         }
         if (data.version) {
           this.version.set(data.version);
+        }
+        if (data.persona) {
+          this.brandName.set(data.persona.brandName);
+          this.adminTitle.set(data.persona.adminTitle);
+          this.personaName.set(data.persona.displayName);
+          this.avatarUrl.set(data.persona.avatarUrl);
         }
       }
     } catch {

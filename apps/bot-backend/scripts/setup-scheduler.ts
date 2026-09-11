@@ -44,7 +44,7 @@ const jobs = [
     },
     {
         name: 'rebecca-news-batch',
-        schedule: '0 12 * * *', // Daily at 12:00 JST (lunchtime news post)
+        schedule: '11 12 * * *', // Daily at 12:11 JST (avoid top-of-hour API demand spike)
         url: `${serviceUrl}/batch/news-post`
     },
     {
