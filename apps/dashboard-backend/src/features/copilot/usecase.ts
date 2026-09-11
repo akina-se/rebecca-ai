@@ -150,20 +150,38 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
           const response = await Promise.race([geminiCall, timeoutGuard]);
 
-          if (response.text) {
+          if (response && response.text) {
             const parsed = JSON.parse(response.text) as CopilotResponse;
             return this.normalizeCopilotResponse(parsed, userMessage, isEn);
           }
+          throw new Error('Empty or invalid response received from Gemini API');
         } catch (err) {
-          console.warn('Gemini API call failed, falling back to autonomous agent engine:', err);
+          console.error('Gemini API call failed:', err);
+          return {
+            reply: isEn
+              ? 'A communication error occurred with the AI service (timeout or temporary outage). Please wait a moment and try again.'
+              : 'AIモデル（Gemini）との通信中にエラーが発生しました（一時的な障害またはタイムアウト）。お手数ですが、しばらく待ってから再度お試しください。',
+            actionRequired: null,
+            suggestionChips: isEn
+              ? ['Retry', 'Refresh page', 'Check system status']
+              : ['もう一度試す', 'ページを再読み込み', 'システム状況を確認']
+          };
         }
       }
 
-      // 4. In-character autonomous agent fallback
+      // 4. In-character autonomous agent fallback (used when Gemini AI is not configured or in offline mock mode)
       return this.generateAutonomousFallbackResponse(userMessage, currentContext, telemetryContext, isEn);
     } catch (globalErr) {
-      console.warn('Top-level processChat error, recovering with fallback:', globalErr);
-      return this.generateAutonomousFallbackResponse(userMessage, currentContext, '', isEn);
+      console.error('Top-level processChat error:', globalErr);
+      return {
+        reply: isEn
+          ? 'An internal error occurred while processing the copilot request. Please try again.'
+          : 'コパイロットのリクエスト処理中に内部エラーが発生しました。お手数ですが、再度お試しください。',
+        actionRequired: null,
+        suggestionChips: isEn
+          ? ['Retry', 'Refresh page', 'Check system status']
+          : ['もう一度試す', 'ページを再読み込み', 'システム状況を確認']
+      };
     }
   }
 
@@ -374,10 +392,14 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
     // 3. Failed assets / Captions query
     if (lower.includes('キャプション') || lower.includes('caption') || lower.includes('アセット') || lower.includes('asset') || lower.includes('失敗')) {
+      const failedMatch = telemetry.match(/FailedCaptions=(\d+)/);
+      const failedCount = failedMatch ? parseInt(failedMatch[1], 10) : 0;
+      const countMsgJa = failedCount > 0 ? `現在キャプション生成で待機中またはエラーのアセットが${failedCount}件存在しています。` : `現在キャプション生成で待機中またはエラーのアセットが存在しています。`;
+      const countMsgEn = failedCount > 0 ? `There are ${failedCount} asset(s) with pending or failed caption generation.` : `There are assets with pending or failed caption generation.`;
       return {
         reply: isEn
-          ? `Checked the telemetry logs, ${callsign}. There are assets with pending or failed caption generation. Want to trigger a bulk retry?`
-          : `テレメトリログを確認しました、${callsign}。現在キャプション生成で待機中またはエラーのアセットが存在しています。一括でAI再生成（リトライ）を実行しますか？`,
+          ? `Checked the telemetry logs, ${callsign}. ${countMsgEn} Want to trigger a bulk retry?`
+          : `テレメトリログを確認しました、${callsign}。${countMsgJa}一括でAI再生成（リトライ）を実行しますか？`,
         actionRequired: {
           type: 'REGENERATE_CAPTIONS',
           title: isEn ? 'Bulk Regenerate Captions' : 'キャプション一括再生成',
@@ -414,10 +436,18 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
     // 5. Data analytics / KPI query
     if (lower.includes('kpi') || lower.includes('分析') || lower.includes('推移') || lower.includes('フォロワー') || lower.includes('エンゲージメント') || lower.includes('trend') || lower.includes('metric')) {
+      const kpiMatch = telemetry.match(/Followers=(\d+)\s*\(([^)]+)\),\s*EngagementRate=([\d.]+)%,\s*DAU=(\d+)/);
+      let metricDetails = '';
+      if (kpiMatch) {
+        const [, followers, trend, engagement, dau] = kpiMatch;
+        metricDetails = isEn
+          ? `\nFollowers: ${followers} (${trend}), Engagement rate: ${engagement}%, DAU: ${dau}.`
+          : `\nフォロワー数: ${followers} (${trend})、エンゲージメント率: ${engagement}%、DAU: ${dau}。`;
+      }
       return {
         reply: isEn
-          ? `Analyzed the latest performance metrics for you, ${callsign}.\nFollowers are growing steadily, and engagement rate is healthy at ~4.8%.\nAsk me anytime for more in-depth telemetry.`
-          : `${callsign}のために最新のパフォーマンスログを分析しました。\n現在フォロワー数は順調に推移し、エンゲージメント率は約4.8%で安定しています。\n詳細なデータが必要な場合はいつでもお申し付けください。`,
+          ? `Analyzed the latest performance metrics for you, ${callsign}.${metricDetails}\nAsk me anytime for more in-depth telemetry.`
+          : `${callsign}のために最新のパフォーマンスログを分析しました。${metricDetails}\n詳細なデータが必要な場合はいつでもお申し付けください。`,
         actionRequired: null,
         suggestionChips: isEn
           ? ['Engagement breakdown', 'Top 3 posts', 'Active user telemetry']

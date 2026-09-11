@@ -708,6 +708,13 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
     });
 
     it('processChat should gather telemetry when asking about system memory and dreaming', async () => {
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify({
+          reply: 'Memory layers and telemetry gathered successfully.',
+          actionRequired: null,
+          suggestionChips: []
+        })
+      });
       const resMemory = await copilot.processChat({
         message: 'Show me system memory status and layers',
         currentContext: 'System Memory',
@@ -716,7 +723,31 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(resMemory.reply).toBeDefined();
     });
 
+    it('processChat should return transparent communication error when Gemini fails', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('Network timeout'));
+      const res = await copilot.processChat({
+        message: 'Can you help?',
+        language: 'en'
+      });
+      expect(res.reply).toContain('A communication error occurred with the AI service');
+      expect(res.actionRequired).toBeNull();
+      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page', 'Check system status']);
+    });
+
+    it('processChat should return Japanese communication error when Gemini fails in Japanese', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('500 Internal Error'));
+      const res = await copilot.processChat({
+        message: '手伝って',
+        language: 'ja'
+      });
+      expect(res.reply).toContain('AIモデル（Gemini）との通信中にエラーが発生しました');
+      expect(res.actionRequired).toBeNull();
+      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
+    });
+
     it('processChat should test autonomous fallback intents in Japanese and English', async () => {
+      (copilot as any).ai = null;
+
       // 1. Block user without @ in English
       const resBlockEn = await copilot.processChat({
         message: 'Please block spammer_999 from replying',
@@ -774,6 +805,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
     });
 
     it('processChat should handle general conversation fallback in Japanese and English', async () => {
+      (copilot as any).ai = null;
+
       // General Japanese conversation fallback
       const resJa = await copilot.processChat({
         message: 'こんにちは！調子はどう？',
@@ -792,6 +825,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
     });
 
     it('processChat should recover gracefully from top-level exception in telemetry gathering', async () => {
+      (copilot as any).ai = null;
       timelineRepo.getMetrics.mockRejectedValueOnce(new Error('Fatal telemetry error'));
 
       const res = await copilot.processChat({
@@ -1237,6 +1271,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       } as any;
 
       const copilot = new CopilotUseCase(usersRepo, timelineRepo, assetsRepo, memoryRepo);
+      (copilot as any).ai = null;
 
       // 1. ProcessChat with block intent in EN and JA
       const resEnBlock = await copilot.processChat({

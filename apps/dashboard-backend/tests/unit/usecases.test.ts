@@ -693,7 +693,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res.actionRequired?.type).toBe('BLOCK_USER');
     });
 
-    it('processChat should handle English gyaru persona in fallback', async () => {
+    it('processChat should return transparent communication error when Gemini API fails', async () => {
       mockGenerateContent.mockRejectedValueOnce(new Error('Quota limit'));
 
       const res = await copilotUseCase.processChat({
@@ -702,12 +702,29 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         language: 'en'
       });
 
-      expect(res.reply).toContain('Master');
-      expect(res.actionRequired?.type).toBe('DELETE_POST');
-      expect(res.actionRequired?.title).toBe('Confirm Post Deletion');
+      expect(res.reply).toContain('A communication error occurred with the AI service');
+      expect(res.actionRequired).toBeNull();
+      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page', 'Check system status']);
     });
 
-    it('processChat fallback should generate autonomous actions for assets, dreaming, and KPI', async () => {
+    it('processChat should return Japanese communication error when Gemini API fails in ja mode', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('503 Service Unavailable'));
+
+      const res = await copilotUseCase.processChat({
+        message: '投稿を削除して',
+        currentContext: 'Timeline',
+        language: 'ja'
+      });
+
+      expect(res.reply).toContain('AIモデル（Gemini）との通信中にエラーが発生しました');
+      expect(res.actionRequired).toBeNull();
+      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
+    });
+
+    it('processChat fallback should generate autonomous actions for assets, dreaming, and KPI when offline', async () => {
+      // Simulate offline / no AI configuration
+      (copilotUseCase as any).ai = null;
+
       // Failed Captions fallback
       const assetRes = await copilotUseCase.processChat({
         message: 'キャプションの再生成をお願い',
