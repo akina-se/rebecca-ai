@@ -1,4 +1,4 @@
-﻿import { Component, Input, inject, OnChanges, signal } from '@angular/core';
+import { Component, Input, inject, OnChanges, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ToastService } from '../../../services/toast.service';
@@ -41,9 +41,9 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
           class="btn btn-primary"
           style="margin-top: 1rem; width: 100%; justify-content: center;"
           (click)="onSavePrompt()"
-          [disabled]="isSavingPrompt || isLoading()">
-          <span class="material-icons" [class.spinning]="isSavingPrompt">{{ isSavingPrompt ? 'sync' : 'save' }}</span>
-          {{ isSavingPrompt ? ('memory.saving' | translate) : ('memory.save_tuning' | translate) }}
+          [disabled]="isSavingPrompt() || isLoading()">
+          <span class="material-icons" [class.spinning]="isSavingPrompt()">{{ isSavingPrompt() ? 'sync' : 'save' }}</span>
+          {{ isSavingPrompt() ? ('memory.saving' | translate) : ('memory.save_tuning' | translate) }}
         </button>
       </div>
     }
@@ -63,9 +63,9 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
           class="btn btn-primary"
           style="margin-top: 1rem; width: 100%; justify-content: center;"
           (click)="onSaveSummary()"
-          [disabled]="isSavingSummary || isLoading()">
-          <span class="material-icons" [class.spinning]="isSavingSummary">{{ isSavingSummary ? 'sync' : 'save' }}</span>
-          {{ isSavingSummary ? ('memory.saving' | translate) : ('memory.save_summary' | translate) }}
+          [disabled]="isSavingSummary() || isLoading()">
+          <span class="material-icons" [class.spinning]="isSavingSummary()">{{ isSavingSummary() ? 'sync' : 'save' }}</span>
+          {{ isSavingSummary() ? ('memory.saving' | translate) : ('memory.save_summary' | translate) }}
         </button>
       </div>
     }
@@ -82,8 +82,8 @@ export class MemoryDrawerComponent implements OnChanges {
   readonly timelineSummary = signal<string>('');
 
   readonly isLoading = signal<boolean>(false);
-  isSavingPrompt = false;
-  isSavingSummary = false;
+  readonly isSavingPrompt = signal<boolean>(false);
+  readonly isSavingSummary = signal<boolean>(false);
 
   ngOnChanges() {
     this.loadData();
@@ -128,29 +128,29 @@ export class MemoryDrawerComponent implements OnChanges {
   }
 
   onSavePrompt() {
-    this.isSavingPrompt = true;
+    this.isSavingPrompt.set(true);
     this.memoryRepo.updateExtendedMemory(this.extendedPrompt()).subscribe({
       next: () => {
         this.toastService.show('Successfully saved Extended Persona Tuning', 'success');
-        this.isSavingPrompt = false;
+        this.isSavingPrompt.set(false);
       },
       error: () => {
         this.toastService.show('Failed to save Extended Persona Tuning', 'error');
-        this.isSavingPrompt = false;
+        this.isSavingPrompt.set(false);
       }
     });
   }
 
   onSaveSummary() {
-    this.isSavingSummary = true;
+    this.isSavingSummary.set(true);
     this.memoryRepo.updateGlobalMemory(this.timelineSummary()).subscribe({
       next: () => {
         this.toastService.show('Successfully saved Global Timeline Summary', 'success');
-        this.isSavingSummary = false;
+        this.isSavingSummary.set(false);
       },
       error: () => {
         this.toastService.show('Failed to save Global Timeline Summary', 'error');
-        this.isSavingSummary = false;
+        this.isSavingSummary.set(false);
       }
     });
   }
