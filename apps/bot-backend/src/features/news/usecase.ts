@@ -1,5 +1,4 @@
 import { AppDependencies } from '../../types';
-import { getBasePrompt } from '@rebecca/persona';
 import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';

@@ -6,7 +6,6 @@ import * as gemini from '../src/services/gemini';
 import { getWorkingMemory } from '../src/core/memory';
 import { buildSystemPrompt } from '../src/core/contextInjector';
 import { getActivePersona } from '@rebecca/persona';
-import { getPersonaPatternEmbeddings } from '../src/core/personaEmbeddingCache';
 
 const persona = getActivePersona();
 

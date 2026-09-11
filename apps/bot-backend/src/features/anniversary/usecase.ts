@@ -1,5 +1,4 @@
 import { AppDependencies } from '../../types';
-import { getBasePrompt } from '@rebecca/persona';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { IAnniversaryProvider, AnniversaryItem, AnniversaryResult } from './types';
