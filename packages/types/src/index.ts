@@ -377,13 +377,17 @@ export interface UserLeaderboard {
   interactions: number;
 }
 
+export type MessageSenderRole = 'user' | 'model';
+
 export interface ChatMessage {
-  from: 'user' | 'rebecca';
+  role: MessageSenderRole;
   text: string;
-  /** Inner thought of the persona during response generation (if from rebecca) */
+  /** Inner thought of the persona during response generation (if from model) */
   thought?: string;
   time: string;
+  personaId?: string;
 }
+
 
 export interface UserDetail {
   id: string;

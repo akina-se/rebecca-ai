@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenAI  } from '@google/genai';
 import config from '../src/config';
-import { getBasePrompt  } from '../src/core/prompt';
+import { getBasePrompt } from '@rebecca/persona';
 
 // Initialize GenAI for Persona Generation
 const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });

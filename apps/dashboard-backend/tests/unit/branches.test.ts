@@ -612,7 +612,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(layers[1].lastUpdated).toBe('System Deploy');
 
       const ext = await repo.getExtendedMemory();
-      expect(ext.content).toContain('Rebecca');
+      expect(ext.content).toBe('');
 
       const global = await repo.getGlobalMemory();
       expect(global.content).toBe('');
@@ -1010,7 +1010,15 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         version: expect.any(String),
         publicSiteUrl: 'https://rebecca-ai.net',
         production: false,
-        useEmulators: true
+        useEmulators: true,
+        persona: {
+          id: 'rebecca',
+          displayName: 'レベッカ',
+          englishName: 'Rebecca',
+          adminTitle: 'REBECCA AI CORE ADMIN',
+          brandName: 'Rebecca AI',
+          avatarUrl: 'rebecca_icon.png',
+        },
       });
     });
 

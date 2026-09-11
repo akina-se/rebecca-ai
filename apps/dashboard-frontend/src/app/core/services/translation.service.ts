@@ -7,7 +7,7 @@ import { SettingsService } from './settings.service';
 const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
   ja: {
     // Navigation & Global
-    'nav.admin': 'Rebecca Admin',
+    'nav.admin': 'Admin Console',
     'nav.dashboard': 'ダッシュボード',
     'nav.memory': 'メモリ管理',
     'nav.assets': 'アセット管理',
@@ -18,7 +18,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     // TopBar
     'topbar.admin': '管理者',
     'topbar.logout': 'ログアウト',
-    'topbar.open_copilot': 'Rebecca を開く',
+    'topbar.open_copilot': 'Copilot を開く',
 
     // Common
     'common.loading': '読み込み中...',
@@ -194,7 +194,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
   },
   en: {
     // Navigation & Global
-    'nav.admin': 'Rebecca Admin',
+    'nav.admin': 'Admin Console',
     'nav.dashboard': 'Dashboard',
     'nav.memory': 'Memory Management',
     'nav.assets': 'Assets Library',
@@ -205,7 +205,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     // TopBar
     'topbar.admin': 'Admin',
     'topbar.logout': 'Logout',
-    'topbar.open_copilot': 'Open Rebecca Copilot',
+    'topbar.open_copilot': 'Open Copilot',
 
     // Common
     'common.loading': 'Loading...',

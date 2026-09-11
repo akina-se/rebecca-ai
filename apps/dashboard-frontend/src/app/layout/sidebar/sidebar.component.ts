@@ -11,8 +11,8 @@ import { ConfigService } from '../../core/services/config.service';
   styleUrl: './sidebar.component.css'
 })
 export class SidebarComponent {
-  readonly brandName = 'Rebecca AI';
   private configService = inject(ConfigService);
+  readonly brandName = this.configService.brandName;
   readonly publicSiteUrl = this.configService.publicSiteUrl;
   readonly version = this.configService.version;
 }

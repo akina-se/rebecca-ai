@@ -5,8 +5,10 @@ import path from 'path';
 import * as gemini from '../src/services/gemini';
 import { getWorkingMemory } from '../src/core/memory';
 import { buildSystemPrompt } from '../src/core/contextInjector';
-import { findTopPersonaPatterns, buildPersonaFewShotPrompt } from '@rebecca/persona';
+import { getActivePersona } from '@rebecca/persona';
 import { getPersonaPatternEmbeddings } from '../src/core/personaEmbeddingCache';
+
+const persona = getActivePersona();
 
 const DB_FILE = path.join(__dirname, '../local_db.json');
 const RAW_LOG_FILE = path.join(__dirname, '../local_raw_logs.jsonl');
@@ -76,22 +78,21 @@ const chatLoop = async () => {
             try {
                 const userEmbedding = await gemini.generateEmbedding(input);
                 if (userEmbedding && userEmbedding.length > 0) {
-                    const patternEmbeddings = getPersonaPatternEmbeddings();
-                    const topPatterns = findTopPersonaPatterns(userEmbedding, patternEmbeddings, 3);
-                    personaFewShotPrompt = buildPersonaFewShotPrompt(topPatterns, 'ja');
+                    const topPatterns = persona.findTopPatterns(userEmbedding, 3);
+                    personaFewShotPrompt = persona.buildFewShotPrompt(topPatterns, 'ja');
                     console.log(`\n[🔍 抽出されたペルソナアンカー Top 3: ${topPatterns.map(p => `#${p.id} ${p.category}`).join(', ')}]`);
                 }
             } catch (embedError) {
                 console.warn('[Embedding Warning] 動的アンカー抽出スキップ:', (embedError as Error).message);
             }
 
-            const systemPrompt = buildSystemPrompt('reply', userData, input, extendedPrompt, '', [], 'ja', personaFewShotPrompt);
+            const systemPrompt = buildSystemPrompt(persona, 'reply', userData, input, extendedPrompt, '', [], 'ja', personaFewShotPrompt);
             
             // Fetch Structured Reply from Gemini
             const result = await gemini.generateStructuredReply(systemPrompt, workingMemory, input);
             
             console.log(`\n💭 [内省 Thought]: ${result.thought}`);
-            console.log(`💋 [レベッカ Reply]: ${result.reply}\n`);
+            console.log(`💋 [${persona.metadata.displayName} Reply]: ${result.reply}\n`);
 
             // Save to local JSON DB
             userData.episodicBuffer.push({ role: 'user', content: input, timestamp: new Date().toISOString() });

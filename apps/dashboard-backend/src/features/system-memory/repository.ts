@@ -79,7 +79,7 @@ export class SystemMemoryRepository {
     return {
       level: 1,
       name: 'Layer 1: Extended Persona Tuning',
-      content: data?.extended_prompt || 'You are Rebecca, an AI virtual friend. Be helpful, engaging, and friendly.',
+      content: typeof data?.extended_prompt === 'string' ? data.extended_prompt : '',
       isReadOnly: false
     };
   }

@@ -44,4 +44,9 @@ export const config = {
       .map((o) => o.trim())
       .filter(Boolean),
   },
+  /** Persona Configuration */
+  persona: {
+    activeId: (process.env.ACTIVE_PERSONA || 'rebecca').trim() || 'rebecca',
+  },
 } as const;
+

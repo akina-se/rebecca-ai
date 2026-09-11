@@ -243,14 +243,14 @@ export class UsersRepository {
       const log = d.data();
       if (log.userText) {
         chatHistory.push({
-          from: 'user',
+          role: 'user',
           text: String(log.userText),
           time: String(log.timestamp || '')
         });
       }
       if (log.aiText) {
         chatHistory.push({
-          from: 'rebecca',
+          role: 'model',
           text: String(log.aiText),
           thought: log.thought ? String(log.thought) : undefined,
           time: String(log.timestamp || '')
@@ -263,7 +263,7 @@ export class UsersRepository {
       for (const entry of data.episodicBuffer as Array<{ role: string; content: string; thought?: string; timestamp?: string }>) {
         if (entry.content) {
           chatHistory.push({
-            from: entry.role === 'user' ? 'user' : 'rebecca',
+            role: entry.role === 'user' ? 'user' : 'model',
             text: entry.content,
             thought: entry.role !== 'user' && entry.thought ? String(entry.thought) : undefined,
             time: entry.timestamp || String(data.last_reply_date || '')

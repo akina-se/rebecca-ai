@@ -81,8 +81,9 @@ export class ProactiveNewsUseCase {
         timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
       ]);
 
-      const systemInstruction = getBasePrompt('timeline', 'ja');
-      const newsPrompt = `以下の今日の最新ニュースから、共感・興奮しそうな話題（エンタメ・IT・スイーツ・カルチャー・新商品・気象など）を【1つだけ】選び、ニュースの概要や背景に触れながらツイートを生成してください。
+      const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
+      const interestsStr = this.deps.persona.metadata.interests.join('・');
+      const newsPrompt = `以下の今日の最新ニュースから、共感・興奮しそうな話題（${interestsStr}など）を【1つだけ】選び、ニュースの概要や背景に触れながらツイートを生成してください。
 
 【今日のニュース】
 ${formattedNewsContext}
@@ -104,9 +105,12 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         return { status: 'skipped', reason: 'generation_failed' };
       }
 
-      const hashtag = '\n#全肯定AIレベッカ';
-      if (postText.length + hashtag.length <= 140) {
-        postText += hashtag;
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
+      if (defaultHashtag) {
+        const hashtag = `\n${defaultHashtag}`;
+        if (postText.length + hashtag.length <= 140) {
+          postText += hashtag;
+        }
       }
 
       console.log('[ProactiveNewsUseCase] Generated Post:', postText);
