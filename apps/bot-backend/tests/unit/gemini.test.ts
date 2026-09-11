@@ -398,6 +398,29 @@ describe('gemini.ts', () => {
                 }
             });
         });
+
+        it('should handle search_web gracefully when query is missing or empty without falling back to userInput', async () => {
+            const { gemini } = getGeminiModule();
+
+            mockGenerateContent
+                .mockResolvedValueOnce({
+                    functionCalls: [{ name: 'search_web', args: {} }],
+                    candidates: [{ content: { role: 'model', parts: [{ functionCall: { name: 'search_web', args: {} } }] } }]
+                })
+                .mockResolvedValueOnce({
+                    text: JSON.stringify({ thought: 'クエリがなかったわ', reply: '何を調べればいいか教えてね♡' })
+                });
+
+            const res = await gemini.generateStructuredReply('System', [], 'これ調べて');
+            expect(res.thought).toBe('クエリがなかったわ');
+            expect(res.reply).toBe('何を調べればいいか教えてね♡');
+            expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+
+            // Verify functionResponse passed to model contains explicit message, not userInput
+            const secondCallContents = mockGenerateContent.mock.calls[1][0].contents;
+            const functionRespPart = secondCallContents[secondCallContents.length - 1].parts[0];
+            expect(functionRespPart.functionResponse.response.result).toBe('検索クエリが指定されていません。');
+        });
     });
 
     describe('verifyImageRelevance', () => {

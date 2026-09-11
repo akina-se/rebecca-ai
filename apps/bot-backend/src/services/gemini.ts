@@ -402,10 +402,12 @@ ${imageCaption}
  */
 const executeWebSearch = async (query: string): Promise<string> => {
     if (!ai) return "検索クライアントが未初期化です。";
+    const trimmed = query.trim();
+    if (!trimmed) return "検索クエリが空です。";
     try {
         const res = await ai.models.generateContent({
             model: config.gemini.model,
-            contents: [{ role: 'user', parts: [{ text: query }] }],
+            contents: [{ role: 'user', parts: [{ text: trimmed }] }],
             config: {
                 tools: [{ googleSearch: {} }],
                 safetySettings: [] as never[]
@@ -413,7 +415,7 @@ const executeWebSearch = async (query: string): Promise<string> => {
         });
         return res.text?.trim() || "該当する検索結果が見つかりませんでした。";
     } catch (err) {
-        console.warn(`[executeWebSearch] Failed to search for query "${query}":`, (err as Error).message);
+        console.warn(`[executeWebSearch] Failed to search for query "${trimmed}":`, (err as Error).message);
         return "一時的なネットワークまたは検索エラーにより情報を取得できませんでした。";
     }
 };
@@ -495,8 +497,10 @@ const generateStructuredReply = async (
             return parsePersonaResponse(rawText);
         }
 
-        const searchQuery = (functionCall.args?.query as string) || userInput;
-        const searchResult = await executeWebSearch(searchQuery);
+        const searchQuery = typeof functionCall.args?.query === 'string' ? functionCall.args.query.trim() : '';
+        const searchResult = searchQuery
+            ? await executeWebSearch(searchQuery)
+            : "検索クエリが指定されていません。";
 
         if (response.candidates?.[0]?.content) {
             contents.push(response.candidates[0].content);
