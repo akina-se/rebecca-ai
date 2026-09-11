@@ -101,6 +101,10 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 | | `GET` | `/api/v1/memory/global` | Get Layer 2 dynamic Global summary prompt |
 | | `PUT` | `/api/v1/memory/global` | Update Layer 2 dynamic Global summary content |
 | | `POST` | `/api/v1/memory/force-dreaming` | Trigger asynchronous Dreaming consolidation |
+| **Copilot** | `POST` | `/api/v1/copilot/chat` | AI Copilot conversational dialogue and HITL action proposals |
+| **Settings** | `GET` | `/api/v1/settings` | Get system language and timezone preferences |
+| | `PATCH` | `/api/v1/settings` | Update system language and timezone preferences |
+| **Config** | `GET` | `/api/v1/config` | Public client runtime configurations & active persona metadata |
 
 ---
 

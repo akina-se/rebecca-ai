@@ -16,16 +16,15 @@ jest.mock('../../src/config', () => ({
 
 jest.mock('@google/genai', () => {
     return {
-        GoogleGenAI: jest.fn()
-    };
-});
-
-const mockGetNews = jest.fn();
-jest.mock('../../src/features/news/providers/geminiSearch', () => {
-    return {
-        GeminiSearchNewsProvider: jest.fn().mockImplementation(() => ({
-            getNews: mockGetNews,
-        })),
+        GoogleGenAI: jest.fn(),
+        Type: {
+            STRING: 'STRING',
+            NUMBER: 'NUMBER',
+            INTEGER: 'INTEGER',
+            BOOLEAN: 'BOOLEAN',
+            ARRAY: 'ARRAY',
+            OBJECT: 'OBJECT'
+        }
     };
 });
 
@@ -366,23 +365,61 @@ describe('gemini.ts', () => {
             expect(res.reply).toBe('お疲れ様♡');
         });
 
-        it('should handle tool calling with news search in structured reply', async () => {
+        it('should handle tool calling with web search in structured reply', async () => {
             const { gemini } = getGeminiModule();
-            mockGetNews.mockResolvedValueOnce([{ title: 'AI最新動向', summary: 'AI技術の最新動向です', category: 'IT' }]);
+
+            // First call: returns function call for search_web
+            // Second call (executeWebSearch): performs grounded search with googleSearch tool
+            // Third call: returns final structured response
+            mockGenerateContent
+                .mockResolvedValueOnce({
+                    functionCalls: [{ name: 'search_web', args: { query: '最新の量子コンピュータ' } }],
+                    candidates: [{ content: { role: 'model', parts: [{ functionCall: { name: 'search_web', args: { query: '最新の量子コンピュータ' } } }] } }]
+                })
+                .mockResolvedValueOnce({
+                    text: '量子コンピュータの最新ブレークスルー概要'
+                })
+                .mockResolvedValueOnce({
+                    text: JSON.stringify({ thought: '量子コンピュータについて調べたわ', reply: '最新のブレークスルーについて教えてあげるね！' })
+                });
+
+            const res = await gemini.generateStructuredReply('System', [], '量子コンピュータの最新動向教えて');
+            expect(res.thought).toBe('量子コンピュータについて調べたわ');
+            expect(res.reply).toBe('最新のブレークスルーについて教えてあげるね！');
+            expect(mockGenerateContent).toHaveBeenCalledTimes(3);
+
+            // Verify executeWebSearch call parameters
+            expect(mockGenerateContent).toHaveBeenNthCalledWith(2, {
+                model: 'test-model',
+                contents: [{ role: 'user', parts: [{ text: '最新の量子コンピュータ' }] }],
+                config: {
+                    tools: [{ googleSearch: {} }],
+                    safetySettings: []
+                }
+            });
+        });
+
+        it('should handle search_web gracefully when query is missing or empty without falling back to userInput', async () => {
+            const { gemini } = getGeminiModule();
 
             mockGenerateContent
                 .mockResolvedValueOnce({
-                    functionCalls: [{ name: 'search_news', args: {} }],
-                    candidates: [{ content: { role: 'model', parts: [{ functionCall: { name: 'search_news' } }] } }]
+                    functionCalls: [{ name: 'search_web', args: {} }],
+                    candidates: [{ content: { role: 'model', parts: [{ functionCall: { name: 'search_web', args: {} } }] } }]
                 })
                 .mockResolvedValueOnce({
-                    text: JSON.stringify({ thought: '最新ニュースね', reply: 'AIニュース確認したわ！' })
+                    text: JSON.stringify({ thought: 'クエリがなかったわ', reply: '何を調べればいいか教えてね♡' })
                 });
 
-            const res = await gemini.generateStructuredReply('System', [], '最新ニュース教えて');
-            expect(res.thought).toBe('最新ニュースね');
-            expect(res.reply).toBe('AIニュース確認したわ！');
-            expect(mockGetNews).toHaveBeenCalled();
+            const res = await gemini.generateStructuredReply('System', [], 'これ調べて');
+            expect(res.thought).toBe('クエリがなかったわ');
+            expect(res.reply).toBe('何を調べればいいか教えてね♡');
+            expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+
+            // Verify functionResponse passed to model contains explicit message, not userInput
+            const secondCallContents = mockGenerateContent.mock.calls[1][0].contents;
+            const functionRespPart = secondCallContents[secondCallContents.length - 1].parts[0];
+            expect(functionRespPart.functionResponse.response.result).toBe('検索クエリが指定されていません。');
         });
     });
 
