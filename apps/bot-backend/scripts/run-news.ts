@@ -8,7 +8,7 @@ import * as xApi from '../src/services/xApi';
 import * as tasks from '../src/services/tasks';
 import { AppDependencies } from '../src/types';
 import { getActivePersona } from '@rebecca/persona';
-import { loadConfig } from '../src/config';
+import config from '../src/config';
 
 // Mock external APIs for safe local testing
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,8 +36,7 @@ const run = async () => {
   console.log(' 📰 News Post Batch (手動実行テスト)');
   console.log('=========================================');
 
-  const config = loadConfig();
-  const persona = getActivePersona(config.activePersona);
+  const persona = getActivePersona(config.persona.activeId);
 
   const deps: AppDependencies = {
     firestore,

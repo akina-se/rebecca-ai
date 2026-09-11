@@ -30,15 +30,14 @@ import { AppDependencies } from '../src/types';
 
 import { WikipediaAnniversaryProvider } from '../src/features/anniversary/providers/wikipedia';
 import { getActivePersona } from '@rebecca/persona';
-import { loadConfig } from '../src/config';
+import config from '../src/config';
 
 const run = async () => {
   console.log('=========================================');
   console.log(' 📅 Anniversary Post Batch (手動実行テスト)');
   console.log('=========================================');
 
-  const config = loadConfig();
-  const persona = getActivePersona(config.activePersona);
+  const persona = getActivePersona(config.persona.activeId);
 
   const deps: AppDependencies = {
     firestore,
