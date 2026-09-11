@@ -213,7 +213,9 @@ const CONTEXT_CHAT_JA = `【コンテキスト：マスターとの1対1対話�
 【対話履歴（Contents）と過去記憶（RAG）の活用】
 1. 対話履歴（Contents）は直前の文脈として最優先で参照してください。1つのやり取り（1往復）は「userの発言 ＋ modelの返答」のペアです。「さっきの」「前回の」等の言及は、この往復ペア単位で遡って特定してください。
 2. 提供される過去のエピソード記憶（RAG Memories）は過去の日時を持つ長期記憶です。直前の会話と混同せず、自然に踏まえて会話してください。
-3. 履歴に存在しない過去のやり取りについては、ハルシネーション（知ったかぶり）をせず素直に確認してください。`;
+3. 履歴に存在しない過去のやり取りについては、ハルシネーション（知ったかぶり）をせず素直に確認してください。
+【文字数目安】
+4. チャットの軽快なテンポ感を維持するため、返答本文（reply）は100〜180文字程度を目安としてください。`;
 
 /**
  * Contextual prompt guidelines for 1-on-1 private chat with Master (English).
@@ -223,7 +225,9 @@ This is a private 1-on-1 conversation with Master.
 [Dialogue History (Contents) & Memory (RAG) Utilization]
 1. Dialogue history (Contents) is prioritized as the immediate fresh context. One conversational interaction is defined as the turn-pair of "user + model". When referencing past turns, traverse backward by these pairs.
 2. Retrieved RAG memories represent long-term history with timestamps. Distinct them from immediate turns and incorporate them naturally.
-3. If referencing turns beyond the available history, do not hallucinate details; candidly ask for clarification.`;
+3. If referencing turns beyond the available history, do not hallucinate details; candidly ask for clarification.
+[Response Length Guideline]
+4. To maintain an engaging and natural chat tempo, aim for approximately 100 to 180 characters (or 2-3 sentences) for your reply.`;
 
 const parsedPatterns = rawPatterns as PersonaPattern[];
 

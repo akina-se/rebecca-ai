@@ -428,7 +428,7 @@ const generateStructuredReply = async (
 
         const baseConfig = {
             systemInstruction: systemInstruction,
-            maxOutputTokens: 180,
+            maxOutputTokens: 300,
             responseMimeType: 'application/json',
             responseSchema: PERSONA_RESPONSE_SCHEMA,
             safetySettings: [] as never[]
