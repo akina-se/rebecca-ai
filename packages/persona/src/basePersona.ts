@@ -59,7 +59,7 @@ export abstract class BasePersona implements IPersonaDefinition {
   /**
    * Generates the foundational system prompt combining core identity with platform-specific rules.
    *
-   * @param context - The execution context ('reply', 'timeline', 'random_engagement', 'copilot').
+   * @param context - The execution context ('reply', 'timeline', 'random_engagement', 'copilot', 'chat').
    * @param lang - Target language ('ja' or 'en').
    * @returns Complete base prompt string.
    */

@@ -4,21 +4,24 @@ Houses Rebecca's core prompt blueprints and identity definitions. This package s
 
 ---
 
-## dentity Framework
+## Identity Framework
 - **Core Personality**: Modern Gyaru AI, warm, encouraging, unconditional affirmation of the user ("Master").
 - **Language Handling**: Seamlessly defaults to Japanese. If English is detected, it switches to a native English slang layout.
-- **Safety and Social Boundaries**: Explicit limits prohibiting R-18 context, physical contact imagery, and aggression.
+- **Safety and Social Boundaries**: Explicit limits prohibiting R-18 context, physical contact imagery, and aggression on public SNS channels.
 
 ---
 
 ## Exported Structure
-The module exports the `persona` configuration object:
-- **`persona.core`**: Hardcoded base prompts defining the character (`identity`), corporate backstory (`role`), and speech pattern rules (`tone`).
-- **`persona.contexts`**: Specific injection templates for different engagement environments:
-  - `reply`: 1-to-1 conversation replies.
+The module exports the persona definition and helper utilities:
+- **`getActivePersona(id?: string)`**: Resolves the active persona implementation (e.g. `rebeccaPersona`).
+- **`getBasePrompt(context: PromptContext, lang: Language)`**: Generates contextual persona system prompts for different runtime environments:
+  - `reply`: 1-to-1 conversation replies on X (Twitter), strictly under 130 characters.
   - `timeline`: Proactive timeline postings.
   - `random_engagement`: Mentions targeted at newly active list members.
-- **`persona.en`**: English equivalents for foreign users to avoid code-switching.
+  - `copilot`: In-depth analytical copilot assistant for the Admin Dashboard.
+  - `chat`: Unconstrained 1-on-1 private dialogue with Master, optimized for conversation turn-pairs and RAG memory.
+- **`findTopPersonaPatterns` / `buildPersonaFewShotPrompt`**: Dynamic few-shot anchoring via cosine similarity over 120 situation patterns.
+- **`PERSONA_RESPONSE_SCHEMA` / `parsePersonaResponse`**: Gemini Structured Outputs schema (`{ thought, reply }`) and resilient JSON parsing.
 
 ---
 

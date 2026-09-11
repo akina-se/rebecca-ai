@@ -6,8 +6,9 @@ import { PersonaPatternWithVector } from './personaPatternVectors';
  * - `timeline`: Autonomous broadcasting to timeline followers (e.g. news, anniversary, soliloquy).
  * - `random_engagement`: Unsolicited friendly engagement with timeline community posts.
  * - `copilot`: Administrative dashboard assistant answering analytics and system queries.
+ * - `chat`: 1-on-1 private interactive chat directly with user/Master.
  */
-export type PromptContext = 'reply' | 'timeline' | 'random_engagement' | 'copilot';
+export type PromptContext = 'reply' | 'timeline' | 'random_engagement' | 'copilot' | 'chat';
 
 /**
  * Supported natural languages for persona prompts and generation.
