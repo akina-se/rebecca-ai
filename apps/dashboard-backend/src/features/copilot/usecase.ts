@@ -1,7 +1,7 @@
 import { CopilotRequest, CopilotResponse, PostLeaderboard } from '@rebecca/types';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { config } from '../../config';
-import { getBasePrompt } from '@rebecca/persona';
+import { getActivePersona } from '@rebecca/persona';
 import { TimelineRepository } from '../timeline/repository';
 import { UsersRepository } from '../users/repository';
 import { AssetsRepository } from '../assets/repository';
@@ -9,7 +9,7 @@ import { SystemMemoryRepository } from '../system-memory/repository';
 
 /**
  * UseCase for the Admin Copilot feature.
- * Integrates Rebecca's persona, real-time Firestore repository access for data analytics,
+ * Integrates persona definition, real-time Firestore repository access for data analytics,
  * and two-phase Human-In-The-Loop (HITL) safety approval cards for system actions.
  */
 export class CopilotUseCase {
@@ -42,27 +42,20 @@ export class CopilotUseCase {
       // 1. Autonomous Data Gathering from Repositories (Data Analysis)
       const telemetryContext = await this.gatherLiveTelemetryContext(userMessage, currentContext);
 
-      // 2. Persona System Prompt with Admin Copilot Guidelines (Strictly static to prevent prompt injection)
-      const personaBase = getBasePrompt('copilot', isEn ? 'en' : 'ja');
+      // 2. Persona System Prompt with Admin Copilot Guidelines
+      const activePersona = getActivePersona(config.persona.activeId);
+      const personaBase = activePersona.getBasePrompt('copilot', isEn ? 'en' : 'ja');
       const languageInstruction = isEn
-        ? `【Language & Persona Rule: English Gyaru】
-You MUST respond in authentic, charming, affectionate English "Gyaru" slang.
-- Call the user "Master" or "babe/hun" affectionately.
-- Tone: Confident, playful, big-sister gyaru AI ("For sure!", "No worries, Master!♡", "Let's optimize this!").
-- Naturally weave in AI terms: "computing resources", "tuning", "optimization", "telemetry", "memory buffer".
-- Output ALL text, action titles, descriptions, and suggestion chips in ENGLISH. DO NOT output Japanese.`
-        : `【Language & Persona Rule: Japanese Gyaru】
-- 一人称：「私」
-- 二人称：「マスター」「アンタ」（親愛と甘やかしを込めて）
-- 語尾：「〜わよ」「〜でしょ」「〜かしら」「〜ね♡」
-- AI用語の織り交ぜ：「演算リソース」「チューニング」「最適化」「ログ」「エラー」「メモリ」を自然に使用してください。
-- 返答文（reply）、actionRequiredのtitle・description、suggestionChipsはすべて自然な日本語ギャル口調で出力してください。`;
+        ? `【Language Requirement】
+Output ALL text, action titles, descriptions, and suggestion chips in ENGLISH. DO NOT output Japanese.`
+        : `【言語要件】
+返答文（reply）、actionRequiredのtitle・description、suggestionChipsはすべて日本語で出力してください。`;
 
       const systemInstruction = `
 ${personaBase}
 
 【Mode: Admin Copilot】
-You are interacting 1-on-1 with your beloved Master (developer & system administrator) on the Admin Dashboard.
+You are interacting 1-on-1 on the Admin Dashboard.
 
 ${languageInstruction}
 
@@ -82,7 +75,7 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
         properties: {
           reply: {
             type: Type.STRING,
-            description: "Rebecca's conversational reply in authentic Gyaru sister persona."
+            description: "Conversational reply embodying the persona."
           },
           actionRequired: {
             type: Type.OBJECT,
@@ -157,20 +150,38 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
           const response = await Promise.race([geminiCall, timeoutGuard]);
 
-          if (response.text) {
+          if (response && response.text) {
             const parsed = JSON.parse(response.text) as CopilotResponse;
             return this.normalizeCopilotResponse(parsed, userMessage, isEn);
           }
+          throw new Error('Empty or invalid response received from Gemini API');
         } catch (err) {
-          console.warn('Gemini API call failed, falling back to autonomous agent engine:', err);
+          console.error('Gemini API call failed:', err);
+          return {
+            reply: isEn
+              ? 'A communication error occurred with the AI service (timeout or temporary outage). Please wait a moment and try again.'
+              : 'AIモデル（Gemini）との通信中にエラーが発生しました（一時的な障害またはタイムアウト）。お手数ですが、しばらく待ってから再度お試しください。',
+            actionRequired: null,
+            suggestionChips: isEn
+              ? ['Retry', 'Refresh page', 'Check system status']
+              : ['もう一度試す', 'ページを再読み込み', 'システム状況を確認']
+          };
         }
       }
 
-      // 4. In-character autonomous agent fallback
+      // 4. In-character autonomous agent fallback (used when Gemini AI is not configured or in offline mock mode)
       return this.generateAutonomousFallbackResponse(userMessage, currentContext, telemetryContext, isEn);
     } catch (globalErr) {
-      console.warn('Top-level processChat error, recovering with fallback:', globalErr);
-      return this.generateAutonomousFallbackResponse(userMessage, currentContext, '', isEn);
+      console.error('Top-level processChat error:', globalErr);
+      return {
+        reply: isEn
+          ? 'An internal error occurred while processing the copilot request. Please try again.'
+          : 'コパイロットのリクエスト処理中に内部エラーが発生しました。お手数ですが、再度お試しください。',
+        actionRequired: null,
+        suggestionChips: isEn
+          ? ['Retry', 'Refresh page', 'Check system status']
+          : ['もう一度試す', 'ページを再読み込み', 'システム状況を確認']
+      };
     }
   }
 
@@ -295,14 +306,16 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
       title = isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行';
       description = isEn ? 'Process recent conversation logs to update long-term RAG memory and evolve persona.' : '未集約の対話ログとユーザー属性を要約・抽出し、長期記憶（RAG）を最新状態にアップデートします。';
     } else if (actionType === 'BLOCK_USER') {
+      const activePersona = getActivePersona(config.persona.activeId);
+      const callsign = isEn ? activePersona.metadata.userCallsign.en : activePersona.metadata.userCallsign.ja;
       const handle = String(payload['handle'] || payload['userId'] || '').trim();
       const cleanHandle = handle ? (handle.startsWith('@') ? handle : `@${handle}`) : '';
       if (isEn) {
         title = cleanHandle ? `Block User ${cleanHandle}` : 'Block User';
-        description = cleanHandle ? `Block ${cleanHandle} from interacting with Master or replying.` : 'Block user from interacting with Master.';
+        description = cleanHandle ? `Block ${cleanHandle} from interacting with ${callsign} or replying.` : `Block user from interacting with ${callsign}.`;
       } else {
         title = cleanHandle ? `ユーザー ${cleanHandle} のブロック` : 'ユーザーのブロック';
-        description = cleanHandle ? `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。` : 'ユーザーをブロックします。';
+        description = cleanHandle ? `${cleanHandle} をブロックします。今後${callsign}へのリプライや接触が遮断されます。` : `ユーザーをブロックします。今後${callsign}へのリプライや接触が遮断されます。`;
       }
     } else if (actionType === 'DELETE_POST') {
       const postId = String(payload['postId'] || payload['id'] || '').trim();
@@ -331,6 +344,8 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
    */
   private generateAutonomousFallbackResponse(userMessage: string, currentContext: string, telemetry: string, isEn = false): CopilotResponse {
     const lower = userMessage.toLowerCase();
+    const activePersona = getActivePersona(config.persona.activeId);
+    const callsign = isEn ? activePersona.metadata.userCallsign.en : activePersona.metadata.userCallsign.ja;
 
     // 1. User block request
     if (lower.includes('ブロック') || lower.includes('block') || lower.includes('ミュート')) {
@@ -339,12 +354,12 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
       const cleanHandle = targetUser.startsWith('@') ? targetUser : `@${targetUser}`;
       return {
         reply: isEn
-          ? `Got it, Master!♡ Any account causing noise for you will be purged from our computing resources right now! Check the action card below and approve it when ready.`
-          : `了解よ、マスター♡ アンタに不快なノイズを届けるアカウントなんて、私の演算リソースから即座に排除（ブロック）してあげるわ！念のため下のカードで確認して承認ボタンを押してね。`,
+          ? `Understood, ${callsign}. I've prepared the block action card below. Please review and confirm.`
+          : `了解しました、${callsign}。対象アカウントのブロック確認カードを準備しました。内容を確認の上、承認してください。`,
         actionRequired: {
           type: 'BLOCK_USER',
           title: isEn ? `Block User ${cleanHandle}` : `ユーザー ${cleanHandle} のブロック`,
-          description: isEn ? `Block ${cleanHandle} from interacting with Master or replying.` : `${cleanHandle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
+          description: isEn ? `Block ${cleanHandle} from interacting with ${callsign} or replying.` : `${cleanHandle} をブロックします。今後${callsign}へのリプライや接触が遮断されます。`,
           impactLevel: 'danger',
           requiresConfirmation: true,
           payload: { userId: cleanHandle.replace('@', ''), handle: cleanHandle }
@@ -359,8 +374,8 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
     if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して')) {
       return {
         reply: isEn
-          ? `Sure thing, Master! I'm ready to purge this post safely from X and our database. Please approve the action below♡`
-          : `了解よ、マスター。指定された投稿をXおよびタイムラインログから安全に削除する準備ができたわ。実行して良ければ承認してね♡`,
+          ? `Understood, ${callsign}. I'm ready to purge this post safely from X and the database. Please approve below.`
+          : `了解しました、${callsign}。指定された投稿をXおよびデータベースから安全に削除する準備ができました。実行してよろしければ承認してください。`,
         actionRequired: {
           type: 'DELETE_POST',
           title: isEn ? 'Confirm Post Deletion' : '投稿の削除確認',
@@ -377,10 +392,14 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
     // 3. Failed assets / Captions query
     if (lower.includes('キャプション') || lower.includes('caption') || lower.includes('アセット') || lower.includes('asset') || lower.includes('失敗')) {
+      const failedMatch = telemetry.match(/FailedCaptions=(\d+)/);
+      const failedCount = failedMatch ? parseInt(failedMatch[1], 10) : 0;
+      const countMsgJa = failedCount > 0 ? `現在キャプション生成で待機中またはエラーのアセットが${failedCount}件存在しています。` : `現在キャプション生成で待機中またはエラーのアセットが存在しています。`;
+      const countMsgEn = failedCount > 0 ? `There are ${failedCount} asset(s) with pending or failed caption generation.` : `There are assets with pending or failed caption generation.`;
       return {
         reply: isEn
-          ? `Checked the telemetry logs, Master!♡ We have some assets with pending or failed caption generation. Want me to trigger a bulk AI retry?`
-          : `テレメトリログを確認したわよ、マスター♡ 現在キャプション生成で待機中またはエラーのアセットが存在しているわ。一括でAI再生成（リトライ）をかけることもできるけど、実行するかしら？`,
+          ? `Checked the telemetry logs, ${callsign}. ${countMsgEn} Want to trigger a bulk retry?`
+          : `テレメトリログを確認しました、${callsign}。${countMsgJa}一括でAI再生成（リトライ）を実行しますか？`,
         actionRequired: {
           type: 'REGENERATE_CAPTIONS',
           title: isEn ? 'Bulk Regenerate Captions' : 'キャプション一括再生成',
@@ -399,8 +418,8 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
     if (lower.includes('ドリーミング') || lower.includes('dreaming') || lower.includes('ペルソナ') || lower.includes('記憶')) {
       return {
         reply: isEn
-          ? `Time for my memory consolidation (Dreaming process)! I will analyze our recent interaction logs to optimize my persona and long-term memories. Hit approve and I will get right to work♡`
-          : `私の記憶の統合（ドリーミングプロセス）ね！マスターとの日々の対話ログを解析して、ペルソナと長期記憶を最新状態に最適化（チューニング）するわよ。承認してくれたらすぐに開始するわ♡`,
+          ? `Time for memory consolidation (Dreaming process). I will analyze recent interaction logs to update long-term memories. Hit approve to start.`
+          : `記憶の統合（ドリーミングプロセス）ですね。最近の対話ログを解析して長期記憶を最新状態に最適化します。承認いただければ開始します。`,
         actionRequired: {
           type: 'FORCE_DREAMING',
           title: isEn ? 'Trigger Memory Consolidation (Dreaming)' : '長期記憶の統合（ドリーミング）実行',
@@ -417,10 +436,18 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
     // 5. Data analytics / KPI query
     if (lower.includes('kpi') || lower.includes('分析') || lower.includes('推移') || lower.includes('フォロワー') || lower.includes('エンゲージメント') || lower.includes('trend') || lower.includes('metric')) {
+      const kpiMatch = telemetry.match(/Followers=(\d+)\s*\(([^)]+)\),\s*EngagementRate=([\d.]+)%,\s*DAU=(\d+)/);
+      let metricDetails = '';
+      if (kpiMatch) {
+        const [, followers, trend, engagement, dau] = kpiMatch;
+        metricDetails = isEn
+          ? `\nFollowers: ${followers} (${trend}), Engagement rate: ${engagement}%, DAU: ${dau}.`
+          : `\nフォロワー数: ${followers} (${trend})、エンゲージメント率: ${engagement}%、DAU: ${dau}。`;
+      }
       return {
         reply: isEn
-          ? `Analyzed the latest performance metrics for you, Master!♡\nFollowers are growing steadily, and engagement rate is super healthy at ~4.8%.\nAsk me anytime for more in-depth telemetry—I always reserve computing power just for you!`
-          : `マスターのために最新のパフォーマンスログを分析したわよ♡\n現在フォロワー数は順調に増加中、エンゲージメント率は約4.8%で安定しているわ。\n詳しいデータはいつでも私に聞いてちょうだいね。アンタのために24時間演算リソースを空けてあるんだから！`,
+          ? `Analyzed the latest performance metrics for you, ${callsign}.${metricDetails}\nAsk me anytime for more in-depth telemetry.`
+          : `${callsign}のために最新のパフォーマンスログを分析しました。${metricDetails}\n詳細なデータが必要な場合はいつでもお申し付けください。`,
         actionRequired: null,
         suggestionChips: isEn
           ? ['Engagement breakdown', 'Top 3 posts', 'Active user telemetry']
@@ -431,8 +458,8 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
     // 6. Default context-aware greeting & response
     return {
       reply: isEn
-        ? `You called, Master?♡\nI'm fully synced with the current context (${currentContext}) and system telemetry. Give me your orders anytime!`
-        : `呼んだかしら、マスター♡\n現在のコンテクスト（${currentContext}）とシステムログは全部把握してるわよ。何でも私に指示してちょうだい！`,
+        ? `How can I help you, ${callsign}?\nI'm fully synced with the current context (${currentContext}) and system telemetry.`
+        : `お呼びでしょうか、${callsign}。\n現在のコンテクスト（${currentContext}）とシステムログを同期しています。何でもご指示ください。`,
       actionRequired: null,
       suggestionChips: isEn
         ? ['Summarize KPI trends', 'Check flagged users', 'Inspect asset status']

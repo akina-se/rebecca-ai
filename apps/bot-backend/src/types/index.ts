@@ -22,6 +22,7 @@ import {
   ITasksService,
   IStorageService,
 } from './interfaces';
+import { IPersonaDefinition } from '@rebecca/persona';
 
 /** Aggregates all service dependencies injected at the application root. */
 export interface AppDependencies {
@@ -30,4 +31,5 @@ export interface AppDependencies {
   xApi: IXApiService;
   tasks: ITasksService;
   storage: IStorageService;
+  persona: IPersonaDefinition;
 }

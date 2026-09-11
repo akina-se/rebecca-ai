@@ -3,8 +3,8 @@
         <div class="breadcrumb">{{ 'topbar.admin' | translate }} <span class="material-icons" style="font-size: 1rem; color: var(--text-muted)">chevron_right</span> <span>{{ pageTitle }}</span></div>
     </div>
     <div class="user-menu" style="display: flex; align-items: center; gap: 10px;">
-        <button class="sparkle-btn header-rebecca-btn" id="header-rebecca-btn" (click)="toggleDrawer()" title="Open Rebecca Copilot" aria-label="Open Rebecca Copilot">
-            <span class="material-icons" style="font-size: 1.1rem;">auto_awesome</span> Rebecca
+        <button class="sparkle-btn header-rebecca-btn" id="header-rebecca-btn" (click)="toggleDrawer()" [title]="'Open ' + configService.personaName() + ' Copilot'" [attr.aria-label]="'Open ' + configService.personaName() + ' Copilot'">
+            <span class="material-icons" style="font-size: 1.1rem;">auto_awesome</span> {{ configService.personaName() }}
         </button>
         <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 5px;"></div>
         <div style="position: relative; cursor: pointer;" (click)="toggleUserDropdown($event)">

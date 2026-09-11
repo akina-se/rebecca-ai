@@ -119,4 +119,12 @@ export default {
     dedupLookbackDays: Math.max(1, parseInt(process.env.NEWS_DEDUP_LOOKBACK_DAYS || '30', 10) || 30),
     dedupSimilarityThreshold: Math.max(0.1, Math.min(1.0, parseFloat(process.env.NEWS_DEDUP_SIMILARITY_THRESHOLD || '0.82') || 0.82)),
   },
+
+  /**
+   * Active persona configuration.
+   */
+  persona: {
+    activeId: (process.env.ACTIVE_PERSONA || 'rebecca').trim() || 'rebecca',
+  },
 };
+

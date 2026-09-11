@@ -377,13 +377,33 @@ export interface UserLeaderboard {
   interactions: number;
 }
 
+/**
+ * Canonical sender role for a conversation turn, aligned with Gemini API message structures.
+ * - `user`: The human user or administrator.
+ * - `model`: The AI persona model.
+ */
+export type MessageSenderRole = 'user' | 'model';
+
+/**
+ * Normalized representation of a chat message exchanged between a user and the AI persona.
+ */
 export interface ChatMessage {
-  from: 'user' | 'rebecca';
+  /** The sender role of the message ('user' or 'model'). */
+  role: MessageSenderRole;
+
+  /** The plain text body of the message. */
   text: string;
-  /** Inner thought of the persona during response generation (if from rebecca) */
+
+  /** The AI persona's internal reflection or chain-of-thought during generation (model turns only). */
   thought?: string;
+
+  /** ISO 8601 formatted timestamp or localized time representation. */
   time: string;
+
+  /** Canonical ID of the active persona that generated this message (model turns only). */
+  personaId?: string;
 }
+
 
 export interface UserDetail {
   id: string;
