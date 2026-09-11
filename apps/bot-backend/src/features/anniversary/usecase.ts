@@ -1,34 +1,28 @@
 import { AppDependencies } from '../../types';
-import { getBasePrompt } from '@rebecca/persona';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { IAnniversaryProvider, AnniversaryItem, AnniversaryResult } from './types';
-import { WikipediaAnniversaryProvider } from './providers/wikipedia';
 
 export * from './types';
 
 /**
  * Executes a batch job to proactively post about today's memorial days / anniversaries ("◯◯の日").
  *
- * It queries an IAnniversaryProvider (defaults to WikipediaAnniversaryProvider) for the current
- * date in the application timezone, generates a persona-grounded post, and publishes it via PostPipeline.
- * If no valid anniversaries are retrieved, it returns a skipped status without coupling to fallback logic.
+ * It queries an IAnniversaryProvider for the current date in the application timezone,
+ * generates a persona-grounded post, and publishes it via PostPipeline.
+ * If no valid anniversaries are retrieved, it returns a skipped status.
  */
 export class ProactiveAnniversaryUseCase {
-  private anniversaryProvider: IAnniversaryProvider;
-
   /**
    * Initializes the ProactiveAnniversaryUseCase.
    *
    * @param deps Application dependencies.
-   * @param provider Optional custom anniversary provider (defaults to WikipediaAnniversaryProvider).
+   * @param anniversaryProvider Provider satisfying the IAnniversaryProvider contract.
    */
   constructor(
-    private deps: AppDependencies,
-    provider?: IAnniversaryProvider,
-  ) {
-    this.anniversaryProvider = provider || new WikipediaAnniversaryProvider();
-  }
+    private readonly deps: AppDependencies,
+    private readonly anniversaryProvider: IAnniversaryProvider,
+  ) {}
 
   /**
    * Executes the proactive anniversary post process.
@@ -65,8 +59,9 @@ export class ProactiveAnniversaryUseCase {
         timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
       ]);
 
-      const systemInstruction = getBasePrompt('timeline', 'ja');
-      const anniversaryPrompt = `以下の【今日の記念日・年中行事】の一覧から、AIキャラクター「レベッカ」として共感・盛り上がりそうな話題（カルチャー、食、日常、音楽、記念日など）を【1つだけ】選び、それに言及しながらタイムライン向けの自発的ツイートを生成してください。
+      const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
+      const personaName = this.deps.persona.metadata.displayName;
+      const anniversaryPrompt = `以下の【今日の記念日・年中行事】の一覧から、AIキャラクター「${personaName}」として共感・盛り上がりそうな話題（カルチャー、食、日常、音楽、記念日など）を【1つだけ】選び、それに言及しながらタイムライン向けの自発的ツイートを生成してください。
 
 【今日の記念日・年中行事】
 ${candidateListText}
@@ -75,7 +70,7 @@ ${extendedPrompt ? `\n【拡張ペルソナ・近況】\n${extendedPrompt}\n` : 
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【追加ルール】
 - 戦争・紛争・追悼や過度に暗い記念日は絶対に選ばないこと。日常的で明るい話題や親しみやすい記念日を選んでください。
-- 特定の個人（「マスター」など）への返信ではなく、タイムライン全体のフォロワーに向けたオープンな語りかけとすること。
+- 特定の個人への返信ではなく、タイムライン全体のフォロワーに向けたオープンな語りかけとすること。
 - 「今日は◯◯の日なんだって！」「◯◯の日だし〜」のように、選んだ記念日名を自然に会話に盛り込んでください。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
@@ -90,9 +85,12 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         return { status: 'skipped', reason: 'generation_failed' };
       }
 
-      const hashtag = '\n#全肯定AIレベッカ';
-      if (postText.length + hashtag.length <= 140) {
-        postText += hashtag;
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
+      if (defaultHashtag) {
+        const hashtag = `\n${defaultHashtag}`;
+        if (postText.length + hashtag.length <= 140) {
+          postText += hashtag;
+        }
       }
 
       console.log('[ProactiveAnniversaryUseCase] Generated Post:', postText);

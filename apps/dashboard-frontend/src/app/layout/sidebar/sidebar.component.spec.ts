@@ -21,7 +21,7 @@ describe('SidebarComponent', () => {
 
   it('should create sidebar component with brandName and version', () => {
     expect(component).toBeTruthy();
-    expect(component.brandName).toBe('Rebecca AI');
+    expect(component.brandName()).toBe('Rebecca AI');
     expect(component.publicSiteUrl()).toBeDefined();
     expect(component.version()).toBeDefined();
   });

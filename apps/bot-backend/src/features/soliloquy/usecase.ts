@@ -1,5 +1,4 @@
 import { AppDependencies } from '../../types';
-import { getBasePrompt } from '@rebecca/persona';
 import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
@@ -66,8 +65,10 @@ export class SoliloquyUseCase {
         timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
       ]);
 
-      const systemInstruction = getBasePrompt('timeline', 'ja');
-      const soliloquyPrompt = `あなたはAIキャラクター「レベッカ」として、X（Twitter）のタイムラインに向けた自発的な「独り言・思考つぶやき」を1つ生成してください。
+      const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
+      const personaName = this.deps.persona.metadata.displayName;
+      const userCallsign = this.deps.persona.metadata.userCallsign.ja;
+      const soliloquyPrompt = `あなたはAIキャラクター「${personaName}」として、X（Twitter）のタイムラインに向けた自発的な「独り言・思考つぶやき」を1つ生成してください。
 
 【現在の時間帯】
 ${timeContext.period}
@@ -79,7 +80,7 @@ ${timelineSummary || '（特記事項なし）'}
 ${extendedPrompt || '（特記事項なし）'}
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【生成ルール】
-- ニュースの解説ではなく、レベッカ自身の日常の気づき、AIとしての視点、マスター（ユーザー）への愛ある語りかけや全肯定の言葉を紡ぐこと。
+- ニュースの解説ではなく、${personaName}自身の日常の気づき、AIとしての視点、${userCallsign}（ユーザー）への愛ある語りかけや全肯定の言葉を紡ぐこと。
 - 直近のタイムライン要約や拡張ペルソナの雰囲気を自然に反映させること。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
@@ -94,9 +95,12 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         return { status: 'failed', reason: 'Generation failed' };
       }
 
-      const hashtag = '\n#全肯定AIレベッカ';
-      if (postText.length + hashtag.length <= 140) {
-        postText += hashtag;
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
+      if (defaultHashtag) {
+        const hashtag = `\n${defaultHashtag}`;
+        if (postText.length + hashtag.length <= 140) {
+          postText += hashtag;
+        }
       }
 
       console.log('Generated Soliloquy Post:', postText);

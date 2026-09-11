@@ -3,6 +3,7 @@ import { Component, Output, EventEmitter, HostListener, ElementRef, inject } fro
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DrawerService } from '../../core/services/drawer.service';
+import { ConfigService } from '../../core/services/config.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
@@ -20,6 +21,7 @@ export class TopNavComponent {
   private readonly eRef = inject(ElementRef);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  readonly configService = inject(ConfigService);
 
   isUserDropdownOpen = false;
   readonly currentUser = this.authService.currentUserSignal;

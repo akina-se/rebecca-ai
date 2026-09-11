@@ -11,6 +11,7 @@ import * as geminiService from './services/gemini';
 import * as xApiService from './services/xApi';
 import * as tasksService from './services/tasks';
 import * as storageService from './services/storage';
+import { getActivePersona } from '@rebecca/persona';
 import { AppDependencies } from './types';
 
 import { createBatchRoutes } from './routes/batchRoutes';
@@ -18,12 +19,15 @@ import { createWorkerRoutes } from './routes/workerRoutes';
 import { publicRateLimiter, batchRateLimiter, workerRateLimiter } from './middleware/apiRateLimiter';
 import { startGrpcServer } from './services/grpcServer';
 
+const activePersona = getActivePersona(config.persona.activeId);
+
 const deps: AppDependencies = {
     firestore: firestoreService,
     gemini: geminiService,
     xApi: xApiService,
     tasks: tasksService,
     storage: storageService,
+    persona: activePersona,
 };
 
 import path from 'path';

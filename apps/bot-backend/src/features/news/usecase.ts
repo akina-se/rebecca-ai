@@ -1,10 +1,8 @@
 import { AppDependencies } from '../../types';
-import { getBasePrompt } from '@rebecca/persona';
 import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { INewsProvider, NewsResult } from './types';
-import { GeminiSearchNewsProvider } from './providers/geminiSearch';
 import { filterFreshNews } from './deduplicator';
 
 export * from './types';
@@ -14,27 +12,23 @@ export * from './providers/geminiSearch';
 /**
  * Executes a batch job to proactively post a news-related tweet.
  *
- * Retrieves headlines via an injected INewsProvider (defaults to GeminiSearchNewsProvider),
+ * Retrieves headlines via an injected INewsProvider,
  * filters out recent duplicates using vector cosine similarity, generates a persona-grounded
  * post, and delivers it via the unified PostPipeline.
  *
  * If no fresh headlines are available, it returns a skipped status without coupling to fallback logic.
  */
 export class ProactiveNewsUseCase {
-  private newsProvider: INewsProvider;
-
   /**
    * Initializes the ProactiveNewsUseCase.
    *
    * @param deps Injected application dependencies.
-   * @param newsProvider Optional custom news provider implementation (defaults to GeminiSearchNewsProvider).
+   * @param newsProvider Injected news provider implementation.
    */
   constructor(
-    private deps: AppDependencies,
-    newsProvider?: INewsProvider,
-  ) {
-    this.newsProvider = newsProvider || new GeminiSearchNewsProvider();
-  }
+    private readonly deps: AppDependencies,
+    private readonly newsProvider: INewsProvider,
+  ) {}
 
   /**
    * Executes the proactive news post process.
@@ -81,8 +75,9 @@ export class ProactiveNewsUseCase {
         timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
       ]);
 
-      const systemInstruction = getBasePrompt('timeline', 'ja');
-      const newsPrompt = `以下の今日の最新ニュースから、共感・興奮しそうな話題（エンタメ・IT・スイーツ・カルチャー・新商品・気象など）を【1つだけ】選び、ニュースの概要や背景に触れながらツイートを生成してください。
+      const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
+      const interestsStr = this.deps.persona.metadata.interests.join('・');
+      const newsPrompt = `以下の今日の最新ニュースから、共感・興奮しそうな話題（${interestsStr}など）を【1つだけ】選び、ニュースの概要や背景に触れながらツイートを生成してください。
 
 【今日のニュース】
 ${formattedNewsContext}
@@ -104,9 +99,12 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         return { status: 'skipped', reason: 'generation_failed' };
       }
 
-      const hashtag = '\n#全肯定AIレベッカ';
-      if (postText.length + hashtag.length <= 140) {
-        postText += hashtag;
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
+      if (defaultHashtag) {
+        const hashtag = `\n${defaultHashtag}`;
+        if (postText.length + hashtag.length <= 140) {
+          postText += hashtag;
+        }
       }
 
       console.log('[ProactiveNewsUseCase] Generated Post:', postText);
