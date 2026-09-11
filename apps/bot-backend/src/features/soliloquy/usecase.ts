@@ -68,7 +68,7 @@ export class SoliloquyUseCase {
 
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
       const personaName = this.deps.persona.metadata.displayName;
-      const userCallsign = this.deps.persona.metadata.userCallsign?.ja || 'マスター';
+      const userCallsign = this.deps.persona.metadata.userCallsign.ja;
       const soliloquyPrompt = `あなたはAIキャラクター「${personaName}」として、X（Twitter）のタイムラインに向けた自発的な「独り言・思考つぶやき」を1つ生成してください。
 
 【現在の時間帯】

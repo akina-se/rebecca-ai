@@ -1,7 +1,7 @@
 import { Firestore } from '@google-cloud/firestore';
 import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
-import { persona } from '@rebecca/persona';
+import { getActivePersona } from '@rebecca/persona';
 import { config } from '../../config';
 
 /**
@@ -59,7 +59,8 @@ export class SystemMemoryRepository {
    * @returns A promise that resolves to the core memory content.
    */
   async getCoreMemory(): Promise<MemoryContent> {
-    const fullContent = `${persona.core.identity}\n\n【キャラクター設定】\n役割: ${persona.core.role}\n口調: ${persona.core.tone}\n\n【ペルソナマスターデータ（全120パターン）】\n${persona.core.patternsText}`;
+    const activePersona = getActivePersona(config.persona.activeId);
+    const fullContent = `${activePersona.getBasePrompt('timeline', 'ja').split('【コンテキスト')[0].trim()}\n\n【キャラクター設定】\n役割: ${activePersona.metadata.role}\n口調: ${activePersona.metadata.toneDescription}\n\n【ペルソナマスターデータ（全${activePersona.patterns.length}パターン）】\n${activePersona.getFormattedPatternsText()}`;
     return {
       level: 0,
       name: 'Layer 0: Persona Core Prompt',

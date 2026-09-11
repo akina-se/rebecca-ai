@@ -87,7 +87,10 @@ ${desc}
                     const parsedProfile = await deps.gemini.analyzeUserProfile(profilePrompt);
                     userData.coreProfile = parsedProfile;
                     // Inject a single history log hinting that the profile has been read
-                    userData.episodicBuffer.push({ role: 'model', content: 'アンタのプロフィール文、舐めるように見といたわ。これからよろしくね。' });
+                    userData.episodicBuffer.push({
+                        role: 'model',
+                        content: `（${deps.persona.metadata.displayName}はユーザーのプロフィール文を確認した）`,
+                    });
                 }
             } catch(e) {
                 console.error("Failed to fetch/analyze user profile", e);

@@ -770,7 +770,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         currentContext: 'Dashboard Overview',
         language: 'en'
       });
-      expect(resKpiEn.reply).toContain('Analyzed the latest performance metrics for you, Master!♡');
+      expect(resKpiEn.reply).toContain('Analyzed the latest performance metrics for you');
     });
 
     it('processChat should handle general conversation fallback in Japanese and English', async () => {
@@ -780,7 +780,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         currentContext: 'Overview',
         language: 'ja'
       });
-      expect(resJa.reply).toContain('呼んだかしら、マスター♡');
+      expect(resJa.reply).toContain('お呼びでしょうか');
 
       // General English conversation fallback
       const resEn = await copilot.processChat({
@@ -788,7 +788,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         currentContext: 'Overview',
         language: 'en'
       });
-      expect(resEn.reply).toContain('You called, Master?♡');
+      expect(resEn.reply).toContain('How can I help you');
     });
 
     it('processChat should recover gracefully from top-level exception in telemetry gathering', async () => {
@@ -800,7 +800,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         language: 'ja'
       });
 
-      expect(res.reply).toContain('呼んだかしら、マスター♡');
+      expect(res.reply).toContain('お呼びでしょうか');
     });
   });
 

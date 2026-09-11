@@ -4,7 +4,6 @@ import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { INewsProvider, NewsResult } from './types';
-import { GeminiSearchNewsProvider } from './providers/geminiSearch';
 import { filterFreshNews } from './deduplicator';
 
 export * from './types';
@@ -14,27 +13,23 @@ export * from './providers/geminiSearch';
 /**
  * Executes a batch job to proactively post a news-related tweet.
  *
- * Retrieves headlines via an injected INewsProvider (defaults to GeminiSearchNewsProvider),
+ * Retrieves headlines via an injected INewsProvider,
  * filters out recent duplicates using vector cosine similarity, generates a persona-grounded
  * post, and delivers it via the unified PostPipeline.
  *
  * If no fresh headlines are available, it returns a skipped status without coupling to fallback logic.
  */
 export class ProactiveNewsUseCase {
-  private newsProvider: INewsProvider;
-
   /**
    * Initializes the ProactiveNewsUseCase.
    *
    * @param deps Injected application dependencies.
-   * @param newsProvider Optional custom news provider implementation (defaults to GeminiSearchNewsProvider).
+   * @param newsProvider Injected news provider implementation.
    */
   constructor(
-    private deps: AppDependencies,
-    newsProvider?: INewsProvider,
-  ) {
-    this.newsProvider = newsProvider || new GeminiSearchNewsProvider();
-  }
+    private readonly deps: AppDependencies,
+    private readonly newsProvider: INewsProvider,
+  ) {}
 
   /**
    * Executes the proactive news post process.

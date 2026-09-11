@@ -730,7 +730,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         currentContext: 'Dashboard Overview',
         language: 'ja'
       });
-      expect(kpiRes.reply).toContain('パフォーマンスログを分析したわよ');
+      expect(kpiRes.reply).toContain('パフォーマンスログを分析しました');
       expect(kpiRes.actionRequired).toBeNull();
     });
   });

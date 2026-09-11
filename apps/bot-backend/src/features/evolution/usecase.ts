@@ -50,7 +50,7 @@ export class GlobalEvolutionUseCase {
 
         console.log(`Generating evolution prompt from ${logs.length} logs...`);
         const personaName = this.deps.persona.metadata.displayName;
-        const coreGuidelines = this.deps.persona.metadata.coreGuidelines?.join('、') || '深い信頼関係、大人のギャル、自立した知的スタンス';
+        const coreGuidelines = this.deps.persona.metadata.coreGuidelines.join('、');
         const evoPrompt = `あなたはAIキャラクターのプロンプトエンジニアです。
 以下の会話ログ（直近の対話データ）を客観的に分析し、ユーザー層の活動内容、興味関心のあるトピック、対話のトレンドを抽出してください。
 その上で、AIキャラクター「${personaName}」がユーザーの関心事や知的文脈に自然に寄り添い、魅力的かつ有意義な対話を育めるような「追加プロンプト（400〜500文字程度、最大600文字以内のテキスト）」を1つ作成してください。

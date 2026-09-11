@@ -42,7 +42,7 @@ const buildSystemPrompt = (
 
     if (userData?.coreProfile) {
         const userCallsign = persona.metadata.userCallsign;
-        const callsign = lang === 'en' ? (userCallsign?.en || "Master") : (userCallsign?.ja || "マスター");
+        const callsign = lang === 'en' ? userCallsign.en : userCallsign.ja;
         prompt += lang === 'en' 
             ? `\n\n[${callsign}'s Core Profile]\n`
             : `\n\n【${callsign}のプロファイル（Core Profile）】\n`;
