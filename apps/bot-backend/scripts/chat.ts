@@ -85,7 +85,7 @@ const chatLoop = async () => {
                 console.warn('[Embedding Warning] 動的アンカー抽出スキップ:', (embedError as Error).message);
             }
 
-            const systemPrompt = buildSystemPrompt(persona, 'reply', userData, input, extendedPrompt, '', [], 'ja', personaFewShotPrompt);
+            const systemPrompt = buildSystemPrompt(persona, 'chat', userData, input, extendedPrompt, '', [], 'ja', personaFewShotPrompt);
             
             // Fetch Structured Reply from Gemini
             const result = await gemini.generateStructuredReply(systemPrompt, workingMemory, input);
