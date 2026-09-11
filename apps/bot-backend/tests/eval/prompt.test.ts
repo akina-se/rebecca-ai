@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import * as gemini from '../../src/services/gemini';
 import { buildSystemPrompt } from '../../src/core/contextInjector';
 import { Language, getActivePersona } from '@rebecca/persona';
@@ -56,32 +56,37 @@ ${response}
 
 【評価ルール】
 ${rule}
-
-以下のJSONフォーマットのみを出力してください（Markdownの修飾やその他のテキストは一切含めないでください）。
-{
-  "pass": true または false,
-  "reason": "判定の理由（簡潔に）"
-}`;
+`;
 
     const result = await ai!.models.generateContent({
         model: JUDGE_MODEL,
         contents: judgePrompt,
         config: {
-            responseMimeType: "application/json"
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    pass: { type: Type.BOOLEAN, description: "Whether the response satisfies the evaluation rule" },
+                    reason: { type: Type.STRING, description: "Concise reason for pass or fail" }
+                },
+                required: ["pass", "reason"]
+            }
         }
     });
-    
-    let jsonStr = result.text?.trim() || '{}';
-    if (jsonStr.startsWith('```json')) {
-        jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-    } else if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
+
+    let rawText = result.text?.trim() || '{}';
+    const fenceMatch = rawText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+    if (fenceMatch) {
+        rawText = fenceMatch[1].trim();
     }
 
     try {
-        return JSON.parse(jsonStr);
+        const parsed = JSON.parse(rawText);
+        const pass = parsed.pass === true || parsed.pass === 'true' || parsed.passed === true || parsed.status === 'pass';
+        const reason = parsed.reason || parsed.explanation || parsed.comment || parsed.reasoning || JSON.stringify(parsed);
+        return { pass, reason };
     } catch {
-        return { pass: false, reason: `Invalid JSON from Judge (${JUDGE_MODEL}): ${jsonStr}` };
+        return { pass: false, reason: `Invalid JSON from Judge (${JUDGE_MODEL}): ${rawText}` };
     }
 };
 
