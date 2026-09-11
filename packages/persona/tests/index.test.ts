@@ -51,6 +51,14 @@ describe('persona package exports verification', () => {
     expect(getBasePrompt('random_engagement', 'en')).toContain('[No URLs]');
     expect(getBasePrompt('copilot', 'en')).toContain('[Context: Admin Dashboard Copilot]');
     expect(getBasePrompt('copilot', 'en')).toContain('Comprehensive Data Analytics');
+
+    expect(getBasePrompt('chat', 'ja')).toContain('【コンテキスト：マスターとの1対1対話】');
+    expect(getBasePrompt('chat', 'ja')).toContain('【対話履歴（Contents）と過去記憶（RAG）の活用】');
+    expect(getBasePrompt('chat', 'ja')).not.toContain('130文字');
+
+    expect(getBasePrompt('chat', 'en')).toContain('[Context: 1-on-1 Dialogue with Master]');
+    expect(getBasePrompt('chat', 'en')).toContain('[Dialogue History (Contents) & Memory (RAG) Utilization]');
+    expect(getBasePrompt('chat', 'en')).not.toContain('130');
   });
 
   test('cosineSimilarity should compute vector similarity correctly', () => {

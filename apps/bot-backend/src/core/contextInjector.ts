@@ -57,14 +57,26 @@ const buildSystemPrompt = (
     }
 
     const hour = jstNow.getHours();
-    if (hour >= 7 && hour <= 9) {
+    if (hour >= 5 && hour <= 6) {
         prompt += lang === 'en'
-            ? `\n\n[Time Context: Morning (${hour}:00)]\nIt is morning right now.`
-            : `\n\n【状況コンテキスト：朝】\n現在時刻は朝（${hour}時台）です。`;
-    } else if (hour >= 22 || hour <= 2) {
+            ? `\n\n[Time Context: Early Morning]\nIt is early morning right now.`
+            : `\n\n【状況コンテキスト：早朝】\n現在は早朝です。`;
+    } else if (hour >= 7 && hour <= 10) {
         prompt += lang === 'en'
-            ? `\n\n[Time Context: Late Night (${hour}:00)]\nIt is late at night right now.`
-            : `\n\n【状況コンテキスト：深夜】\n現在時刻は深夜（${hour}時台）です。`;
+            ? `\n\n[Time Context: Morning]\nIt is morning right now.`
+            : `\n\n【状況コンテキスト：朝】\n現在は朝です。`;
+    } else if (hour >= 11 && hour <= 16) {
+        prompt += lang === 'en'
+            ? `\n\n[Time Context: Daytime]\nIt is daytime right now.`
+            : `\n\n【状況コンテキスト：昼】\n現在は昼です。`;
+    } else if (hour >= 17 && hour <= 21) {
+        prompt += lang === 'en'
+            ? `\n\n[Time Context: Evening]\nIt is evening right now.`
+            : `\n\n【状況コンテキスト：夕方・夜】\n現在は夕方・夜です。`;
+    } else {
+        prompt += lang === 'en'
+            ? `\n\n[Time Context: Late Night]\nIt is late at night right now.`
+            : `\n\n【状況コンテキスト：深夜】\n現在は深夜です。`;
     }
 
     if (userData?.lastReplyDate) {
