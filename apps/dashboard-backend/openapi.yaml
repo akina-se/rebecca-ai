@@ -483,6 +483,84 @@ paths:
                     type: string
                     example: Dreaming process initiated
 
+  /copilot/chat:
+    post:
+      summary: Send chat message to Admin Copilot
+      description: Interactive conversational assistance with real-time UI context and optional Human-In-The-Loop (HITL) action proposals.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopilotRequest'
+      responses:
+        '200':
+          description: Copilot structured response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopilotResponse'
+        '400':
+          description: Missing or invalid message
+        '500':
+          description: Internal processing error
+
+  /settings:
+    get:
+      summary: Retrieve system preferences
+      description: Returns persisted global language and timezone settings.
+      responses:
+        '200':
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SystemSettings'
+    patch:
+      summary: Update system preferences
+      description: Modifies global language or timezone preferences.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                language:
+                  type: string
+                  enum: [ja, en]
+                timezone:
+                  type: string
+                  example: "Asia/Tokyo"
+      responses:
+        '200':
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SystemSettings'
+        '400':
+          description: Invalid language or timezone identifier
+
+  /config:
+    get:
+      summary: Get client runtime configuration
+      description: Public endpoint providing client Firebase identifiers, base API paths, and active persona metadata.
+      security: []
+      responses:
+        '200':
+          description: Public configuration parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeConfig'
+
 components:
   schemas:
     SystemAlert:
@@ -794,6 +872,132 @@ components:
       type: string
       enum: [SUCCESS, FAILED, PROCESSING]
       example: SUCCESS
+
+    CopilotRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "ユーザーの活動状況を教えて"
+        currentContext:
+          type: string
+          example: "Dashboard Home"
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum: [user, model]
+              text:
+                type: string
+              time:
+                type: string
+        language:
+          type: string
+          enum: [ja, en]
+          example: "ja"
+
+    CopilotResponse:
+      type: object
+      required:
+        - reply
+        - suggestionChips
+      properties:
+        reply:
+          type: string
+          example: "マスター、最近のアクティブユーザーの傾向を分析したわよ♡"
+        actionRequired:
+          $ref: '#/components/schemas/CopilotAction'
+        suggestionChips:
+          type: array
+          items:
+            type: string
+          example: ["失敗アセットを確認", "KPIメトリクスを表示"]
+
+    CopilotAction:
+      type: object
+      required:
+        - type
+        - title
+        - description
+        - impactLevel
+        - requiresConfirmation
+      properties:
+        type:
+          type: string
+          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS, NAVIGATE_PAGE]
+          example: "BLOCK_USER"
+        title:
+          type: string
+          example: "ユーザーのブロック"
+        description:
+          type: string
+          example: "悪質なユーザーをブロックしますか？"
+        impactLevel:
+          type: string
+          enum: [danger, warning, info]
+          example: "danger"
+        requiresConfirmation:
+          type: boolean
+          example: true
+        payload:
+          type: object
+
+    RuntimeConfig:
+      type: object
+      properties:
+        firebase:
+          type: object
+          properties:
+            apiKey:
+              type: string
+            authDomain:
+              type: string
+            projectId:
+              type: string
+            storageBucket:
+              type: string
+            messagingSenderId:
+              type: string
+            appId:
+              type: string
+        apiUrl:
+          type: string
+          example: "/api/v1"
+        version:
+          type: string
+          example: "1.17.1"
+        publicSiteUrl:
+          type: string
+          example: "https://rebecca-ai.net"
+        production:
+          type: boolean
+          example: false
+        useEmulators:
+          type: boolean
+          example: true
+        persona:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "rebecca"
+            displayName:
+              type: string
+              example: "レベッカ"
+            englishName:
+              type: string
+              example: "Rebecca"
+            adminTitle:
+              type: string
+            brandName:
+              type: string
+            avatarUrl:
+              type: string
 
   securitySchemes:
     BearerAuth:
