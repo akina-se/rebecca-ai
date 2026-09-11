@@ -81,9 +81,19 @@ export const parseAnniversarySection = (sectionText: string): AnniversaryItem[] 
 
 /**
  * Provider that retrieves memorial days from Japanese Wikipedia's day pages (e.g., "9月8日").
+ * Adheres to Wikimedia Foundation API guidelines by requiring an explicit User-Agent header.
  */
 export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
-  constructor(private userAgent: string = 'RebeccaBot/1.0 (https://github.com/akina-se/rebecca-ai)') {}
+  /**
+   * Initializes the WikipediaAnniversaryProvider.
+   *
+   * @param userAgent - Valid User-Agent string identifying the client application.
+   */
+  constructor(private readonly userAgent: string) {
+    if (!userAgent || !userAgent.trim()) {
+      throw new Error('WikipediaAnniversaryProvider requires a non-empty User-Agent string.');
+    }
+  }
 
   /**
    * Fetches and parses anniversary items for the provided date from Japanese Wikipedia.

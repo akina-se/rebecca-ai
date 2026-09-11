@@ -28,10 +28,17 @@ import { AppDependencies } from '../src/types';
   console.log(`[MOCK DB] Saved timeline post: ${params.text}`);
 };
 
+import { WikipediaAnniversaryProvider } from '../src/features/anniversary/providers/wikipedia';
+import { getActivePersona } from '@rebecca/persona';
+import { loadConfig } from '../src/config';
+
 const run = async () => {
   console.log('=========================================');
   console.log(' 📅 Anniversary Post Batch (手動実行テスト)');
   console.log('=========================================');
+
+  const config = loadConfig();
+  const persona = getActivePersona(config.activePersona);
 
   const deps: AppDependencies = {
     firestore,
@@ -39,10 +46,12 @@ const run = async () => {
     storage,
     xApi,
     tasks,
+    persona,
   };
 
   try {
-    const useCase = new ProactiveAnniversaryUseCase(deps);
+    const provider = new WikipediaAnniversaryProvider(persona.metadata.userAgent);
+    const useCase = new ProactiveAnniversaryUseCase(deps, provider);
     const result = await useCase.execute();
     console.log('\n[結果]:', result);
   } catch (e) {

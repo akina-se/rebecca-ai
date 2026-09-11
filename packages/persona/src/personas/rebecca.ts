@@ -1,12 +1,12 @@
 import rawPatterns from '../data/personaPatterns.json';
 import { precomputedPersonaPatternEmbeddings, PersonaPatternWithVector } from '../personaPatternVectors';
 import {
-  IPersonaDefinition,
   PersonaMetadata,
   PersonaPattern,
   PromptContext,
   Language,
 } from '../types';
+import { BasePersona } from '../basePersona';
 
 export const REBECCA_METADATA: PersonaMetadata = {
   id: 'rebecca',
@@ -201,31 +201,12 @@ You are interacting 1-on-1 with your beloved Master on the Admin Dashboard.
 3. **Conversational Style**:
    - Speak richly, intelligently, and affectionately as a supportive, all-affirming Gyaru partner assisting Master with system administration.`;
 
-/**
- * Calculates cosine similarity between two numeric vectors.
- */
-function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0 || vecA.length !== vecB.length) {
-    return 0;
-  }
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
 const parsedPatterns = rawPatterns as PersonaPattern[];
 
 /**
- * Complete implementation of IPersonaDefinition for Rebecca.
+ * Concrete implementation of BasePersona for Rebecca.
  */
-export class RebeccaPersona implements IPersonaDefinition {
+export class RebeccaPersona extends BasePersona {
   readonly metadata: PersonaMetadata = REBECCA_METADATA;
   readonly patterns: PersonaPattern[] = parsedPatterns;
   readonly patternVectors: PersonaPatternWithVector[] = precomputedPersonaPatternEmbeddings;
@@ -264,70 +245,6 @@ export class RebeccaPersona implements IPersonaDefinition {
    - "concerns": ユーザーが共有した課題・業務や技術上の悩み・関心事（文字列の配列）
    - "important_memories": ユーザーと交わした具体的な約束・共有された重要な出来事（文字列の配列）
 `;
-  }
-
-  findTopPatterns(queryVector: number[], topK = 3): PersonaPattern[] {
-    if (!queryVector || queryVector.length === 0 || !this.patternVectors || this.patternVectors.length === 0) {
-      return this.patterns.slice(0, Math.min(topK, this.patterns.length));
-    }
-
-    const scored = this.patternVectors.map((item) => ({
-      id: item.id,
-      score: cosineSimilarity(queryVector, item.vector),
-    }));
-
-    scored.sort((a, b) => b.score - a.score);
-
-    const patternMap = new Map<number, PersonaPattern>();
-    for (const p of this.patterns) {
-      patternMap.set(p.id, p);
-    }
-
-    const result: PersonaPattern[] = [];
-    for (const item of scored.slice(0, topK)) {
-      const pattern = patternMap.get(item.id);
-      if (pattern) {
-        result.push(pattern);
-      }
-    }
-    return result;
-  }
-
-  buildFewShotPrompt(patterns: PersonaPattern[], lang: Language = 'ja'): string {
-    if (!patterns || patterns.length === 0) return '';
-
-    if (lang === 'en') {
-      const examples = patterns
-        .map(
-          (p, idx) => `[Example ${idx + 1}: ${p.category}]
-Trigger: ${p.trigger}
-Inner Thought: ${p.internal_thought}
-Behavior: ${p.behavior}
-Sample Response: ${p.sample_response}`
-        )
-        .join('\n\n');
-      return `[Dynamic Few-Shot Persona Anchors]\n${examples}`;
-    } else {
-      const examples = patterns
-        .map(
-          (p, idx) => `【模範パターン ${idx + 1}：${p.category}】
-・トリガー（状況）：${p.trigger}
-・内省（本音と思考）：${p.internal_thought}
-・行動指針：${p.behavior}
-・発話例：${p.sample_response}`
-        )
-        .join('\n\n');
-      return `【動的Few-Shotペルソナアンカー（思考と発話の指針）】\n以下の状況別パターンを参考に、内省思考(thought)と発話(reply)を生成してください：\n\n${examples}`;
-    }
-  }
-
-  getFormattedPatternsText(): string {
-    return this.patterns
-      .map(
-        (p) =>
-          `#${p.id} [${p.category}]\n  状況: ${p.trigger}\n  本音: ${p.internal_thought}\n  行動: ${p.behavior}\n  台詞: ${p.sample_response}`
-      )
-      .join('\n\n');
   }
 
   formatAbsenceInstruction(diffDays: number, lang: Language): string {

@@ -65,9 +65,14 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
       jest.restoreAllMocks();
     });
 
+    it('should throw an error when initialized with an empty userAgent', () => {
+      expect(() => new WikipediaAnniversaryProvider('')).toThrow('WikipediaAnniversaryProvider requires a non-empty User-Agent string.');
+      expect(() => new WikipediaAnniversaryProvider('   ')).toThrow('WikipediaAnniversaryProvider requires a non-empty User-Agent string.');
+    });
+
     it('should throw error on fetch failure so transient errors propagate', async () => {
       jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
-      const provider = new WikipediaAnniversaryProvider();
+      const provider = new WikipediaAnniversaryProvider('TestBot/1.0');
       await expect(provider.getAnniversaries(new Date('2026-09-08T00:00:00Z'))).rejects.toThrow('Network error');
     });
 
@@ -85,7 +90,7 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
         json: async () => mockContentResponse,
       } as Response);
 
-      const provider = new WikipediaAnniversaryProvider();
+      const provider = new WikipediaAnniversaryProvider('TestBot/1.0');
       const result = await provider.getAnniversaries(new Date('2026-11-11T00:00:00Z'));
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('ポッキーの日');
@@ -106,7 +111,7 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
         json: async () => mockContentResponse,
       } as Response);
 
-      const provider = new WikipediaAnniversaryProvider();
+      const provider = new WikipediaAnniversaryProvider('TestBot/1.0');
       const result = await provider.getAnniversaries(new Date('2026-11-11T00:00:00Z'));
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe('聖マルティヌスの日');
