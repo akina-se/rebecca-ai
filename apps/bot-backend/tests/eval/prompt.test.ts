@@ -12,13 +12,25 @@ const persona = getActivePersona(config.persona.activeId);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 3000): Promise<T> => {
+const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 4, initialDelay = 3000): Promise<T> => {
     let delay = initialDelay;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             return await fn();
         } catch (error: any) {
-            const isTransient = error?.status === 503 || error?.status === 429 || error?.code === 503 || error?.code === 429 || String(error?.message || '').includes('high demand') || String(error?.message || '').includes('UNAVAILABLE');
+            const isTransient =
+                error?.status === 503 ||
+                error?.status === 500 ||
+                error?.status === 429 ||
+                error?.code === 503 ||
+                error?.code === 500 ||
+                error?.code === 429 ||
+                String(error?.message || '').includes('500') ||
+                String(error?.message || '').includes('503') ||
+                String(error?.message || '').includes('429') ||
+                String(error?.message || '').includes('Internal error') ||
+                String(error?.message || '').includes('high demand') ||
+                String(error?.message || '').includes('UNAVAILABLE');
             if (attempt < maxRetries && isTransient) {
                 console.warn(`[Eval Retry] Transient Gemini API error (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
                 await sleep(delay);
@@ -51,24 +63,25 @@ ${rule}
   "reason": "判定の理由（簡潔に）"
 }`;
 
-    try {
-        const result = await ai!.models.generateContent({
-            model: JUDGE_MODEL,
-            contents: judgePrompt,
-            config: {
-                responseMimeType: "application/json"
-            }
-        });
-        
-        let jsonStr = result.text?.trim() || '{}';
-        if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-        } else if (jsonStr.startsWith('```')) {
-            jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
+    const result = await ai!.models.generateContent({
+        model: JUDGE_MODEL,
+        contents: judgePrompt,
+        config: {
+            responseMimeType: "application/json"
         }
+    });
+    
+    let jsonStr = result.text?.trim() || '{}';
+    if (jsonStr.startsWith('```json')) {
+        jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
+    } else if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
+    }
+
+    try {
         return JSON.parse(jsonStr);
-    } catch (e: any) {
-        return { pass: false, reason: `Judge Error (${JUDGE_MODEL}): ${e.message}` };
+    } catch {
+        return { pass: false, reason: `Invalid JSON from Judge (${JUDGE_MODEL}): ${jsonStr}` };
     }
 };
 
@@ -103,8 +116,8 @@ runEval('LLM as a Judge: Prompt Evaluation', () => {
     ];
 
     beforeEach(async () => {
-        // Add a 3-second delay between tests to avoid TPM/RPM limits
-        await sleep(3000);
+        // Add a 5-second delay between tests to avoid TPM/RPM limits
+        await sleep(5000);
     });
 
     test.each(testCases)('should pass eval: $name', async (tc) => {
