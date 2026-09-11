@@ -4,12 +4,11 @@
  * and performing various semantic NLP tasks using Google's generative AI models.
  */
 
-import { GoogleGenAI, Content } from '@google/genai';
+import { GoogleGenAI, Content, Type } from '@google/genai';
 import config from '../config';
 import { formatJSTDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
-import { GeminiSearchNewsProvider } from '../features/news/providers/geminiSearch';
 
 /**
  * Global Gemini API client instance.
@@ -395,6 +394,50 @@ ${imageCaption}
 };
 
 /**
+ * Executes Google Search Grounding for an arbitrary user query.
+ * Returns concise factual text summary to feed back into model.
+ *
+ * @param query - Search keywords or question to look up.
+ * @returns Grounded search summary or fallback message.
+ */
+const executeWebSearch = async (query: string): Promise<string> => {
+    if (!ai) return "検索クライアントが未初期化です。";
+    try {
+        const res = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: [{ role: 'user', parts: [{ text: query }] }],
+            config: {
+                tools: [{ googleSearch: {} }],
+                safetySettings: [] as never[]
+            }
+        });
+        return res.text?.trim() || "該当する検索結果が見つかりませんでした。";
+    } catch (err) {
+        console.warn(`[executeWebSearch] Failed to search for query "${query}":`, (err as Error).message);
+        return "一時的なネットワークまたは検索エラーにより情報を取得できませんでした。";
+    }
+};
+
+const SEARCH_WEB_TOOL = {
+    functionDeclarations: [
+        {
+            name: "search_web",
+            description: "Searches the web for up-to-date information, facts, or answers when asked questions or requested to investigate a topic.",
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    query: {
+                        type: Type.STRING,
+                        description: "Search keywords or question to look up on the web"
+                    }
+                },
+                required: ["query"]
+            }
+        }
+    ]
+};
+
+/**
  * Generates a structured conversational reply with internal monologue using Gemini API Structured Outputs.
  *
  * @param systemInstruction - The system persona and behavioral guidelines.
@@ -439,58 +482,47 @@ const generateStructuredReply = async (
             contents: contents,
             config: {
                 ...baseConfig,
-                tools: [{
-                    functionDeclarations: [
-                        {
-                            name: "search_news",
-                            description: "Fetches the latest news headlines. ONLY use when the user explicitly asks about current events, news, or today's topics. NEVER use for casual greetings or general chat."
-                        }
-                    ]
-                }]
+                tools: [SEARCH_WEB_TOOL]
             }
         });
 
-        if (response.functionCalls && response.functionCalls.length > 0) {
-            const call = response.functionCalls[0];
-            if (call.name === 'search_news') {
-                const newsProvider = new GeminiSearchNewsProvider(undefined, ai || undefined);
-                const newsItems = await newsProvider.getNews();
-                const newsResult = newsItems.length > 0
-                    ? newsItems.map((n) => `【${n.category}】${n.title}: ${n.summary}`).join('\n')
-                    : "ニュースを取得できませんでした。";
-
-                if (response.candidates && response.candidates[0].content) {
-                    contents.push(response.candidates[0].content);
-                }
-
-                contents.push({
-                    role: 'user',
-                    parts: [{
-                        functionResponse: {
-                            name: call.name,
-                            response: { result: newsResult }
-                        }
-                    }]
-                });
-
-                const finalResponse = await ai.models.generateContent({
-                    model: config.gemini.model,
-                    contents: contents,
-                    config: baseConfig
-                });
-                const finalText = finalResponse.text?.trim();
-                if (!finalText) {
-                    throw new Error('Gemini API returned empty structured response after function execution.');
-                }
-                return parsePersonaResponse(finalText);
+        const functionCall = response.functionCalls?.[0];
+        if (!functionCall || functionCall.name !== 'search_web') {
+            const rawText = response.text?.trim();
+            if (!rawText) {
+                throw new Error('Gemini API returned empty structured response or content was filtered.');
             }
+            return parsePersonaResponse(rawText);
         }
 
-        const rawText = response.text?.trim();
-        if (!rawText) {
-            throw new Error('Gemini API returned empty structured response or content was filtered.');
+        const searchQuery = (functionCall.args?.query as string) || userInput;
+        const searchResult = await executeWebSearch(searchQuery);
+
+        if (response.candidates?.[0]?.content) {
+            contents.push(response.candidates[0].content);
         }
-        return parsePersonaResponse(rawText);
+
+        contents.push({
+            role: 'user',
+            parts: [{
+                functionResponse: {
+                    name: functionCall.name,
+                    response: { result: searchResult }
+                }
+            }]
+        });
+
+        const finalResponse = await ai.models.generateContent({
+            model: config.gemini.model,
+            contents: contents,
+            config: baseConfig
+        });
+
+        const finalText = finalResponse.text?.trim();
+        if (!finalText) {
+            throw new Error('Gemini API returned empty structured response after function execution.');
+        }
+        return parsePersonaResponse(finalText);
     } catch (error) {
         console.error('Error generating structured reply with Gemini:', error);
         throw error;

@@ -54,11 +54,16 @@ describe('persona package exports verification', () => {
 
     expect(getBasePrompt('chat', 'ja')).toContain('【コンテキスト：マスターとの1対1対話】');
     expect(getBasePrompt('chat', 'ja')).toContain('【対話履歴（Contents）と過去記憶（RAG）の活用】');
+    expect(getBasePrompt('chat', 'ja')).toContain('【情報検索】');
     expect(getBasePrompt('chat', 'ja')).not.toContain('130文字');
 
     expect(getBasePrompt('chat', 'en')).toContain('[Context: 1-on-1 Dialogue with Master]');
     expect(getBasePrompt('chat', 'en')).toContain('[Dialogue History (Contents) & Memory (RAG) Utilization]');
+    expect(getBasePrompt('chat', 'en')).toContain('[Information Search]');
     expect(getBasePrompt('chat', 'en')).not.toContain('130');
+
+    expect(getBasePrompt('reply', 'ja')).toContain('【情報検索】');
+    expect(getBasePrompt('reply', 'en')).toContain('[Information Search]');
   });
 
   test('cosineSimilarity should compute vector similarity correctly', () => {
