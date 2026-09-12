@@ -1,4 +1,5 @@
-import { getJSTDate, formatJSTDateTime } from '../utils/time';
+import { getZonedDateParts, formatZonedDateTime } from '../utils/time';
+import config from '../config';
 import { PromptContext, Language, IPersonaDefinition } from '@rebecca/persona';
 import { FirestoreUser } from '../types';
 
@@ -30,11 +31,12 @@ const buildSystemPrompt = (
 ): string => {
     let prompt = persona.getBasePrompt(promptContext, lang);
 
-    const jstNow = getJSTDate();
-    const formattedCurrentTime = formatJSTDateTime(new Date().toISOString());
+    const now = new Date();
+    const { numericHour } = getZonedDateParts(now, config.appTimezone);
+    const formattedCurrentTime = formatZonedDateTime(now, config.appTimezone);
     prompt += lang === 'en'
-        ? `\n\n[Current Time (JST)]\n${formattedCurrentTime}`
-        : `\n\n【現在時刻（JST）】\n${formattedCurrentTime}`;
+        ? `\n\n[Current Time]\n${formattedCurrentTime}`
+        : `\n\n【現在時刻】\n${formattedCurrentTime}`;
 
     if (personaFewShotPrompt) {
         prompt += `\n\n${personaFewShotPrompt}`;
@@ -56,20 +58,19 @@ const buildSystemPrompt = (
         prompt += ragMemories.join('\n\n');
     }
 
-    const hour = jstNow.getHours();
-    if (hour >= 5 && hour <= 6) {
+    if (numericHour >= 5 && numericHour <= 6) {
         prompt += lang === 'en'
             ? `\n\n[Time Context: Early Morning]\nIt is early morning right now.`
             : `\n\n【状況コンテキスト：早朝】\n現在は早朝です。`;
-    } else if (hour >= 7 && hour <= 10) {
+    } else if (numericHour >= 7 && numericHour <= 10) {
         prompt += lang === 'en'
             ? `\n\n[Time Context: Morning]\nIt is morning right now.`
             : `\n\n【状況コンテキスト：朝】\n現在は朝です。`;
-    } else if (hour >= 11 && hour <= 16) {
+    } else if (numericHour >= 11 && numericHour <= 16) {
         prompt += lang === 'en'
             ? `\n\n[Time Context: Daytime]\nIt is daytime right now.`
             : `\n\n【状況コンテキスト：昼】\n現在は昼です。`;
-    } else if (hour >= 17 && hour <= 21) {
+    } else if (numericHour >= 17 && numericHour <= 21) {
         prompt += lang === 'en'
             ? `\n\n[Time Context: Evening]\nIt is evening right now.`
             : `\n\n【状況コンテキスト：夕方・夜】\n現在は夕方・夜です。`;
@@ -81,7 +82,7 @@ const buildSystemPrompt = (
 
     if (userData?.lastReplyDate) {
         const lastDate = new Date(userData.lastReplyDate);
-        const diffMs = jstNow.getTime() - lastDate.getTime();
+        const diffMs = now.getTime() - lastDate.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
         if (diffDays >= 3) {
             const absenceInstruction = persona.formatAbsenceInstruction(diffDays, lang);
