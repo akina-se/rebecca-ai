@@ -32,25 +32,62 @@ describe('Text Utils - extractCleanTextForLanguageDetection', () => {
     });
 });
 
-import { getJSTDate, formatJSTDateTime } from '../../src/utils/time';
+import { getZonedDateParts, formatZonedDateTime } from '../../src/utils/time';
 
-describe('Time Utils - getJSTDate and formatJSTDateTime', () => {
-    it('should return a valid Date object in JST timezone', () => {
-        const date = getJSTDate();
-        expect(date).toBeInstanceOf(Date);
-        expect(isNaN(date.getTime())).toBe(false);
+describe('Time Utils - getZonedDateParts and formatZonedDateTime', () => {
+    it('should extract correct date parts in default (Asia/Tokyo) timezone', () => {
+        // 2026-09-12 22:00:00 UTC corresponds to 2026-09-13 07:00:00 in Asia/Tokyo
+        const utcInstant = new Date('2026-09-12T22:00:00.000Z');
+        const parts = getZonedDateParts(utcInstant);
+
+        expect(parts.year).toBe('2026');
+        expect(parts.month).toBe('09');
+        expect(parts.day).toBe('13');
+        expect(parts.hour).toBe('07');
+        expect(parts.minute).toBe('00');
+        expect(parts.numericYear).toBe(2026);
+        expect(parts.numericMonth).toBe(9);
+        expect(parts.numericDay).toBe(13);
+        expect(parts.numericHour).toBe(7);
+        expect(parts.numericMinute).toBe(0);
     });
 
-    it('should format a valid ISO string into JST format', () => {
+    it('should extract correct date parts when configured with custom timezone (America/New_York)', () => {
+        // 2026-09-12 22:00:00 UTC corresponds to 2026-09-12 18:00:00 in America/New_York (EDT)
+        const utcInstant = new Date('2026-09-12T22:00:00.000Z');
+        const parts = getZonedDateParts(utcInstant, 'America/New_York');
+
+        expect(parts.year).toBe('2026');
+        expect(parts.month).toBe('09');
+        expect(parts.day).toBe('12');
+        expect(parts.hour).toBe('18');
+        expect(parts.numericHour).toBe(18);
+        expect(parts.numericDay).toBe(12);
+    });
+
+    it('should format a valid ISO string into zoned format with timezone abbreviation', () => {
         const iso = '2026-09-08T12:02:00.000Z'; // 21:02 in JST
-        const formatted = formatJSTDateTime(iso);
+        const formatted = formatZonedDateTime(iso);
+        expect(formatted).toBe('2026-09-08 21:02 JST');
+    });
+
+    it('should format using a custom timezone', () => {
+        const iso = '2026-09-08T12:02:00.000Z';
+        const formatted = formatZonedDateTime(iso, 'UTC');
+        expect(formatted).toBe('2026-09-08 12:02 UTC');
+    });
+
+    it('should accept Date instance directly', () => {
+        const date = new Date('2026-09-08T12:02:00.000Z');
+        const formatted = formatZonedDateTime(date);
         expect(formatted).toBe('2026-09-08 21:02 JST');
     });
 
     it('should return empty string for falsy or invalid input', () => {
-        expect(formatJSTDateTime(null)).toBe('');
-        expect(formatJSTDateTime(undefined)).toBe('');
-        expect(formatJSTDateTime('')).toBe('');
-        expect(formatJSTDateTime('invalid-date')).toBe('');
+        expect(formatZonedDateTime(null)).toBe('');
+        expect(formatZonedDateTime(undefined)).toBe('');
+        expect(formatZonedDateTime('')).toBe('');
+        expect(formatZonedDateTime('invalid-date')).toBe('');
     });
 });
+
