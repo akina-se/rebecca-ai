@@ -1,4 +1,6 @@
 import { AnniversaryItem, IAnniversaryProvider } from '../types';
+import config from '../../../config';
+import { getZonedDateParts } from '../../../utils/time';
 
 /**
  * Timeout in milliseconds for Wikipedia API requests.
@@ -88,8 +90,12 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
    * Initializes the WikipediaAnniversaryProvider.
    *
    * @param userAgent - Valid User-Agent string identifying the client application.
+   * @param timezone - Target IANA time zone identifier (defaults to config.appTimezone).
    */
-  constructor(private readonly userAgent: string) {
+  constructor(
+    private readonly userAgent: string,
+    private readonly timezone: string = config.appTimezone,
+  ) {
     if (!userAgent || !userAgent.trim()) {
       throw new Error('WikipediaAnniversaryProvider requires a non-empty User-Agent string.');
     }
@@ -100,13 +106,13 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
    * Uses a single HTTP request to fetch wikitext and extracts the memorial section.
    *
    * @param date - The date to fetch anniversaries for.
+   * @param timezone - Optional timezone override (defaults to instance timezone).
    * @returns List of parsed anniversary items, or an empty list upon error/timeout.
    */
-  async getAnniversaries(date: Date): Promise<AnniversaryItem[]> {
+  async getAnniversaries(date: Date, timezone: string = this.timezone): Promise<AnniversaryItem[]> {
     try {
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const pageTitle = `${month}月${day}日`;
+      const { numericMonth, numericDay } = getZonedDateParts(date, timezone);
+      const pageTitle = `${numericMonth}月${numericDay}日`;
       const encodedTitle = encodeURIComponent(pageTitle);
 
       const url = `https://ja.wikipedia.org/w/api.php?action=parse&page=${encodedTitle}&prop=wikitext&format=json`;

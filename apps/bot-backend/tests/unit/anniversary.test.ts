@@ -117,8 +117,34 @@ describe('WikipediaAnniversaryProvider Unit Tests', () => {
       expect(result[0].name).toBe('聖マルティヌスの日');
       expect(result[1].name).toBe('ポッキー&プリッツの日');
     });
+
+    it('should correctly query day page based on configured application timezone (e.g. 07:00 JST / 22:00 UTC prev day)', async () => {
+      const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          parse: {
+            wikitext: {
+              '*': '== 記念日・年中行事 ==\n* [[世界の法の日]]\n*: 9月13日の記念日。',
+            },
+          },
+        }),
+      } as Response);
+
+      // 2026-09-12 22:00:00 UTC is 2026-09-13 07:00:00 in Asia/Tokyo
+      const utcDateAtJstMorning = new Date('2026-09-12T22:00:00.000Z');
+      const provider = new WikipediaAnniversaryProvider('TestBot/1.0', 'Asia/Tokyo');
+      const result = await provider.getAnniversaries(utcDateAtJstMorning);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining(encodeURIComponent('9月13日')),
+        expect.any(Object),
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('世界の法の日');
+    });
   });
 });
+
 
 describe('ProactiveAnniversaryUseCase Unit Tests', () => {
   let deps: any;
