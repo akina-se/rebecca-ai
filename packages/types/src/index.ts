@@ -122,6 +122,9 @@ export interface RawConversationLog {
   expireAt: string;
 }
 
+/** Canonical post types supported on the timeline. */
+export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement';
+
 /**
  * Represents a post on the AI's timeline.
  * `expireAt` is serialized as an ISO string to remain Firestore-agnostic.
@@ -137,19 +140,16 @@ export interface TimelinePost {
   status?: PostStatus;
   impressions?: number;
   likes?: number;
-  retweets?: number;
   reposts?: number;
   replies?: number;
   mediaUrls?: string[];
-  media_urls?: string[];
   tweetId?: string;
-  tweet_id?: string;
   assetId?: string;
   authorId?: string;
   authorName?: string;
   authorHandle?: string;
   authorAvatarUrl?: string;
-  postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
+  postType?: PostType;
   newsTitle?: string;
   newsEmbedding?: number[];
   anniversaryTitle?: string;

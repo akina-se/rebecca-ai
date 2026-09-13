@@ -76,11 +76,19 @@ describe('Soliloquy Unit Tests', () => {
 
   describe('SoliloquyUseCase', () => {
     it('should generate and publish soliloquy post successfully', async () => {
+      (deps.firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValue([
+        { text: '過去の独り言1', thought: '過去の本音1', timestamp: '2026-09-13T03:00:00Z' },
+      ]);
+
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
       expect(result.post).toContain('今日も無理せずファイトよ♡');
       expect(result.post).toContain('#全肯定AIレベッカ');
+      expect(deps.firestore.getRecentTimelinePosts).toHaveBeenCalledWith({
+        limit: 4,
+        postType: 'soliloquy',
+      });
       expect(deps.gemini.generateEmbedding).toHaveBeenCalled();
       expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
         expect.any(String),
@@ -93,6 +101,14 @@ describe('Soliloquy Unit Tests', () => {
       expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【拡張ペルソナ・近況】'),
+      );
+      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('過去の独り言1 (内心: 過去の本音1)'),
+      );
+      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('【話題の多様性と非反復】'),
       );
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
         expect.stringContaining('#全肯定AIレベッカ'),
