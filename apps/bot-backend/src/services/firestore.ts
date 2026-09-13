@@ -28,6 +28,8 @@ import type {
   ListInteraction,
   XApiUser,
   FollowerListStatus,
+  GetRecentTimelinePostsOptions,
+  TimelinePost,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -487,33 +489,26 @@ const getRecentNewsEmbeddings = async (
 };
 
 /**
- * Retrieves the most recent timeline posts, in chronological order.
+ * Retrieves the most recent timeline posts in chronological order (oldest first).
+ * Returns strongly typed TimelinePost entities directly from the converter.
  *
- * @param limit - Maximum number of posts to return. Defaults to 3.
- * @returns Array of post text strings, oldest first.
+ * @param options - Query options including limit (default: 3) and optional postType filter.
+ * @returns Array of TimelinePost documents, oldest first.
  */
-const getRecentTimelinePosts = async (limit = 3): Promise<string[]> => {
-  const snapshot = await db.timelineHistory
+const getRecentTimelinePosts = async (
+  options: GetRecentTimelinePostsOptions = {},
+): Promise<TimelinePost[]> => {
+  const { limit = 3, postType } = options;
+  let query: FirebaseFirestore.Query<TimelinePost> = db.timelineHistory;
+  if (postType) {
+    query = query.where('postType', '==', postType);
+  }
+  const snapshot = await query
     .orderBy('timestamp', 'desc')
     .limit(limit)
     .get();
 
-  const posts: string[] = [];
-  snapshot.forEach((doc) => {
-    const data = doc.data();
-    if (data?.text) {
-      const dateStr = data.timestamp
-        ? new Date(data.timestamp).toLocaleDateString('ja-JP', {
-            month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo'
-          })
-        : '';
-      const textWithThought = data.thought
-        ? `${data.text} (内心: ${data.thought})`
-        : data.text;
-      posts.push(dateStr ? `[${dateStr}] ${textWithThought}` : textWithThought);
-    }
-  });
-  return posts.reverse();
+  return snapshot.docs.map((doc) => doc.data()).reverse();
 };
 
 // ---------------------------------------------------------------------------

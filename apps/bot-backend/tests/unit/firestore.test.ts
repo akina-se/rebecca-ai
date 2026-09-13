@@ -403,12 +403,20 @@ describe('Firestore Service Unit Tests', () => {
       );
 
       mockQueryGet.mockResolvedValueOnce({
-        forEach: (cb: any) => [{ data: () => ({ text: 'Post content', thought: 'タイムライン本音' }) }].forEach(cb),
-        docs: [{ data: () => ({ text: 'Post content', thought: 'タイムライン本音' }) }],
+        docs: [{ data: () => ({ text: 'Post content', thought: 'タイムライン本音', timestamp: '2026-09-13T00:00:00Z' }) }],
       });
-      const posts = await firestoreService.getRecentTimelinePosts(3);
+      const posts = await firestoreService.getRecentTimelinePosts({ limit: 3 });
       expect(posts).toHaveLength(1);
-      expect(posts[0]).toContain('Post content (内心: タイムライン本音)');
+      expect(posts[0]).toEqual({ text: 'Post content', thought: 'タイムライン本音', timestamp: '2026-09-13T00:00:00Z' });
+
+      mockQueryGet.mockResolvedValueOnce({
+        docs: [{ data: () => ({ text: 'Soliloquy content', postType: 'soliloquy', timestamp: '2026-09-13T01:00:00Z' }) }],
+      });
+      const filtered = await firestoreService.getRecentTimelinePosts({ limit: 4, postType: 'soliloquy' });
+      expect(mockQueryWhere).toHaveBeenCalledWith('postType', '==', 'soliloquy');
+      expect(mockQueryLimit).toHaveBeenCalledWith(4);
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].text).toBe('Soliloquy content');
     });
 
     it('getRecentNewsEmbeddings should return titles and embeddings within cutoff', async () => {
