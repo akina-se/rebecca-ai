@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/akina-se/rebecca-ai/compare/v1.18.0...v1.18.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* **bot:** centralize timezone configuration and fix anniversary date drift ([#216](https://github.com/akina-se/rebecca-ai/issues/216)) ([c22dd2e](https://github.com/akina-se/rebecca-ai/commit/c22dd2e234874356f929bf8a3c15a75ca0803eef))
+
 ## [1.18.0](https://github.com/akina-se/rebecca-ai/compare/v1.17.1...v1.18.0) (2026-09-11)
 
 
