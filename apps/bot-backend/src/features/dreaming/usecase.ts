@@ -31,15 +31,19 @@ export class GlobalDreamingUseCase {
         }
 
         try {
-            const recentPosts = await this.deps.firestore.getRecentTimelinePosts(20);
+            const recentPosts = await this.deps.firestore.getRecentTimelinePosts({ limit: 20 });
             if (recentPosts.length > 0) {
                 const previousSummary = await this.deps.firestore.getTimelineSummary();
                 const personaName = this.deps.persona.metadata.displayName;
+                const formattedPosts = recentPosts.map((p, i) => {
+                    const thoughtPart = p.thought ? ` (内心: ${p.thought})` : '';
+                    return `[${i + 1}] ${p.text}${thoughtPart}`;
+                });
                 const prompt = `【過去の要約】
 ${previousSummary || '（まだ要約なし）'}
 
 【${personaName}の最近のツイート（古い順）】
-${recentPosts.map((p, i) => `[${i + 1}] ${p}`).join('\n')}`;
+${formattedPosts.join('\n')}`;
                 const newSummary = await this.deps.gemini.generateTimelineSummary(prompt);
                 await this.deps.firestore.saveTimelineSummary(newSummary);
                 console.log("Timeline summary updated:", newSummary);

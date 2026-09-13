@@ -19,8 +19,15 @@ import type {
   XApiUser,
   FollowerListStatus,
   ProcessedFollower,
+  PostType,
+  TimelinePost,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
+
+export interface GetRecentTimelinePostsOptions {
+  limit?: number;
+  postType?: PostType;
+}
 
 // ---------------------------------------------------------------------------
 // Firestore Service
@@ -55,12 +62,12 @@ export interface IFirestoreService {
     mediaUrls?: string[];
     assetId?: string;
     tweetId?: string;
-    postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
+    postType?: PostType;
     newsTitle?: string;
     newsEmbedding?: number[];
     anniversaryTitle?: string;
   }): Promise<void>;
-  getRecentTimelinePosts(limit?: number): Promise<string[]>;
+  getRecentTimelinePosts(options?: GetRecentTimelinePostsOptions): Promise<TimelinePost[]>;
   getRecentNewsEmbeddings(days?: number): Promise<Array<{ title?: string; embedding: number[] }>>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
   findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;
