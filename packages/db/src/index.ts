@@ -121,47 +121,29 @@ const conversationLogConverter: FirestoreDataConverter<RawConversationLog> = {
  */
 const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
   toFirestore(post: TimelinePost): DocumentData {
-    const repostCount = Number(post.reposts ?? post.retweets ?? 0);
-    const mediaUrls = post.mediaUrls ?? post.media_urls ?? [];
-    const tweetId = post.tweetId ?? post.tweet_id ?? '';
     return {
       ...post,
       thought: post.thought ?? null,
-      reposts: repostCount,
-      retweets: repostCount,
-      mediaUrls,
-      media_urls: mediaUrls,
-      tweetId,
-      tweet_id: tweetId,
+      reposts: Number(post.reposts ?? 0),
+      mediaUrls: post.mediaUrls ?? [],
+      tweetId: post.tweetId ?? '',
       expireAt: post.expireAt ? Timestamp.fromDate(new Date(post.expireAt)) : null,
     };
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): TimelinePost {
     const data = snapshot.data();
-    const repostCount = Number(data['reposts'] ?? data['retweets'] ?? 0);
-    const mediaList = (Array.isArray(data['mediaUrls'])
-      ? data['mediaUrls']
-      : Array.isArray(data['media_urls'])
-      ? data['media_urls']
-      : []) as string[];
-    const tweetId = String(data['tweetId'] ?? data['tweet_id'] ?? '');
-    const timestamp = String(data['timestamp'] ?? data['created_at'] ?? '');
-
     return {
       text: String(data['text'] ?? ''),
       thought: data['thought'],
-      tweetId,
-      tweet_id: tweetId,
-      timestamp,
+      tweetId: String(data['tweetId'] ?? ''),
+      timestamp: String(data['timestamp'] ?? ''),
       expireAt: toIsoString(data['expireAt']) ?? '',
       status: data['status'],
       impressions: Number(data['impressions'] ?? 0),
       likes: Number(data['likes'] ?? 0),
-      reposts: repostCount,
-      retweets: repostCount,
+      reposts: Number(data['reposts'] ?? 0),
       replies: Number(data['replies'] ?? 0),
-      mediaUrls: mediaList,
-      media_urls: mediaList,
+      mediaUrls: (Array.isArray(data['mediaUrls']) ? data['mediaUrls'] : []) as string[],
       authorId: data['authorId'],
       authorName: data['authorName'],
       authorHandle: data['authorHandle'],

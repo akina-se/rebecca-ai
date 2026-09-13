@@ -1,8 +1,8 @@
-import { AppDependencies } from '../types';
+import { AppDependencies, PostType } from '../types';
 import { publishPost, PublishPostResult } from './postPublisher';
 
 export interface ExecutePostPipelineParams {
-  postType: 'soliloquy' | 'news' | 'anniversary' | 'random_engagement';
+  postType: PostType;
   text: string;
   thought?: string;
   imageContext?: string;

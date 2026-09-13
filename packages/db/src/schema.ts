@@ -84,108 +84,26 @@ export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
 // ---------------------------------------------------------------------------
 
 import type {
-  UserStatus,
-  PostStatus,
   AssetStatus,
-  AdminRole,
-  AdminUserStatus,
   FollowerListStatus,
-  ConversationLogEntry,
-  UserCoreProfile,
+  AdminUser,
+  ProcessedEvent,
+  FirestoreUser,
+  RagMemory,
+  RawConversationLog,
+  PostType,
+  TimelinePost,
 } from '@rebecca/types';
 
-/** Represents an administrator account authorized to access the dashboard. */
-export interface AdminUser {
-  email: string;
-  role: AdminRole;
-  status: AdminUserStatus;
-  createdAt: string;
-}
-
-/** Idempotency record for Eventarc cloud events processed by Cloud Functions. */
-export interface ProcessedEvent {
-  processedAt: string;
-  type: string;
-  logId?: string;
-}
-
-/**
- * Represents a user document as stored in Firestore.
- * The `id` field mirrors the Firestore document ID and is populated on read.
- */
-export interface FirestoreUser {
-  id?: string;
-  name?: string;
-  username?: string;
-  avatarUrl?: string;
-  coreProfile: UserCoreProfile;
-  working_memory?: ConversationLogEntry[];
-  episodicBuffer: ConversationLogEntry[];
-  /** ISO 8601 date string (YYYY-MM-DD) */
-  lastReplyDate?: string;
-  dailyReplyCount?: number;
-  status?: UserStatus;
-  firstSeen?: string;
-  lastSeen?: string;
-}
-
-/** Represents a memory entry used in Retrieval-Augmented Generation (RAG). */
-export interface RagMemory {
-  userId: string;
-  text: string;
-  embedding: number[];
-  /** ISO 8601 datetime string */
-  timestamp: string;
-}
-
-/**
- * Represents a raw conversation log between a user and the AI.
- * `expireAt` is serialized as an ISO string to remain Firestore-agnostic.
- */
-export interface RawConversationLog {
-  userId: string;
-  userText: string;
-  aiText: string;
-  /** Inner thought of the persona during response generation */
-  thought?: string;
-  /** ISO 8601 datetime string */
-  timestamp: string;
-  /** ISO 8601 datetime string (TTL expiry) */
-  expireAt: string;
-}
-
-/**
- * Represents a post on the AI's timeline.
- * `expireAt` is serialized as an ISO string to remain Firestore-agnostic.
- */
-export interface TimelinePost {
-  text: string;
-  /** Inner thought of the persona during post generation */
-  thought?: string;
-  /** ISO 8601 datetime string */
-  timestamp: string;
-  /** ISO 8601 datetime string (TTL expiry) */
-  expireAt: string;
-  status?: PostStatus;
-  impressions?: number;
-  likes?: number;
-  retweets?: number;
-  reposts?: number;
-  replies?: number;
-  mediaUrls?: string[];
-  media_urls?: string[];
-  tweetId?: string;
-  tweet_id?: string;
-  assetId?: string;
-  authorId?: string;
-  authorName?: string;
-  authorHandle?: string;
-  authorAvatarUrl?: string;
-  postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
-  newsTitle?: string;
-  newsEmbedding?: number[];
-  anniversaryTitle?: string;
-}
+export type {
+  AdminUser,
+  ProcessedEvent,
+  FirestoreUser,
+  RagMemory,
+  RawConversationLog,
+  PostType,
+  TimelinePost,
+};
 
 /** Rate-limit tracking document for a user within a time window. */
 export interface RateLimitDoc {
