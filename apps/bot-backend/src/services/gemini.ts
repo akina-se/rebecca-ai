@@ -6,7 +6,7 @@
 
 import { GoogleGenAI, Content, Type } from '@google/genai';
 import config from '../config';
-import { formatJSTDateTime } from '../utils/time';
+import { formatZonedDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 
@@ -459,7 +459,7 @@ const generateStructuredReply = async (
     try {
         const contents: Content[] = [];
         for (const msg of history) {
-            const timePrefix = msg.timestamp ? `[${formatJSTDateTime(msg.timestamp)}] ` : '';
+            const timePrefix = msg.timestamp ? `[${formatZonedDateTime(msg.timestamp)}] ` : '';
             if (msg.role === 'model') {
                 const modelBody = msg.thought
                     ? `【思考・本音】${msg.thought}\n【発話】${msg.content}`

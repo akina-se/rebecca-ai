@@ -1,35 +1,25 @@
 import { AppDependencies } from '../types';
 import config from '../config';
-import { getJSTDate  } from '../utils/time';
+import { getZonedDateParts } from '../utils/time';
 
 /**
- * Retrieves the current JST date formatted as a string (YYYY-MM-DD).
- * 
- * @returns The formatted date string.
+ * Generates rate limit time window keys (daily, monthly, per-minute)
+ * localized to the application configured time zone.
+ *
+ * @param date - Optional date instance (defaults to current time).
+ * @param timezone - Optional target time zone (defaults to config.appTimezone).
+ * @returns Object containing dateStr, monthStr, and minuteStr.
  */
-const getJSTDateString = () => {
-    const d = getJSTDate();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-/**
- * Retrieves the current JST month formatted as a string (YYYY-MM).
- * 
- * @returns The formatted month string.
- */
-const getJSTMonthString = () => {
-    const d = getJSTDate();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-};
-
-/**
- * Retrieves the current JST minute formatted as a string (YYYY-MM-DDTHH:mm).
- * 
- * @returns The formatted minute string.
- */
-const getJSTMinuteString = () => {
-    const d = getJSTDate();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+export const getRateLimitTimeKeys = (
+  date: Date = new Date(),
+  timezone: string = config.appTimezone,
+): { dateStr: string; monthStr: string; minuteStr: string } => {
+  const { year, month, day, hour, minute } = getZonedDateParts(date, timezone);
+  return {
+    dateStr: `${year}-${month}-${day}`,
+    monthStr: `${year}-${month}`,
+    minuteStr: `${year}-${month}-${day}T${hour}:${minute}`,
+  };
 };
 
 /**
@@ -41,9 +31,7 @@ const getJSTMinuteString = () => {
  * @returns A promise resolving to an object indicating if the request is allowed and an optional reason if denied.
  */
 const checkAndIncrementRateLimits = async (deps: AppDependencies, userId: string): Promise<{ allowed: boolean; reason?: string }> => {
-    const dateStr = getJSTDateString();
-    const monthStr = getJSTMonthString();
-    const minuteStr = getJSTMinuteString();
+    const { dateStr, monthStr, minuteStr } = getRateLimitTimeKeys();
 
     const globalDailyLimit = config.limits.globalDailyLimit || 45;
     const spamMinuteLimit = config.limits.spamMinuteLimit || 3;
@@ -60,3 +48,4 @@ const checkAndIncrementRateLimits = async (deps: AppDependencies, userId: string
 export { 
     checkAndIncrementRateLimits
 };
+
