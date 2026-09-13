@@ -20,6 +20,7 @@ describe('Config', () => {
         delete process.env.BATCH_SECRET_KEY;
         delete process.env.X_FOLLOWERS_PAGE_SIZE;
         delete process.env.X_FOLLOWERS_MAX_RESULTS;
+        delete process.env.IMAGE_COOLDOWN_DAYS;
 
         const config = require('../../src/config/index').default;
 
@@ -37,6 +38,7 @@ describe('Config', () => {
         expect(Number(config.evolution.lookbackDays)).toBe(7);
         expect(Number(config.xApi.followersPageSize)).toBe(10);
         expect(Number(config.xApi.followersMaxResults)).toBe(50);
+        expect(Number(config.images.cooldownDays)).toBe(14);
         expect(config.batchSecret).toBeUndefined();
     });
 
@@ -56,6 +58,7 @@ describe('Config', () => {
         process.env.BATCH_SECRET_KEY = 'secret';
         process.env.X_FOLLOWERS_PAGE_SIZE = '25';
         process.env.X_FOLLOWERS_MAX_RESULTS = '500';
+        process.env.IMAGE_COOLDOWN_DAYS = '21';
 
         const config = require('../../src/config/index').default;
 
@@ -74,5 +77,6 @@ describe('Config', () => {
         expect(config.batchSecret).toBe('secret');
         expect(Number(config.xApi.followersPageSize)).toBe(25);
         expect(Number(config.xApi.followersMaxResults)).toBe(500);
+        expect(Number(config.images.cooldownDays)).toBe(21);
     });
 });
