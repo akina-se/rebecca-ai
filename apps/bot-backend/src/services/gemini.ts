@@ -166,7 +166,7 @@ const generateStructuredPostInternal = async (
             throw new Error('Gemini API returned empty structured response or content was filtered');
         }
         const parsed = parsePersonaResponse(rawText);
-        if (!parsed.reply) {
+        if (!parsed.reply || !parsed.reply.trim()) {
             throw new Error('Gemini API returned structured response with empty reply');
         }
         return parsed;
@@ -506,7 +506,7 @@ const generateStructuredReply = async (
                 throw new Error('Gemini API returned empty structured response or content was filtered.');
             }
             const parsed = parsePersonaResponse(rawText);
-            if (!parsed.reply) {
+            if (!parsed.reply || !parsed.reply.trim()) {
                 throw new Error('Gemini API returned structured response with empty reply.');
             }
             return parsed;
@@ -542,7 +542,7 @@ const generateStructuredReply = async (
             throw new Error('Gemini API returned empty structured response after function execution.');
         }
         const parsed = parsePersonaResponse(finalText);
-        if (!parsed.reply) {
+        if (!parsed.reply || !parsed.reply.trim()) {
             throw new Error('Gemini API returned structured response with empty reply after function execution.');
         }
         return parsed;

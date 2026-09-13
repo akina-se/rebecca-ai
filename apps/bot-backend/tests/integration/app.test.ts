@@ -361,10 +361,9 @@ describe('Integration Tests', () => {
         }, 15000);
 
         it('should return 500 Internal Server Error when soliloquy generation fails', async () => {
-            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValueOnce({
-                thought: '',
-                reply: '',
-            });
+            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockRejectedValueOnce(
+                new Error('Gemini API returned empty structured response or content was filtered'),
+            );
 
             const response = await request(app).get('/batch/soliloquy-post').set('x-batch-secret', 'test_secret');
 
