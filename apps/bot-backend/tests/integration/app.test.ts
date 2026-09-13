@@ -359,6 +359,20 @@ describe('Integration Tests', () => {
             expect(gemini.generateStructuredSoliloquyPost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Post'), expect.any(Object));
         }, 15000);
+
+        it('should return 500 Internal Server Error when soliloquy generation fails', async () => {
+            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockRejectedValueOnce(
+                new Error('Gemini API returned empty structured response or content was filtered'),
+            );
+
+            const response = await request(app).get('/batch/soliloquy-post').set('x-batch-secret', 'test_secret');
+
+            expect(response.status).toBe(500);
+            expect(response.body).toEqual({
+                error: 'Internal Server Error',
+            });
+            expect(xApi.tweet).not.toHaveBeenCalled();
+        }, 15000);
     });
 
     describe('GET /batch/stealth-onboarding', () => {
