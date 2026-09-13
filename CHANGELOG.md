@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/akina-se/rebecca-ai/compare/v1.18.3...v1.19.0) (2026-09-13)
+
+
+### Features
+
+* **bot-backend:** diversify soliloquy topics with past post injection and postType indexing ([#226](https://github.com/akina-se/rebecca-ai/issues/226)) ([c9e02c5](https://github.com/akina-se/rebecca-ai/commit/c9e02c5e4b3d0716a0726efd9db95fa99bd64c4f))
+
 ## [1.18.3](https://github.com/akina-se/rebecca-ai/compare/v1.18.2...v1.18.3) (2026-09-13)
 
 
