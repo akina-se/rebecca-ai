@@ -82,11 +82,6 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       let postText = structuredPost.reply;
       const thought = structuredPost.thought;
 
-      if (!postText) {
-        console.log('[ProactiveAnniversaryUseCase] Failed to generate anniversary post.');
-        return { status: 'skipped', reason: 'generation_failed' };
-      }
-
       const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
       if (defaultHashtag) {
         const hashtag = `\n${defaultHashtag}`;

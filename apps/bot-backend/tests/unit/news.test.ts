@@ -113,15 +113,13 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         );
     });
 
-    it('should return skipped status if generation fails', async () => {
+    it('should propagate error if generation fails', async () => {
         mockNewsProvider.getNews.mockResolvedValue([
             { title: 'News 1', summary: 'Summary 1', category: 'General' },
         ]);
-        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: '', reply: '' });
+        deps.gemini.generateStructuredNewsPost.mockRejectedValue(new Error('Gemini API error'));
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
-        expect(result.status).toBe('skipped');
-        expect(result.reason).toBe('generation_failed');
+        await expect(new ProactiveNewsUseCase(deps, mockNewsProvider).execute()).rejects.toThrow('Gemini API error');
     });
 
     it('should append hashtag if total length <= 140', async () => {
