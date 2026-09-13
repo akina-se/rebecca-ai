@@ -16,7 +16,7 @@
 import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';
 import { getCollections, COLLECTIONS } from '@rebecca/db';
 import config from '../config';
-import { formatJSTDateTime } from '../utils/time';
+import { formatZonedDateTime } from '../utils/time';
 import type {
   FirestoreUser,
   ConversationLogEntry,
@@ -582,7 +582,7 @@ const findRagMemories = async (userId: string, queryVector: number[], limit = 3)
       const data = doc.data();
       const text = data?.['text'];
       if (text) {
-        const timeHeader = data?.['timestamp'] ? `[${formatJSTDateTime(data['timestamp'])}]\n` : '';
+        const timeHeader = data?.['timestamp'] ? `[${formatZonedDateTime(data['timestamp'])}]\n` : '';
         memories.push(`${timeHeader}${text}`);
       }
     });
