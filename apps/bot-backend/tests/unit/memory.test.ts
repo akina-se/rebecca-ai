@@ -86,7 +86,10 @@ describe('Memory Module', () => {
                     { id: 'u1', episodicBuffer: [{}] },
                     { id: 'u2', episodicBuffer: [] } // will skip dreaming
                 ]);
-                deps.firestore.getRecentTimelinePosts.mockResolvedValue(['post1', 'post2']);
+                deps.firestore.getRecentTimelinePosts.mockResolvedValue([
+                    { text: 'post1', timestamp: '2026-09-13T00:00:00Z' },
+                    { text: 'post2', timestamp: '2026-09-13T01:00:00Z' },
+                ]);
                 deps.firestore.getTimelineSummary.mockResolvedValue('old_summary');
                 deps.gemini.generateTimelineSummary.mockResolvedValue('new_summary');
                 

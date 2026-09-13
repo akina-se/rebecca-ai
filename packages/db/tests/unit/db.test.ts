@@ -174,7 +174,7 @@ describe('@rebecca/db Unit Tests', () => {
   });
 
   describe('timelinePostConverter', () => {
-    it('toFirestore should convert expireAt correctly', () => {
+    it('toFirestore should convert expireAt correctly and default numeric/array fields', () => {
       const post: TimelinePost = {
         text: 'test tweet',
         timestamp: '2026-04-01T00:00:00Z',
@@ -182,9 +182,10 @@ describe('@rebecca/db Unit Tests', () => {
         status: PostStatus.SUCCESS,
         impressions: 10,
         likes: 2,
-        retweets: 1,
+        reposts: 1,
         replies: 0,
-        mediaUrls: [],
+        mediaUrls: ['https://example.com/image.png'],
+        tweetId: 't1',
         authorId: 'a1',
         authorName: 'Rebecca',
         authorHandle: 'rebecca_ai',
@@ -192,20 +193,37 @@ describe('@rebecca/db Unit Tests', () => {
       };
       const data = timelinePostConverter.toFirestore(post);
       expect(data.expireAt).toBeInstanceOf(Timestamp);
+      expect(data.reposts).toBe(1);
+      expect(data.mediaUrls).toEqual(['https://example.com/image.png']);
+      expect(data.tweetId).toBe('t1');
     });
 
-    it('fromFirestore should map mediaUrls and handle missing mediaUrls', () => {
+    it('toFirestore should handle null expireAt and undefined optional fields', () => {
+      const emptyPost: TimelinePost = {
+        text: 'test empty',
+        timestamp: '2026-04-01T00:00:00Z',
+        expireAt: '',
+      };
+      const emptyData = timelinePostConverter.toFirestore(emptyPost);
+      expect(emptyData.reposts).toBe(0);
+      expect(emptyData.mediaUrls).toEqual([]);
+      expect(emptyData.tweetId).toBe('');
+      expect(emptyData.expireAt).toBeNull();
+    });
+
+    it('fromFirestore should map document fields strictly to canonical TimelinePost', () => {
       const mockSnapshot = {
         data: () => ({
           text: 'tweet',
+          tweetId: 't1',
           timestamp: '2026-04-01T00:00:00Z',
           expireAt: null,
           status: PostStatus.SUCCESS,
           impressions: 10,
           likes: 2,
-          retweets: 1,
+          reposts: 7,
           replies: 0,
-          media_urls: ['https://image.png'],
+          mediaUrls: ['https://image.png'],
           authorId: 'a1',
           authorName: 'Rebecca',
           authorHandle: 'rebecca_ai',
@@ -219,81 +237,26 @@ describe('@rebecca/db Unit Tests', () => {
 
       const post = timelinePostConverter.fromFirestore(mockSnapshot);
       expect(post.mediaUrls).toEqual(['https://image.png']);
+      expect(post.tweetId).toBe('t1');
+      expect(post.reposts).toBe(7);
       expect(post.postType).toBe('news');
       expect(post.newsTitle).toBe('IT Passport');
       expect(post.newsEmbedding).toEqual([0.1, 0.2]);
       expect(post.thought).toBe('実は私も気になる話題ね');
     });
 
-    it('toFirestore should handle alternate fields and null expireAt', () => {
-      const postWithLegacy = {
-        text: 'test legacy',
-        timestamp: '2026-04-01T00:00:00Z',
-        expireAt: '',
-        status: PostStatus.SUCCESS,
-        impressions: 10,
-        likes: 2,
-        retweets: 5,
-        replies: 0,
-        media_urls: ['https://legacy.png'],
-        tweet_id: 't_legacy_1',
-      } as unknown as TimelinePost;
-      const data = timelinePostConverter.toFirestore(postWithLegacy);
-      expect(data.reposts).toBe(5);
-      expect(data.retweets).toBe(5);
-      expect(data.mediaUrls).toEqual(['https://legacy.png']);
-      expect(data.media_urls).toEqual(['https://legacy.png']);
-      expect(data.tweetId).toBe('t_legacy_1');
-      expect(data.tweet_id).toBe('t_legacy_1');
-      expect(data.expireAt).toBeNull();
-
-      const emptyPost = {
-        text: 'test empty',
-        timestamp: '2026-04-01T00:00:00Z',
-        expireAt: '',
-      } as unknown as TimelinePost;
-      const emptyData = timelinePostConverter.toFirestore(emptyPost);
-      expect(emptyData.reposts).toBe(0);
-      expect(emptyData.retweets).toBe(0);
-      expect(emptyData.mediaUrls).toEqual([]);
-      expect(emptyData.tweetId).toBe('');
-    });
-
-    it('fromFirestore should handle mediaUrls array, reposts, tweetId, and created_at', () => {
-      const snap1 = {
-        data: () => ({
-          text: 'tweet1',
-          tweetId: 't1',
-          timestamp: '2026-04-01T00:00:00Z',
-          mediaUrls: ['https://canonical.png'],
-          reposts: 7,
-          impressions: 100,
-          likes: 20,
-          replies: 3,
-        }),
+    it('fromFirestore should fallback gracefully for missing fields', () => {
+      const mockSnapshot = {
+        data: () => ({}),
       } as any;
-      const res1 = timelinePostConverter.fromFirestore(snap1);
-      expect(res1.mediaUrls).toEqual(['https://canonical.png']);
-      expect(res1.media_urls).toEqual(['https://canonical.png']);
-      expect(res1.reposts).toBe(7);
-      expect(res1.retweets).toBe(7);
-      expect(res1.tweetId).toBe('t1');
-      expect(res1.timestamp).toBe('2026-04-01T00:00:00Z');
 
-      const snap2 = {
-        data: () => ({
-          tweet_id: 't2',
-          created_at: '2026-04-02T00:00:00Z',
-          retweets: 4,
-          mediaUrls: null,
-          media_urls: null,
-        }),
-      } as any;
-      const res2 = timelinePostConverter.fromFirestore(snap2);
-      expect(res2.mediaUrls).toEqual([]);
-      expect(res2.reposts).toBe(4);
-      expect(res2.tweetId).toBe('t2');
-      expect(res2.timestamp).toBe('2026-04-02T00:00:00Z');
+      const post = timelinePostConverter.fromFirestore(mockSnapshot);
+      expect(post.text).toBe('');
+      expect(post.tweetId).toBe('');
+      expect(post.timestamp).toBe('');
+      expect(post.mediaUrls).toEqual([]);
+      expect(post.reposts).toBe(0);
+      expect(post.expireAt).toBe('');
     });
   });
 
