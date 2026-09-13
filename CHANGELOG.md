@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/akina-se/rebecca-ai/compare/v1.18.1...v1.18.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* **gemini:** fail fast on structured generation error and enable 500 scheduler retry ([#219](https://github.com/akina-se/rebecca-ai/issues/219)) ([ca19c69](https://github.com/akina-se/rebecca-ai/commit/ca19c693dc9402aa2079a41782f1339147589c3c))
+
 ## [1.18.1](https://github.com/akina-se/rebecca-ai/compare/v1.18.0...v1.18.1) (2026-09-13)
 
 
