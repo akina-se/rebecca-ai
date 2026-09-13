@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.3](https://github.com/akina-se/rebecca-ai/compare/v1.18.2...v1.18.3) (2026-09-13)
+
+
+### Bug Fixes
+
+* **config:** increase default image cooldown days from 3 to 14 ([#222](https://github.com/akina-se/rebecca-ai/issues/222)) ([bf5e608](https://github.com/akina-se/rebecca-ai/commit/bf5e608c5af9e05bff86cf98d745bb29e107bdaa))
+
 ## [1.18.2](https://github.com/akina-se/rebecca-ai/compare/v1.18.1...v1.18.2) (2026-09-13)
 
 
