@@ -16,7 +16,6 @@ RUN npm run build --workspace=@rebecca/types --workspace=@rebecca/db --workspace
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-ENV TZ=Asia/Tokyo
 
 # Copy root package manifests for runtime module resolution
 COPY package*.json ./
