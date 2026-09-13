@@ -91,7 +91,7 @@ export default {
    * Configuration for image handling and storage.
    */
   images: {
-    cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '3', 10),
+    cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '14', 10),
     similarityThreshold: parseFloat(process.env.IMAGE_SIMILARITY_THRESHOLD || '0.35'),
     bucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
   },
