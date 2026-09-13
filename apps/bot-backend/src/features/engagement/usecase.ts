@@ -133,7 +133,7 @@ ${description}
       const userInput = `【ターゲットユーザー情報】\nユーザー名: @${username}\nプロフィール: ${description}\n分析属性: ${JSON.stringify(profileAnalysis)}\n${tweetContext}\n\n上記を踏まえて、ターゲットユーザーの最近の活動や投稿内容に言及しつつ、不意打ちで話しかける独立したメンション投稿を作成してください。`;
 
       const structured = await this.deps.gemini.generateStructuredReply(systemPrompt, [], userInput);
-      let finalText = (structured.reply || '').trim();
+      let finalText = structured.reply.trim();
       const thought = structured.thought;
 
       if (!finalText.includes(`@${username}`)) {

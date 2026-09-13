@@ -91,11 +91,6 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       let postText = structuredPost.reply;
       const thought = structuredPost.thought;
 
-      if (!postText) {
-        console.log('Failed to generate soliloquy post.');
-        return { status: 'failed', reason: 'Generation failed' };
-      }
-
       const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
       if (defaultHashtag) {
         const hashtag = `\n${defaultHashtag}`;

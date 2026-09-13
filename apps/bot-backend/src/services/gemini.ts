@@ -141,8 +141,11 @@ const generateStructuredPostInternal = async (
     maxOutputTokens = 500,
     modelOverride?: string,
 ): Promise<StructuredPersonaResponse> => {
-    if (!ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) {
-        return { thought: '', reply: '' };
+    if (!ai) {
+        throw new Error('Gemini API client not initialized');
+    }
+    if (!prompt || (Array.isArray(prompt) && prompt.length === 0)) {
+        throw new Error('Prompt cannot be empty for structured post generation');
     }
     try {
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
@@ -158,10 +161,18 @@ const generateStructuredPostInternal = async (
                 safetySettings: [] as never[]
             }
         });
-        return parsePersonaResponse(response.text?.trim() || '');
+        const rawText = response.text?.trim();
+        if (!rawText) {
+            throw new Error('Gemini API returned empty structured response or content was filtered');
+        }
+        const parsed = parsePersonaResponse(rawText);
+        if (!parsed.reply || !parsed.reply.trim()) {
+            throw new Error('Gemini API returned structured response with empty reply');
+        }
+        return parsed;
     } catch (e) {
         console.error('Error generating structured timeline post:', e);
-        return { thought: '', reply: '' };
+        throw e;
     }
 };
 
@@ -494,7 +505,11 @@ const generateStructuredReply = async (
             if (!rawText) {
                 throw new Error('Gemini API returned empty structured response or content was filtered.');
             }
-            return parsePersonaResponse(rawText);
+            const parsed = parsePersonaResponse(rawText);
+            if (!parsed.reply || !parsed.reply.trim()) {
+                throw new Error('Gemini API returned structured response with empty reply.');
+            }
+            return parsed;
         }
 
         const searchQuery = typeof functionCall.args?.query === 'string' ? functionCall.args.query.trim() : '';
@@ -526,7 +541,11 @@ const generateStructuredReply = async (
         if (!finalText) {
             throw new Error('Gemini API returned empty structured response after function execution.');
         }
-        return parsePersonaResponse(finalText);
+        const parsed = parsePersonaResponse(finalText);
+        if (!parsed.reply || !parsed.reply.trim()) {
+            throw new Error('Gemini API returned structured response with empty reply after function execution.');
+        }
+        return parsed;
     } catch (error) {
         console.error('Error generating structured reply with Gemini:', error);
         throw error;
