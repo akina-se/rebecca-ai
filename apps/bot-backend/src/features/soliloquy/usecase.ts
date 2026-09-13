@@ -92,8 +92,8 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       const thought = structuredPost.thought;
 
       if (!postText) {
-        console.log('Failed to generate soliloquy post.');
-        return { status: 'failed', reason: 'Generation failed' };
+        console.error('Failed to generate soliloquy post: empty reply received');
+        throw new Error('Failed to generate soliloquy post: empty reply received');
       }
 
       const defaultHashtag = this.deps.persona.metadata.defaultHashtag;

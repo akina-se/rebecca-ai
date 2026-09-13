@@ -108,13 +108,10 @@ describe('Soliloquy Unit Tests', () => {
       );
     });
 
-    it('should return failed when gemini generation returns empty', async () => {
+    it('should throw error when gemini generation returns empty', async () => {
       (deps.gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValue({ thought: '', reply: '' });
 
-      const result = await useCase.execute();
-
-      expect(result.status).toBe('failed');
-      expect(result.reason).toBe('Generation failed');
+      await expect(useCase.execute()).rejects.toThrow('Failed to generate soliloquy post: empty reply received');
       expect(deps.xApi.tweet).not.toHaveBeenCalled();
     });
   });
