@@ -24,7 +24,7 @@ const jobs = [
     },
     {
         name: 'rebecca-stealth-onboarding',
-        schedule: '15 3,9,15,21 * * *', // 3:15, 9:15, 15:15, 21:15 JST (4 times/day)
+        schedule: process.env.STEALTH_ONBOARDING_SCHEDULE || '15 3 * * *', // Daily at 3:15 AM JST (once per day)
         url: `${serviceUrl}/batch/stealth-onboarding`
     },
     {
