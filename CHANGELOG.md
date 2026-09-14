@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/akina-se/rebecca-ai/compare/v1.19.0...v1.19.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* **onboarding:** reduce stealth onboarding frequency to daily and cap max results to 30 ([#229](https://github.com/akina-se/rebecca-ai/issues/229)) ([46e2c51](https://github.com/akina-se/rebecca-ai/commit/46e2c5135f5a042889cc50f261367a4b8c21dd55))
+
 ## [1.19.0](https://github.com/akina-se/rebecca-ai/compare/v1.18.3...v1.19.0) (2026-09-13)
 
 
