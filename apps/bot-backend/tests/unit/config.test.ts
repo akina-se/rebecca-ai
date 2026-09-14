@@ -37,7 +37,7 @@ describe('Config', () => {
         expect(Number(config.limits.publicIpRateLimit)).toBe(100);
         expect(Number(config.evolution.lookbackDays)).toBe(7);
         expect(Number(config.xApi.followersPageSize)).toBe(10);
-        expect(Number(config.xApi.followersMaxResults)).toBe(50);
+        expect(Number(config.xApi.followersMaxResults)).toBe(30);
         expect(Number(config.images.cooldownDays)).toBe(14);
         expect(config.batchSecret).toBeUndefined();
     });
