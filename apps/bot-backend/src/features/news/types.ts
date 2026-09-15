@@ -49,19 +49,13 @@ export interface CandidateNewsItem {
   item: NewsItem;
 }
 
+import { ProactiveBatchResult } from '../../types';
+
 /**
  * Interface representing the result of a proactive news execution.
+ * Extends the canonical ProactiveBatchResult.
  */
-export interface NewsResult {
-  /** The execution status of the news job. */
-  status: 'skipped' | 'success' | 'failed';
-  /** A descriptive reason if the status is skipped or failed. */
-  reason?: string;
-  /** The content of the tweet that was posted, if successful. */
-  post?: string;
-  /** Indicates whether media (e.g., an image) was attached to the post. */
-  attachedMedia?: boolean;
-}
+export interface NewsResult extends ProactiveBatchResult {}
 
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 

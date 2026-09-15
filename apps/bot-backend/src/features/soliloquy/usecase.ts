@@ -1,4 +1,4 @@
-import { AppDependencies } from '../../types';
+import { AppDependencies, ProactiveBatchResult } from '../../types';
 import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
@@ -6,13 +6,9 @@ import { formatZonedDateTime } from '../../utils/time';
 
 /**
  * Result of a soliloquy post execution.
+ * Extends the canonical ProactiveBatchResult.
  */
-export interface SoliloquyResult {
-  status: 'success' | 'failed';
-  reason?: string;
-  post?: string;
-  attachedMedia?: boolean;
-}
+export interface SoliloquyResult extends ProactiveBatchResult {}
 
 /**
  * Returns contextual description based on the application time zone hour.
