@@ -9,6 +9,33 @@ import config from '../config';
 import { formatZonedDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile } from '../types';
 import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
+import { StructuredNewsPostResponse } from '../features/news/types';
+
+/**
+ * JSON schema for structured news post generation with explicit selection metadata.
+ */
+const STRUCTURED_NEWS_POST_SCHEMA = {
+  type: 'object',
+  properties: {
+    selectedTitle: {
+      type: 'string',
+      description: 'The exact title of the selected news item.',
+    },
+    category: {
+      type: 'string',
+      description: 'The category of the selected news item.',
+    },
+    thought: {
+      type: 'string',
+      description: 'Inner thoughts, true feelings, and emotional shifts based on the persona (within 150 characters).',
+    },
+    reply: {
+      type: 'string',
+      description: 'The public tweet text (within 100 characters).',
+    },
+  },
+  required: ['selectedTitle', 'category', 'thought', 'reply'],
+};
 
 /**
  * Global Gemini API client instance.
@@ -177,14 +204,73 @@ const generateStructuredPostInternal = async (
 };
 
 /**
- * Generates a structured news post (inner thought and public tweet text) based on news headlines.
+ * Generates a structured news post (inner thought, public tweet text, selected news title, and category)
+ * based on news headlines and persona instructions.
+ *
+ * @param systemInstruction - System instruction defining character persona and behavior.
+ * @param prompt - Contextual prompt containing headlines, timeline summary, and guidelines.
+ * @param modelOverride - Optional model override.
+ * @returns A promise resolving to the strongly-typed StructuredNewsPostResponse.
  */
 const generateStructuredNewsPost = async (
     systemInstruction: string,
     prompt: string | string[],
     modelOverride?: string,
-): Promise<StructuredPersonaResponse> => {
-    return generateStructuredPostInternal(systemInstruction, prompt, 500, modelOverride || config.gemini.newsPostModel);
+): Promise<StructuredNewsPostResponse> => {
+    if (!ai) {
+        throw new Error('Gemini API client not initialized');
+    }
+    if (!prompt || (Array.isArray(prompt) && prompt.length === 0)) {
+        throw new Error('Prompt cannot be empty for structured news post generation');
+    }
+
+    try {
+        const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
+        const modelToUse = modelOverride || config.gemini.newsPostModel;
+        const response = await ai.models.generateContent({
+            model: modelToUse,
+            contents: contentStr,
+            config: {
+                systemInstruction,
+                maxOutputTokens: 500,
+                responseMimeType: 'application/json',
+                responseSchema: STRUCTURED_NEWS_POST_SCHEMA,
+                safetySettings: [] as never[],
+            },
+        });
+
+        const rawText = response.text?.trim();
+        if (!rawText) {
+            throw new Error('Gemini API returned empty response for structured news post');
+        }
+
+        const cleaned = rawText.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
+        const parsed = JSON.parse(cleaned);
+
+        if (
+            typeof parsed.thought !== 'string' ||
+            typeof parsed.reply !== 'string' ||
+            typeof parsed.selectedTitle !== 'string' ||
+            typeof parsed.category !== 'string'
+        ) {
+            throw new Error('Gemini API returned malformed response schema for structured news post');
+        }
+
+        const trimmedReply = parsed.reply.trim();
+        if (!trimmedReply) {
+            throw new Error('Gemini API returned structured news post with empty reply');
+        }
+
+        return {
+            thought: parsed.thought.trim(),
+            reply: trimmedReply,
+            selectedTitle: parsed.selectedTitle.trim(),
+            category: parsed.category.trim(),
+        };
+    } catch (e) {
+        console.error('Error generating structured news post:', e);
+        throw e;
+    }
 };
 
 /**

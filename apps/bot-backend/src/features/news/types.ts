@@ -40,3 +40,18 @@ export interface NewsResult {
   /** Indicates whether media (e.g., an image) was attached to the post. */
   attachedMedia?: boolean;
 }
+
+/**
+ * Structured output representation produced by Gemini for news posts,
+ * containing explicit selection metadata alongside the persona response.
+ */
+export interface StructuredNewsPostResponse {
+  /** The persona's private internal thought process. */
+  readonly thought: string;
+  /** The public text response intended to be delivered. */
+  readonly reply: string;
+  /** The headline title of the news item selected by the model. */
+  readonly selectedTitle: string;
+  /** The category of the selected news item. */
+  readonly category: string;
+}

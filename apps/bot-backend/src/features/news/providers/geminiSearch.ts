@@ -4,16 +4,24 @@ import { INewsProvider, NewsItem } from '../types';
 
 /**
  * Prompt instructing Gemini to search real-time news via Google Search Grounding and output structured JSON.
+ * Enforces one news item across each of 5 balanced categories to eliminate domain bias.
  */
 const NEWS_STRUCTURED_SEARCH_PROMPT = `あなたは最新ニュースリサーチャーです。
-Google検索を利用して、日本の今日の最新トレンド、エンタメ、スイーツ・グルメ、カルチャー、新商品、お出かけ・天気に関するニュースを【5件】検索・取得し、必ず以下のJSON配列形式のみで出力してください。
+Google検索を利用して、日本の今日の最新ニュースを以下の【5つの指定カテゴリ】から【各カテゴリ1件ずつ、計5件】厳選して取得し、必ず以下のJSON配列形式のみで出力してください。
+
+【指定カテゴリ（各1件必須）】
+1. 最新テクノロジー・IT（AI、ガジェット、Web、先端技術など）
+2. エンタメ・カルチャー（音楽、映画、アニメ、ゲーム、アート、展示など）
+3. 新商品・トレンド（話題の新作グッズ、生活トレンド、SNS話題など）
+4. ライフスタイル・お出かけ・気象（イベント、スポット、気象・天候、健康など）
+5. グルメ・スイーツ（カフェ、飲食店、新作フード・スイーツなど）
 
 【出力フォーマット】
 [
   {
     "title": "ニュース見出し（30文字以内）",
     "summary": "ニュースの簡単な概要や背景（1〜2文）",
-    "category": "エンタメ | トレンド | グルメ | 新商品 | カルチャー | お出かけ"
+    "category": "最新テクノロジー・IT | エンタメ・カルチャー | 新商品・トレンド | ライフスタイル・お出かけ・気象 | グルメ・スイーツ"
   }
 ]
 

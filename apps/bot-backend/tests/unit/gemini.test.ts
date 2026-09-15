@@ -70,9 +70,16 @@ describe('gemini.ts', () => {
     describe('generateStructuredNewsPost', () => {
         it('should generate structured news post successfully', async () => {
             const { gemini } = getGeminiModule();
-            mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"News thought","reply":"News tweet"}' });
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"thought":"News thought","reply":"News tweet","selectedTitle":"Headlines","category":"最新テクノロジー・IT"}'
+            });
             const result = await gemini.generateStructuredNewsPost('mock instruction', ['Headlines']);
-            expect(result).toEqual({ thought: 'News thought', reply: 'News tweet' });
+            expect(result).toEqual({
+                thought: 'News thought',
+                reply: 'News tweet',
+                selectedTitle: 'Headlines',
+                category: '最新テクノロジー・IT'
+            });
         });
 
         it('should throw error on API error', async () => {
@@ -265,10 +272,17 @@ describe('gemini.ts', () => {
     describe('generateStructuredNewsPost and generateStructuredSoliloquyPost', () => {
         it('should handle array of headlines and string prompt', async () => {
             const { gemini } = getGeminiModule();
-            mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"t1","reply":"News post content"}' });
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"thought":"t1","reply":"News post content","selectedTitle":"headline 1","category":"エンタメ・カルチャー"}'
+            });
 
             const res1 = await gemini.generateStructuredNewsPost('sys', ['headline 1', 'headline 2']);
-            expect(res1).toEqual({ thought: 't1', reply: 'News post content' });
+            expect(res1).toEqual({
+                thought: 't1',
+                reply: 'News post content',
+                selectedTitle: 'headline 1',
+                category: 'エンタメ・カルチャー'
+            });
 
             mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"t2","reply":"Soliloquy post content 2"}' });
             const res2 = await gemini.generateStructuredSoliloquyPost('sys', 'single prompt');
@@ -283,7 +297,9 @@ describe('gemini.ts', () => {
             mockGenerateContent.mockRejectedValueOnce(new Error('Gemini error'));
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt')).rejects.toThrow('Gemini error');
 
-            mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"only thought","reply":""}' });
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"thought":"only thought","reply":"","selectedTitle":"t","category":"c"}'
+            });
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt')).rejects.toThrow('empty reply');
         });
     });

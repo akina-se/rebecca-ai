@@ -61,6 +61,8 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
             thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
             reply: '完全新作ゲーム発表！楽しみね！',
+            selectedTitle: '完全新作ゲーム発表！',
+            category: 'エンタメ',
         });
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
@@ -102,6 +104,8 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
             thought: '秋スイーツ美味しそう！',
             reply: 'ブルボン新商品楽しみね！',
+            selectedTitle: 'ブルボン新商品',
+            category: '新商品',
         });
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
@@ -127,7 +131,12 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             { title: 'News 1', summary: 'Summary 1', category: 'General' },
         ]);
         const shortPost = 'A short news post.';
-        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'short thought', reply: shortPost });
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            thought: 'short thought',
+            reply: shortPost,
+            selectedTitle: 'News 1',
+            category: 'General',
+        });
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
@@ -141,7 +150,12 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             { title: 'News 1', summary: 'Summary 1', category: 'General' },
         ]);
         const longPost = 'A'.repeat(135);
-        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'long thought', reply: longPost });
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            thought: 'long thought',
+            reply: longPost,
+            selectedTitle: 'News 1',
+            category: 'General',
+        });
 
         const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
 
@@ -155,7 +169,12 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             { title: 'News 1', summary: 'Summary 1', category: 'General' },
         ]);
         const text = 'A post about coffee';
-        deps.gemini.generateStructuredNewsPost.mockResolvedValue({ thought: 'coffee thought', reply: text });
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            thought: 'coffee thought',
+            reply: text,
+            selectedTitle: 'News 1',
+            category: 'General',
+        });
         deps.firestore.getTimelineSummary.mockResolvedValue('summary');
         deps.gemini.inferImageSearchQuery.mockResolvedValue('coffee');
         deps.gemini.generateEmbedding.mockResolvedValue([0.1, 0.2]);
