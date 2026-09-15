@@ -63,8 +63,8 @@ export class ProactiveNewsUseCase {
       console.log('[ProactiveNewsUseCase] Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
 
       const formattedNewsContext = candidateNews
-        .map((c) => `・【${c.item.category}】${c.item.title}\n  概要: ${c.item.summary}`)
-        .join('\n');
+        .map((c) => `・【${c.item.category}】${c.headline}\n  概要: ${c.item.summary}`)
+        .join('\n\n');
 
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
@@ -76,27 +76,38 @@ export class ProactiveNewsUseCase {
       ]);
 
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
+      const personaName = this.deps.persona.metadata.displayName;
+      const userCallsign = this.deps.persona.metadata.userCallsign.ja;
       const interestsStr = this.deps.persona.metadata.interests.join('・');
-      const newsPrompt = `以下の今日の最新ニュースから、共感・興奮しそうな話題（${interestsStr}など）を【1つだけ】選び、ニュースの概要や背景に触れながらツイートを生成してください。
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
 
-【今日のニュース】
+      const newsPrompt = `あなたはAIキャラクター「${personaName}」として、今日の最新ニュースから自身の関心領域（${interestsStr}など）に最も合致し、${userCallsign}やフォロワーと盛り上がれそうな話題を【1つだけ】選び、ツイートを生成してください。
+
+【今日のニュース候補】
 ${formattedNewsContext}
 ${timelineSummary ? `\n【直近のタイムライン要約】\n${timelineSummary}\n` : ''}
 ${extendedPrompt ? `\n【拡張ペルソナ・近況】\n${extendedPrompt}\n` : ''}
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
-【追加ルール】
-- 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題や気象、カルチャーなどを選んでください。
+【トピック選定と多様性の重要ルール】
+- 直近のタイムライン要約を確認し、直近で既に取り上げた話題ジャンルと重ならない多様なカテゴリ（最新テクノロジー・IT、エンタメ・カルチャー、新商品・トレンド、ライフスタイル等）を優先して選定すること。
+- 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題を選んでください。
 - ニュースの単なる要約や事実紹介だけで完結させないこと。話題に対する独自の着眼点や意見を簡潔に述べた上で、読み手が思わずリプライしたくなる具体的な問いかけ（2択の提示や具体的な選択への問いなど）を末尾に必ず含めること。
 - 曖昧な質問（例: 「どう思いますか？」）は避け、読み手が即座に答えやすい具体的な問いかけとすること。
+- selectedTitle には選定したニュースの【見出しタイトル】を出力すること。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
-- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
+- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。
+${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステムが自動付与するため、本文中には絶対に含めないでください。` : ''}`;
 
-      const structuredPost = await this.deps.gemini.generateStructuredNewsPost(systemInstruction, newsPrompt);
+      const candidateHeadlines = candidateNews.map((c) => c.headline);
+      const structuredPost = await this.deps.gemini.generateStructuredNewsPost(
+        systemInstruction,
+        newsPrompt,
+        candidateHeadlines,
+      );
       let postText = structuredPost.reply;
       const thought = structuredPost.thought;
 
-      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
       if (defaultHashtag) {
         const hashtag = `\n${defaultHashtag}`;
         if (postText.length + hashtag.length <= 140) {
@@ -105,33 +116,34 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       }
 
       console.log('[ProactiveNewsUseCase] Generated Post:', postText);
+      console.log('[ProactiveNewsUseCase] Selected News Title:', structuredPost.selectedTitle);
 
-      // Identify which headline was referenced
-      const matchedNews = candidateNews.find((c) => postText.includes(c.headline));
-      const newsTitle = matchedNews ? matchedNews.headline : undefined;
+      // Deterministic resolution by exact headline matching with Fail-Fast check
+      const matchedNews = candidateNews.find((c) => c.headline === structuredPost.selectedTitle);
+      if (!matchedNews) {
+        console.error(
+          `[ProactiveNewsUseCase] Model selected unknown title: "${structuredPost.selectedTitle}". Available candidates:`,
+          candidateHeadlines,
+        );
+        throw new Error(
+          `[ProactiveNewsUseCase] Selected headline "${structuredPost.selectedTitle}" not found in candidate list.`,
+        );
+      }
 
-      let chosenEmbedding: number[] | undefined;
-      if (matchedNews) {
-        chosenEmbedding = matchedNews.embedding;
-        if (!chosenEmbedding || chosenEmbedding.length === 0) {
-          try {
-            chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedNews.headline);
-          } catch (e) {
-            console.warn('[ProactiveNewsUseCase] Failed to generate embedding for selected headline:', e);
-          }
-        }
+      const newsTitle = matchedNews.headline;
+      let chosenEmbedding: number[] = matchedNews.embedding;
+      if (chosenEmbedding.length === 0) {
+        chosenEmbedding = await this.deps.gemini.generateEmbedding(matchedNews.headline);
       }
 
       const pipelineResult = await executePostPipeline(this.deps, {
         postType: 'news',
         text: postText,
         thought,
-        imageContext: matchedNews
-          ? `ニュース見出し: ${matchedNews.headline}\nタイムライン状況: ${timelineSummary}`
-          : `タイムライン状況: ${timelineSummary}`,
+        imageContext: `ニュース見出し: ${matchedNews.headline}\nタイムライン状況: ${timelineSummary ?? ''}`,
         metadata: {
           newsTitle,
-          newsEmbedding: chosenEmbedding && chosenEmbedding.length > 0 ? chosenEmbedding : undefined,
+          newsEmbedding: chosenEmbedding,
         },
       });
 
