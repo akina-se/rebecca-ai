@@ -13,7 +13,7 @@ describe('Soliloquy Unit Tests', () => {
     useCase = new SoliloquyUseCase(deps);
     (deps.firestore.getTimelineSummary as jest.Mock).mockResolvedValue('Recent timeline events');
     (deps.firestore.getExtendedPrompt as jest.Mock).mockResolvedValue('User loves coffee');
-    (deps.gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValue({
+    (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
       thought: '今日も頑張るマスターを応援したいな',
       reply: '今日も無理せずファイトよ♡',
     });
@@ -90,23 +90,23 @@ describe('Soliloquy Unit Tests', () => {
         postType: 'soliloquy',
       });
       expect(deps.gemini.generateEmbedding).toHaveBeenCalled();
-      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【現在の時間帯】'),
       );
-      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【直近のタイムライン要約】'),
       );
-      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【拡張ペルソナ・近況】'),
       );
-      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('過去の独り言1 (内心: 過去の本音1)'),
       );
-      expect(deps.gemini.generateStructuredSoliloquyPost).toHaveBeenCalledWith(
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
         expect.any(String),
         expect.stringContaining('【話題の多様性と非反復】'),
       );
@@ -125,7 +125,7 @@ describe('Soliloquy Unit Tests', () => {
     });
 
     it('should propagate error when gemini generation fails', async () => {
-      (deps.gemini.generateStructuredSoliloquyPost as jest.Mock).mockRejectedValue(
+      (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockRejectedValue(
         new Error('Gemini API returned structured response with empty reply'),
       );
 
