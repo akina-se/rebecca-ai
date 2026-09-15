@@ -12,18 +12,14 @@ import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEM
 import { StructuredNewsPostResponse } from '../features/news/types';
 
 /**
- * JSON schema for structured news post generation with explicit selection metadata.
+ * JSON schema for structured news post generation with explicit candidate index selection.
  */
 const STRUCTURED_NEWS_POST_SCHEMA = {
   type: 'object',
   properties: {
-    selectedTitle: {
-      type: 'string',
-      description: 'The exact title of the selected news item.',
-    },
-    category: {
-      type: 'string',
-      description: 'The category of the selected news item.',
+    selectedIndex: {
+      type: 'integer',
+      description: 'The 1-based index (e.g. 1, 2, 3...) of the chosen candidate news item.',
     },
     thought: {
       type: 'string',
@@ -34,7 +30,7 @@ const STRUCTURED_NEWS_POST_SCHEMA = {
       description: 'The public tweet text (within 100 characters).',
     },
   },
-  required: ['selectedTitle', 'category', 'thought', 'reply'],
+  required: ['selectedIndex', 'thought', 'reply'],
 };
 
 /**
@@ -204,11 +200,11 @@ const generateStructuredPostInternal = async (
 };
 
 /**
- * Generates a structured news post (inner thought, public tweet text, selected news title, and category)
+ * Generates a structured news post (inner thought, public tweet text, and selected candidate index)
  * based on news headlines and persona instructions.
  *
  * @param systemInstruction - System instruction defining character persona and behavior.
- * @param prompt - Contextual prompt containing headlines, timeline summary, and guidelines.
+ * @param prompt - Contextual prompt containing numbered headlines, timeline summary, and guidelines.
  * @param modelOverride - Optional model override.
  * @returns A promise resolving to the strongly-typed StructuredNewsPostResponse.
  */
@@ -226,7 +222,7 @@ const generateStructuredNewsPost = async (
 
     try {
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
-        const modelToUse = modelOverride || config.gemini.newsPostModel;
+        const modelToUse = modelOverride ?? config.gemini.newsPostModel;
         const response = await ai.models.generateContent({
             model: modelToUse,
             contents: contentStr,
@@ -250,8 +246,7 @@ const generateStructuredNewsPost = async (
         if (
             typeof parsed.thought !== 'string' ||
             typeof parsed.reply !== 'string' ||
-            typeof parsed.selectedTitle !== 'string' ||
-            typeof parsed.category !== 'string'
+            typeof parsed.selectedIndex !== 'number'
         ) {
             throw new Error('Gemini API returned malformed response schema for structured news post');
         }
@@ -262,10 +257,9 @@ const generateStructuredNewsPost = async (
         }
 
         return {
+            selectedIndex: Math.floor(parsed.selectedIndex),
             thought: parsed.thought.trim(),
             reply: trimmedReply,
-            selectedTitle: parsed.selectedTitle.trim(),
-            category: parsed.category.trim(),
         };
     } catch (e) {
         console.error('Error generating structured news post:', e);

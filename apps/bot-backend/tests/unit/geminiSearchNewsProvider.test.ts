@@ -35,12 +35,12 @@ describe('GeminiSearchNewsProvider', () => {
   {
     "title": "「アメ横AIコンシェルジュ」β版を公開",
     "summary": "4カ国語で加盟店を案内する新サービスが開始。",
-    "category": "トレンド"
+    "category": "新商品・トレンド"
   },
   {
     "title": "日本橋三越の洋菓子エリアがリニューアル",
     "summary": "新9ブランドの手土産スイーツが登場。",
-    "category": "グルメ"
+    "category": "グルメ・スイーツ"
   }
 ]
 \`\`\``,
@@ -69,12 +69,12 @@ describe('GeminiSearchNewsProvider', () => {
     expect(items[0]).toEqual({
       title: '「アメ横AIコンシェルジュ」β版を公開',
       summary: '4カ国語で加盟店を案内する新サービスが開始。',
-      category: 'トレンド',
+      category: '新商品・トレンド',
     });
     expect(items[1]).toEqual({
       title: '日本橋三越の洋菓子エリアがリニューアル',
       summary: '新9ブランドの手土産スイーツが登場。',
-      category: 'グルメ',
+      category: 'グルメ・スイーツ',
     });
   });
 

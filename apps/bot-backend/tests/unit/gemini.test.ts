@@ -71,14 +71,13 @@ describe('gemini.ts', () => {
         it('should generate structured news post successfully', async () => {
             const { gemini } = getGeminiModule();
             mockGenerateContent.mockResolvedValueOnce({
-                text: '{"thought":"News thought","reply":"News tweet","selectedTitle":"Headlines","category":"最新テクノロジー・IT"}'
+                text: '{"selectedIndex":1,"thought":"News thought","reply":"News tweet"}'
             });
             const result = await gemini.generateStructuredNewsPost('mock instruction', ['Headlines']);
             expect(result).toEqual({
+                selectedIndex: 1,
                 thought: 'News thought',
-                reply: 'News tweet',
-                selectedTitle: 'Headlines',
-                category: '最新テクノロジー・IT'
+                reply: 'News tweet'
             });
         });
 
@@ -273,15 +272,14 @@ describe('gemini.ts', () => {
         it('should handle array of headlines and string prompt', async () => {
             const { gemini } = getGeminiModule();
             mockGenerateContent.mockResolvedValueOnce({
-                text: '{"thought":"t1","reply":"News post content","selectedTitle":"headline 1","category":"エンタメ・カルチャー"}'
+                text: '{"selectedIndex":1,"thought":"t1","reply":"News post content"}'
             });
 
             const res1 = await gemini.generateStructuredNewsPost('sys', ['headline 1', 'headline 2']);
             expect(res1).toEqual({
+                selectedIndex: 1,
                 thought: 't1',
                 reply: 'News post content',
-                selectedTitle: 'headline 1',
-                category: 'エンタメ・カルチャー'
             });
 
             mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"t2","reply":"Soliloquy post content 2"}' });
@@ -298,7 +296,7 @@ describe('gemini.ts', () => {
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt')).rejects.toThrow('Gemini error');
 
             mockGenerateContent.mockResolvedValueOnce({
-                text: '{"thought":"only thought","reply":"","selectedTitle":"t","category":"c"}'
+                text: '{"selectedIndex":1,"thought":"only thought","reply":""}'
             });
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt')).rejects.toThrow('empty reply');
         });

@@ -43,7 +43,7 @@ jest.mock('../../src/services/gemini', () => ({
     generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
     detectLanguage: jest.fn().mockResolvedValue('ja'),
-    generateStructuredNewsPost: jest.fn().mockResolvedValue({ thought: 'ニュース思考', reply: 'Mock News Post' }),
+    generateStructuredNewsPost: jest.fn().mockResolvedValue({ selectedIndex: 1, thought: 'ニュース思考', reply: 'Mock News Post' }),
     generateStructuredSoliloquyPost: jest.fn().mockResolvedValue({ thought: '独り言思考', reply: 'Mock Soliloquy Post' }),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
     inferImageSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
@@ -70,7 +70,7 @@ jest.mock('../../src/services/tasks', () => ({
 }));
 
 const mockGetNews = jest.fn().mockResolvedValue([
-    { title: 'Test News Headline', summary: 'Test News Summary', category: 'General' },
+    { title: 'Test News Headline', summary: 'Test News Summary', category: '最新テクノロジー・IT' },
 ]);
 
 jest.mock('../../src/features/news/providers/geminiSearch', () => ({
@@ -302,6 +302,7 @@ describe('Integration Tests', () => {
         });
         it('should process news-post successfully', async () => {
             (gemini.generateStructuredNewsPost as jest.Mock).mockResolvedValueOnce({
+                selectedIndex: 1,
                 thought: 'ニュース思考',
                 reply: 'Mock News Post',
             });

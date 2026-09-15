@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import config from '../../../config';
-import { INewsProvider, NewsItem } from '../types';
+import { INewsProvider, NewsItem, NewsCategory, NEWS_CATEGORIES } from '../types';
 
 /**
  * Prompt instructing Gemini to search real-time news via Google Search Grounding and output structured JSON.
@@ -31,7 +31,7 @@ Google検索を利用して、日本の今日の最新ニュースを以下の�
 - Markdownコードブロックや余計な前置き・解説は一切含めず、純粋なJSON文字列のみを出力すること。`;
 
 /**
- * Validates whether an unknown value conforms to the NewsItem structure.
+ * Validates whether an unknown value conforms to the NewsItem structure with a valid NewsCategory.
  */
 const isValidNewsItem = (item: unknown): item is NewsItem => {
   if (typeof item !== 'object' || item === null) {
@@ -44,7 +44,7 @@ const isValidNewsItem = (item: unknown): item is NewsItem => {
     typeof candidate.summary === 'string' &&
     candidate.summary.trim().length > 0 &&
     typeof candidate.category === 'string' &&
-    candidate.category.trim().length > 0
+    NEWS_CATEGORIES.includes(candidate.category.trim() as NewsCategory)
   );
 };
 
@@ -56,7 +56,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
   private model: string;
 
   constructor(model?: string, client?: GoogleGenAI) {
-    this.model = model || config.gemini.newsSearchModel;
+    this.model = model ?? config.gemini.newsSearchModel;
     if (client) {
       this.ai = client;
     } else if (config.gemini.apiKey) {
@@ -66,6 +66,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
 
   /**
    * Fetches latest structured news items using Google Search Grounding.
+   * Ensures diverse coverage by selecting distinct items across validated categories.
    *
    * @returns Array of valid NewsItem objects (up to 5), or empty array upon failure.
    */
@@ -87,7 +88,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
         },
       });
 
-      const rawText = response.text?.trim() || '';
+      const rawText = response.text?.trim() ?? '';
       if (!rawText) {
         console.warn('[GeminiSearchNewsProvider] Empty response from search grounding.');
         return [];
@@ -106,16 +107,23 @@ export class GeminiSearchNewsProvider implements INewsProvider {
         return [];
       }
 
-      const items: NewsItem[] = parsed
-        .filter(isValidNewsItem)
-        .map((item) => ({
-          title: item.title.trim(),
-          summary: item.summary.trim(),
-          category: item.category.trim(),
-        }));
+      const validItems = parsed.filter(isValidNewsItem).map((item) => ({
+        title: item.title.trim(),
+        summary: item.summary.trim(),
+        category: item.category.trim() as NewsCategory,
+      }));
 
-      console.log(`[GeminiSearchNewsProvider] Successfully fetched ${items.length} structured news items.`);
-      return items.slice(0, 5);
+      // Ensure at most 1 item per category to prevent any single category from dominating
+      const categoryMap = new Map<NewsCategory, NewsItem>();
+      for (const item of validItems) {
+        if (!categoryMap.has(item.category)) {
+          categoryMap.set(item.category, item);
+        }
+      }
+
+      const diverseItems = Array.from(categoryMap.values());
+      console.log(`[GeminiSearchNewsProvider] Successfully fetched ${diverseItems.length} diverse news items.`);
+      return diverseItems;
     } catch (error) {
       console.error('[GeminiSearchNewsProvider] Error fetching structured news via search grounding:', error);
       throw error;
