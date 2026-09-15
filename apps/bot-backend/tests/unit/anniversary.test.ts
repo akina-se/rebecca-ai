@@ -171,7 +171,7 @@ describe('ProactiveAnniversaryUseCase Unit Tests', () => {
 
     expect(result.status).toBe('skipped');
     expect(result.reason).toBe('no_anniversaries');
-    expect(deps.gemini.generateStructuredSoliloquyPost).not.toHaveBeenCalled();
+    expect(deps.gemini.generateStructuredTimelinePost).not.toHaveBeenCalled();
   });
 
   it('should select anniversary, generate post, and publish to X', async () => {
@@ -183,7 +183,7 @@ describe('ProactiveAnniversaryUseCase Unit Tests', () => {
       getAnniversaries: jest.fn().mockResolvedValue(mockItems),
     };
 
-    deps.gemini.generateStructuredSoliloquyPost.mockResolvedValue({
+    deps.gemini.generateStructuredTimelinePost.mockResolvedValue({
       thought: 'クレバの日はビートに乗ってノリノリでいくわよ',
       reply: '今日はクレバの日ね！最高のリズムで心拍数あげてこ♡',
     });

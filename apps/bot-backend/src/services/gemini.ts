@@ -272,9 +272,9 @@ const generateStructuredNewsPost = async (
 };
 
 /**
- * Generates a structured soliloquy post (inner thought and public tweet text) based on situational context.
+ * Generates a structured timeline post (inner thought and public tweet text) based on situational context.
  */
-const generateStructuredSoliloquyPost = async (
+const generateStructuredTimelinePost = async (
     systemInstruction: string,
     prompt: string | string[]
 ): Promise<StructuredPersonaResponse> => {
@@ -644,7 +644,7 @@ export {
     auditEvolutionPrompt,
     analyzeUserProfile,
     generateStructuredNewsPost,
-    generateStructuredSoliloquyPost,
+    generateStructuredTimelinePost,
     generateTimelineSummary,
     detectLanguage,
     generateEmbedding,

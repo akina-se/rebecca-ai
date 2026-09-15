@@ -80,7 +80,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 - 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。
 ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステムが自動付与するため、本文中には絶対に含めないでください。` : ''}`;
 
-      const structuredPost = await this.deps.gemini.generateStructuredSoliloquyPost(systemInstruction, anniversaryPrompt);
+      const structuredPost = await this.deps.gemini.generateStructuredTimelinePost(systemInstruction, anniversaryPrompt);
       let postText = structuredPost.reply;
       const thought = structuredPost.thought;
 

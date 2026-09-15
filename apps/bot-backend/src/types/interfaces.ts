@@ -114,7 +114,7 @@ export interface IGeminiService {
   auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;
   analyzeUserProfile(prompt: string): Promise<UserCoreProfile>;
   generateStructuredNewsPost(systemInstruction: string, prompt: string, candidateHeadlines: string[]): Promise<StructuredNewsPostResponse>;
-  generateStructuredSoliloquyPost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
+  generateStructuredTimelinePost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
   generateTimelineSummary(prompt: string): Promise<string>;
   detectLanguage(prompt: string): Promise<'ja' | 'en'>;
   generateEmbedding(text: string): Promise<number[]>;

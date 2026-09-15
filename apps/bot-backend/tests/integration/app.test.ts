@@ -44,7 +44,7 @@ jest.mock('../../src/services/gemini', () => ({
     generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
     detectLanguage: jest.fn().mockResolvedValue('ja'),
     generateStructuredNewsPost: jest.fn().mockResolvedValue({ selectedTitle: 'Test News Headline', thought: 'ニュース思考', reply: 'Mock News Post' }),
-    generateStructuredSoliloquyPost: jest.fn().mockResolvedValue({ thought: '独り言思考', reply: 'Mock Soliloquy Post' }),
+    generateStructuredTimelinePost: jest.fn().mockResolvedValue({ thought: '独り言思考', reply: 'Mock Soliloquy Post' }),
     analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
     inferImageSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
     generateEvolutionPrompt: jest.fn().mockResolvedValue('Mock Prompt'),
@@ -317,7 +317,7 @@ describe('Integration Tests', () => {
 
         it('should execute alternate soliloquy post and return 200 when news is skipped (no headlines)', async () => {
             mockGetNews.mockResolvedValueOnce([]);
-            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValueOnce({
+            (gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValueOnce({
                 thought: 'ニュースないから独り言',
                 reply: 'Mock Soliloquy Alternate Post',
             });
@@ -326,7 +326,7 @@ describe('Integration Tests', () => {
             const response = await request(app).get('/batch/news-post').set('x-batch-secret', 'test_secret');
 
             expect(response.status).toBe(200);
-            expect(gemini.generateStructuredSoliloquyPost).toHaveBeenCalled();
+            expect(gemini.generateStructuredTimelinePost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Alternate Post'), expect.any(Object));
         }, 15000);
 
@@ -339,7 +339,7 @@ describe('Integration Tests', () => {
             expect(response.body).toEqual({
                 error: 'Internal Server Error',
             });
-            expect(gemini.generateStructuredSoliloquyPost).not.toHaveBeenCalled();
+            expect(gemini.generateStructuredTimelinePost).not.toHaveBeenCalled();
         }, 15000);
     });
 
@@ -348,7 +348,7 @@ describe('Integration Tests', () => {
             require('../../src/config').default.batchSecret = 'test_secret';
         });
         it('should process soliloquy-post successfully', async () => {
-            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockResolvedValueOnce({
+            (gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValueOnce({
                 thought: '独り言思考',
                 reply: 'Mock Soliloquy Post',
             });
@@ -357,12 +357,12 @@ describe('Integration Tests', () => {
             const response = await request(app).get('/batch/soliloquy-post').set('x-batch-secret', 'test_secret');
 
             expect(response.status).toBe(200);
-            expect(gemini.generateStructuredSoliloquyPost).toHaveBeenCalled();
+            expect(gemini.generateStructuredTimelinePost).toHaveBeenCalled();
             expect(xApi.tweet).toHaveBeenCalledWith(expect.stringContaining('Mock Soliloquy Post'), expect.any(Object));
         }, 15000);
 
         it('should return 500 Internal Server Error when soliloquy generation fails', async () => {
-            (gemini.generateStructuredSoliloquyPost as jest.Mock).mockRejectedValueOnce(
+            (gemini.generateStructuredTimelinePost as jest.Mock).mockRejectedValueOnce(
                 new Error('Gemini API returned empty structured response or content was filtered'),
             );
 

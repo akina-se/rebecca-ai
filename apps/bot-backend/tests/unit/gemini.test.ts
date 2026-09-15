@@ -269,7 +269,7 @@ describe('gemini.ts', () => {
         });
     });
 
-    describe('generateStructuredNewsPost and generateStructuredSoliloquyPost', () => {
+    describe('generateStructuredNewsPost and generateStructuredTimelinePost', () => {
         it('should handle array of headlines and string prompt', async () => {
             const { gemini } = getGeminiModule();
             mockGenerateContent.mockResolvedValueOnce({
@@ -284,14 +284,14 @@ describe('gemini.ts', () => {
             });
 
             mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"t2","reply":"Soliloquy post content 2"}' });
-            const res2 = await gemini.generateStructuredSoliloquyPost('sys', 'single prompt');
+            const res2 = await gemini.generateStructuredTimelinePost('sys', 'single prompt');
             expect(res2).toEqual({ thought: 't2', reply: 'Soliloquy post content 2' });
         });
 
         it('should throw error if prompt is empty or error occurs', async () => {
             const { gemini } = getGeminiModule();
             await expect(gemini.generateStructuredNewsPost('sys', '', ['h1'])).rejects.toThrow('Prompt cannot be empty');
-            await expect(gemini.generateStructuredSoliloquyPost('sys', '')).rejects.toThrow('Prompt cannot be empty');
+            await expect(gemini.generateStructuredTimelinePost('sys', '')).rejects.toThrow('Prompt cannot be empty');
 
             mockGenerateContent.mockRejectedValueOnce(new Error('Gemini error'));
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['h1'])).rejects.toThrow('Gemini error');
@@ -483,7 +483,7 @@ describe('gemini.ts', () => {
                 expect(await gemini.auditEvolutionPrompt('cand', 'audit')).toEqual({ pass: true });
                 expect(await gemini.analyzeUserProfile('desc')).toEqual({});
                 await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['news'])).rejects.toThrow('Gemini API client not initialized');
-                await expect(gemini.generateStructuredSoliloquyPost('sys', 'soliloquy')).rejects.toThrow('Gemini API client not initialized');
+                await expect(gemini.generateStructuredTimelinePost('sys', 'soliloquy')).rejects.toThrow('Gemini API client not initialized');
                 expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
                 expect(await gemini.detectLanguage('test')).toBe('ja');
                 expect(await gemini.generateEmbedding('test')).toEqual([]);

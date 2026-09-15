@@ -63,16 +63,15 @@ export interface NewsResult {
   attachedMedia?: boolean;
 }
 
+import type { StructuredPersonaResponse } from '@rebecca/persona';
+
 /**
  * Structured output representation produced by Gemini for news posts,
  * containing the exact headline title selected from candidates constrained by enum.
+ * Extends the canonical StructuredPersonaResponse (thought + reply).
  */
-export interface StructuredNewsPostResponse {
+export interface StructuredNewsPostResponse extends StructuredPersonaResponse {
   /** The exact headline title selected from candidates, constrained by enum. */
   readonly selectedTitle: string;
-  /** The persona's private internal thought process. */
-  readonly thought: string;
-  /** The public text response intended to be delivered. */
-  readonly reply: string;
 }
 
