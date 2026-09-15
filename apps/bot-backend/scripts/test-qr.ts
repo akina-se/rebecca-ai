@@ -1,5 +1,5 @@
-import * as xApi from '../src/services/xApi';
-import * as gemini from '../src/services/gemini';
+import { XApiService } from '../src/services/xApi';
+import { GeminiService } from '../src/services/gemini';
 import { getBasePrompt } from '../src/core/prompt';
 import { downloadImage } from '../src/utils/image';
 import * as xdk from '@xdevplatform/xdk';
@@ -9,6 +9,8 @@ dotenv.config();
 
 const run = async () => {
     console.log('Testing Quote Retweet on master (akina-se)...');
+    const xApi = new XApiService(config.xApi);
+    const gemini = new GeminiService(config.gemini);
     try {
         const oauth1Client = new xdk.OAuth1({
             apiKey: config.xApi.appKey || '',

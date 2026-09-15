@@ -1,5 +1,4 @@
 import { AnniversaryItem, IAnniversaryProvider } from '../types';
-import config from '../../../config';
 import { getZonedDateParts } from '../../../utils/time';
 
 /**
@@ -90,11 +89,11 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
    * Initializes the WikipediaAnniversaryProvider.
    *
    * @param userAgent - Valid User-Agent string identifying the client application.
-   * @param timezone - Target IANA time zone identifier (defaults to config.appTimezone).
+   * @param timezone - Target IANA time zone identifier (defaults to 'Asia/Tokyo').
    */
   constructor(
     private readonly userAgent: string,
-    private readonly timezone: string = config.appTimezone,
+    private readonly timezone: string = 'Asia/Tokyo',
   ) {
     if (!userAgent || !userAgent.trim()) {
       throw new Error('WikipediaAnniversaryProvider requires a non-empty User-Agent string.');

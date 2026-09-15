@@ -2,12 +2,14 @@ import 'dotenv/config';
 import readline from 'readline';
 import fs from 'fs';
 import path from 'path';
-import * as gemini from '../src/services/gemini';
+import { GeminiService } from '../src/services/gemini';
 import { getWorkingMemory } from '../src/core/memory';
 import { buildSystemPrompt } from '../src/core/contextInjector';
 import { getActivePersona } from '@rebecca/persona';
+import config from '../src/config';
 
 const persona = getActivePersona();
+const gemini = new GeminiService(config.gemini);
 
 const DB_FILE = path.join(__dirname, '../local_db.json');
 const RAW_LOG_FILE = path.join(__dirname, '../local_raw_logs.jsonl');

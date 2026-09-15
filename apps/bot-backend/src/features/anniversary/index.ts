@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import config from '../../config';
 import { ProactiveAnniversaryController } from './controller';
 import { ProactiveAnniversaryUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
@@ -24,9 +25,10 @@ export const createProactiveAnniversaryModule = (
   deps: AppDependencies,
   provider?: IAnniversaryProvider,
 ): Router => {
-  const anniversaryProvider = provider ?? new WikipediaAnniversaryProvider(deps.persona.metadata.userAgent);
+  const anniversaryProvider =
+    provider ?? new WikipediaAnniversaryProvider(deps.persona.metadata.userAgent, config.appTimezone);
   const useCase = new ProactiveAnniversaryUseCase(deps, anniversaryProvider);
-  const soliloquyUseCase = new SoliloquyUseCase(deps);
+  const soliloquyUseCase = new SoliloquyUseCase(deps, { timezone: config.appTimezone });
   const controller = new ProactiveAnniversaryController(useCase, soliloquyUseCase);
   return createProactiveAnniversaryRouter(controller);
 };

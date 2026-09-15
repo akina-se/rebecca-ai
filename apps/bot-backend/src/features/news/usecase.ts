@@ -1,8 +1,7 @@
 import { AppDependencies } from '../../types';
-import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
-import { INewsProvider, NewsResult } from './types';
+import { INewsProvider, NewsResult, NewsUseCaseConfig } from './types';
 import { filterFreshNews } from './deduplicator';
 
 export * from './types';
@@ -24,10 +23,12 @@ export class ProactiveNewsUseCase {
    *
    * @param deps Injected application dependencies.
    * @param newsProvider Injected news provider implementation.
+   * @param config Injected news usecase configuration.
    */
   constructor(
     private readonly deps: AppDependencies,
     private readonly newsProvider: INewsProvider,
+    private readonly config: NewsUseCaseConfig,
   ) {}
 
   /**
@@ -50,8 +51,8 @@ export class ProactiveNewsUseCase {
       const candidateNews = await filterFreshNews(
         this.deps,
         rawNewsItems,
-        config.news.dedupLookbackDays,
-        config.news.dedupSimilarityThreshold,
+        this.config.dedupLookbackDays,
+        this.config.dedupSimilarityThreshold,
       );
 
       if (candidateNews.length === 0) {

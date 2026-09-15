@@ -30,8 +30,12 @@ export const createProactiveNewsModule = (
     new GoogleGenAI({ apiKey: config.gemini.apiKey }),
     config.gemini.newsSearchModel,
   );
-  const useCase = new ProactiveNewsUseCase(deps, newsProvider);
-  const soliloquyUseCase = new SoliloquyUseCase(deps);
+  const useCase = new ProactiveNewsUseCase(deps, newsProvider, {
+    dedupLookbackDays: config.news.dedupLookbackDays,
+    dedupSimilarityThreshold: config.news.dedupSimilarityThreshold,
+    timezone: config.appTimezone,
+  });
+  const soliloquyUseCase = new SoliloquyUseCase(deps, { timezone: config.appTimezone });
   const controller = new ProactiveNewsController(useCase, soliloquyUseCase);
   return createProactiveNewsRouter(controller);
 };

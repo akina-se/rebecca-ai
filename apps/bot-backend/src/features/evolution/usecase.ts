@@ -1,5 +1,11 @@
 import { AppDependencies } from '../../types';
-import config from '../../config';
+
+/**
+ * Configuration required for global evolution batch execution.
+ */
+export interface EvolutionUseCaseConfig {
+    lookbackDays: number;
+}
 
 /**
  * Represents the result of a global evolution execution.
@@ -21,8 +27,12 @@ export class GlobalEvolutionUseCase {
      * Initializes a new instance of the GlobalEvolutionUseCase.
      * 
      * @param deps - The application dependencies required to execute the evolution process (e.g., Firestore, Gemini).
+     * @param config - Configuration options for evolution lookback window.
      */
-    constructor(private deps: AppDependencies) {}
+    constructor(
+        private readonly deps: AppDependencies,
+        private readonly config: EvolutionUseCaseConfig,
+    ) {}
 
     /**
      * Executes the global evolution batch process.
@@ -37,7 +47,7 @@ export class GlobalEvolutionUseCase {
     async execute(): Promise<EvolutionResult> {
     console.log("Starting Global Evolution Batch...");
     try {
-        const logs = await this.deps.firestore.getRecentConversationLogs(config.evolution.lookbackDays);
+        const logs = await this.deps.firestore.getRecentConversationLogs(this.config.lookbackDays);
         if (logs.length === 0) {
             console.log("No recent logs found. Skipping evolution.");
             return { status: 'skipped', reason: 'No logs found' };

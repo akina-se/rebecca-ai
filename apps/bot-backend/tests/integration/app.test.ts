@@ -1,8 +1,10 @@
 import request from 'supertest';
 import app from '../../src/index';
 import * as firestore from '../../src/services/firestore';
-import * as gemini from '../../src/services/gemini';
-import * as xApi from '../../src/services/xApi';
+import * as geminiModule from '../../src/services/gemini';
+import * as xApiModule from '../../src/services/xApi';
+const gemini = geminiModule as any;
+const xApi = xApiModule as any;
 import * as tasks from '../../src/services/tasks';
 
 // Mock dependencies
@@ -37,33 +39,47 @@ jest.mock('../../src/services/firestore', () => ({
     getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock('../../src/services/gemini', () => ({
-    generateStructuredReply: jest.fn().mockResolvedValue({ thought: '内省モック', reply: 'Mock AI Reply' }),
-    verifyImageRelevance: jest.fn().mockResolvedValue(true),
-    generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
-    generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-    detectLanguage: jest.fn().mockResolvedValue('ja'),
-    generateStructuredNewsPost: jest.fn().mockResolvedValue({ selectedTitle: 'Test News Headline', thought: 'ニュース思考', reply: 'Mock News Post' }),
-    generateStructuredTimelinePost: jest.fn().mockResolvedValue({ thought: '独り言思考', reply: 'Mock Soliloquy Post' }),
-    analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
-    inferImageSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
-    generateEvolutionPrompt: jest.fn().mockResolvedValue('Mock Prompt'),
-    auditEvolutionPrompt: jest.fn().mockResolvedValue({ isSafe: true }),
-    generateTimelineSummary: jest.fn().mockResolvedValue('Mock Summary'),
-    generateDreaming: jest.fn().mockResolvedValue({}),
-    analyzeImageCaption: jest.fn().mockResolvedValue('Mock image caption')
-}));
+jest.mock('../../src/services/gemini', () => {
+    const mock = {
+        generateStructuredReply: jest.fn().mockResolvedValue({ thought: '内省モック', reply: 'Mock AI Reply' }),
+        verifyImageRelevance: jest.fn().mockResolvedValue(true),
+        generateSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
+        generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+        detectLanguage: jest.fn().mockResolvedValue('ja'),
+        generateStructuredNewsPost: jest.fn().mockResolvedValue({ selectedTitle: 'Test News Headline', thought: 'ニュース思考', reply: 'Mock News Post' }),
+        generateStructuredTimelinePost: jest.fn().mockResolvedValue({ thought: '独り言思考', reply: 'Mock Soliloquy Post' }),
+        analyzeUserProfile: jest.fn().mockResolvedValue({ attributes: ['test'] }),
+        inferImageSearchQuery: jest.fn().mockResolvedValue('Mock Query'),
+        generateEvolutionPrompt: jest.fn().mockResolvedValue('Mock Prompt'),
+        auditEvolutionPrompt: jest.fn().mockResolvedValue({ isSafe: true }),
+        generateTimelineSummary: jest.fn().mockResolvedValue('Mock Summary'),
+        generateDreaming: jest.fn().mockResolvedValue({}),
+        analyzeImageCaption: jest.fn().mockResolvedValue('Mock image caption'),
+    };
+    return {
+        ...mock,
+        GeminiService: jest.fn().mockImplementation(() => mock),
+    };
+});
 
-jest.mock('../../src/services/xApi', () => ({
-    replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
-    getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
-    getFollowers: jest.fn().mockResolvedValue({ data: [] }),
-    addListMember: jest.fn().mockResolvedValue(true),
-    getTweetDetails: jest.fn().mockResolvedValue({ data: { text: '' }, includes: { media: [] } }),
-    tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
-    getUserProfile: jest.fn().mockResolvedValue({ data: { id: 'target_1', username: 'target_user', name: 'Target', description: 'bio' } }),
-    getUserTweets: jest.fn().mockResolvedValue({ data: [{ id: 'tweet_123', text: 'today was fun' }] }),
-}));
+jest.mock('../../src/services/xApi', () => {
+    const mock = {
+        replyToMention: jest.fn().mockResolvedValue({ data: { id: 'mock_reply_id' } }),
+        getMentions: jest.fn().mockResolvedValue({ data: [], meta: { resultCount: 0 } }),
+        getFollowers: jest.fn().mockResolvedValue({ data: [] }),
+        addListMember: jest.fn().mockResolvedValue(true),
+        getTweetDetails: jest.fn().mockResolvedValue({ data: { text: '' }, includes: { media: [] } }),
+        tweet: jest.fn().mockResolvedValue({ data: { id: 'mock_tweet_id' } }),
+        getUserProfile: jest.fn().mockResolvedValue({ data: { id: 'target_1', username: 'target_user', name: 'Target', description: 'bio' } }),
+        getUserTweets: jest.fn().mockResolvedValue({ data: [{ id: 'tweet_123', text: 'today was fun' }] }),
+        deleteTweet: jest.fn().mockResolvedValue(true),
+        cachedNumericMyUserId: null,
+    };
+    return {
+        ...mock,
+        XApiService: jest.fn().mockImplementation(() => mock),
+    };
+});
 
 jest.mock('../../src/services/tasks', () => ({
     enqueueReplyTask: jest.fn().mockResolvedValue({ name: 'mock_task' }),

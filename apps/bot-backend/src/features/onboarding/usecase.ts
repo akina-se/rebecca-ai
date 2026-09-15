@@ -1,5 +1,14 @@
 import { AppDependencies } from '../../types';
-import config from '../../config';
+
+/**
+ * Configuration required for stealth onboarding execution.
+ */
+export interface StealthOnboardingConfig {
+  myUserId?: string;
+  targetListId?: string;
+  followersPageSize?: number;
+  followersMaxResults?: number;
+}
 
 /**
  * Execution result for the stealth onboarding process.
@@ -15,7 +24,10 @@ export interface OnboardingResult {
  * Orchestrates self-healing retries for previously failed followers and paginated ingestion of new followers.
  */
 export class StealthOnboardingUseCase {
-  constructor(private deps: AppDependencies) {}
+  constructor(
+    private readonly deps: AppDependencies,
+    private readonly config: StealthOnboardingConfig,
+  ) {}
 
   /**
    * Executes the stealth onboarding background workflow.
@@ -23,13 +35,13 @@ export class StealthOnboardingUseCase {
   async execute(): Promise<OnboardingResult> {
     console.log('Starting Stealth Onboarding Batch...');
     try {
-      const myUserId = config.xApi.myUserId || this.deps.xApi.cachedNumericMyUserId;
+      const myUserId = this.config.myUserId || this.deps.xApi.cachedNumericMyUserId;
       if (!myUserId) {
         console.error('X_MY_USER_ID is not set and could not be resolved.');
         return { status: 'failed', processed: 0, reason: 'Missing X_MY_USER_ID' };
       }
 
-      const targetListId = config.xApi.targetListId;
+      const targetListId = this.config.targetListId;
       if (!targetListId) {
         console.error('X_TARGET_LIST_ID is not set in config.');
         return { status: 'failed', processed: 0, reason: 'Missing X_TARGET_LIST_ID' };
@@ -96,8 +108,8 @@ export class StealthOnboardingUseCase {
    * Fetches new followers paginated from X API and adds eligible followers to the curated list.
    */
   private async ingestNewFollowers(myUserId: string, targetListId: string): Promise<number> {
-    const pageSize = config.xApi.followersPageSize || 10;
-    const maxResults = config.xApi.followersMaxResults || 50;
+    const pageSize = this.config.followersPageSize ?? 10;
+    const maxResults = this.config.followersMaxResults ?? 30;
 
     let processedCount = 0;
     let fetchedCount = 0;

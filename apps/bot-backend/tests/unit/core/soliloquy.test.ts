@@ -10,7 +10,7 @@ describe('Soliloquy Unit Tests', () => {
 
   beforeEach(() => {
     deps = createMockDeps();
-    useCase = new SoliloquyUseCase(deps);
+    useCase = new SoliloquyUseCase(deps, { timezone: 'Asia/Tokyo' });
     (deps.firestore.getTimelineSummary as jest.Mock).mockResolvedValue('Recent timeline events');
     (deps.firestore.getExtendedPrompt as jest.Mock).mockResolvedValue('User loves coffee');
     (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({

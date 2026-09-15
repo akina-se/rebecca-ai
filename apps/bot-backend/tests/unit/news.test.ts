@@ -1,6 +1,12 @@
 import { ProactiveNewsUseCase } from '../../src/features/news/usecase';
-import { INewsProvider } from '../../src/features/news/types';
+import { INewsProvider, NewsUseCaseConfig } from '../../src/features/news/types';
 import { createMockDeps } from './core/testUtils';
+
+const testNewsConfig: NewsUseCaseConfig = {
+    dedupLookbackDays: 30,
+    dedupSimilarityThreshold: 0.82,
+    timezone: 'Asia/Tokyo',
+};
 
 describe('ProactiveNewsUseCase Unit Tests', () => {
     let deps: any;
@@ -22,7 +28,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
     it('should return skipped status if no headlines are fetched', async () => {
         mockNewsProvider.getNews.mockResolvedValue([]);
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
         expect(result.status).toBe('skipped');
         expect(result.reason).toBe('no_headlines');
         expect(deps.gemini.generateStructuredNewsPost).not.toHaveBeenCalled();
@@ -38,7 +44,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         ]);
         deps.gemini.generateEmbedding.mockResolvedValue([1, 0]);
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
 
         expect(result.status).toBe('skipped');
         expect(result.reason).toBe('all_duplicates');
@@ -64,7 +70,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             reply: '完全新作ゲーム発表！楽しみね！',
         });
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
 
         expect(deps.firestore.getRecentNewsEmbeddings).toHaveBeenCalledWith(30);
         expect(result.status).toBe('success');
@@ -109,7 +115,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             reply: 'ブルボン新商品楽しみね！',
         });
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
 
         expect(result.status).toBe('success');
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
@@ -129,7 +135,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             reply: 'reply',
         });
 
-        await expect(new ProactiveNewsUseCase(deps, mockNewsProvider).execute()).rejects.toThrow(
+        await expect(new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute()).rejects.toThrow(
             '[ProactiveNewsUseCase] Selected headline "Unknown Title" not found in candidate list.',
         );
     });
@@ -140,7 +146,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         ]);
         deps.gemini.generateStructuredNewsPost.mockRejectedValue(new Error('Gemini API error'));
 
-        await expect(new ProactiveNewsUseCase(deps, mockNewsProvider).execute()).rejects.toThrow('Gemini API error');
+        await expect(new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute()).rejects.toThrow('Gemini API error');
     });
 
     it('should append hashtag if total length <= 140', async () => {
@@ -154,7 +160,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             reply: shortPost,
         });
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.post).toBe(shortPost + '\n#全肯定AIレベッカ');
@@ -172,7 +178,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             reply: longPost,
         });
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.post).toBe(longPost);
@@ -202,7 +208,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         deps.storage.downloadImage.mockResolvedValue(Buffer.from('image'));
         deps.xApi.uploadMedia.mockResolvedValue('media_123');
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider).execute();
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.attachedMedia).toBe(true);

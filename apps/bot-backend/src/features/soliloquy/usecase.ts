@@ -1,8 +1,14 @@
 import { AppDependencies, ProactiveBatchResult } from '../../types';
-import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { formatZonedDateTime } from '../../utils/time';
+
+/**
+ * Configuration required for autonomous soliloquy execution.
+ */
+export interface SoliloquyUseCaseConfig {
+  timezone: string;
+}
 
 /**
  * Result of a soliloquy post execution.
@@ -14,12 +20,12 @@ export interface SoliloquyResult extends ProactiveBatchResult {}
  * Returns contextual description based on the application time zone hour.
  *
  * @param date - The date to evaluate.
- * @param timezone - IANA time zone identifier (e.g. 'Asia/Tokyo'). Defaults to config.appTimezone.
+ * @param timezone - IANA time zone identifier (e.g. 'Asia/Tokyo'). Defaults to 'Asia/Tokyo'.
  * @returns Period label and situational context.
  */
 export const getTimeOfDayGreetingContext = (
   date: Date,
-  timezone: string = config.appTimezone,
+  timezone: string = 'Asia/Tokyo',
 ): { period: string } => {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
@@ -47,13 +53,16 @@ export const getTimeOfDayGreetingContext = (
  * then publishes the post via the unified post pipeline.
  */
 export class SoliloquyUseCase {
-  constructor(private deps: AppDependencies) {}
+  constructor(
+    private readonly deps: AppDependencies,
+    private readonly config: SoliloquyUseCaseConfig,
+  ) {}
 
   async execute(): Promise<SoliloquyResult> {
     console.log('Starting Autonomous Soliloquy Post...');
     try {
       const now = new Date();
-      const timeContext = getTimeOfDayGreetingContext(now, config.appTimezone);
+      const timeContext = getTimeOfDayGreetingContext(now, this.config.timezone);
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
       const recentSoliloquies = (await this.deps.firestore.getRecentTimelinePosts({
