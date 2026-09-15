@@ -12,14 +12,15 @@ import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEM
 import { StructuredNewsPostResponse } from '../features/news/types';
 
 /**
- * JSON schema for structured news post generation with explicit candidate index selection.
+ * Creates the JSON schema for structured news post generation with enum-constrained candidate title selection.
  */
-const STRUCTURED_NEWS_POST_SCHEMA = {
+const createStructuredNewsPostSchema = (candidateHeadlines: string[]) => ({
   type: 'object',
   properties: {
-    selectedIndex: {
-      type: 'integer',
-      description: 'The 1-based index (e.g. 1, 2, 3...) of the chosen candidate news item.',
+    selectedTitle: {
+      type: 'string',
+      enum: candidateHeadlines,
+      description: 'The exact headline title chosen from the candidate list.',
     },
     thought: {
       type: 'string',
@@ -30,8 +31,8 @@ const STRUCTURED_NEWS_POST_SCHEMA = {
       description: 'The public tweet text (within 100 characters).',
     },
   },
-  required: ['selectedIndex', 'thought', 'reply'],
-};
+  required: ['selectedTitle', 'thought', 'reply'],
+});
 
 /**
  * Global Gemini API client instance.
@@ -161,8 +162,7 @@ const analyzeUserProfile = async (prompt: string): Promise<Record<string, unknow
 const generateStructuredPostInternal = async (
     systemInstruction: string,
     prompt: string | string[],
-    maxOutputTokens = 500,
-    modelOverride?: string,
+    maxOutputTokens: number = 300,
 ): Promise<StructuredPersonaResponse> => {
     if (!ai) {
         throw new Error('Gemini API client not initialized');
@@ -172,7 +172,7 @@ const generateStructuredPostInternal = async (
     }
     try {
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
-        const modelToUse = modelOverride || config.gemini.model;
+        const modelToUse = config.gemini.model;
         const response = await ai.models.generateContent({
             model: modelToUse,
             contents: contentStr,
@@ -200,18 +200,18 @@ const generateStructuredPostInternal = async (
 };
 
 /**
- * Generates a structured news post (inner thought, public tweet text, and selected candidate index)
- * based on news headlines and persona instructions.
+ * Generates a structured news post (inner thought, public tweet text, and selected headline)
+ * based on news headlines and persona instructions, constrained to candidate headlines via enum.
  *
  * @param systemInstruction - System instruction defining character persona and behavior.
- * @param prompt - Contextual prompt containing numbered headlines, timeline summary, and guidelines.
- * @param modelOverride - Optional model override.
+ * @param prompt - Contextual prompt containing headlines, timeline summary, and guidelines.
+ * @param candidateHeadlines - Array of candidate headline titles to constrain selectedTitle.
  * @returns A promise resolving to the strongly-typed StructuredNewsPostResponse.
  */
 const generateStructuredNewsPost = async (
     systemInstruction: string,
     prompt: string | string[],
-    modelOverride?: string,
+    candidateHeadlines: string[],
 ): Promise<StructuredNewsPostResponse> => {
     if (!ai) {
         throw new Error('Gemini API client not initialized');
@@ -219,10 +219,14 @@ const generateStructuredNewsPost = async (
     if (!prompt || (Array.isArray(prompt) && prompt.length === 0)) {
         throw new Error('Prompt cannot be empty for structured news post generation');
     }
+    if (!candidateHeadlines || candidateHeadlines.length === 0) {
+        throw new Error('Candidate headlines cannot be empty for structured news post generation');
+    }
 
     try {
         const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
-        const modelToUse = modelOverride ?? config.gemini.newsPostModel;
+        const modelToUse = config.gemini.newsPostModel;
+        const responseSchema = createStructuredNewsPostSchema(candidateHeadlines);
         const response = await ai.models.generateContent({
             model: modelToUse,
             contents: contentStr,
@@ -230,7 +234,7 @@ const generateStructuredNewsPost = async (
                 systemInstruction,
                 maxOutputTokens: 500,
                 responseMimeType: 'application/json',
-                responseSchema: STRUCTURED_NEWS_POST_SCHEMA,
+                responseSchema,
                 safetySettings: [] as never[],
             },
         });
@@ -246,7 +250,7 @@ const generateStructuredNewsPost = async (
         if (
             typeof parsed.thought !== 'string' ||
             typeof parsed.reply !== 'string' ||
-            typeof parsed.selectedIndex !== 'number'
+            typeof parsed.selectedTitle !== 'string'
         ) {
             throw new Error('Gemini API returned malformed response schema for structured news post');
         }
@@ -257,7 +261,7 @@ const generateStructuredNewsPost = async (
         }
 
         return {
-            selectedIndex: Math.floor(parsed.selectedIndex),
+            selectedTitle: parsed.selectedTitle.trim(),
             thought: parsed.thought.trim(),
             reply: trimmedReply,
         };

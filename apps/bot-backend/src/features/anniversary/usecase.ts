@@ -61,7 +61,9 @@ export class ProactiveAnniversaryUseCase {
 
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
       const personaName = this.deps.persona.metadata.displayName;
-      const anniversaryPrompt = `以下の【今日の記念日・年中行事】の一覧から、AIキャラクター「${personaName}」として共感・盛り上がりそうな話題（カルチャー、食、日常、音楽、記念日など）を【1つだけ】選び、それに言及しながらタイムライン向けの自発的ツイートを生成してください。
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
+      const userCallsign = this.deps.persona.metadata.userCallsign.ja;
+      const anniversaryPrompt = `あなたはAIキャラクター「${personaName}」として、今日の記念日や年中行事の中から最も親しみやすく、${userCallsign}やフォロワーと会話が弾みそうな話題を【1つだけ】選び、ツイートを生成してください。
 
 【今日の記念日・年中行事】
 ${candidateListText}
@@ -76,13 +78,13 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 - 「今日は◯◯の日なんだって！」「◯◯の日だし〜」のように、選んだ記念日名を自然に会話に盛り込んでください。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
-- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
+- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。
+${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステムが自動付与するため、本文中には絶対に含めないでください。` : ''}`;
 
-      const structuredPost = await this.deps.gemini.generateStructuredNewsPost(systemInstruction, anniversaryPrompt);
+      const structuredPost = await this.deps.gemini.generateStructuredSoliloquyPost(systemInstruction, anniversaryPrompt);
       let postText = structuredPost.reply;
       const thought = structuredPost.thought;
 
-      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
       if (defaultHashtag) {
         const hashtag = `\n${defaultHashtag}`;
         if (postText.length + hashtag.length <= 140) {

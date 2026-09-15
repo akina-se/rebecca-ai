@@ -41,10 +41,9 @@ export interface INewsProvider {
 }
 
 /**
- * Enriched candidate news item with 1-based index and semantic embedding vector.
+ * Enriched candidate news item with semantic embedding vector and original NewsItem metadata.
  */
 export interface CandidateNewsItem {
-  id: number;
   headline: string;
   embedding: number[];
   item: NewsItem;
@@ -66,11 +65,11 @@ export interface NewsResult {
 
 /**
  * Structured output representation produced by Gemini for news posts,
- * containing explicit candidate index selection alongside the persona response.
+ * containing the exact headline title selected from candidates constrained by enum.
  */
 export interface StructuredNewsPostResponse {
-  /** 1-based index of the candidate news item selected by the model. */
-  readonly selectedIndex: number;
+  /** The exact headline title selected from candidates, constrained by enum. */
+  readonly selectedTitle: string;
   /** The persona's private internal thought process. */
   readonly thought: string;
   /** The public text response intended to be delivered. */

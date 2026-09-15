@@ -59,7 +59,6 @@ export const filterFreshNews = async (
 
     if (!isDuplicate) {
       freshCandidates.push({
-        id: freshCandidates.length + 1,
         headline: item.title,
         embedding,
         item,

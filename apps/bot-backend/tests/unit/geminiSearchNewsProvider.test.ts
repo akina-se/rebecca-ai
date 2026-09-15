@@ -19,11 +19,8 @@ describe('GeminiSearchNewsProvider', () => {
     } as unknown as GoogleGenAI;
   });
 
-  it('should return empty array if client is not initialized', async () => {
-    const provider = new GeminiSearchNewsProvider('test-model', undefined);
-    // Force ai client to null
-    (provider as any).ai = null;
-
+  it('should return empty array if client is not provided or null', async () => {
+    const provider = new GeminiSearchNewsProvider(null as any, 'test-model');
     const news = await provider.getNews();
     expect(news).toEqual([]);
   });
@@ -53,7 +50,7 @@ describe('GeminiSearchNewsProvider', () => {
       ],
     });
 
-    const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
+    const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
     const items = await provider.getNews();
 
     expect(mockGenerateContent).toHaveBeenCalledWith({
@@ -81,7 +78,7 @@ describe('GeminiSearchNewsProvider', () => {
   it('should rethrow API errors so transient errors can propagate to controller', async () => {
     mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
 
-    const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
+    const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
     await expect(provider.getNews()).rejects.toThrow('API quota exceeded');
   });
 
@@ -90,7 +87,7 @@ describe('GeminiSearchNewsProvider', () => {
       text: '   ',
     });
 
-    const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
+    const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
     const news = await provider.getNews();
 
     expect(news).toEqual([]);

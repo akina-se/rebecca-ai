@@ -1,5 +1,4 @@
 import { GoogleGenAI } from '@google/genai';
-import config from '../../../config';
 import { INewsProvider, NewsItem, NewsCategory, NEWS_CATEGORIES } from '../types';
 
 /**
@@ -52,16 +51,12 @@ const isValidNewsItem = (item: unknown): item is NewsItem => {
  * News provider that fetches real-time news using Google Search Grounding via Gemini API.
  */
 export class GeminiSearchNewsProvider implements INewsProvider {
-  private ai: GoogleGenAI | null = null;
-  private model: string;
+  private readonly ai: GoogleGenAI;
+  private readonly model: string;
 
-  constructor(model?: string, client?: GoogleGenAI) {
-    this.model = model ?? config.gemini.newsSearchModel;
-    if (client) {
-      this.ai = client;
-    } else if (config.gemini.apiKey) {
-      this.ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
-    }
+  constructor(ai: GoogleGenAI, model: string) {
+    this.ai = ai;
+    this.model = model;
   }
 
   /**

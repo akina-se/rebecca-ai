@@ -59,7 +59,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             .mockResolvedValueOnce([0, 1]);
 
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
-            selectedIndex: 1,
+            selectedTitle: '完全新作ゲーム発表！',
             thought: '新作ゲーム、マスターが好きそうだから教えてあげたい',
             reply: '完全新作ゲーム発表！楽しみね！',
         });
@@ -72,14 +72,17 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('完全新作ゲーム発表！'),
+            expect.arrayContaining(['完全新作ゲーム発表！']),
         );
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('【直近のタイムライン要約】'),
+            expect.any(Array),
         );
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('【拡張ペルソナ・近況】'),
+            expect.any(Array),
         );
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -101,7 +104,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         ]);
 
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
-            selectedIndex: 1,
+            selectedTitle: 'ブルボン新商品',
             thought: '秋スイーツ美味しそう！',
             reply: 'ブルボン新商品楽しみね！',
         });
@@ -112,6 +115,22 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('【新商品・トレンド】ブルボン新商品\n  概要: 秋の味覚を楽しめる新商品4品が登場。'),
+            expect.arrayContaining(['ブルボン新商品']),
+        );
+    });
+
+    it('should throw an error if selectedTitle does not match any candidate news item', async () => {
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'News 1', summary: 'Summary 1', category: '最新テクノロジー・IT' },
+        ]);
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            selectedTitle: 'Unknown Title',
+            thought: 'thought',
+            reply: 'reply',
+        });
+
+        await expect(new ProactiveNewsUseCase(deps, mockNewsProvider).execute()).rejects.toThrow(
+            '[ProactiveNewsUseCase] Selected headline "Unknown Title" not found in candidate list.',
         );
     });
 
@@ -130,7 +149,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         ]);
         const shortPost = 'A short news post.';
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
-            selectedIndex: 1,
+            selectedTitle: 'News 1',
             thought: 'short thought',
             reply: shortPost,
         });
@@ -148,7 +167,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         ]);
         const longPost = 'A'.repeat(135);
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
-            selectedIndex: 1,
+            selectedTitle: 'News 1',
             thought: 'long thought',
             reply: longPost,
         });
@@ -166,7 +185,7 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
         ]);
         const text = 'A post about coffee';
         deps.gemini.generateStructuredNewsPost.mockResolvedValue({
-            selectedIndex: 1,
+            selectedTitle: 'News 1',
             thought: 'coffee thought',
             reply: text,
         });
