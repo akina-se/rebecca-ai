@@ -162,7 +162,7 @@ const analyzeUserProfile = async (prompt: string): Promise<Record<string, unknow
 const generateStructuredPostInternal = async (
     systemInstruction: string,
     prompt: string | string[],
-    maxOutputTokens: number = 300,
+    maxOutputTokens: number = 500,
 ): Promise<StructuredPersonaResponse> => {
     if (!ai) {
         throw new Error('Gemini API client not initialized');

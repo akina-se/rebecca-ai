@@ -62,8 +62,7 @@ export class ProactiveAnniversaryUseCase {
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
       const personaName = this.deps.persona.metadata.displayName;
       const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
-      const userCallsign = this.deps.persona.metadata.userCallsign.ja;
-      const anniversaryPrompt = `あなたはAIキャラクター「${personaName}」として、今日の記念日や年中行事の中から最も親しみやすく、${userCallsign}やフォロワーと会話が弾みそうな話題を【1つだけ】選び、ツイートを生成してください。
+      const anniversaryPrompt = `以下の【今日の記念日・年中行事】の一覧から、AIキャラクター「${personaName}」として共感・盛り上がりそうな話題（カルチャー、食、日常、音楽、記念日など）を【1つだけ】選び、それに言及しながらタイムライン向けの自発的ツイートを生成してください。
 
 【今日の記念日・年中行事】
 ${candidateListText}
