@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/akina-se/rebecca-ai/compare/v1.19.1...v1.20.0) (2026-09-15)
+
+
+### Features
+
+* **news:** balance search categories, enforce enum-constrained selection, and unify proactive batch types ([#232](https://github.com/akina-se/rebecca-ai/issues/232)) ([7698f7d](https://github.com/akina-se/rebecca-ai/commit/7698f7d5aca4742a6aec05d41786d6b8c5dee1c2))
+
 ## [1.19.1](https://github.com/akina-se/rebecca-ai/compare/v1.19.0...v1.19.1) (2026-09-14)
 
 
