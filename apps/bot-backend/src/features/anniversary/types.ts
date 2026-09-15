@@ -7,10 +7,8 @@ export interface IAnniversaryProvider {
   getAnniversaries(date: Date, timezone?: string): Promise<AnniversaryItem[]>;
 }
 
-export interface AnniversaryResult {
-  status: 'success' | 'skipped' | 'failed';
-  reason?: string;
-  post?: string;
-  attachedMedia?: boolean;
+import { ProactiveBatchResult } from '../../types';
+
+export interface AnniversaryResult extends ProactiveBatchResult {
   anniversaryTitle?: string;
 }

@@ -19,11 +19,8 @@ describe('GeminiSearchNewsProvider', () => {
     } as unknown as GoogleGenAI;
   });
 
-  it('should return empty array if client is not initialized', async () => {
-    const provider = new GeminiSearchNewsProvider('test-model', undefined);
-    // Force ai client to null
-    (provider as any).ai = null;
-
+  it('should return empty array if client is not provided or null', async () => {
+    const provider = new GeminiSearchNewsProvider(null as any, 'test-model');
     const news = await provider.getNews();
     expect(news).toEqual([]);
   });
@@ -35,12 +32,12 @@ describe('GeminiSearchNewsProvider', () => {
   {
     "title": "「アメ横AIコンシェルジュ」β版を公開",
     "summary": "4カ国語で加盟店を案内する新サービスが開始。",
-    "category": "トレンド"
+    "category": "新商品・トレンド"
   },
   {
     "title": "日本橋三越の洋菓子エリアがリニューアル",
     "summary": "新9ブランドの手土産スイーツが登場。",
-    "category": "グルメ"
+    "category": "グルメ・スイーツ"
   }
 ]
 \`\`\``,
@@ -53,7 +50,7 @@ describe('GeminiSearchNewsProvider', () => {
       ],
     });
 
-    const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
+    const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
     const items = await provider.getNews();
 
     expect(mockGenerateContent).toHaveBeenCalledWith({
@@ -69,19 +66,19 @@ describe('GeminiSearchNewsProvider', () => {
     expect(items[0]).toEqual({
       title: '「アメ横AIコンシェルジュ」β版を公開',
       summary: '4カ国語で加盟店を案内する新サービスが開始。',
-      category: 'トレンド',
+      category: '新商品・トレンド',
     });
     expect(items[1]).toEqual({
       title: '日本橋三越の洋菓子エリアがリニューアル',
       summary: '新9ブランドの手土産スイーツが登場。',
-      category: 'グルメ',
+      category: 'グルメ・スイーツ',
     });
   });
 
   it('should rethrow API errors so transient errors can propagate to controller', async () => {
     mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
 
-    const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
+    const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
     await expect(provider.getNews()).rejects.toThrow('API quota exceeded');
   });
 
@@ -90,7 +87,7 @@ describe('GeminiSearchNewsProvider', () => {
       text: '   ',
     });
 
-    const provider = new GeminiSearchNewsProvider('gemini-2.5-flash', mockClient);
+    const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
     const news = await provider.getNews();
 
     expect(news).toEqual([]);

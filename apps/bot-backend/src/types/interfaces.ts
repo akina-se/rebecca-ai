@@ -23,6 +23,7 @@ import type {
   TimelinePost,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
+import type { StructuredNewsPostResponse } from '../features/news/types';
 
 export interface GetRecentTimelinePostsOptions {
   limit?: number;
@@ -112,8 +113,8 @@ export interface IGeminiService {
   generateEvolutionPrompt(prompt: string): Promise<string>;
   auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;
   analyzeUserProfile(prompt: string): Promise<UserCoreProfile>;
-  generateStructuredNewsPost(systemInstruction: string, prompt: string, modelOverride?: string): Promise<StructuredPersonaResponse>;
-  generateStructuredSoliloquyPost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
+  generateStructuredNewsPost(systemInstruction: string, prompt: string, candidateHeadlines: string[]): Promise<StructuredNewsPostResponse>;
+  generateStructuredTimelinePost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
   generateTimelineSummary(prompt: string): Promise<string>;
   detectLanguage(prompt: string): Promise<'ja' | 'en'>;
   generateEmbedding(text: string): Promise<number[]>;

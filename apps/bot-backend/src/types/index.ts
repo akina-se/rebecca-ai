@@ -33,3 +33,17 @@ export interface AppDependencies {
   storage: IStorageService;
   persona: IPersonaDefinition;
 }
+
+/**
+ * Canonical base result contract for proactive timeline batch use cases (News, Soliloquy, Anniversary).
+ */
+export interface ProactiveBatchResult {
+  /** The execution status of the batch job. */
+  status: 'success' | 'skipped' | 'failed';
+  /** A descriptive reason if the status is skipped or failed. */
+  reason?: string;
+  /** The content of the tweet that was posted, if successful. */
+  post?: string;
+  /** Indicates whether media (e.g., an image) was attached to the post. */
+  attachedMedia?: boolean;
+}

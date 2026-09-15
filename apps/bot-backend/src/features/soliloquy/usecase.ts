@@ -1,4 +1,4 @@
-import { AppDependencies } from '../../types';
+import { AppDependencies, ProactiveBatchResult } from '../../types';
 import config from '../../config';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
@@ -6,13 +6,9 @@ import { formatZonedDateTime } from '../../utils/time';
 
 /**
  * Result of a soliloquy post execution.
+ * Extends the canonical ProactiveBatchResult.
  */
-export interface SoliloquyResult {
-  status: 'success' | 'failed';
-  reason?: string;
-  post?: string;
-  attachedMedia?: boolean;
-}
+export interface SoliloquyResult extends ProactiveBatchResult {}
 
 /**
  * Returns contextual description based on the application time zone hour.
@@ -81,6 +77,7 @@ export class SoliloquyUseCase {
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
       const personaName = this.deps.persona.metadata.displayName;
       const userCallsign = this.deps.persona.metadata.userCallsign.ja;
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
       const soliloquyPrompt = `あなたはAIキャラクター「${personaName}」として、X（Twitter）のタイムラインに向けた自発的な「独り言・思考つぶやき」を1つ生成してください。
 
 【現在の時間帯】
@@ -106,13 +103,12 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 - 直近のタイムライン要約や拡張ペルソナの雰囲気を自然に反映させること。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に100文字以内の短文】にすること。
-- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。`;
+- 出力に「(90文字)」などの文字数カウント表記や解説、引用符は絶対に含めないでください。
+${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステムが自動付与するため、本文中には絶対に含めないでください。` : ''}`;
 
-      const structuredPost = await this.deps.gemini.generateStructuredSoliloquyPost(systemInstruction, soliloquyPrompt);
+      const structuredPost = await this.deps.gemini.generateStructuredTimelinePost(systemInstruction, soliloquyPrompt);
       let postText = structuredPost.reply;
       const thought = structuredPost.thought;
-
-      const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
       if (defaultHashtag) {
         const hashtag = `\n${defaultHashtag}`;
         if (postText.length + hashtag.length <= 140) {
