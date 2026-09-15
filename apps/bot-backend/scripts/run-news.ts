@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { GoogleGenAI } from '@google/genai';
 import { ProactiveNewsUseCase } from '../src/features/news/usecase';
 import { GeminiSearchNewsProvider } from '../src/features/news/providers/geminiSearch';
 import * as firestore from '../src/services/firestore';
@@ -48,7 +49,10 @@ const run = async () => {
   };
 
   try {
-    const provider = new GeminiSearchNewsProvider();
+    const provider = new GeminiSearchNewsProvider(
+      new GoogleGenAI({ apiKey: config.gemini.apiKey }),
+      config.gemini.newsSearchModel,
+    );
     const useCase = new ProactiveNewsUseCase(deps, provider);
     const result = await useCase.execute();
     console.log('\n[結果]:', result);

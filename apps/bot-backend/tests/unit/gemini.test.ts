@@ -70,20 +70,27 @@ describe('gemini.ts', () => {
     describe('generateStructuredNewsPost', () => {
         it('should generate structured news post successfully', async () => {
             const { gemini } = getGeminiModule();
-            mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"News thought","reply":"News tweet"}' });
-            const result = await gemini.generateStructuredNewsPost('mock instruction', ['Headlines']);
-            expect(result).toEqual({ thought: 'News thought', reply: 'News tweet' });
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"selectedTitle":"Headlines","thought":"News thought","reply":"News tweet"}'
+            });
+            const result = await gemini.generateStructuredNewsPost('mock instruction', 'prompt with headlines', ['Headlines']);
+            expect(result).toEqual({
+                selectedTitle: 'Headlines',
+                thought: 'News thought',
+                reply: 'News tweet'
+            });
         });
 
         it('should throw error on API error', async () => {
             const { gemini } = getGeminiModule();
             mockGenerateContent.mockRejectedValueOnce(new Error('Network error'));
-            await expect(gemini.generateStructuredNewsPost('mock instruction', ['Headlines'])).rejects.toThrow('Network error');
+            await expect(gemini.generateStructuredNewsPost('mock instruction', 'prompt with headlines', ['Headlines'])).rejects.toThrow('Network error');
         });
 
-        it('should throw error if headlines are empty (boundary case)', async () => {
+        it('should throw error if prompt or headlines are empty (boundary case)', async () => {
             const { gemini } = getGeminiModule();
-            await expect(gemini.generateStructuredNewsPost('mock instruction', [])).rejects.toThrow('Prompt cannot be empty');
+            await expect(gemini.generateStructuredNewsPost('mock instruction', '', ['Headlines'])).rejects.toThrow('Prompt cannot be empty');
+            await expect(gemini.generateStructuredNewsPost('mock instruction', 'prompt', [])).rejects.toThrow('Candidate headlines cannot be empty');
             expect(mockGenerateContent).not.toHaveBeenCalled();
         });
     });
@@ -262,29 +269,37 @@ describe('gemini.ts', () => {
         });
     });
 
-    describe('generateStructuredNewsPost and generateStructuredSoliloquyPost', () => {
+    describe('generateStructuredNewsPost and generateStructuredTimelinePost', () => {
         it('should handle array of headlines and string prompt', async () => {
             const { gemini } = getGeminiModule();
-            mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"t1","reply":"News post content"}' });
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"selectedTitle":"headline 1","thought":"t1","reply":"News post content"}'
+            });
 
-            const res1 = await gemini.generateStructuredNewsPost('sys', ['headline 1', 'headline 2']);
-            expect(res1).toEqual({ thought: 't1', reply: 'News post content' });
+            const res1 = await gemini.generateStructuredNewsPost('sys', 'prompt', ['headline 1', 'headline 2']);
+            expect(res1).toEqual({
+                selectedTitle: 'headline 1',
+                thought: 't1',
+                reply: 'News post content',
+            });
 
             mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"t2","reply":"Soliloquy post content 2"}' });
-            const res2 = await gemini.generateStructuredSoliloquyPost('sys', 'single prompt');
+            const res2 = await gemini.generateStructuredTimelinePost('sys', 'single prompt');
             expect(res2).toEqual({ thought: 't2', reply: 'Soliloquy post content 2' });
         });
 
         it('should throw error if prompt is empty or error occurs', async () => {
             const { gemini } = getGeminiModule();
-            await expect(gemini.generateStructuredNewsPost('sys', [])).rejects.toThrow('Prompt cannot be empty');
-            await expect(gemini.generateStructuredSoliloquyPost('sys', '')).rejects.toThrow('Prompt cannot be empty');
+            await expect(gemini.generateStructuredNewsPost('sys', '', ['h1'])).rejects.toThrow('Prompt cannot be empty');
+            await expect(gemini.generateStructuredTimelinePost('sys', '')).rejects.toThrow('Prompt cannot be empty');
 
             mockGenerateContent.mockRejectedValueOnce(new Error('Gemini error'));
-            await expect(gemini.generateStructuredNewsPost('sys', 'prompt')).rejects.toThrow('Gemini error');
+            await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['h1'])).rejects.toThrow('Gemini error');
 
-            mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":"only thought","reply":""}' });
-            await expect(gemini.generateStructuredNewsPost('sys', 'prompt')).rejects.toThrow('empty reply');
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"selectedTitle":"h1","thought":"only thought","reply":""}'
+            });
+            await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['h1'])).rejects.toThrow('empty reply');
         });
     });
 
@@ -467,8 +482,8 @@ describe('gemini.ts', () => {
                 expect(await gemini.generateEvolutionPrompt('logs')).toBe('');
                 expect(await gemini.auditEvolutionPrompt('cand', 'audit')).toEqual({ pass: true });
                 expect(await gemini.analyzeUserProfile('desc')).toEqual({});
-                await expect(gemini.generateStructuredNewsPost('sys', ['news'])).rejects.toThrow('Gemini API client not initialized');
-                await expect(gemini.generateStructuredSoliloquyPost('sys', 'soliloquy')).rejects.toThrow('Gemini API client not initialized');
+                await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['news'])).rejects.toThrow('Gemini API client not initialized');
+                await expect(gemini.generateStructuredTimelinePost('sys', 'soliloquy')).rejects.toThrow('Gemini API client not initialized');
                 expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
                 expect(await gemini.detectLanguage('test')).toBe('ja');
                 expect(await gemini.generateEmbedding('test')).toEqual([]);

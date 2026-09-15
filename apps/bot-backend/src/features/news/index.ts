@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { GoogleGenAI } from '@google/genai';
+import config from '../../config';
 import { ProactiveNewsController } from './controller';
 import { ProactiveNewsUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
@@ -24,7 +26,10 @@ export const createProactiveNewsModule = (
   deps: AppDependencies,
   provider?: INewsProvider,
 ): Router => {
-  const newsProvider = provider ?? new GeminiSearchNewsProvider();
+  const newsProvider = provider ?? new GeminiSearchNewsProvider(
+    new GoogleGenAI({ apiKey: config.gemini.apiKey }),
+    config.gemini.newsSearchModel,
+  );
   const useCase = new ProactiveNewsUseCase(deps, newsProvider);
   const soliloquyUseCase = new SoliloquyUseCase(deps);
   const controller = new ProactiveNewsController(useCase, soliloquyUseCase);

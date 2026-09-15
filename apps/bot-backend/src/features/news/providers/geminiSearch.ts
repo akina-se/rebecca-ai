@@ -1,19 +1,26 @@
 import { GoogleGenAI } from '@google/genai';
-import config from '../../../config';
-import { INewsProvider, NewsItem } from '../types';
+import { INewsProvider, NewsItem, NewsCategory, NEWS_CATEGORIES } from '../types';
 
 /**
  * Prompt instructing Gemini to search real-time news via Google Search Grounding and output structured JSON.
+ * Enforces one news item across each of 5 balanced categories to eliminate domain bias.
  */
 const NEWS_STRUCTURED_SEARCH_PROMPT = `あなたは最新ニュースリサーチャーです。
-Google検索を利用して、日本の今日の最新トレンド、エンタメ、スイーツ・グルメ、カルチャー、新商品、お出かけ・天気に関するニュースを【5件】検索・取得し、必ず以下のJSON配列形式のみで出力してください。
+Google検索を利用して、日本の今日の最新ニュースを以下の【5つの指定カテゴリ】から【各カテゴリ1件ずつ、計5件】厳選して取得し、必ず以下のJSON配列形式のみで出力してください。
+
+【指定カテゴリ（各1件必須）】
+1. 最新テクノロジー・IT（AI、ガジェット、Web、先端技術など）
+2. エンタメ・カルチャー（音楽、映画、アニメ、ゲーム、アート、展示など）
+3. 新商品・トレンド（話題の新作グッズ、生活トレンド、SNS話題など）
+4. ライフスタイル・お出かけ・気象（イベント、スポット、気象・天候、健康など）
+5. グルメ・スイーツ（カフェ、飲食店、新作フード・スイーツなど）
 
 【出力フォーマット】
 [
   {
     "title": "ニュース見出し（30文字以内）",
     "summary": "ニュースの簡単な概要や背景（1〜2文）",
-    "category": "エンタメ | トレンド | グルメ | 新商品 | カルチャー | お出かけ"
+    "category": "最新テクノロジー・IT | エンタメ・カルチャー | 新商品・トレンド | ライフスタイル・お出かけ・気象 | グルメ・スイーツ"
   }
 ]
 
@@ -23,7 +30,7 @@ Google検索を利用して、日本の今日の最新トレンド、エンタ�
 - Markdownコードブロックや余計な前置き・解説は一切含めず、純粋なJSON文字列のみを出力すること。`;
 
 /**
- * Validates whether an unknown value conforms to the NewsItem structure.
+ * Validates whether an unknown value conforms to the NewsItem structure with a valid NewsCategory.
  */
 const isValidNewsItem = (item: unknown): item is NewsItem => {
   if (typeof item !== 'object' || item === null) {
@@ -36,7 +43,7 @@ const isValidNewsItem = (item: unknown): item is NewsItem => {
     typeof candidate.summary === 'string' &&
     candidate.summary.trim().length > 0 &&
     typeof candidate.category === 'string' &&
-    candidate.category.trim().length > 0
+    NEWS_CATEGORIES.includes(candidate.category.trim() as NewsCategory)
   );
 };
 
@@ -44,20 +51,17 @@ const isValidNewsItem = (item: unknown): item is NewsItem => {
  * News provider that fetches real-time news using Google Search Grounding via Gemini API.
  */
 export class GeminiSearchNewsProvider implements INewsProvider {
-  private ai: GoogleGenAI | null = null;
-  private model: string;
+  private readonly ai: GoogleGenAI;
+  private readonly model: string;
 
-  constructor(model?: string, client?: GoogleGenAI) {
-    this.model = model || config.gemini.newsSearchModel;
-    if (client) {
-      this.ai = client;
-    } else if (config.gemini.apiKey) {
-      this.ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
-    }
+  constructor(ai: GoogleGenAI, model: string) {
+    this.ai = ai;
+    this.model = model;
   }
 
   /**
    * Fetches latest structured news items using Google Search Grounding.
+   * Ensures diverse coverage by selecting distinct items across validated categories.
    *
    * @returns Array of valid NewsItem objects (up to 5), or empty array upon failure.
    */
@@ -79,7 +83,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
         },
       });
 
-      const rawText = response.text?.trim() || '';
+      const rawText = response.text?.trim() ?? '';
       if (!rawText) {
         console.warn('[GeminiSearchNewsProvider] Empty response from search grounding.');
         return [];
@@ -98,16 +102,23 @@ export class GeminiSearchNewsProvider implements INewsProvider {
         return [];
       }
 
-      const items: NewsItem[] = parsed
-        .filter(isValidNewsItem)
-        .map((item) => ({
-          title: item.title.trim(),
-          summary: item.summary.trim(),
-          category: item.category.trim(),
-        }));
+      const validItems = parsed.filter(isValidNewsItem).map((item) => ({
+        title: item.title.trim(),
+        summary: item.summary.trim(),
+        category: item.category.trim() as NewsCategory,
+      }));
 
-      console.log(`[GeminiSearchNewsProvider] Successfully fetched ${items.length} structured news items.`);
-      return items.slice(0, 5);
+      // Ensure at most 1 item per category to prevent any single category from dominating
+      const categoryMap = new Map<NewsCategory, NewsItem>();
+      for (const item of validItems) {
+        if (!categoryMap.has(item.category)) {
+          categoryMap.set(item.category, item);
+        }
+      }
+
+      const diverseItems = Array.from(categoryMap.values());
+      console.log(`[GeminiSearchNewsProvider] Successfully fetched ${diverseItems.length} diverse news items.`);
+      return diverseItems;
     } catch (error) {
       console.error('[GeminiSearchNewsProvider] Error fetching structured news via search grounding:', error);
       throw error;
