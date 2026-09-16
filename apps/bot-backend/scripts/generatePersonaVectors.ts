@@ -12,7 +12,10 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { personaPatterns, PersonaPattern } from '@rebecca/persona';
-import * as gemini from '../src/services/gemini';
+import { GeminiService } from '../src/services/gemini';
+import config from '../src/config';
+
+const gemini = new GeminiService(config.gemini);
 
 interface PersonaPatternWithVector extends PersonaPattern {
   vector: number[];

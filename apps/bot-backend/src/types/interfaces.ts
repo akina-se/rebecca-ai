@@ -142,6 +142,7 @@ export interface IXApiService {
   getFollowers(userId: string, paginationToken?: string, pageSize?: number): Promise<XApiFollowersResponse>;
   addListMember(listId: string, userId: string): Promise<boolean>;
   getUserTweets(userId: string, maxResults?: number): Promise<XApiMentionResponse>;
+  deleteTweet(tweetId: string): Promise<boolean>;
   cachedNumericMyUserId: string | null;
 }
 

@@ -4,6 +4,8 @@ import { GlobalEvolutionUseCase } from './usecase';
 import { AppDependencies } from '../../types';
 import { createGlobalEvolutionRouter } from './routes';
 
+import config from '../../config';
+
 /**
  * Bootstraps the global evolution module by assembling its use case, controller, and router.
  * 
@@ -11,7 +13,9 @@ import { createGlobalEvolutionRouter } from './routes';
  * @returns A configured Express Router instance for the evolution module.
  */
 export const createGlobalEvolutionModule = (deps: AppDependencies): Router => {
-    const useCase = new GlobalEvolutionUseCase(deps);
+    const useCase = new GlobalEvolutionUseCase(deps, {
+        lookbackDays: config.evolution.lookbackDays,
+    });
     const controller = new GlobalEvolutionController(useCase);
     return createGlobalEvolutionRouter(controller);
 };

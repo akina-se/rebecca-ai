@@ -1,33 +1,11 @@
 import 'dotenv/config';
 import { ProactiveAnniversaryUseCase } from '../src/features/anniversary/usecase';
 import * as firestore from '../src/services/firestore';
-import * as gemini from '../src/services/gemini';
+import { GeminiService } from '../src/services/gemini';
 import * as storage from '../src/services/storage';
-import * as xApi from '../src/services/xApi';
+import { XApiService } from '../src/services/xApi';
 import * as tasks from '../src/services/tasks';
 import { AppDependencies } from '../src/types';
-
-// Mock external APIs for safe local testing
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(xApi as any).tweet = async (text: string, mediaIds?: string[]) => {
-  console.log(`[MOCK TWEET]: ${text}`);
-  if (mediaIds && mediaIds.length > 0) {
-    console.log(`[MOCK TWEET MEDIA ATTACHED]: ${mediaIds.join(', ')}`);
-  }
-  return { data: { id: 'mock-tweet-id' } };
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(xApi as any).uploadMedia = async (buffer: Buffer, mimeType: string) => {
-  console.log(`[MOCK UPLOAD MEDIA]: Uploading ${mimeType} buffer of size ${buffer.length} bytes`);
-  return 'mock-media-id-12345';
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(firestore as any).saveTimelinePost = async (params: { text: string }) => {
-  console.log(`[MOCK DB] Saved timeline post: ${params.text}`);
-};
-
 import { WikipediaAnniversaryProvider } from '../src/features/anniversary/providers/wikipedia';
 import { getActivePersona } from '@rebecca/persona';
 import config from '../src/config';
@@ -39,9 +17,31 @@ const run = async () => {
 
   const persona = getActivePersona(config.persona.activeId);
 
+  const xApi = new XApiService(config.xApi);
+  // Mock external APIs for safe local testing
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (xApi as any).tweet = async (text: string, mediaIds?: string[]) => {
+    console.log(`[MOCK TWEET]: ${text}`);
+    if (mediaIds && mediaIds.length > 0) {
+      console.log(`[MOCK TWEET MEDIA ATTACHED]: ${mediaIds.join(', ')}`);
+    }
+    return { data: { id: 'mock-tweet-id' } };
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (xApi as any).uploadMedia = async (buffer: Buffer, mimeType: string) => {
+    console.log(`[MOCK UPLOAD MEDIA]: Uploading ${mimeType} buffer of size ${buffer.length} bytes`);
+    return 'mock-media-id-12345';
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (firestore as any).saveTimelinePost = async (params: { text: string }) => {
+    console.log(`[MOCK DB] Saved timeline post: ${params.text}`);
+  };
+
   const deps: AppDependencies = {
     firestore,
-    gemini,
+    gemini: new GeminiService(config.gemini),
     storage,
     xApi,
     tasks,
@@ -49,7 +49,7 @@ const run = async () => {
   };
 
   try {
-    const provider = new WikipediaAnniversaryProvider(persona.metadata.userAgent);
+    const provider = new WikipediaAnniversaryProvider(persona.metadata.userAgent, config.appTimezone);
     const useCase = new ProactiveAnniversaryUseCase(deps, provider);
     const result = await useCase.execute();
     console.log('\n[結果]:', result);
