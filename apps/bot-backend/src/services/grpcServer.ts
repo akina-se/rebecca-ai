@@ -6,7 +6,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
-import { deleteTweet } from './xApi';
+import { IXApiService } from '../types';
 
 const PROTO_PATH = path.resolve(__dirname, '../../../../packages/grpc-schemas/tweets.proto');
 
@@ -56,9 +56,10 @@ const tweetsPackage = protoDescriptor.tweets;
  * Binds the server to the configured port and registers all available services,
  * currently limited to the TweetService for handling tweet deletions.
  * 
+ * @param xApiService - Injected IXApiService instance.
  * @returns The initialized and bound gRPC `Server` instance.
  */
-export function startGrpcServer(): grpc.Server {
+export function startGrpcServer(xApiService: IXApiService): grpc.Server {
   const server = new grpc.Server();
   
   server.addService(tweetsPackage.TweetService.service, {
@@ -69,7 +70,7 @@ export function startGrpcServer(): grpc.Server {
       const tweetId = call.request.tweet_id;
       console.log(`gRPC server received delete request for tweet: ${tweetId}`);
       try {
-        await deleteTweet(tweetId);
+        await xApiService.deleteTweet(tweetId);
         callback(null, { success: true, message: 'Tweet successfully deleted' });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';

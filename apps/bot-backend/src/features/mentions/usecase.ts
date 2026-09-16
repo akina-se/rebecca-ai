@@ -1,5 +1,11 @@
-import config from '../../config';
 import { AppDependencies } from '../../types';
+
+/**
+ * Configuration required for mention polling.
+ */
+export interface PollMentionsConfig {
+    myUserId?: string;
+}
 
 /**
  * Implements the core business logic for polling new mentions and delegating reply tasks.
@@ -7,12 +13,14 @@ import { AppDependencies } from '../../types';
  */
 export class PollMentionsUseCase {
     /**
-     * Instantiates the PollMentionsUseCase with required application dependencies.
+     * Instantiates the PollMentionsUseCase with required application dependencies and config.
      * 
      * @param deps - A container holding the required repositories and external platform APIs.
+     * @param config - Configuration options including the bot's own user ID.
      */
     constructor(
-        private deps: AppDependencies
+        private readonly deps: AppDependencies,
+        private readonly config: PollMentionsConfig,
     ) {}
 
     /**
@@ -50,7 +58,7 @@ export class PollMentionsUseCase {
                 continue;
             }
 
-            if (authorId === config.xApi.myUserId) {
+            if (authorId === this.config.myUserId) {
                 console.log(`Ignoring self-mention ${tweetId}`);
                 continue;
             }
