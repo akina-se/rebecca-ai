@@ -5,7 +5,6 @@ import { ProactiveAnniversaryUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
 import { AppDependencies } from '../../types';
 import { createProactiveAnniversaryRouter } from './routes';
-import { IAnniversaryProvider } from './types';
 import { WikipediaAnniversaryProvider } from './providers/wikipedia';
 
 export * from './types';
@@ -18,15 +17,15 @@ export * from './providers/wikipedia';
  * Creates and configures the router module for the Proactive Anniversary feature.
  *
  * @param deps Application dependencies required to instantiate use cases and controllers.
- * @param provider Optional custom anniversary provider (defaults to WikipediaAnniversaryProvider).
  * @returns An Express Router instance configured with anniversary-related routes.
  */
 export const createProactiveAnniversaryModule = (
   deps: AppDependencies,
-  provider?: IAnniversaryProvider,
 ): Router => {
-  const anniversaryProvider =
-    provider ?? new WikipediaAnniversaryProvider(deps.persona.metadata.userAgent, config.appTimezone);
+  const anniversaryProvider = new WikipediaAnniversaryProvider(
+    deps.persona.metadata.userAgent,
+    config.appTimezone,
+  );
   const useCase = new ProactiveAnniversaryUseCase(deps, anniversaryProvider);
   const soliloquyUseCase = new SoliloquyUseCase(deps, { timezone: config.appTimezone });
   const controller = new ProactiveAnniversaryController(useCase, soliloquyUseCase);

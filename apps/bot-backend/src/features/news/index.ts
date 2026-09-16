@@ -6,7 +6,6 @@ import { ProactiveNewsUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
 import { AppDependencies } from '../../types';
 import { createProactiveNewsRouter } from './routes';
-import { INewsProvider } from './types';
 import { GeminiSearchNewsProvider } from './providers/geminiSearch';
 
 export * from './types';
@@ -19,14 +18,12 @@ export * from './providers/geminiSearch';
  * Creates and configures the router module for the Proactive News feature.
  *
  * @param deps The application dependencies required to instantiate the use cases and controllers.
- * @param provider Optional custom news provider implementation (defaults to GeminiSearchNewsProvider).
  * @returns An Express Router instance configured with news-related routes.
  */
 export const createProactiveNewsModule = (
   deps: AppDependencies,
-  provider?: INewsProvider,
 ): Router => {
-  const newsProvider = provider ?? new GeminiSearchNewsProvider(
+  const newsProvider = new GeminiSearchNewsProvider(
     new GoogleGenAI({ apiKey: config.gemini.apiKey }),
     config.gemini.newsSearchModel,
   );

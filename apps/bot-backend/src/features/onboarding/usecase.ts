@@ -35,9 +35,9 @@ export class StealthOnboardingUseCase {
   async execute(): Promise<OnboardingResult> {
     console.log('Starting Stealth Onboarding Batch...');
     try {
-      const myUserId = this.config.myUserId || this.deps.xApi.cachedNumericMyUserId;
+      const myUserId = this.config.myUserId;
       if (!myUserId) {
-        console.error('X_MY_USER_ID is not set and could not be resolved.');
+        console.error('X_MY_USER_ID is not set in config.');
         return { status: 'failed', processed: 0, reason: 'Missing X_MY_USER_ID' };
       }
 

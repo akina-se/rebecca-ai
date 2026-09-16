@@ -76,7 +76,6 @@ describe('Stealth Onboarding Batch', () => {
         expect(deps.xApi.addListMember).not.toHaveBeenCalled();
     });
     it('should return failed if myUserId is not set', async () => {
-        deps.xApi.cachedNumericMyUserId = undefined;
         const result = await new StealthOnboardingUseCase(deps, { ...testConfig, myUserId: '' }).execute();
         expect(result.status).toBe('failed');
     });
