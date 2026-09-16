@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { GoogleGenAI, Type } from '@google/genai';
-import * as gemini from '../../src/services/gemini';
+import { GeminiService } from '../../src/services/gemini';
 import { buildSystemPrompt } from '../../src/core/contextInjector';
 import { Language, getActivePersona } from '@rebecca/persona';
 import config from '../../src/config';
@@ -9,6 +9,7 @@ const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_K
 const ai = hasApiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
 const JUDGE_MODEL = process.env.JUDGE_MODEL || config.gemini.judgeModel || 'gemma-4-26b-a4b-it';
 const persona = getActivePersona(config.persona.activeId);
+const gemini = new GeminiService(config.gemini);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

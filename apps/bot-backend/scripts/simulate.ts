@@ -9,8 +9,10 @@ import { getBasePrompt } from '@rebecca/persona';
 const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
 
 // Import Rebecca's generation logic
-import * as gemini from '../src/services/gemini';
+import { GeminiService } from '../src/services/gemini';
 import { getWorkingMemory  } from '../src/core/memory';
+
+const gemini = new GeminiService(config.gemini);
 
 const PERSONAS = [
     { id: 1, name: "限界ITエンジニア", desc: "残業100時間超えで精神が削れている28歳男性。ただ癒やされたい。" },

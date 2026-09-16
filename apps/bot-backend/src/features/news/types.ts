@@ -52,6 +52,15 @@ export interface CandidateNewsItem {
 import { ProactiveBatchResult } from '../../types';
 
 /**
+ * Configuration required for proactive news usecase execution.
+ */
+export interface NewsUseCaseConfig {
+  dedupLookbackDays: number;
+  dedupSimilarityThreshold: number;
+  timezone: string;
+}
+
+/**
  * Interface representing the result of a proactive news execution.
  * Extends the canonical ProactiveBatchResult.
  */

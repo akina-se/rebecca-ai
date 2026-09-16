@@ -13,7 +13,7 @@ describe('evolution.ts', () => {
         it('should skip if no recent logs found', async () => {
             deps.firestore.getRecentConversationLogs.mockResolvedValueOnce([]);
             
-            const result = await new GlobalEvolutionUseCase(deps).execute();
+            const result = await new GlobalEvolutionUseCase(deps, { lookbackDays: 7 }).execute();
             
             expect(result.status).toBe('skipped');
             expect(result.reason).toBe('No logs found');
@@ -24,7 +24,7 @@ describe('evolution.ts', () => {
             deps.firestore.getRecentConversationLogs.mockResolvedValueOnce([{ userText: 'hi', aiText: 'hello' }]);
             deps.gemini.generateEvolutionPrompt.mockResolvedValueOnce(null);
             
-            const result = await new GlobalEvolutionUseCase(deps).execute();
+            const result = await new GlobalEvolutionUseCase(deps, { lookbackDays: 7 }).execute();
             
             expect(result.status).toBe('failed');
             expect(result.reason).toBe('Generation failed');
@@ -36,7 +36,7 @@ describe('evolution.ts', () => {
             deps.gemini.generateEvolutionPrompt.mockResolvedValueOnce('new rule');
             deps.gemini.auditEvolutionPrompt.mockResolvedValueOnce({ pass: true });
             
-            const result = await new GlobalEvolutionUseCase(deps).execute();
+            const result = await new GlobalEvolutionUseCase(deps, { lookbackDays: 7 }).execute();
             
             expect(result.status).toBe('success');
             expect(result.prompt).toBe('new rule');
@@ -51,7 +51,7 @@ describe('evolution.ts', () => {
             deps.gemini.generateEvolutionPrompt.mockResolvedValueOnce('bad rule');
             deps.gemini.auditEvolutionPrompt.mockResolvedValueOnce({ pass: false, reason: 'harmful' });
             
-            const result = await new GlobalEvolutionUseCase(deps).execute();
+            const result = await new GlobalEvolutionUseCase(deps, { lookbackDays: 7 }).execute();
             
             expect(result.status).toBe('rejected');
             expect(result.reason).toBe('harmful');
@@ -63,7 +63,7 @@ describe('evolution.ts', () => {
             const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             deps.firestore.getRecentConversationLogs.mockRejectedValueOnce(new Error('DB Error'));
             
-            await expect(new GlobalEvolutionUseCase(deps).execute()).rejects.toThrow('DB Error');
+            await expect(new GlobalEvolutionUseCase(deps, { lookbackDays: 7 }).execute()).rejects.toThrow('DB Error');
             
             expect(consoleSpy).toHaveBeenCalledWith('Error in runGlobalEvolutionBatch:', expect.any(Error));
             consoleSpy.mockRestore();
