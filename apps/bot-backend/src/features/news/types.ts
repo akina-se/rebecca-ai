@@ -27,17 +27,20 @@ export interface NewsItem {
   category: NewsCategory;
 }
 
+export type CategorySelector = () => NewsCategory;
+
 /**
  * Abstract provider interface for retrieving real-time news items.
  * Adheres to the Dependency Inversion Principle (DIP).
  */
 export interface INewsProvider {
   /**
-   * Fetches latest structured news items containing titles, summaries, and categories.
+   * Fetches latest structured news items for the specified news category.
    *
-   * @returns Array of NewsItem objects.
+   * @param category The target news category to fetch.
+   * @returns Array of NewsItem objects belonging to the target category.
    */
-  getNews(): Promise<NewsItem[]>;
+  getNews(category: NewsCategory): Promise<NewsItem[]>;
 }
 
 /**

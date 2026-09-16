@@ -115,13 +115,42 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             reply: 'ブルボン新商品楽しみね！',
         });
 
-        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
+        const result = await new ProactiveNewsUseCase(
+            deps,
+            mockNewsProvider,
+            testNewsConfig,
+            () => '新商品・トレンド',
+        ).execute();
 
         expect(result.status).toBe('success');
+        expect(mockNewsProvider.getNews).toHaveBeenCalledWith('新商品・トレンド');
         expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
             expect.any(String),
             expect.stringContaining('【新商品・トレンド】ブルボン新商品\n  概要: 秋の味覚を楽しめる新商品4品が登場。'),
             expect.arrayContaining(['ブルボン新商品']),
+        );
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('【今日のニュース候補（新商品・トレンド）】'),
+            expect.any(Array),
+        );
+    });
+
+    it('should use default random category selector when not explicitly injected', async () => {
+        mockNewsProvider.getNews.mockResolvedValue([
+            { title: 'News 1', summary: 'Summary 1', category: '最新テクノロジー・IT' },
+        ]);
+        deps.gemini.generateStructuredNewsPost.mockResolvedValue({
+            selectedTitle: 'News 1',
+            thought: 'thought',
+            reply: 'reply',
+        });
+
+        const result = await new ProactiveNewsUseCase(deps, mockNewsProvider, testNewsConfig).execute();
+
+        expect(result.status).toBe('success');
+        expect(mockNewsProvider.getNews).toHaveBeenCalledWith(
+            expect.stringMatching(/最新テクノロジー・IT|エンタメ・カルチャー|新商品・トレンド|ライフスタイル・お出かけ・気象|グルメ・スイーツ/),
         );
     });
 

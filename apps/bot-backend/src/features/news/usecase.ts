@@ -1,7 +1,14 @@
 import { AppDependencies } from '../../types';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
-import { INewsProvider, NewsResult, NewsUseCaseConfig } from './types';
+import {
+  INewsProvider,
+  NewsResult,
+  NewsUseCaseConfig,
+  NewsCategory,
+  NEWS_CATEGORIES,
+  CategorySelector,
+} from './types';
 import { filterFreshNews } from './deduplicator';
 
 export * from './types';
@@ -9,9 +16,17 @@ export * from './deduplicator';
 export * from './providers/geminiSearch';
 
 /**
+ * Default category selector that picks a category uniformly at random from canonical NEWS_CATEGORIES.
+ */
+export const selectRandomCategory: CategorySelector = (): NewsCategory => {
+  const index = Math.floor(Math.random() * NEWS_CATEGORIES.length);
+  return NEWS_CATEGORIES[index];
+};
+
+/**
  * Executes a batch job to proactively post a news-related tweet.
  *
- * Retrieves headlines via an injected INewsProvider,
+ * Selects a target category, retrieves headlines via an injected INewsProvider,
  * filters out recent duplicates using vector cosine similarity, generates a persona-grounded
  * post, and delivers it via the unified PostPipeline.
  *
@@ -24,11 +39,13 @@ export class ProactiveNewsUseCase {
    * @param deps Injected application dependencies.
    * @param newsProvider Injected news provider implementation.
    * @param config Injected news usecase configuration.
+   * @param selectCategory Injected function to select the target news category for this execution.
    */
   constructor(
     private readonly deps: AppDependencies,
     private readonly newsProvider: INewsProvider,
     private readonly config: NewsUseCaseConfig,
+    private readonly selectCategory: CategorySelector = selectRandomCategory,
   ) {}
 
   /**
@@ -39,10 +56,13 @@ export class ProactiveNewsUseCase {
   async execute(): Promise<NewsResult> {
     console.log('Starting Proactive News Post Batch...');
     try {
-      const rawNewsItems = await this.newsProvider.getNews();
+      const targetCategory = this.selectCategory();
+      console.log(`[ProactiveNewsUseCase] Target news category: ${targetCategory}`);
+
+      const rawNewsItems = await this.newsProvider.getNews(targetCategory);
 
       if (rawNewsItems.length === 0) {
-        console.log('[ProactiveNewsUseCase] No news items fetched.');
+        console.log(`[ProactiveNewsUseCase] No news items fetched for category "${targetCategory}".`);
         return { status: 'skipped', reason: 'no_headlines' };
       }
 
@@ -71,7 +91,7 @@ export class ProactiveNewsUseCase {
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
 
       const personaFewShotPrompt = await resolveSituationalPersonaAnchors(this.deps.gemini, [
-        `【今日のニュース候補】\n${freshHeadlineTexts.join('\n')}`,
+        `【今日のニュース候補（${targetCategory}）】\n${freshHeadlineTexts.join('\n')}`,
         extendedPrompt ? `【近況・気分】${extendedPrompt}` : '',
         timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
       ]);
@@ -82,15 +102,14 @@ export class ProactiveNewsUseCase {
       const interestsStr = this.deps.persona.metadata.interests.join('・');
       const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
 
-      const newsPrompt = `あなたはAIキャラクター「${personaName}」として、今日の最新ニュースから自身の関心領域（${interestsStr}など）に最も合致し、${userCallsign}やフォロワーと盛り上がれそうな話題を【1つだけ】選び、ツイートを生成してください。
+      const newsPrompt = `あなたはAIキャラクター「${personaName}」として、今日の【${targetCategory}】の最新ニュースから、自身の関心領域（${interestsStr}など）を交えつつ${userCallsign}やフォロワーと盛り上がれそうな話題を【1つだけ】選び、ツイートを生成してください。
 
-【今日のニュース候補】
+【今日のニュース候補（${targetCategory}）】
 ${formattedNewsContext}
 ${timelineSummary ? `\n【直近のタイムライン要約】\n${timelineSummary}\n` : ''}
 ${extendedPrompt ? `\n【拡張ペルソナ・近況】\n${extendedPrompt}\n` : ''}
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
-【トピック選定と多様性の重要ルール】
-- 直近のタイムライン要約を確認し、直近で既に取り上げた話題ジャンルと重ならない多様なカテゴリ（最新テクノロジー・IT、エンタメ・カルチャー、新商品・トレンド、ライフスタイル等）を優先して選定すること。
+【トピック選定の重要ルール】
 - 殺人や痛ましい事故など、過度に暗いニュースや人が亡くなっているニュースは絶対に選ばないこと。必ず明るい話題を選んでください。
 - ニュースの単なる要約や事実紹介だけで完結させないこと。話題に対する独自の着眼点や意見を簡潔に述べた上で、読み手が思わずリプライしたくなる具体的な問いかけ（2択の提示や具体的な選択への問いなど）を末尾に必ず含めること。
 - 曖昧な質問（例: 「どう思いますか？」）は避け、読み手が即座に答えやすい具体的な問いかけとすること。
