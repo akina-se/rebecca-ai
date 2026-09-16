@@ -1,11 +1,14 @@
 import request from 'supertest';
-import app from '../../src/index';
 import * as firestore from '../../src/services/firestore';
 import * as geminiModule from '../../src/services/gemini';
 import * as xApiModule from '../../src/services/xApi';
 const gemini = geminiModule as any;
 const xApi = xApiModule as any;
 import * as tasks from '../../src/services/tasks';
+import { createApp } from '../../src/index';
+
+let app: any;
+
 
 // Mock dependencies
 jest.mock('../../src/services/firestore', () => ({
@@ -96,6 +99,13 @@ jest.mock('../../src/features/news/providers/geminiSearch', () => ({
 }));
 
 describe('Integration Tests', () => {
+    beforeAll(() => {
+        require('../../src/config').default.batchSecret = 'test_secret';
+        require('../../src/config').default.xApi.myUserId = 'test_my_user_id';
+        require('../../src/config').default.xApi.targetListId = 'test_target_list_id';
+        app = createApp();
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
         (firestore.checkAndConsumeRateLimit as jest.Mock).mockResolvedValue({ allowed: true });
