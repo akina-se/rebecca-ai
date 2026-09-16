@@ -21,41 +21,41 @@ describe('GeminiSearchNewsProvider', () => {
 
   it('should return empty array if client is not provided or null', async () => {
     const provider = new GeminiSearchNewsProvider(null as any, 'test-model');
-    const news = await provider.getNews();
+    const news = await provider.getNews('最新テクノロジー・IT');
     expect(news).toEqual([]);
   });
 
-  it('should fetch and parse structured news items from search grounding JSON output', async () => {
+  it('should fetch and parse structured news items from search grounding JSON output for target category', async () => {
     mockGenerateContent.mockResolvedValueOnce({
       text: `\`\`\`json
 [
   {
     "title": "「アメ横AIコンシェルジュ」β版を公開",
     "summary": "4カ国語で加盟店を案内する新サービスが開始。",
-    "category": "新商品・トレンド"
+    "category": "最新テクノロジー・IT"
   },
   {
-    "title": "日本橋三越の洋菓子エリアがリニューアル",
-    "summary": "新9ブランドの手土産スイーツが登場。",
-    "category": "グルメ・スイーツ"
+    "title": "次世代ロボットアーム発表",
+    "summary": "AI制御による高精度な作業を実現。",
+    "category": "最新テクノロジー・IT"
   }
 ]
 \`\`\``,
       candidates: [
         {
           groundingMetadata: {
-            webSearchQueries: ['日本の最新トレンド', 'スイーツ 新商品'],
+            webSearchQueries: ['AI ロボット 最新'],
           },
         },
       ],
     });
 
     const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
-    const items = await provider.getNews();
+    const items = await provider.getNews('最新テクノロジー・IT');
 
     expect(mockGenerateContent).toHaveBeenCalledWith({
       model: 'gemini-2.5-flash',
-      contents: expect.stringContaining('最新ニュースリサーチャー'),
+      contents: expect.stringContaining('最新テクノロジー・IT'),
       config: {
         tools: [{ googleSearch: {} }],
         safetySettings: [],
@@ -66,12 +66,12 @@ describe('GeminiSearchNewsProvider', () => {
     expect(items[0]).toEqual({
       title: '「アメ横AIコンシェルジュ」β版を公開',
       summary: '4カ国語で加盟店を案内する新サービスが開始。',
-      category: '新商品・トレンド',
+      category: '最新テクノロジー・IT',
     });
     expect(items[1]).toEqual({
-      title: '日本橋三越の洋菓子エリアがリニューアル',
-      summary: '新9ブランドの手土産スイーツが登場。',
-      category: 'グルメ・スイーツ',
+      title: '次世代ロボットアーム発表',
+      summary: 'AI制御による高精度な作業を実現。',
+      category: '最新テクノロジー・IT',
     });
   });
 
@@ -79,7 +79,7 @@ describe('GeminiSearchNewsProvider', () => {
     mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
 
     const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
-    await expect(provider.getNews()).rejects.toThrow('API quota exceeded');
+    await expect(provider.getNews('最新テクノロジー・IT')).rejects.toThrow('API quota exceeded');
   });
 
   it('should handle empty text response gracefully', async () => {
@@ -88,7 +88,7 @@ describe('GeminiSearchNewsProvider', () => {
     });
 
     const provider = new GeminiSearchNewsProvider(mockClient, 'gemini-2.5-flash');
-    const news = await provider.getNews();
+    const news = await provider.getNews('最新テクノロジー・IT');
 
     expect(news).toEqual([]);
   });
