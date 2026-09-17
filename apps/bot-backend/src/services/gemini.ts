@@ -211,7 +211,7 @@ export class GeminiService implements IGeminiService {
   private async generateStructuredPostInternal(
     systemInstruction: string,
     prompt: string | string[],
-    maxOutputTokens: number = 500,
+    maxOutputTokens: number = 1000,
   ): Promise<StructuredPersonaResponse> {
     if (!this.ai) {
       throw new Error('Gemini API client not initialized');
@@ -281,7 +281,7 @@ export class GeminiService implements IGeminiService {
         contents: contentStr,
         config: {
           systemInstruction,
-          maxOutputTokens: 500,
+          maxOutputTokens: 1000,
           responseMimeType: 'application/json',
           responseSchema,
           safetySettings: [] as never[],
@@ -327,7 +327,7 @@ export class GeminiService implements IGeminiService {
     systemInstruction: string,
     prompt: string | string[]
   ): Promise<StructuredPersonaResponse> {
-    return this.generateStructuredPostInternal(systemInstruction, prompt, 500);
+    return this.generateStructuredPostInternal(systemInstruction, prompt, 1000);
   }
 
   /**
