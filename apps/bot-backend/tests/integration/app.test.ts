@@ -285,6 +285,23 @@ describe('Integration Tests', () => {
         });
     });
 
+    describe('GET /batch/self-reflection', () => {
+        beforeEach(() => {
+            require('../../src/config').default.batchSecret = 'test_secret';
+        });
+        it('should process self-reflection successfully', async () => {
+            (firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValueOnce(['post 1', 'post 2']);
+            (gemini.generateTimelineSummary as jest.Mock).mockResolvedValueOnce('New Timeline Summary');
+
+            const response = await request(app).get('/batch/self-reflection').set('x-batch-secret', 'test_secret');
+
+            expect(response.status).toBe(200);
+            expect(firestore.getRecentTimelinePosts).toHaveBeenCalled();
+            expect(gemini.generateTimelineSummary).toHaveBeenCalled();
+            expect(firestore.saveTimelineSummary).toHaveBeenCalledWith('New Timeline Summary');
+        });
+    });
+
     describe('GET /batch/dreaming', () => {
         beforeEach(() => {
             require('../../src/config').default.batchSecret = 'test_secret';
@@ -292,7 +309,6 @@ describe('Integration Tests', () => {
         it('should process dreaming successfully', async () => {
             (firestore.getAllUsers as jest.Mock).mockResolvedValueOnce([{ id: 'user1', episodicBuffer: ['test memory'], coreProfile: {} }]);
             (gemini.generateDreaming as jest.Mock).mockResolvedValueOnce({ preferences: ['test'] });
-            (gemini.generateTimelineSummary as jest.Mock).mockResolvedValueOnce('Mock Summary');
             
             const response = await request(app).get('/batch/dreaming').set('x-batch-secret', 'test_secret');
             
@@ -442,6 +458,7 @@ describe('Integration Tests', () => {
     describe('Batch & Worker Security Gate (Unauthenticated Access Must Be Blocked)', () => {
         const batchEndpoints = [
             { method: 'get', path: '/batch/mentions' },
+            { method: 'get', path: '/batch/self-reflection' },
             { method: 'get', path: '/batch/dreaming' },
             { method: 'get', path: '/batch/evolution' },
             { method: 'get', path: '/batch/news-post' },

@@ -401,8 +401,12 @@ const getTimelineSummary = async (): Promise<string> => {
  * @param summaryText - The new summary text.
  */
 const saveTimelineSummary = async (summaryText: string): Promise<void> => {
+  const trimmed = summaryText.trim();
+  if (!trimmed) {
+    throw new Error('[FirestoreService] Cannot save empty or blank timeline summary.');
+  }
   await firestore.collection(COLLECTIONS.SYSTEM).doc('persona').set(
-    { timeline_summary: summaryText, timelineSummaryUpdatedAt: new Date().toISOString() },
+    { timeline_summary: trimmed, timelineSummaryUpdatedAt: new Date().toISOString() },
     { merge: true },
   );
 };

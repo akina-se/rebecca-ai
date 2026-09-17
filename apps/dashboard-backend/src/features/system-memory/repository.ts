@@ -150,6 +150,12 @@ export class SystemMemoryRepository {
       const auth = new GoogleAuth();
       const client = await auth.getIdTokenClient(botUrl);
       
+      console.log(`Triggering self-reflection at ${botUrl}/batch/self-reflection`);
+      await client.request({
+        url: `${botUrl}/batch/self-reflection`,
+        method: 'POST',
+      });
+
       console.log(`Triggering dreaming at ${botUrl}/batch/dreaming`);
       await client.request({
         url: `${botUrl}/batch/dreaming`,
@@ -161,7 +167,7 @@ export class SystemMemoryRepository {
         url: `${botUrl}/batch/evolution`,
         method: 'POST',
       });
-      console.log('Successfully completed Dreaming & Evolution batch executions.');
+      console.log('Successfully completed Self-Reflection, Dreaming & Evolution batch executions.');
     } catch (e) {
       console.error('Failed to trigger dreaming on bot-backend', e);
     }
