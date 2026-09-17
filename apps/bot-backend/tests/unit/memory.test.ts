@@ -74,53 +74,86 @@ describe('Memory Module', () => {
                 await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
                 
                 expect(deps.firestore.updateCoreProfile).not.toHaveBeenCalled();
-                expect(consoleSpy).toHaveBeenCalledWith('Dreaming failed for user: user1', expect.any(Error));
+                expect(consoleSpy).toHaveBeenCalledWith('[GlobalDreamingUseCase] Dreaming failed for user: user1:', expect.any(Error));
                 
                 consoleSpy.mockRestore();
             });
         });
 
         describe('execute', () => {
-            it('should process all users and update timeline summary if there are recent posts', async () => {
+            it('should consolidate users with pending buffers and skip users with empty buffers', async () => {
                 deps.firestore.getAllUsers.mockResolvedValue([
-                    { id: 'u1', episodicBuffer: [{}] },
+                    { id: 'u1', episodicBuffer: [{ role: 'user', content: 'hello' }] },
                     { id: 'u2', episodicBuffer: [] } // will skip dreaming
                 ]);
-                deps.firestore.getRecentTimelinePosts.mockResolvedValue([
-                    { text: 'post1', timestamp: '2026-09-13T00:00:00Z' },
-                    { text: 'post2', timestamp: '2026-09-13T01:00:00Z' },
-                ]);
-                deps.firestore.getTimelineSummary.mockResolvedValue('old_summary');
-                deps.gemini.generateTimelineSummary.mockResolvedValue('new_summary');
-                
-                deps.gemini.generateDreaming.mockResolvedValue({});
+                deps.gemini.generateDreaming.mockResolvedValue({ attributes: ['friendly'] });
 
-                await useCase.execute();
+                const customUseCase = new GlobalDreamingUseCase(deps, { throttleMs: 5 });
+                const result = await customUseCase.execute();
 
                 expect(deps.firestore.getAllUsers).toHaveBeenCalled();
-                expect(deps.gemini.generateTimelineSummary).toHaveBeenCalledWith(expect.stringContaining('old_summary'));
-                expect(deps.firestore.saveTimelineSummary).toHaveBeenCalledWith('new_summary');
+                expect(deps.gemini.generateDreaming).toHaveBeenCalledTimes(1);
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith(
+                    'u1',
+                    { attributes: ['friendly'] },
+                    expect.any(Array),
+                );
+                expect(result).toEqual({
+                    status: 'success',
+                    totalUsers: 2,
+                    processedUsers: 1,
+                    succeeded: 1,
+                    failed: 0,
+                    skipped: 1,
+                });
             });
 
-            it('should skip timeline summary if no recent posts', async () => {
-                deps.firestore.getAllUsers.mockResolvedValue([]);
-                deps.firestore.getRecentTimelinePosts.mockResolvedValue([]);
+            it('should return skipped status if no users have pending episodic buffers', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([
+                    { id: 'u1', episodicBuffer: [] },
+                    { id: 'u2' }
+                ]);
 
-                await useCase.execute();
+                const result = await useCase.execute();
 
-                expect(deps.gemini.generateTimelineSummary).not.toHaveBeenCalled();
-                expect(deps.firestore.saveTimelineSummary).not.toHaveBeenCalled();
+                expect(result.status).toBe('skipped');
+                expect(result.reason).toBe('no_users_with_episodic_buffer');
+                expect(deps.gemini.generateDreaming).not.toHaveBeenCalled();
             });
 
-            it('should catch error if timeline summary fails', async () => {
-                deps.firestore.getAllUsers.mockResolvedValue([]);
-                deps.firestore.getRecentTimelinePosts.mockRejectedValue(new Error('Timeline fetch error'));
-                const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            it('should isolate failures per user and report partial_success when some succeed and some fail', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([
+                    { id: 'u1', episodicBuffer: [{ role: 'user', content: 'hi' }] },
+                    { id: 'u2', episodicBuffer: [{ role: 'user', content: 'fail' }] },
+                ]);
 
-                await useCase.execute();
+                deps.gemini.generateDreaming
+                    .mockResolvedValueOnce({ attributes: ['good'] })
+                    .mockRejectedValueOnce(new Error('User 2 rate limit'));
 
-                expect(consoleSpy).toHaveBeenCalledWith("Failed to summarize timeline", expect.any(Error));
-                consoleSpy.mockRestore();
+                const customUseCase = new GlobalDreamingUseCase(deps, { throttleMs: 1 });
+                const result = await customUseCase.execute();
+
+                expect(result.status).toBe('partial_success');
+                expect(result.processedUsers).toBe(2);
+                expect(result.succeeded).toBe(1);
+                expect(result.failed).toBe(1);
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledTimes(1);
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('u1', expect.any(Object), expect.any(Array));
+            });
+
+            it('should report failed status when all target users fail', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([
+                    { id: 'u1', episodicBuffer: [{ role: 'user', content: 'hi' }] },
+                ]);
+                deps.gemini.generateDreaming.mockRejectedValueOnce(new Error('API quota'));
+
+                const customUseCase = new GlobalDreamingUseCase(deps, { throttleMs: 1 });
+                const result = await customUseCase.execute();
+
+                expect(result.status).toBe('failed');
+                expect(result.succeeded).toBe(0);
+                expect(result.failed).toBe(1);
             });
         });
     });

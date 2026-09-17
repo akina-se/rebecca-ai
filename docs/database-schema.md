@@ -449,7 +449,7 @@ Global system configuration and operational state singletons.
 | `timestamp` | `string \| undefined` (ISO 8601) | Datetime when the turn occurred. |
 
 #### `UserCoreProfile` (Used in `users.coreProfile`)
-Synthesized by the Dreaming batch engine (`apps/bot-backend/src/usecases/dreamingUseCase.ts`). Stored as a schema-flexible JSON object:
+Synthesized by the Dreaming batch engine (`apps/bot-backend/src/features/dreaming/usecase.ts`). Stored as a schema-flexible JSON object:
 - `summary`: High-level narrative summary of who the user is and their relationship with Rebecca.
 - `facts`: Array of factual attributes learned about the user (e.g. occupation, hobbies, birthday).
 - `preferences`: User preferences, likes, and dislikes.

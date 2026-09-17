@@ -26,9 +26,13 @@ export class GlobalDreamingController {
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
             const result = await this.useCase.execute();
+            if (result.status === 'failed') {
+                res.status(500).json(result);
+                return;
+            }
             res.status(200).json(result);
         } catch (e) {
-            console.error("dreaming error:", e);
+            console.error('dreaming error:', e);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     };
