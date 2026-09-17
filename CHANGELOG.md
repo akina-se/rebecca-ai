@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.21.0](https://github.com/akina-se/rebecca-ai/compare/v1.20.0...v1.21.0) (2026-09-17)
+
+
+### Features
+
+* **news:** enforce inclusion of concrete subject and proper noun in news tweets ([8c940d2](https://github.com/akina-se/rebecca-ai/commit/8c940d2cfa2fc107596c1ba82af7a6ef6e3158ce))
+* **news:** enforce inclusion of concrete subject and proper noun in news tweets ([f5426dc](https://github.com/akina-se/rebecca-ai/commit/f5426dce508ca8b6bba033630405658b83851f77))
+* **news:** implement random single-category targeting for proactive news ([65553e3](https://github.com/akina-se/rebecca-ai/commit/65553e390f9069c0801d84ab530858ca0bbfab13))
+* **news:** implement random single-category targeting for proactive news ([c4ff7ae](https://github.com/akina-se/rebecca-ai/commit/c4ff7aec6c61a47e45d03dcd06e5cf96bac77bd0))
+* **news:** release concrete subject requirement for news tweets ([94dc64f](https://github.com/akina-se/rebecca-ai/commit/94dc64f9c406608e4803645d9971bbf32bed0e22))
+* **news:** release random single-category targeting for proactive news ([c186e8c](https://github.com/akina-se/rebecca-ai/commit/c186e8cb3a08bb2d7b4d4c80c12d38d9238179bc))
+
 ## [1.20.0](https://github.com/akina-se/rebecca-ai/compare/v1.19.1...v1.20.0) (2026-09-15)
 
 
