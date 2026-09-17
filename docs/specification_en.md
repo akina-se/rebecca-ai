@@ -26,6 +26,23 @@ For the administration control panel, a dedicated **BFF (Backend-For-Frontend)**
 - **Strict Dependency Injection**: Core domain logic is decoupled from infrastructure services, allowing seamless transitions to event streaming or alternative stores with zero changes to core logic.
 - **Admin Copilot**: A specialized AI assistant on the dashboard. Unconstrained by 130-character limits, it conducts multi-dimensional analytics on KPIs, user trends, and assets, issuing 2-phase Human-In-The-Loop (HITL) action proposals when administrative intervention is needed.
 
+### 1.2 Batch & Worker API Specifications
+The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes triggered by Cloud Scheduler or BFF manual triggers, and `/worker/*` routes invoked asynchronously by Cloud Tasks.
+
+| Endpoint | Method | Schedule (JST) | Deadline | Description |
+|---|---|---|---|---|
+| `/batch/self-reflection` | `GET` | 04:05 Daily | 180s | **Layer 2 Global Timeline Summary**: Distills recent timeline posts into `system/persona.timeline_summary`. Fail-fast on Gemini quota exhaustion or empty responses. |
+| `/batch/dreaming` | `GET` | 04:30 Daily | 900s | **User Memory Consolidation (Layer 3)**: Compresses user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and per-user failure isolation. |
+| `/batch/evolution` | `GET` | 05:00 Daily | 300s | **Layer 1 Self-Evolution**: Analyzes cross-user dialogue patterns to dynamically evolve the system prompt (`system/persona.extended_prompt`). |
+| `/batch/mentions` | `GET` | Every 5 min | 180s | Polls new mentions, checks dynamic DAU rate limits, and enqueues delayed reply tasks to Cloud Tasks. |
+| `/batch/news-post` | `GET` | 07:00, 11:30, 19:00 | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
+| `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
+| `/batch/anniversary-post` | `GET` | 08:30 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
+| `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
+| `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
+| `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates vector embeddings for image assets missing representations. |
+| `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | - | Generates structured `{ thought, reply }` response and posts reply to X. |
+
 ## 2. Character Specification & Persona
 Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her pure core identity is cleanly decoupled from runtime execution context rules (X replies, timeline posts, Admin Copilot).
 

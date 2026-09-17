@@ -9,9 +9,10 @@ The `bot-backend` is the core execution engine of Rebecca AI, operating as a ser
 ### 1. Triple-Buffer Memory System
 Rebecca implements a multi-tiered memory architecture to keep prompts highly relevant while maintaining computational cost efficiency:
 - **Layer 0 (Core Persona Prompt)**: Immutable, hardcoded prompt defining Rebecca's core identity, gyaru slang, and social rules. Loaded directly from `@rebecca/persona`.
-- **Layer 1 (Extended Persona Tuning)**: Dynamic behavioral tunings. Updated automatically by the background "Dreaming" process based on recent timeline trends and sentiment logs.
-- **Layer 2 (Global Timeline Summary)**: Dynamic global summary of what Rebecca has posted, providing a shared context of her timeline.
-- **Episodic Buffer**: Short-term conversation history (last few turns) injected directly into the user reply context.
+- **Layer 1 (Extended Persona Tuning)**: Dynamic behavioral tunings. Updated automatically by the background "Evolution" batch (`/batch/evolution`) based on recent multi-user conversation trends.
+- **Layer 2 (Global Timeline Summary)**: Dynamic global summary of what Rebecca has posted, providing a shared context of her timeline. Updated automatically by the dedicated "Self-Reflection" batch (`/batch/self-reflection`) with fail-fast protections.
+- **User Core Profile (Long-Term Memory)**: Consolidated user preferences, relationship dynamics, and factual traits synthesized per-user by the "Dreaming" batch (`/batch/dreaming`) with 4.5s throttling.
+- **Episodic Buffer**: Short-term conversation history (sliding window) preserved across dreaming synthesis and injected directly into user reply context.
 - **Vector Memory (RAG)**: Long-term memory fragments retrieved via semantic vector searches on user-specific fragments.
 
 ### 2. Context Injection Rules
@@ -36,6 +37,39 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 - Automatically analyzes uploaded graphics using `gemini-3.1-flash-lite` (Vision mode) and generates alt-text metadata.
 - Alt-text captions are vectorized using `text-embedding-004` and stored in Firestore.
 - Proactive timeline updates query these embeddings using Firestore Vector Search (KNN) to attach contextually relevant images to auto-generated posts.
+
+---
+
+## HTTP Batch & Worker API Specification
+
+`bot-backend` exposes secured HTTP endpoints mounted on `/batch/*` (invoked on schedule via Cloud Scheduler or administrative BFF triggers) and `/worker/*` (invoked asynchronously by Cloud Tasks).
+
+All `/batch/*` routes require authentication via either:
+1. `x-batch-secret` header matching `BATCH_SECRET_KEY` (local/testing or BFF proxy)
+2. GCP Cloud Scheduler OIDC Bearer Token validated against Google's token verification endpoints (`batchAuth` middleware)
+
+All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud Tasks (`workerAuth` middleware).
+
+### Batch Endpoints (`/batch/*`)
+
+| Endpoint | Method | Schedule (JST) | Deadline | Description |
+|---|---|---|---|---|
+| `/batch/self-reflection` | `GET` | `04:05` Daily | 180s | **Layer 2 Global Timeline Summary**: Distills Rebecca's recent timeline context into `system/persona.timeline_summary`. Fail-fast on Gemini errors or empty outputs. |
+| `/batch/dreaming` | `GET` | `04:30` Daily | 900s | **User Memory Consolidation**: Consolidates user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and isolated per-user failure boundaries. |
+| `/batch/evolution` | `GET` | `05:00` Daily | 300s | **Layer 1 Self-Evolution**: Analyzes collective conversation trends and updates the dynamic behavioral prompt (`system/persona.extended_prompt`). |
+| `/batch/mentions` | `GET` | Every 5 min | 180s | Polls recent X mentions, verifies DAU rate limits, and enqueues reply tasks to Cloud Tasks. |
+| `/batch/news-post` | `GET` | 07:00, 11:30, 19:00 | 180s | Ingests RSS news, applies vector deduplication, and posts Gyaru commentary with KNN-matched images. |
+| `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
+| `/batch/anniversary-post` | `GET` | 08:30 Daily | 180s | Sources real-world memorial days ("◯◯の日") from Wikipedia and posts contextual commentary. |
+| `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and enrolls them into the special engagement list. |
+| `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Sends surprise spontaneous mentions to enrolled special treatment list members. |
+| `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates text embeddings for newly uploaded images missing vector representation. |
+
+### Worker Endpoints (`/worker/*`)
+
+| Endpoint | Method | Trigger | Description |
+|---|---|---|---|
+| `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | Generates structured `{ thought, reply }` response using working memory, persona few-shot anchors, and RAG episodes. Dispatches reply to X. |
 
 ---
 
