@@ -90,6 +90,11 @@ describe('ProactiveNewsUseCase Unit Tests', () => {
             expect.stringContaining('【拡張ペルソナ・近況】'),
             expect.any(Array),
         );
+        expect(deps.gemini.generateStructuredNewsPost).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.stringContaining('選定したニュースの【具体的な対象・固有名詞】'),
+            expect.any(Array),
+        );
         expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
             expect.objectContaining({
                 text: expect.stringContaining('完全新作ゲーム発表！楽しみね！'),
