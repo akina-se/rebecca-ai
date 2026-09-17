@@ -270,6 +270,25 @@ describe('GeminiService Unit Tests', () => {
             expect(res2).toEqual({ thought: 't2', reply: 'Soliloquy post content 2' });
         });
 
+        it('should call generateContent with maxOutputTokens: 1000 for timeline and news posts', async () => {
+            const gemini = getGeminiService();
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"thought":"t","reply":"text"}'
+            });
+            await gemini.generateStructuredTimelinePost('sys', 'prompt');
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+                config: expect.objectContaining({ maxOutputTokens: 1000 }),
+            }));
+
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"selectedTitle":"h1","thought":"t","reply":"text"}'
+            });
+            await gemini.generateStructuredNewsPost('sys', 'prompt', ['h1']);
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+                config: expect.objectContaining({ maxOutputTokens: 1000 }),
+            }));
+        });
+
         it('should throw error if prompt is empty or error occurs', async () => {
             const gemini = getGeminiService();
             await expect(gemini.generateStructuredNewsPost('sys', '', ['h1'])).rejects.toThrow('Prompt cannot be empty');
