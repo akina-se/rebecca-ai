@@ -334,13 +334,19 @@ export class GeminiService implements IGeminiService {
    * Summarizes the latest timeline events and integrates them with a previous summary context.
    *
    * @param prompt - The formatted instruction containing recent posts and previous summary.
-   * @param previousSummary - Optional prior summary context.
    * @returns A promise resolving to the updated timeline summary string.
+   * @throws Error if client is uninitialized, prompt is invalid, or generation fails.
    */
-  async generateTimelineSummary(prompt: string | string[], previousSummary?: string): Promise<string> {
-    if (!this.ai || !prompt || (Array.isArray(prompt) && prompt.length === 0)) return previousSummary || '';
+  async generateTimelineSummary(prompt: string | string[]): Promise<string> {
+    if (!this.ai) {
+      throw new Error('Gemini API client not initialized');
+    }
+    const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
+    if (!contentStr || contentStr.trim().length === 0) {
+      throw new Error('[GeminiService] Prompt for timeline summary cannot be empty.');
+    }
+
     try {
-      const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
       const response = await this.ai.models.generateContent({
         model: this.config.model,
         contents: contentStr,
@@ -350,10 +356,14 @@ export class GeminiService implements IGeminiService {
           maxOutputTokens: 400,
         },
       });
-      return response.text?.trim() || previousSummary || '';
+      const summary = response.text?.trim();
+      if (!summary) {
+        throw new Error('[GeminiService] Gemini returned empty response for timeline summary.');
+      }
+      return summary;
     } catch (e) {
-      console.error('Error generating timeline summary:', e);
-      return previousSummary || '';
+      console.error('[GeminiService] Failed to generate timeline summary:', e);
+      throw e;
     }
   }
 

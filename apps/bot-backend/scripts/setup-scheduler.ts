@@ -16,7 +16,14 @@ console.log(`Setting up Cloud Scheduler jobs for ${projectId} in ${region}...`);
 
 const timeZone = process.env.APP_TIMEZONE || 'Asia/Tokyo';
 
-const jobs = [
+interface SchedulerJobConfig {
+    name: string;
+    schedule: string;
+    url: string;
+    attemptDeadline?: string;
+}
+
+const jobs: SchedulerJobConfig[] = [
     {
         name: 'rebecca-mentions-polling',
         schedule: '0 3,7-23 * * *', // 7:00-23:00 every hour + 3:00 AM JST (18 times/day)
@@ -28,9 +35,16 @@ const jobs = [
         url: `${serviceUrl}/batch/stealth-onboarding`
     },
     {
+        name: 'rebecca-self-reflection-batch',
+        schedule: '5 4 * * *', // Daily at 4:05 AM JST (timeline summary, runs after 4:00 timeline sync)
+        url: `${serviceUrl}/batch/self-reflection`,
+        attemptDeadline: '180s',
+    },
+    {
         name: 'rebecca-dreaming-batch',
-        schedule: '0 4 * * *', // Daily at 4:00 AM JST
-        url: `${serviceUrl}/batch/dreaming`
+        schedule: '30 4 * * *', // Daily at 4:30 AM JST (user memory consolidation with 4.5s throttling)
+        url: `${serviceUrl}/batch/dreaming`,
+        attemptDeadline: '900s',
     },
     {
         name: 'rebecca-evolution-batch',
@@ -64,7 +78,7 @@ const jobs = [
     }
 ];
 
-const createJob = (job: { name: string; schedule: string; url: string }) => {
+const createJob = (job: SchedulerJobConfig) => {
     try {
         const args = [
             'scheduler', 'jobs', 'create', 'http', job.name,
@@ -75,6 +89,10 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
             '--location', region,
             '--project', projectId
         ];
+
+        if (job.attemptDeadline) {
+            args.push('--attempt-deadline', job.attemptDeadline);
+        }
 
         // Use OIDC if service account is provided, otherwise fallback to shared secret
         if (serviceAccount) {
@@ -103,6 +121,10 @@ const createJob = (job: { name: string; schedule: string; url: string }) => {
                 '--location', region,
                 '--project', projectId
             ];
+
+            if (job.attemptDeadline) {
+                updateArgs.push('--attempt-deadline', job.attemptDeadline);
+            }
 
             if (serviceAccount) {
                 updateArgs.push('--oidc-service-account-email', serviceAccount);
