@@ -466,11 +466,11 @@ paths:
 
   /memory/force-dreaming:
     post:
-      summary: Force Dreaming consolidation
-      description: Non-blocking trigger to run the background Dreaming process in the Bot backend.
+      summary: Force full memory consolidation (Self-Reflection, Dreaming, Evolution)
+      description: Non-blocking trigger to orchestrate multi-tiered background memory consolidation in the Bot backend (executing /batch/self-reflection for Layer 2 timeline summary, /batch/dreaming for throttled user episodic profiles, and /batch/evolution for Layer 1 prompt evolution).
       responses:
         '202':
-          description: Dreaming evolution triggered
+          description: Multi-phase memory consolidation initiated
           content:
             application/json:
               schema:
@@ -481,7 +481,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: Dreaming process initiated
+                    example: Memory consolidation batch sequence initiated
 
   /copilot/chat:
     post:

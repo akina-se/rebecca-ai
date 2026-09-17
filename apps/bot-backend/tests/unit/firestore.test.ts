@@ -384,6 +384,11 @@ describe('Firestore Service Unit Tests', () => {
       expect(mockDocSet).toHaveBeenCalled();
     });
 
+    it('saveTimelineSummary rejects empty or whitespace-only strings', async () => {
+      await expect(firestoreService.saveTimelineSummary('')).rejects.toThrow('[FirestoreService] Cannot save empty or blank timeline summary.');
+      await expect(firestoreService.saveTimelineSummary('   ')).rejects.toThrow('[FirestoreService] Cannot save empty or blank timeline summary.');
+    });
+
     it('saveTimelinePost and getRecentTimelinePosts', async () => {
       await firestoreService.saveTimelinePost({
         text: 'Post content',

@@ -26,6 +26,23 @@ For the administration control panel, a dedicated **BFF (Backend-For-Frontend)**
 - **Strict Dependency Injection**: Core domain logic is decoupled from infrastructure services, allowing seamless transitions to event streaming or alternative stores with zero changes to core logic.
 - **Admin Copilot**: A specialized AI assistant on the dashboard. Unconstrained by 130-character limits, it conducts multi-dimensional analytics on KPIs, user trends, and assets, issuing 2-phase Human-In-The-Loop (HITL) action proposals when administrative intervention is needed.
 
+### 1.2 Batch & Worker API Specifications
+The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes triggered by Cloud Scheduler or BFF manual triggers, and `/worker/*` routes invoked asynchronously by Cloud Tasks.
+
+| Endpoint | Method | Schedule (JST) | Deadline | Description |
+|---|---|---|---|---|
+| `/batch/self-reflection` | `GET` | 04:05 Daily | 180s | **Layer 2 Global Timeline Summary**: Distills recent timeline posts into `system/persona.timeline_summary`. Fail-fast on Gemini quota exhaustion or empty responses. |
+| `/batch/dreaming` | `GET` | 04:30 Daily | 900s | **User Memory Consolidation (Layer 3)**: Compresses user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and per-user failure isolation. |
+| `/batch/evolution` | `GET` | 05:00 Daily | 300s | **Layer 1 Self-Evolution**: Analyzes cross-user dialogue patterns to dynamically evolve the system prompt (`system/persona.extended_prompt`). |
+| `/batch/mentions` | `GET` | Every 5 min | 180s | Polls new mentions, checks dynamic DAU rate limits, and enqueues delayed reply tasks to Cloud Tasks. |
+| `/batch/news-post` | `GET` | 07:00, 11:30, 19:00 | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
+| `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
+| `/batch/anniversary-post` | `GET` | 08:30 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
+| `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
+| `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
+| `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates vector embeddings for image assets missing representations. |
+| `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | - | Generates structured `{ thought, reply }` response and posts reply to X. |
+
 ## 2. Character Specification & Persona
 Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her pure core identity is cleanly decoupled from runtime execution context rules (X replies, timeline posts, Admin Copilot).
 
@@ -63,14 +80,16 @@ Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her
 3. **Random Engagement**
    - Randomly selects a user from the "Special Treatment" list, analyzes their profile, and sends a sudden, unprompted mention (executed only once per user).
 4. **Memory Consolidation (Dreaming Batch)**
-   - Consolidates daily conversation logs (`episodicBuffer`) into a compressed `Core Profile` without regression from new `thought` fields.
-5. **Self-Evolution (Evolution Batch)**
+   - Consolidates daily conversation logs (`episodicBuffer`) into a compressed `Core Profile`. Features a 4,500ms inter-user throttle to strictly comply with Gemini 15 RPM quota limits, along with isolated transactional execution and `partial_success` status reporting so one user's failure does not corrupt or halt processing for other users.
+5. **Self-Reflection (Timeline Summary Batch)**
+   - Distills Rebecca's recent timeline context into Layer 2 Timeline Summary (`system/persona.timeline_summary`). Implements strict fail-fast error semantics: Gemini quota exhaustion or empty responses throw explicit errors rather than destructively overwriting persistent memory with empty strings.
+6. **Self-Evolution (Evolution Batch)**
    - Analyzes conversation trends across all users to dynamically update her system prompt (Collective Unconscious Trend) to better empathize with current user concerns.
-6. **Proactive News Post & Image Re-ranking**
+7. **Proactive News Post & Image Re-ranking**
    - Fetches news feeds, generates Gyaru commentary, selects images using similarity threshold filtering (`IMAGE_SIMILARITY_THRESHOLD`) and LLM-as-a-Judge re-ranking (`verifyImageRelevance`), falling back to text-only if irrelevant.
-7. **Dynamic Rate Limit**
+8. **Dynamic Rate Limit**
    - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions.
-8. **System Memory Layers Management**
+9. **System Memory Layers Management**
    - Inspects Layer 0 persona master data (all 120 patterns) in text format on the dashboard, alongside Layer 1 (extended prompt) and Layer 2 (timeline summary).
 
 ## 4. Database Schema & Data Types (Firestore)
@@ -156,13 +175,19 @@ Tracks random engagement history for list members.
 5. Builds a surprise `random_engagement` context prompt based on the analysis and recent timeline, then generates a mention text.
 6. To bypass X API Free Tier limitations on Quote Tweets/Replies, posts the generated text as a **standalone new tweet** with an @mention, and records the user in `list_interaction_history` (ensuring this happens only once per user).
 
-### 5.4 Dreaming Flow (Memory Consolidation)
-1. Triggered daily at 3:00 AM by Cloud Scheduler.
-2. Scans `episodicBuffer` across all users for unprocessed logs.
-3. Passes the existing `coreProfile` and `episodicBuffer` to Gemini to compress and rebuild a new `coreProfile` JSON (with strict PII masking enforced).
-4. Clears the `episodicBuffer` upon successful update.
+### 5.4 Self-Reflection Flow (Timeline Summary)
+1. Triggered daily at 4:05 AM JST by Cloud Scheduler (`rebecca-self-reflection-batch`), executing after the 4:00 AM timeline sync completes.
+2. Fetches recent timeline posts from Firestore and invokes Gemini to generate an objective Layer 2 Timeline Summary.
+3. Adheres to fail-fast semantics: if Gemini encounters quota exhaustion or returns an empty string, an error is raised and persistent memory remains untouched. Successfully generated summaries are saved to `system/persona`.
 
-### 5.5 Proactive News & Autonomous Soliloquy Flow
+### 5.5 Dreaming Flow (User Memory Consolidation)
+1. Triggered daily at 4:30 AM JST by Cloud Scheduler (`rebecca-dreaming-batch`, attemptDeadline: 900s).
+2. Scans `episodicBuffer` across all users for unprocessed logs.
+3. Enforces a 4,500ms throttle between users to stay within Gemini Free Tier rate limits (15 RPM).
+4. Passes the existing `coreProfile` and `episodicBuffer` to Gemini to compress and rebuild a new `coreProfile` JSON (with strict PII masking).
+5. Upon per-user success, updates that user's `coreProfile` and trims `episodicBuffer` to the sliding window (retaining last 20 items). Failures for individual users are isolated and do not halt or corrupt the remaining batch.
+
+### 5.6 Proactive News & Autonomous Soliloquy Flow
 1. Triggered periodically multiple times a day.
 2. Fetches an RSS feed (e.g., Yahoo! News) and extracts top news from a random category.
 3. **Vector Deduplication**: Fetches embeddings of news posted in the past 48 hours (`newsEmbedding`) and computes cosine similarity (`cosineSimilarity >= 0.82`) against candidate headlines to deterministically exclude previously covered topics.
