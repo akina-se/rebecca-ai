@@ -67,14 +67,16 @@
 3. **ランダムエンゲージメント機能 (Random Engagement)**
    - 「特別扱い」リストのメンバーからランダムにユーザーを選び、プロフィールを分析した上で不意打ちのメンションを1回だけ送る。
 4. **記憶統合・ドリーミング (Dreaming Batch)**
-   - 日々の会話ログ（Episodic Buffer）を統合し、ユーザーごとの長期記憶（Core Profile）を自動更新する。既存の `content` プロパティを読み込むため、`thought` 追加による影響・デグレは生じない。
-5. **自己進化機能 (Evolution Batch)**
+   - 日々の会話ログ（Episodic Buffer）を統合し、ユーザーごとの長期記憶（Core Profile）を自動更新する。ユーザー間の連続呼び出しによるGemini APIレートリミット（15 RPM）枯渇を防ぐため、ユーザー処理間に4,500msのスロットリングを導入。個別ユーザーの処理失敗が他ユーザーに波及しないトランザクション隔離と部分成功（partial_success）のステータス管理を実施。
+5. **自己内省・タイムライン要約 (Self-Reflection Batch)**
+   - タイムライン全体の投稿からレベッカ自身の最新の関心・文脈（Layer 2 Timeline Summary）を抽出し、`system/persona.timeline_summary` を更新。Fail-Fast設計を採用し、Geminiのクォータ枯渇や空文字生成時には既存の要約を空文字で破壊的に上書きせず、明示的にエラーを送出して処理を中断・保護する。
+6. **自己進化機能 (Evolution Batch)**
    - 全ユーザーの会話トレンドを分析し、より寄り添えるようにプロンプト（集合無意識トレンド）を自己アップデートする。
-6. **ニュース自発投稿機能 (Proactive News Post & Image Re-ranking)**
+7. **ニュース自発投稿機能 (Proactive News Post & Image Re-ranking)**
    - ニュースを取得し、ギャル視点での意見を生成。投稿内容に合った画像をベクトル検索（類似度閾値 `IMAGE_SIMILARITY_THRESHOLD`）および LLM-as-a-Judge Re-ranking (`verifyImageRelevance`) で判定し、適切な画像のみを添付。無関係な画像の場合はテキストのみで投稿する。
-7. **ダイナミックレートリミット (Dynamic Rate Limit)**
+8. **ダイナミックレートリミット (Dynamic Rate Limit)**
    - API制限を超過しないよう、Daily Active Users (DAU) に応じて1ユーザーあたりの1日の返信上限を動的に変動。Firestoreのトランザクションを用いて堅牢に管理します。
-8. **システム記憶レイヤー管理 (System Memory Layers)**
+9. **システム記憶レイヤー管理 (System Memory Layers)**
    - ダッシュボードの Layer 0 で 120 パターンのペルソナマスターデータをテキストで閲覧可能。Layer 1（拡張プロンプト）および Layer 2（タイムライン要約）の確認・更新が可能。
 
 ## 4. データベース設計とデータ種別 (Firestore Schema & Types)
@@ -160,13 +162,19 @@
 5. 分析結果と直近のタイムライン状況をもとに `random_engagement` 用の不意打ちコンテキストプロンプトを構築し、メンション文章を生成。
 6. 対象者の最新ツイートを「引用/リプライ」するのではなく、API制限を回避するため、文脈を含めた**独立した新規ツイート（@メンション付き）**としてXへ投稿し、対象者を `list_interaction_history` に記録して完了（1ユーザーにつき1回のみ実行）。
 
-### 5.4 記憶統合バッチ (Dreaming Flow)
-1. 毎日深夜3時に Cloud Scheduler が起動。
-2. 全ユーザーの `episodicBuffer` を確認し、未統合の会話ログが存在するユーザーを抽出。
-3. Geminiに過去の `coreProfile` と `episodicBuffer` を渡し、新しい `coreProfile` (JSON) に圧縮・再構築させる（※PIIマスキングの徹底）。
-4. 更新後、`episodicBuffer` をクリアする。
+### 5.4 自己内省バッチ (Self-Reflection Flow)
+1. 毎日深夜4時05分（JST）に Cloud Scheduler (`rebecca-self-reflection-batch`) が起動（04:00のタイムライン同期バッチ完了後に実行）。
+2. 直近のタイムライン投稿を取得し、Geminiによって客観的な要約テキスト（Layer 2 Timeline Summary）を生成。
+3. Fail-Fast原則に基づき、生成結果が空文字またはエラーの場合は例外を送出し、既存の要約を破壊的更新から保護。正常時のみ `system/persona` ドキュメントに保存。
 
-### 5.5 ニュース自発投稿 & 自律独り言バッチ (Proactive News & Autonomous Soliloquy Flow)
+### 5.5 記憶統合バッチ (Dreaming Flow)
+1. 毎日深夜4時30分（JST）に Cloud Scheduler (`rebecca-dreaming-batch`, attemptDeadline: 900s) が起動。
+2. 全ユーザーの `episodicBuffer` を確認し、未統合の会話ログが存在するユーザーを抽出。
+3. 各ユーザーの処理間に4,500msのインターバルスロットを設け、無料枠・レートリミット（15 RPM）超過による429エラーを防止。
+4. Geminiに過去の `coreProfile` と `episodicBuffer` を渡し、新しい `coreProfile` (JSON) に圧縮・再構築（※PIIマスキングの徹底）。
+5. ユーザーごとの更新が成功した時点で当該ユーザーの `episodicBuffer` をスライディングウィンドウ（直近20件保持）で更新。個別ユーザーのエラーは他ユーザーの処理を中断させない。
+
+### 5.6 ニュース自発投稿 & 自律独り言バッチ (Proactive News & Autonomous Soliloquy Flow)
 1. 毎日複数回、定期的に実行。
 2. Yahoo! ニュース等のRSSフィードを取得し、ランダムなカテゴリからトップニュースを抽出。
 3. **ベクトル重複排除（RAG化）**: 過去48時間以内の投稿ニュースの埋め込みベクトル（`newsEmbedding`）を取得し、新規ヘッドラインとのコサイン類似度（`cosineSimilarity >= 0.82`）を計算して既出トピックを前段で完全除外。

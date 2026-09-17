@@ -63,14 +63,16 @@ Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her
 3. **Random Engagement**
    - Randomly selects a user from the "Special Treatment" list, analyzes their profile, and sends a sudden, unprompted mention (executed only once per user).
 4. **Memory Consolidation (Dreaming Batch)**
-   - Consolidates daily conversation logs (`episodicBuffer`) into a compressed `Core Profile` without regression from new `thought` fields.
-5. **Self-Evolution (Evolution Batch)**
+   - Consolidates daily conversation logs (`episodicBuffer`) into a compressed `Core Profile`. Features a 4,500ms inter-user throttle to strictly comply with Gemini 15 RPM quota limits, along with isolated transactional execution and `partial_success` status reporting so one user's failure does not corrupt or halt processing for other users.
+5. **Self-Reflection (Timeline Summary Batch)**
+   - Distills Rebecca's recent timeline context into Layer 2 Timeline Summary (`system/persona.timeline_summary`). Implements strict fail-fast error semantics: Gemini quota exhaustion or empty responses throw explicit errors rather than destructively overwriting persistent memory with empty strings.
+6. **Self-Evolution (Evolution Batch)**
    - Analyzes conversation trends across all users to dynamically update her system prompt (Collective Unconscious Trend) to better empathize with current user concerns.
-6. **Proactive News Post & Image Re-ranking**
+7. **Proactive News Post & Image Re-ranking**
    - Fetches news feeds, generates Gyaru commentary, selects images using similarity threshold filtering (`IMAGE_SIMILARITY_THRESHOLD`) and LLM-as-a-Judge re-ranking (`verifyImageRelevance`), falling back to text-only if irrelevant.
-7. **Dynamic Rate Limit**
+8. **Dynamic Rate Limit**
    - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions.
-8. **System Memory Layers Management**
+9. **System Memory Layers Management**
    - Inspects Layer 0 persona master data (all 120 patterns) in text format on the dashboard, alongside Layer 1 (extended prompt) and Layer 2 (timeline summary).
 
 ## 4. Database Schema & Data Types (Firestore)
@@ -156,13 +158,19 @@ Tracks random engagement history for list members.
 5. Builds a surprise `random_engagement` context prompt based on the analysis and recent timeline, then generates a mention text.
 6. To bypass X API Free Tier limitations on Quote Tweets/Replies, posts the generated text as a **standalone new tweet** with an @mention, and records the user in `list_interaction_history` (ensuring this happens only once per user).
 
-### 5.4 Dreaming Flow (Memory Consolidation)
-1. Triggered daily at 3:00 AM by Cloud Scheduler.
-2. Scans `episodicBuffer` across all users for unprocessed logs.
-3. Passes the existing `coreProfile` and `episodicBuffer` to Gemini to compress and rebuild a new `coreProfile` JSON (with strict PII masking enforced).
-4. Clears the `episodicBuffer` upon successful update.
+### 5.4 Self-Reflection Flow (Timeline Summary)
+1. Triggered daily at 4:05 AM JST by Cloud Scheduler (`rebecca-self-reflection-batch`), executing after the 4:00 AM timeline sync completes.
+2. Fetches recent timeline posts from Firestore and invokes Gemini to generate an objective Layer 2 Timeline Summary.
+3. Adheres to fail-fast semantics: if Gemini encounters quota exhaustion or returns an empty string, an error is raised and persistent memory remains untouched. Successfully generated summaries are saved to `system/persona`.
 
-### 5.5 Proactive News & Autonomous Soliloquy Flow
+### 5.5 Dreaming Flow (User Memory Consolidation)
+1. Triggered daily at 4:30 AM JST by Cloud Scheduler (`rebecca-dreaming-batch`, attemptDeadline: 900s).
+2. Scans `episodicBuffer` across all users for unprocessed logs.
+3. Enforces a 4,500ms throttle between users to stay within Gemini Free Tier rate limits (15 RPM).
+4. Passes the existing `coreProfile` and `episodicBuffer` to Gemini to compress and rebuild a new `coreProfile` JSON (with strict PII masking).
+5. Upon per-user success, updates that user's `coreProfile` and trims `episodicBuffer` to the sliding window (retaining last 20 items). Failures for individual users are isolated and do not halt or corrupt the remaining batch.
+
+### 5.6 Proactive News & Autonomous Soliloquy Flow
 1. Triggered periodically multiple times a day.
 2. Fetches an RSS feed (e.g., Yahoo! News) and extracts top news from a random category.
 3. **Vector Deduplication**: Fetches embeddings of news posted in the past 48 hours (`newsEmbedding`) and computes cosine similarity (`cosineSimilarity >= 0.82`) against candidate headlines to deterministically exclude previously covered topics.

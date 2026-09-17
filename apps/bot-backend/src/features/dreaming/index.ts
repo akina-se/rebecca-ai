@@ -1,8 +1,13 @@
 import { Router } from 'express';
-import { GlobalDreamingController } from './controller';
-import { GlobalDreamingUseCase } from './usecase';
 import { AppDependencies } from '../../types';
+import { GlobalDreamingUseCase } from './usecase';
+import { GlobalDreamingController } from './controller';
 import { createGlobalDreamingRouter } from './routes';
+
+export * from './types';
+export * from './usecase';
+export * from './controller';
+export * from './routes';
 
 /**
  * Initializes and configures the global dreaming module.

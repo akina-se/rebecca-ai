@@ -11,6 +11,7 @@ import { createRandomEngagementModule } from '../features/engagement';
 import { createSoliloquyModule } from '../features/soliloquy';
 import { createAssetEmbeddingsModule } from '../features/assets';
 import { createProactiveAnniversaryModule } from '../features/anniversary';
+import { createSelfReflectionModule } from '../features/self-reflection';
 
 export const createBatchRoutes = (deps: AppDependencies): Router => {
     const router = Router();
@@ -19,6 +20,7 @@ export const createBatchRoutes = (deps: AppDependencies): Router => {
     router.use(batchAuth);
 
     router.use('/mentions', createMentionsModule(deps));
+    router.use('/self-reflection', createSelfReflectionModule(deps));
     router.use('/dreaming', createGlobalDreamingModule(deps));
     router.use('/evolution', createGlobalEvolutionModule(deps));
     router.use('/news-post', createProactiveNewsModule(deps));

@@ -110,11 +110,10 @@ describe('GeminiService Unit Tests', () => {
             expect(result).toBe('Summary');
         });
 
-        it('should return previous summary on error', async () => {
+        it('should throw error when Gemini API generation fails', async () => {
             const gemini = getGeminiService();
-            mockGenerateContent.mockRejectedValueOnce(new Error('Error'));
-            const result = await gemini.generateTimelineSummary(['post1'], 'Prev Summary');
-            expect(result).toBe('Prev Summary');
+            mockGenerateContent.mockRejectedValueOnce(new Error('API quota exceeded'));
+            await expect(gemini.generateTimelineSummary(['post1'])).rejects.toThrow('API quota exceeded');
         });
     });
 
@@ -287,18 +286,30 @@ describe('GeminiService Unit Tests', () => {
     });
 
     describe('generateTimelineSummary', () => {
-        it('should handle prompt array and fallback to previous summary on error or empty', async () => {
+        it('should handle prompt array and return trimmed text', async () => {
             const gemini = getGeminiService();
-            mockGenerateContent.mockResolvedValueOnce({ text: 'New summary' });
+            mockGenerateContent.mockResolvedValueOnce({ text: '  New summary  ' });
 
-            const res = await gemini.generateTimelineSummary(['post1', 'post2'], 'old summary');
+            const res = await gemini.generateTimelineSummary(['post1', 'post2']);
             expect(res).toBe('New summary');
+        });
 
-            mockGenerateContent.mockRejectedValueOnce(new Error('Gemini error'));
-            const resFallback = await gemini.generateTimelineSummary('prompt', 'old summary');
-            expect(resFallback).toBe('old summary');
+        it('should throw error when prompt is empty array or blank string', async () => {
+            const gemini = getGeminiService();
+            await expect(gemini.generateTimelineSummary([])).rejects.toThrow(
+                '[GeminiService] Prompt for timeline summary cannot be empty.',
+            );
+            await expect(gemini.generateTimelineSummary('   ')).rejects.toThrow(
+                '[GeminiService] Prompt for timeline summary cannot be empty.',
+            );
+        });
 
-            expect(await gemini.generateTimelineSummary([], 'prev')).toBe('prev');
+        it('should throw error when Gemini returns empty response', async () => {
+            const gemini = getGeminiService();
+            mockGenerateContent.mockResolvedValueOnce({ text: '   ' });
+            await expect(gemini.generateTimelineSummary('prompt')).rejects.toThrow(
+                '[GeminiService] Gemini returned empty response for timeline summary.',
+            );
         });
     });
 
@@ -539,7 +550,7 @@ describe('GeminiService Unit Tests', () => {
             expect(await gemini.analyzeUserProfile('desc')).toEqual({});
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['news'])).rejects.toThrow('Gemini API client not initialized');
             await expect(gemini.generateStructuredTimelinePost('sys', 'soliloquy')).rejects.toThrow('Gemini API client not initialized');
-            expect(await gemini.generateTimelineSummary(['post'], 'prev')).toBe('prev');
+            await expect(gemini.generateTimelineSummary(['post'])).rejects.toThrow('Gemini API client not initialized');
             expect(await gemini.detectLanguage('test')).toBe('ja');
             expect(await gemini.generateEmbedding('test')).toEqual([]);
             expect(await gemini.generateSearchQuery('ctx', 'in')).toBe('in');
