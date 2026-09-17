@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0](https://github.com/akina-se/rebecca-ai/compare/v1.21.0...v1.22.0) (2026-09-17)
+
+
+### Features
+
+* **dreaming:** separate self-reflection batch and enforce robust user consolidation ([#243](https://github.com/akina-se/rebecca-ai/issues/243)) ([ff3642a](https://github.com/akina-se/rebecca-ai/commit/ff3642ac939f680221d48aa150a098ac2a667da0))
+
+
+### Bug Fixes
+
+* **bot-backend:** expand structured post maxOutputTokens to 1000 ([#246](https://github.com/akina-se/rebecca-ai/issues/246)) ([#247](https://github.com/akina-se/rebecca-ai/issues/247)) ([a86451d](https://github.com/akina-se/rebecca-ai/commit/a86451dc838ee40f90d378d045812ba8091e64a1))
+
 ## [1.21.0](https://github.com/akina-se/rebecca-ai/compare/v1.20.0...v1.21.0) (2026-09-17)
 
 
