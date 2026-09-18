@@ -40,6 +40,9 @@ jest.mock('../../src/services/firestore', () => ({
     saveTimelinePost: jest.fn().mockResolvedValue(undefined),
     updateImageLastUsed: jest.fn().mockResolvedValue(undefined),
     getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
+    getActiveCampaign: jest.fn().mockResolvedValue(null),
+    getCampaignById: jest.fn().mockResolvedValue(null),
+    updateCampaign: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../../src/services/gemini', () => {

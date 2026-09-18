@@ -1,0 +1,159 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute, Router } from '@angular/router';
+import { of } from 'rxjs';
+import { CampaignEditorComponent } from './campaign-editor.component';
+import { CAMPAIGNS_REPOSITORY } from '../../../core/ports/campaigns.repository';
+import { ToastService } from '../../../shared/services/toast.service';
+import { CampaignDocWithId } from '@rebecca/types';
+
+describe('CampaignEditorComponent', () => {
+  let component: CampaignEditorComponent;
+  let fixture: ComponentFixture<CampaignEditorComponent>;
+  let mockRepo: any;
+  let mockRouter: any;
+  let mockToast: any;
+  let mockRoute: any;
+
+  const sampleCampaign: CampaignDocWithId = {
+    id: 'camp_edit_1',
+    title: 'Kyoto Journey',
+    description: 'Fall tour',
+    startDate: '2026-11-01',
+    endDate: '2026-11-03',
+    status: 'draft',
+    dailySlotTimes: ['08:00', '19:00'],
+    masterContext: 'Rebecca in Kyoto',
+    replyContextSummary: 'Enjoying Kyoto',
+    slots: [
+      {
+        slotId: 'slot-1-0800',
+        dayNumber: 1,
+        timePeriod: 'morning',
+        scheduledTime: '2026-11-01T08:00:00Z',
+        theme: 'Arrival',
+        status: 'pending',
+      },
+    ],
+    totalSlotsCount: 1,
+    completedSlotsCount: 0,
+    isPaused: false,
+    createdAt: '2026-09-18T00:00:00Z',
+    updatedAt: '2026-09-18T00:00:00Z',
+  };
+
+  beforeEach(async () => {
+    mockRepo = {
+      getById: jest.fn().mockReturnValue(of(sampleCampaign)),
+      create: jest.fn().mockReturnValue(of({ ...sampleCampaign, id: 'camp_new' })),
+      update: jest.fn().mockReturnValue(of(sampleCampaign)),
+      uploadAsset: jest.fn().mockReturnValue(
+        of({ url: 'https://storage.googleapis.com/bucket/pic.png', filename: 'pic.png' }),
+      ),
+    };
+
+    mockRouter = {
+      navigate: jest.fn(),
+    };
+
+    mockToast = {
+      show: jest.fn(),
+    };
+
+    mockRoute = {
+      snapshot: {
+        paramMap: {
+          get: jest.fn().mockReturnValue('camp_edit_1'),
+        },
+      },
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CampaignEditorComponent],
+      providers: [
+        { provide: CAMPAIGNS_REPOSITORY, useValue: mockRepo },
+        { provide: Router, useValue: mockRouter },
+        { provide: ActivatedRoute, useValue: mockRoute },
+        { provide: ToastService, useValue: mockToast },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(CampaignEditorComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should load campaign when id is present in route params (edit mode)', () => {
+    expect(component).toBeTruthy();
+    expect(component.isEditMode()).toBe(true);
+    expect(mockRepo.getById).toHaveBeenCalledWith('camp_edit_1');
+    expect(component.title).toBe('Kyoto Journey');
+    expect(component.slots).toHaveLength(1);
+  });
+
+  it('should auto-generate slots based on dates and slot times', () => {
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-02';
+    component.dailySlotTimesText = '08:00, 19:00';
+
+    component.autoGenerateSlots();
+    // 2 days * 2 slots = 4 slots
+    expect(component.slots).toHaveLength(4);
+    expect(component.slots[0].dayNumber).toBe(1);
+    expect(component.slots[0].timePeriod).toBe('morning');
+    expect(component.slots[1].dayNumber).toBe(1);
+    expect(component.slots[1].timePeriod).toBe('evening');
+    expect(component.slots[2].dayNumber).toBe(2);
+    expect(component.slots[3].dayNumber).toBe(2);
+  });
+
+  it('should update slot on onSlotChange', () => {
+    const updated = { ...component.slots[0], theme: 'New Theme' };
+    component.onSlotChange(updated);
+    expect(component.slots[0].theme).toBe('New Theme');
+  });
+
+  it('should upload illustration asset and attach url to slot', () => {
+    const file = new File(['abc'], 'kyoto.png', { type: 'image/png' });
+    component.onUploadMedia({ slot: component.slots[0], file });
+
+    expect(mockRepo.uploadAsset).toHaveBeenCalledWith('camp_edit_1', file);
+    expect(component.slots[0].mediaUrl).toBe('https://storage.googleapis.com/bucket/pic.png');
+    expect(component.slots[0].textOnly).toBe(false);
+  });
+
+  it('should validate title and dates on save', () => {
+    component.title = '';
+    component.save();
+    expect(mockToast.show).toHaveBeenCalledWith('Title is required', 'warning');
+    expect(mockRepo.update).not.toHaveBeenCalled();
+
+    component.title = 'Valid Title';
+    component.startDate = '2026-12-05';
+    component.endDate = '2026-12-01';
+    component.save();
+    expect(mockToast.show).toHaveBeenCalledWith('Valid start date and end date are required', 'warning');
+    expect(mockRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('should save updates in edit mode and navigate to /campaigns', () => {
+    component.title = 'Updated Title';
+    component.startDate = '2026-11-01';
+    component.endDate = '2026-11-03';
+
+    component.save('scheduled');
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      'camp_edit_1',
+      expect.objectContaining({
+        title: 'Updated Title',
+        status: 'scheduled',
+      }),
+    );
+    expect(mockToast.show).toHaveBeenCalledWith('Campaign saved successfully', 'success');
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns']);
+  });
+
+  it('should cancel and navigate to /campaigns', () => {
+    component.cancel();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns']);
+  });
+});

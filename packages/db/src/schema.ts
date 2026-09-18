@@ -74,6 +74,12 @@ export const COLLECTIONS = {
    * Doc ID = Eventarc eventId.
    */
   PROCESSED_EVENTS: 'processed_events',
+
+  /**
+   * Campaigns: Multi-day narrative event projects.
+   * Doc ID = `camp_<timestamp>_<uuid>`.
+   */
+  CAMPAIGNS: 'campaigns',
 } as const;
 
 // Derive a union type for all collection name values.
@@ -93,6 +99,12 @@ import type {
   RawConversationLog,
   PostType,
   TimelinePost,
+  CampaignStatus,
+  SlotTimePeriod,
+  CampaignSlotStatus,
+  CampaignSlot,
+  CampaignDoc,
+  CampaignDocWithId,
 } from '@rebecca/types';
 
 export type {
@@ -103,6 +115,12 @@ export type {
   RawConversationLog,
   PostType,
   TimelinePost,
+  CampaignStatus,
+  SlotTimePeriod,
+  CampaignSlotStatus,
+  CampaignSlot,
+  CampaignDoc,
+  CampaignDocWithId,
 };
 
 /** Rate-limit tracking document for a user within a time window. */

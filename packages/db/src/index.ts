@@ -35,6 +35,10 @@ import {
   type RateLimitDoc,
   type PersonaDoc,
   type XApiStateDoc,
+  type CampaignDoc,
+  type CampaignSlot,
+  type SlotTimePeriod,
+  type CampaignSlotStatus,
 } from './schema';
 
 // ---------------------------------------------------------------------------
@@ -276,6 +280,93 @@ export const rateLimitConverter = makePassThroughConverter<RateLimitDoc>();
 export const personaConverter = makePassThroughConverter<PersonaDoc>();
 export const xApiStateConverter = makePassThroughConverter<XApiStateDoc>();
 
+/**
+ * Converter for the `campaigns` collection.
+ */
+const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
+  toFirestore(campaign: CampaignDoc): DocumentData {
+    const data: DocumentData = {
+      title: campaign.title,
+      status: campaign.status,
+      isPaused: Boolean(campaign.isPaused),
+      startDate: campaign.startDate,
+      endDate: campaign.endDate,
+      dailySlotTimes: Array.isArray(campaign.dailySlotTimes) ? campaign.dailySlotTimes : [],
+      masterContext: campaign.masterContext ?? '',
+      replyContextSummary: campaign.replyContextSummary ?? '',
+      slots: Array.isArray(campaign.slots)
+        ? campaign.slots.map((slot: CampaignSlot) => ({
+            slotId: slot.slotId,
+            dayNumber: slot.dayNumber,
+            timePeriod: slot.timePeriod,
+            scheduledTime: slot.scheduledTime,
+            theme: slot.theme,
+            mediaUrl: slot.mediaUrl ?? null,
+            captionPromptHint: slot.captionPromptHint ?? null,
+            fixedTextOverride: slot.fixedTextOverride ?? null,
+            status: slot.status,
+            postedTweetId: slot.postedTweetId ?? null,
+            postedAt: slot.postedAt ?? null,
+            errorReason: slot.errorReason ?? null,
+          }))
+        : [],
+      totalSlotsCount: Number(campaign.totalSlotsCount ?? 0),
+      completedSlotsCount: Number(campaign.completedSlotsCount ?? 0),
+      isAnnualRecurring: Boolean(campaign.isAnnualRecurring),
+      createdAt: campaign.createdAt,
+      updatedAt: campaign.updatedAt,
+    };
+
+    if (campaign.description !== undefined) {
+      data['description'] = campaign.description;
+    }
+    if (campaign.recurringApprovedYear !== undefined) {
+      data['recurringApprovedYear'] = campaign.recurringApprovedYear;
+    }
+
+    return data;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot): CampaignDoc {
+    const data = snapshot.data();
+    return {
+      id: snapshot.id,
+      title: String(data['title'] ?? ''),
+      description: data['description'] ?? undefined,
+      status: data['status'] ?? 'draft',
+      isPaused: Boolean(data['isPaused']),
+      startDate: String(data['startDate'] ?? ''),
+      endDate: String(data['endDate'] ?? ''),
+      dailySlotTimes: (Array.isArray(data['dailySlotTimes']) ? data['dailySlotTimes'] : []) as string[],
+      masterContext: String(data['masterContext'] ?? ''),
+      replyContextSummary: String(data['replyContextSummary'] ?? ''),
+      slots: Array.isArray(data['slots'])
+        ? (data['slots'] as Record<string, unknown>[]).map((s): CampaignSlot => ({
+            slotId: String(s['slotId'] ?? ''),
+            dayNumber: Number(s['dayNumber'] ?? 1),
+            timePeriod: (s['timePeriod'] as SlotTimePeriod) ?? 'morning',
+            scheduledTime: String(s['scheduledTime'] ?? ''),
+            theme: String(s['theme'] ?? ''),
+            mediaUrl: typeof s['mediaUrl'] === 'string' ? s['mediaUrl'] : undefined,
+            captionPromptHint: typeof s['captionPromptHint'] === 'string' ? s['captionPromptHint'] : undefined,
+            fixedTextOverride: typeof s['fixedTextOverride'] === 'string' ? s['fixedTextOverride'] : undefined,
+            isFixedText: Boolean(s['isFixedText']),
+            textOnly: Boolean(s['textOnly']),
+            status: (s['status'] as CampaignSlotStatus) ?? 'pending',
+            postedTweetId: typeof s['postedTweetId'] === 'string' ? s['postedTweetId'] : undefined,
+            postedAt: toIsoString(s['postedAt'] as Timestamp | Date | string | null | undefined) ?? (typeof s['postedAt'] === 'string' ? s['postedAt'] : undefined),
+            errorReason: typeof s['errorReason'] === 'string' ? s['errorReason'] : undefined,
+          }))
+        : [],
+      totalSlotsCount: Number(data['totalSlotsCount'] ?? 0),
+      completedSlotsCount: Number(data['completedSlotsCount'] ?? 0),
+      isAnnualRecurring: Boolean(data['isAnnualRecurring']),
+      recurringApprovedYear: data['recurringApprovedYear'] != null ? Number(data['recurringApprovedYear']) : undefined,
+      createdAt: toIsoString(data['createdAt']) ?? String(data['createdAt'] ?? ''),
+      updatedAt: toIsoString(data['updatedAt']) ?? String(data['updatedAt'] ?? ''),
+    };
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Public API: getCollections()
 // ---------------------------------------------------------------------------
@@ -384,6 +475,14 @@ export function getCollections(db: Firestore) {
     processedEvents: db
       .collection(COLLECTIONS.PROCESSED_EVENTS)
       .withConverter(makePassThroughConverter()),
+
+    /**
+     * Typed campaign narrative event documents.
+     * Doc ID = `camp_<timestamp>_<uuid>`.
+     */
+    campaigns: db
+      .collection(COLLECTIONS.CAMPAIGNS)
+      .withConverter(campaignDocConverter),
   } as const;
 }
 
@@ -399,6 +498,7 @@ export {
   imageDocConverter,
   processedFollowerConverter,
   listInteractionConverter,
+  campaignDocConverter,
 };
 
 // Re-export all schema models and collection constants.

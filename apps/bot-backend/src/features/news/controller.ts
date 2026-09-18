@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ProactiveNewsUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
+import { CampaignGuard } from '../campaign';
 
 /**
  * Controller for the Proactive News feature.
@@ -11,10 +12,12 @@ export class ProactiveNewsController {
      * Initializes the ProactiveNewsController.
      * @param useCase The use case responsible for executing proactive news posting.
      * @param soliloquyUseCase The fallback use case to execute when news posting is skipped.
+     * @param campaignGuard Optional campaign guard for evaluating narrative event suppression.
      */
     constructor(
         private useCase: ProactiveNewsUseCase,
         private soliloquyUseCase: SoliloquyUseCase,
+        private campaignGuard?: CampaignGuard,
     ) {}
 
     /**
@@ -25,6 +28,15 @@ export class ProactiveNewsController {
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
+            if (this.campaignGuard) {
+                const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
+                if (suppression.shouldSuppress) {
+                    console.log(`[ProactiveNewsController] Suppressed by active campaign "${suppression.campaign?.title}" (${suppression.campaign?.id})`);
+                    res.status(200).json({ status: 'suppressed_by_campaign', campaignId: suppression.campaign?.id });
+                    return;
+                }
+            }
+
             const result = await this.useCase.execute();
             if (result.status === 'skipped') {
                 console.log(`[ProactiveNewsController] News post skipped (${result.reason}). Executing alternate soliloquy post...`);
