@@ -1,12 +1,16 @@
 import { Firestore, Query, DocumentData } from '@google-cloud/firestore';
-import { CampaignDoc, CampaignDocWithId, PaginatedResponse } from '@rebecca/types';
+import {
+  CampaignDoc,
+  CampaignDocWithId,
+  CampaignQueryParams,
+  PaginatedResponse,
+} from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
+export type { CampaignQueryParams };
 
-export interface CampaignQueryParams {
-  page?: number;
-  limit?: number;
-  status?: string;
-}
+export const DEFAULT_PAGE = 1;
+export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 100;
 
 /**
  * Repository for data access operations related to Narrative Event Campaigns in Firestore.
@@ -28,8 +32,8 @@ export class CampaignsRepository {
    * @returns Paginated list of campaigns with metadata.
    */
   async getPaginated(params?: CampaignQueryParams): Promise<PaginatedResponse<CampaignDocWithId>> {
-    const page = Math.max(1, Number(params?.page || 1));
-    const limit = Math.max(1, Math.min(100, Number(params?.limit || 20)));
+    const page = params?.page ?? DEFAULT_PAGE;
+    const limit = Math.min(MAX_LIMIT, params?.limit ?? DEFAULT_LIMIT);
     const statusFilter = params?.status?.trim();
 
     let query: Query<CampaignDoc> = this.collections.campaigns;

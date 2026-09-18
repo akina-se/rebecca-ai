@@ -8,6 +8,7 @@ import { CampaignsController } from './controller';
 export * from './repository';
 export * from './usecase';
 export * from './controller';
+export * from './errors';
 
 const upload = multer({
   storage: multer.memoryStorage(),

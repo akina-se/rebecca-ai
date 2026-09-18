@@ -3,6 +3,7 @@ import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { CampaignPostResult } from './types';
 import { getZonedDateParts } from '../../utils/time';
 import { downloadImage } from '../../utils/image';
+import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 
 /**
  * Configuration for the CampaignPostUseCase.
@@ -20,9 +21,9 @@ export interface CampaignPostUseCaseConfig {
 export const mapHourToTimePeriod = (hour: number): SlotTimePeriod => {
   if (hour >= 5 && hour < 11) {
     return 'morning';
-  } else if (hour >= 11 && hour < 15) {
+  } else if (hour >= 11 && hour < 17) {
     return 'afternoon';
-  } else if (hour >= 15 && hour < 19) {
+  } else if (hour >= 17 && hour < 22) {
     return 'evening';
   } else {
     return 'night';
@@ -75,8 +76,8 @@ export class CampaignPostUseCase {
 
     const currentPeriod = mapHourToTimePeriod(numericHour);
 
-    // Find the pending slot for today matching the current period, or earliest pending for today
-    const pendingSlotsForToday = (campaign.slots || []).filter(
+    // Find the pending slot for today matching the current period strictly
+    const pendingSlotsForToday = campaign.slots.filter(
       (s: CampaignSlot) => s.dayNumber === dayNumber && s.status === 'pending',
     );
 
@@ -88,9 +89,15 @@ export class CampaignPostUseCase {
       };
     }
 
-    const targetSlot =
-      pendingSlotsForToday.find((s) => s.timePeriod === currentPeriod) ||
-      pendingSlotsForToday[0];
+    const targetSlot = pendingSlotsForToday.find((s) => s.timePeriod === currentPeriod);
+
+    if (!targetSlot) {
+      console.log(`[CampaignPostUseCase] No pending slot configured for period "${currentPeriod}" on Day ${dayNumber}. Skipping.`);
+      return {
+        status: 'skipped',
+        reason: `No pending slot configured for period "${currentPeriod}" on Day ${dayNumber}.`,
+      };
+    }
 
     console.log(`[CampaignPostUseCase] Target slot matched: ID=${targetSlot.slotId}, Day=${targetSlot.dayNumber}, Period=${targetSlot.timePeriod}, Theme="${targetSlot.theme}"`);
 
@@ -106,7 +113,29 @@ export class CampaignPostUseCase {
         const userCallsign = this.deps.persona.metadata.userCallsign.ja;
         const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
 
+        const timelineSummary = await this.deps.firestore.getTimelineSummary();
+        const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
+
+        const personaFewShotPrompt = await resolveSituationalPersonaAnchors(
+          this.deps.gemini,
+          [
+            `【イベント・ストーリー設定】${campaign.masterContext}`,
+            `【本日のテーマ】${targetSlot.theme}`,
+            `【時間帯】${targetSlot.timePeriod}`,
+            targetSlot.captionPromptHint && targetSlot.captionPromptHint.trim()
+              ? `【演出ヒント】${targetSlot.captionPromptHint.trim()}`
+              : '',
+            extendedPrompt ? `【拡張ペルソナ・近況】${extendedPrompt}` : '',
+            timelineSummary ? `【タイムラインの空気感】${timelineSummary}` : '',
+          ].filter(Boolean),
+          'ja',
+          3,
+        );
+
         const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
+        const captionHintText = targetSlot.captionPromptHint && targetSlot.captionPromptHint.trim()
+          ? targetSlot.captionPromptHint.trim()
+          : '（特記事項なし）';
         const campaignPrompt = `あなたはAIキャラクター「${personaName}」として、現在実施中の特別ストーリー（イベント・キャンペーン）に沿ったX（Twitter）のポストを1つ作成してください。
 
 【特別ストーリー設定（Master Context）】
@@ -116,9 +145,9 @@ ${campaign.masterContext}
 - キャンペーン進行: Day ${targetSlot.dayNumber}（${todayStr}）
 - 時間帯: ${targetSlot.timePeriod}
 - このスロットのテーマ: ${targetSlot.theme}
-- 描写・演出ヒント: ${targetSlot.captionPromptHint || '（特記事項なし）'}
+- 描写・演出ヒント: ${captionHintText}
 ${targetSlot.mediaUrl ? '- 本投稿にはイラスト写真が添付されます。写真に写っている情景を自然に共有するトーンで語りかけてください。' : '- 本投稿はテキストのみのつぶやきです。'}
-
+${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【生成ルール】
 - Master Contextの世界観と現在のスロットのテーマを自然に織り込み、生き生きとした実況感や日常の体験を${userCallsign}（ユーザー）に伝えてください。
 - 一方的な報告にならず、${personaName}らしい親しみやすい語りかけや問いかけを交えてください。

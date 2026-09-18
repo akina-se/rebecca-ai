@@ -1,12 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { CampaignsRepository } from '../../core/ports/campaigns.repository';
 import {
-  CampaignsRepository,
-  CampaignListParams,
+  CampaignDocWithId,
+  PaginatedResponse,
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
+  CampaignQueryParams,
   CampaignAssetUploadResult,
-} from '../../core/ports/campaigns.repository';
-import { CampaignDoc, CampaignDocWithId, PaginatedResponse } from '@rebecca/types';
+} from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -22,7 +25,7 @@ export class HttpCampaignsRepository implements CampaignsRepository {
   /**
    * Retrieves paginated campaigns list with optional status filtering.
    */
-  getAll(params?: CampaignListParams): Observable<PaginatedResponse<CampaignDocWithId>> {
+  getAll(params?: CampaignQueryParams): Observable<PaginatedResponse<CampaignDocWithId>> {
     let httpParams = new HttpParams();
     if (params) {
       if (params.page !== undefined) {
@@ -50,14 +53,14 @@ export class HttpCampaignsRepository implements CampaignsRepository {
   /**
    * Creates a new narrative event campaign.
    */
-  create(data: Partial<CampaignDoc>): Observable<CampaignDocWithId> {
+  create(data: CreateCampaignRequest): Observable<CampaignDocWithId> {
     return this.http.post<CampaignDocWithId>(`${this.baseUrl}/campaigns`, data);
   }
 
   /**
    * Updates an existing campaign document.
    */
-  update(id: string, updates: Partial<CampaignDoc>): Observable<CampaignDocWithId> {
+  update(id: string, updates: UpdateCampaignRequest): Observable<CampaignDocWithId> {
     return this.http.put<CampaignDocWithId>(`${this.baseUrl}/campaigns/${id}`, updates);
   }
 

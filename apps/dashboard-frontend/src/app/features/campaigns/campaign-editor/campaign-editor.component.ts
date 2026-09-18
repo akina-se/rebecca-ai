@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-  CampaignDoc,
   CampaignDocWithId,
   CampaignSlot,
   CampaignStatus,
   SlotTimePeriod,
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
 } from '@rebecca/types';
 import { CAMPAIGNS_REPOSITORY } from '../../../core/ports/campaigns.repository';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -78,16 +79,16 @@ export class CampaignEditorComponent implements OnInit {
     this.repo.getById(id).subscribe({
       next: (campaign: CampaignDocWithId) => {
         this.title = campaign.title;
-        this.description = campaign.description || '';
+        this.description = campaign.description ?? '';
         this.startDate = campaign.startDate;
         this.endDate = campaign.endDate;
-        this.dailySlotTimesText = (campaign.dailySlotTimes || ['08:00', '12:00', '19:00']).join(', ');
-        this.masterContext = campaign.masterContext || '';
-        this.replyContextSummary = campaign.replyContextSummary || '';
+        this.dailySlotTimesText = campaign.dailySlotTimes.join(', ');
+        this.masterContext = campaign.masterContext;
+        this.replyContextSummary = campaign.replyContextSummary;
         this.status = campaign.status;
-        this.isAnnualRecurring = !!campaign.isAnnualRecurring;
-        this.isPaused = !!campaign.isPaused;
-        this.slots = campaign.slots || [];
+        this.isAnnualRecurring = campaign.isAnnualRecurring;
+        this.isPaused = campaign.isPaused;
+        this.slots = campaign.slots;
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -119,7 +120,11 @@ export class CampaignEditorComponent implements OnInit {
       return;
     }
 
-    const times = this.parsedSlotTimes.length > 0 ? this.parsedSlotTimes : ['08:00', '19:00'];
+    const times = this.parsedSlotTimes;
+    if (times.length === 0) {
+      this.toastService.show('Please provide valid daily slot times (e.g. 08:00, 12:00, 19:00)', 'warning');
+      return;
+    }
     const generated: CampaignSlot[] = [];
 
     const start = new Date(`${this.startDate}T00:00:00Z`);
@@ -208,7 +213,7 @@ export class CampaignEditorComponent implements OnInit {
   /**
    * Saves the campaign document as draft or scheduled.
    */
-  save(targetStatus?: CampaignStatus): void {
+  save(targetStatus: CampaignStatus): void {
     const trimmedTitle = this.title.trim();
     if (!trimmedTitle) {
       this.toastService.show('Title is required', 'warning');
@@ -220,10 +225,25 @@ export class CampaignEditorComponent implements OnInit {
       return;
     }
 
-    this.isSaving.set(true);
-    const resolvedStatus: CampaignStatus = targetStatus || this.status;
+    if (this.parsedSlotTimes.length === 0) {
+      this.toastService.show('At least one valid daily slot time (HH:mm) is required', 'warning');
+      return;
+    }
 
-    const payload: Partial<CampaignDoc> = {
+    if (targetStatus === 'scheduled' || targetStatus === 'active') {
+      if (!this.masterContext.trim()) {
+        this.toastService.show('Master context is required for scheduled campaigns', 'warning');
+        return;
+      }
+      if (!this.replyContextSummary.trim()) {
+        this.toastService.show('Reply context summary is required for scheduled campaigns', 'warning');
+        return;
+      }
+    }
+
+    this.isSaving.set(true);
+
+    const payload: CreateCampaignRequest = {
       title: trimmedTitle,
       description: this.description.trim(),
       startDate: this.startDate,
@@ -231,16 +251,15 @@ export class CampaignEditorComponent implements OnInit {
       dailySlotTimes: this.parsedSlotTimes,
       masterContext: this.masterContext.trim(),
       replyContextSummary: this.replyContextSummary.trim(),
-      status: resolvedStatus,
+      status: targetStatus,
       isAnnualRecurring: this.isAnnualRecurring,
       isPaused: this.isPaused,
       slots: this.slots,
-      totalSlotsCount: this.slots.length,
-      completedSlotsCount: this.slots.filter((s) => s.status === 'posted').length,
     };
 
+    const updates: UpdateCampaignRequest = payload;
     const action$ = this.isEditMode() && this.campaignId
-      ? this.repo.update(this.campaignId, payload)
+      ? this.repo.update(this.campaignId, updates)
       : this.repo.create(payload);
 
     action$.subscribe({

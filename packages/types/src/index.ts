@@ -558,4 +558,55 @@ export interface CampaignDocWithId extends CampaignDoc {
   id: string;
 }
 
+/** Query parameters for listing campaigns with pagination and filtering. */
+export interface CampaignQueryParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+}
+
+/** Payload for creating a new campaign. */
+export interface CreateCampaignRequest {
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  dailySlotTimes: string[];
+  masterContext: string;
+  replyContextSummary: string;
+  status: CampaignStatus;
+  isPaused?: boolean;
+  isAnnualRecurring?: boolean;
+  recurringApprovedYear?: number;
+  slots?: CampaignSlot[];
+}
+
+/** Payload for updating an existing campaign. */
+export interface UpdateCampaignRequest {
+  title?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  dailySlotTimes?: string[];
+  masterContext?: string;
+  replyContextSummary?: string;
+  status?: CampaignStatus;
+  isPaused?: boolean;
+  isAnnualRecurring?: boolean;
+  recurringApprovedYear?: number;
+  slots?: CampaignSlot[];
+}
+
+/** Payload for cloning an existing campaign. */
+export interface CloneCampaignRequest {
+  newStartDate?: string;
+  newEndDate?: string;
+}
+
+/** Uploaded campaign illustration result. */
+export interface CampaignAssetUploadResult {
+  url: string;
+  filename: string;
+}
+
 

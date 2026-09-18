@@ -6,6 +6,11 @@ import {
 } from '../../src/features/campaign/usecase';
 import { CampaignsController } from '../../src/features/campaign/controller';
 import { initializeCampaignsModule } from '../../src/features/campaign';
+import {
+  CampaignConflictError,
+  CampaignNotFoundError,
+  CampaignValidationError,
+} from '../../src/features/campaign/errors';
 import { CampaignDoc, CampaignDocWithId } from '@rebecca/types';
 import { createMockFirestore } from './testUtils';
 import { Request, Response } from 'express';
@@ -69,7 +74,8 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(getTimePeriodForHour('08:00')).toBe('morning');
       expect(getTimePeriodForHour('12:30')).toBe('afternoon');
       expect(getTimePeriodForHour('17:00')).toBe('evening');
-      expect(getTimePeriodForHour('21:00')).toBe('night');
+      expect(getTimePeriodForHour('21:00')).toBe('evening');
+      expect(getTimePeriodForHour('23:00')).toBe('night');
       expect(getTimePeriodForHour('02:00')).toBe('night');
     });
 
@@ -92,9 +98,9 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(slots[3].timePeriod).toBe('evening');
     });
 
-    it('generateSlotsForSchedule should return empty array if dates are invalid', () => {
-      expect(generateSlotsForSchedule('invalid', 'dates', ['08:00'])).toEqual([]);
-      expect(generateSlotsForSchedule('2026-07-05', '2026-07-01', ['08:00'])).toEqual([]);
+    it('generateSlotsForSchedule should throw if dates are invalid', () => {
+      expect(() => generateSlotsForSchedule('invalid', 'dates', ['08:00'])).toThrow('Dates must be in YYYY-MM-DD format.');
+      expect(() => generateSlotsForSchedule('2026-07-05', '2026-07-01', ['08:00'])).toThrow('startDate cannot be after endDate.');
     });
   });
 
@@ -258,10 +264,10 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
     });
 
     it('createCampaign should validate title and dates', async () => {
-      await expect(useCase.createCampaign({ title: '' })).rejects.toThrow('Campaign title is required');
-      await expect(useCase.createCampaign({ title: 'Trip', startDate: '' })).rejects.toThrow('Campaign startDate and endDate are required');
+      await expect(useCase.createCampaign({ title: '' } as any)).rejects.toThrow('Campaign title is required');
+      await expect(useCase.createCampaign({ title: 'Trip', startDate: '', endDate: '2026-12-01', dailySlotTimes: ['08:00'], status: 'draft' } as any)).rejects.toThrow('startDate and endDate must be valid dates in YYYY-MM-DD format.');
       await expect(
-        useCase.createCampaign({ title: 'Trip', startDate: '2026-12-05', endDate: '2026-12-01' }),
+        useCase.createCampaign({ title: 'Trip', startDate: '2026-12-05', endDate: '2026-12-01', dailySlotTimes: ['08:00'], status: 'draft' } as any),
       ).rejects.toThrow('startDate cannot be after endDate');
     });
 
@@ -275,6 +281,10 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
           title: 'New Event',
           startDate: '2026-07-03',
           endDate: '2026-07-07',
+          dailySlotTimes: ['08:00'],
+          status: 'draft',
+          masterContext: 'Ctx',
+          replyContextSummary: 'Reply',
         }),
       ).rejects.toThrow('Campaign dates overlap with existing campaign: "Existing Event"');
     });
@@ -287,6 +297,9 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
         startDate: '2026-08-01',
         endDate: '2026-08-02',
         dailySlotTimes: ['08:00', '19:00'],
+        status: 'draft',
+        masterContext: 'Context',
+        replyContextSummary: 'Reply summary',
       });
 
       expect(created.totalSlotsCount).toBe(4);
@@ -494,31 +507,32 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(mockRes.status).toHaveBeenCalledWith(404);
     });
 
-    it('create should return 201 on success or 400 on error', async () => {
+    it('create should return 201 on success or 400 on validation error', async () => {
       mockReq.body = { title: 'Event' };
       mockUseCase.createCampaign.mockResolvedValueOnce({ ...sampleCampaign, id: 'c1' });
 
       await controller.create(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(201);
 
-      mockUseCase.createCampaign.mockRejectedValueOnce(new Error('Validation error'));
+      mockUseCase.createCampaign.mockRejectedValueOnce(new CampaignValidationError('Validation error'));
       await controller.create(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Validation error', code: 'CAMPAIGN_VALIDATION_ERROR' });
     });
 
-    it('list should handle errors and return 500', async () => {
+    it('list should handle errors securely and return 500 without leaking internal details', async () => {
       mockUseCase.listCampaigns.mockRejectedValueOnce(new Error('DB failure'));
       await controller.list(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'DB failure' });
+      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' });
     });
 
-    it('getById should handle errors and return 500', async () => {
+    it('getById should handle errors securely and return 500', async () => {
       mockReq.params = { id: 'c1' };
       mockUseCase.getCampaign.mockRejectedValueOnce(new Error('Lookup failure'));
       await controller.getById(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Lookup failure' });
+      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' });
     });
 
     it('update should return 200 on success, 404 when not found, and 400 on validation error', async () => {
@@ -529,29 +543,29 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.update(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(200);
 
-      mockUseCase.updateCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
+      mockUseCase.updateCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found.'));
       await controller.update(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
-      mockUseCase.updateCampaign.mockRejectedValueOnce(new Error('Invalid dates'));
+      mockUseCase.updateCampaign.mockRejectedValueOnce(new CampaignValidationError('Invalid dates'));
       await controller.update(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
-    it('clone should return 201 on success, 404 when not found, and 400 on error', async () => {
+    it('clone should return 201 on success, 404 when not found, and 409 on overlap error', async () => {
       mockReq.params = { id: 'c1' };
       mockUseCase.cloneCampaign.mockResolvedValueOnce({ ...sampleCampaign, id: 'c2' });
 
       await controller.clone(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(201);
 
-      mockUseCase.cloneCampaign.mockRejectedValueOnce(new Error('Source campaign c1 not found.'));
+      mockUseCase.cloneCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Source campaign c1 not found.'));
       await controller.clone(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
-      mockUseCase.cloneCampaign.mockRejectedValueOnce(new Error('Overlap error'));
+      mockUseCase.cloneCampaign.mockRejectedValueOnce(new CampaignConflictError('Overlap error'));
       await controller.clone(mockReq as Request, mockRes as Response);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.status).toHaveBeenCalledWith(409);
     });
 
     it('pause and resume should return 200 on success, 404 on not found, and 500 on server error', async () => {
@@ -561,7 +575,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.pause(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(200);
 
-      mockUseCase.pauseCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found'));
+      mockUseCase.pauseCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found'));
       await controller.pause(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
@@ -573,7 +587,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.resume(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(200);
 
-      mockUseCase.resumeCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found'));
+      mockUseCase.resumeCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found'));
       await controller.resume(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
@@ -600,7 +614,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(mockRes.status).toHaveBeenCalledWith(201);
 
       // Not found -> 404
-      mockUseCase.uploadCampaignAsset.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
+      mockUseCase.uploadCampaignAsset.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found.'));
       await controller.uploadAsset(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
@@ -618,7 +632,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Campaign deleted successfully.' });
 
-      mockUseCase.deleteCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
+      mockUseCase.deleteCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found.'));
       await controller.delete(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 

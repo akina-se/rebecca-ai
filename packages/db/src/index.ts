@@ -39,6 +39,7 @@ import {
   type CampaignSlot,
   type SlotTimePeriod,
   type CampaignSlotStatus,
+  type CampaignStatus,
 } from './schema';
 
 // ---------------------------------------------------------------------------
@@ -328,41 +329,84 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): CampaignDoc {
     const data = snapshot.data();
+
+    // Enforce mandatory document fields - fail fast on schema corruption rather than masking
+    if (
+      typeof data['title'] !== 'string' ||
+      typeof data['startDate'] !== 'string' ||
+      typeof data['endDate'] !== 'string' ||
+      typeof data['status'] !== 'string'
+    ) {
+      throw new Error(
+        `Corrupted Campaign document [${snapshot.id}]: missing required root fields (title, startDate, endDate, status).`,
+      );
+    }
+
+    const rawSlots = data['slots'];
+    if (!Array.isArray(rawSlots)) {
+      throw new Error(`Corrupted Campaign document [${snapshot.id}]: slots must be an array.`);
+    }
+
+    const slots: CampaignSlot[] = rawSlots.map((s, index): CampaignSlot => {
+      if (
+        !s ||
+        typeof s['slotId'] !== 'string' ||
+        typeof s['dayNumber'] !== 'number' ||
+        typeof s['timePeriod'] !== 'string' ||
+        typeof s['scheduledTime'] !== 'string' ||
+        typeof s['theme'] !== 'string' ||
+        typeof s['status'] !== 'string'
+      ) {
+        throw new Error(
+          `Corrupted CampaignSlot at index ${index} in document [${snapshot.id}]: missing required slot fields (slotId, dayNumber, timePeriod, scheduledTime, theme, status).`,
+        );
+      }
+
+      return {
+        slotId: s['slotId'],
+        dayNumber: s['dayNumber'],
+        timePeriod: s['timePeriod'] as SlotTimePeriod,
+        scheduledTime: s['scheduledTime'],
+        theme: s['theme'],
+        mediaUrl: typeof s['mediaUrl'] === 'string' ? s['mediaUrl'] : undefined,
+        captionPromptHint: typeof s['captionPromptHint'] === 'string' ? s['captionPromptHint'] : undefined,
+        fixedTextOverride: typeof s['fixedTextOverride'] === 'string' ? s['fixedTextOverride'] : undefined,
+        isFixedText: Boolean(s['isFixedText']),
+        textOnly: Boolean(s['textOnly']),
+        status: s['status'] as CampaignSlotStatus,
+        postedTweetId: typeof s['postedTweetId'] === 'string' ? s['postedTweetId'] : undefined,
+        postedAt:
+          toIsoString(s['postedAt'] as Timestamp | Date | string | null | undefined) ??
+          (typeof s['postedAt'] === 'string' ? s['postedAt'] : undefined),
+        errorReason: typeof s['errorReason'] === 'string' ? s['errorReason'] : undefined,
+      };
+    });
+
+    const createdAtIso = toIsoString(data['createdAt']);
+    const updatedAtIso = toIsoString(data['updatedAt']);
+
     return {
       id: snapshot.id,
-      title: String(data['title'] ?? ''),
-      description: data['description'] ?? undefined,
-      status: data['status'] ?? 'draft',
+      title: data['title'],
+      description: typeof data['description'] === 'string' ? data['description'] : undefined,
+      status: data['status'] as CampaignStatus,
       isPaused: Boolean(data['isPaused']),
-      startDate: String(data['startDate'] ?? ''),
-      endDate: String(data['endDate'] ?? ''),
-      dailySlotTimes: (Array.isArray(data['dailySlotTimes']) ? data['dailySlotTimes'] : []) as string[],
-      masterContext: String(data['masterContext'] ?? ''),
-      replyContextSummary: String(data['replyContextSummary'] ?? ''),
-      slots: Array.isArray(data['slots'])
-        ? (data['slots'] as Record<string, unknown>[]).map((s): CampaignSlot => ({
-            slotId: String(s['slotId'] ?? ''),
-            dayNumber: Number(s['dayNumber'] ?? 1),
-            timePeriod: (s['timePeriod'] as SlotTimePeriod) ?? 'morning',
-            scheduledTime: String(s['scheduledTime'] ?? ''),
-            theme: String(s['theme'] ?? ''),
-            mediaUrl: typeof s['mediaUrl'] === 'string' ? s['mediaUrl'] : undefined,
-            captionPromptHint: typeof s['captionPromptHint'] === 'string' ? s['captionPromptHint'] : undefined,
-            fixedTextOverride: typeof s['fixedTextOverride'] === 'string' ? s['fixedTextOverride'] : undefined,
-            isFixedText: Boolean(s['isFixedText']),
-            textOnly: Boolean(s['textOnly']),
-            status: (s['status'] as CampaignSlotStatus) ?? 'pending',
-            postedTweetId: typeof s['postedTweetId'] === 'string' ? s['postedTweetId'] : undefined,
-            postedAt: toIsoString(s['postedAt'] as Timestamp | Date | string | null | undefined) ?? (typeof s['postedAt'] === 'string' ? s['postedAt'] : undefined),
-            errorReason: typeof s['errorReason'] === 'string' ? s['errorReason'] : undefined,
-          }))
-        : [],
-      totalSlotsCount: Number(data['totalSlotsCount'] ?? 0),
-      completedSlotsCount: Number(data['completedSlotsCount'] ?? 0),
+      startDate: data['startDate'],
+      endDate: data['endDate'],
+      dailySlotTimes: Array.isArray(data['dailySlotTimes']) ? (data['dailySlotTimes'] as string[]) : [],
+      masterContext: typeof data['masterContext'] === 'string' ? data['masterContext'] : '',
+      replyContextSummary: typeof data['replyContextSummary'] === 'string' ? data['replyContextSummary'] : '',
+      slots,
+      totalSlotsCount: typeof data['totalSlotsCount'] === 'number' ? data['totalSlotsCount'] : slots.length,
+      completedSlotsCount:
+        typeof data['completedSlotsCount'] === 'number'
+          ? data['completedSlotsCount']
+          : slots.filter((s) => s.status === 'posted').length,
       isAnnualRecurring: Boolean(data['isAnnualRecurring']),
-      recurringApprovedYear: data['recurringApprovedYear'] != null ? Number(data['recurringApprovedYear']) : undefined,
-      createdAt: toIsoString(data['createdAt']) ?? String(data['createdAt'] ?? ''),
-      updatedAt: toIsoString(data['updatedAt']) ?? String(data['updatedAt'] ?? ''),
+      recurringApprovedYear:
+        data['recurringApprovedYear'] != null ? Number(data['recurringApprovedYear']) : undefined,
+      createdAt: createdAtIso ?? (typeof data['createdAt'] === 'string' ? data['createdAt'] : new Date().toISOString()),
+      updatedAt: updatedAtIso ?? (typeof data['updatedAt'] === 'string' ? data['updatedAt'] : new Date().toISOString()),
     };
   },
 };

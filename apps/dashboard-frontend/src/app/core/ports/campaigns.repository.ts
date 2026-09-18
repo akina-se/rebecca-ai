@@ -1,23 +1,15 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CampaignDoc, CampaignDocWithId, PaginatedResponse } from '@rebecca/types';
+import {
+  CampaignDocWithId,
+  PaginatedResponse,
+  CreateCampaignRequest,
+  UpdateCampaignRequest,
+  CampaignQueryParams,
+  CampaignAssetUploadResult,
+} from '@rebecca/types';
 
-/**
- * Query parameters for campaigns list.
- */
-export interface CampaignListParams {
-  page?: number;
-  limit?: number;
-  status?: string;
-}
-
-/**
- * Asset upload result contract.
- */
-export interface CampaignAssetUploadResult {
-  url: string;
-  filename: string;
-}
+export type { CampaignQueryParams as CampaignListParams, CampaignAssetUploadResult };
 
 /**
  * Port contract for campaigns backend interactions.
@@ -26,7 +18,7 @@ export interface CampaignsRepository {
   /**
    * Retrieves paginated campaigns.
    */
-  getAll(params?: CampaignListParams): Observable<PaginatedResponse<CampaignDocWithId>>;
+  getAll(params?: CampaignQueryParams): Observable<PaginatedResponse<CampaignDocWithId>>;
 
   /**
    * Retrieves a single campaign by ID.
@@ -36,12 +28,12 @@ export interface CampaignsRepository {
   /**
    * Creates a new campaign.
    */
-  create(data: Partial<CampaignDoc>): Observable<CampaignDocWithId>;
+  create(data: CreateCampaignRequest): Observable<CampaignDocWithId>;
 
   /**
    * Updates an existing campaign.
    */
-  update(id: string, updates: Partial<CampaignDoc>): Observable<CampaignDocWithId>;
+  update(id: string, updates: UpdateCampaignRequest): Observable<CampaignDocWithId>;
 
   /**
    * Duplicates an existing campaign with reset slots.

@@ -454,49 +454,57 @@ describe('@rebecca/db Unit Tests', () => {
       expect(result['slots']).toEqual([]);
     });
 
-    it('fromFirestore should handle empty or missing snapshot fields cleanly', () => {
-      const mockSnapshot = {
+    it('fromFirestore should throw an error when mandatory fields are missing', () => {
+      const mockCorruptedSnapshot = {
         id: 'camp_empty',
         data: () => ({
           title: 'Minimal Campaign',
+          // missing startDate, endDate, status
+        }),
+      } as any;
+
+      expect(() => campaignDocConverter.fromFirestore(mockCorruptedSnapshot)).toThrow(
+        'Corrupted Campaign document [camp_empty]: missing required root fields',
+      );
+    });
+
+    it('fromFirestore should throw an error when slots contain invalid or missing fields', () => {
+      const mockSnapshot = {
+        id: 'camp_invalid_slot',
+        data: () => ({
+          title: 'Invalid Slot Campaign',
+          startDate: '2026-07-01',
+          endDate: '2026-07-05',
+          status: 'scheduled',
           slots: [
             {
               slotId: 'slot-1',
-              theme: 'Welcome',
-              postedAt: '2026-07-01T08:00:00Z',
+              // missing dayNumber, timePeriod, etc.
             },
           ],
         }),
       } as any;
 
-      const campaign = campaignDocConverter.fromFirestore(mockSnapshot);
-      expect(campaign.id).toBe('camp_empty');
-      expect(campaign.title).toBe('Minimal Campaign');
-      expect(campaign.description).toBeUndefined();
-      expect(campaign.status).toBe('draft');
-      expect(campaign.isPaused).toBe(false);
-      expect(campaign.dailySlotTimes).toEqual([]);
-      expect(campaign.slots[0].dayNumber).toBe(1);
-      expect(campaign.slots[0].timePeriod).toBe('morning');
-      expect(campaign.slots[0].status).toBe('pending');
-      expect(campaign.slots[0].postedAt).toBe('2026-07-01T08:00:00Z');
-      expect(campaign.totalSlotsCount).toBe(0);
-      expect(campaign.completedSlotsCount).toBe(0);
+      expect(() => campaignDocConverter.fromFirestore(mockSnapshot)).toThrow(
+        'Corrupted CampaignSlot at index 0 in document [camp_invalid_slot]: missing required slot fields',
+      );
     });
 
-    it('fromFirestore should handle non-array slots gracefully', () => {
+    it('fromFirestore should throw an error when slots is not an array', () => {
       const mockSnapshot = {
         id: 'camp_no_slots',
         data: () => ({
           title: 'No Slots',
+          startDate: '2026-07-01',
+          endDate: '2026-07-05',
+          status: 'draft',
           slots: null,
-          dailySlotTimes: null,
         }),
       } as any;
 
-      const campaign = campaignDocConverter.fromFirestore(mockSnapshot);
-      expect(campaign.slots).toEqual([]);
-      expect(campaign.dailySlotTimes).toEqual([]);
+      expect(() => campaignDocConverter.fromFirestore(mockSnapshot)).toThrow(
+        'Corrupted Campaign document [camp_no_slots]: slots must be an array.',
+      );
     });
   });
 

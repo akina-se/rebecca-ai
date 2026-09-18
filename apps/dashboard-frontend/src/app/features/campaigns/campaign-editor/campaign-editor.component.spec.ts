@@ -123,14 +123,14 @@ describe('CampaignEditorComponent', () => {
 
   it('should validate title and dates on save', () => {
     component.title = '';
-    component.save();
+    component.save('draft');
     expect(mockToast.show).toHaveBeenCalledWith('Title is required', 'warning');
     expect(mockRepo.update).not.toHaveBeenCalled();
 
     component.title = 'Valid Title';
     component.startDate = '2026-12-05';
     component.endDate = '2026-12-01';
-    component.save();
+    component.save('draft');
     expect(mockToast.show).toHaveBeenCalledWith('Valid start date and end date are required', 'warning');
     expect(mockRepo.update).not.toHaveBeenCalled();
   });

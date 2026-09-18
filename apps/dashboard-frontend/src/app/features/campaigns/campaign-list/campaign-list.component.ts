@@ -72,11 +72,9 @@ export class CampaignListComponent implements OnInit {
       })
       .subscribe({
         next: (res: PaginatedResponse<CampaignDocWithId>) => {
-          const items = res.data || [];
-          this.campaigns.set(items);
-          const total = res.meta?.totalItems ?? items.length;
-          this.totalItems.set(total);
-          this.totalPages.set(res.meta?.totalPages ?? Math.max(1, Math.ceil(total / this.pageSize)));
+          this.campaigns.set(res.data);
+          this.totalItems.set(res.meta.totalItems);
+          this.totalPages.set(res.meta.totalPages);
           this.isLoading.set(false);
         },
         error: (err) => {
@@ -120,7 +118,7 @@ export class CampaignListComponent implements OnInit {
    * Toggles emergency pause / resume for a campaign.
    */
   togglePause(campaign: CampaignDocWithId): void {
-    const isPaused = !!campaign.isPaused;
+    const isPaused = campaign.isPaused;
     const action$ = isPaused ? this.repo.resume(campaign.id) : this.repo.pause(campaign.id);
 
     action$.subscribe({
@@ -176,7 +174,8 @@ export class CampaignListComponent implements OnInit {
       },
       error: (err) => {
         console.error('[CampaignList] Clone failed:', err);
-        this.toastService.show(err.error?.error || 'Failed to clone campaign', 'error');
+        const msg = typeof err.error?.error === 'string' ? err.error.error : 'Failed to clone campaign';
+        this.toastService.show(msg, 'error');
         this.isCloning.set(false);
       },
     });
@@ -225,7 +224,7 @@ export class CampaignListComponent implements OnInit {
    * Computes completed slots percentage for progress bar.
    */
   getProgressPercentage(campaign: CampaignDocWithId): number {
-    if (!campaign.totalSlotsCount || campaign.totalSlotsCount === 0) return 0;
+    if (campaign.totalSlotsCount <= 0) return 0;
     return Math.min(100, Math.round((campaign.completedSlotsCount / campaign.totalSlotsCount) * 100));
   }
 

@@ -9,6 +9,15 @@ import { ReplyTaskUseCase } from '../../src/features/reply/usecase';
 import { createMockDeps } from './core/testUtils';
 import { CampaignDoc } from '@rebecca/types';
 import { Request, Response } from 'express';
+import { getZonedDateParts } from '../../src/utils/time';
+
+jest.mock('../../src/utils/time', () => {
+  const actual = jest.requireActual('../../src/utils/time');
+  return {
+    ...actual,
+    getZonedDateParts: jest.fn(),
+  };
+});
 
 jest.mock('../../src/utils/image', () => ({
   downloadImage: jest.fn().mockResolvedValue({
@@ -60,6 +69,19 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
   beforeEach(() => {
     deps = createMockDeps();
     jest.clearAllMocks();
+    (getZonedDateParts as jest.Mock).mockReturnValue({
+      year: '2026',
+      month: '09',
+      day: '18',
+      hour: '08',
+      minute: '00',
+      second: '00',
+      numericYear: 2026,
+      numericMonth: 9,
+      numericDay: 18,
+      numericHour: 8,
+      numericMinute: 0,
+    });
   });
 
   describe('mapHourToTimePeriod', () => {
@@ -67,10 +89,10 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       expect(mapHourToTimePeriod(6)).toBe('morning');
       expect(mapHourToTimePeriod(10)).toBe('morning');
       expect(mapHourToTimePeriod(12)).toBe('afternoon');
-      expect(mapHourToTimePeriod(14)).toBe('afternoon');
-      expect(mapHourToTimePeriod(16)).toBe('evening');
+      expect(mapHourToTimePeriod(16)).toBe('afternoon');
       expect(mapHourToTimePeriod(18)).toBe('evening');
-      expect(mapHourToTimePeriod(20)).toBe('night');
+      expect(mapHourToTimePeriod(20)).toBe('evening');
+      expect(mapHourToTimePeriod(22)).toBe('night');
       expect(mapHourToTimePeriod(2)).toBe('night');
     });
   });
@@ -206,14 +228,12 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       expect(result.status).toBe('no_active_campaign');
     });
 
-    it('should successfully post slot with attached media and update Firestore', async () => {
-      // Mock campaign starting today
+    it('should successfully post slot with attached media, dynamic persona anchoring, and update Firestore', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
-      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date());
-      campaign.startDate = todayStr;
-      campaign.endDate = todayStr;
 
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.firestore.getTimelineSummary as jest.Mock).mockResolvedValue('Recent tweets about coffee');
+      (deps.firestore.getExtendedPrompt as jest.Mock).mockResolvedValue('Feeling adventurous');
       (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
         reply: 'ホノルル空港に到着！海風が最高だよ〜🌺',
         thought: 'ハワイに着いてテンションあがる！',
@@ -229,6 +249,11 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       expect(result.tweetId).toBe('tweet_camp_999');
       expect(result.attachedMedia).toBe(true);
 
+      expect(deps.gemini.generateEmbedding).toHaveBeenCalled();
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('Rebecca is vacationing in Honolulu with friends.'),
+      );
       expect(deps.xApi.uploadMedia).toHaveBeenCalled();
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
         expect.stringContaining('ホノルル空港に到着'),
@@ -249,11 +274,76 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       );
     });
 
+    it('should strictly skip when current time period does not match any pending slot on that day', async () => {
+      (getZonedDateParts as jest.Mock).mockReturnValue({
+        year: '2026',
+        month: '09',
+        day: '18',
+        hour: '20',
+        minute: '00',
+        second: '00',
+        numericYear: 2026,
+        numericMonth: 9,
+        numericDay: 18,
+        numericHour: 20, // evening -> no evening slot on Day 1
+        numericMinute: 0,
+      });
+
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('skipped');
+      expect(result.reason).toContain('No pending slot configured for period "evening" on Day 1.');
+      expect(deps.gemini.generateStructuredTimelinePost).not.toHaveBeenCalled();
+      expect(deps.xApi.tweet).not.toHaveBeenCalled();
+    });
+
+    it('should return no_pending_slot when all slots for today are already posted', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots.forEach((s: any) => {
+        s.status = 'posted';
+      });
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('no_pending_slot');
+      expect(result.reason).toContain('No pending slots found for Day 1.');
+      expect(deps.xApi.tweet).not.toHaveBeenCalled();
+    });
+
+    it('should return skipped when current date is outside campaign window', async () => {
+      (getZonedDateParts as jest.Mock).mockReturnValue({
+        year: '2026',
+        month: '09',
+        day: '26', // Campaign ends on 2026-09-24
+        hour: '08',
+        minute: '00',
+        second: '00',
+        numericYear: 2026,
+        numericMonth: 9,
+        numericDay: 26,
+        numericHour: 8,
+        numericMinute: 0,
+      });
+
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('skipped');
+      expect(result.reason).toContain('outside campaign window');
+      expect(deps.xApi.tweet).not.toHaveBeenCalled();
+    });
+
     it('should use fixedTextOverride directly without calling Gemini when specified', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
-      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date());
-      campaign.startDate = todayStr;
-      campaign.endDate = todayStr;
       campaign.slots[0].fixedTextOverride = '【公式告知】ハワイ到着イベント開幕！';
       delete campaign.slots[0].mediaUrl;
 
@@ -272,9 +362,6 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
 
     it('Fail-Loudly: should update slot as failed in Firestore and rethrow error when tweet fails', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
-      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date());
-      campaign.startDate = todayStr;
-      campaign.endDate = todayStr;
       campaign.slots[0].fixedTextOverride = 'Fail test';
       delete campaign.slots[0].mediaUrl;
 

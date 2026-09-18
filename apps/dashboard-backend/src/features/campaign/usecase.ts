@@ -4,11 +4,30 @@ import {
   CampaignDoc,
   CampaignDocWithId,
   CampaignSlot,
+  CampaignStatus,
+  CampaignQueryParams,
+  CreateCampaignRequest,
   PaginatedResponse,
   SlotTimePeriod,
+  UpdateCampaignRequest,
 } from '@rebecca/types';
-import { CampaignsRepository, CampaignQueryParams } from './repository';
+import { CampaignsRepository } from './repository';
 import { config } from '../../config';
+import {
+  CampaignConflictError,
+  CampaignNotFoundError,
+  CampaignValidationError,
+} from './errors';
+
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const VALID_CAMPAIGN_STATUSES = new Set<CampaignStatus>([
+  'draft',
+  'scheduled',
+  'active',
+  'completed',
+  'archived',
+]);
 
 export interface UploadedCampaignFile {
   originalname: string;
@@ -20,10 +39,13 @@ export interface UploadedCampaignFile {
  * Maps a HH:mm string to SlotTimePeriod.
  */
 export const getTimePeriodForHour = (timeStr: string): SlotTimePeriod => {
-  const hour = parseInt(timeStr.split(':')[0], 10) || 0;
+  if (!TIME_REGEX.test(timeStr)) {
+    throw new CampaignValidationError(`Invalid time format "${timeStr}". Expected HH:mm.`);
+  }
+  const hour = parseInt(timeStr.split(':')[0], 10);
   if (hour >= 5 && hour < 11) return 'morning';
-  if (hour >= 11 && hour < 15) return 'afternoon';
-  if (hour >= 15 && hour < 19) return 'evening';
+  if (hour >= 11 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 22) return 'evening';
   return 'night';
 };
 
@@ -40,15 +62,24 @@ export const generateSlotsForSchedule = (
   endDate: string,
   dailySlotTimes: string[],
 ): CampaignSlot[] => {
+  if (!DATE_REGEX.test(startDate) || !DATE_REGEX.test(endDate)) {
+    throw new CampaignValidationError('Dates must be in YYYY-MM-DD format.');
+  }
+  if (startDate > endDate) {
+    throw new CampaignValidationError('startDate cannot be after endDate.');
+  }
+  if (!Array.isArray(dailySlotTimes) || dailySlotTimes.length === 0) {
+    throw new CampaignValidationError('dailySlotTimes must be a non-empty array of HH:mm strings.');
+  }
+  for (const t of dailySlotTimes) {
+    if (!TIME_REGEX.test(t)) {
+      throw new CampaignValidationError(`Invalid slot time "${t}". Expected HH:mm format.`);
+    }
+  }
+
   const slots: CampaignSlot[] = [];
   const start = new Date(`${startDate}T00:00:00Z`);
   const end = new Date(`${endDate}T00:00:00Z`);
-
-  if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-    return slots;
-  }
-
-  const times = dailySlotTimes.length > 0 ? dailySlotTimes : ['08:00', '12:00', '19:00'];
 
   let dayNum = 1;
   const current = new Date(start);
@@ -59,7 +90,7 @@ export const generateSlotsForSchedule = (
     const d = String(current.getUTCDate()).padStart(2, '0');
     const dateStr = `${y}-${m}-${d}`;
 
-    for (const time of times) {
+    for (const time of dailySlotTimes) {
       const period = getTimePeriodForHour(time);
       const cleanTime = time.replace(':', '');
       slots.push({
@@ -104,62 +135,92 @@ export class CampaignsUseCase {
   }
 
   /**
-   * Creates a new narrative event campaign with date overlap validation and automatic slot generation.
+   * Creates a new narrative event campaign with strict validation and automatic slot generation.
    *
    * @param data - Input campaign attributes.
    * @returns Created campaign entity.
    */
-  async createCampaign(data: Partial<CampaignDoc>): Promise<CampaignDocWithId> {
-    const title = data.title?.trim();
+  async createCampaign(data: CreateCampaignRequest): Promise<CampaignDocWithId> {
+    if (!data || typeof data !== 'object') {
+      throw new CampaignValidationError('Campaign creation payload is required.');
+    }
+
+    const title = typeof data.title === 'string' ? data.title.trim() : '';
     if (!title) {
-      throw new Error('Campaign title is required.');
+      throw new CampaignValidationError('Campaign title is required.');
     }
 
-    const startDate = data.startDate?.trim();
-    const endDate = data.endDate?.trim();
-    if (!startDate || !endDate) {
-      throw new Error('Campaign startDate and endDate are required.');
+    const startDate = typeof data.startDate === 'string' ? data.startDate.trim() : '';
+    const endDate = typeof data.endDate === 'string' ? data.endDate.trim() : '';
+    if (!DATE_REGEX.test(startDate) || !DATE_REGEX.test(endDate)) {
+      throw new CampaignValidationError('startDate and endDate must be valid dates in YYYY-MM-DD format.');
     }
-
     if (startDate > endDate) {
-      throw new Error('startDate cannot be after endDate.');
+      throw new CampaignValidationError('startDate cannot be after endDate.');
+    }
+
+    if (!Array.isArray(data.dailySlotTimes) || data.dailySlotTimes.length === 0) {
+      throw new CampaignValidationError('dailySlotTimes must be a non-empty array of HH:mm strings.');
+    }
+    for (const t of data.dailySlotTimes) {
+      if (!TIME_REGEX.test(t)) {
+        throw new CampaignValidationError(`Invalid slot time "${t}". Expected HH:mm format.`);
+      }
+    }
+
+    if (!data.status || !VALID_CAMPAIGN_STATUSES.has(data.status)) {
+      throw new CampaignValidationError(
+        `Invalid campaign status "${data.status}". Allowed values: ${Array.from(VALID_CAMPAIGN_STATUSES).join(', ')}.`,
+      );
+    }
+
+    const masterContext = typeof data.masterContext === 'string' ? data.masterContext.trim() : '';
+    const replyContextSummary = typeof data.replyContextSummary === 'string' ? data.replyContextSummary.trim() : '';
+
+    if (data.status === 'scheduled' || data.status === 'active') {
+      if (!masterContext) {
+        throw new CampaignValidationError('masterContext is required when scheduling or activating a campaign.');
+      }
+      if (!replyContextSummary) {
+        throw new CampaignValidationError('replyContextSummary is required when scheduling or activating a campaign.');
+      }
     }
 
     // Invariant: Reject overlapping active or scheduled campaigns
     const overlapping = await this.repo.findOverlapping(startDate, endDate);
     if (overlapping.length > 0) {
-      throw new Error(
+      throw new CampaignConflictError(
         `Campaign dates overlap with existing campaign: "${overlapping[0].title}" (${overlapping[0].startDate} to ${overlapping[0].endDate})`,
       );
     }
 
-    const dailySlotTimes = Array.isArray(data.dailySlotTimes) && data.dailySlotTimes.length > 0
-      ? data.dailySlotTimes
-      : ['08:00', '12:00', '19:00'];
-
     // Generate slots if not supplied, or validate provided slots
     const slots: CampaignSlot[] = Array.isArray(data.slots) && data.slots.length > 0
       ? data.slots
-      : generateSlotsForSchedule(startDate, endDate, dailySlotTimes);
+      : generateSlotsForSchedule(startDate, endDate, data.dailySlotTimes);
+
+    if ((data.status === 'scheduled' || data.status === 'active') && slots.length === 0) {
+      throw new CampaignValidationError('A scheduled or active campaign must contain at least one slot.');
+    }
 
     const id = `camp_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const nowIso = new Date().toISOString();
 
     const campaignDoc: CampaignDoc = {
       title,
-      description: data.description?.trim() || undefined,
-      status: data.status || 'draft',
+      description: typeof data.description === 'string' && data.description.trim() ? data.description.trim() : undefined,
+      status: data.status,
       isPaused: Boolean(data.isPaused),
       startDate,
       endDate,
-      dailySlotTimes,
-      masterContext: data.masterContext?.trim() || '',
-      replyContextSummary: data.replyContextSummary?.trim() || '',
+      dailySlotTimes: data.dailySlotTimes,
+      masterContext,
+      replyContextSummary,
       slots,
       totalSlotsCount: slots.length,
       completedSlotsCount: slots.filter((s) => s.status === 'posted').length,
       isAnnualRecurring: Boolean(data.isAnnualRecurring),
-      recurringApprovedYear: data.recurringApprovedYear,
+      recurringApprovedYear: typeof data.recurringApprovedYear === 'number' ? data.recurringApprovedYear : undefined,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -170,26 +231,57 @@ export class CampaignsUseCase {
   /**
    * Updates an existing campaign with date overlap validation and slot reconciliation.
    */
-  async updateCampaign(id: string, updates: Partial<CampaignDoc>): Promise<CampaignDocWithId> {
+  async updateCampaign(id: string, updates: UpdateCampaignRequest): Promise<CampaignDocWithId> {
     const existing = await this.repo.getById(id);
     if (!existing) {
-      throw new Error(`Campaign ${id} not found.`);
+      throw new CampaignNotFoundError(`Campaign ${id} not found.`);
     }
 
     const startDate = updates.startDate ? updates.startDate.trim() : existing.startDate;
     const endDate = updates.endDate ? updates.endDate.trim() : existing.endDate;
 
+    if (!DATE_REGEX.test(startDate) || !DATE_REGEX.test(endDate)) {
+      throw new CampaignValidationError('startDate and endDate must be valid dates in YYYY-MM-DD format.');
+    }
     if (startDate > endDate) {
-      throw new Error('startDate cannot be after endDate.');
+      throw new CampaignValidationError('startDate cannot be after endDate.');
     }
 
     // If dates changed, verify non-overlap with other campaigns
     if (startDate !== existing.startDate || endDate !== existing.endDate) {
       const overlapping = await this.repo.findOverlapping(startDate, endDate, id);
       if (overlapping.length > 0) {
-        throw new Error(
+        throw new CampaignConflictError(
           `Updated dates overlap with existing campaign: "${overlapping[0].title}" (${overlapping[0].startDate} to ${overlapping[0].endDate})`,
         );
+      }
+    }
+
+    if (updates.dailySlotTimes !== undefined) {
+      if (!Array.isArray(updates.dailySlotTimes) || updates.dailySlotTimes.length === 0) {
+        throw new CampaignValidationError('dailySlotTimes must be a non-empty array of HH:mm strings.');
+      }
+      for (const t of updates.dailySlotTimes) {
+        if (!TIME_REGEX.test(t)) {
+          throw new CampaignValidationError(`Invalid slot time "${t}". Expected HH:mm format.`);
+        }
+      }
+    }
+
+    const targetStatus = updates.status || existing.status;
+    if (!VALID_CAMPAIGN_STATUSES.has(targetStatus)) {
+      throw new CampaignValidationError(`Invalid campaign status "${targetStatus}".`);
+    }
+
+    const masterContext = updates.masterContext !== undefined ? updates.masterContext.trim() : existing.masterContext;
+    const replyContextSummary = updates.replyContextSummary !== undefined ? updates.replyContextSummary.trim() : existing.replyContextSummary;
+
+    if (targetStatus === 'scheduled' || targetStatus === 'active') {
+      if (!masterContext) {
+        throw new CampaignValidationError('masterContext is required when scheduling or activating a campaign.');
+      }
+      if (!replyContextSummary) {
+        throw new CampaignValidationError('replyContextSummary is required when scheduling or activating a campaign.');
       }
     }
 
@@ -199,8 +291,13 @@ export class CampaignsUseCase {
 
     const sanitizedUpdates: Partial<CampaignDoc> = {
       ...updates,
+      title: updates.title !== undefined ? updates.title.trim() : existing.title,
+      description: updates.description !== undefined ? updates.description.trim() : existing.description,
       startDate,
       endDate,
+      masterContext,
+      replyContextSummary,
+      status: targetStatus,
       slots,
       totalSlotsCount,
       completedSlotsCount,
@@ -220,11 +317,18 @@ export class CampaignsUseCase {
   ): Promise<CampaignDocWithId> {
     const source = await this.repo.getById(id);
     if (!source) {
-      throw new Error(`Source campaign ${id} not found.`);
+      throw new CampaignNotFoundError(`Source campaign ${id} not found.`);
     }
 
-    const startDate = newStartDate || source.startDate;
-    const endDate = newEndDate || source.endDate;
+    const startDate = newStartDate ? newStartDate.trim() : source.startDate;
+    const endDate = newEndDate ? newEndDate.trim() : source.endDate;
+
+    if (!DATE_REGEX.test(startDate) || !DATE_REGEX.test(endDate)) {
+      throw new CampaignValidationError('startDate and endDate must be in YYYY-MM-DD format.');
+    }
+    if (startDate > endDate) {
+      throw new CampaignValidationError('startDate cannot be after endDate.');
+    }
 
     // Reset slots to pending and clear execution artifacts
     const clonedSlots: CampaignSlot[] = (source.slots || []).map((slot, index) => ({
@@ -259,7 +363,7 @@ export class CampaignsUseCase {
   async pauseCampaign(id: string): Promise<CampaignDocWithId> {
     const existing = await this.repo.getById(id);
     if (!existing) {
-      throw new Error(`Campaign ${id} not found.`);
+      throw new CampaignNotFoundError(`Campaign ${id} not found.`);
     }
     return this.repo.update(id, {
       isPaused: true,
@@ -273,7 +377,7 @@ export class CampaignsUseCase {
   async resumeCampaign(id: string): Promise<CampaignDocWithId> {
     const existing = await this.repo.getById(id);
     if (!existing) {
-      throw new Error(`Campaign ${id} not found.`);
+      throw new CampaignNotFoundError(`Campaign ${id} not found.`);
     }
     return this.repo.update(id, {
       isPaused: false,
@@ -292,7 +396,11 @@ export class CampaignsUseCase {
   ): Promise<{ url: string; filename: string }> {
     const campaign = await this.repo.getById(campaignId);
     if (!campaign) {
-      throw new Error(`Campaign ${campaignId} not found.`);
+      throw new CampaignNotFoundError(`Campaign ${campaignId} not found.`);
+    }
+
+    if (!file.mimetype.startsWith('image/')) {
+      throw new CampaignValidationError('Only image uploads are permitted for campaign assets.');
     }
 
     const bucketName = config.gcp.imageBucketName;
@@ -325,7 +433,7 @@ export class CampaignsUseCase {
   async deleteCampaign(id: string): Promise<void> {
     const campaign = await this.repo.getById(id);
     if (!campaign) {
-      throw new Error(`Campaign ${id} not found.`);
+      throw new CampaignNotFoundError(`Campaign ${id} not found.`);
     }
     await this.repo.delete(id);
   }

@@ -157,9 +157,10 @@ ${processedText}
 
         // Check for active narrative event campaign to inject story context
         const activeCampaign = await deps.firestore.getActiveCampaign();
-        const campaignContext = (activeCampaign && !activeCampaign.isPaused)
-            ? activeCampaign.replyContextSummary
-            : '';
+        let campaignContext = '';
+        if (activeCampaign && !activeCampaign.isPaused && activeCampaign.replyContextSummary.trim()) {
+            campaignContext = activeCampaign.replyContextSummary.trim();
+        }
 
         const systemPrompt = buildSystemPrompt(
             this.deps.persona,
