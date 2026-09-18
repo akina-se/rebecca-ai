@@ -21,9 +21,9 @@ export interface CampaignPostUseCaseConfig {
 export const mapHourToTimePeriod = (hour: number): SlotTimePeriod => {
   if (hour >= 5 && hour < 11) {
     return 'morning';
-  } else if (hour >= 11 && hour < 17) {
+  } else if (hour >= 11 && hour < 15) {
     return 'afternoon';
-  } else if (hour >= 17 && hour < 22) {
+  } else if (hour >= 15 && hour < 19) {
     return 'evening';
   } else {
     return 'night';

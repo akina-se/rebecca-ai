@@ -1,43 +1,49 @@
 import { Request, Response } from 'express';
 import { CampaignsUseCase } from './usecase';
-import {
-  CampaignError,
-  CampaignNotFoundError,
-  CampaignValidationError,
-} from './errors';
 
 /**
  * Validates and extracts a required non-empty string ID from request params.
- * Throws CampaignValidationError (HTTP 400) if missing or whitespace, avoiding silent empty string fallbacks.
+ * Throws an Error (mapped to HTTP 400) if missing or whitespace.
  */
 const extractRequiredId = (param: unknown): string => {
   const raw = Array.isArray(param) ? param[0] : param;
   if (typeof raw !== 'string' || raw.trim().length === 0) {
-    throw new CampaignValidationError('Valid campaign ID parameter is required.');
+    throw new Error('Valid campaign ID parameter is required.');
   }
   return raw.trim();
 };
 
 /**
- * Unified error response handler for CampaignsController.
- * Maps typed domain errors to corresponding HTTP status codes and structured codes,
- * and securely masks unexpected 500 errors to prevent internal system leakage.
+ * Error response handler for CampaignsController.
+ * Maps domain/validation errors to standard HTTP status codes,
+ * and masks unexpected server errors to prevent internal system leakage.
  */
 const handleControllerError = (res: Response, err: unknown, context: string): void => {
-  if (err instanceof CampaignError) {
-    console.warn(`[CampaignsController] ${context} client error:`, err.message);
-    res.status(err.statusCode).json({
-      error: err.message,
-      code: err.code,
-    });
+  const message = err instanceof Error ? err.message : String(err);
+
+  if (message.toLowerCase().includes('not found')) {
+    res.status(404).json({ error: message });
+    return;
+  }
+
+  if (message.includes('overlap')) {
+    res.status(409).json({ error: message });
+    return;
+  }
+
+  if (
+    message.includes('required') ||
+    message.includes('must be') ||
+    message.includes('cannot be') ||
+    message.includes('Invalid') ||
+    message.includes('Only image')
+  ) {
+    res.status(400).json({ error: message });
     return;
   }
 
   console.error(`[CampaignsController] ${context} unexpected server error:`, err);
-  res.status(500).json({
-    error: 'Internal server error',
-    code: 'INTERNAL_SERVER_ERROR',
-  });
+  res.status(500).json({ error: 'Internal server error' });
 };
 
 /**
@@ -47,27 +53,12 @@ export class CampaignsController {
   constructor(private readonly useCase: CampaignsUseCase) {}
 
   /**
-   * GET / - List campaigns with validated pagination and filtering.
+   * GET / - List campaigns with friendly query clamping and filtering.
    */
   list = async (req: Request, res: Response): Promise<void> => {
     try {
-      let page = 1;
-      if (req.query.page !== undefined) {
-        const parsedPage = Number(req.query.page);
-        if (!Number.isInteger(parsedPage) || parsedPage < 1) {
-          throw new CampaignValidationError('Page query parameter must be a positive integer.');
-        }
-        page = parsedPage;
-      }
-
-      let limit = 20;
-      if (req.query.limit !== undefined) {
-        const parsedLimit = Number(req.query.limit);
-        if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
-          throw new CampaignValidationError('Limit query parameter must be an integer between 1 and 100.');
-        }
-        limit = parsedLimit;
-      }
+      const page = req.query.page ? Math.max(1, parseInt(req.query.page as string, 10) || 1) : 1;
+      const limit = req.query.limit ? Math.max(1, Math.min(50, parseInt(req.query.limit as string, 10) || 20)) : 20;
 
       const status = typeof req.query.status === 'string' && req.query.status.trim()
         ? req.query.status.trim()
@@ -88,7 +79,8 @@ export class CampaignsController {
       const id = extractRequiredId(req.params.id);
       const campaign = await this.useCase.getCampaign(id);
       if (!campaign) {
-        throw new CampaignNotFoundError(`Campaign not found with id: ${id}`);
+        res.status(404).json({ error: `Campaign not found with id: ${id}` });
+        return;
       }
       res.status(200).json(campaign);
     } catch (err: unknown) {
@@ -170,7 +162,8 @@ export class CampaignsController {
       const file = req.file;
 
       if (!file) {
-        throw new CampaignValidationError('No image file uploaded.');
+        res.status(400).json({ error: 'No image file uploaded.' });
+        return;
       }
 
       const result = await this.useCase.uploadCampaignAsset(id, {

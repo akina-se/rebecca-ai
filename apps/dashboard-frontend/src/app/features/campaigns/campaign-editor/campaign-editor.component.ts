@@ -170,8 +170,8 @@ export class CampaignEditorComponent implements OnInit {
    */
   private mapHourToPeriod(hour: number): SlotTimePeriod {
     if (hour >= 5 && hour < 11) return 'morning';
-    if (hour >= 11 && hour < 17) return 'afternoon';
-    if (hour >= 17 && hour < 22) return 'evening';
+    if (hour >= 11 && hour < 15) return 'afternoon';
+    if (hour >= 15 && hour < 19) return 'evening';
     return 'night';
   }
 

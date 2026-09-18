@@ -101,7 +101,7 @@ describe('CampaignEditorComponent', () => {
     expect(component.slots[0].dayNumber).toBe(1);
     expect(component.slots[0].timePeriod).toBe('morning');
     expect(component.slots[1].dayNumber).toBe(1);
-    expect(component.slots[1].timePeriod).toBe('evening');
+    expect(component.slots[1].timePeriod).toBe('night');
     expect(component.slots[2].dayNumber).toBe(2);
     expect(component.slots[3].dayNumber).toBe(2);
   });

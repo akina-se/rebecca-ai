@@ -6,11 +6,6 @@ import {
 } from '../../src/features/campaign/usecase';
 import { CampaignsController } from '../../src/features/campaign/controller';
 import { initializeCampaignsModule } from '../../src/features/campaign';
-import {
-  CampaignConflictError,
-  CampaignNotFoundError,
-  CampaignValidationError,
-} from '../../src/features/campaign/errors';
 import { CampaignDoc, CampaignDocWithId } from '@rebecca/types';
 import { createMockFirestore } from './testUtils';
 import { Request, Response } from 'express';
@@ -74,7 +69,8 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(getTimePeriodForHour('08:00')).toBe('morning');
       expect(getTimePeriodForHour('12:30')).toBe('afternoon');
       expect(getTimePeriodForHour('17:00')).toBe('evening');
-      expect(getTimePeriodForHour('21:00')).toBe('evening');
+      expect(getTimePeriodForHour('19:00')).toBe('night');
+      expect(getTimePeriodForHour('21:00')).toBe('night');
       expect(getTimePeriodForHour('23:00')).toBe('night');
       expect(getTimePeriodForHour('02:00')).toBe('night');
     });
@@ -514,17 +510,17 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.create(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(201);
 
-      mockUseCase.createCampaign.mockRejectedValueOnce(new CampaignValidationError('Validation error'));
+      mockUseCase.createCampaign.mockRejectedValueOnce(new Error('Validation error: title is required'));
       await controller.create(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Validation error', code: 'CAMPAIGN_VALIDATION_ERROR' });
+      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Validation error: title is required' });
     });
 
     it('list should handle errors securely and return 500 without leaking internal details', async () => {
       mockUseCase.listCampaigns.mockRejectedValueOnce(new Error('DB failure'));
       await controller.list(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' });
+      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
 
     it('getById should handle errors securely and return 500', async () => {
@@ -532,7 +528,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       mockUseCase.getCampaign.mockRejectedValueOnce(new Error('Lookup failure'));
       await controller.getById(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(500);
-      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error', code: 'INTERNAL_SERVER_ERROR' });
+      expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
 
     it('update should return 200 on success, 404 when not found, and 400 on validation error', async () => {
@@ -543,11 +539,11 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.update(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(200);
 
-      mockUseCase.updateCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found.'));
+      mockUseCase.updateCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
       await controller.update(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
-      mockUseCase.updateCampaign.mockRejectedValueOnce(new CampaignValidationError('Invalid dates'));
+      mockUseCase.updateCampaign.mockRejectedValueOnce(new Error('Invalid dates: startDate cannot be after endDate'));
       await controller.update(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
@@ -559,11 +555,11 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.clone(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(201);
 
-      mockUseCase.cloneCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Source campaign c1 not found.'));
+      mockUseCase.cloneCampaign.mockRejectedValueOnce(new Error('Source campaign c1 not found.'));
       await controller.clone(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
-      mockUseCase.cloneCampaign.mockRejectedValueOnce(new CampaignConflictError('Overlap error'));
+      mockUseCase.cloneCampaign.mockRejectedValueOnce(new Error('Campaign dates overlap with existing campaign'));
       await controller.clone(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(409);
     });
@@ -575,7 +571,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.pause(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(200);
 
-      mockUseCase.pauseCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found'));
+      mockUseCase.pauseCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found'));
       await controller.pause(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
@@ -587,7 +583,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       await controller.resume(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(200);
 
-      mockUseCase.resumeCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found'));
+      mockUseCase.resumeCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found'));
       await controller.resume(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
@@ -614,7 +610,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(mockRes.status).toHaveBeenCalledWith(201);
 
       // Not found -> 404
-      mockUseCase.uploadCampaignAsset.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found.'));
+      mockUseCase.uploadCampaignAsset.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
       await controller.uploadAsset(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 
@@ -632,7 +628,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({ message: 'Campaign deleted successfully.' });
 
-      mockUseCase.deleteCampaign.mockRejectedValueOnce(new CampaignNotFoundError('Campaign c1 not found.'));
+      mockUseCase.deleteCampaign.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
       await controller.delete(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(404);
 

@@ -8,10 +8,6 @@ import {
 import { getCollections } from '@rebecca/db';
 export type { CampaignQueryParams };
 
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_LIMIT = 20;
-export const MAX_LIMIT = 100;
-
 /**
  * Repository for data access operations related to Narrative Event Campaigns in Firestore.
  * Utilizes @rebecca/db campaignDocConverter for typed normalization and consistency.
@@ -32,8 +28,8 @@ export class CampaignsRepository {
    * @returns Paginated list of campaigns with metadata.
    */
   async getPaginated(params?: CampaignQueryParams): Promise<PaginatedResponse<CampaignDocWithId>> {
-    const page = params?.page ?? DEFAULT_PAGE;
-    const limit = Math.min(MAX_LIMIT, params?.limit ?? DEFAULT_LIMIT);
+    const page = Math.max(1, Number(params?.page || 1));
+    const limit = Math.max(1, Math.min(50, Number(params?.limit || 20)));
     const statusFilter = params?.status?.trim();
 
     let query: Query<CampaignDoc> = this.collections.campaigns;

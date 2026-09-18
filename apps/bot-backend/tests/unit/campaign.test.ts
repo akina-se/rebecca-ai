@@ -89,9 +89,11 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       expect(mapHourToTimePeriod(6)).toBe('morning');
       expect(mapHourToTimePeriod(10)).toBe('morning');
       expect(mapHourToTimePeriod(12)).toBe('afternoon');
-      expect(mapHourToTimePeriod(16)).toBe('afternoon');
+      expect(mapHourToTimePeriod(14)).toBe('afternoon');
+      expect(mapHourToTimePeriod(16)).toBe('evening');
       expect(mapHourToTimePeriod(18)).toBe('evening');
-      expect(mapHourToTimePeriod(20)).toBe('evening');
+      expect(mapHourToTimePeriod(19)).toBe('night');
+      expect(mapHourToTimePeriod(20)).toBe('night');
       expect(mapHourToTimePeriod(22)).toBe('night');
       expect(mapHourToTimePeriod(2)).toBe('night');
     });
@@ -285,7 +287,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
         numericYear: 2026,
         numericMonth: 9,
         numericDay: 18,
-        numericHour: 20, // evening -> no evening slot on Day 1
+        numericHour: 20, // night -> no night slot on Day 1
         numericMinute: 0,
       });
 
@@ -296,7 +298,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       const result = await useCase.execute();
 
       expect(result.status).toBe('skipped');
-      expect(result.reason).toContain('No pending slot configured for period "evening" on Day 1.');
+      expect(result.reason).toContain('No pending slot configured for period "night" on Day 1.');
       expect(deps.gemini.generateStructuredTimelinePost).not.toHaveBeenCalled();
       expect(deps.xApi.tweet).not.toHaveBeenCalled();
     });
