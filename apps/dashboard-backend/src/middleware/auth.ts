@@ -1,19 +1,9 @@
 import { Response, NextFunction } from 'express';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
 import { COLLECTIONS } from '@rebecca/db/schema';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types/auth';
-import { config } from '../config';
+import { getAdminAuth, getAdminFirestore } from '../lib/firebase';
 
 export { AuthenticatedRequest, AuthenticatedUser };
-
-// Initialize Firebase Admin (only once across the application)
-if (!getApps().length) {
-  initializeApp({
-    projectId: process.env.GCP_PROJECT_ID || process.env.GCLOUD_PROJECT || config.gcp.projectId || 'rebecca-ai-gal-local',
-  });
-}
 
 // In-memory cache for admin authorization status (5-minute TTL)
 interface CachedAdmin {
@@ -36,7 +26,7 @@ async function resolveAdminRole(email: string): Promise<{ authorized: boolean; r
       : { authorized: false, revoked: true };
   }
 
-  const snapshot = await getFirestore()
+  const snapshot = await getAdminFirestore()
     .collection(COLLECTIONS.ADMIN_USERS)
     .where('email', '==', email)
     .where('status', '==', 'ACTIVE')
@@ -87,7 +77,7 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
 
   const token = authHeader.split('Bearer ')[1];
   try {
-    const decodedToken = await getAuth().verifyIdToken(token);
+    const decodedToken = await getAdminAuth().verifyIdToken(token);
 
     // 1. Check custom claims if present
     if (decodedToken.role === 'SUPER_ADMIN' || decodedToken.role === 'ADMIN' || decodedToken.admin === true) {
