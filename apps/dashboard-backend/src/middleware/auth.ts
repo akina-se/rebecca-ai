@@ -4,12 +4,15 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { COLLECTIONS } from '@rebecca/db/schema';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types/auth';
+import { config } from '../config';
 
 export { AuthenticatedRequest, AuthenticatedUser };
 
 // Initialize Firebase Admin (only once across the application)
 if (!getApps().length) {
-  initializeApp();
+  initializeApp({
+    projectId: process.env.GCP_PROJECT_ID || process.env.GCLOUD_PROJECT || config.gcp.projectId || 'rebecca-ai-gal-local',
+  });
 }
 
 // In-memory cache for admin authorization status (5-minute TTL)

@@ -5,7 +5,7 @@ import { config } from './config';
 
 if (!getApps().length) {
   initializeApp({
-    projectId: config.gcp.projectId || 'rebecca-ai-gal-local',
+    projectId: process.env.GCP_PROJECT_ID || process.env.GCLOUD_PROJECT || config.gcp.projectId || 'rebecca-ai-gal-local',
   });
 }
 

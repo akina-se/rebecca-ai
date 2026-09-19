@@ -164,7 +164,7 @@ Write-Host "-> Bot Backend launched (HTTP port 8082, gRPC port 50051)..." -Foreg
 
 # 7. Start Dashboard Backend (BFF Server)
 Write-Host "[7/7] Starting Dashboard Backend (BFF Server)..." -ForegroundColor Yellow
-$BffCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; `$env:BOT_GRPC_URL='localhost:50051'; `$env:PORT='8081'; npm run dev --workspace=dashboard-backend"
+$BffCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; `$env:GCLOUD_PROJECT='rebecca-ai-gal-local'; `$env:BOT_GRPC_URL='localhost:50051'; `$env:PORT='8081'; npm run dev --workspace=dashboard-backend"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $BffCommand -WorkingDirectory $PWD
 Write-Host "-> Dashboard BFF launched (HTTP port 8081)..." -ForegroundColor Gray
 
