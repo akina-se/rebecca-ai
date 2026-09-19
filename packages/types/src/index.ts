@@ -123,7 +123,7 @@ export interface RawConversationLog {
 }
 
 /** Canonical post types supported on the timeline. */
-export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement';
+export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign';
 
 /**
  * Represents a post on the AI's timeline.
@@ -499,6 +499,114 @@ export interface SystemAlert {
   timestamp?: string;
   link?: string;
   linkText?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Narrative Event Engine Models
+// ---------------------------------------------------------------------------
+
+/** Lifecycle status of a narrative event campaign. */
+export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'completed' | 'archived';
+
+/** Categorized time of day for itinerary slot posts. */
+export type SlotTimePeriod = 'morning' | 'afternoon' | 'evening' | 'night';
+
+/** Status of an individual post slot within a campaign. */
+export type CampaignSlotStatus = 'pending' | 'posted' | 'skipped' | 'failed';
+
+/** Represents a single scheduled narrative post slot within a campaign itinerary. */
+export interface CampaignSlot {
+  slotId: string;
+  dayNumber: number;
+  timePeriod: SlotTimePeriod;
+  scheduledTime: string;
+  theme: string;
+  mediaUrl?: string;
+  captionPromptHint?: string;
+  fixedTextOverride?: string;
+  isFixedText?: boolean;
+  textOnly?: boolean;
+  status: CampaignSlotStatus;
+  postedTweetId?: string;
+  postedAt?: string;
+  errorReason?: string;
+}
+
+/** Complete persistent campaign document representation. */
+export interface CampaignDoc {
+  id?: string;
+  title: string;
+  description?: string;
+  status: CampaignStatus;
+  isPaused: boolean;
+  startDate: string;
+  endDate: string;
+  dailySlotTimes: string[];
+  masterContext: string;
+  replyContextSummary: string;
+  slots: CampaignSlot[];
+  totalSlotsCount: number;
+  completedSlotsCount: number;
+  isAnnualRecurring: boolean;
+  recurringApprovedYear?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Extended campaign document with mandatory Firestore document ID. */
+export interface CampaignDocWithId extends CampaignDoc {
+  id: string;
+}
+
+/** Query parameters for listing campaigns with pagination and filtering. */
+export interface CampaignQueryParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+}
+
+/** Payload for creating a new campaign. */
+export interface CreateCampaignRequest {
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  dailySlotTimes: string[];
+  masterContext: string;
+  replyContextSummary: string;
+  status: CampaignStatus;
+  isPaused?: boolean;
+  isAnnualRecurring?: boolean;
+  recurringApprovedYear?: number;
+  slots?: CampaignSlot[];
+}
+
+/** Payload for updating an existing campaign. */
+export interface UpdateCampaignRequest {
+  title?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  dailySlotTimes?: string[];
+  masterContext?: string;
+  replyContextSummary?: string;
+  status?: CampaignStatus;
+  isPaused?: boolean;
+  isAnnualRecurring?: boolean;
+  recurringApprovedYear?: number;
+  slots?: CampaignSlot[];
+}
+
+/** Payload for cloning an existing campaign. */
+export interface CloneCampaignRequest {
+  newStartDate?: string;
+  newEndDate?: string;
+}
+
+/** Uploaded campaign illustration result. */
+export interface CampaignAssetUploadResult {
+  url: string;
+  filename: string;
 }
 
 

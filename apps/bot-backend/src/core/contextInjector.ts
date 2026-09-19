@@ -16,6 +16,8 @@ import { FirestoreUser } from '../types';
  * @param timelineSummary - An optional summary of the AI's recent timeline activity.
  * @param ragMemories - Optional retrieved memories relevant to the current conversation.
  * @param lang - The language for the prompt, defaults to 'ja'.
+ * @param personaFewShotPrompt - Optional dynamically selected few-shot examples.
+ * @param campaignContext - Optional narrative event context summary when a campaign is active.
  * @returns The fully constructed system prompt string.
  */
 const buildSystemPrompt = (
@@ -27,7 +29,8 @@ const buildSystemPrompt = (
     timelineSummary = '', 
     ragMemories: string[] = [], 
     lang: Language = 'ja',
-    personaFewShotPrompt = ''
+    personaFewShotPrompt = '',
+    campaignContext = ''
 ): string => {
     let prompt = persona.getBasePrompt(promptContext, lang);
 
@@ -103,6 +106,12 @@ const buildSystemPrompt = (
         prompt += lang === 'en'
             ? `\n\n[My Recent Posts (Context)]\nRecently, I posted this:\n${timelineSummary}`
             : `\n\n【最近の自分の投稿（参考）】\n${personaName}は最近以下のようにつぶやいていた。\n${timelineSummary}`;
+    }
+
+    if (campaignContext && campaignContext.trim() !== '') {
+        prompt += lang === 'en'
+            ? `\n\n[Current Ongoing Campaign / Special Narrative Event]\n${campaignContext}\n\n[CRITICAL: Empathy Priority Rule]\nAlways prioritize the user's emotional state, troubles, or immediate question before mentioning the campaign. Never derail a serious or melancholic conversation with bubbly event talk unless the user asked about it or it naturally fits.`
+            : `\n\n【現在進行中のイベント・キャンペーン状況（Special Narrative Event）】\n${campaignContext}\n\n【最優先ルール：共感・ユーザーファースト（Empathy Priority）】\nユーザーの悩み、相談、質問、感情の機微を最優先で受け止めて返信してください。ユーザーが真剣な話や落ち込んでいる時に、イベントの話題（旅行や浮かれた話など）を無理やり割り込ませて話の腰を折ることは厳禁です。ユーザーからイベントについて尋ねられた場合、または自然な雑談の流れでのみ触れてください。`;
     }
 
     return prompt;

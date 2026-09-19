@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ProactiveAnniversaryUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
+import { CampaignGuard } from '../campaign';
 
 /**
  * Controller for the Proactive Anniversary feature.
@@ -12,10 +13,12 @@ export class ProactiveAnniversaryController {
    *
    * @param useCase The use case responsible for executing proactive anniversary posting.
    * @param soliloquyUseCase The fallback use case for when no anniversaries are available.
+   * @param campaignGuard Optional campaign guard for evaluating narrative event suppression.
    */
   constructor(
     private useCase: ProactiveAnniversaryUseCase,
     private soliloquyUseCase: SoliloquyUseCase,
+    private campaignGuard?: CampaignGuard,
   ) {}
 
   /**
@@ -27,6 +30,15 @@ export class ProactiveAnniversaryController {
    */
   handle = async (req: Request, res: Response): Promise<void> => {
     try {
+      if (this.campaignGuard) {
+        const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
+        if (suppression.shouldSuppress) {
+          console.log(`[ProactiveAnniversaryController] Suppressed by active campaign "${suppression.campaign?.title}" (${suppression.campaign?.id})`);
+          res.status(200).json({ status: 'suppressed_by_campaign', campaignId: suppression.campaign?.id });
+          return;
+        }
+      }
+
       const result = await this.useCase.execute();
       if (result.status === 'skipped') {
         console.log(`[ProactiveAnniversaryController] Anniversary post skipped (${result.reason}). Executing alternate soliloquy post...`);

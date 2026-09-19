@@ -39,6 +39,9 @@ export const createMockDeps = (): AppDependencies => {
             getRecentNewsEmbeddings: jest.fn().mockResolvedValue([]),
             getAssetsPendingEmbedding: jest.fn().mockResolvedValue([]),
             updateAssetEmbedding: jest.fn().mockResolvedValue(undefined),
+            getActiveCampaign: jest.fn().mockResolvedValue(null),
+            getCampaignById: jest.fn().mockResolvedValue(null),
+            updateCampaign: jest.fn().mockResolvedValue(undefined),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),

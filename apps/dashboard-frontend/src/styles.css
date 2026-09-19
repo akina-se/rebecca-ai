@@ -179,10 +179,39 @@ html, body {
 .close-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
 .form-group { margin-bottom: 1.5rem; }
 .form-label { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
-.form-control { width: 100%; background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-main); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; transition: all 0.2s; }
-.form-control:hover { border-color: rgba(255,255,255,0.15); }
-.form-control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2); }
-textarea.form-control { resize: vertical; min-height: 120px; line-height: 1.5; }
+.form-control,
+.form-input,
+.form-textarea {
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  color-scheme: dark;
+}
+.form-control:hover,
+.form-input:hover,
+.form-textarea:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.form-control:focus,
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+textarea.form-control,
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
 
 /* Asset Grid */
 .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }

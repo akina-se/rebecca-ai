@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { RandomEngagementUseCase } from './usecase';
+import { CampaignGuard } from '../campaign';
 
 /**
  * Controller responsible for handling random engagement HTTP requests.
@@ -10,8 +11,12 @@ export class RandomEngagementController {
      * Instantiates the RandomEngagementController.
      * 
      * @param useCase - The use case that encapsulates the random engagement business logic.
+     * @param campaignGuard - Optional campaign guard for evaluating narrative event suppression.
      */
-    constructor(private useCase: RandomEngagementUseCase) {}
+    constructor(
+        private useCase: RandomEngagementUseCase,
+        private campaignGuard?: CampaignGuard,
+    ) {}
 
     /**
      * Handles incoming HTTP requests to trigger the random engagement process.
@@ -22,6 +27,15 @@ export class RandomEngagementController {
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
+            if (this.campaignGuard) {
+                const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
+                if (suppression.shouldSuppress) {
+                    console.log(`[RandomEngagementController] Suppressed by active campaign "${suppression.campaign?.title}" (${suppression.campaign?.id})`);
+                    res.status(200).json({ status: 'suppressed_by_campaign', campaignId: suppression.campaign?.id });
+                    return;
+                }
+            }
+
             const result = await this.useCase.execute();
             res.status(200).json(result);
         } catch (e) {

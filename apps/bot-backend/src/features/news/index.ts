@@ -8,6 +8,8 @@ import { AppDependencies } from '../../types';
 import { createProactiveNewsRouter } from './routes';
 import { GeminiSearchNewsProvider } from './providers/geminiSearch';
 
+import { CampaignGuard } from '../campaign';
+
 export * from './types';
 export * from './usecase';
 export * from './controller';
@@ -33,6 +35,7 @@ export const createProactiveNewsModule = (
     timezone: config.appTimezone,
   });
   const soliloquyUseCase = new SoliloquyUseCase(deps, { timezone: config.appTimezone });
-  const controller = new ProactiveNewsController(useCase, soliloquyUseCase);
+  const campaignGuard = new CampaignGuard(deps.firestore);
+  const controller = new ProactiveNewsController(useCase, soliloquyUseCase, campaignGuard);
   return createProactiveNewsRouter(controller);
 };

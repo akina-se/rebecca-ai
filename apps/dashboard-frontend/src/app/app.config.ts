@@ -1,4 +1,4 @@
-﻿import { ApplicationConfig, provideZonelessChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, provideZonelessChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { ConfigService } from './core/services/config.service';
@@ -18,6 +18,9 @@ import { HttpMemoryRepository } from './infrastructure/http/http-memory.reposito
 
 import { COPILOT_REPOSITORY } from './core/ports/copilot.repository';
 import { HttpCopilotRepository } from './infrastructure/http/http-copilot.repository';
+
+import { CAMPAIGNS_REPOSITORY } from './core/ports/campaigns.repository';
+import { HttpCampaignsRepository } from './infrastructure/http/http-campaigns.repository';
 
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 
@@ -51,6 +54,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: COPILOT_REPOSITORY,
       useClass: HttpCopilotRepository
+    },
+    {
+      provide: CAMPAIGNS_REPOSITORY,
+      useClass: HttpCampaignsRepository
     }
   ]
 };
