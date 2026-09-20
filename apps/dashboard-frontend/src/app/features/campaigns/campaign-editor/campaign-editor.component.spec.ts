@@ -46,6 +46,9 @@ describe('CampaignEditorComponent', () => {
       getById: jest.fn().mockReturnValue(of(sampleCampaign)),
       create: jest.fn().mockReturnValue(of({ ...sampleCampaign, id: 'camp_new' })),
       update: jest.fn().mockReturnValue(of(sampleCampaign)),
+      pause: jest.fn().mockReturnValue(of({ ...sampleCampaign, isPaused: true })),
+      resume: jest.fn().mockReturnValue(of({ ...sampleCampaign, isPaused: false })),
+      delete: jest.fn().mockReturnValue(of(undefined)),
       uploadAsset: jest.fn().mockReturnValue(
         of({ url: 'https://storage.googleapis.com/bucket/pic.png', filename: 'pic.png' }),
       ),
@@ -60,6 +63,9 @@ describe('CampaignEditorComponent', () => {
     };
 
     mockRoute = {
+      paramMap: of({
+        get: jest.fn().mockReturnValue('camp_edit_1'),
+      }),
       snapshot: {
         paramMap: {
           get: jest.fn().mockReturnValue('camp_edit_1'),
@@ -221,6 +227,59 @@ describe('CampaignEditorComponent', () => {
 
   it('should cancel and navigate to /campaigns', () => {
     component.cancel();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns']);
+  });
+
+  it('should create draft and proceed to edit mode on createDraftAndProceed', () => {
+    component.title = 'Spring Tour';
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-03';
+    component.createDraftAndProceed();
+
+    expect(mockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Spring Tour',
+        status: 'draft',
+      }),
+    );
+    expect(mockToast.show).toHaveBeenCalledWith(
+      'Campaign draft created. Please configure detailed settings.',
+      'success',
+    );
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns', 'camp_new']);
+  });
+
+  it('should toggle pause and resume status in editor', () => {
+    component.campaignId = 'camp_edit_1';
+    component.isPaused = false;
+    component.togglePause();
+
+    expect(mockRepo.pause).toHaveBeenCalledWith('camp_edit_1');
+    expect(component.isPaused).toBe(true);
+    expect(mockToast.show).toHaveBeenCalledWith('Campaign paused successfully', 'success');
+
+    component.togglePause();
+    expect(mockRepo.resume).toHaveBeenCalledWith('camp_edit_1');
+    expect(component.isPaused).toBe(false);
+    expect(mockToast.show).toHaveBeenCalledWith('Campaign resumed successfully', 'success');
+  });
+
+  it('should open delete modal, confirm delete and navigate to /campaigns', () => {
+    component.campaignId = 'camp_edit_1';
+    expect(component.isDeleteModalOpen()).toBe(false);
+
+    component.openDeleteModal();
+    expect(component.isDeleteModalOpen()).toBe(true);
+
+    component.closeDeleteModal();
+    expect(component.isDeleteModalOpen()).toBe(false);
+
+    component.openDeleteModal();
+    component.confirmDelete();
+
+    expect(mockRepo.delete).toHaveBeenCalledWith('camp_edit_1');
+    expect(component.isDeleteModalOpen()).toBe(false);
+    expect(mockToast.show).toHaveBeenCalledWith('Campaign deleted successfully', 'success');
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns']);
   });
 });

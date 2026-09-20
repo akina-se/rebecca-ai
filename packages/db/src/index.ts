@@ -286,16 +286,33 @@ export const xApiStateConverter = makePassThroughConverter<XApiStateDoc>();
  */
 const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
   toFirestore(campaign: CampaignDoc): DocumentData {
-    const data: DocumentData = {
-      title: campaign.title,
-      status: campaign.status,
-      isPaused: Boolean(campaign.isPaused),
-      startDate: campaign.startDate,
-      endDate: campaign.endDate,
-      dailySlotTimes: Array.isArray(campaign.dailySlotTimes) ? campaign.dailySlotTimes : [],
-      masterContext: campaign.masterContext ?? '',
-      replyContextSummary: campaign.replyContextSummary ?? '',
-      slots: Array.isArray(campaign.slots)
+    const data: DocumentData = {};
+    if (campaign.title !== undefined) {
+      data['title'] = campaign.title;
+    }
+    if (campaign.status !== undefined) {
+      data['status'] = campaign.status;
+    }
+    if (campaign.isPaused !== undefined) {
+      data['isPaused'] = Boolean(campaign.isPaused);
+    }
+    if (campaign.startDate !== undefined) {
+      data['startDate'] = campaign.startDate;
+    }
+    if (campaign.endDate !== undefined) {
+      data['endDate'] = campaign.endDate;
+    }
+    if (campaign.dailySlotTimes !== undefined) {
+      data['dailySlotTimes'] = Array.isArray(campaign.dailySlotTimes) ? campaign.dailySlotTimes : [];
+    }
+    if (campaign.masterContext !== undefined) {
+      data['masterContext'] = campaign.masterContext ?? '';
+    }
+    if (campaign.replyContextSummary !== undefined) {
+      data['replyContextSummary'] = campaign.replyContextSummary ?? '';
+    }
+    if (campaign.slots !== undefined) {
+      data['slots'] = Array.isArray(campaign.slots)
         ? campaign.slots.map((slot: CampaignSlot) => ({
             slotId: slot.slotId,
             dayNumber: slot.dayNumber,
@@ -310,13 +327,20 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
             postedAt: slot.postedAt ?? null,
             errorReason: slot.errorReason ?? null,
           }))
-        : [],
-      totalSlotsCount: Number(campaign.totalSlotsCount ?? 0),
-      completedSlotsCount: Number(campaign.completedSlotsCount ?? 0),
-      isAnnualRecurring: Boolean(campaign.isAnnualRecurring),
-      updatedAt: campaign.updatedAt,
-    };
-
+        : [];
+    }
+    if (campaign.totalSlotsCount !== undefined) {
+      data['totalSlotsCount'] = Number(campaign.totalSlotsCount ?? 0);
+    }
+    if (campaign.completedSlotsCount !== undefined) {
+      data['completedSlotsCount'] = Number(campaign.completedSlotsCount ?? 0);
+    }
+    if (campaign.isAnnualRecurring !== undefined) {
+      data['isAnnualRecurring'] = Boolean(campaign.isAnnualRecurring);
+    }
+    if (campaign.updatedAt !== undefined) {
+      data['updatedAt'] = campaign.updatedAt;
+    }
     if (campaign.createdAt !== undefined) {
       data['createdAt'] = campaign.createdAt;
     }

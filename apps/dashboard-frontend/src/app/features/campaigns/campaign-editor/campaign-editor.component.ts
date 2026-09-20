@@ -54,6 +54,9 @@ export class CampaignEditorComponent implements OnInit {
   readonly isEditMode = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
+  readonly isTogglingPause = signal<boolean>(false);
+  readonly isDeleteModalOpen = signal<boolean>(false);
+  readonly isDeleting = signal<boolean>(false);
 
   // Form Fields
   title = '';
@@ -79,22 +82,43 @@ export class CampaignEditorComponent implements OnInit {
   openDays = new Set<number>();
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
+    if (this.route.paramMap) {
+      this.route.paramMap.subscribe((params) => {
+        const id = params?.get ? params.get('id') : null;
+        this.applyRouteId(id);
+      });
+    } else {
+      const id = this.route.snapshot?.paramMap?.get('id');
+      this.applyRouteId(id);
+    }
+  }
+
+  private applyRouteId(id: string | null | undefined): void {
     if (id && id !== 'new') {
       this.campaignId = id;
       this.isEditMode.set(true);
       this.loadCampaign(id);
     } else {
-      // Default to 3 days starting next week
-      const nextWeek = new Date();
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      const after3Days = new Date(nextWeek);
-      after3Days.setDate(after3Days.getDate() + 2);
-
-      this.startDate = nextWeek.toISOString().slice(0, 10);
-      this.endDate = after3Days.toISOString().slice(0, 10);
-      this.autoGenerateSlots();
+      this.campaignId = null;
+      this.isEditMode.set(false);
+      this.initNewCampaignDefaults();
     }
+  }
+
+  /**
+   * Sets sensible default dates and initial preset for new campaign creation.
+   */
+  initNewCampaignDefaults(): void {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const after3Days = new Date(nextWeek);
+    after3Days.setDate(after3Days.getDate() + 2);
+
+    this.startDate = nextWeek.toISOString().slice(0, 10);
+    this.endDate = after3Days.toISOString().slice(0, 10);
+    this.presetMode = 'standard';
+    this.selectedCustomTimes = [...this.standardHours];
+    this.autoGenerateSlots(false);
   }
 
   /**
@@ -433,6 +457,123 @@ export class CampaignEditorComponent implements OnInit {
         const msg = err.error?.error || 'Failed to save campaign';
         this.toastService.show(msg, 'error');
         this.isSaving.set(false);
+      },
+    });
+  }
+
+  /**
+   * Step 1 Progressive Disclosure:
+   * Creates a draft campaign with basic information & schedule,
+   * then transitions directly to the detailed campaign editor.
+   */
+  createDraftAndProceed(): void {
+    const trimmedTitle = this.title.trim();
+    if (!trimmedTitle) {
+      this.toastService.show('Title is required', 'warning');
+      return;
+    }
+
+    if (!this.startDate || !this.endDate || this.startDate > this.endDate) {
+      this.toastService.show('Valid start date and end date are required', 'warning');
+      return;
+    }
+
+    if (this.parsedSlotTimes.length === 0) {
+      this.toastService.show('At least one delivery slot is required', 'warning');
+      return;
+    }
+
+    this.autoGenerateSlots(false);
+    this.isSaving.set(true);
+
+    const payload: CreateCampaignRequest = {
+      title: trimmedTitle,
+      description: this.description.trim(),
+      startDate: this.startDate,
+      endDate: this.endDate,
+      dailySlotTimes: this.parsedSlotTimes,
+      masterContext: this.masterContext.trim(),
+      replyContextSummary: this.replyContextSummary.trim(),
+      status: 'draft',
+      isAnnualRecurring: this.isAnnualRecurring,
+      isPaused: false,
+      slots: this.slots,
+    };
+
+    this.repo.create(payload).subscribe({
+      next: (created: CampaignDocWithId) => {
+        this.isSaving.set(false);
+        this.toastService.show('Campaign draft created. Please configure detailed settings.', 'success');
+        this.router.navigate(['/campaigns', created.id]);
+      },
+      error: (err) => {
+        console.error('[CampaignEditor] Create draft failed:', err);
+        const msg = err.error?.error || 'Failed to create campaign draft';
+        this.toastService.show(msg, 'error');
+        this.isSaving.set(false);
+      },
+    });
+  }
+
+  /**
+   * Toggles emergency pause / resume for this campaign.
+   */
+  togglePause(): void {
+    if (!this.campaignId) return;
+    this.isTogglingPause.set(true);
+    const action$ = this.isPaused
+      ? this.repo.resume(this.campaignId)
+      : this.repo.pause(this.campaignId);
+
+    action$.subscribe({
+      next: (updated: CampaignDocWithId) => {
+        this.isPaused = updated.isPaused;
+        this.isTogglingPause.set(false);
+        const msg = updated.isPaused
+          ? 'Campaign paused successfully'
+          : 'Campaign resumed successfully';
+        this.toastService.show(msg, 'success');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('[CampaignEditor] Toggle pause failed:', err);
+        this.isTogglingPause.set(false);
+        this.toastService.show('Failed to toggle pause status', 'error');
+      },
+    });
+  }
+
+  /**
+   * Opens delete confirmation modal.
+   */
+  openDeleteModal(): void {
+    this.isDeleteModalOpen.set(true);
+  }
+
+  /**
+   * Closes delete modal.
+   */
+  closeDeleteModal(): void {
+    this.isDeleteModalOpen.set(false);
+  }
+
+  /**
+   * Confirms and permanently deletes this campaign.
+   */
+  confirmDelete(): void {
+    if (!this.campaignId) return;
+    this.isDeleting.set(true);
+    this.repo.delete(this.campaignId).subscribe({
+      next: () => {
+        this.isDeleting.set(false);
+        this.closeDeleteModal();
+        this.toastService.show('Campaign deleted successfully', 'success');
+        this.router.navigate(['/campaigns']);
+      },
+      error: (err) => {
+        console.error('[CampaignEditor] Delete failed:', err);
+        this.isDeleting.set(false);
+        this.toastService.show('Failed to delete campaign', 'error');
       },
     });
   }

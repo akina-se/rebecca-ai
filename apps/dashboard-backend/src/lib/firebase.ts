@@ -18,5 +18,16 @@ export function getFirebaseAdminApp(): App {
 }
 
 export const getAdminAuth = (): Auth => getAuth(getFirebaseAdminApp());
-export const getAdminFirestore = (): Firestore => getFirestore(getFirebaseAdminApp());
+let cachedFirestore: Firestore | null = null;
+export const getAdminFirestore = (): Firestore => {
+  if (!cachedFirestore) {
+    cachedFirestore = getFirestore(getFirebaseAdminApp());
+    try {
+      cachedFirestore.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // Ignore if settings already configured
+    }
+  }
+  return cachedFirestore;
+};
 export const getAdminStorage = (): Storage => getStorage(getFirebaseAdminApp());

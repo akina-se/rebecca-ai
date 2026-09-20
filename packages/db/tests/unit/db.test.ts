@@ -475,6 +475,20 @@ describe('@rebecca/db Unit Tests', () => {
       expect(result['createdAt']).toBeUndefined();
     });
 
+    it('toFirestore should only include defined fields for partial updates (e.g. pause toggle)', () => {
+      const partialCampaign = {
+        isPaused: true,
+        updatedAt: '2027-01-01T12:00:00.000Z',
+      } as unknown as CampaignDoc;
+
+      const result = campaignDocConverter.toFirestore(partialCampaign);
+      expect(result).toEqual({
+        isPaused: true,
+        updatedAt: '2027-01-01T12:00:00.000Z',
+      });
+      expect(result['title']).toBeUndefined();
+    });
+
     it('fromFirestore should throw an error when mandatory fields are missing', () => {
       const mockCorruptedSnapshot = {
         id: 'camp_empty',

@@ -14,36 +14,106 @@
       </div>
     </div>
 
+    <!-- Actions Bar: Differs between Create Mode (Step 1) and Edit Mode -->
     <div class="topbar-actions">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        [disabled]="isSaving()"
-        (click)="save('draft')"
-      >
-        <span class="material-icons">save</span>
-        {{ 'campaign.save_draft' | translate }}
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary"
-        [disabled]="isSaving() || !title"
-        (click)="save('scheduled')"
-      >
-        @if (isSaving()) {
-          <span class="material-icons spinning">sync</span>
-          {{ 'common.saving' | translate }}
-        } @else {
-          <span class="material-icons">check_circle</span>
-          {{ 'campaign.schedule_campaign' | translate }}
+      @if (!isEditMode()) {
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="isSaving()"
+          (click)="cancel()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isSaving() || !title.trim()"
+          (click)="createDraftAndProceed()"
+        >
+          @if (isSaving()) {
+            <span class="material-icons spinning">sync</span>
+            {{ 'common.saving' | translate }}
+          } @else {
+            <span class="material-icons">arrow_forward</span>
+            {{ 'campaign.step1_create_btn' | translate }}
+          }
+        </button>
+      } @else {
+        <!-- Pause / Resume Toggle for Active or Scheduled Campaign -->
+        @if (status === 'active' || status === 'scheduled') {
+          <button
+            type="button"
+            class="btn"
+            [class.btn-warning]="isPaused"
+            [class.btn-secondary]="!isPaused"
+            [disabled]="isTogglingPause()"
+            (click)="togglePause()"
+            [title]="(isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate"
+          >
+            <span class="material-icons">{{ isPaused ? 'play_arrow' : 'pause' }}</span>
+            {{ (isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate }}
+          </button>
         }
-      </button>
+
+        <!-- Delete Button -->
+        <button
+          type="button"
+          class="btn btn-danger-outline"
+          [disabled]="isSaving() || isDeleting()"
+          (click)="openDeleteModal()"
+          [title]="'campaign.delete' | translate"
+        >
+          <span class="material-icons">delete</span>
+          {{ 'campaign.delete' | translate }}
+        </button>
+
+        <!-- Save Draft Button -->
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="isSaving()"
+          (click)="save('draft')"
+        >
+          <span class="material-icons">save</span>
+          {{ 'campaign.save_draft' | translate }}
+        </button>
+
+        <!-- Schedule Button -->
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isSaving() || !title.trim()"
+          (click)="save('scheduled')"
+        >
+          @if (isSaving()) {
+            <span class="material-icons spinning">sync</span>
+            {{ 'common.saving' | translate }}
+          } @else {
+            <span class="material-icons">check_circle</span>
+            {{ 'campaign.schedule_campaign' | translate }}
+          }
+        </button>
+      }
     </div>
   </div>
 
   <!-- Main Form Content -->
   <div class="editor-content">
-    <!-- Section 1: Campaign Overview & Schedule -->
+    @if (!isEditMode()) {
+      <!-- Progressive Disclosure Notice for Step 1 -->
+      <div class="step1-notice glass-panel animate-in">
+        <div class="notice-icon-wrapper">
+          <span class="material-icons notice-icon">auto_awesome</span>
+        </div>
+        <div class="notice-text-content">
+          <h4>{{ 'campaign.step1_notice_title' | translate }}</h4>
+          <p>{{ 'campaign.step1_info' | translate }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Section 1: Campaign Overview & Schedule (Common to both modes) -->
     <div class="form-section glass-panel">
       <div class="section-header">
         <span class="material-icons section-icon">info</span>
@@ -164,128 +234,198 @@
       </div>
     </div>
 
-    <!-- Section 2: Narrative Context Layers -->
-    <div class="form-section glass-panel">
-      <div class="section-header">
-        <span class="material-icons section-icon">psychology</span>
-        <h3>Narrative Context Layers</h3>
+    <!-- In Create Mode (Step 1), show bottom action bar -->
+    @if (!isEditMode()) {
+      <div class="step1-bottom-bar glass-panel animate-in">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancel()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-large"
+          [disabled]="isSaving() || !title.trim()"
+          (click)="createDraftAndProceed()"
+        >
+          @if (isSaving()) {
+            <span class="material-icons spinning">sync</span>
+            {{ 'common.saving' | translate }}
+          } @else {
+            <span>{{ 'campaign.step1_create_btn' | translate }}</span>
+            <span class="material-icons">arrow_forward</span>
+          }
+        </button>
       </div>
+    }
 
-      <div class="form-grid">
-        <!-- Master Context -->
-        <div class="form-group span-full">
-          <label class="form-label">{{ 'campaign.form_master_context' | translate }}</label>
-          <textarea
-            class="form-textarea"
-            rows="4"
-            [(ngModel)]="masterContext"
-            [placeholder]="'campaign.form_master_context_hint' | translate"
-          ></textarea>
+    <!-- In Edit Mode, show Section 2 (Narrative Context) and Section 3 (Slots) -->
+    @if (isEditMode()) {
+      <!-- Section 2: Narrative Context Layers -->
+      <div class="form-section glass-panel">
+        <div class="section-header">
+          <span class="material-icons section-icon">psychology</span>
+          <h3>Narrative Context Layers</h3>
         </div>
 
-        <!-- Reply Context Summary -->
-        <div class="form-group span-full">
-          <label class="form-label">{{ 'campaign.form_reply_context' | translate }}</label>
-          <textarea
-            class="form-textarea"
-            rows="3"
-            [(ngModel)]="replyContextSummary"
-            [placeholder]="'campaign.form_reply_context_hint' | translate"
-          ></textarea>
-          <span class="form-hint">{{ 'campaign.form_reply_context_hint' | translate }}</span>
-        </div>
-      </div>
-    </div>
+        <div class="form-grid">
+          <!-- Master Context -->
+          <div class="form-group span-full">
+            <label class="form-label">{{ 'campaign.form_master_context' | translate }}</label>
+            <textarea
+              class="form-textarea"
+              rows="4"
+              [(ngModel)]="masterContext"
+              [placeholder]="'campaign.form_master_context_hint' | translate"
+            ></textarea>
+          </div>
 
-    <!-- Section 3: Itinerary Slots Accordion -->
-    <div class="slots-section">
-      <div class="slots-header">
-        <div class="slots-header-title">
-          <span class="material-icons">calendar_month</span>
-          <h3>{{ 'campaign.itinerary_slots' | translate }}</h3>
-          <span class="badge slots-count-badge">{{ slots.length }} slots</span>
-        </div>
-        <div class="slots-header-actions">
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            (click)="expandAllDays()"
-            [title]="'campaign.expand_all' | translate"
-          >
-            <span class="material-icons">unfold_more</span>
-            {{ 'campaign.expand_all' | translate }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            (click)="collapseAllDays()"
-            [title]="'campaign.collapse_all' | translate"
-          >
-            <span class="material-icons">unfold_less</span>
-            {{ 'campaign.collapse_all' | translate }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary btn-sm"
-            (click)="autoGenerateSlots(true)"
-          >
-            <span class="material-icons">autorenew</span>
-            {{ 'campaign.regenerate_slots' | translate }}
-          </button>
+          <!-- Reply Context Summary -->
+          <div class="form-group span-full">
+            <label class="form-label">{{ 'campaign.form_reply_context' | translate }}</label>
+            <textarea
+              class="form-textarea"
+              rows="3"
+              [(ngModel)]="replyContextSummary"
+              [placeholder]="'campaign.form_reply_context_hint' | translate"
+            ></textarea>
+            <span class="form-hint">{{ 'campaign.form_reply_context_hint' | translate }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- Day Groups Accordion List -->
-      <div class="accordion-list">
-        @for (group of groupedSlots; track group.dayNumber) {
-          <div class="day-accordion-card glass-panel" [class.is-open]="isDayOpen(group.dayNumber)">
-            <!-- Accordion Header -->
-            <div
-              class="day-accordion-header"
-              (click)="toggleDay(group.dayNumber)"
-              [attr.aria-expanded]="isDayOpen(group.dayNumber)"
+      <!-- Section 3: Itinerary Slots Accordion -->
+      <div class="slots-section">
+        <div class="slots-header">
+          <div class="slots-header-title">
+            <span class="material-icons">calendar_month</span>
+            <h3>{{ 'campaign.itinerary_slots' | translate }}</h3>
+            <span class="badge slots-count-badge">{{ slots.length }} slots</span>
+          </div>
+          <div class="slots-header-actions">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="expandAllDays()"
+              [title]="'campaign.expand_all' | translate"
             >
-              <div class="day-header-left">
-                <span class="day-pill-badge">
-                  Day {{ group.dayNumber }}
-                </span>
-                <span class="day-date-text">
-                  <span class="material-icons date-icon">event</span>
-                  {{ group.dateStr }}
-                </span>
-                <span class="day-summary-badge">
-                  {{ group.slots.length }} {{ 'campaign.day_summary' | translate }}
-                  @if (group.postedCount > 0) {
-                    • {{ group.postedCount }} {{ 'campaign.day_completed' | translate }}
-                  }
-                </span>
-              </div>
-              <div class="day-header-right">
-                <span class="material-icons expand-icon">
-                  {{ isDayOpen(group.dayNumber) ? 'expand_less' : 'expand_more' }}
-                </span>
-              </div>
-            </div>
+              <span class="material-icons">unfold_more</span>
+              {{ 'campaign.expand_all' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="collapseAllDays()"
+              [title]="'campaign.collapse_all' | translate"
+            >
+              <span class="material-icons">unfold_less</span>
+              {{ 'campaign.collapse_all' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="autoGenerateSlots(true)"
+            >
+              <span class="material-icons">autorenew</span>
+              {{ 'campaign.regenerate_slots' | translate }}
+            </button>
+          </div>
+        </div>
 
-            <!-- Accordion Content (Visible when open) -->
-            @if (isDayOpen(group.dayNumber)) {
-              <div class="day-accordion-body animate-in">
-                <div class="slots-grid">
-                  @for (slot of group.slots; track slot.slotId) {
-                    <app-itinerary-slot-card
-                      [slot]="slot"
-                      [campaignId]="campaignId || undefined"
-                      [isReadonly]="slot.status === 'posted'"
-                      (slotChange)="onSlotChange($event)"
-                      (uploadMedia)="onUploadMedia($event)"
-                    ></app-itinerary-slot-card>
-                  }
+        <!-- Day Groups Accordion List -->
+        <div class="accordion-list">
+          @for (group of groupedSlots; track group.dayNumber) {
+            <div class="day-accordion-card glass-panel" [class.is-open]="isDayOpen(group.dayNumber)">
+              <!-- Accordion Header -->
+              <div
+                class="day-accordion-header"
+                (click)="toggleDay(group.dayNumber)"
+                [attr.aria-expanded]="isDayOpen(group.dayNumber)"
+              >
+                <div class="day-header-left">
+                  <span class="day-pill-badge">
+                    Day {{ group.dayNumber }}
+                  </span>
+                  <span class="day-date-text">
+                    <span class="material-icons date-icon">event</span>
+                    {{ group.dateStr }}
+                  </span>
+                  <span class="day-summary-badge">
+                    {{ group.slots.length }} {{ 'campaign.day_summary' | translate }}
+                    @if (group.postedCount > 0) {
+                      • {{ group.postedCount }} {{ 'campaign.day_completed' | translate }}
+                    }
+                  </span>
+                </div>
+                <div class="day-header-right">
+                  <span class="material-icons expand-icon">
+                    {{ isDayOpen(group.dayNumber) ? 'expand_less' : 'expand_more' }}
+                  </span>
                 </div>
               </div>
-            }
+
+              <!-- Accordion Content (Visible when open) -->
+              @if (isDayOpen(group.dayNumber)) {
+                <div class="day-accordion-body animate-in">
+                  <div class="slots-grid">
+                    @for (slot of group.slots; track slot.slotId) {
+                      <app-itinerary-slot-card
+                        [slot]="slot"
+                        [campaignId]="campaignId || undefined"
+                        [isReadonly]="slot.status === 'posted'"
+                        (slotChange)="onSlotChange($event)"
+                        (uploadMedia)="onUploadMedia($event)"
+                      ></app-itinerary-slot-card>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  @if (isDeleteModalOpen()) {
+    <div class="modal-backdrop" (click)="closeDeleteModal()">
+      <div class="modal-card glass-panel animate-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="material-icons" style="color: var(--danger);">delete_forever</span>
+            <h3>{{ 'campaign.delete' | translate }}</h3>
           </div>
-        }
+          <button type="button" class="close-btn" (click)="closeDeleteModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>{{ 'campaign.confirm_delete' | translate }}</p>
+          <p class="delete-target-title">"{{ title }}"</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            [disabled]="isDeleting()"
+            (click)="confirmDelete()"
+          >
+            @if (isDeleting()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.saving' | translate }}
+            } @else {
+              <span class="material-icons">delete</span>
+              {{ 'campaign.delete' | translate }}
+            }
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  }
 </div>

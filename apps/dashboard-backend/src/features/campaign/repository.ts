@@ -99,7 +99,7 @@ export class CampaignsRepository {
     const snapshot = await this.collections.campaigns.get();
     const activeOrScheduled = snapshot.docs
       .map((doc) => ({ ...doc.data(), id: doc.id } as CampaignDocWithId))
-      .filter((c) => c.status !== 'archived' && c.status !== 'completed');
+      .filter((c) => c.status === 'active' || c.status === 'scheduled');
 
     return activeOrScheduled.filter((c) => {
       if (excludeId && c.id === excludeId) return false;
