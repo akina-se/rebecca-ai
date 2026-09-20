@@ -33,8 +33,15 @@ test.describe('Campaign Presets, Hourly Chips & Accordion E2E Verification', () 
     const dayCards = page.locator('.day-accordion-card');
     await expect(dayCards).toHaveCount(3);
 
+    // Scroll to slot card and capture close-up
+    const firstSlotCard = page.locator('app-itinerary-slot-card').first();
+    await firstSlotCard.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await firstSlotCard.screenshot({
+      path: path.join(artifactsDir, 'slot_card_day_badge.png'),
+    });
+
     // Capture Screenshot 1: Standard Preset with Day-level Accordion
-    await page.waitForTimeout(500);
     await page.screenshot({
       path: path.join(artifactsDir, 'preset_standard_accordion.png'),
       fullPage: true,

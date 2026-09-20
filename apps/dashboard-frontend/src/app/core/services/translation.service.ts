@@ -228,7 +228,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'campaign.form_reply_context_hint': 'フォロワーとのリプライ対話時に反映させる簡潔な状況要約（共感優先ルールが適用されます）',
     'campaign.itinerary_slots': '配信タイムテーブル (Itinerary Slots)',
     'campaign.regenerate_slots': 'スロット自動再生成',
-    'campaign.slot_day': '日目',
+    'campaign.slot_day': 'Day',
     'campaign.slot_period': '時間帯',
     'campaign.slot_period_morning': '朝 (Morning)',
     'campaign.slot_period_afternoon': '昼 (Afternoon)',
