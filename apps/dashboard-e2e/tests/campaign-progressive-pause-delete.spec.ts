@@ -8,6 +8,7 @@ test.describe('Campaign Progressive Disclosure, Pause/Resume & Delete Actions', 
   test('progressive disclosure creation, topbar pause toggle, list pause toggle, and editor delete', async ({ page }) => {
     // 1. Authenticate
     await loginWithEmulatorAndSeedDB(page, 'admin@example.com', 'password123');
+    await page.evaluate(() => localStorage.setItem('rebecca_lang', 'ja'));
 
     // 2. Navigate to /campaigns/new
     await page.goto('/campaigns/new');
@@ -22,7 +23,7 @@ test.describe('Campaign Progressive Disclosure, Pause/Resume & Delete Actions', 
     await expect(overviewSection).toBeVisible();
 
     // Verify Step 2 (Narrative Context) and Step 3 (Slots) are NOT rendered in DOM
-    const narrativeSection = page.locator('.form-section:has-text("Narrative Context Layers")');
+    const narrativeSection = page.locator('.form-section').filter({ has: page.locator('span.material-icons:has-text("psychology")') });
     await expect(narrativeSection).toHaveCount(0);
     const slotsSection = page.locator('.slots-section');
     await expect(slotsSection).toHaveCount(0);
@@ -72,21 +73,35 @@ test.describe('Campaign Progressive Disclosure, Pause/Resume & Delete Actions', 
     const campaignId = campaignIdMatch![1];
 
     // Verify full editor is now unlocked
-    await expect(page.locator('.form-section:has-text("Narrative Context Layers")')).toBeVisible({ timeout: 10000 });
+    const narrativeSectionInEdit = page.locator('.form-section').filter({ has: page.locator('span.material-icons:has-text("psychology")') });
+    await expect(narrativeSectionInEdit).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.slots-section')).toBeVisible({ timeout: 10000 });
+
+    // Test "Sync Slots" / "スロット再同期" button
+    const syncSlotsBtn = page.locator('.slots-header-actions button:has(.material-icons:has-text("autorenew"))');
+    await expect(syncSlotsBtn).toBeVisible();
+    await syncSlotsBtn.click();
+    await expect(page.locator('.toast')).toBeVisible({ timeout: 5000 });
 
     // Capture Screenshot 2: Full Editor Unlocked
     await page.waitForTimeout(400);
     await page.screenshot({
       path: path.join(artifactsDir, '02_step2_full_editor_unlocked.png'),
-      fullPage: true,
+    });
+
+    // Scroll to and capture Slot Cards
+    await page.locator('.slots-section').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      path: path.join(artifactsDir, '02_step2_slots_accordion.png'),
     });
 
     // 5. Fill Narrative Context and Schedule Campaign so we can test Pause/Resume
-    const masterContextInput = page.locator('.form-group:has-text("Master Context") textarea');
+    await page.locator('.form-section').first().scrollIntoViewIfNeeded();
+    const masterContextInput = narrativeSectionInEdit.locator('textarea').first();
     await masterContextInput.fill('Rebecca is staying at a cozy ryokan in Jozankei hot springs.');
 
-    const replyContextInput = page.locator('.form-group:has-text("Reply Context") textarea');
+    const replyContextInput = narrativeSectionInEdit.locator('textarea').nth(1);
     await replyContextInput.fill('Enjoying hot springs and Hokkaido milk soft serve.');
 
     // Click "Schedule Campaign" button in topbar

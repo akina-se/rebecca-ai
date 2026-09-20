@@ -12,6 +12,7 @@ import {
 } from '@rebecca/types';
 import { CAMPAIGNS_REPOSITORY } from '../../../core/ports/campaigns.repository';
 import { ToastService } from '../../../shared/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { ItinerarySlotCardComponent } from '../../../shared/components/molecules/itinerary-slot-card/itinerary-slot-card.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
@@ -48,6 +49,7 @@ export class CampaignEditorComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toastService = inject(ToastService);
+  private readonly translation = inject(TranslationService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   campaignId: string | null = null;
@@ -344,6 +346,10 @@ export class CampaignEditorComponent implements OnInit {
 
     this.slots = generated;
     this.cdr.markForCheck();
+
+    if (notifyOnValidationError) {
+      this.toastService.show(this.translation.translate('campaign.slots_regenerated_success'), 'info');
+    }
   }
 
   /**
