@@ -116,16 +116,23 @@ export class CampaignEditorComponent implements OnInit {
 
   /**
    * Auto-generates slot entries for the specified date range and times.
+   *
+   * @param notifyOnValidationError - Whether to show a warning toast on validation failure.
+   * Defaults to false so intermediate editing in date pickers does not pop up irritating warnings.
    */
-  autoGenerateSlots(): void {
+  autoGenerateSlots(notifyOnValidationError = false): void {
     if (!this.startDate || !this.endDate || this.startDate > this.endDate) {
-      this.toastService.show('Invalid start or end date', 'warning');
+      if (notifyOnValidationError) {
+        this.toastService.show('Invalid start or end date', 'warning');
+      }
       return;
     }
 
     const times = this.parsedSlotTimes;
     if (times.length === 0) {
-      this.toastService.show('Please provide valid daily slot times (e.g. 08:00, 12:00, 19:00)', 'warning');
+      if (notifyOnValidationError) {
+        this.toastService.show('Please provide valid daily slot times (e.g. 08:00, 12:00, 19:00)', 'warning');
+      }
       return;
     }
     const generated: CampaignSlot[] = [];

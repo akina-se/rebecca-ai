@@ -99,7 +99,7 @@ describe('HttpCampaignsRepository', () => {
 
     const req = httpMock.expectOne(`${environment.apiUrl}/campaigns/camp_1/clone`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ startDate: '2027-11-01', endDate: '2027-11-03' });
+    expect(req.request.body).toEqual({ newStartDate: '2027-11-01', newEndDate: '2027-11-03' });
     req.flush({ ...mockCampaign, id: 'camp_2' });
   });
 
