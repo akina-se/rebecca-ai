@@ -93,7 +93,8 @@ describe('CampaignEditorComponent', () => {
   it('should auto-generate slots based on dates and slot times', () => {
     component.startDate = '2026-12-01';
     component.endDate = '2026-12-02';
-    component.dailySlotTimesText = '08:00, 19:00';
+    component.setPresetMode('custom');
+    component.selectedCustomTimes = ['08:00', '19:00'];
 
     component.autoGenerateSlots();
     // 2 days * 2 slots = 4 slots
@@ -104,6 +105,72 @@ describe('CampaignEditorComponent', () => {
     expect(component.slots[1].timePeriod).toBe('night');
     expect(component.slots[2].dayNumber).toBe(2);
     expect(component.slots[3].dayNumber).toBe(2);
+  });
+
+  it('should toggle preset mode and generate standard 3 slots', () => {
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-01'; // 1 day
+    component.setPresetMode('standard');
+
+    expect(component.presetMode).toBe('standard');
+    expect(component.parsedSlotTimes).toEqual(['08:00', '12:00', '19:00']);
+    expect(component.slots).toHaveLength(3);
+  });
+
+  it('should toggle hourly chips and enforce maximum slot limit guard', () => {
+    component.setPresetMode('custom');
+    component.selectedCustomTimes = ['08:00'];
+
+    // Add 10:00
+    component.toggleHourChip('10:00');
+    expect(component.isHourSelected('10:00')).toBe(true);
+    expect(component.selectedCustomTimes).toContain('10:00');
+
+    // Remove 10:00
+    component.toggleHourChip('10:00');
+    expect(component.isHourSelected('10:00')).toBe(false);
+
+    // Prevent removing the last slot
+    expect(component.selectedCustomTimes).toHaveLength(1);
+    component.toggleHourChip('08:00');
+    expect(mockToast.show).toHaveBeenCalledWith('At least one delivery slot is required', 'warning');
+    expect(component.selectedCustomTimes).toContain('08:00');
+
+    // Test max slots guard (8 slots)
+    component.selectedCustomTimes = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+    component.toggleHourChip('23:00');
+    expect(mockToast.show).toHaveBeenCalledWith(
+      expect.stringContaining('Daily limit (8 slots) reached'),
+      'warning',
+    );
+    expect(component.selectedCustomTimes).not.toContain('23:00');
+  });
+
+  it('should manage accordion day groups and expand/collapse states', () => {
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-03'; // 3 days
+    component.setPresetMode('standard'); // 3 slots/day = 9 slots total
+
+    const groups = component.groupedSlots;
+    expect(groups).toHaveLength(3);
+    expect(groups[0].dayNumber).toBe(1);
+    expect(groups[0].slots).toHaveLength(3);
+    expect(groups[1].dayNumber).toBe(2);
+    expect(groups[2].dayNumber).toBe(3);
+
+    // Test expand/collapse
+    expect(component.isDayOpen(1)).toBe(true);
+    component.toggleDay(1);
+    expect(component.isDayOpen(1)).toBe(false);
+
+    component.collapseAllDays();
+    expect(component.isDayOpen(1)).toBe(false);
+    expect(component.isDayOpen(2)).toBe(false);
+
+    component.expandAllDays();
+    expect(component.isDayOpen(1)).toBe(true);
+    expect(component.isDayOpen(2)).toBe(true);
+    expect(component.isDayOpen(3)).toBe(true);
   });
 
   it('should update slot on onSlotChange', () => {

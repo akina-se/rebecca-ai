@@ -56,7 +56,7 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     await endDateInput.fill(endDateStr);
 
     // Regenerate slots
-    const regenBtn = page.locator('.btn-inline-action').first();
+    const regenBtn = page.locator('.slots-header-actions button').last();
     await regenBtn.click();
 
     // Fill Context Layers

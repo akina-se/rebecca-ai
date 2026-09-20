@@ -15,6 +15,21 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { ItinerarySlotCardComponent } from '../../../shared/components/molecules/itinerary-slot-card/itinerary-slot-card.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
+export interface DaySlotGroup {
+  dayNumber: number;
+  dateStr: string;
+  slots: CampaignSlot[];
+  postedCount: number;
+  pendingCount: number;
+  skippedCount: number;
+}
+
+export const STANDARD_SLOT_HOURS: string[] = ['08:00', '12:00', '19:00'];
+export const MAX_CUSTOM_SLOT_HOURS = 8;
+export const ALL_HOURLY_SLOTS: string[] = Array.from({ length: 24 }, (_, i) => {
+  return `${String(i).padStart(2, '0')}:00`;
+});
+
 /**
  * CampaignEditorComponent
  *
@@ -53,6 +68,16 @@ export class CampaignEditorComponent implements OnInit {
   isPaused = false;
   slots: CampaignSlot[] = [];
 
+  // Presets & Hourly Chips
+  presetMode: 'standard' | 'custom' = 'standard';
+  selectedCustomTimes: string[] = ['08:00', '12:00', '19:00'];
+  readonly standardHours = STANDARD_SLOT_HOURS;
+  readonly allHourlySlots = ALL_HOURLY_SLOTS;
+  readonly maxCustomSlots = MAX_CUSTOM_SLOT_HOURS;
+
+  // Day-level Accordion Open State
+  openDays = new Set<number>();
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'new') {
@@ -84,12 +109,32 @@ export class CampaignEditorComponent implements OnInit {
         this.startDate = campaign.startDate;
         this.endDate = campaign.endDate;
         this.dailySlotTimesText = campaign.dailySlotTimes.join(', ');
+
+        // Detect if loaded campaign matches standard 3-slot preset
+        const isStandard =
+          campaign.dailySlotTimes.length === 3 &&
+          campaign.dailySlotTimes[0] === '08:00' &&
+          campaign.dailySlotTimes[1] === '12:00' &&
+          campaign.dailySlotTimes[2] === '19:00';
+
+        this.presetMode = isStandard ? 'standard' : 'custom';
+        this.selectedCustomTimes =
+          campaign.dailySlotTimes.length > 0
+            ? [...campaign.dailySlotTimes]
+            : [...this.standardHours];
+
         this.masterContext = campaign.masterContext;
         this.replyContextSummary = campaign.replyContextSummary;
         this.status = campaign.status;
         this.isAnnualRecurring = campaign.isAnnualRecurring;
         this.isPaused = campaign.isPaused;
         this.slots = campaign.slots;
+
+        // Open all days by default for loaded campaign
+        for (const slot of campaign.slots) {
+          this.openDays.add(slot.dayNumber);
+        }
+
         this.isLoading.set(false);
         this.cdr.markForCheck();
       },
@@ -104,21 +149,121 @@ export class CampaignEditorComponent implements OnInit {
   }
 
   /**
-   * Parses comma-separated daily slot times text into a normalized array of HH:mm strings.
+   * Returns active daily slot times based on preset mode.
    */
   get parsedSlotTimes(): string[] {
-    return this.dailySlotTimesText
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => /^\d{1,2}:\d{2}$/.test(t))
-      .map((t) => (t.length === 4 ? `0${t}` : t));
+    if (this.presetMode === 'standard') {
+      return this.standardHours;
+    }
+    return [...this.selectedCustomTimes].sort();
+  }
+
+  /**
+   * Switches schedule preset mode (standard vs custom hourly chips).
+   */
+  setPresetMode(mode: 'standard' | 'custom'): void {
+    if (this.presetMode === mode) return;
+    this.presetMode = mode;
+    if (mode === 'standard') {
+      this.selectedCustomTimes = [...this.standardHours];
+    }
+    this.autoGenerateSlots(false);
+  }
+
+  /**
+   * Toggles an hour chip selection in custom mode.
+   * Guarantees at least 1 slot is selected and prevents exceeding max limit (Anti-Spam Guard).
+   */
+  toggleHourChip(hour: string): void {
+    if (this.presetMode !== 'custom') {
+      this.presetMode = 'custom';
+    }
+
+    const idx = this.selectedCustomTimes.indexOf(hour);
+    if (idx !== -1) {
+      if (this.selectedCustomTimes.length <= 1) {
+        this.toastService.show('At least one delivery slot is required', 'warning');
+        return;
+      }
+      this.selectedCustomTimes.splice(idx, 1);
+    } else {
+      if (this.selectedCustomTimes.length >= this.maxCustomSlots) {
+        this.toastService.show(
+          `Daily limit (${this.maxCustomSlots} slots) reached to protect X API rate limits`,
+          'warning',
+        );
+        return;
+      }
+      this.selectedCustomTimes.push(hour);
+    }
+
+    this.selectedCustomTimes.sort();
+    this.autoGenerateSlots(false);
+  }
+
+  /**
+   * Checks whether a specific hour is currently selected.
+   */
+  isHourSelected(hour: string): boolean {
+    return this.parsedSlotTimes.includes(hour);
+  }
+
+  /**
+   * Groups slots by dayNumber for the collapsible accordion UI.
+   */
+  get groupedSlots(): DaySlotGroup[] {
+    const map = new Map<number, CampaignSlot[]>();
+    for (const slot of this.slots) {
+      const list = map.get(slot.dayNumber) || [];
+      list.push(slot);
+      map.set(slot.dayNumber, list);
+    }
+
+    const result: DaySlotGroup[] = [];
+    for (const [dayNumber, daySlots] of map.entries()) {
+      const dateStr = daySlots[0]?.scheduledTime ? daySlots[0].scheduledTime.slice(0, 10) : '';
+      result.push({
+        dayNumber,
+        dateStr,
+        slots: daySlots,
+        postedCount: daySlots.filter((s) => s.status === 'posted').length,
+        pendingCount: daySlots.filter((s) => s.status === 'pending').length,
+        skippedCount: daySlots.filter((s) => s.status === 'skipped').length,
+      });
+    }
+
+    return result.sort((a, b) => a.dayNumber - b.dayNumber);
+  }
+
+  /**
+   * Accordion expand/collapse helpers.
+   */
+  isDayOpen(dayNumber: number): boolean {
+    return this.openDays.has(dayNumber);
+  }
+
+  toggleDay(dayNumber: number): void {
+    if (this.openDays.has(dayNumber)) {
+      this.openDays.delete(dayNumber);
+    } else {
+      this.openDays.add(dayNumber);
+    }
+  }
+
+  expandAllDays(): void {
+    for (const group of this.groupedSlots) {
+      this.openDays.add(group.dayNumber);
+    }
+  }
+
+  collapseAllDays(): void {
+    this.openDays.clear();
   }
 
   /**
    * Auto-generates slot entries for the specified date range and times.
    *
    * @param notifyOnValidationError - Whether to show a warning toast on validation failure.
-   * Defaults to false so intermediate editing in date pickers does not pop up irritating warnings.
    */
   autoGenerateSlots(notifyOnValidationError = false): void {
     if (!this.startDate || !this.endDate || this.startDate > this.endDate) {
@@ -131,7 +276,7 @@ export class CampaignEditorComponent implements OnInit {
     const times = this.parsedSlotTimes;
     if (times.length === 0) {
       if (notifyOnValidationError) {
-        this.toastService.show('Please provide valid daily slot times (e.g. 08:00, 12:00, 19:00)', 'warning');
+        this.toastService.show('Please provide valid daily slot times', 'warning');
       }
       return;
     }
@@ -143,6 +288,7 @@ export class CampaignEditorComponent implements OnInit {
     const totalDays = Math.round((end.getTime() - start.getTime()) / dayMs) + 1;
 
     for (let day = 1; day <= totalDays; day++) {
+      this.openDays.add(day);
       const currentDayDate = new Date(start.getTime() + (day - 1) * dayMs);
       const dateStr = currentDayDate.toISOString().slice(0, 10);
 

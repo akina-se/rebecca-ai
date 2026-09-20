@@ -51,7 +51,7 @@ test.describe('Campaign Narrative Engine Features E2E Tests', () => {
     await endDateInput.fill('2026-10-03');
 
     // 3. Trigger slot generation
-    const regenBtn = page.locator('.btn-inline-action').first();
+    const regenBtn = page.locator('.slots-header-actions button').last();
     await regenBtn.click();
 
     // 4. Verify slot cards rendered (3 days * 3 slots = 9 slots)

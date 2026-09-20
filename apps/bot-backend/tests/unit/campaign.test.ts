@@ -303,6 +303,53 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       expect(deps.xApi.tweet).not.toHaveBeenCalled();
     });
 
+    it('should prioritize exact hour match when multiple slots exist within the same time period', async () => {
+      (getZonedDateParts as jest.Mock).mockReturnValue({
+        year: '2026',
+        month: '09',
+        day: '18',
+        hour: '10',
+        minute: '00',
+        second: '00',
+        numericYear: 2026,
+        numericMonth: 9,
+        numericDay: 18,
+        numericHour: 10,
+        numericMinute: 0,
+      });
+
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots = [
+        {
+          slotId: 'slot-1-0800',
+          dayNumber: 1,
+          timePeriod: 'morning',
+          scheduledTime: '2026-09-22T08:00:00Z',
+          theme: 'Theme 8am',
+          status: 'pending',
+          fixedTextOverride: 'Fixed 8am',
+        },
+        {
+          slotId: 'slot-1-1000',
+          dayNumber: 1,
+          timePeriod: 'morning',
+          scheduledTime: '2026-09-22T10:00:00Z',
+          theme: 'Theme 10am',
+          status: 'pending',
+          fixedTextOverride: 'Fixed 10am',
+        },
+      ];
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_exact_hour_123' } });
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(result.slotId).toBe('slot-1-1000');
+      expect(result.post).toBe('Fixed 10am');
+    });
+
     it('should return no_pending_slot when all slots for today are already posted', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
       campaign.slots.forEach((s: any) => {

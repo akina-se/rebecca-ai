@@ -89,10 +89,26 @@ export class CampaignPostUseCase {
       };
     }
 
-    const targetSlot = pendingSlotsForToday.find((s) => s.timePeriod === currentPeriod);
+    // Find matching pending slot:
+    // Priority 1: Match exact hour from scheduledTime (handles 1-hour granular slots)
+    // Priority 2: Fallback to canonical timePeriod matching for full backward compatibility
+    const targetSlot =
+      pendingSlotsForToday.find((s) => {
+        if (s.scheduledTime) {
+          const timePart = s.scheduledTime.includes('T')
+            ? s.scheduledTime.split('T')[1]
+            : s.scheduledTime;
+          const [hStr] = timePart.split(':');
+          const slotHour = parseInt(hStr, 10);
+          if (!isNaN(slotHour) && slotHour === numericHour) {
+            return true;
+          }
+        }
+        return false;
+      }) ?? pendingSlotsForToday.find((s) => s.timePeriod === currentPeriod);
 
     if (!targetSlot) {
-      console.log(`[CampaignPostUseCase] No pending slot configured for period "${currentPeriod}" on Day ${dayNumber}. Skipping.`);
+      console.log(`[CampaignPostUseCase] No pending slot configured for hour ${numericHour} (period "${currentPeriod}") on Day ${dayNumber}. Skipping.`);
       return {
         status: 'skipped',
         reason: `No pending slot configured for period "${currentPeriod}" on Day ${dayNumber}.`,
