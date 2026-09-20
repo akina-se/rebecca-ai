@@ -454,6 +454,27 @@ describe('@rebecca/db Unit Tests', () => {
       expect(result['slots']).toEqual([]);
     });
 
+    it('toFirestore should omit createdAt when undefined for partial merge updates', () => {
+      const campaign = {
+        title: 'Spring Festival',
+        status: 'draft' as const,
+        isPaused: false,
+        startDate: '2027-03-01',
+        endDate: '2027-03-05',
+        dailySlotTimes: ['09:00'],
+        masterContext: '',
+        replyContextSummary: '',
+        slots: [],
+        totalSlotsCount: 1,
+        completedSlotsCount: 0,
+        isAnnualRecurring: false,
+        updatedAt: '2027-01-01T00:00:00.000Z',
+      } as unknown as CampaignDoc;
+
+      const result = campaignDocConverter.toFirestore(campaign);
+      expect(result['createdAt']).toBeUndefined();
+    });
+
     it('fromFirestore should throw an error when mandatory fields are missing', () => {
       const mockCorruptedSnapshot = {
         id: 'camp_empty',

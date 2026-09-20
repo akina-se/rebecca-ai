@@ -31,15 +31,27 @@
           </a>
         }
       } @else if (slot.status === 'skipped') {
-        <span class="badge status-badge status-skipped">
+        <button
+          type="button"
+          class="badge status-badge status-skipped"
+          (click)="toggleSkip()"
+          [disabled]="isReadonly"
+          title="Click to reactivate slot"
+        >
           <span class="material-icons">block</span>
           {{ 'campaign.slot_status_skipped' | translate }}
-        </span>
+        </button>
       } @else {
-        <span class="badge status-badge status-pending">
+        <button
+          type="button"
+          class="badge status-badge status-pending"
+          (click)="toggleSkip()"
+          [disabled]="isReadonly"
+          title="Click to skip this slot"
+        >
           <span class="material-icons">hourglass_empty</span>
           {{ 'campaign.slot_status_pending' | translate }}
-        </span>
+        </button>
       }
     </div>
   </div>

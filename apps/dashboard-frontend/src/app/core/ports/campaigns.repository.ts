@@ -38,7 +38,7 @@ export interface CampaignsRepository {
   /**
    * Duplicates an existing campaign with reset slots.
    */
-  clone(id: string, startDate?: string, endDate?: string): Observable<CampaignDocWithId>;
+  clone(id: string, newStartDate?: string, newEndDate?: string): Observable<CampaignDocWithId>;
 
   /**
    * Triggers emergency kill-switch pause.

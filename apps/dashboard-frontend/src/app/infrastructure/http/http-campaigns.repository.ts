@@ -7,6 +7,7 @@ import {
   PaginatedResponse,
   CreateCampaignRequest,
   UpdateCampaignRequest,
+  CloneCampaignRequest,
   CampaignQueryParams,
   CampaignAssetUploadResult,
 } from '@rebecca/types';
@@ -67,11 +68,12 @@ export class HttpCampaignsRepository implements CampaignsRepository {
   /**
    * Clones an existing campaign with reset slot status.
    */
-  clone(id: string, startDate?: string, endDate?: string): Observable<CampaignDocWithId> {
-    return this.http.post<CampaignDocWithId>(`${this.baseUrl}/campaigns/${id}/clone`, {
-      startDate,
-      endDate,
-    });
+  clone(id: string, newStartDate?: string, newEndDate?: string): Observable<CampaignDocWithId> {
+    const payload: CloneCampaignRequest = {
+      newStartDate,
+      newEndDate,
+    };
+    return this.http.post<CampaignDocWithId>(`${this.baseUrl}/campaigns/${id}/clone`, payload);
   }
 
   /**

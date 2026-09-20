@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -33,6 +33,7 @@ export class CampaignEditorComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly toastService = inject(ToastService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   campaignId: string | null = null;
   readonly isEditMode = signal<boolean>(false);
@@ -90,11 +91,13 @@ export class CampaignEditorComponent implements OnInit {
         this.isPaused = campaign.isPaused;
         this.slots = campaign.slots;
         this.isLoading.set(false);
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('[CampaignEditor] Failed to load campaign:', err);
         this.toastService.show('Failed to load campaign', 'error');
         this.isLoading.set(false);
+        this.cdr.markForCheck();
         this.router.navigate(['/campaigns']);
       },
     });
@@ -163,6 +166,7 @@ export class CampaignEditorComponent implements OnInit {
     }
 
     this.slots = generated;
+    this.cdr.markForCheck();
   }
 
   /**
@@ -182,6 +186,7 @@ export class CampaignEditorComponent implements OnInit {
     const idx = this.slots.findIndex((s) => s.slotId === updatedSlot.slotId);
     if (idx !== -1) {
       this.slots[idx] = updatedSlot;
+      this.cdr.markForCheck();
     }
   }
 
@@ -202,10 +207,12 @@ export class CampaignEditorComponent implements OnInit {
         event.slot.textOnly = false;
         this.onSlotChange(event.slot);
         this.toastService.show('Illustration uploaded', 'success');
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('[CampaignEditor] Upload failed:', err);
         this.toastService.show('Failed to upload image', 'error');
+        this.cdr.markForCheck();
       },
     });
   }

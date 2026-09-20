@@ -102,6 +102,24 @@
   border: 1px solid var(--border-color);
 }
 
+button.status-badge {
+  cursor: pointer;
+  border-radius: 20px;
+  font-family: inherit;
+  transition: opacity 0.2s, transform 0.1s, background 0.2s;
+}
+
+button.status-badge:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+button.status-badge:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+}
+
 .view-tweet-btn {
   color: var(--color-primary);
   display: inline-flex;

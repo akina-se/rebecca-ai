@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { CloneCampaignRequest } from '@rebecca/types';
 import { CampaignsUseCase } from './usecase';
 
 /**
@@ -119,7 +120,7 @@ export class CampaignsController {
   clone = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = extractRequiredId(req.params.id);
-      const { newStartDate, newEndDate } = req.body || {};
+      const { newStartDate, newEndDate }: CloneCampaignRequest = req.body || {};
       const cloned = await this.useCase.cloneCampaign(id, newStartDate, newEndDate);
       res.status(201).json(cloned);
     } catch (err: unknown) {

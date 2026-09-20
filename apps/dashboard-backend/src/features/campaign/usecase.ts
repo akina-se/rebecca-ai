@@ -296,6 +296,7 @@ export class CampaignsUseCase {
       slots,
       totalSlotsCount,
       completedSlotsCount,
+      createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
     };
 

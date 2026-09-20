@@ -314,10 +314,12 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
       totalSlotsCount: Number(campaign.totalSlotsCount ?? 0),
       completedSlotsCount: Number(campaign.completedSlotsCount ?? 0),
       isAnnualRecurring: Boolean(campaign.isAnnualRecurring),
-      createdAt: campaign.createdAt,
       updatedAt: campaign.updatedAt,
     };
 
+    if (campaign.createdAt !== undefined) {
+      data['createdAt'] = campaign.createdAt;
+    }
     if (campaign.description !== undefined) {
       data['description'] = campaign.description;
     }

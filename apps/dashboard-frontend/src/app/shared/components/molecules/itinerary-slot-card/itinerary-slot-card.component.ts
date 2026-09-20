@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
@@ -17,7 +17,9 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
   templateUrl: './itinerary-slot-card.component.html',
   styleUrls: ['./itinerary-slot-card.component.css'],
 })
-export class ItinerarySlotCardComponent {
+export class ItinerarySlotCardComponent implements OnChanges {
+  private readonly cdr = inject(ChangeDetectorRef);
+
   /** The slot data model. */
   @Input({ required: true }) slot!: CampaignSlot;
 
@@ -35,6 +37,13 @@ export class ItinerarySlotCardComponent {
 
   /** Local state indicating an in-progress asset upload for this slot. */
   isUploading = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['slot']) {
+      this.isUploading = false;
+      this.cdr.markForCheck();
+    }
+  }
 
   /**
    * Resolves the appropriate Material Icon for a given slot time period.
@@ -85,6 +94,7 @@ export class ItinerarySlotCardComponent {
     if (this.isReadonly) return;
     this.slot.isFixedText = fixed;
     this.notifyChange();
+    this.cdr.markForCheck();
   }
 
   /**
@@ -95,6 +105,17 @@ export class ItinerarySlotCardComponent {
     this.slot.mediaUrl = undefined;
     this.slot.textOnly = true;
     this.notifyChange();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Toggles slot skip status between pending and skipped.
+   */
+  toggleSkip(): void {
+    if (this.isReadonly || this.slot.status === 'posted') return;
+    this.slot.status = this.slot.status === 'skipped' ? 'pending' : 'skipped';
+    this.notifyChange();
+    this.cdr.markForCheck();
   }
 
   /**
