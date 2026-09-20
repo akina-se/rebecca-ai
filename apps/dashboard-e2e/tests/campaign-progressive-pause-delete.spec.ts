@@ -43,6 +43,11 @@ test.describe('Campaign Progressive Disclosure, Pause/Resume & Delete Actions', 
     const descTextarea = page.locator('textarea.form-textarea').first();
     await descTextarea.fill('Exploring snowy Otaru canal and Sapporo night markets.');
 
+    const hashtagInput = page.locator('input.with-prefix');
+    await expect(hashtagInput).toBeVisible();
+    await hashtagInput.fill('#北海道雪景色2026');
+    await expect(hashtagInput).toHaveValue('北海道雪景色2026');
+
     // Generate unique future date range to prevent overlapping date collision
     const offsetDays = 100 + Math.floor(Math.random() * 800);
     const startObj = new Date(Date.now() + offsetDays * 86400000);
@@ -77,11 +82,14 @@ test.describe('Campaign Progressive Disclosure, Pause/Resume & Delete Actions', 
     await expect(narrativeSectionInEdit).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.slots-section')).toBeVisible({ timeout: 10000 });
 
+    // Verify hashtag was persisted into edit mode
+    await expect(page.locator('input.with-prefix')).toHaveValue('北海道雪景色2026');
+
     // Test "Sync Slots" / "スロット再同期" button
     const syncSlotsBtn = page.locator('.slots-header-actions button:has(.material-icons:has-text("autorenew"))');
     await expect(syncSlotsBtn).toBeVisible();
     await syncSlotsBtn.click();
-    await expect(page.locator('.toast')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.toast').last()).toBeVisible({ timeout: 5000 });
 
     // Capture Screenshot 2: Full Editor Unlocked
     await page.waitForTimeout(400);

@@ -120,14 +120,23 @@ export class CampaignPostUseCase {
     let postText: string;
     let thought: string;
 
+    const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
+    const campaignHashtag = campaign.hashtag ? `#${campaign.hashtag.replace(/^#+/, '').trim()}` : '';
+    const hashtagsList = [campaignHashtag, defaultHashtag].filter(Boolean);
+    const hashtagsBlock = hashtagsList.length > 0 ? `\n${hashtagsList.join(' ')}` : '';
+
     try {
       if (targetSlot.fixedTextOverride && targetSlot.fixedTextOverride.trim()) {
         postText = targetSlot.fixedTextOverride.trim();
         thought = 'Pre-defined narrative script for campaign slot.';
+        if (campaignHashtag && !postText.includes(campaignHashtag)) {
+          if (postText.length + `\n${campaignHashtag}`.length <= 140) {
+            postText += `\n${campaignHashtag}`;
+          }
+        }
       } else {
         const personaName = this.deps.persona.metadata.displayName;
         const userCallsign = this.deps.persona.metadata.userCallsign.ja;
-        const defaultHashtag = this.deps.persona.metadata.defaultHashtag;
 
         const timelineSummary = await this.deps.firestore.getTimelineSummary();
         const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
@@ -152,6 +161,10 @@ export class CampaignPostUseCase {
         const captionHintText = targetSlot.captionPromptHint && targetSlot.captionPromptHint.trim()
           ? targetSlot.captionPromptHint.trim()
           : '（特記事項なし）';
+
+        // Calculate max body characters so body + hashtags strictly stay within 140 chars
+        const maxBodyChars = Math.min(100, 140 - hashtagsBlock.length);
+
         const campaignPrompt = `あなたはAIキャラクター「${personaName}」として、現在実施中の特別ストーリー（イベント・キャンペーン）に沿ったX（Twitter）のポストを1つ作成してください。
 
 【特別ストーリー設定（Master Context）】
@@ -168,7 +181,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 - Master Contextの世界観と現在のスロットのテーマを自然に織り込み、生き生きとした実況感や日常の体験を${userCallsign}（ユーザー）に伝えてください。
 - 一方的な報告にならず、${personaName}らしい親しみやすい語りかけや問いかけを交えてください。
 - thought（内省思考）は150文字以内の自然な独白としてください。
-- reply（ツイート本文）は【絶対に100文字以内の短文】にしてください。
+- reply（ツイート本文）は【絶対に${maxBodyChars}文字以内の短文】にしてください。
 - ハッシュタグはシステムが自動付与するため、本文中には絶対に含めないでください。`;
 
         const structuredPost = await this.deps.gemini.generateStructuredTimelinePost(
@@ -178,11 +191,8 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         postText = structuredPost.reply;
         thought = structuredPost.thought;
 
-        if (defaultHashtag) {
-          const hashtag = `\n${defaultHashtag}`;
-          if (postText.length + hashtag.length <= 140) {
-            postText += hashtag;
-          }
+        if (hashtagsBlock && postText.length + hashtagsBlock.length <= 140) {
+          postText += hashtagsBlock;
         }
       }
 

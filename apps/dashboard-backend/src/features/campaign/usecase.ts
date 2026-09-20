@@ -24,6 +24,24 @@ const VALID_CAMPAIGN_STATUSES = new Set<CampaignStatus>([
   'archived',
 ]);
 
+/**
+ * Validates and cleans optional campaign hashtag.
+ * Strips leading '#' characters, limits length to 20 characters,
+ * and restricts to valid alphanumeric and Japanese characters without spaces.
+ */
+export const sanitizeHashtag = (raw?: unknown): string | undefined => {
+  if (typeof raw !== 'string') return undefined;
+  const clean = raw.trim().replace(/^#+/, '');
+  if (!clean) return undefined;
+  if (clean.length > 20) {
+    throw new Error('Campaign hashtag cannot exceed 20 characters.');
+  }
+  if (!/^[a-zA-Z0-9_\u3040-\u30FF\u4E00-\u9FFF]+$/.test(clean)) {
+    throw new Error('Campaign hashtag contains invalid characters. Use letters, numbers, or Japanese characters without spaces or symbols.');
+  }
+  return clean;
+};
+
 export interface UploadedCampaignFile {
   originalname: string;
   mimetype: string;
@@ -200,10 +218,12 @@ export class CampaignsUseCase {
 
     const id = `camp_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
     const nowIso = new Date().toISOString();
+    const hashtag = sanitizeHashtag(data.hashtag);
 
     const campaignDoc: CampaignDoc = {
       title,
       description: typeof data.description === 'string' && data.description.trim() ? data.description.trim() : undefined,
+      hashtag,
       status: data.status,
       isPaused: Boolean(data.isPaused),
       startDate,
@@ -283,11 +303,13 @@ export class CampaignsUseCase {
     const slots = updates.slots !== undefined ? updates.slots : existing.slots;
     const totalSlotsCount = slots.length;
     const completedSlotsCount = slots.filter((s) => s.status === 'posted').length;
+    const hashtag = updates.hashtag !== undefined ? sanitizeHashtag(updates.hashtag) : existing.hashtag;
 
     const sanitizedUpdates: Partial<CampaignDoc> = {
       ...updates,
       title: updates.title !== undefined ? updates.title.trim() : existing.title,
       description: updates.description !== undefined ? updates.description.trim() : existing.description,
+      hashtag,
       startDate,
       endDate,
       masterContext,

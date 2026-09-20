@@ -143,6 +143,28 @@
           ></textarea>
         </div>
 
+        <!-- Hashtag (Optional) -->
+        <div class="form-group span-full">
+          <div class="label-with-action">
+            <label class="form-label">{{ 'campaign.form_hashtag' | translate }}</label>
+            <span class="char-count" [class.limit-reached]="hashtag.length >= 20">
+              {{ hashtag.length }}/20
+            </span>
+          </div>
+          <div class="input-with-prefix">
+            <span class="input-prefix">#</span>
+            <input
+              type="text"
+              class="form-input with-prefix"
+              maxlength="20"
+              [value]="hashtag"
+              (input)="onHashtagInput($event)"
+              [placeholder]="'campaign.form_hashtag_placeholder' | translate"
+            />
+          </div>
+          <span class="form-hint">{{ 'campaign.form_hashtag_hint' | translate }}</span>
+        </div>
+
         <!-- Start Date -->
         <div class="form-group">
           <label class="form-label">{{ 'campaign.form_start_date' | translate }} *</label>

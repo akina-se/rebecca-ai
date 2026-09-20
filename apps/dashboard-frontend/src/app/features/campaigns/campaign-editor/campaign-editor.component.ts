@@ -63,6 +63,7 @@ export class CampaignEditorComponent implements OnInit {
   // Form Fields
   title = '';
   description = '';
+  hashtag = '';
   startDate = '';
   endDate = '';
   dailySlotTimesText = '08:00, 12:00, 19:00';
@@ -116,6 +117,9 @@ export class CampaignEditorComponent implements OnInit {
     const after3Days = new Date(nextWeek);
     after3Days.setDate(after3Days.getDate() + 2);
 
+    this.title = '';
+    this.description = '';
+    this.hashtag = '';
     this.startDate = nextWeek.toISOString().slice(0, 10);
     this.endDate = after3Days.toISOString().slice(0, 10);
     this.presetMode = 'standard';
@@ -132,6 +136,7 @@ export class CampaignEditorComponent implements OnInit {
       next: (campaign: CampaignDocWithId) => {
         this.title = campaign.title;
         this.description = campaign.description ?? '';
+        this.hashtag = campaign.hashtag ?? '';
         this.startDate = campaign.startDate;
         this.endDate = campaign.endDate;
         this.dailySlotTimesText = campaign.dailySlotTimes.join(', ');
@@ -401,6 +406,20 @@ export class CampaignEditorComponent implements OnInit {
   }
 
   /**
+   * Sanitizes hashtag input to strip leading '#' and spaces, capped at 20 chars.
+   */
+  onHashtagInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let clean = input.value.replace(/^#+/, '').replace(/[\s#]+/g, '');
+    if (clean.length > 20) {
+      clean = clean.slice(0, 20);
+    }
+    this.hashtag = clean;
+    input.value = clean;
+  }
+
+  /**
    * Saves the campaign document as draft or scheduled.
    */
   save(targetStatus: CampaignStatus): void {
@@ -433,9 +452,11 @@ export class CampaignEditorComponent implements OnInit {
 
     this.isSaving.set(true);
 
+    const cleanHashtag = this.hashtag.trim().replace(/^#+/, '');
     const payload: CreateCampaignRequest = {
       title: trimmedTitle,
       description: this.description.trim(),
+      hashtag: cleanHashtag ? cleanHashtag : undefined,
       startDate: this.startDate,
       endDate: this.endDate,
       dailySlotTimes: this.parsedSlotTimes,
@@ -492,9 +513,11 @@ export class CampaignEditorComponent implements OnInit {
     this.autoGenerateSlots(false);
     this.isSaving.set(true);
 
+    const cleanHashtag = this.hashtag.trim().replace(/^#+/, '');
     const payload: CreateCampaignRequest = {
       title: trimmedTitle,
       description: this.description.trim(),
+      hashtag: cleanHashtag ? cleanHashtag : undefined,
       startDate: this.startDate,
       endDate: this.endDate,
       dailySlotTimes: this.parsedSlotTimes,

@@ -347,6 +347,9 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
     if (campaign.description !== undefined) {
       data['description'] = campaign.description;
     }
+    if (campaign.hashtag !== undefined) {
+      data['hashtag'] = campaign.hashtag;
+    }
     if (campaign.recurringApprovedYear !== undefined) {
       data['recurringApprovedYear'] = campaign.recurringApprovedYear;
     }
@@ -422,6 +425,7 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
       dailySlotTimes: Array.isArray(data['dailySlotTimes']) ? (data['dailySlotTimes'] as string[]) : [],
       masterContext: typeof data['masterContext'] === 'string' ? data['masterContext'] : '',
       replyContextSummary: typeof data['replyContextSummary'] === 'string' ? data['replyContextSummary'] : '',
+      hashtag: typeof data['hashtag'] === 'string' ? data['hashtag'] : undefined,
       slots,
       totalSlotsCount: typeof data['totalSlotsCount'] === 'number' ? data['totalSlotsCount'] : slots.length,
       completedSlotsCount:

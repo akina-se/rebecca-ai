@@ -276,6 +276,51 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       );
     });
 
+    it('should include campaign hashtag and adjust prompt character limit to guarantee total <= 140 chars', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.hashtag = 'レベッカ京都旅';
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue(new Array(768).fill(0.1));
+      (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
+        reply: '京都の紅葉が綺麗すぎて言葉が出ないよ〜🍁',
+        thought: '京都満喫中！',
+      });
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_camp_hashtag_1' } });
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      // Verify prompt instruction includes dynamic limit
+      // hashtagsBlock is "\n#レベッカ京都旅 #RebeccaAI" (length: 1 + 8 + 1 + 10 = 20)
+      // maxBodyChars = Math.min(100, 140 - 20) = 100
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('【絶対に100文字以内の短文】にしてください。'),
+      );
+      // Verify both hashtags were appended
+      expect(result.post).toContain('#レベッカ京都旅');
+      expect(result.post).toContain(deps.persona.metadata.defaultHashtag);
+      expect(result.post.length).toBeLessThanOrEqual(140);
+    });
+
+    it('should append campaign hashtag to fixedTextOverride if not already present and space permits', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.hashtag = 'レベッカ京都旅';
+      campaign.slots[0].fixedTextOverride = '金閣寺にやってきました！金色が眩しい！';
+      delete campaign.slots[0].mediaUrl;
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_fixed_hashtag_1' } });
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(result.post).toBe('金閣寺にやってきました！金色が眩しい！\n#レベッカ京都旅');
+      expect(result.post.length).toBeLessThanOrEqual(140);
+    });
+
     it('should strictly skip when current time period does not match any pending slot on that day', async () => {
       (getZonedDateParts as jest.Mock).mockReturnValue({
         year: '2026',

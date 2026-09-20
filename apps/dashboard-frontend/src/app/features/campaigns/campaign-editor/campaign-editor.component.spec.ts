@@ -18,6 +18,7 @@ describe('CampaignEditorComponent', () => {
     id: 'camp_edit_1',
     title: 'Kyoto Journey',
     description: 'Fall tour',
+    hashtag: 'レベッカ京都旅',
     startDate: '2026-11-01',
     endDate: '2026-11-03',
     status: 'draft',
@@ -93,7 +94,20 @@ describe('CampaignEditorComponent', () => {
     expect(component.isEditMode()).toBe(true);
     expect(mockRepo.getById).toHaveBeenCalledWith('camp_edit_1');
     expect(component.title).toBe('Kyoto Journey');
+    expect(component.hashtag).toBe('レベッカ京都旅');
     expect(component.slots).toHaveLength(1);
+  });
+
+  it('should sanitize hashtag input on user typing and limit to 20 chars', () => {
+    const input = document.createElement('input');
+    input.value = '#京都旅行 2026';
+    component.onHashtagInput({ target: input } as any);
+    expect(component.hashtag).toBe('京都旅行2026');
+
+    input.value = '##12345678901234567890EXTRA';
+    component.onHashtagInput({ target: input } as any);
+    expect(component.hashtag).toBe('12345678901234567890');
+    expect(component.hashtag.length).toBe(20);
   });
 
   it('should auto-generate slots based on dates and slot times', () => {

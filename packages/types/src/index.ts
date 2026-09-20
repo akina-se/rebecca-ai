@@ -544,6 +544,7 @@ export interface CampaignDoc {
   dailySlotTimes: string[];
   masterContext: string;
   replyContextSummary: string;
+  hashtag?: string;
   slots: CampaignSlot[];
   totalSlotsCount: number;
   completedSlotsCount: number;
@@ -574,6 +575,7 @@ export interface CreateCampaignRequest {
   dailySlotTimes: string[];
   masterContext: string;
   replyContextSummary: string;
+  hashtag?: string;
   status: CampaignStatus;
   isPaused?: boolean;
   isAnnualRecurring?: boolean;
@@ -590,6 +592,7 @@ export interface UpdateCampaignRequest {
   dailySlotTimes?: string[];
   masterContext?: string;
   replyContextSummary?: string;
+  hashtag?: string;
   status?: CampaignStatus;
   isPaused?: boolean;
   isAnnualRecurring?: boolean;

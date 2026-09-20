@@ -3,6 +3,7 @@ import {
   CampaignsUseCase,
   generateSlotsForSchedule,
   getTimePeriodForHour,
+  sanitizeHashtag,
 } from '../../src/features/campaign/usecase';
 import { CampaignsController } from '../../src/features/campaign/controller';
 import { initializeCampaignsModule } from '../../src/features/campaign';
@@ -97,6 +98,40 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
     it('generateSlotsForSchedule should throw if dates are invalid', () => {
       expect(() => generateSlotsForSchedule('invalid', 'dates', ['08:00'])).toThrow('Dates must be in YYYY-MM-DD format.');
       expect(() => generateSlotsForSchedule('2026-07-05', '2026-07-01', ['08:00'])).toThrow('startDate cannot be after endDate.');
+    });
+  });
+
+  describe('sanitizeHashtag', () => {
+    it('should return undefined for empty, undefined, or non-string inputs', () => {
+      expect(sanitizeHashtag(undefined)).toBeUndefined();
+      expect(sanitizeHashtag(null)).toBeUndefined();
+      expect(sanitizeHashtag(123)).toBeUndefined();
+      expect(sanitizeHashtag('')).toBeUndefined();
+      expect(sanitizeHashtag('   ')).toBeUndefined();
+      expect(sanitizeHashtag('###')).toBeUndefined();
+    });
+
+    it('should strip leading hash symbols and whitespace', () => {
+      expect(sanitizeHashtag('#京都旅')).toBe('京都旅');
+      expect(sanitizeHashtag('##RebeccaTravel')).toBe('RebeccaTravel');
+      expect(sanitizeHashtag('  #Autumn2026  ')).toBe('Autumn2026');
+    });
+
+    it('should throw if hashtag exceeds 20 characters', () => {
+      expect(() => sanitizeHashtag('123456789012345678901')).toThrow('Campaign hashtag cannot exceed 20 characters.');
+      expect(() => sanitizeHashtag('#123456789012345678901')).toThrow('Campaign hashtag cannot exceed 20 characters.');
+    });
+
+    it('should throw if hashtag contains spaces or punctuation symbols', () => {
+      expect(() => sanitizeHashtag('kyoto trip')).toThrow('Campaign hashtag contains invalid characters.');
+      expect(() => sanitizeHashtag('kyoto!trip')).toThrow('Campaign hashtag contains invalid characters.');
+      expect(() => sanitizeHashtag('kyoto-trip')).toThrow('Campaign hashtag contains invalid characters.');
+    });
+
+    it('should accept valid alphanumeric and Japanese characters', () => {
+      expect(sanitizeHashtag('レベッカ京都旅')).toBe('レベッカ京都旅');
+      expect(sanitizeHashtag('Rebecca_2026')).toBe('Rebecca_2026');
+      expect(sanitizeHashtag('秋の紅葉狩り')).toBe('秋の紅葉狩り');
     });
   });
 
@@ -302,6 +337,49 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(created.completedSlotsCount).toBe(0);
       expect(created.slots).toHaveLength(4);
       expect(repo.create).toHaveBeenCalled();
+    });
+
+    it('createCampaign should sanitize and include optional hashtag', async () => {
+      repo.create.mockImplementation(async (id, data) => ({ ...data, id } as CampaignDocWithId));
+
+      const created = await useCase.createCampaign({
+        title: 'Kyoto Journey',
+        hashtag: '#京都の紅葉狩り',
+        startDate: '2026-11-01',
+        endDate: '2026-11-02',
+        dailySlotTimes: ['08:00'],
+        masterContext: 'Kyoto context',
+        replyContextSummary: 'Kyoto reply',
+        status: 'draft',
+      });
+
+      expect(created.hashtag).toBe('京都の紅葉狩り');
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          hashtag: '京都の紅葉狩り',
+        }),
+      );
+    });
+
+    it('updateCampaign should sanitize and update hashtag when provided', async () => {
+      repo.getById.mockResolvedValueOnce({
+        ...sampleCampaign,
+        id: 'c1',
+      } as CampaignDocWithId);
+      repo.update.mockImplementation(async (id, data) => ({ ...sampleCampaign, id, ...data } as any));
+
+      const updated = await useCase.updateCampaign('c1', {
+        hashtag: '##UpdatedHashtag',
+      });
+
+      expect(updated.hashtag).toBe('UpdatedHashtag');
+      expect(repo.update).toHaveBeenCalledWith(
+        'c1',
+        expect.objectContaining({
+          hashtag: 'UpdatedHashtag',
+        }),
+      );
     });
 
     it('updateCampaign should reject invalid dates and overlapping dates', async () => {
