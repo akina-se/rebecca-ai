@@ -70,23 +70,19 @@ describe('ItinerarySlotCardComponent', () => {
     expect(component.slotChange.emit).toHaveBeenCalled();
   });
 
-  it('should compute thumbnail and full URLs, and open/close Lightbox', () => {
+  it('should compute thumbnail and full URLs, and open Lightbox via previewMedia emit', () => {
+    jest.spyOn(component.previewMedia, 'emit');
     component.slot.mediaUrl = '/api/v1/campaigns/c1/assets/pic.jpg';
     expect(component.getThumbnailUrl()).toBe('/api/v1/campaigns/c1/assets/pic.jpg?size=thumbnail');
     expect(component.getFullImageUrl()).toBe('/api/v1/campaigns/c1/assets/pic.jpg?size=full');
-    expect(component.getAssetFilename()).toBe('pic.jpg');
 
     component.openLightbox();
-    expect(component.isLightboxOpen).toBe(true);
-
-    component.closeLightbox();
-    expect(component.isLightboxOpen).toBe(false);
+    expect(component.previewMedia.emit).toHaveBeenCalledWith('/api/v1/campaigns/c1/assets/pic.jpg?size=full');
 
     // Empty URL handling
     component.slot.mediaUrl = undefined;
     expect(component.getThumbnailUrl()).toBe('');
     expect(component.getFullImageUrl()).toBe('');
-    expect(component.getAssetFilename()).toBe('');
   });
 
   it('should emit uploadMedia when onFileSelected is triggered', () => {
