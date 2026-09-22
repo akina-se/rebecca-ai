@@ -3,7 +3,6 @@ import { Firestore } from '@google-cloud/firestore';
 import { Storage } from '@google-cloud/storage';
 import multer from 'multer';
 import { config } from '../../config';
-import { getGcsStorageClient } from '../../lib/storage';
 import { CampaignsRepository } from './repository';
 import { CampaignsUseCase, CampaignsUseCaseConfig } from './usecase';
 import { CampaignsController } from './controller';

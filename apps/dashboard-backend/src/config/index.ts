@@ -20,7 +20,7 @@ function parseStorageEmulatorEndpoint(): string | undefined {
   try {
     parsedUrl = new URL(withProtocol);
   } catch (e) {
-    throw new Error(`Invalid storage emulator endpoint "${raw}": ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Invalid storage emulator endpoint "${raw}": ${e instanceof Error ? e.message : String(e)}`, { cause: e });
   }
 
   if (!parsedUrl.port && parsedUrl.protocol === 'http:') {
