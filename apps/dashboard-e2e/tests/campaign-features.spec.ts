@@ -40,19 +40,31 @@ test.describe('Campaign Narrative Engine Features E2E Tests', () => {
     await expect(page.locator('.editor-heading h2')).toBeVisible({ timeout: 15000 });
 
     // 1. Fill campaign title
+    const uniqueId = Date.now().toString().slice(-6);
+    const title = `Hawaii Story Arc ${uniqueId}`;
     const titleInput = page.locator('input.form-input').first();
-    await titleInput.fill('Hawaii Story Arc 2026');
+    await titleInput.fill(title);
 
-    // 2. Set dates
+    // 2. Set unique dates
+    const offsetDays = (parseInt(uniqueId, 10) % 500) + 100;
+    const baseDate = new Date();
+    baseDate.setUTCDate(baseDate.getUTCDate() + offsetDays);
+    const endDateObj = new Date(baseDate);
+    endDateObj.setUTCDate(endDateObj.getUTCDate() + 2);
+
     const startDateInput = page.locator('input[type="date"]').first();
     const endDateInput = page.locator('input[type="date"]').nth(1);
 
-    await startDateInput.fill('2026-10-01');
-    await endDateInput.fill('2026-10-03');
+    await startDateInput.fill(baseDate.toISOString().slice(0, 10));
+    await endDateInput.fill(endDateObj.toISOString().slice(0, 10));
 
-    // 3. Trigger slot generation
-    const regenBtn = page.locator('.slots-header-actions button').last();
-    await regenBtn.click();
+    // 3. Step 1: Create draft and proceed to Step 2 (Detailed configuration)
+    const createBtn = page.locator('.step1-bottom-bar button.btn-primary');
+    await expect(createBtn).toBeEnabled();
+    await createBtn.click();
+
+    // Wait for transition to edit mode (/campaigns/camp_*)
+    await expect(page).toHaveURL(/\/campaigns\/camp_/, { timeout: 15000 });
 
     // 4. Verify slot cards rendered (3 days * 3 slots = 9 slots)
     const slotCards = page.locator('app-itinerary-slot-card');

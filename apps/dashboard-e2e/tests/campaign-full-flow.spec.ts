@@ -55,9 +55,11 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     await startDateInput.fill(startDateStr);
     await endDateInput.fill(endDateStr);
 
-    // Regenerate slots
-    const regenBtn = page.locator('.slots-header-actions button').last();
-    await regenBtn.click();
+    // Step 1: Create draft and proceed to Step 2 (Progressive Disclosure)
+    const createBtn = page.locator('.step1-bottom-bar button.btn-primary');
+    await expect(createBtn).toBeEnabled();
+    await createBtn.click();
+    await expect(page).toHaveURL(/\/campaigns\/camp_/, { timeout: 15000 });
 
     // Fill Context Layers
     const masterContext = page.locator('.form-grid textarea.form-textarea').nth(1);
