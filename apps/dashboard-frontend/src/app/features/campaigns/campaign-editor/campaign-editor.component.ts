@@ -15,6 +15,7 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
 import { ItinerarySlotCardComponent } from '../../../shared/components/molecules/itinerary-slot-card/itinerary-slot-card.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 
 export interface DaySlotGroup {
   dayNumber: number;
@@ -40,7 +41,7 @@ export const ALL_HOURLY_SLOTS: string[] = Array.from({ length: 24 }, (_, i) => {
 @Component({
   selector: 'app-campaign-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ItinerarySlotCardComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, ItinerarySlotCardComponent, TranslatePipe, LightboxComponent],
   templateUrl: './campaign-editor.component.html',
   styleUrls: ['./campaign-editor.component.css'],
 })
@@ -59,6 +60,8 @@ export class CampaignEditorComponent implements OnInit {
   readonly isTogglingPause = signal<boolean>(false);
   readonly isDeleteModalOpen = signal<boolean>(false);
   readonly isDeleting = signal<boolean>(false);
+  readonly isLightboxOpen = signal<boolean>(false);
+  readonly lightboxImageUrl = signal<string>('');
 
   // Form Fields
   title = '';
@@ -343,7 +346,6 @@ export class CampaignEditorComponent implements OnInit {
             theme: `Day ${day} ${timePeriod.toUpperCase()}`,
             status: 'pending',
             isFixedText: false,
-            textOnly: true,
           });
         }
       }
@@ -373,8 +375,8 @@ export class CampaignEditorComponent implements OnInit {
   onSlotChange(updatedSlot: CampaignSlot): void {
     const idx = this.slots.findIndex((s) => s.slotId === updatedSlot.slotId);
     if (idx !== -1) {
-      this.slots[idx] = updatedSlot;
-      this.cdr.markForCheck();
+      this.slots = this.slots.map((s, i) => (i === idx ? { ...updatedSlot } : s));
+      this.cdr.detectChanges();
     }
   }
 
@@ -391,18 +393,49 @@ export class CampaignEditorComponent implements OnInit {
     this.toastService.show('Uploading illustration...', 'info');
     this.repo.uploadAsset(campaignId, event.file).subscribe({
       next: (res) => {
-        event.slot.mediaUrl = res.url;
-        event.slot.textOnly = false;
-        this.onSlotChange(event.slot);
+        const updatedSlot: CampaignSlot = {
+          ...event.slot,
+          mediaUrl: res.url,
+        };
+        this.onSlotChange(updatedSlot);
         this.toastService.show('Illustration uploaded', 'success');
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('[CampaignEditor] Upload failed:', err);
         this.toastService.show('Failed to upload image', 'error');
-        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
     });
+  }
+
+  /**
+   * Handles illustration file deletion for an individual slot.
+   */
+  onDeleteMedia(event: { slot: CampaignSlot; filename: string }): void {
+    const campaignId = this.campaignId;
+    const filename = event.filename;
+
+    event.slot.mediaUrl = undefined;
+    const updatedSlot: CampaignSlot = {
+      ...event.slot,
+      mediaUrl: undefined,
+    };
+    this.onSlotChange(updatedSlot);
+    this.cdr.detectChanges();
+
+    if (campaignId && filename) {
+      this.repo.deleteAsset(campaignId, filename).subscribe({
+        next: () => {
+          this.toastService.show('Illustration deleted', 'info');
+        },
+        error: (err) => {
+          console.warn('[CampaignEditor] Failed to physically delete asset from GCS:', err);
+        },
+      });
+    } else {
+      this.toastService.show('Illustration deleted', 'info');
+    }
   }
 
   /**
@@ -605,6 +638,22 @@ export class CampaignEditorComponent implements OnInit {
         this.toastService.show('Failed to delete campaign', 'error');
       },
     });
+  }
+
+  /**
+   * Opens full-size Lightbox modal for a slot illustration.
+   */
+  openLightbox(url: string): void {
+    this.lightboxImageUrl.set(url);
+    this.isLightboxOpen.set(true);
+  }
+
+  /**
+   * Closes the full-size Lightbox modal.
+   */
+  closeLightbox(): void {
+    this.isLightboxOpen.set(false);
+    this.lightboxImageUrl.set('');
   }
 
   /**

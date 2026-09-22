@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import sharp from 'sharp';
 import { Storage } from '@google-cloud/storage';
 import {
   CampaignDoc,
@@ -12,6 +13,37 @@ import {
   UpdateCampaignRequest,
 } from '@rebecca/types';
 import { ICampaignsRepository } from './repository';
+
+/**
+ * In-memory LRU Cache for high-frequency campaign thumbnail streaming.
+ */
+class ThumbnailMemoryCache {
+  private cache = new Map<string, { buffer: Buffer; contentType: string }>();
+  constructor(private max = 200) {}
+
+  get(key: string) {
+    const val = this.cache.get(key);
+    if (val) {
+      this.cache.delete(key);
+      this.cache.set(key, val);
+    }
+    return val;
+  }
+
+  set(key: string, val: { buffer: Buffer; contentType: string }) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.max) {
+      const oldest = this.cache.keys().next().value;
+      if (oldest !== undefined) this.cache.delete(oldest);
+    }
+    this.cache.set(key, val);
+  }
+
+  delete(key: string) {
+    this.cache.delete(key);
+  }
+}
 
 /**
  * Configuration options required by CampaignsUseCase.
@@ -145,6 +177,8 @@ export const generateSlotsForSchedule = (
  * and CampaignsUseCaseConfig via constructor Dependency Injection.
  */
 export class CampaignsUseCase {
+  private readonly thumbnailMemoryCache = new ThumbnailMemoryCache();
+
   constructor(
     private readonly repo: ICampaignsRepository,
     private readonly storage: Storage,
@@ -457,6 +491,16 @@ export class CampaignsUseCase {
    * @returns A Promise resolving to an object containing public URL and clean filename.
    * @throws Error if campaign is not found or uploaded file is not an image.
    */
+  /**
+   * Uploads an isolated campaign illustration directly to GCS.
+   * STRICT ASSET SEGREGATION: Stored under gs://<bucket>/campaigns/<campaignId>/...
+   * and NEVER registered into collections.images.
+   *
+   * @param campaignId - Document ID of the target campaign.
+   * @param file - Uploaded file buffer and metadata.
+   * @returns A Promise resolving to an object containing backend proxy URL and clean filename.
+   * @throws Error if campaign is not found or uploaded file is not an image.
+   */
   async uploadCampaignAsset(
     campaignId: string,
     file: UploadedCampaignFile,
@@ -485,17 +529,152 @@ export class CampaignsUseCase {
         contentType: file.mimetype,
         cacheControl: 'public, max-age=31536000',
       },
+      resumable: false,
     });
 
-    const publicUrl = `https://storage.googleapis.com/${bucketName}/${destination}`;
+    const proxyUrl = `/api/v1/campaigns/${campaignId}/assets/${cleanFilename}`;
     return {
-      url: publicUrl,
+      url: proxyUrl,
       filename: cleanFilename,
     };
   }
 
   /**
-   * Deletes a campaign document permanently.
+   * Retrieves the binary content of a campaign asset.
+   * Supports on-demand WebP thumbnail generation (400px width) with multi-tier caching (RAM -> GCS -> On-demand).
+   *
+   * @param campaignId - Document ID of the campaign.
+   * @param filename - Storage filename within the campaign.
+   * @param size - 'full' for original resolution or 'thumbnail' for 400px WebP.
+   * @returns Object with buffer and contentType, or null if not found.
+   */
+  async getCampaignAssetBinary(
+    campaignId: string,
+    filename: string,
+    size: 'full' | 'thumbnail' = 'full',
+  ): Promise<{ buffer: Buffer; contentType: string } | null> {
+    if (
+      !campaignId ||
+      !filename ||
+      !/^[a-zA-Z0-9_.-]+$/.test(campaignId) ||
+      !/^[a-zA-Z0-9_.-]+$/.test(filename)
+    ) {
+      return null;
+    }
+
+    const bucket = this.storage.bucket(this.config.imageBucketName);
+    const cacheKey = `${campaignId}_${filename}`;
+
+    if (size === 'thumbnail') {
+      const memoryHit = this.thumbnailMemoryCache.get(cacheKey);
+      if (memoryHit) {
+        return memoryHit;
+      }
+
+      const thumbPath = `campaigns/${campaignId}/thumbnails/${filename}.webp`;
+      try {
+        const thumbFile = bucket.file(thumbPath);
+        const [exists] = await thumbFile.exists();
+        if (exists) {
+          const [buffer] = await thumbFile.download();
+          const result = { buffer, contentType: 'image/webp' };
+          this.thumbnailMemoryCache.set(cacheKey, result);
+          return result;
+        }
+      } catch {
+        // GCS read failed, proceed to generate
+      }
+    }
+
+    const originalPath = `campaigns/${campaignId}/${filename}`;
+    const originalFile = bucket.file(originalPath);
+    try {
+      const [exists] = await originalFile.exists();
+      if (!exists) {
+        return null;
+      }
+      const [originalBuffer] = await originalFile.download();
+      let contentType = filename.toLowerCase().endsWith('.png')
+        ? 'image/png'
+        : filename.toLowerCase().endsWith('.webp')
+          ? 'image/webp'
+          : 'image/jpeg';
+      try {
+        const [metadata] = await originalFile.getMetadata();
+        if (metadata?.contentType) {
+          contentType = metadata.contentType;
+        }
+      } catch {
+        // ignore metadata error
+      }
+
+      if (size === 'thumbnail') {
+        try {
+          const thumbnailBuffer = await sharp(originalBuffer)
+            .resize({ width: 400, withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toBuffer();
+          const result = { buffer: thumbnailBuffer, contentType: 'image/webp' };
+          this.thumbnailMemoryCache.set(cacheKey, result);
+
+          const thumbPath = `campaigns/${campaignId}/thumbnails/${filename}.webp`;
+          bucket
+            .file(thumbPath)
+            .save(thumbnailBuffer, {
+              metadata: {
+                contentType: 'image/webp',
+                cacheControl: 'public, max-age=31536000, immutable',
+              },
+            })
+            .catch((err) => {
+              console.warn(`Failed to cache campaign thumbnail ${thumbPath} in GCS:`, err);
+            });
+
+          return result;
+        } catch (err) {
+          console.warn(`Failed to generate thumbnail for ${cacheKey}, fallback to original:`, err);
+          return { buffer: originalBuffer, contentType };
+        }
+      }
+
+      return { buffer: originalBuffer, contentType };
+    } catch (err) {
+      console.error(`Failed to read campaign asset ${originalPath}:`, err);
+      return null;
+    }
+  }
+
+  /**
+   * Physically deletes a campaign asset and its cached thumbnail from GCS.
+   *
+   * @param campaignId - Document ID of the campaign.
+   * @param filename - Storage filename within the campaign.
+   */
+  async deleteCampaignAsset(campaignId: string, filename: string): Promise<void> {
+    if (
+      !campaignId ||
+      !filename ||
+      !/^[a-zA-Z0-9_.-]+$/.test(campaignId) ||
+      !/^[a-zA-Z0-9_.-]+$/.test(filename)
+    ) {
+      throw new Error('Invalid campaign ID or filename.');
+    }
+
+    const bucket = this.storage.bucket(this.config.imageBucketName);
+    const cacheKey = `${campaignId}_${filename}`;
+    this.thumbnailMemoryCache.delete(cacheKey);
+
+    const originalPath = `campaigns/${campaignId}/${filename}`;
+    const thumbPath = `campaigns/${campaignId}/thumbnails/${filename}.webp`;
+
+    await Promise.all([
+      bucket.file(originalPath).delete({ ignoreNotFound: true }).catch(() => {}),
+      bucket.file(thumbPath).delete({ ignoreNotFound: true }).catch(() => {}),
+    ]);
+  }
+
+  /**
+   * Deletes a campaign document permanently, cascading physical deletion to all associated GCS objects.
    *
    * @param id - Document ID of the campaign to delete.
    * @returns A Promise resolving to void.
@@ -506,6 +685,15 @@ export class CampaignsUseCase {
     if (!campaign) {
       throw new Error(`Campaign ${id} not found.`);
     }
+
+    // Cascade GCS deletion for all assets and thumbnails under campaigns/${id}/
+    try {
+      const bucket = this.storage.bucket(this.config.imageBucketName);
+      await bucket.deleteFiles({ prefix: `campaigns/${id}/`, force: true });
+    } catch (err) {
+      console.warn(`[CampaignsUseCase] Warning during GCS cascade cleanup for campaign ${id}:`, err);
+    }
+
     await this.repo.delete(id);
   }
 }

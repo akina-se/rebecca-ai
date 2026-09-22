@@ -525,7 +525,6 @@ export interface CampaignSlot {
   captionPromptHint?: string;
   fixedTextOverride?: string;
   isFixedText?: boolean;
-  textOnly?: boolean;
   status: CampaignSlotStatus;
   postedTweetId?: string;
   postedAt?: string;
