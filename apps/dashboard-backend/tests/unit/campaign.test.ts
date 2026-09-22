@@ -641,6 +641,37 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       ).rejects.toThrow('Slot nonexistent-slot not found in campaign c1.');
     });
 
+    it('setSlotIllustration should throw invariant violation error if updated campaign does not contain slot', async () => {
+      const campWithSlot: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [
+          {
+            slotId: 'slot-1-0800',
+            dayNumber: 1,
+            timePeriod: 'morning',
+            scheduledTime: '2026-11-01T08:00:00Z',
+            theme: 'Theme',
+            status: 'pending',
+          },
+        ],
+      };
+      repo.getById.mockResolvedValueOnce(campWithSlot);
+      // Simulate repo returning corrupted document without the slot
+      repo.update.mockResolvedValueOnce({
+        ...campWithSlot,
+        slots: [],
+      });
+
+      await expect(
+        useCase.setSlotIllustration('c1', 'slot-1-0800', {
+          originalname: 'a.jpg',
+          mimetype: 'image/jpeg',
+          buffer: Buffer.from('a'),
+        }),
+      ).rejects.toThrow('Invariant violation: Slot "slot-1-0800" not found in updated campaign "c1".');
+    });
+
     it('removeSlotIllustration should delete GCS file and clear slot mediaUrl in Firestore', async () => {
       const campWithImage: CampaignDocWithId = {
         ...sampleCampaign,
@@ -679,6 +710,32 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       repo.getById.mockResolvedValueOnce(campWithSlots);
       await expect(useCase.removeSlotIllustration('c1', 'nonexistent')).rejects.toThrow(
         'Slot nonexistent not found in campaign c1.',
+      );
+    });
+
+    it('removeSlotIllustration should throw invariant violation error if updated campaign does not contain slot', async () => {
+      const campWithSlot: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [
+          {
+            slotId: 'slot-1-0800',
+            dayNumber: 1,
+            timePeriod: 'morning',
+            scheduledTime: '2026-11-01T08:00:00Z',
+            theme: 'Theme',
+            status: 'pending',
+          },
+        ],
+      };
+      repo.getById.mockResolvedValueOnce(campWithSlot);
+      repo.update.mockResolvedValueOnce({
+        ...campWithSlot,
+        slots: [],
+      });
+
+      await expect(useCase.removeSlotIllustration('c1', 'slot-1-0800')).rejects.toThrow(
+        'Invariant violation: Slot "slot-1-0800" not found in updated campaign "c1".',
       );
     });
 
@@ -1028,7 +1085,8 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
 
   describe('initializeCampaignsModule router factory', () => {
     it('should create express routers with registered campaign routes', () => {
-      const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(mock.firestore);
+      const mockStorage = { bucket: jest.fn() } as any;
+      const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(mock.firestore, mockStorage);
       expect(campaignsRouter).toBeDefined();
       expect(campaignsRouter.stack.length).toBeGreaterThan(0);
       expect(publicCampaignImagesRouter).toBeDefined();

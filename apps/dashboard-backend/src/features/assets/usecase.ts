@@ -4,7 +4,6 @@ import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
-import { getGcsStorageClient } from '../../lib/storage';
 import { config } from '../../config';
 
 export interface UploadedFile {
@@ -48,18 +47,19 @@ class ThumbnailMemoryCache {
  * UseCase for managing and processing Assets (images).
  */
 export class AssetsUseCase {
-  private storage: Storage;
   private ai?: GoogleGenAI;
   private thumbnailMemoryCache = new ThumbnailMemoryCache(200);
 
   /**
-   * Creates an instance of AssetsUseCase.
+   * Creates an instance of AssetsUseCase with strictly injected dependencies.
    * 
    * @param repo - The repository instance for database operations.
-   * @param storage - Optional Storage client for DI.
+   * @param storage - Strictly required Storage client for GCS operations (pure DI).
    */
-  constructor(private repo: AssetsRepository, storage?: Storage) {
-    this.storage = storage ?? getGcsStorageClient();
+  constructor(
+    private repo: AssetsRepository,
+    private storage: Storage,
+  ) {
     if (config.gemini.apiKey) {
       this.ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
     }

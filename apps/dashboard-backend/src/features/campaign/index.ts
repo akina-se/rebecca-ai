@@ -20,16 +20,16 @@ const upload = multer({
 });
 
 /**
- * Initializes the Campaign feature module.
+ * Initializes the Campaign feature module with pure Dependency Injection.
  *
  * @param firestore - The Firestore database instance.
- * @param storage - Optional GCS Storage instance for DI (defaults to getGcsStorageClient()).
+ * @param storage - Strictly required GCS Storage instance for DI.
  * @param campaignConfig - Optional campaign configuration for DI (defaults to config.gcp.imageBucketName).
  * @returns Configured Express Router for /campaigns endpoints.
  */
 export function initializeCampaignsModule(
   firestore: Firestore,
-  storage: Storage = getGcsStorageClient(),
+  storage: Storage,
   campaignConfig: CampaignsUseCaseConfig = {
     imageBucketName: config.gcp.imageBucketName,
   },

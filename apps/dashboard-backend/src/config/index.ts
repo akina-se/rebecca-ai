@@ -7,6 +7,29 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 
 
+function parseStorageEmulatorEndpoint(): string | undefined {
+  const raw = process.env.FIREBASE_STORAGE_EMULATOR_HOST?.trim()
+    || process.env.STORAGE_EMULATOR_HOST?.trim();
+
+  if (!raw) {
+    return undefined;
+  }
+
+  const withProtocol = raw.includes('://') ? raw : `http://${raw}`;
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(withProtocol);
+  } catch (e) {
+    throw new Error(`Invalid storage emulator endpoint "${raw}": ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  if (!parsedUrl.port && parsedUrl.protocol === 'http:') {
+    throw new Error(`Storage emulator endpoint "${raw}" must specify an explicit port number (e.g. 127.0.0.1:9199).`);
+  }
+
+  return parsedUrl.origin;
+}
+
 /**
  * Global configuration loader for dashboard-backend
  */
@@ -20,6 +43,7 @@ export const config = {
     projectId: process.env.GCP_PROJECT_ID || 'rebecca-ai-gal-local',
     location: process.env.GCP_LOCATION || 'asia-northeast1',
     imageBucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
+    storageEmulatorEndpoint: parseStorageEmulatorEndpoint(),
   },
   /** Services Configuration */
   services: {

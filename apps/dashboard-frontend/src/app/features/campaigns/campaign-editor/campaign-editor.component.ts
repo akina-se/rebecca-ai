@@ -393,6 +393,7 @@ export class CampaignEditorComponent implements OnInit {
     this.toastService.show(this.translation.translate('campaign.slot_uploading'), 'info');
     this.repo.uploadSlotImage(campaignId, event.slot.slotId, event.file).subscribe({
       next: (res) => {
+        event.slot.mediaUrl = res.mediaUrl;
         const updatedSlot: CampaignSlot = {
           ...event.slot,
           mediaUrl: res.mediaUrl,
@@ -416,9 +417,10 @@ export class CampaignEditorComponent implements OnInit {
     const campaignId = this.campaignId;
     if (!campaignId) return;
 
-    event.slot.mediaUrl = undefined;
+    const previousMediaUrl = event.slot.mediaUrl;
     this.repo.deleteSlotImage(campaignId, event.slot.slotId).subscribe({
       next: () => {
+        event.slot.mediaUrl = undefined;
         const updatedSlot: CampaignSlot = {
           ...event.slot,
           mediaUrl: undefined,
@@ -430,6 +432,12 @@ export class CampaignEditorComponent implements OnInit {
       error: (err) => {
         console.error('[CampaignEditor] Slot delete failed:', err);
         this.toastService.show('Failed to delete image', 'error');
+        // Rollback: ensure slot card retains original mediaUrl on failure
+        this.onSlotChange({
+          ...event.slot,
+          mediaUrl: previousMediaUrl,
+        });
+        this.cdr.detectChanges();
       },
     });
   }

@@ -573,9 +573,8 @@ export class CampaignsUseCase {
     if (targetSlot.mediaUrl) {
       const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
       if (match && match[1]) {
-        await this.deleteCampaignAsset(campaignId, match[1]).catch((err) => {
-          console.warn(`[CampaignsUseCase] Failed to delete previous slot asset ${match[1]}:`, err);
-        });
+        // Enforce physical deletion to guarantee Zero Zombie Assets
+        await this.deleteCampaignAsset(campaignId, match[1]);
       }
     }
 
@@ -606,7 +605,10 @@ export class CampaignsUseCase {
     };
 
     const updatedCampaign = await this.repo.update(campaignId, { slots: updatedSlots });
-    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId) || updatedSlots[slotIndex];
+    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId);
+    if (!persistedSlot) {
+      throw new Error(`[CampaignsUseCase] Invariant violation: Slot "${slotId}" not found in updated campaign "${campaignId}".`);
+    }
 
     return {
       slot: persistedSlot,
@@ -640,9 +642,8 @@ export class CampaignsUseCase {
     if (targetSlot.mediaUrl) {
       const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
       if (match && match[1]) {
-        await this.deleteCampaignAsset(campaignId, match[1]).catch((err) => {
-          console.warn(`[CampaignsUseCase] Failed to delete slot asset ${match[1]}:`, err);
-        });
+        // Enforce physical deletion to guarantee Zero Zombie Assets
+        await this.deleteCampaignAsset(campaignId, match[1]);
       }
     }
 
@@ -652,7 +653,10 @@ export class CampaignsUseCase {
     updatedSlots[slotIndex] = cleanedSlot;
 
     const updatedCampaign = await this.repo.update(campaignId, { slots: updatedSlots });
-    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId) || cleanedSlot;
+    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId);
+    if (!persistedSlot) {
+      throw new Error(`[CampaignsUseCase] Invariant violation: Slot "${slotId}" not found in updated campaign "${campaignId}".`);
+    }
 
     return {
       slot: persistedSlot,
@@ -719,13 +723,10 @@ export class CampaignsUseCase {
         : filename.toLowerCase().endsWith('.webp')
           ? 'image/webp'
           : 'image/jpeg';
-      try {
-        const [metadata] = await originalFile.getMetadata();
-        if (metadata?.contentType) {
-          contentType = metadata.contentType;
-        }
-      } catch {
-        // ignore metadata error
+
+      const [metadata] = await originalFile.getMetadata();
+      if (metadata?.contentType) {
+        contentType = metadata.contentType;
       }
 
       if (size === 'thumbnail') {
@@ -760,7 +761,7 @@ export class CampaignsUseCase {
       return { buffer: originalBuffer, contentType };
     } catch (err) {
       console.error(`Failed to read campaign asset ${originalPath}:`, err);
-      return null;
+      throw err;
     }
   }
 
@@ -788,8 +789,8 @@ export class CampaignsUseCase {
     const thumbPath = `campaigns/${campaignId}/thumbnails/${filename}.webp`;
 
     await Promise.all([
-      bucket.file(originalPath).delete({ ignoreNotFound: true }).catch(() => {}),
-      bucket.file(thumbPath).delete({ ignoreNotFound: true }).catch(() => {}),
+      bucket.file(originalPath).delete({ ignoreNotFound: true }),
+      bucket.file(thumbPath).delete({ ignoreNotFound: true }),
     ]);
   }
 
