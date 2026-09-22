@@ -1,0 +1,312 @@
+<div class="campaign-list-container">
+  <!-- Emergency Kill-Switch Warning Banner -->
+  @if (pausedActiveCampaign(); as activeCampaign) {
+    <div class="alert-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ 'campaign.emergency_pause_active' | translate }} ({{ activeCampaign.title }})</span>
+      <button
+        type="button"
+        class="btn btn-secondary btn-resume-banner"
+        (click)="togglePause(activeCampaign)"
+      >
+        <span class="material-icons">play_arrow</span>
+        {{ 'campaign.resume_campaign' | translate }}
+      </button>
+    </div>
+  }
+
+  <!-- View Header -->
+  <div class="view-header">
+    <div class="header-titles">
+      <h1>{{ 'campaign.title' | translate }}</h1>
+      <p class="subtitle">{{ 'campaign.subtitle' | translate }}</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-primary" (click)="openNewCampaign()">
+        <span class="material-icons">add</span>
+        {{ 'campaign.new_campaign' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="filter-bar">
+    <div class="ranking-tabs">
+      <button
+        type="button"
+        class="rank-tab"
+        [class.active]="selectedFilter === 'all'"
+        (click)="setFilter('all')"
+      >
+        {{ 'campaign.filter_all' | translate }}
+      </button>
+      <button
+        type="button"
+        class="rank-tab"
+        [class.active]="selectedFilter === 'active'"
+        (click)="setFilter('active')"
+      >
+        {{ 'campaign.filter_active' | translate }}
+      </button>
+      <button
+        type="button"
+        class="rank-tab"
+        [class.active]="selectedFilter === 'scheduled'"
+        (click)="setFilter('scheduled')"
+      >
+        {{ 'campaign.filter_scheduled' | translate }}
+      </button>
+      <button
+        type="button"
+        class="rank-tab"
+        [class.active]="selectedFilter === 'completed'"
+        (click)="setFilter('completed')"
+      >
+        {{ 'campaign.filter_completed' | translate }}
+      </button>
+      <button
+        type="button"
+        class="rank-tab"
+        [class.active]="selectedFilter === 'draft'"
+        (click)="setFilter('draft')"
+      >
+        {{ 'campaign.filter_draft' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Campaigns Table Card -->
+  <div class="table-container glass-panel">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'campaign.table_title' | translate }}</th>
+          <th>{{ 'campaign.table_period' | translate }}</th>
+          <th>{{ 'campaign.table_progress' | translate }}</th>
+          <th>{{ 'campaign.table_status' | translate }}</th>
+          <th style="text-align: right;">{{ 'campaign.table_actions' | translate }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (camp of campaigns(); track camp.id) {
+          <tr class="campaign-row">
+            <!-- Title & Description -->
+            <td class="col-title" (click)="editCampaign(camp.id)">
+              <div class="camp-title-cell">
+                <span class="camp-name">{{ camp.title }}</span>
+                @if (camp.description) {
+                  <span class="camp-desc">{{ camp.description }}</span>
+                }
+              </div>
+            </td>
+
+            <!-- Period -->
+            <td class="col-period">
+              <div class="period-cell">
+                <span class="material-icons date-icon">event</span>
+                <span>{{ camp.startDate }} ~ {{ camp.endDate }}</span>
+              </div>
+            </td>
+
+            <!-- Progress Bar -->
+            <td class="col-progress">
+              <div class="progress-cell">
+                <div class="progress-bar-bg">
+                  <div
+                    class="progress-bar-fill"
+                    [style.width.%]="getProgressPercentage(camp)"
+                  ></div>
+                </div>
+                <span class="progress-text">
+                  {{ camp.completedSlotsCount }} / {{ camp.totalSlotsCount }}
+                  ({{ getProgressPercentage(camp) }}%)
+                </span>
+              </div>
+            </td>
+
+            <!-- Status -->
+            <td class="col-status">
+              <div class="status-cell">
+                <span class="badge" [ngClass]="getStatusBadgeClass(camp.status)">
+                  {{ ('campaign.status_' + camp.status) | translate }}
+                </span>
+                @if (camp.isPaused) {
+                  <span class="badge badge-paused">
+                    <span class="material-icons">pause</span>
+                    {{ 'campaign.status_paused' | translate }}
+                  </span>
+                }
+              </div>
+            </td>
+
+            <!-- Action Buttons -->
+            <td class="col-actions">
+              <div class="action-buttons">
+                <!-- Pause/Resume Toggle for Active / Scheduled -->
+                @if (camp.status === 'active' || camp.status === 'scheduled') {
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    [class.btn-icon-paused]="camp.isPaused"
+                    [title]="camp.isPaused ? ('campaign.resume_campaign' | translate) : ('campaign.pause_campaign' | translate)"
+                    (click)="togglePause(camp)"
+                  >
+                    <span class="material-icons">{{ camp.isPaused ? 'play_arrow' : 'pause' }}</span>
+                  </button>
+                }
+
+                <!-- Clone Button -->
+                <button
+                  type="button"
+                  class="btn-icon"
+                  [title]="'campaign.clone' | translate"
+                  (click)="openCloneModal(camp)"
+                >
+                  <span class="material-icons">content_copy</span>
+                </button>
+
+                <!-- Edit Button -->
+                <button
+                  type="button"
+                  class="btn-icon"
+                  [title]="'campaign.edit' | translate"
+                  (click)="editCampaign(camp.id)"
+                >
+                  <span class="material-icons">edit</span>
+                </button>
+
+                <!-- Delete Button -->
+                <button
+                  type="button"
+                  class="btn-icon btn-icon-danger"
+                  [title]="'campaign.delete' | translate"
+                  (click)="openDeleteModal(camp)"
+                >
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          @if (!isLoading()) {
+            <tr>
+              <td colspan="5" class="empty-cell">
+                <div class="empty-state">
+                  <span class="material-icons empty-icon">event_busy</span>
+                  <p>{{ 'campaign.no_campaigns' | translate }}</p>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <app-pagination
+      [currentPage]="currentPage"
+      [totalPages]="totalPages()"
+      [totalItems]="totalItems()"
+      [itemsLabel]="'pagination.campaigns' | translate"
+      [isLoading]="isLoading()"
+      (pageChange)="onPageChange($event)"
+    ></app-pagination>
+  </div>
+
+  <!-- Clone Campaign Modal -->
+  @if (isCloneModalOpen()) {
+    <div class="modal-backdrop" (click)="closeCloneModal()">
+      <div class="modal-card glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>
+            <span class="material-icons">content_copy</span>
+            {{ 'campaign.clone_modal_title' | translate }}
+          </h3>
+          <button type="button" class="close-btn" (click)="closeCloneModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">
+            "{{ targetCloneCampaign()?.title }}"
+          </p>
+          <div class="form-group">
+            <label class="form-label">{{ 'campaign.clone_start_date' | translate }}</label>
+            <input
+              type="date"
+              class="form-input"
+              [(ngModel)]="cloneStartDate"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ 'campaign.clone_end_date' | translate }}</label>
+            <input
+              type="date"
+              class="form-input"
+              [(ngModel)]="cloneEndDate"
+            />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeCloneModal()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isCloning() || !cloneStartDate || !cloneEndDate"
+            (click)="submitClone()"
+          >
+            @if (isCloning()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'campaign.cloning' | translate }}
+            } @else {
+              <span class="material-icons">content_copy</span>
+              {{ 'campaign.clone' | translate }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete Confirmation Modal -->
+  @if (isDeleteModalOpen()) {
+    <div class="modal-backdrop" (click)="closeDeleteModal()">
+      <div class="modal-card glass-panel modal-card-danger" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>
+            <span class="material-icons" style="color: var(--danger);">delete_forever</span>
+            {{ 'campaign.delete' | translate }}
+          </h3>
+          <button type="button" class="close-btn" (click)="closeDeleteModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>{{ 'campaign.confirm_delete' | translate }}</p>
+          <p class="delete-target-title">"{{ targetDeleteCampaign()?.title }}"</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            [disabled]="isDeleting()"
+            (click)="confirmDelete()"
+          >
+            @if (isDeleting()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.deleting' | translate }}
+            } @else {
+              <span class="material-icons">delete</span>
+              {{ 'campaign.delete' | translate }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -38,6 +38,12 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 - Alt-text captions are vectorized using `text-embedding-004` and stored in Firestore.
 - Proactive timeline updates query these embeddings using Firestore Vector Search (KNN) to attach contextually relevant images to auto-generated posts.
 
+### 6. Campaign Narrative Event Dispatcher
+- Dispatches scheduled narrative storyline posts during active multi-day event campaigns (e.g. travel tours, seasonal festivals).
+- Enforces single-active resolution via `getActiveCampaign()`, matching elapsed relative days (`dayNumber`) and the current hourly window against `pending` itinerary slots.
+- Anchors generation against `masterContext` world-building constraints, slot `theme`, and `captionPromptHint` instructions while automatically appending the event `hashtag`.
+- Integrates with `CampaignGuard` to automatically suppress routine soliloquy and anniversary posts while a campaign is running to avoid timeline spam.
+
 ---
 
 ## HTTP Batch & Worker API Specification
@@ -64,6 +70,7 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 | `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and enrolls them into the special engagement list. |
 | `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Sends surprise spontaneous mentions to enrolled special treatment list members. |
 | `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates text embeddings for newly uploaded images missing vector representation. |
+| `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180s | **Campaign Slot Dispatcher**: Evaluates active narrative campaign slots and publishes episodic story posts. |
 
 ### Worker Endpoints (`/worker/*`)
 

@@ -141,6 +141,26 @@ erDiagram
         timestamp lastInteractionAt "Last interaction datetime"
     }
 
+    CAMPAIGNS {
+        string id PK "Auto-generated UID"
+        string title "Campaign title"
+        string description "Narrative overview"
+        string hashtag "Optional common hashtag"
+        string startDate "YYYY-MM-DD"
+        string endDate "YYYY-MM-DD"
+        string status "draft | scheduled | active | completed | archived"
+        array dailySlotTimes "Array of HH:mm slot times"
+        string masterContext "Event world-building context"
+        string replyContextSummary "Context injected into replies"
+        boolean isAnnualRecurring "Annual recurrence flag"
+        boolean isPaused "Emergency kill-switch flag"
+        array slots "Array of CampaignSlot objects"
+        int totalSlotsCount "Total configured slots"
+        int completedSlotsCount "Completed (posted) slots"
+        string createdAt "ISO 8601 datetime"
+        string updatedAt "ISO 8601 datetime"
+    }
+
     ADMIN_USERS {
         string id PK "Firebase Auth UID"
         string email "Admin email address"
@@ -438,7 +458,58 @@ Global system configuration and operational state singletons.
 
 ---
 
-### 4.14 Nested Substructures
+### 4.14 Collection: `campaigns`
+
+Manages episodic narrative event campaigns (e.g. Kyoto trip, summer festivals, Valentine's arc).
+Documents are indexed at the root collection level and serialized via `@rebecca/db` (`campaignsConverter`).
+
+- **Document ID**: Auto-generated UID (or user-defined slug, e.g. `camp_kyoto_2026`).
+- **Access Pattern**:
+  - `getActiveCampaign`: Queries `status == 'active'` and `isPaused == false`, then verifies current date is within `[startDate, endDate]`.
+  - `findOverlapping`: Queries `status IN ['active', 'scheduled']` to reject overlapping schedules.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `title` | `string` | Human-readable campaign title. |
+| `description` | `string \| undefined` | High-level summary of the narrative arc. |
+| `hashtag` | `string \| undefined` | Optional event-specific hashtag appended to generated posts (without leading `#`). |
+| `startDate` | `string` (YYYY-MM-DD) | Inclusive campaign start date in app timezone. |
+| `endDate` | `string` (YYYY-MM-DD) | Inclusive campaign end date in app timezone. |
+| `status` | `'draft' \| 'scheduled' \| 'active' \| 'completed' \| 'archived'` | Lifecycle state of the campaign. |
+| `dailySlotTimes` | `string[]` (HH:mm) | Configured daily delivery slot times (e.g. `['08:00', '12:00', '19:00']`). |
+| `masterContext` | `string` | World-building narrative instructions injected into Gemini prompt for slot posts. |
+| `replyContextSummary` | `string` | Compact situation summary injected into mention reply prompts during the event. |
+| `isAnnualRecurring` | `boolean` | Flag indicating whether this campaign repeats annually. |
+| `isPaused` | `boolean` | Emergency kill-switch flag. If `true`, halts slot posts and suppresses prompt injection. |
+| `slots` | `CampaignSlot[]` | Array of configured itinerary slot entities. |
+| `totalSlotsCount` | `number` | Total number of generated itinerary slots across the date range. |
+| `completedSlotsCount` | `number` | Total number of slots successfully posted to X. |
+| `createdAt` | `string` (ISO 8601) | Creation timestamp. |
+| `updatedAt` | `string` (ISO 8601) | Last modification timestamp. |
+
+---
+
+### 4.15 Nested Substructures
+
+#### `CampaignSlot` (Used in `campaigns.slots`)
+Individual scheduled narrative post slot within a campaign itinerary.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `slotId` | `string` | Unique slot identifier (e.g. `slot-1-0800`). |
+| `dayNumber` | `number` | Relative day index within the campaign (1-indexed). |
+| `timePeriod` | `'morning' \| 'afternoon' \| 'evening' \| 'night'` | Canonical time period classification. |
+| `scheduledTime` | `string` (ISO 8601) | Scheduled target publication timestamp. |
+| `theme` | `string` | Topic or narrative focus for this slot. |
+| `captionPromptHint` | `string \| undefined` | Fine-grained scene or framing guidance for AI text generation. |
+| `status` | `'pending' \| 'posted' \| 'skipped' \| 'failed'` | Execution status of this slot. |
+| `isFixedText` | `boolean` | If `true`, uses fixedTextOverride instead of AI generation. |
+| `fixedTextOverride` | `string \| undefined` | Author-crafted exact text to post. |
+| `mediaUrl` | `string \| undefined` | Public/Signed URL of attached illustration asset in GCS. |
+| `textOnly` | `boolean` | If `true`, post will not attach image media. |
+| `postedTweetId` | `string \| undefined` | X status ID of the published tweet. |
+| `postedAt` | `string \| undefined` (ISO 8601) | Actual publication timestamp. |
+| `errorReason` | `string \| undefined` | Failure error message if posting failed. |
 
 #### `ConversationLogEntry` (Used in `users.working_memory` and `users.episodicBuffer`)
 | Field Name | Type | Description |
@@ -465,6 +536,7 @@ Synthesized by the Dreaming batch engine (`apps/bot-backend/src/features/dreamin
 2. **Composite Indexes**:
    - `rag_memories`: `userId` ASC + `timestamp` ASC (enables FIFO memory pruning).
    - `processed_followers`: `listStatus` ASC + `timestamp` ASC (enables self-healing retries).
+   - `campaigns`: `status` ASC + `isPaused` ASC (enables efficient active campaign resolution).
 3. **TTL Policies**:
    - `conversation_logs.expireAt`: Enabled (5-year automatic expiration).
    - `timeline_history.expireAt`: Enabled (5-year automatic expiration).
