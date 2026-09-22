@@ -37,6 +37,7 @@ describe('ItinerarySlotCardComponent', () => {
     expect(component.getTimePeriodIcon('evening')).toBe('nights_stay');
     expect(component.getTimePeriodIcon('night')).toBe('bedtime');
     expect(component.formatTimeDisplay('2026-11-01T08:00:00Z')).toBe('08:00');
+    expect(component.formatTimeDisplay('2026-09-23T03:00:00+09:00')).toBe('03:00');
   });
 
   it('should toggle fixed text mode and emit slotChange', () => {

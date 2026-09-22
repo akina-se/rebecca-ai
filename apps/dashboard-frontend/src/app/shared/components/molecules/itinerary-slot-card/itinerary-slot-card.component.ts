@@ -75,6 +75,10 @@ export class ItinerarySlotCardComponent implements OnChanges {
   formatTimeDisplay(isoString: string): string {
     if (!isoString) return '--:--';
     try {
+      const match = isoString.match(/T(\d{2}):(\d{2})/);
+      if (match) {
+        return `${match[1]}:${match[2]}`;
+      }
       const date = new Date(isoString);
       if (isNaN(date.getTime())) return isoString;
       const hours = String(date.getUTCHours()).padStart(2, '0');
