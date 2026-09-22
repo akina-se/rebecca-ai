@@ -20,20 +20,23 @@ src/app/
 ├── core/
 │   └── ports/              # Business contract interfaces (Ports)
 │       ├── auth.repository.ts
+│       ├── campaigns.repository.ts
 │       ├── memory.repository.ts
 │       └── users.repository.ts
 ├── infrastructure/
 │   └── http/               # HTTP client implementations (Adapters)
 │       ├── http-auth.repository.ts
+│       ├── http-campaigns.repository.ts
 │       ├── http-memory.repository.ts
 │       └── http-users.repository.ts
 └── features/               # UI components and view controllers
+    ├── campaigns/          # Narrative episodic campaign list & visual editor
     ├── dashboard/          # Aggregated KPI widgets, alerts lists
     ├── memory/             # RAG memory layer administration
     └── login/              # Google Auth login credentials
 ```
 
-The app components inject core port tokens (e.g. `MEMORY_REPOSITORY`), which are resolved to their HTTP adapter classes in `app.config.ts`. This permits swap-out testing or local mock mocking without touching any view controllers.
+The app components inject core port tokens (e.g. `CAMPAIGNS_REPOSITORY`, `MEMORY_REPOSITORY`), which are resolved to their HTTP adapter classes in `app.config.ts`. This permits swap-out testing or local mock mocking without touching any view controllers.
 
 ---
 
@@ -58,3 +61,11 @@ Generates highly optimized static assets under the `/dist` directory:
 npm run build --workspace=dashboard-frontend
 ```
 This build enforces CSS size budgets (e.g., drawer components restricted under 2.05kB) to guarantee lightweight client delivery.
+
+---
+
+## Campaign Narrative Manager Views
+
+- `/campaigns`: Paginated list of event campaigns with status badges, progress bars, emergency pause banner, and clone/delete modal dialogs.
+- `/campaigns/new`: 2-step progressive disclosure creator starting with core parameters (title, dates, hourly presets) into full timetable editor.
+- `/campaigns/:id`: Interactive collapsible accordion editor with isolated slot illustration upload, fixed-text toggle, and live draft/scheduled saving.

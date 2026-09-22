@@ -13,10 +13,10 @@
  *    that must bypass the typed converter during updates.
  */
 
-import { Firestore, FieldValue, Timestamp } from '@google-cloud/firestore';
+import { Firestore, FieldValue, Timestamp, DocumentData } from '@google-cloud/firestore';
 import { getCollections, COLLECTIONS } from '@rebecca/db';
 import config from '../config';
-import { formatZonedDateTime } from '../utils/time';
+import { formatZonedDateTime, getZonedDateParts } from '../utils/time';
 import type {
   FirestoreUser,
   ConversationLogEntry,
@@ -30,6 +30,7 @@ import type {
   FollowerListStatus,
   GetRecentTimelinePostsOptions,
   TimelinePost,
+  CampaignDoc,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -946,6 +947,60 @@ const getListMembersFromCache = async (): Promise<Pick<XApiUser, 'id'>[]> => {
 };
 
 // ---------------------------------------------------------------------------
+// Campaign Operations
+// ---------------------------------------------------------------------------
+
+/**
+ * Retrieves the currently active, unpaused campaign valid for today's date in the application timezone.
+ * Fail-Loudly: If Firestore access encounters an error, the error is re-raised to the caller.
+ *
+ * @returns The active CampaignDoc, or null if no campaign is currently active.
+ */
+const getActiveCampaign = async (): Promise<CampaignDoc | null> => {
+  const snapshot = await db.campaigns
+    .where('status', '==', 'active')
+    .where('isPaused', '==', false)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const { year, month, day } = getZonedDateParts(new Date(), config.appTimezone);
+  const todayStr = `${year}-${month}-${day}`;
+
+  for (const doc of snapshot.docs) {
+    const campaign = doc.data();
+    if (campaign.startDate <= todayStr && campaign.endDate >= todayStr) {
+      return { ...campaign, id: doc.id };
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Retrieves a campaign by its document ID.
+ *
+ * @param campaignId - The Firestore document ID.
+ * @returns The CampaignDoc or null.
+ */
+const getCampaignById = async (campaignId: string): Promise<CampaignDoc | null> => {
+  const doc = await db.campaigns.doc(campaignId).get();
+  return doc.exists ? { ...doc.data()!, id: doc.id } : null;
+};
+
+/**
+ * Updates a campaign document by ID with partial updates.
+ *
+ * @param campaignId - The target campaign document ID.
+ * @param data - The partial campaign fields to update.
+ */
+const updateCampaign = async (campaignId: string, data: Partial<CampaignDoc>): Promise<void> => {
+  await db.campaigns.doc(campaignId).set(data as DocumentData, { merge: true });
+};
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -994,4 +1049,7 @@ export {
   getLastListInteraction,
   updateLastListInteraction,
   getListMembersFromCache,
+  getActiveCampaign,
+  getCampaignById,
+  updateCampaign,
 };

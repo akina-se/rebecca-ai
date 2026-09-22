@@ -155,7 +155,25 @@ ${processedText}
             3
         );
 
-        const systemPrompt = buildSystemPrompt(this.deps.persona, 'reply', userData, processedText, extendedPrompt, timelineSummary, ragMemories, lang, personaFewShotPrompt);
+        // Check for active narrative event campaign to inject story context
+        const activeCampaign = await deps.firestore.getActiveCampaign();
+        let campaignContext = '';
+        if (activeCampaign && !activeCampaign.isPaused && activeCampaign.replyContextSummary.trim()) {
+            campaignContext = activeCampaign.replyContextSummary.trim();
+        }
+
+        const systemPrompt = buildSystemPrompt(
+            this.deps.persona,
+            'reply',
+            userData,
+            processedText,
+            extendedPrompt,
+            timelineSummary,
+            ragMemories,
+            lang,
+            personaFewShotPrompt,
+            campaignContext
+        );
 
         // Generate the structured AI response (thought + reply) based on the contextualized prompt
         const structuredReply = await deps.gemini.generateStructuredReply(systemPrompt, workingMemory, processedText);

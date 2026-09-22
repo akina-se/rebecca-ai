@@ -15,6 +15,7 @@ src/
 ├── features/              # Vertical Feature Slices
 │   ├── assets/            # Media library management (Gemini auto-captions)
 │   ├── auth/              # Admin session authentication context
+│   ├── campaign/          # Narrative episodic campaign orchestration & slot dispatch
 │   ├── system-memory/     # Rebecca's multi-layered system memory (Dreaming trigger)
 │   ├── timeline/          # Timeline post audit logs and bulk deletion
 │   └── users/             # Monitored master users list & chat history
@@ -101,6 +102,15 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 | | `GET` | `/api/v1/memory/global` | Get Layer 2 dynamic Global summary prompt |
 | | `PUT` | `/api/v1/memory/global` | Update Layer 2 dynamic Global summary content |
 | | `POST` | `/api/v1/memory/force-dreaming` | Trigger asynchronous multi-phase memory consolidation (Self-Reflection, Dreaming, Evolution) |
+| **Campaigns** | `GET` | `/api/v1/campaigns` | List narrative event campaigns (paginated, filterable by status) |
+| | `POST` | `/api/v1/campaigns` | Create new campaign with collision check and slot generation |
+| | `GET` | `/api/v1/campaigns/{id}` | Get detailed campaign document and itinerary slots |
+| | `PUT` | `/api/v1/campaigns/{id}` | Update campaign configuration and reconcile slots |
+| | `DELETE` | `/api/v1/campaigns/{id}` | Permanently delete a campaign |
+| | `POST` | `/api/v1/campaigns/{id}/clone` | Clone campaign to future dates with reset slot statuses |
+| | `POST` | `/api/v1/campaigns/{id}/pause` | Emergency halt campaign automated postings |
+| | `POST` | `/api/v1/campaigns/{id}/resume` | Resume paused campaign execution |
+| | `POST` | `/api/v1/campaigns/{id}/assets` | Upload illustration asset to isolated GCS partition |
 | **Copilot** | `POST` | `/api/v1/copilot/chat` | AI Copilot conversational dialogue and HITL action proposals |
 | **Settings** | `GET` | `/api/v1/settings` | Get system language and timezone preferences |
 | | `PATCH` | `/api/v1/settings` | Update system language and timezone preferences |

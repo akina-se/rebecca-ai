@@ -44,6 +44,7 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 | `/batch/stealth-onboarding` | `GET` | 30分毎 | 180秒 | 新規フォロワーを自動検知し、特別扱いリストへ追加。 |
 | `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180秒 | 特別扱いリストの未絡みユーザーから1名を抽出し、不意打ちメンションを送信。 |
 | `/batch/asset-embeddings` | `GET` | 6時間毎 | 300秒 | アップロードされた画像のうち、埋め込み未生成の画像アセットに対してベクトルをバッチ生成。 |
+| `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180秒 | **キャンペーン投稿バッチ**: 進行中キャンペーンの当日スロットを判定し、世界観・演出ヒントに基づいたストーリー投稿をXへ自動パブリッシュ。 |
 | `/worker/reply` | `POST` | Cloud Tasks (1〜3分遅延) | - | メンションへの返信文（`{ thought, reply }`）を生成し、Xへ投稿。 |
 
 ## 2. キャラクター仕様・ペルソナ (Persona Specification)
@@ -201,6 +202,20 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 6. 生成された文から画像検索用クエリを推論し、Firestoreの `images` コレクションから意味的に合致する画像をベクトル検索（KNN）で取得。
 7. 該当画像があればGCSから取得してXにアップロードし、テキストと共に投稿。`timeline_history` に `postType`、`newsTitle`、`newsEmbedding` を保存する。
 
+### 5.7 キャンペーン自発ポスト & リプライ連動フロー (Campaign Narrative Flow)
+1. **スロット抽出**: Cloud Scheduler (`rebecca-campaign-batch`) が起動時、Firestoreから `getActiveCampaign()` を実行。`status == 'active'` かつ `isPaused == false` のキャンペーンを取得（単一アクティブ保証）。
+2. **旅程スロット照合**: 本日の経過日数（`dayNumber`）および現在時刻から、`status == 'pending'` の該当スロットを1件抽出。
+3. **ペルソナアンカリング & プロンプト構築**:
+   - 固定文（`isFixedText == true`）の場合はオーサーの指定テキストを採用。
+   - AI生成の場合は、`masterContext`（世界観設定）、スロットの `theme`、`captionPromptHint`（演出ヒント）、および拡張ペルソナをGeminiに注入。
+   - キャンペーン固有のハッシュタグ（`hashtag`）およびデフォルトハッシュタグを自動付与（140文字上限厳守）。
+4. **画像メディア添付**: スロットに `mediaUrl` が指定されている場合、分離されたGCSバケットから画像を取得してX APIにアップロード。
+5. **投稿と状態遷移**: Xへ投稿完了後、スロットのステータスを `posted` に更新し、`postedTweetId` および `postedAt` を記録。全スロット終了時はキャンペーン全体を `completed` に自動遷移。
+6. **メンションリプライ連動**: ユーザーからの返信処理時、アクティブキャンペーンの `replyContextSummary` を自動抽出し、通常の会話文脈に自然に組み込んで返信（ユーザーファーストの共感優先ルールを徹底）。
+7. **多重安全ガード**:
+   - `CampaignGuard`: キャンペーン進行中は、通常の独り言ポストや記念日ポストが同一時間帯に重複して発射されないよう自動的に通常ポストを抑制（Suppression）。
+   - 一時停止キルスイッチ: ダッシュボードから1クリックで `isPaused` をトグル可能。一時停止中は即座にバッチ投稿およびリプライ注入が停止。
+
 ## 6. レートリミット時の挙動仕様 (Rate Limit Handling)
 日間のリプライ上限に達した際、システムはフェイルセーフとして新規リプライ処理を一時停止する。この際、単なる無応答とするのではなく、翌朝の定期ポスト等の自発的なメッセージ内で自身の「演算リソース（返信可能件数）の制限」について可愛らしく言及する設計とし、システム運用上の制約をキャラクター設定（世界観）に組み込んで自然に表現する仕様としている。
 
@@ -208,11 +223,11 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 
 ### 7.1 アーキテクチャと機能一覧
 1. **Vertical Slicing & Feature-Driven BFF**:
-   - `apps/dashboard-backend` は、Clean Architecture / Vertical Slicing により `timeline`, `users`, `assets`, `system-memory`, `copilot`, `settings` の各機能スライスに分離。
+   - `apps/dashboard-backend` は、Clean Architecture / Vertical Slicing により `timeline`, `users`, `assets`, `system-memory`, `copilot`, `settings`, `campaign` の各機能スライスに分離。
    - Dependency Injection (DI) により、コントローラー・ユースケース・リポジトリが疎結合に設計され、単体テスト・E2Eテストが容易。
 2. **Rebecca Copilot AI アシスタント**:
    - 右上の「Rebecca」ボタンから開く常駐ドロワー。
-   - 画面遷移（Dashboard, Memory, Assets, Users, Settings）やドロワー表示中エンティティをリアルタイム検知し、UIコンテクストに即した対話・サジェスチョンチップを提供。
+   - 画面遷移（Dashboard, Memory, Assets, Users, Settings, Campaigns）やドロワー表示中エンティティをリアルタイム検知し、UIコンテクストに即した対話・サジェスチョンチップを提供。
    - 自律型データ収集ツールチェーンにより、FirestoreリポジトリからKPI、失敗アセット、要注意ユーザー、タイムライン投稿を自律検索してLLMコンテクストに注入。
 3. **Two-Phase Human-In-The-Loop (HITL) セーフティ承認フロー**:
    - 破壊的操作（ユーザーのブロック、投稿削除、強制ドリーミング、キャプション一括再生成など）を依頼された場合、即時実行せず「承認カード」をチャット内に提示。
@@ -224,3 +239,20 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
    - Angular Signals ベースの `TranslationService` / `TranslatePipe` により、画面リロードなしで日本語と英語が即座に切り替わる。
    - UIの各ラベルだけでなく、Rebecca の初期挨拶・サジェスチョン・プロンプト・回答言語（英語ギャル / 日本語お姉さんギャル）も言語設定に完全連動。
 
+### 7.2 キャンペーン・叙事詩的イベント管理 (Campaign Narrative Event Engine)
+旅行・季節イベント・記念日連動などの時限的ストーリー（叙事詩的アーク）を視覚的に管理・運用する機能。
+
+1. **日程重複防止 (Invariant Guard)**:
+   - `status` が `active` または `scheduled` のキャンペーン間での期間重複（`c.startDate <= endDate && c.endDate >= startDate`）をBFF側で完全禁止（HTTP 409 Conflict）。
+   - 同一日に2つ以上のキャンペーンがスケジュールされることを防ぎ、タイムラインの整合性を担保。
+2. **プログレッシブ開示による2ステップ作成**:
+   - Step 1: 基本情報（タイトル、期間、ハッシュタグ、配信時間帯プリセット）を入力して下書き（Draft）を作成。
+   - Step 2: 自動生成された旅程スロットに対し、日別アコーディオンUI上で詳細設定（テーマ、演出ヒント、固定文、画像アップロード）を順次設定。
+3. **柔軟な配信時間帯設定**:
+   - 標準プリセット（朝 08:00、昼 12:00、夜 19:00 の3枠）。
+   - カスタムモード（00:00〜23:00の24チップから1〜8枠を自由に選択可能。X APIレート保護のための上限ガード付き）。
+4. **独立した画像アセット管理**:
+   - 通常アセットプールとは隔離されたGCSパス（`campaigns/{id}/`）にイラストをアップロード可能。
+5. **緊急キルスイッチ & クローン機能**:
+   - ワンクリックでキャンペーンの一時停止（Pause）と再開（Resume）を実行可能。
+   - 過去の好評だったキャンペーンを翌年以降の日程にスライド複製（Clone）し、スロット実行状態を自動リセットして再利用可能。

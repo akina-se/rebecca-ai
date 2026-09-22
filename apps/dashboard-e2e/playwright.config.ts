@@ -20,7 +20,7 @@ export default defineConfig({
     {
       command: 'npm run start --workspace=dashboard-backend',
       url: 'http://127.0.0.1:8081/health',
-      reuseExistingServer: false,
+      reuseExistingServer: true,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 120 * 1000,
@@ -37,7 +37,7 @@ export default defineConfig({
     {
       command: 'node ../../scripts/serve-frontend.js',
       url: 'http://127.0.0.1:4200',
-      reuseExistingServer: false,
+      reuseExistingServer: true,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 120 * 1000,

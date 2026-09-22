@@ -18,6 +18,7 @@ import { initializeSystemMemoryModule } from './features/system-memory';
 import { initializeAssetsModule } from './features/assets';
 import { initializeSettingsModule } from './features/settings';
 import { initializeConfigModule } from './features/config';
+import { initializeCampaignsModule } from './features/campaign';
 
 /**
  * Creates and configures the Express application with all middlewares, routes, and security policies.
@@ -79,6 +80,7 @@ export function createApp(firestore: Firestore): Express {
   const { assetsRouter, publicImagesRouter } = initializeAssetsModule(firestore);
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
+  const campaignsRouter = initializeCampaignsModule(firestore);
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);
@@ -102,6 +104,8 @@ export function createApp(firestore: Firestore): Express {
   app.use('/api/v1/assets', verifyAuth, assetsRouter);
   app.use('/api/v1/images', verifyAuth, assetsRouter);
   app.use('/api/v1/settings', verifyAuth, settingsRouter);
+  app.use('/api/v1/campaigns', verifyAuth, campaignsRouter);
+  app.use('/api/campaigns', verifyAuth, campaignsRouter);
 
   return app;
 }
