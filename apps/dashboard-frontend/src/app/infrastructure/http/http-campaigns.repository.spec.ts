@@ -158,6 +158,14 @@ describe('HttpCampaignsRepository', () => {
     req.flush({ url: 'https://storage.googleapis.com/bucket/campaigns/camp_1/test.png', filename: 'test.png' });
   });
 
+  it('deleteAsset should request DELETE /campaigns/:id/assets/:filename', () => {
+    repo.deleteAsset('camp_1', 'slot_1.png').subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/campaigns/camp_1/assets/slot_1.png`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ success: true });
+  });
+
   it('delete should request DELETE /campaigns/:id', () => {
     repo.delete('camp_1').subscribe();
 

@@ -56,14 +56,37 @@ describe('ItinerarySlotCardComponent', () => {
     );
   });
 
-  it('should remove media, set textOnly to true and emit slotChange', () => {
+  it('should remove media, emit deleteMedia and slotChange', () => {
     jest.spyOn(component.slotChange, 'emit');
-    component.slot.mediaUrl = 'https://storage.googleapis.com/bucket/pic.jpg';
+    jest.spyOn(component.deleteMedia, 'emit');
+    component.slot.mediaUrl = '/api/v1/campaigns/c1/assets/pic.jpg';
 
     component.removeMedia();
     expect(component.slot.mediaUrl).toBeUndefined();
-    expect(component.slot.textOnly).toBe(true);
+    expect(component.deleteMedia.emit).toHaveBeenCalledWith({
+      slot: component.slot,
+      filename: 'pic.jpg',
+    });
     expect(component.slotChange.emit).toHaveBeenCalled();
+  });
+
+  it('should compute thumbnail and full URLs, and open/close Lightbox', () => {
+    component.slot.mediaUrl = '/api/v1/campaigns/c1/assets/pic.jpg';
+    expect(component.getThumbnailUrl()).toBe('/api/v1/campaigns/c1/assets/pic.jpg?size=thumbnail');
+    expect(component.getFullImageUrl()).toBe('/api/v1/campaigns/c1/assets/pic.jpg?size=full');
+    expect(component.getAssetFilename()).toBe('pic.jpg');
+
+    component.openLightbox();
+    expect(component.isLightboxOpen).toBe(true);
+
+    component.closeLightbox();
+    expect(component.isLightboxOpen).toBe(false);
+
+    // Empty URL handling
+    component.slot.mediaUrl = undefined;
+    expect(component.getThumbnailUrl()).toBe('');
+    expect(component.getFullImageUrl()).toBe('');
+    expect(component.getAssetFilename()).toBe('');
   });
 
   it('should emit uploadMedia when onFileSelected is triggered', () => {

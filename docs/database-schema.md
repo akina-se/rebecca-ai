@@ -505,8 +505,7 @@ Individual scheduled narrative post slot within a campaign itinerary.
 | `status` | `'pending' \| 'posted' \| 'skipped' \| 'failed'` | Execution status of this slot. |
 | `isFixedText` | `boolean` | If `true`, uses fixedTextOverride instead of AI generation. |
 | `fixedTextOverride` | `string \| undefined` | Author-crafted exact text to post. |
-| `mediaUrl` | `string \| undefined` | Public/Signed URL of attached illustration asset in GCS. |
-| `textOnly` | `boolean` | If `true`, post will not attach image media. |
+| `mediaUrl` | `string \| undefined` | URL of attached illustration asset in GCS (proxied via `/api/v1/campaigns/:id/assets/:filename`). |
 | `postedTweetId` | `string \| undefined` | X status ID of the published tweet. |
 | `postedAt` | `string \| undefined` (ISO 8601) | Actual publication timestamp. |
 | `errorReason` | `string \| undefined` | Failure error message if posting failed. |

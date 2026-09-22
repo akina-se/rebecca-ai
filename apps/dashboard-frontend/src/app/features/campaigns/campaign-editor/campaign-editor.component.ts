@@ -343,7 +343,6 @@ export class CampaignEditorComponent implements OnInit {
             theme: `Day ${day} ${timePeriod.toUpperCase()}`,
             status: 'pending',
             isFixedText: false,
-            textOnly: true,
           });
         }
       }
@@ -392,7 +391,6 @@ export class CampaignEditorComponent implements OnInit {
     this.repo.uploadAsset(campaignId, event.file).subscribe({
       next: (res) => {
         event.slot.mediaUrl = res.url;
-        event.slot.textOnly = false;
         this.onSlotChange(event.slot);
         this.toastService.show('Illustration uploaded', 'success');
         this.cdr.markForCheck();
@@ -403,6 +401,30 @@ export class CampaignEditorComponent implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  /**
+   * Handles illustration file deletion for an individual slot.
+   */
+  onDeleteMedia(event: { slot: CampaignSlot; filename: string }): void {
+    const campaignId = this.campaignId;
+    const filename = event.filename;
+
+    event.slot.mediaUrl = undefined;
+    this.onSlotChange(event.slot);
+
+    if (campaignId && filename) {
+      this.repo.deleteAsset(campaignId, filename).subscribe({
+        next: () => {
+          this.toastService.show('Illustration deleted', 'info');
+        },
+        error: (err) => {
+          console.warn('[CampaignEditor] Failed to physically delete asset from GCS:', err);
+        },
+      });
+    } else {
+      this.toastService.show('Illustration deleted', 'info');
+    }
   }
 
   /**

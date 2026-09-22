@@ -56,6 +56,11 @@ export interface CampaignsRepository {
   uploadAsset(campaignId: string, file: File): Observable<CampaignAssetUploadResult>;
 
   /**
+   * Physically deletes an isolated media asset from a campaign.
+   */
+  deleteAsset(campaignId: string, filename: string): Observable<unknown>;
+
+  /**
    * Deletes a campaign.
    */
   delete(id: string): Observable<unknown>;

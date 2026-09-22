@@ -12,12 +12,23 @@ import { createMockFirestore } from './testUtils';
 import { Request, Response } from 'express';
 
 const mockSave = jest.fn().mockResolvedValue(undefined);
+const mockDelete = jest.fn().mockResolvedValue(undefined);
+const mockDeleteFiles = jest.fn().mockResolvedValue(undefined);
+const mockExists = jest.fn().mockResolvedValue([true]);
+const mockDownload = jest.fn().mockResolvedValue([Buffer.from('mock-image-data')]);
+const mockGetMetadata = jest.fn().mockResolvedValue([{ contentType: 'image/png' }]);
+
 jest.mock('@google-cloud/storage', () => ({
   Storage: jest.fn().mockImplementation(() => ({
     bucket: jest.fn().mockReturnValue({
       file: jest.fn().mockReturnValue({
         save: mockSave,
+        delete: mockDelete,
+        exists: mockExists,
+        download: mockDownload,
+        getMetadata: mockGetMetadata,
       }),
+      deleteFiles: mockDeleteFiles,
     }),
   })),
 }));
@@ -268,6 +279,14 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
     let useCase: CampaignsUseCase;
 
     beforeEach(() => {
+      jest.clearAllMocks();
+      mockExists.mockResolvedValue([true]);
+      mockDownload.mockResolvedValue([Buffer.from('mock-image-data')]);
+      mockGetMetadata.mockResolvedValue([{ contentType: 'image/png' }]);
+      mockSave.mockResolvedValue(undefined);
+      mockDelete.mockResolvedValue(undefined);
+      mockDeleteFiles.mockResolvedValue(undefined);
+
       repo = {
         getPaginated: jest.fn(),
         getById: jest.fn(),
@@ -280,7 +299,12 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
         bucket: jest.fn().mockReturnValue({
           file: jest.fn().mockReturnValue({
             save: mockSave,
+            delete: mockDelete,
+            exists: mockExists,
+            download: mockDownload,
+            getMetadata: mockGetMetadata,
           }),
+          deleteFiles: mockDeleteFiles,
         }),
       };
       mockConfig = { imageBucketName: 'test-bucket' };
@@ -518,7 +542,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       });
 
       expect(mockSave).toHaveBeenCalled();
-      expect(res.url).toContain('campaigns/c1/');
+      expect(res.url).toBe('/api/v1/campaigns/c1/assets/' + res.filename);
       expect(res.filename).toContain('.png');
     });
 
@@ -529,9 +553,60 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       ).rejects.toThrow('Campaign missing not found.');
     });
 
-    it('deleteCampaign should invoke repo.delete', async () => {
+    it('getCampaignAssetBinary should retrieve image binary and validate inputs', async () => {
+      const validPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+      mockDownload.mockResolvedValue([validPng]);
+
+      expect(await useCase.getCampaignAssetBinary('../etc', 'passwd')).toBeNull();
+      expect(await useCase.getCampaignAssetBinary('c1', '../danger.png')).toBeNull();
+
+      // Full resolution
+      const fullRes = await useCase.getCampaignAssetBinary('c1', 'temple.png', 'full');
+      expect(fullRes).toBeDefined();
+      expect(fullRes?.buffer).toEqual(validPng);
+      expect(fullRes?.contentType).toBe('image/png');
+
+      // Thumbnail generation via sharp
+      const thumbRes = await useCase.getCampaignAssetBinary('c1', 'temple.png', 'thumbnail');
+      expect(thumbRes).toBeDefined();
+      expect(thumbRes?.contentType).toBe('image/webp');
+
+      // Subsequent call should hit LRU memory cache
+      const cachedRes = await useCase.getCampaignAssetBinary('c1', 'temple.png', 'thumbnail');
+      expect(cachedRes).toBeDefined();
+      expect(cachedRes?.buffer).toEqual(thumbRes?.buffer);
+
+      // GCS pre-cached thumbnail branch
+      mockExists.mockImplementation(async () => [true]);
+      mockDownload.mockResolvedValueOnce([Buffer.from('cached-thumb-webp')]);
+      const gcsCachedThumb = await useCase.getCampaignAssetBinary('c1', 'temple2.png', 'thumbnail');
+      expect(gcsCachedThumb).toBeDefined();
+
+      // Sharp error fallback to original
+      const invalidImage = Buffer.from('not-an-image');
+      mockExists.mockResolvedValueOnce([false]); // thumb does not exist in GCS
+      mockExists.mockResolvedValueOnce([true]);  // original exists
+      mockDownload.mockResolvedValue([invalidImage]);
+      const fallbackRes = await useCase.getCampaignAssetBinary('c1', 'corrupt.png', 'thumbnail');
+      expect(fallbackRes?.buffer).toEqual(invalidImage);
+
+      // Missing original asset in GCS -> null
+      mockExists.mockResolvedValue([false]);
+      const missing = await useCase.getCampaignAssetBinary('c1', 'nonexistent.png');
+      expect(missing).toBeNull();
+    });
+
+    it('deleteCampaignAsset should physically remove original and thumbnail from GCS', async () => {
+      await useCase.deleteCampaignAsset('c1', 'temple.png');
+      expect(mockDelete).toHaveBeenCalled();
+
+      await expect(useCase.deleteCampaignAsset('c1', '../illegal.png')).rejects.toThrow('Invalid campaign ID or filename.');
+    });
+
+    it('deleteCampaign should cascade delete GCS files and invoke repo.delete', async () => {
       repo.getById.mockResolvedValueOnce({ ...sampleCampaign, id: 'c1' } as any);
       await useCase.deleteCampaign('c1');
+      expect(mockDeleteFiles).toHaveBeenCalledWith(expect.objectContaining({ prefix: 'campaigns/c1/' }));
       expect(repo.delete).toHaveBeenCalledWith('c1');
     });
 
@@ -557,13 +632,17 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
         pauseCampaign: jest.fn(),
         resumeCampaign: jest.fn(),
         uploadCampaignAsset: jest.fn(),
+        getCampaignAssetBinary: jest.fn(),
+        deleteCampaignAsset: jest.fn(),
         deleteCampaign: jest.fn(),
       } as any;
       controller = new CampaignsController(mockUseCase);
       mockReq = { query: {}, params: {}, body: {} };
       mockRes = {
         status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
+        json: jest.fn().mockReturnThis(),
+        setHeader: jest.fn().mockReturnThis(),
+        send: jest.fn().mockReturnThis(),
       };
     });
 
@@ -708,6 +787,61 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(mockRes.status).toHaveBeenCalledWith(500);
     });
 
+    it('getAssetImage should stream image with 200, return 404 if missing, and 500 on server error', async () => {
+      mockReq.params = { id: 'c1', filename: 'slot_1.jpg' };
+      mockReq.query = { size: 'thumbnail' };
+      mockUseCase.getCampaignAssetBinary.mockResolvedValueOnce({
+        buffer: Buffer.from('thumb'),
+        contentType: 'image/webp',
+      });
+
+      await controller.getAssetImage(mockReq as Request, mockRes as Response);
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Cache-Control', 'public, max-age=31536000, immutable');
+      expect(mockRes.send).toHaveBeenCalledWith(Buffer.from('thumb'));
+
+      // Missing asset -> 404
+      mockUseCase.getCampaignAssetBinary.mockResolvedValueOnce(null);
+      await controller.getAssetImage(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+
+      // Missing filename -> 400
+      mockReq.params = { id: 'c1' };
+      await controller.getAssetImage(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+
+      // Server error -> 500
+      mockReq.params = { id: 'c1', filename: 'slot_1.jpg' };
+      mockUseCase.getCampaignAssetBinary.mockRejectedValueOnce(new Error('Storage failure'));
+      await controller.getAssetImage(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+    });
+
+    it('deleteAsset should return 200 on success, 404 on not found, and 500 on server error', async () => {
+      mockReq.params = { id: 'c1', filename: 'slot_1.jpg' };
+      mockUseCase.deleteCampaignAsset.mockResolvedValueOnce(undefined);
+
+      await controller.deleteAsset(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({ success: true });
+
+      // Missing filename -> 400
+      mockReq.params = { id: 'c1' };
+      await controller.deleteAsset(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+
+      // Not found -> 404
+      mockReq.params = { id: 'c1', filename: 'slot_1.jpg' };
+      mockUseCase.deleteCampaignAsset.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
+      await controller.deleteAsset(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+
+      // Storage failure -> 500
+      mockUseCase.deleteCampaignAsset.mockRejectedValueOnce(new Error('GCS error'));
+      await controller.deleteAsset(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+    });
+
     it('delete should return 200 on success, 404 when not found, and 500 on server error', async () => {
       mockReq.params = { id: 'c1' };
       mockUseCase.deleteCampaign.mockResolvedValueOnce(undefined);
@@ -727,10 +861,12 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
   });
 
   describe('initializeCampaignsModule router factory', () => {
-    it('should create express router with registered campaign routes', () => {
-      const router = initializeCampaignsModule(mock.firestore);
-      expect(router).toBeDefined();
-      expect(router.stack.length).toBeGreaterThan(0);
+    it('should create express routers with registered campaign routes', () => {
+      const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(mock.firestore);
+      expect(campaignsRouter).toBeDefined();
+      expect(campaignsRouter.stack.length).toBeGreaterThan(0);
+      expect(publicCampaignImagesRouter).toBeDefined();
+      expect(publicCampaignImagesRouter.stack.length).toBeGreaterThan(0);
     });
   });
 });

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
+import { LightboxComponent } from '../../organisms/lightbox/lightbox.component';
 
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
@@ -13,7 +14,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 @Component({
   selector: 'app-itinerary-slot-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, LightboxComponent],
   templateUrl: './itinerary-slot-card.component.html',
   styleUrls: ['./itinerary-slot-card.component.css'],
 })
@@ -35,8 +36,14 @@ export class ItinerarySlotCardComponent implements OnChanges {
   /** Emits when an image file is selected for upload. */
   @Output() uploadMedia = new EventEmitter<{ slot: CampaignSlot; file: File }>();
 
+  /** Emits when illustration media is deleted from this slot. */
+  @Output() deleteMedia = new EventEmitter<{ slot: CampaignSlot; filename: string }>();
+
   /** Local state indicating an in-progress asset upload for this slot. */
   isUploading = false;
+
+  /** Whether the full-size image Lightbox modal is open. */
+  isLightboxOpen = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['slot']) {
@@ -102,12 +109,59 @@ export class ItinerarySlotCardComponent implements OnChanges {
   }
 
   /**
-   * Removes attached illustration media from this slot.
+   * Opens full-size Lightbox modal.
+   */
+  openLightbox(): void {
+    if (this.slot.mediaUrl) {
+      this.isLightboxOpen = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  /**
+   * Closes Lightbox modal.
+   */
+  closeLightbox(): void {
+    this.isLightboxOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Computes proxy URL for optimized 400px thumbnail.
+   */
+  getThumbnailUrl(): string {
+    if (!this.slot.mediaUrl) return '';
+    const separator = this.slot.mediaUrl.includes('?') ? '&' : '?';
+    return `${this.slot.mediaUrl}${separator}size=thumbnail`;
+  }
+
+  /**
+   * Computes proxy URL for full-size media.
+   */
+  getFullImageUrl(): string {
+    if (!this.slot.mediaUrl) return '';
+    const separator = this.slot.mediaUrl.includes('?') ? '&' : '?';
+    return `${this.slot.mediaUrl}${separator}size=full`;
+  }
+
+  /**
+   * Extracts filename from mediaUrl.
+   */
+  getAssetFilename(): string {
+    if (!this.slot.mediaUrl) return '';
+    const cleanUrl = this.slot.mediaUrl.split('?')[0];
+    const parts = cleanUrl.split('/');
+    return parts[parts.length - 1] || '';
+  }
+
+  /**
+   * Removes attached illustration media from this slot and notifies parent.
    */
   removeMedia(): void {
     if (this.isReadonly) return;
+    const filename = this.getAssetFilename();
+    this.deleteMedia.emit({ slot: this.slot, filename });
     this.slot.mediaUrl = undefined;
-    this.slot.textOnly = true;
     this.notifyChange();
     this.cdr.markForCheck();
   }

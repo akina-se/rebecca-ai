@@ -108,10 +108,6 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     const slot1 = page.locator('app-itinerary-slot-card').first();
     await expect(slot1).toBeVisible({ timeout: 20000 });
 
-    const textOnlyCheckbox = slot1.locator('.text-only-label input[type="checkbox"]');
-    if (await textOnlyCheckbox.isVisible() && (await textOnlyCheckbox.isChecked())) {
-      await textOnlyCheckbox.uncheck();
-    }
     const uploadBtn = slot1.locator('.upload-btn');
     await expect(uploadBtn).toBeVisible({ timeout: 10000 });
     const fileChooserPromise = page.waitForEvent('filechooser');
@@ -119,8 +115,9 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(path.resolve(__dirname, '../test-assets/sample.png'));
 
-    // Wait for image thumbnail or upload completion
-    await page.waitForTimeout(2000);
+    // Wait for image thumbnail preview to appear
+    const thumbPreview = slot1.locator('.attached-media-preview');
+    await expect(thumbPreview).toBeVisible({ timeout: 15000 });
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_uploaded.png'), fullPage: true });
 
     // Save changes
