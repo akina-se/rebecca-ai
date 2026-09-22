@@ -148,7 +148,7 @@ Write-Host "[5/7] Seeding Local Auth & Firestore Emulators..." -ForegroundColor 
 $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
 $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
 $env:FIREBASE_STORAGE_EMULATOR_HOST = "127.0.0.1:9199"
-$env:GCLOUD_PROJECT = "rebecca-ai-gal-local"
+$env:GCP_PROJECT_ID = "rebecca-ai-gal-local"
 npx ts-node -T apps/dashboard-backend/scripts/seed-db.ts
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[WARNING] Seeding script completed with warnings or errors. Check logs." -ForegroundColor Yellow

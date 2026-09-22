@@ -81,6 +81,7 @@ export class AuthService {
   async loginWithEmail(email: string, password: string): Promise<void> {
     const auth = this.ensureAuth();
     const cred = await signInWithEmailAndPassword(auth, email, password);
+    await cred.user.getIdToken(true);
     this.currentUserSignal.set(cred.user);
   }
 
@@ -95,6 +96,7 @@ export class AuthService {
     });
     try {
       const result = await signInWithPopup(auth, provider);
+      await result.user.getIdToken(true);
       this.currentUserSignal.set(result.user);
       return result.user;
     } catch (error) {

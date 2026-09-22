@@ -21,6 +21,7 @@ import type {
   ProcessedFollower,
   PostType,
   TimelinePost,
+  CampaignDoc,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 import type { StructuredNewsPostResponse } from '../features/news/types';
@@ -95,6 +96,9 @@ export interface IFirestoreService {
   getLastListInteraction(userId: string): Promise<Date | null>;
   updateLastListInteraction(userId: string): Promise<void>;
   getListMembersFromCache(): Promise<Pick<XApiUser, 'id'>[]>;
+  getActiveCampaign(): Promise<CampaignDoc | null>;
+  getCampaignById(campaignId: string): Promise<CampaignDoc | null>;
+  updateCampaign(campaignId: string, data: Partial<CampaignDoc>): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
