@@ -561,6 +561,260 @@ paths:
               schema:
                 $ref: '#/components/schemas/RuntimeConfig'
 
+  /campaigns:
+    get:
+      summary: List narrative event campaigns
+      description: Retrieves a paginated list of narrative event campaigns with optional status filtering.
+      parameters:
+        - name: page
+          in: query
+          description: Target page number (1-indexed).
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Items per page (clamped between 1 and 50).
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+        - name: status
+          in: query
+          description: Filter by campaign lifecycle status.
+          schema:
+            $ref: '#/components/schemas/CampaignStatus'
+      responses:
+        '200':
+          description: Paginated campaigns list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCampaignsResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+    post:
+      summary: Create a new narrative event campaign
+      description: Creates a new campaign. If status is scheduled or active, schedule collision checks and slot generation are enforced.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCampaignRequest'
+      responses:
+        '201':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignDocWithId'
+        '400':
+          description: Validation error or missing required fields
+        '409':
+          description: Schedule conflict with an existing active or scheduled campaign
+        '500':
+          description: Internal server error
+
+  /campaigns/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Unique campaign document ID
+        schema:
+          type: string
+    get:
+      summary: Get campaign details by ID
+      description: Retrieves full campaign document including all itinerary slots.
+      responses:
+        '200':
+          description: Campaign document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignDocWithId'
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update an existing campaign
+      description: Updates campaign configuration and reconciles itinerary slots if schedule dates changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCampaignRequest'
+      responses:
+        '200':
+          description: Updated campaign document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignDocWithId'
+        '400':
+          description: Validation error
+        '404':
+          description: Campaign not found
+        '409':
+          description: Schedule conflict with another active or scheduled campaign
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete a campaign
+      description: Permanently removes a campaign document and its itinerary configuration.
+      responses:
+        '204':
+          description: Campaign deleted successfully
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
+  /campaigns/{id}/clone:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Source campaign document ID to clone
+        schema:
+          type: string
+    post:
+      summary: Clone an existing campaign
+      description: Creates a duplicated campaign with reset slot execution statuses for recurring or iterating annual events.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloneCampaignRequest'
+      responses:
+        '201':
+          description: Cloned campaign created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignDocWithId'
+        '400':
+          description: Invalid date format
+        '404':
+          description: Source campaign not found
+        '409':
+          description: Overlapping schedule conflict with another campaign
+        '500':
+          description: Internal server error
+
+  /campaigns/{id}/pause:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Target campaign document ID
+        schema:
+          type: string
+    post:
+      summary: Emergency pause campaign execution
+      description: Sets isPaused flag to true. Halts subsequent automated slot posting immediately.
+      responses:
+        '200':
+          description: Campaign paused successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignDocWithId'
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
+  /campaigns/{id}/resume:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Target campaign document ID
+        schema:
+          type: string
+    post:
+      summary: Resume a paused campaign
+      description: Resets isPaused flag to false to allow automated slot posting according to schedule.
+      responses:
+        '200':
+          description: Campaign resumed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignDocWithId'
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
+  /campaigns/{id}/assets:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Campaign document ID for isolated asset storage partitioning
+        schema:
+          type: string
+    post:
+      summary: Upload an illustration asset for a campaign slot
+      description: Uploads an image file directly to isolated Google Cloud Storage campaign partition.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file to upload (JPEG, PNG, WebP up to 15MB).
+      responses:
+        '200':
+          description: Asset uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignAssetUploadResult'
+        '400':
+          description: No file uploaded or unsupported mime type
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
 components:
   schemas:
     SystemAlert:
@@ -998,6 +1252,291 @@ components:
               type: string
             avatarUrl:
               type: string
+
+    CampaignStatus:
+      type: string
+      enum: [draft, scheduled, active, completed, archived]
+      description: Lifecycle status of a narrative event campaign.
+      example: scheduled
+
+    SlotTimePeriod:
+      type: string
+      enum: [morning, afternoon, evening, night]
+      description: Canonical slot period classification.
+      example: morning
+
+    SlotStatus:
+      type: string
+      enum: [pending, posted, skipped, failed]
+      description: Execution state of an individual narrative itinerary slot.
+      example: pending
+
+    CampaignSlot:
+      type: object
+      required:
+        - slotId
+        - dayNumber
+        - timePeriod
+        - scheduledTime
+        - theme
+        - status
+      properties:
+        slotId:
+          type: string
+          example: slot-1-0800
+        dayNumber:
+          type: integer
+          minimum: 1
+          example: 1
+        timePeriod:
+          $ref: '#/components/schemas/SlotTimePeriod'
+        scheduledTime:
+          type: string
+          format: date-time
+          example: "2026-11-01T08:00:00Z"
+        theme:
+          type: string
+          example: Arrival in Kyoto
+        captionPromptHint:
+          type: string
+          example: Excited arrival tweet with bullet train view
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+        isFixedText:
+          type: boolean
+          default: false
+        fixedTextOverride:
+          type: string
+        mediaUrl:
+          type: string
+          format: uri
+        textOnly:
+          type: boolean
+          default: true
+        postedTweetId:
+          type: string
+        postedAt:
+          type: string
+          format: date-time
+        errorReason:
+          type: string
+
+    CampaignDoc:
+      type: object
+      required:
+        - title
+        - startDate
+        - endDate
+        - status
+        - dailySlotTimes
+        - masterContext
+        - replyContextSummary
+        - slots
+        - totalSlotsCount
+        - completedSlotsCount
+        - isPaused
+        - createdAt
+        - updatedAt
+      properties:
+        title:
+          type: string
+          example: Kyoto Journey
+        description:
+          type: string
+          example: Fall tour in historical Kyoto
+        hashtag:
+          type: string
+          example: RebeccaKyotoTrip
+        startDate:
+          type: string
+          format: date
+          example: "2026-11-01"
+        endDate:
+          type: string
+          format: date
+          example: "2026-11-03"
+        status:
+          $ref: '#/components/schemas/CampaignStatus'
+        dailySlotTimes:
+          type: array
+          items:
+            type: string
+            pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          example: ["08:00", "12:00", "19:00"]
+        masterContext:
+          type: string
+          example: Rebecca travels to Kyoto for sightseeing and autumn colors.
+        replyContextSummary:
+          type: string
+          example: Rebecca is currently in Kyoto enjoying traditional sweets and shrines.
+        isAnnualRecurring:
+          type: boolean
+          default: false
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignSlot'
+        totalSlotsCount:
+          type: integer
+          example: 9
+        completedSlotsCount:
+          type: integer
+          example: 3
+        isPaused:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-09-18T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-09-18T00:00:00.000Z"
+
+    CampaignDocWithId:
+      allOf:
+        - $ref: '#/components/schemas/CampaignDoc'
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              example: camp_kyoto_2026
+
+    CreateCampaignRequest:
+      type: object
+      required:
+        - title
+        - startDate
+        - endDate
+      properties:
+        title:
+          type: string
+          example: Kyoto Journey
+        description:
+          type: string
+        hashtag:
+          type: string
+        startDate:
+          type: string
+          format: date
+          example: "2026-11-01"
+        endDate:
+          type: string
+          format: date
+          example: "2026-11-03"
+        dailySlotTimes:
+          type: array
+          items:
+            type: string
+          example: ["08:00", "12:00", "19:00"]
+        masterContext:
+          type: string
+        replyContextSummary:
+          type: string
+        status:
+          $ref: '#/components/schemas/CampaignStatus'
+        isAnnualRecurring:
+          type: boolean
+        isPaused:
+          type: boolean
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignSlot'
+
+    UpdateCampaignRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        hashtag:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        dailySlotTimes:
+          type: array
+          items:
+            type: string
+        masterContext:
+          type: string
+        replyContextSummary:
+          type: string
+        status:
+          $ref: '#/components/schemas/CampaignStatus'
+        isAnnualRecurring:
+          type: boolean
+        isPaused:
+          type: boolean
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignSlot'
+
+    CloneCampaignRequest:
+      type: object
+      properties:
+        newStartDate:
+          type: string
+          format: date
+          example: "2027-11-01"
+        newEndDate:
+          type: string
+          format: date
+          example: "2027-11-03"
+
+    CampaignAssetUploadResult:
+      type: object
+      required:
+        - url
+        - filename
+      properties:
+        url:
+          type: string
+          format: uri
+          example: "https://storage.googleapis.com/rebecca-illustrations/campaigns/camp_1/pic.png"
+        filename:
+          type: string
+          example: "pic.png"
+
+    PaginatedCampaignsResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignDocWithId'
+        meta:
+          type: object
+          required:
+            - totalItems
+            - totalPages
+            - currentPage
+            - limit
+          properties:
+            totalItems:
+              type: integer
+              example: 1
+            totalPages:
+              type: integer
+              example: 1
+            currentPage:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 10
 
   securitySchemes:
     BearerAuth:
