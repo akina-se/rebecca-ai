@@ -127,36 +127,38 @@
     <div class="media-section">
       <div class="media-header">
         <span class="form-label">{{ 'campaign.slot_image' | translate }}</span>
-        @if (!slot.mediaUrl) {
-          <label class="checkbox-container text-only-label">
-            <input
-              type="checkbox"
-              [(ngModel)]="slot.textOnly"
-              (ngModelChange)="notifyChange()"
-              [disabled]="isReadonly"
-            />
-            <span class="checkmark"></span>
-            {{ 'campaign.slot_text_only' | translate }}
-          </label>
-        }
       </div>
 
-      <!-- Attached Image Preview -->
+      <!-- Attached Image Preview with Hover Zoom & Delete Action -->
       @if (slot.mediaUrl) {
-        <div class="attached-media-preview">
-          <img [src]="slot.mediaUrl" alt="Campaign Illustration" class="media-thumb" />
+        <div class="attached-media-container">
+          <div
+            class="attached-media-preview"
+            (click)="openLightbox()"
+            title="クリックして拡大表示"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="openLightbox()"
+            (keydown.space)="openLightbox()"
+          >
+            <img [src]="getThumbnailUrl()" alt="Campaign Illustration" class="media-thumb" loading="lazy" />
+            <div class="media-overlay">
+              <span class="material-icons zoom-icon">zoom_in</span>
+            </div>
+          </div>
           @if (!isReadonly) {
             <button
               type="button"
-              class="btn-remove-media"
+              class="btn btn-secondary btn-delete-media"
               (click)="removeMedia()"
-              title="Remove image"
+              title="イラストを削除"
             >
-              <span class="material-icons">close</span>
+              <span class="material-icons">delete</span>
+              <span>削除</span>
             </button>
           }
         </div>
-      } @else if (!slot.textOnly) {
+      } @else {
         <!-- Upload Trigger -->
         <div class="upload-container">
           <input

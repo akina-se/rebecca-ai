@@ -12,8 +12,18 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
   test('Complete lifecycle: List -> Create -> Edit/Upload -> List Verification -> Clone -> Delete', async ({ page }) => {
     test.setTimeout(90000);
 
-    page.on('console', (msg) => console.log('[BROWSER LOG]', msg.type(), msg.text()));
-    page.on('pageerror', (err) => console.log('[BROWSER ERROR]', err));
+    page.on('console', (msg) => console.log(`[BROWSER LOG] ${msg.type()}: ${msg.text()}`));
+    page.on('pageerror', (err) => console.log(`[BROWSER ERROR] ${err}`));
+    page.on('request', (req) => {
+      if (req.url().includes('/api/')) {
+        process.stdout.write(`[HTTP REQ] ${req.method()} ${req.url()}\n`);
+      }
+    });
+    page.on('response', (res) => {
+      if (res.url().includes('/api/')) {
+        process.stdout.write(`[HTTP RES] ${res.status()} ${res.url()}\n`);
+      }
+    });
 
     // 1. Authenticate via emulator
     await loginWithEmulatorAndSeedDB(page, 'admin@example.com', 'password123');
@@ -40,10 +50,11 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     const descTextarea = page.locator('textarea.form-textarea').first();
     await descTextarea.fill('Special episodic storyline exploring Akihabara retro arcades and tech shops with Rebecca.');
 
-    // Compute unique future dates to prevent 409 Date Overlap Conflict
-    const offsetDays = (parseInt(uniqueId, 10) % 500) + 100;
+    // Compute unique future dates in year 2035 to ensure top of Page 1 and prevent 409 Conflict
     const baseDate = new Date();
-    baseDate.setUTCDate(baseDate.getUTCDate() + offsetDays);
+    baseDate.setFullYear(2035);
+    baseDate.setUTCMonth(5);
+    baseDate.setUTCDate(1 + (parseInt(uniqueId, 10) % 20));
     const endDateObj = new Date(baseDate);
     endDateObj.setUTCDate(endDateObj.getUTCDate() + 1);
 
@@ -87,7 +98,7 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_03_campaign_editor_filled.png'), fullPage: true });
 
     // 6. Save as Draft
-    const saveDraftBtn = page.locator('.topbar-actions button.btn-secondary');
+    const saveDraftBtn = page.locator('.topbar-actions button').filter({ hasText: /下書き保存|Save Draft/ });
     await saveDraftBtn.click();
 
     // Wait for redirect to /campaigns
@@ -108,23 +119,51 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     const slot1 = page.locator('app-itinerary-slot-card').first();
     await expect(slot1).toBeVisible({ timeout: 20000 });
 
-    const textOnlyCheckbox = slot1.locator('.text-only-label input[type="checkbox"]');
-    if (await textOnlyCheckbox.isVisible() && (await textOnlyCheckbox.isChecked())) {
-      await textOnlyCheckbox.uncheck();
-    }
-    const uploadBtn = slot1.locator('.upload-btn');
-    await expect(uploadBtn).toBeVisible({ timeout: 10000 });
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await uploadBtn.click();
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(path.resolve(__dirname, '../test-assets/sample.png'));
+    // Attach sample image to Slot 1 via setInputFiles
+    const fileInput1 = slot1.locator('input[type="file"]');
+    await fileInput1.setInputFiles(path.resolve(__dirname, '../test-assets/sample.png'));
 
-    // Wait for image thumbnail or upload completion
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_uploaded.png'), fullPage: true });
+    // Wait for image thumbnail preview to appear
+    const thumbPreview = slot1.locator('.attached-media-preview');
+    await expect(thumbPreview).toBeVisible({ timeout: 15000 });
+    const thumbImg = thumbPreview.locator('img.media-thumb');
+    await expect(thumbImg).toBeVisible();
+    expect(await thumbImg.getAttribute('src')).toContain('size=thumbnail');
+    await slot1.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_uploaded.png') });
+
+    // 8a. Test Lightbox Open on Thumbnail Click
+    await thumbPreview.click();
+    const lightbox = page.locator('app-lightbox .lightbox-overlay');
+    await expect(lightbox).toBeVisible({ timeout: 10000 });
+    const lightboxImg = lightbox.locator('.image-container img');
+    await expect(lightboxImg).toBeVisible({ timeout: 10000 });
+    expect(await lightboxImg.getAttribute('src')).toContain('size=full');
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05b_campaign_lightbox_open.png') });
+
+    // 8b. Close Lightbox
+    const closeLightboxBtn = lightbox.locator('.close-btn');
+    await closeLightboxBtn.click();
+    await expect(lightbox).toBeHidden({ timeout: 5000 });
+
+    // 8c. Test Image Deletion (Physical GCS Cleanup & UI Reset)
+    const deleteMediaBtn = slot1.locator('.btn-delete-media');
+    await expect(deleteMediaBtn).toBeVisible({ timeout: 5000 });
+    await deleteMediaBtn.click();
+
+    // Verify thumbnail is removed and "イラストを追加" button is restored
+    await expect(thumbPreview).toBeHidden({ timeout: 10000 });
+    const restoredUploadBtn = slot1.locator('.upload-btn');
+    await expect(restoredUploadBtn).toBeVisible({ timeout: 10000 });
+    await slot1.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05c_campaign_image_deleted.png') });
+
+    // 8d. Re-upload image to test saving and cloning with media
+    await slot1.locator('input[type="file"]').setInputFiles(path.resolve(__dirname, '../test-assets/sample.png'));
+    await expect(thumbPreview).toBeVisible({ timeout: 15000 });
 
     // Save changes
-    const saveBtn = page.locator('.topbar-actions button.btn-secondary');
+    const saveBtn = page.locator('.topbar-actions button').filter({ hasText: /下書き保存|Save Draft/ });
     await saveBtn.click();
     await page.waitForURL('**/campaigns', { timeout: 20000 });
 

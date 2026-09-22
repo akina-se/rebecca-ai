@@ -80,7 +80,7 @@ export function createApp(firestore: Firestore): Express {
   const { assetsRouter, publicImagesRouter } = initializeAssetsModule(firestore);
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
-  const campaignsRouter = initializeCampaignsModule(firestore);
+  const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(firestore);
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);
@@ -88,6 +88,8 @@ export function createApp(firestore: Firestore): Express {
   // Mount Public Image Streaming (unauthenticated streaming for browser <img> & CSS assets)
   app.use('/api/v1/assets', publicImagesRouter);
   app.use('/api/v1/images', publicImagesRouter);
+  app.use('/api/v1/campaigns', publicCampaignImagesRouter);
+  app.use('/api/campaigns', publicCampaignImagesRouter);
 
   // Healthcheck endpoint
   app.get('/health', (req, res) => {

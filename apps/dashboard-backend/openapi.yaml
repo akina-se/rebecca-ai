@@ -815,6 +815,76 @@ paths:
         '500':
           description: Internal server error
 
+  /campaigns/{id}/assets/{filename}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Campaign document ID
+        schema:
+          type: string
+      - name: filename
+        in: path
+        required: true
+        description: Asset filename
+        schema:
+          type: string
+    get:
+      summary: Stream campaign illustration image with on-demand WebP thumbnail generation
+      description: Public streaming endpoint returning image binary. Supports query parameter size=thumbnail (400px WebP) or size=full (original image).
+      security: []
+      parameters:
+        - name: size
+          in: query
+          required: false
+          description: Image resolution mode ('thumbnail' for compressed 400px WebP or 'full' for original resolution)
+          schema:
+            type: string
+            enum: [full, thumbnail]
+            default: full
+      responses:
+        '200':
+          description: Binary image data
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid campaign ID or filename
+        '404':
+          description: Campaign asset not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Delete campaign illustration asset permanently from Google Cloud Storage
+      description: Permanently deletes the original image file and cached WebP thumbnails from Google Cloud Storage.
+      responses:
+        '200':
+          description: Asset deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid campaign ID or filename
+        '404':
+          description: Campaign not found
+        '500':
+          description: Internal server error
+
 components:
   schemas:
     SystemAlert:
@@ -1310,9 +1380,6 @@ components:
         mediaUrl:
           type: string
           format: uri
-        textOnly:
-          type: boolean
-          default: true
         postedTweetId:
           type: string
         postedAt:

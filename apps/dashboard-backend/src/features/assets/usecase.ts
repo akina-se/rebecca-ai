@@ -37,6 +37,10 @@ class ThumbnailMemoryCache {
     }
     this.cache.set(key, val);
   }
+
+  delete(key: string) {
+    this.cache.delete(key);
+  }
 }
 
 /**
@@ -333,6 +337,50 @@ export class AssetsUseCase {
    * @returns A promise that resolves when the deletion is complete.
    */
   async deleteAssets(ids: string[]): Promise<void> {
+    const bucket = this.storage.bucket(config.gcp.imageBucketName);
+    for (const id of ids) {
+      try {
+        const rawDoc = await this.repo.getRawDoc(id);
+        const cleanId = id.replace(/^img_/, '');
+
+        this.thumbnailMemoryCache.delete(cleanId);
+        this.thumbnailMemoryCache.delete(id);
+
+        await bucket.file(`thumbnails/${cleanId}.webp`).delete({ ignoreNotFound: true }).catch(() => {});
+        if (cleanId !== id) {
+          await bucket.file(`thumbnails/${id}.webp`).delete({ ignoreNotFound: true }).catch(() => {});
+        }
+
+        let originalPath: string | null = null;
+        if (rawDoc && typeof rawDoc.url === 'string') {
+          const rawUrl = rawDoc.url;
+          if (rawUrl.startsWith('gs://')) {
+            const parts = rawUrl.replace('gs://', '').split('/');
+            parts.shift(); // remove bucket name
+            originalPath = parts.join('/');
+          } else if (rawUrl.includes('storage.googleapis.com')) {
+            try {
+              const parsed = new URL(rawUrl);
+              const parts = parsed.pathname.replace(/^\/+/, '').split('/');
+              parts.shift(); // remove bucket name
+              originalPath = parts.join('/');
+            } catch {
+              // ignore url parse error
+            }
+          }
+        }
+
+        if (originalPath) {
+          await bucket.file(originalPath).delete({ ignoreNotFound: true }).catch(() => {});
+        } else {
+          for (const prefix of [`media_assets/${cleanId}`, `images/${cleanId}`, `media_assets/${id}`, `images/${id}`]) {
+            await bucket.deleteFiles({ prefix, force: true }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        console.warn(`[AssetsUseCase] Warning during GCS physical deletion for asset ${id}:`, err);
+      }
+    }
     await this.repo.deleteMany(ids);
   }
 
