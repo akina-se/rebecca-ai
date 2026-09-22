@@ -51,8 +51,9 @@ describe('CampaignEditorComponent', () => {
       resume: jest.fn().mockReturnValue(of({ ...sampleCampaign, isPaused: false })),
       delete: jest.fn().mockReturnValue(of(undefined)),
       uploadAsset: jest.fn().mockReturnValue(
-        of({ url: 'https://storage.googleapis.com/bucket/pic.png', filename: 'pic.png' }),
+        of({ url: '/api/v1/campaigns/camp_edit_1/assets/pic.png', filename: 'pic.png' }),
       ),
+      deleteAsset: jest.fn().mockReturnValue(of({ success: true })),
     };
 
     mockRouter = {
@@ -204,8 +205,7 @@ describe('CampaignEditorComponent', () => {
     component.onUploadMedia({ slot: component.slots[0], file });
 
     expect(mockRepo.uploadAsset).toHaveBeenCalledWith('camp_edit_1', file);
-    expect(component.slots[0].mediaUrl).toBe('https://storage.googleapis.com/bucket/pic.png');
-    expect(component.slots[0].textOnly).toBe(false);
+    expect(component.slots[0].mediaUrl).toBe('/api/v1/campaigns/camp_edit_1/assets/pic.png');
   });
 
   it('should validate title and dates on save', () => {
@@ -486,5 +486,24 @@ describe('CampaignEditorComponent', () => {
 
     component.toggleDay(1);
     expect(component.isDayOpen(1)).toBe(true);
+  });
+
+  it('should warn when onUploadMedia is called without saved campaignId', () => {
+    const mockFile = new File(['image-bytes'], 'pic.png', { type: 'image/png' });
+    const targetSlot = component.slots[0];
+    component.campaignId = null;
+    component.onUploadMedia({ slot: targetSlot, file: mockFile });
+    expect(mockToast.show).toHaveBeenCalledWith('Please save campaign before uploading images', 'warning');
+  });
+
+  it('should delete illustration media and physically delete from repo', () => {
+    component.campaignId = 'camp_edit_1';
+    const targetSlot = component.slots[0];
+    targetSlot.mediaUrl = '/api/v1/campaigns/camp_edit_1/assets/pic.png';
+
+    component.onDeleteMedia({ slot: targetSlot, filename: 'pic.png' });
+    expect(targetSlot.mediaUrl).toBeUndefined();
+    expect(mockRepo.deleteAsset).toHaveBeenCalledWith('camp_edit_1', 'pic.png');
+    expect(mockToast.show).toHaveBeenCalledWith('Illustration deleted', 'info');
   });
 });

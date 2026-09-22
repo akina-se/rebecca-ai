@@ -212,6 +212,57 @@ export class CampaignsController {
   };
 
   /**
+   * GET /:id/assets/:filename - Stream campaign illustration with on-demand thumbnail generation.
+   *
+   * @param req - Express Request object.
+   * @param res - Express Response object.
+   */
+  getAssetImage = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractRequiredId(req.params.id);
+      const filename = req.params.filename;
+      if (!filename || typeof filename !== 'string') {
+        res.status(400).json({ error: 'Filename parameter is required.' });
+        return;
+      }
+      const size = req.query.size === 'thumbnail' ? 'thumbnail' : 'full';
+      const binary = await this.useCase.getCampaignAssetBinary(id, filename, size);
+      if (!binary) {
+        res.status(404).json({ error: 'Campaign asset not found.' });
+        return;
+      }
+
+      res.setHeader('Content-Type', binary.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.send(binary.buffer);
+    } catch (err: unknown) {
+      handleControllerError(res, err, 'getAssetImage');
+    }
+  };
+
+  /**
+   * DELETE /:id/assets/:filename - Physically delete campaign asset from GCS.
+   *
+   * @param req - Express Request object.
+   * @param res - Express Response object.
+   */
+  deleteAsset = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractRequiredId(req.params.id);
+      const filename = req.params.filename;
+      if (!filename || typeof filename !== 'string') {
+        res.status(400).json({ error: 'Filename parameter is required.' });
+        return;
+      }
+
+      await this.useCase.deleteCampaignAsset(id, filename);
+      res.status(200).json({ success: true });
+    } catch (err: unknown) {
+      handleControllerError(res, err, 'deleteAsset');
+    }
+  };
+
+  /**
    * DELETE /:id - Delete campaign.
    *
    * @param req - Express Request object containing campaign ID path param.

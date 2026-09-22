@@ -401,7 +401,6 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
         captionPromptHint: typeof s['captionPromptHint'] === 'string' ? s['captionPromptHint'] : undefined,
         fixedTextOverride: typeof s['fixedTextOverride'] === 'string' ? s['fixedTextOverride'] : undefined,
         isFixedText: Boolean(s['isFixedText']),
-        textOnly: Boolean(s['textOnly']),
         status: s['status'] as CampaignSlotStatus,
         postedTweetId: typeof s['postedTweetId'] === 'string' ? s['postedTweetId'] : undefined,
         postedAt:
