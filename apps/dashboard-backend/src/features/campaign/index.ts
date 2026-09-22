@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { Firestore } from '@google-cloud/firestore';
+import { Storage } from '@google-cloud/storage';
 import multer from 'multer';
+import { config } from '../../config';
 import { CampaignsRepository } from './repository';
-import { CampaignsUseCase } from './usecase';
+import { CampaignsUseCase, CampaignsUseCaseConfig } from './usecase';
 import { CampaignsController } from './controller';
 
 export * from './repository';
@@ -20,13 +22,21 @@ const upload = multer({
  * Initializes the Campaign feature module.
  *
  * @param firestore - The Firestore database instance.
+ * @param storage - Optional GCS Storage instance for DI (defaults to new Storage()).
+ * @param campaignConfig - Optional campaign configuration for DI (defaults to config.gcp.imageBucketName).
  * @returns Configured Express Router for /campaigns endpoints.
  */
-export function initializeCampaignsModule(firestore: Firestore): Router {
+export function initializeCampaignsModule(
+  firestore: Firestore,
+  storage: Storage = new Storage(),
+  campaignConfig: CampaignsUseCaseConfig = {
+    imageBucketName: config.gcp.imageBucketName,
+  },
+): Router {
   const router = Router();
 
   const repo = new CampaignsRepository(firestore);
-  const useCase = new CampaignsUseCase(repo);
+  const useCase = new CampaignsUseCase(repo, storage, campaignConfig);
   const controller = new CampaignsController(useCase);
 
   // Listing & Creation

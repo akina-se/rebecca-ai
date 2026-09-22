@@ -55,6 +55,10 @@ export class CampaignsController {
 
   /**
    * GET / - List campaigns with friendly query clamping and filtering.
+   *
+   * @param req - Express Request object containing optional query params (page, limit, status).
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   list = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -73,7 +77,11 @@ export class CampaignsController {
   };
 
   /**
-   * GET /:id - Retrieve single campaign.
+   * GET /:id - Retrieve single campaign by ID.
+   *
+   * @param req - Express Request object containing ID path parameter.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   getById = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -91,6 +99,10 @@ export class CampaignsController {
 
   /**
    * POST / - Create a new campaign.
+   *
+   * @param req - Express Request object containing CreateCampaignRequest in body.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   create = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -103,6 +115,10 @@ export class CampaignsController {
 
   /**
    * PUT /:id - Update an existing campaign.
+   *
+   * @param req - Express Request object containing ID path param and UpdateCampaignRequest in body.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   update = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -116,6 +132,10 @@ export class CampaignsController {
 
   /**
    * POST /:id/clone - Duplicate an existing campaign.
+   *
+   * @param req - Express Request object containing source ID path param and optional new dates in body.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   clone = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -130,6 +150,10 @@ export class CampaignsController {
 
   /**
    * POST /:id/pause - Emergency kill switch pause.
+   *
+   * @param req - Express Request object containing campaign ID path param.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   pause = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -143,6 +167,10 @@ export class CampaignsController {
 
   /**
    * POST /:id/resume - Resume a paused campaign.
+   *
+   * @param req - Express Request object containing campaign ID path param.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   resume = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -156,6 +184,10 @@ export class CampaignsController {
 
   /**
    * POST /:id/assets - Isolated campaign illustration upload.
+   *
+   * @param req - Express Request object containing campaign ID path param and uploaded file.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   uploadAsset = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -181,6 +213,10 @@ export class CampaignsController {
 
   /**
    * DELETE /:id - Delete campaign.
+   *
+   * @param req - Express Request object containing campaign ID path param.
+   * @param res - Express Response object.
+   * @returns A Promise resolving to void.
    */
   delete = async (req: Request, res: Response): Promise<void> => {
     try {

@@ -11,8 +11,16 @@ import {
   SlotTimePeriod,
   UpdateCampaignRequest,
 } from '@rebecca/types';
-import { CampaignsRepository } from './repository';
-import { config } from '../../config';
+import { ICampaignsRepository } from './repository';
+
+/**
+ * Configuration options required by CampaignsUseCase.
+ * Follows Principle of Least Privilege / Interface Segregation:
+ * Only requires the specific GCS bucket name rather than the full application config.
+ */
+export interface CampaignsUseCaseConfig {
+  imageBucketName: string;
+}
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -28,6 +36,10 @@ const VALID_CAMPAIGN_STATUSES = new Set<CampaignStatus>([
  * Validates and cleans optional campaign hashtag.
  * Strips leading '#' characters, limits length to 20 characters,
  * and restricts to valid alphanumeric and Japanese characters without spaces.
+ *
+ * @param raw - Raw user input value for the hashtag.
+ * @returns Clean sanitized hashtag string without leading '#', or undefined if empty.
+ * @throws Error if the hashtag exceeds 20 characters or contains invalid characters.
  */
 export const sanitizeHashtag = (raw?: unknown): string | undefined => {
   if (typeof raw !== 'string') return undefined;
@@ -49,7 +61,11 @@ export interface UploadedCampaignFile {
 }
 
 /**
- * Maps a HH:mm string to SlotTimePeriod.
+ * Maps a HH:mm string to canonical SlotTimePeriod.
+ *
+ * @param timeStr - Time string formatted as HH:mm.
+ * @returns Canonical SlotTimePeriod ('morning' | 'afternoon' | 'evening' | 'night').
+ * @throws Error if timeStr does not match HH:mm format.
  */
 export const getTimePeriodForHour = (timeStr: string): SlotTimePeriod => {
   if (!TIME_REGEX.test(timeStr)) {
@@ -125,23 +141,31 @@ export const generateSlotsForSchedule = (
 
 /**
  * Business logic layer for Campaign Narrative Event management.
+ * Strictly adheres to Clean Architecture: depends only on ICampaignsRepository, Storage,
+ * and CampaignsUseCaseConfig via constructor Dependency Injection.
  */
 export class CampaignsUseCase {
-  private storage: Storage;
-
-  constructor(private readonly repo: CampaignsRepository) {
-    this.storage = new Storage();
-  }
+  constructor(
+    private readonly repo: ICampaignsRepository,
+    private readonly storage: Storage,
+    private readonly config: CampaignsUseCaseConfig,
+  ) {}
 
   /**
-   * Retrieves paginated campaigns.
+   * Retrieves paginated campaigns with optional status filtering.
+   *
+   * @param params - Query parameters for pagination and status filtering.
+   * @returns A Promise resolving to paginated campaigns with metadata.
    */
   async listCampaigns(params?: CampaignQueryParams): Promise<PaginatedResponse<CampaignDocWithId>> {
     return this.repo.getPaginated(params);
   }
 
   /**
-   * Retrieves a campaign by ID.
+   * Retrieves a single campaign by ID.
+   *
+   * @param id - The unique campaign document ID.
+   * @returns A Promise resolving to the CampaignDocWithId, or null if not found.
    */
   async getCampaign(id: string): Promise<CampaignDocWithId | null> {
     return this.repo.getById(id);
@@ -150,8 +174,9 @@ export class CampaignsUseCase {
   /**
    * Creates a new narrative event campaign with strict validation and automatic slot generation.
    *
-   * @param data - Input campaign attributes.
-   * @returns Created campaign entity.
+   * @param data - Input campaign creation payload.
+   * @returns A Promise resolving to the created campaign entity with ID.
+   * @throws Error if validation fails, fields are missing, or dates overlap another campaign.
    */
   async createCampaign(data: CreateCampaignRequest): Promise<CampaignDocWithId> {
     if (!data || typeof data !== 'object') {
@@ -222,8 +247,7 @@ export class CampaignsUseCase {
 
     const campaignDoc: CampaignDoc = {
       title,
-      description: typeof data.description === 'string' && data.description.trim() ? data.description.trim() : undefined,
-      hashtag,
+      description: typeof data.description === 'string' ? data.description.trim() : undefined,
       status: data.status,
       isPaused: Boolean(data.isPaused),
       startDate,
@@ -231,11 +255,12 @@ export class CampaignsUseCase {
       dailySlotTimes: data.dailySlotTimes,
       masterContext,
       replyContextSummary,
+      hashtag,
       slots,
       totalSlotsCount: slots.length,
       completedSlotsCount: slots.filter((s) => s.status === 'posted').length,
       isAnnualRecurring: Boolean(data.isAnnualRecurring),
-      recurringApprovedYear: typeof data.recurringApprovedYear === 'number' ? data.recurringApprovedYear : undefined,
+      recurringApprovedYear: data.recurringApprovedYear,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -245,6 +270,11 @@ export class CampaignsUseCase {
 
   /**
    * Updates an existing campaign with date overlap validation and slot reconciliation.
+   *
+   * @param id - The ID of the campaign to update.
+   * @param updates - Partial campaign attributes to update.
+   * @returns A Promise resolving to the updated CampaignDocWithId.
+   * @throws Error if campaign is not found, dates overlap, or validation fails.
    */
   async updateCampaign(id: string, updates: UpdateCampaignRequest): Promise<CampaignDocWithId> {
     const existing = await this.repo.getById(id);
@@ -327,6 +357,12 @@ export class CampaignsUseCase {
 
   /**
    * Clones an existing campaign for a new iteration, resetting slot statuses to pending.
+   *
+   * @param id - Document ID of the source campaign to clone.
+   * @param newStartDate - Optional new start date in YYYY-MM-DD format.
+   * @param newEndDate - Optional new end date in YYYY-MM-DD format.
+   * @returns A Promise resolving to the newly created cloned CampaignDocWithId.
+   * @throws Error if source campaign is not found, dates are invalid, or overlap occurs.
    */
   async cloneCampaign(
     id: string,
@@ -376,7 +412,11 @@ export class CampaignsUseCase {
   }
 
   /**
-   * Instantly pauses an active campaign (kill switch).
+   * Instantly pauses an active campaign (emergency kill switch).
+   *
+   * @param id - Document ID of the campaign to pause.
+   * @returns A Promise resolving to the updated CampaignDocWithId.
+   * @throws Error if the campaign is not found.
    */
   async pauseCampaign(id: string): Promise<CampaignDocWithId> {
     const existing = await this.repo.getById(id);
@@ -390,7 +430,11 @@ export class CampaignsUseCase {
   }
 
   /**
-   * Resumes a paused campaign.
+   * Resumes an emergency paused campaign.
+   *
+   * @param id - Document ID of the campaign to resume.
+   * @returns A Promise resolving to the updated CampaignDocWithId.
+   * @throws Error if the campaign is not found.
    */
   async resumeCampaign(id: string): Promise<CampaignDocWithId> {
     const existing = await this.repo.getById(id);
@@ -407,6 +451,11 @@ export class CampaignsUseCase {
    * Uploads an isolated campaign illustration directly to GCS.
    * STRICT ASSET SEGREGATION: Stored under gs://<bucket>/campaigns/<campaignId>/...
    * and NEVER registered into collections.images.
+   *
+   * @param campaignId - Document ID of the target campaign.
+   * @param file - Uploaded file buffer and metadata.
+   * @returns A Promise resolving to an object containing public URL and clean filename.
+   * @throws Error if campaign is not found or uploaded file is not an image.
    */
   async uploadCampaignAsset(
     campaignId: string,
@@ -421,7 +470,7 @@ export class CampaignsUseCase {
       throw new Error('Only image uploads are permitted for campaign assets.');
     }
 
-    const bucketName = config.gcp.imageBucketName;
+    const bucketName = this.config.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
     const ext = file.originalname.includes('.')
@@ -446,7 +495,11 @@ export class CampaignsUseCase {
   }
 
   /**
-   * Deletes a campaign.
+   * Deletes a campaign document permanently.
+   *
+   * @param id - Document ID of the campaign to delete.
+   * @returns A Promise resolving to void.
+   * @throws Error if the campaign is not found.
    */
   async deleteCampaign(id: string): Promise<void> {
     const campaign = await this.repo.getById(id);

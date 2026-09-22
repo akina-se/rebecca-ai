@@ -263,6 +263,8 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
 
   describe('CampaignsUseCase', () => {
     let repo: jest.Mocked<CampaignsRepository>;
+    let mockStorage: any;
+    let mockConfig: { imageBucketName: string };
     let useCase: CampaignsUseCase;
 
     beforeEach(() => {
@@ -274,7 +276,15 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
         update: jest.fn(),
         delete: jest.fn(),
       } as any;
-      useCase = new CampaignsUseCase(repo);
+      mockStorage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue({
+            save: mockSave,
+          }),
+        }),
+      };
+      mockConfig = { imageBucketName: 'test-bucket' };
+      useCase = new CampaignsUseCase(repo, mockStorage as any, mockConfig);
     });
 
     it('listCampaigns should delegate to repo.getPaginated', async () => {

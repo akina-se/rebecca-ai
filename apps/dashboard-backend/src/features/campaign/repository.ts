@@ -9,10 +9,66 @@ import { getCollections } from '@rebecca/db';
 export type { CampaignQueryParams };
 
 /**
+ * Interface contract for campaign persistence operations in the data access layer.
+ */
+export interface ICampaignsRepository {
+  /**
+   * Retrieves paginated campaigns with optional status filtering.
+   *
+   * @param params - Query parameters including page, limit, and status filter.
+   * @returns Paginated list of campaigns with metadata.
+   */
+  getPaginated(params?: CampaignQueryParams): Promise<PaginatedResponse<CampaignDocWithId>>;
+
+  /**
+   * Retrieves a single campaign by ID.
+   *
+   * @param id - Document ID.
+   * @returns Campaign document with ID, or null.
+   */
+  getById(id: string): Promise<CampaignDocWithId | null>;
+
+  /**
+   * Finds campaigns that overlap with the specified date window and are not archived/completed.
+   *
+   * @param startDate - Start date string (YYYY-MM-DD).
+   * @param endDate - End date string (YYYY-MM-DD).
+   * @param excludeId - Optional campaign ID to exclude.
+   * @returns Array of overlapping campaigns.
+   */
+  findOverlapping(startDate: string, endDate: string, excludeId?: string): Promise<CampaignDocWithId[]>;
+
+  /**
+   * Creates a new campaign document.
+   *
+   * @param id - Explicit document ID.
+   * @param data - Campaign document data.
+   * @returns Created CampaignDocWithId.
+   */
+  create(id: string, data: CampaignDoc): Promise<CampaignDocWithId>;
+
+  /**
+   * Updates an existing campaign document.
+   *
+   * @param id - Target document ID.
+   * @param data - Partial fields to update.
+   * @returns Updated CampaignDocWithId.
+   */
+  update(id: string, data: Partial<CampaignDoc>): Promise<CampaignDocWithId>;
+
+  /**
+   * Deletes a campaign document permanently.
+   *
+   * @param id - Document ID.
+   */
+  delete(id: string): Promise<void>;
+}
+
+/**
  * Repository for data access operations related to Narrative Event Campaigns in Firestore.
  * Utilizes @rebecca/db campaignDocConverter for typed normalization and consistency.
  */
-export class CampaignsRepository {
+export class CampaignsRepository implements ICampaignsRepository {
   private collections;
   private firestore: Firestore;
 
