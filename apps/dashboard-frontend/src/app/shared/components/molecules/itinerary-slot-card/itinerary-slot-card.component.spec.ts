@@ -37,6 +37,7 @@ describe('ItinerarySlotCardComponent', () => {
     expect(component.getTimePeriodIcon('evening')).toBe('nights_stay');
     expect(component.getTimePeriodIcon('night')).toBe('bedtime');
     expect(component.formatTimeDisplay('2026-11-01T08:00:00Z')).toBe('08:00');
+    expect(component.formatTimeDisplay('2026-09-23T03:00:00+09:00')).toBe('03:00');
   });
 
   it('should toggle fixed text mode and emit slotChange', () => {
@@ -55,14 +56,33 @@ describe('ItinerarySlotCardComponent', () => {
     );
   });
 
-  it('should remove media, set textOnly to true and emit slotChange', () => {
+  it('should remove media, emit deleteMedia and slotChange', () => {
     jest.spyOn(component.slotChange, 'emit');
-    component.slot.mediaUrl = 'https://storage.googleapis.com/bucket/pic.jpg';
+    jest.spyOn(component.deleteMedia, 'emit');
+    component.slot.mediaUrl = '/api/v1/campaigns/c1/assets/pic.jpg';
 
     component.removeMedia();
     expect(component.slot.mediaUrl).toBeUndefined();
-    expect(component.slot.textOnly).toBe(true);
+    expect(component.deleteMedia.emit).toHaveBeenCalledWith({
+      slot: component.slot,
+      filename: 'pic.jpg',
+    });
     expect(component.slotChange.emit).toHaveBeenCalled();
+  });
+
+  it('should compute thumbnail and full URLs, and open Lightbox via previewMedia emit', () => {
+    jest.spyOn(component.previewMedia, 'emit');
+    component.slot.mediaUrl = '/api/v1/campaigns/c1/assets/pic.jpg';
+    expect(component.getThumbnailUrl()).toBe('/api/v1/campaigns/c1/assets/pic.jpg?size=thumbnail');
+    expect(component.getFullImageUrl()).toBe('/api/v1/campaigns/c1/assets/pic.jpg?size=full');
+
+    component.openLightbox();
+    expect(component.previewMedia.emit).toHaveBeenCalledWith('/api/v1/campaigns/c1/assets/pic.jpg?size=full');
+
+    // Empty URL handling
+    component.slot.mediaUrl = undefined;
+    expect(component.getThumbnailUrl()).toBe('');
+    expect(component.getFullImageUrl()).toBe('');
   });
 
   it('should emit uploadMedia when onFileSelected is triggered', () => {

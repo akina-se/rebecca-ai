@@ -103,6 +103,15 @@ export class HttpCampaignsRepository implements CampaignsRepository {
   }
 
   /**
+   * Physically deletes an isolated campaign asset from GCS.
+   */
+  deleteAsset(campaignId: string, filename: string): Observable<unknown> {
+    return this.http.delete<unknown>(
+      `${this.baseUrl}/campaigns/${campaignId}/assets/${encodeURIComponent(filename)}`,
+    );
+  }
+
+  /**
    * Deletes a campaign.
    */
   delete(id: string): Observable<unknown> {

@@ -32,27 +32,33 @@ export function initializeCampaignsModule(
   campaignConfig: CampaignsUseCaseConfig = {
     imageBucketName: config.gcp.imageBucketName,
   },
-): Router {
-  const router = Router();
+): { campaignsRouter: Router; publicCampaignImagesRouter: Router } {
+  const campaignsRouter = Router();
+  const publicCampaignImagesRouter = Router();
 
   const repo = new CampaignsRepository(firestore);
   const useCase = new CampaignsUseCase(repo, storage, campaignConfig);
   const controller = new CampaignsController(useCase);
 
+  // Public image streaming endpoint (no auth required for browser <img> & lightbox)
+  publicCampaignImagesRouter.get('/:id/assets/:filename', controller.getAssetImage);
+
   // Listing & Creation
-  router.get('/', controller.list);
-  router.post('/', controller.create);
+  campaignsRouter.get('/', controller.list);
+  campaignsRouter.post('/', controller.create);
 
   // Specific Actions before :id
-  router.post('/:id/clone', controller.clone);
-  router.post('/:id/pause', controller.pause);
-  router.post('/:id/resume', controller.resume);
-  router.post('/:id/assets', upload.single('file'), controller.uploadAsset);
+  campaignsRouter.post('/:id/clone', controller.clone);
+  campaignsRouter.post('/:id/pause', controller.pause);
+  campaignsRouter.post('/:id/resume', controller.resume);
+  campaignsRouter.post('/:id/assets', upload.single('file'), controller.uploadAsset);
+  campaignsRouter.delete('/:id/assets/:filename', controller.deleteAsset);
+  campaignsRouter.get('/:id/assets/:filename', controller.getAssetImage);
 
   // Single Item CRUD
-  router.get('/:id', controller.getById);
-  router.put('/:id', controller.update);
-  router.delete('/:id', controller.delete);
+  campaignsRouter.get('/:id', controller.getById);
+  campaignsRouter.put('/:id', controller.update);
+  campaignsRouter.delete('/:id', controller.delete);
 
-  return router;
+  return { campaignsRouter, publicCampaignImagesRouter };
 }

@@ -242,14 +242,22 @@ button.status-badge:disabled {
   margin-bottom: 0;
 }
 
+.attached-media-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .attached-media-preview {
   position: relative;
   display: inline-block;
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  max-width: 140px;
-  max-height: 100px;
+  width: 120px;
+  height: 80px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .media-thumb {
@@ -257,31 +265,59 @@ button.status-badge:disabled {
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.2s ease;
 }
 
-.btn-remove-media {
+.attached-media-preview:hover .media-thumb {
+  transform: scale(1.05);
+}
+
+.media-overlay {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.attached-media-preview:hover .media-overlay {
+  opacity: 1;
+}
+
+.zoom-icon {
+  color: #fff;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.btn-delete-media {
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--danger, #ef4444);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
-.btn-remove-media:hover {
-  background: var(--danger);
+.btn-delete-media:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--danger, #ef4444);
+  color: #fff;
 }
 
-.btn-remove-media .material-icons {
-  font-size: 0.85rem;
+.btn-delete-media .material-icons {
+  font-size: 1rem;
 }
 
 .upload-container {

@@ -35,13 +35,19 @@ export class ItinerarySlotCardComponent implements OnChanges {
   /** Emits when an image file is selected for upload. */
   @Output() uploadMedia = new EventEmitter<{ slot: CampaignSlot; file: File }>();
 
+  /** Emits when illustration media is deleted from this slot. */
+  @Output() deleteMedia = new EventEmitter<{ slot: CampaignSlot; filename: string }>();
+
+  /** Emits when user clicks thumbnail to preview in full-size Lightbox. */
+  @Output() previewMedia = new EventEmitter<string>();
+
   /** Local state indicating an in-progress asset upload for this slot. */
   isUploading = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['slot']) {
       this.isUploading = false;
-      this.cdr.markForCheck();
+      this.cdr.detectChanges();
     }
   }
 
@@ -75,6 +81,10 @@ export class ItinerarySlotCardComponent implements OnChanges {
   formatTimeDisplay(isoString: string): string {
     if (!isoString) return '--:--';
     try {
+      const match = isoString.match(/T(\d{2}):(\d{2})/);
+      if (match) {
+        return `${match[1]}:${match[2]}`;
+      }
       const date = new Date(isoString);
       if (isNaN(date.getTime())) return isoString;
       const hours = String(date.getUTCHours()).padStart(2, '0');
@@ -97,15 +107,57 @@ export class ItinerarySlotCardComponent implements OnChanges {
     this.cdr.markForCheck();
   }
 
+
   /**
-   * Removes attached illustration media from this slot.
+   * Computes proxy URL for optimized 400px thumbnail.
+   */
+  getThumbnailUrl(): string {
+    if (!this.slot.mediaUrl) return '';
+    const separator = this.slot.mediaUrl.includes('?') ? '&' : '?';
+    return `${this.slot.mediaUrl}${separator}size=thumbnail`;
+  }
+
+  /**
+   * Computes proxy URL for full-size media.
+   */
+  getFullImageUrl(): string {
+    if (!this.slot.mediaUrl) return '';
+    const separator = this.slot.mediaUrl.includes('?') ? '&' : '?';
+    return `${this.slot.mediaUrl}${separator}size=full`;
+  }
+
+  /**
+   * Opens full-size Lightbox modal.
+   */
+  openLightbox(): void {
+    if (this.slot.mediaUrl) {
+      this.previewMedia.emit(this.getFullImageUrl());
+    }
+  }
+
+  /**
+   * Calculates human-readable file size from bytes.
+   *
+   * @param bytes - Size in bytes.
+   * @returns Formatted size string (e.g., "1.2 MB").
+   */
+  formatFileSize(bytes?: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  }
+
+  /**
+   * Removes current media attachment from the slot and notifies parent.
    */
   removeMedia(): void {
     if (this.isReadonly) return;
+    const filename = this.getAssetFilename();
     this.slot.mediaUrl = undefined;
-    this.slot.textOnly = true;
+    this.deleteMedia.emit({ slot: this.slot, filename });
     this.notifyChange();
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   /**
@@ -116,6 +168,18 @@ export class ItinerarySlotCardComponent implements OnChanges {
     this.slot.status = this.slot.status === 'skipped' ? 'pending' : 'skipped';
     this.notifyChange();
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Resolves the asset filename from the media proxy URL.
+   *
+   * @returns Filename string or undefined if not parseable.
+   */
+  private getAssetFilename(): string {
+    if (!this.slot.mediaUrl) return '';
+    const cleanUrl = this.slot.mediaUrl.split('?')[0];
+    const segments = cleanUrl.split('/');
+    return segments[segments.length - 1] || '';
   }
 
   /**

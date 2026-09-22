@@ -1,5 +1,5 @@
 @if (isOpen) {
-  <div class="lightbox-overlay" (click)="closeLightbox()">
+  <div class="lightbox-overlay open" (click)="closeLightbox()">
     <div class="lightbox-content" (click)="$event.stopPropagation()">
       <button class="close-btn" (click)="closeLightbox()">
         <span class="material-icons">close</span>
