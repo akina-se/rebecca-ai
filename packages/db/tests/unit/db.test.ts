@@ -12,8 +12,9 @@ import {
   rateLimitConverter,
   personaConverter,
   xApiStateConverter,
+  campaignDocConverter,
 } from '../../src/index';
-import { UserStatus, PostStatus, AssetStatus, FirestoreUser, TimelinePost, ImageDoc, ProcessedFollower } from '@rebecca/types';
+import { UserStatus, PostStatus, AssetStatus, FirestoreUser, TimelinePost, ImageDoc, ProcessedFollower, CampaignDoc } from '@rebecca/types';
 
 describe('@rebecca/db Unit Tests', () => {
   describe('COLLECTIONS constants', () => {
@@ -29,6 +30,7 @@ describe('@rebecca/db Unit Tests', () => {
       expect(COLLECTIONS.IMAGES).toBe('images');
       expect(COLLECTIONS.PROCESSED_FOLLOWERS).toBe('processed_followers');
       expect(COLLECTIONS.LIST_INTERACTION_HISTORY).toBe('list_interaction_history');
+      expect(COLLECTIONS.CAMPAIGNS).toBe('campaigns');
     });
   });
 
@@ -346,6 +348,201 @@ describe('@rebecca/db Unit Tests', () => {
     });
   });
 
+  describe('campaignDocConverter', () => {
+    it('toFirestore should serialize campaign document correctly', () => {
+      const campaign: CampaignDoc = {
+        title: 'Hawaii Trip 2026',
+        description: 'Summer holiday in Hawaii',
+        status: 'active',
+        isPaused: false,
+        startDate: '2026-07-01',
+        endDate: '2026-07-07',
+        dailySlotTimes: ['08:00', '12:00', '19:00'],
+        masterContext: 'Rebecca is vacationing in Honolulu.',
+        replyContextSummary: 'Currently enjoying Honolulu beach with iced latte.',
+        slots: [
+          {
+            slotId: 'slot-1',
+            dayNumber: 1,
+            timePeriod: 'morning',
+            scheduledTime: '2026-07-01T08:00:00Z',
+            theme: 'Arrival at Daniel K. Inouye Airport',
+            mediaUrl: 'https://storage.googleapis.com/rebecca-ai-gal-images/campaigns/c1/img1.png',
+            captionPromptHint: 'Excited about the ocean breeze',
+            status: 'pending',
+          },
+        ],
+        totalSlotsCount: 21,
+        completedSlotsCount: 0,
+        isAnnualRecurring: false,
+        createdAt: '2026-06-01T00:00:00.000Z',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      };
+
+      const result = campaignDocConverter.toFirestore(campaign);
+      expect(result['title']).toBe('Hawaii Trip 2026');
+      expect(result['status']).toBe('active');
+      expect(result['isPaused']).toBe(false);
+      expect(result['slots']).toHaveLength(1);
+      expect(result['slots'][0].slotId).toBe('slot-1');
+      expect(result['slots'][0].mediaUrl).toBe('https://storage.googleapis.com/rebecca-ai-gal-images/campaigns/c1/img1.png');
+    });
+
+    it('fromFirestore should deserialize campaign snapshot with document id', () => {
+      const mockSnapshot = {
+        id: 'camp_12345',
+        data: () => ({
+          title: 'Hawaii Trip 2026',
+          status: 'scheduled',
+          isPaused: false,
+          startDate: '2026-07-01',
+          endDate: '2026-07-07',
+          dailySlotTimes: ['08:00', '12:00', '19:00'],
+          masterContext: 'Rebecca in Hawaii',
+          replyContextSummary: 'At beach',
+          slots: [
+            {
+              slotId: 'slot-1',
+              dayNumber: 1,
+              timePeriod: 'morning',
+              scheduledTime: '2026-07-01T08:00:00Z',
+              theme: 'Arrival',
+              status: 'pending',
+            },
+          ],
+          totalSlotsCount: 21,
+          completedSlotsCount: 0,
+          isAnnualRecurring: true,
+          recurringApprovedYear: 2026,
+          createdAt: '2026-06-01T00:00:00.000Z',
+          updatedAt: '2026-06-01T00:00:00.000Z',
+        }),
+      } as any;
+
+      const campaign = campaignDocConverter.fromFirestore(mockSnapshot);
+      expect(campaign.id).toBe('camp_12345');
+      expect(campaign.title).toBe('Hawaii Trip 2026');
+      expect(campaign.isAnnualRecurring).toBe(true);
+      expect(campaign.recurringApprovedYear).toBe(2026);
+      expect(campaign.slots).toHaveLength(1);
+      expect(campaign.slots[0].theme).toBe('Arrival');
+    });
+
+    it('toFirestore should serialize campaign document with optional recurring fields', () => {
+      const campaign: CampaignDoc = {
+        title: 'Spring Festival',
+        status: 'scheduled',
+        isPaused: true,
+        startDate: '2027-03-01',
+        endDate: '2027-03-05',
+        dailySlotTimes: ['09:00', '18:00'],
+        masterContext: 'Spring trip',
+        replyContextSummary: 'Spring holiday',
+        slots: [],
+        totalSlotsCount: 10,
+        completedSlotsCount: 5,
+        isAnnualRecurring: true,
+        recurringApprovedYear: 2027,
+        createdAt: '2027-01-01T00:00:00.000Z',
+        updatedAt: '2027-01-01T00:00:00.000Z',
+      };
+
+      const result = campaignDocConverter.toFirestore(campaign);
+      expect(result['title']).toBe('Spring Festival');
+      expect(result['recurringApprovedYear']).toBe(2027);
+      expect(result['description']).toBeUndefined();
+      expect(result['slots']).toEqual([]);
+    });
+
+    it('toFirestore should omit createdAt when undefined for partial merge updates', () => {
+      const campaign = {
+        title: 'Spring Festival',
+        status: 'draft' as const,
+        isPaused: false,
+        startDate: '2027-03-01',
+        endDate: '2027-03-05',
+        dailySlotTimes: ['09:00'],
+        masterContext: '',
+        replyContextSummary: '',
+        slots: [],
+        totalSlotsCount: 1,
+        completedSlotsCount: 0,
+        isAnnualRecurring: false,
+        updatedAt: '2027-01-01T00:00:00.000Z',
+      } as unknown as CampaignDoc;
+
+      const result = campaignDocConverter.toFirestore(campaign);
+      expect(result['createdAt']).toBeUndefined();
+    });
+
+    it('toFirestore should only include defined fields for partial updates (e.g. pause toggle)', () => {
+      const partialCampaign = {
+        isPaused: true,
+        updatedAt: '2027-01-01T12:00:00.000Z',
+      } as unknown as CampaignDoc;
+
+      const result = campaignDocConverter.toFirestore(partialCampaign);
+      expect(result).toEqual({
+        isPaused: true,
+        updatedAt: '2027-01-01T12:00:00.000Z',
+      });
+      expect(result['title']).toBeUndefined();
+    });
+
+    it('fromFirestore should throw an error when mandatory fields are missing', () => {
+      const mockCorruptedSnapshot = {
+        id: 'camp_empty',
+        data: () => ({
+          title: 'Minimal Campaign',
+          // missing startDate, endDate, status
+        }),
+      } as any;
+
+      expect(() => campaignDocConverter.fromFirestore(mockCorruptedSnapshot)).toThrow(
+        'Corrupted Campaign document [camp_empty]: missing required root fields',
+      );
+    });
+
+    it('fromFirestore should throw an error when slots contain invalid or missing fields', () => {
+      const mockSnapshot = {
+        id: 'camp_invalid_slot',
+        data: () => ({
+          title: 'Invalid Slot Campaign',
+          startDate: '2026-07-01',
+          endDate: '2026-07-05',
+          status: 'scheduled',
+          slots: [
+            {
+              slotId: 'slot-1',
+              // missing dayNumber, timePeriod, etc.
+            },
+          ],
+        }),
+      } as any;
+
+      expect(() => campaignDocConverter.fromFirestore(mockSnapshot)).toThrow(
+        'Corrupted CampaignSlot at index 0 in document [camp_invalid_slot]: missing required slot fields',
+      );
+    });
+
+    it('fromFirestore should throw an error when slots is not an array', () => {
+      const mockSnapshot = {
+        id: 'camp_no_slots',
+        data: () => ({
+          title: 'No Slots',
+          startDate: '2026-07-01',
+          endDate: '2026-07-05',
+          status: 'draft',
+          slots: null,
+        }),
+      } as any;
+
+      expect(() => campaignDocConverter.fromFirestore(mockSnapshot)).toThrow(
+        'Corrupted Campaign document [camp_no_slots]: slots must be an array.',
+      );
+    });
+  });
+
   describe('getCollections', () => {
     it('should return typed collection references bound to converters', () => {
       const mockWithConverter = jest.fn().mockImplementation((c) => ({ converter: c }));
@@ -365,6 +562,7 @@ describe('@rebecca/db Unit Tests', () => {
       expect(mockCollection).toHaveBeenCalledWith(COLLECTIONS.SYSTEM);
       expect(mockCollection).toHaveBeenCalledWith(COLLECTIONS.SYSTEM_STATS);
       expect(mockCollection).toHaveBeenCalledWith(COLLECTIONS.PROCESSED_MENTIONS);
+      expect(mockCollection).toHaveBeenCalledWith(COLLECTIONS.CAMPAIGNS);
 
       expect(collections.users).toBeDefined();
       expect(collections.conversationLogs).toBeDefined();
@@ -377,6 +575,7 @@ describe('@rebecca/db Unit Tests', () => {
       expect(collections.system).toBeDefined();
       expect(collections.systemStats).toBeDefined();
       expect(collections.processedMentions).toBeDefined();
+      expect(collections.campaigns).toBeDefined();
     });
   });
 });

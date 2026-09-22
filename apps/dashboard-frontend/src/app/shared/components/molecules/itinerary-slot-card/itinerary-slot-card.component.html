@@ -1,0 +1,188 @@
+<div class="slot-card glass-panel" [class.posted]="slot.status === 'posted'" [class.skipped]="slot.status === 'skipped'">
+  <!-- Slot Card Header -->
+  <div class="slot-header">
+    <div class="slot-badges">
+      <span class="badge day-badge">{{ 'campaign.slot_day' | translate }} {{ slot.dayNumber }}</span>
+      <span class="badge period-badge">
+        <span class="material-icons period-icon">{{ getTimePeriodIcon(slot.timePeriod) }}</span>
+        {{ ('campaign.slot_period_' + slot.timePeriod) | translate }}
+      </span>
+      <span class="badge time-badge">
+        <span class="material-icons time-icon">schedule</span>
+        {{ formatTimeDisplay(slot.scheduledTime) }}
+      </span>
+    </div>
+
+    <div class="slot-status-container">
+      @if (slot.status === 'posted') {
+        <span class="badge status-badge status-posted">
+          <span class="material-icons">check_circle</span>
+          {{ 'campaign.slot_status_posted' | translate }}
+        </span>
+        @if (slot.postedTweetId) {
+          <a
+            [href]="'https://x.com/i/web/status/' + slot.postedTweetId"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="view-tweet-btn"
+            title="View on X"
+          >
+            <span class="material-icons">open_in_new</span>
+          </a>
+        }
+      } @else if (slot.status === 'skipped') {
+        <button
+          type="button"
+          class="badge status-badge status-skipped"
+          (click)="toggleSkip()"
+          [disabled]="isReadonly"
+          title="Click to reactivate slot"
+        >
+          <span class="material-icons">block</span>
+          {{ 'campaign.slot_status_skipped' | translate }}
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="badge status-badge status-pending"
+          (click)="toggleSkip()"
+          [disabled]="isReadonly"
+          title="Click to skip this slot"
+        >
+          <span class="material-icons">hourglass_empty</span>
+          {{ 'campaign.slot_status_pending' | translate }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Slot Body -->
+  <div class="slot-body">
+    <!-- Theme / Situation Field -->
+    <div class="form-group">
+      <label class="form-label">{{ 'campaign.slot_theme' | translate }}</label>
+      <input
+        type="text"
+        class="form-input"
+        [(ngModel)]="slot.theme"
+        (ngModelChange)="notifyChange()"
+        [placeholder]="'campaign.slot_theme_placeholder' | translate"
+        [disabled]="isReadonly"
+      />
+    </div>
+
+    <!-- Mode Selector (AI Generated vs Fixed Authored Text) -->
+    <div class="mode-toggle-group">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="!slot.isFixedText"
+        [disabled]="isReadonly"
+        (click)="setFixedTextMode(false)"
+      >
+        <span class="material-icons">smart_toy</span>
+        {{ 'campaign.slot_mode_ai' | translate }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="slot.isFixedText"
+        [disabled]="isReadonly"
+        (click)="setFixedTextMode(true)"
+      >
+        <span class="material-icons">edit_note</span>
+        {{ 'campaign.slot_mode_fixed' | translate }}
+      </button>
+    </div>
+
+    <!-- Fixed Authored Text (when isFixedText === true) -->
+    @if (slot.isFixedText) {
+      <div class="form-group animate-in">
+        <label class="form-label">{{ 'campaign.slot_fixed_text' | translate }}</label>
+        <textarea
+          class="form-textarea"
+          rows="3"
+          [(ngModel)]="slot.fixedTextOverride"
+          (ngModelChange)="notifyChange()"
+          [placeholder]="'campaign.slot_fixed_text_hint' | translate"
+          [disabled]="isReadonly"
+        ></textarea>
+      </div>
+    } @else {
+      <!-- AI Prompt Directive (when isFixedText === false) -->
+      <div class="form-group animate-in">
+        <label class="form-label">{{ 'campaign.slot_prompt_directive' | translate }}</label>
+        <input
+          type="text"
+          class="form-input"
+          [(ngModel)]="slot.captionPromptHint"
+          (ngModelChange)="notifyChange()"
+          [placeholder]="'campaign.slot_prompt_directive_hint' | translate"
+          [disabled]="isReadonly"
+        />
+      </div>
+    }
+
+    <!-- Illustration Asset Attachment -->
+    <div class="media-section">
+      <div class="media-header">
+        <span class="form-label">{{ 'campaign.slot_image' | translate }}</span>
+        @if (!slot.mediaUrl) {
+          <label class="checkbox-container text-only-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="slot.textOnly"
+              (ngModelChange)="notifyChange()"
+              [disabled]="isReadonly"
+            />
+            <span class="checkmark"></span>
+            {{ 'campaign.slot_text_only' | translate }}
+          </label>
+        }
+      </div>
+
+      <!-- Attached Image Preview -->
+      @if (slot.mediaUrl) {
+        <div class="attached-media-preview">
+          <img [src]="slot.mediaUrl" alt="Campaign Illustration" class="media-thumb" />
+          @if (!isReadonly) {
+            <button
+              type="button"
+              class="btn-remove-media"
+              (click)="removeMedia()"
+              title="Remove image"
+            >
+              <span class="material-icons">close</span>
+            </button>
+          }
+        </div>
+      } @else if (!slot.textOnly) {
+        <!-- Upload Trigger -->
+        <div class="upload-container">
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            style="display: none;"
+            (change)="onFileSelected($event)"
+            [disabled]="isReadonly || isUploading"
+          />
+          <button
+            type="button"
+            class="btn btn-secondary upload-btn"
+            (click)="fileInput.click()"
+            [disabled]="isReadonly || isUploading"
+          >
+            @if (isUploading) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'campaign.slot_uploading' | translate }}
+            } @else {
+              <span class="material-icons">add_photo_alternate</span>
+              {{ 'campaign.slot_upload_image' | translate }}
+            }
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+</div>

@@ -6,6 +6,7 @@ import { SoliloquyUseCase } from '../soliloquy';
 import { AppDependencies } from '../../types';
 import { createProactiveAnniversaryRouter } from './routes';
 import { WikipediaAnniversaryProvider } from './providers/wikipedia';
+import { CampaignGuard } from '../campaign';
 
 export * from './types';
 export * from './usecase';
@@ -28,6 +29,7 @@ export const createProactiveAnniversaryModule = (
   );
   const useCase = new ProactiveAnniversaryUseCase(deps, anniversaryProvider);
   const soliloquyUseCase = new SoliloquyUseCase(deps, { timezone: config.appTimezone });
-  const controller = new ProactiveAnniversaryController(useCase, soliloquyUseCase);
+  const campaignGuard = new CampaignGuard(deps.firestore);
+  const controller = new ProactiveAnniversaryController(useCase, soliloquyUseCase, campaignGuard);
   return createProactiveAnniversaryRouter(controller);
 };

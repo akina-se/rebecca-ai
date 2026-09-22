@@ -12,6 +12,7 @@ import { createSoliloquyModule } from '../features/soliloquy';
 import { createAssetEmbeddingsModule } from '../features/assets';
 import { createProactiveAnniversaryModule } from '../features/anniversary';
 import { createSelfReflectionModule } from '../features/self-reflection';
+import { createCampaignPostModule } from '../features/campaign';
 
 export const createBatchRoutes = (deps: AppDependencies): Router => {
     const router = Router();
@@ -29,6 +30,7 @@ export const createBatchRoutes = (deps: AppDependencies): Router => {
     router.use('/stealth-onboarding', createStealthOnboardingModule(deps));
     router.use('/random-engagement', createRandomEngagementModule(deps));
     router.use('/asset-embeddings', createAssetEmbeddingsModule(deps));
+    router.use('/campaign-post', createCampaignPostModule(deps));
 
     return router;
 };

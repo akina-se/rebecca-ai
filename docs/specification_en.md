@@ -41,6 +41,7 @@ The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes tri
 | `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
 | `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
 | `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates vector embeddings for image assets missing representations. |
+| `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180s | **Campaign Slot Dispatcher**: Evaluates active campaign itinerary slots and publishes narrative story tweets with grounded persona anchors. |
 | `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | - | Generates structured `{ thought, reply }` response and posts reply to X. |
 
 ## 2. Character Specification & Persona
@@ -197,6 +198,20 @@ Tracks random engagement history for list members.
 6. Infers an image search query from the text, runs a vector search (KNN) against images in Firestore, and fetches a matching image from GCS.
 7. Uploads the image to X and posts it alongside the text, saving `postType`, `newsTitle`, and `newsEmbedding` to `timeline_history`.
 
+### 5.7 Campaign Narrative Event Post & Mention Flow
+1. **Single-Active Resolution**: Cloud Scheduler (`rebecca-campaign-batch`) invokes `/batch/campaign-post`. The engine queries `getActiveCampaign()` for campaigns where `status == 'active'` and `isPaused == false` (single-active guarantee).
+2. **Slot Matching**: Computes elapsed relative day index (`dayNumber`) from `startDate` and matches an itinerary slot where `status == 'pending'` corresponding to the current time period.
+3. **Persona Anchoring & Dynamic Prompting**:
+   - If `isFixedText == true`, dispatches the author's verbatim script.
+   - Otherwise, injects `masterContext`, slot `theme`, `captionPromptHint`, and top situational persona anchors into Gemini.
+   - Automatically appends the campaign's custom `hashtag` and default brand hashtags while strictly observing the 140-character X limit.
+4. **Media Dispatch**: If `mediaUrl` is attached, retrieves the image from isolated GCS storage and uploads it via X API v2.
+5. **Atomic State Transition**: Updates the slot status to `posted`, recording `postedTweetId` and `postedAt`. Transitions campaign status to `completed` once all slots are finished.
+6. **Conversational Coherence in Mentions**: When replying to user tweets during an active campaign, Rebecca dynamically references `replyContextSummary` while prioritizing user empathy.
+7. **Safety Guards & Routine Post Suppression**:
+   - `CampaignGuard`: Automatically suppresses routine soliloquy and anniversary posts during active campaigns to avoid timeline congestion.
+   - Emergency Kill-Switch: Dashboard enables instant 1-click toggling of `isPaused`, halting all automated postings immediately.
+
 ## 6. Rate Limit Handling Specifications
 When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.
 
@@ -204,11 +219,11 @@ When the daily reply limit is reached, the system will temporarily halt new repl
 
 ### 7.1 Architecture & Core Capabilities
 1. **Vertical Slicing & Feature-Driven BFF**:
-   - `apps/dashboard-backend` is cleanly decoupled into vertical slices: `timeline`, `users`, `assets`, `system-memory`, `copilot`, and `settings`.
+   - `apps/dashboard-backend` is cleanly decoupled into vertical slices: `timeline`, `users`, `assets`, `system-memory`, `copilot`, `settings`, and `campaign`.
    - Built on strict Dependency Injection (DI), isolating controllers, use cases, and repositories for testability and maintainability.
 2. **Rebecca Copilot AI Assistant**:
    - Always-accessible AI chat drawer triggered globally from the top navigation.
-   - Automatically senses active route transitions (Dashboard, Memory, Assets, Users, Settings) and currently inspected entities to dynamically supply rich UI context and suggestion chips.
+   - Automatically senses active route transitions (Dashboard, Memory, Assets, Users, Settings, Campaigns) and currently inspected entities to dynamically supply rich UI context and suggestion chips.
    - Autonomous toolchain collects live telemetry from Firestore repositories (KPIs, failed asset captions, flagged users, impressions) and injects it into LLM grounding.
 3. **Two-Phase Human-In-The-Loop (HITL) Safety Approval Flow**:
    - For destructive actions (e.g., blocking a user, deleting a post, forcing memory dreaming, bulk caption regeneration), Rebecca generates an interactive Action Card rather than executing directly.
@@ -219,3 +234,21 @@ When the daily reply limit is reached, the system will temporarily halt new repl
 5. **Bilingual Internationalization (JA / EN i18n)**:
    - Powered by Angular Signals and a reactive `TranslationService` / `TranslatePipe`, enabling instant zero-reload language switching.
    - Seamlessly translates navigation, tables, buttons, toasts, and Rebecca's conversational persona (English Gyaru vs. Japanese Gyaru sister tone).
+
+### 7.2 Campaign Narrative Event Engine
+Visual and temporal campaign orchestration suite for episodic storytelling arcs (e.g. travel tours, seasonal festivals, special event weeks).
+
+1. **Schedule Conflict Prevention (Invariant Guard)**:
+   - Rejects overlapping date ranges between `active` or `scheduled` campaigns (`c.startDate <= endDate && c.endDate >= startDate`) with HTTP 409 Conflict.
+   - Enforces the invariant that only one narrative event can be active or scheduled at any time.
+2. **Progressive Disclosure 2-Step Workflow**:
+   - Step 1: Core parameters (title, dates, hashtag, slot schedule preset) create a safe Draft.
+   - Step 2: Full interactive itinerary accordion allows granular refinement of slot themes, hints, fixed text, and media.
+3. **Configurable Hourly Presets**:
+   - Standard preset: 3 slots daily (08:00 morning, 12:00 afternoon, 19:00 night).
+   - Custom mode: Interactive chip selector across 24 hourly slots (1 to 8 slots max, protecting X API rate quotas).
+4. **Isolated Media Storage**:
+   - Campaign illustrations are segregated in Google Cloud Storage under dedicated directory paths (`campaigns/{id}/`).
+5. **Emergency Kill-Switch & Lifecycle Controls**:
+   - 1-click pause and resume controls from both the dashboard list and editor top bar.
+   - Clones historical campaigns into future date windows with automatic slot status reset.

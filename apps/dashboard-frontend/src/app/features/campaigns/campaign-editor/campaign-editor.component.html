@@ -1,0 +1,453 @@
+<div class="editor-container">
+  <!-- Top Navigation & Actions Bar -->
+  <div class="editor-topbar">
+    <div class="topbar-left">
+      <button type="button" class="btn btn-secondary btn-back" (click)="cancel()">
+        <span class="material-icons">arrow_back</span>
+        {{ 'campaign.back_to_list' | translate }}
+      </button>
+      <div class="editor-heading">
+        <h2>
+          <span class="material-icons heading-icon">event_note</span>
+          {{ (isEditMode() ? 'campaign.editor_edit_title' : 'campaign.editor_create_title') | translate }}
+        </h2>
+      </div>
+    </div>
+
+    <!-- Actions Bar: Differs between Create Mode (Step 1) and Edit Mode -->
+    <div class="topbar-actions">
+      @if (!isEditMode()) {
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="isSaving()"
+          (click)="cancel()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isSaving() || !title.trim()"
+          (click)="createDraftAndProceed()"
+        >
+          @if (isSaving()) {
+            <span class="material-icons spinning">sync</span>
+            {{ 'common.saving' | translate }}
+          } @else {
+            <span class="material-icons">arrow_forward</span>
+            {{ 'campaign.step1_create_btn' | translate }}
+          }
+        </button>
+      } @else {
+        <!-- Pause / Resume Toggle for Active or Scheduled Campaign -->
+        @if (status === 'active' || status === 'scheduled') {
+          <button
+            type="button"
+            class="btn"
+            [class.btn-warning]="isPaused"
+            [class.btn-secondary]="!isPaused"
+            [disabled]="isTogglingPause()"
+            (click)="togglePause()"
+            [title]="(isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate"
+          >
+            <span class="material-icons">{{ isPaused ? 'play_arrow' : 'pause' }}</span>
+            {{ (isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate }}
+          </button>
+        }
+
+        <!-- Delete Button -->
+        <button
+          type="button"
+          class="btn btn-danger-outline"
+          [disabled]="isSaving() || isDeleting()"
+          (click)="openDeleteModal()"
+          [title]="'campaign.delete' | translate"
+        >
+          <span class="material-icons">delete</span>
+          {{ 'campaign.delete' | translate }}
+        </button>
+
+        <!-- Save Draft Button -->
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="isSaving()"
+          (click)="save('draft')"
+        >
+          <span class="material-icons">save</span>
+          {{ 'campaign.save_draft' | translate }}
+        </button>
+
+        <!-- Schedule Button -->
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="isSaving() || !title.trim()"
+          (click)="save('scheduled')"
+        >
+          @if (isSaving()) {
+            <span class="material-icons spinning">sync</span>
+            {{ 'common.saving' | translate }}
+          } @else {
+            <span class="material-icons">check_circle</span>
+            {{ 'campaign.schedule_campaign' | translate }}
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Main Form Content -->
+  <div class="editor-content">
+    @if (!isEditMode()) {
+      <!-- Progressive Disclosure Notice for Step 1 -->
+      <div class="step1-notice glass-panel animate-in">
+        <div class="notice-icon-wrapper">
+          <span class="material-icons notice-icon">auto_awesome</span>
+        </div>
+        <div class="notice-text-content">
+          <h4>{{ 'campaign.step1_notice_title' | translate }}</h4>
+          <p>{{ 'campaign.step1_info' | translate }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Section 1: Campaign Overview & Schedule (Common to both modes) -->
+    <div class="form-section glass-panel">
+      <div class="section-header">
+        <span class="material-icons section-icon">info</span>
+        <h3>{{ 'campaign.table_title' | translate }} & {{ 'campaign.table_period' | translate }}</h3>
+      </div>
+
+      <div class="form-grid">
+        <!-- Title -->
+        <div class="form-group span-full">
+          <label class="form-label">{{ 'campaign.form_title' | translate }} *</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="title"
+            [placeholder]="'campaign.form_title_placeholder' | translate"
+          />
+        </div>
+
+        <!-- Description -->
+        <div class="form-group span-full">
+          <label class="form-label">{{ 'campaign.form_description' | translate }}</label>
+          <textarea
+            class="form-textarea"
+            rows="2"
+            [(ngModel)]="description"
+            [placeholder]="'campaign.form_description_placeholder' | translate"
+          ></textarea>
+        </div>
+
+        <!-- Hashtag (Optional) -->
+        <div class="form-group span-full">
+          <div class="label-with-action">
+            <label class="form-label">{{ 'campaign.form_hashtag' | translate }}</label>
+            <span class="char-count" [class.limit-reached]="hashtag.length >= 20">
+              {{ hashtag.length }}/20
+            </span>
+          </div>
+          <div class="input-with-prefix">
+            <span class="input-prefix">#</span>
+            <input
+              type="text"
+              class="form-input with-prefix"
+              maxlength="20"
+              [value]="hashtag"
+              (input)="onHashtagInput($event)"
+              [placeholder]="'campaign.form_hashtag_placeholder' | translate"
+            />
+          </div>
+          <span class="form-hint">{{ 'campaign.form_hashtag_hint' | translate }}</span>
+        </div>
+
+        <!-- Start Date -->
+        <div class="form-group">
+          <label class="form-label">{{ 'campaign.form_start_date' | translate }} *</label>
+          <input
+            type="date"
+            class="form-input"
+            [(ngModel)]="startDate"
+            (change)="autoGenerateSlots()"
+          />
+        </div>
+
+        <!-- End Date -->
+        <div class="form-group">
+          <label class="form-label">{{ 'campaign.form_end_date' | translate }} *</label>
+          <input
+            type="date"
+            class="form-input"
+            [(ngModel)]="endDate"
+            (change)="autoGenerateSlots()"
+          />
+        </div>
+
+        <!-- Daily Slot Schedule Configuration -->
+        <div class="form-group span-full">
+          <div class="label-with-action">
+            <label class="form-label">{{ 'campaign.preset_mode' | translate }}</label>
+            <span class="slot-counter-badge">
+              {{ parsedSlotTimes.length }} {{ 'campaign.day_summary' | translate }} {{ 'campaign.selected_slots_count' | translate }}
+            </span>
+          </div>
+
+          <!-- Preset Switch Buttons -->
+          <div class="preset-toggle-group">
+            <button
+              type="button"
+              class="preset-btn"
+              [class.active]="presetMode === 'standard'"
+              (click)="setPresetMode('standard')"
+            >
+              <span class="material-icons">view_agenda</span>
+              <span class="preset-label-text">{{ 'campaign.preset_standard' | translate }}</span>
+              <span class="preset-badge">08:00, 12:00, 19:00</span>
+            </button>
+            <button
+              type="button"
+              class="preset-btn"
+              [class.active]="presetMode === 'custom'"
+              (click)="setPresetMode('custom')"
+            >
+              <span class="material-icons">tune</span>
+              <span class="preset-label-text">{{ 'campaign.preset_custom' | translate }}</span>
+            </button>
+          </div>
+
+          <!-- 24h Hourly Pill Chips (Visible when presetMode === 'custom') -->
+          @if (presetMode === 'custom') {
+            <div class="custom-chips-container animate-in">
+              <div class="chips-header">
+                <span class="chips-title">
+                  <span class="material-icons chips-icon">access_time</span>
+                  {{ 'campaign.custom_chips_title' | translate }}
+                </span>
+                @if (parsedSlotTimes.length >= maxCustomSlots) {
+                  <span class="badge badge-warning">
+                    <span class="material-icons">info</span>
+                    {{ 'campaign.slots_limit_reached' | translate }}
+                  </span>
+                }
+              </div>
+              <div class="chips-grid">
+                @for (hour of allHourlySlots; track hour) {
+                  <button
+                    type="button"
+                    class="hour-chip"
+                    [class.selected]="isHourSelected(hour)"
+                    [disabled]="!isHourSelected(hour) && parsedSlotTimes.length >= maxCustomSlots"
+                    (click)="toggleHourChip(hour)"
+                  >
+                    <span class="material-icons chip-check-icon">
+                      {{ isHourSelected(hour) ? 'check_circle' : 'add_circle_outline' }}
+                    </span>
+                    {{ hour }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- In Create Mode (Step 1), show bottom action bar -->
+    @if (!isEditMode()) {
+      <div class="step1-bottom-bar glass-panel animate-in">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cancel()"
+        >
+          {{ 'common.cancel' | translate }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-large"
+          [disabled]="isSaving() || !title.trim()"
+          (click)="createDraftAndProceed()"
+        >
+          @if (isSaving()) {
+            <span class="material-icons spinning">sync</span>
+            {{ 'common.saving' | translate }}
+          } @else {
+            <span>{{ 'campaign.step1_create_btn' | translate }}</span>
+            <span class="material-icons">arrow_forward</span>
+          }
+        </button>
+      </div>
+    }
+
+    <!-- In Edit Mode, show Section 2 (Narrative Context) and Section 3 (Slots) -->
+    @if (isEditMode()) {
+      <!-- Section 2: Narrative Context Layers -->
+      <div class="form-section glass-panel">
+        <div class="section-header">
+          <span class="material-icons section-icon">psychology</span>
+          <h3>{{ 'campaign.narrative_layers_title' | translate }}</h3>
+        </div>
+
+        <div class="form-grid">
+          <!-- Master Context -->
+          <div class="form-group span-full">
+            <label class="form-label">{{ 'campaign.form_master_context' | translate }}</label>
+            <textarea
+              class="form-textarea"
+              rows="4"
+              [(ngModel)]="masterContext"
+              [placeholder]="'campaign.form_master_context_hint' | translate"
+            ></textarea>
+          </div>
+
+          <!-- Reply Context Summary -->
+          <div class="form-group span-full">
+            <label class="form-label">{{ 'campaign.form_reply_context' | translate }}</label>
+            <textarea
+              class="form-textarea"
+              rows="3"
+              [(ngModel)]="replyContextSummary"
+              [placeholder]="'campaign.form_reply_context_hint' | translate"
+            ></textarea>
+            <span class="form-hint">{{ 'campaign.form_reply_context_hint' | translate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Itinerary Slots Accordion -->
+      <div class="slots-section">
+        <div class="slots-header">
+          <div class="slots-header-title">
+            <span class="material-icons">calendar_month</span>
+            <h3>{{ 'campaign.itinerary_slots' | translate }}</h3>
+            <span class="badge slots-count-badge">{{ slots.length }} slots</span>
+          </div>
+          <div class="slots-header-actions">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="expandAllDays()"
+              [title]="'campaign.expand_all' | translate"
+            >
+              <span class="material-icons">unfold_more</span>
+              {{ 'campaign.expand_all' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="collapseAllDays()"
+              [title]="'campaign.collapse_all' | translate"
+            >
+              <span class="material-icons">unfold_less</span>
+              {{ 'campaign.collapse_all' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="autoGenerateSlots(true)"
+            >
+              <span class="material-icons">autorenew</span>
+              {{ 'campaign.regenerate_slots' | translate }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Day Groups Accordion List -->
+        <div class="accordion-list">
+          @for (group of groupedSlots; track group.dayNumber) {
+            <div class="day-accordion-card glass-panel" [class.is-open]="isDayOpen(group.dayNumber)">
+              <!-- Accordion Header -->
+              <div
+                class="day-accordion-header"
+                (click)="toggleDay(group.dayNumber)"
+                [attr.aria-expanded]="isDayOpen(group.dayNumber)"
+              >
+                <div class="day-header-left">
+                  <span class="day-pill-badge">
+                    Day {{ group.dayNumber }}
+                  </span>
+                  <span class="day-date-text">
+                    <span class="material-icons date-icon">event</span>
+                    {{ group.dateStr }}
+                  </span>
+                  <span class="day-summary-badge">
+                    {{ group.slots.length }} {{ 'campaign.day_summary' | translate }}
+                    @if (group.postedCount > 0) {
+                      • {{ group.postedCount }} {{ 'campaign.day_completed' | translate }}
+                    }
+                  </span>
+                </div>
+                <div class="day-header-right">
+                  <span class="material-icons expand-icon">
+                    {{ isDayOpen(group.dayNumber) ? 'expand_less' : 'expand_more' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Accordion Content (Visible when open) -->
+              @if (isDayOpen(group.dayNumber)) {
+                <div class="day-accordion-body animate-in">
+                  <div class="slots-grid">
+                    @for (slot of group.slots; track slot.slotId) {
+                      <app-itinerary-slot-card
+                        [slot]="slot"
+                        [campaignId]="campaignId || undefined"
+                        [isReadonly]="slot.status === 'posted'"
+                        (slotChange)="onSlotChange($event)"
+                        (uploadMedia)="onUploadMedia($event)"
+                      ></app-itinerary-slot-card>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  @if (isDeleteModalOpen()) {
+    <div class="modal-backdrop" (click)="closeDeleteModal()">
+      <div class="modal-card glass-panel animate-in" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-with-icon">
+            <span class="material-icons" style="color: var(--danger);">delete_forever</span>
+            <h3>{{ 'campaign.delete' | translate }}</h3>
+          </div>
+          <button type="button" class="close-btn" (click)="closeDeleteModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>{{ 'campaign.confirm_delete' | translate }}</p>
+          <p class="delete-target-title">"{{ title }}"</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            [disabled]="isDeleting()"
+            (click)="confirmDelete()"
+          >
+            @if (isDeleting()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.saving' | translate }}
+            } @else {
+              <span class="material-icons">delete</span>
+              {{ 'campaign.delete' | translate }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
