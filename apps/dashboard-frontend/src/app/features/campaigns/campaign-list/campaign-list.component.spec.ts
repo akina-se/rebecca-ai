@@ -129,4 +129,96 @@ describe('CampaignListComponent', () => {
     expect(component.getProgressPercentage(mockCampaign)).toBe(33);
     expect(component.getProgressPercentage({ ...mockCampaign, totalSlotsCount: 0 })).toBe(0);
   });
+
+  it('should return correct badge CSS class for each status', () => {
+    expect(component.getStatusBadgeClass('active')).toBe('badge-active');
+    expect(component.getStatusBadgeClass('scheduled')).toBe('badge-scheduled');
+    expect(component.getStatusBadgeClass('completed')).toBe('badge-completed');
+    expect(component.getStatusBadgeClass('archived')).toBe('badge-cancelled');
+    expect(component.getStatusBadgeClass('draft')).toBe('badge-draft');
+  });
+
+  it('should identify paused active campaign for emergency banner', () => {
+    expect(component.pausedActiveCampaign()).toBeUndefined();
+
+    const pausedActive: CampaignDocWithId = {
+      ...mockCampaign,
+      id: 'camp_paused_active',
+      status: 'active',
+      isPaused: true,
+    };
+    component.campaigns.set([pausedActive]);
+    expect(component.pausedActiveCampaign()).toEqual(pausedActive);
+  });
+
+  it('should handle error when loadCampaigns fails', () => {
+    mockRepo.getAll.mockReturnValue(throwError(() => new Error('Network error')));
+    component.loadCampaigns(1);
+
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to load campaigns', 'error');
+    expect(component.isLoading()).toBe(false);
+  });
+
+  it('should handle error when togglePause fails', () => {
+    mockRepo.pause.mockReturnValue(throwError(() => new Error('Server error')));
+    component.togglePause(mockCampaign);
+
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to toggle pause status', 'error');
+  });
+
+  it('should close clone modal and reset target', () => {
+    component.openCloneModal(mockCampaign);
+    expect(component.isCloneModalOpen()).toBe(true);
+    expect(component.targetCloneCampaign()).toBe(mockCampaign);
+
+    component.closeCloneModal();
+    expect(component.isCloneModalOpen()).toBe(false);
+    expect(component.targetCloneCampaign()).toBeNull();
+  });
+
+  it('should not submit clone if target is null', () => {
+    component.closeCloneModal();
+    component.submitClone();
+    expect(mockRepo.clone).not.toHaveBeenCalled();
+  });
+
+  it('should handle error when submitClone fails', () => {
+    component.openCloneModal(mockCampaign);
+    mockRepo.clone.mockReturnValue(throwError(() => ({ error: { error: 'Name duplicated' } })));
+
+    component.submitClone();
+    expect(mockToast.show).toHaveBeenCalledWith('Name duplicated', 'error');
+    expect(component.isCloning()).toBe(false);
+
+    // Fallback error message if err.error is empty
+    mockRepo.clone.mockReturnValue(throwError(() => new Error('Generic error')));
+    component.submitClone();
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to clone campaign', 'error');
+    expect(component.isCloning()).toBe(false);
+  });
+
+  it('should close delete modal and reset target', () => {
+    component.openDeleteModal(mockCampaign);
+    expect(component.isDeleteModalOpen()).toBe(true);
+    expect(component.targetDeleteCampaign()).toBe(mockCampaign);
+
+    component.closeDeleteModal();
+    expect(component.isDeleteModalOpen()).toBe(false);
+    expect(component.targetDeleteCampaign()).toBeNull();
+  });
+
+  it('should not confirm delete if target is null', () => {
+    component.closeDeleteModal();
+    component.confirmDelete();
+    expect(mockRepo.delete).not.toHaveBeenCalled();
+  });
+
+  it('should handle error when confirmDelete fails', () => {
+    component.openDeleteModal(mockCampaign);
+    mockRepo.delete.mockReturnValue(throwError(() => new Error('Delete failed')));
+
+    component.confirmDelete();
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to delete campaign', 'error');
+    expect(component.isDeleting()).toBe(false);
+  });
 });

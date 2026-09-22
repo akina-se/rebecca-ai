@@ -60,6 +60,20 @@ describe('HttpCampaignsRepository', () => {
     });
   });
 
+  it('getAll should support call with no params or partial params with whitespace status', () => {
+    // No params
+    repo.getAll().subscribe();
+    const req1 = httpMock.expectOne(`${environment.apiUrl}/campaigns`);
+    expect(req1.request.params.keys()).toHaveLength(0);
+    req1.flush({ data: [], meta: { totalItems: 0, totalPages: 1, currentPage: 1, limit: 10 } });
+
+    // Whitespace status should not be set
+    repo.getAll({ status: '   ' }).subscribe();
+    const req2 = httpMock.expectOne(`${environment.apiUrl}/campaigns`);
+    expect(req2.request.params.has('status')).toBe(false);
+    req2.flush({ data: [], meta: { totalItems: 0, totalPages: 1, currentPage: 1, limit: 10 } });
+  });
+
   it('getById should request GET /campaigns/:id', () => {
     repo.getById('camp_1').subscribe((res) => {
       expect(res.id).toBe('camp_1');
@@ -100,6 +114,17 @@ describe('HttpCampaignsRepository', () => {
     const req = httpMock.expectOne(`${environment.apiUrl}/campaigns/camp_1/clone`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ newStartDate: '2027-11-01', newEndDate: '2027-11-03' });
+    req.flush({ ...mockCampaign, id: 'camp_2' });
+  });
+
+  it('clone should support call without optional dates', () => {
+    repo.clone('camp_1').subscribe((res) => {
+      expect(res.id).toBe('camp_2');
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/campaigns/camp_1/clone`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ newStartDate: undefined, newEndDate: undefined });
     req.flush({ ...mockCampaign, id: 'camp_2' });
   });
 

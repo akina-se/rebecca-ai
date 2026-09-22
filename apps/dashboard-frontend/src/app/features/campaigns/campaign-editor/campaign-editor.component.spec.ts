@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CampaignEditorComponent } from './campaign-editor.component';
 import { CAMPAIGNS_REPOSITORY } from '../../../core/ports/campaigns.repository';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -295,5 +295,196 @@ describe('CampaignEditorComponent', () => {
     expect(component.isDeleteModalOpen()).toBe(false);
     expect(mockToast.show).toHaveBeenCalledWith('Campaign deleted successfully', 'success');
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns']);
+  });
+
+  it('should initialize new campaign defaults when route id is "new"', () => {
+    mockRoute.paramMap = of({ get: () => 'new' });
+    const newFixture = TestBed.createComponent(CampaignEditorComponent);
+    const newComponent = newFixture.componentInstance;
+    newFixture.detectChanges();
+
+    expect(newComponent.isEditMode()).toBe(false);
+    expect(newComponent.campaignId).toBeNull();
+    expect(newComponent.title).toBe('');
+    expect(newComponent.presetMode).toBe('standard');
+    expect(newComponent.slots.length).toBeGreaterThan(0);
+  });
+
+  it('should call repo.create when saving in new campaign mode', () => {
+    component.campaignId = null;
+    component.isEditMode.set(false);
+    component.title = 'New Adventure';
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-02';
+
+    component.save('draft');
+    expect(mockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'New Adventure',
+        status: 'draft',
+      }),
+    );
+    expect(mockToast.show).toHaveBeenCalledWith('Campaign saved successfully', 'success');
+  });
+
+  it('should prevent asset upload if campaignId is null', () => {
+    component.campaignId = null;
+    const file = new File(['test'], 'dummy.png', { type: 'image/png' });
+    component.onUploadMedia({ slot: component.slots[0], file });
+
+    expect(mockToast.show).toHaveBeenCalledWith(
+      'Please save campaign before uploading images',
+      'warning',
+    );
+    expect(mockRepo.uploadAsset).not.toHaveBeenCalled();
+  });
+
+  it('should handle asset upload failure gracefully', () => {
+    mockRepo.uploadAsset.mockReturnValue(throwError(() => new Error('Upload error')));
+    const file = new File(['test'], 'dummy.png', { type: 'image/png' });
+    component.onUploadMedia({ slot: component.slots[0], file });
+
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to upload image', 'error');
+  });
+
+  it('should load campaign with custom time slots and nullable fields properly', () => {
+    const customCampaign: CampaignDocWithId = {
+      ...sampleCampaign,
+      id: 'camp_custom_times',
+      description: undefined,
+      hashtag: undefined,
+      dailySlotTimes: ['09:00', '15:00', '21:00'],
+    };
+    mockRepo.getById.mockReturnValue(of(customCampaign));
+
+    component.loadCampaign('camp_custom_times');
+    expect(component.description).toBe('');
+    expect(component.hashtag).toBe('');
+    expect(component.presetMode).toBe('custom');
+    expect(component.selectedCustomTimes).toEqual(['09:00', '15:00', '21:00']);
+  });
+
+  it('should navigate to /campaigns when loadCampaign fails', () => {
+    mockRepo.getById.mockReturnValue(throwError(() => new Error('Not found')));
+    component.loadCampaign('camp_invalid');
+
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to load campaign', 'error');
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/campaigns']);
+  });
+
+  it('should show warning toast when autoGenerateSlots encounters validation failure and notifyOnValidationError is true', () => {
+    // Invalid dates
+    component.startDate = '2026-12-05';
+    component.endDate = '2026-12-01';
+    component.autoGenerateSlots(true);
+    expect(mockToast.show).toHaveBeenCalledWith('Invalid start or end date', 'warning');
+
+    // Empty slot times
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-03';
+    component.presetMode = 'custom';
+    component.selectedCustomTimes = [];
+    component.autoGenerateSlots(true);
+    expect(mockToast.show).toHaveBeenCalledWith('Please provide valid daily slot times', 'warning');
+
+    // Valid slots regenerated with notification
+    component.selectedCustomTimes = ['08:00', '12:00', '19:00'];
+    component.autoGenerateSlots(true);
+    expect(mockToast.show).toHaveBeenCalledWith(
+      expect.stringContaining('スロットを再同期しました'),
+      'info',
+    );
+  });
+
+  it('should validate masterContext and replyContextSummary when saving as scheduled or active', () => {
+    component.title = 'Winter Journey';
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-03';
+    component.masterContext = '';
+    component.replyContextSummary = '';
+
+    // Missing master context
+    component.save('scheduled');
+    expect(mockToast.show).toHaveBeenCalledWith(
+      'Master context is required for scheduled campaigns',
+      'warning',
+    );
+    expect(mockRepo.update).not.toHaveBeenCalled();
+
+    // Missing reply context summary
+    component.masterContext = 'Valid Master Context';
+    component.save('scheduled');
+    expect(mockToast.show).toHaveBeenCalledWith(
+      'Reply context summary is required for scheduled campaigns',
+      'warning',
+    );
+    expect(mockRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('should handle error when save fails', () => {
+    component.title = 'Valid Title';
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-03';
+    mockRepo.update.mockReturnValue(throwError(() => ({ error: { error: 'Database lock' } })));
+
+    component.save('draft');
+    expect(mockToast.show).toHaveBeenCalledWith('Database lock', 'error');
+    expect(component.isSaving()).toBe(false);
+  });
+
+  it('should validate inputs and handle error on createDraftAndProceed', () => {
+    // Empty title
+    component.title = '';
+    component.createDraftAndProceed();
+    expect(mockToast.show).toHaveBeenCalledWith('Title is required', 'warning');
+
+    // Invalid dates
+    component.title = 'Valid Title';
+    component.startDate = '2026-12-05';
+    component.endDate = '2026-12-01';
+    component.createDraftAndProceed();
+    expect(mockToast.show).toHaveBeenCalledWith('Valid start date and end date are required', 'warning');
+
+    // API error
+    component.startDate = '2026-12-01';
+    component.endDate = '2026-12-03';
+    mockRepo.create.mockReturnValue(throwError(() => ({ error: { error: 'Creation failed' } })));
+    component.createDraftAndProceed();
+    expect(mockToast.show).toHaveBeenCalledWith('Creation failed', 'error');
+    expect(component.isSaving()).toBe(false);
+  });
+
+  it('should guard against null campaignId in togglePause and confirmDelete', () => {
+    component.campaignId = null;
+
+    component.togglePause();
+    expect(mockRepo.pause).not.toHaveBeenCalled();
+    expect(mockRepo.resume).not.toHaveBeenCalled();
+
+    component.confirmDelete();
+    expect(mockRepo.delete).not.toHaveBeenCalled();
+  });
+
+  it('should handle error in togglePause and confirmDelete', () => {
+    component.campaignId = 'camp_edit_1';
+
+    mockRepo.pause.mockReturnValue(throwError(() => new Error('Pause failed')));
+    component.isPaused = false;
+    component.togglePause();
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to toggle pause status', 'error');
+    expect(component.isTogglingPause()).toBe(false);
+
+    mockRepo.delete.mockReturnValue(throwError(() => new Error('Delete failed')));
+    component.confirmDelete();
+    expect(mockToast.show).toHaveBeenCalledWith('Failed to delete campaign', 'error');
+    expect(component.isDeleting()).toBe(false);
+  });
+
+  it('should open a closed day via toggleDay', () => {
+    component.collapseAllDays();
+    expect(component.isDayOpen(1)).toBe(false);
+
+    component.toggleDay(1);
+    expect(component.isDayOpen(1)).toBe(true);
   });
 });

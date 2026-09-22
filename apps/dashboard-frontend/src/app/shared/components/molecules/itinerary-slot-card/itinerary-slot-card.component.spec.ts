@@ -92,4 +92,75 @@ describe('ItinerarySlotCardComponent', () => {
     component.removeMedia();
     expect(component.slotChange.emit).not.toHaveBeenCalled();
   });
+
+  it('should toggle skip status between pending and skipped, and emit slotChange', () => {
+    jest.spyOn(component.slotChange, 'emit');
+
+    // pending -> skipped
+    component.slot.status = 'pending';
+    component.toggleSkip();
+    expect(component.slot.status).toBe('skipped');
+    expect(component.slotChange.emit).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'skipped' }),
+    );
+
+    // skipped -> pending
+    component.toggleSkip();
+    expect(component.slot.status).toBe('pending');
+    expect(component.slotChange.emit).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pending' }),
+    );
+  });
+
+  it('should not toggle skip if slot is already posted or isReadonly is true', () => {
+    jest.spyOn(component.slotChange, 'emit');
+
+    // Posted guard
+    component.slot.status = 'posted';
+    component.toggleSkip();
+    expect(component.slot.status).toBe('posted');
+    expect(component.slotChange.emit).not.toHaveBeenCalled();
+
+    // isReadonly guard
+    component.slot.status = 'pending';
+    component.isReadonly = true;
+    component.toggleSkip();
+    expect(component.slot.status).toBe('pending');
+    expect(component.slotChange.emit).not.toHaveBeenCalled();
+  });
+
+  it('should handle formatTimeDisplay edge cases (empty or invalid string)', () => {
+    expect(component.formatTimeDisplay('')).toBe('--:--');
+    expect(component.formatTimeDisplay('invalid-date-string')).toBe('invalid-date-string');
+  });
+
+  it('should return default schedule icon for unknown time period', () => {
+    expect(component.getTimePeriodIcon('custom_period' as any)).toBe('schedule');
+  });
+
+  it('should reset isUploading on slot ngOnChanges input change', () => {
+    component.isUploading = true;
+    component.ngOnChanges({
+      slot: {
+        currentValue: { ...sampleSlot, slotId: 'slot-2' },
+        previousValue: sampleSlot,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    expect(component.isUploading).toBe(false);
+  });
+
+  it('should not emit uploadMedia if file input has no files selected', () => {
+    jest.spyOn(component.uploadMedia, 'emit');
+    const mockEvent = {
+      target: {
+        files: [] as unknown as FileList,
+        value: '',
+      },
+    } as unknown as Event;
+
+    component.onFileSelected(mockEvent);
+    expect(component.uploadMedia.emit).not.toHaveBeenCalled();
+  });
 });
