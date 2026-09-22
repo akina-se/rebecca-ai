@@ -529,6 +529,7 @@ export class CampaignsUseCase {
         contentType: file.mimetype,
         cacheControl: 'public, max-age=31536000',
       },
+      resumable: false,
     });
 
     const proxyUrl = `/api/v1/campaigns/${campaignId}/assets/${cleanFilename}`;

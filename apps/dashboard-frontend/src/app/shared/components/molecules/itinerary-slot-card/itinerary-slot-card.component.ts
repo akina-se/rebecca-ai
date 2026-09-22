@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
-import { LightboxComponent } from '../../organisms/lightbox/lightbox.component';
 
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
@@ -14,7 +13,7 @@ import { LightboxComponent } from '../../organisms/lightbox/lightbox.component';
 @Component({
   selector: 'app-itinerary-slot-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, LightboxComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './itinerary-slot-card.component.html',
   styleUrls: ['./itinerary-slot-card.component.css'],
 })
@@ -39,16 +38,16 @@ export class ItinerarySlotCardComponent implements OnChanges {
   /** Emits when illustration media is deleted from this slot. */
   @Output() deleteMedia = new EventEmitter<{ slot: CampaignSlot; filename: string }>();
 
+  /** Emits when user clicks thumbnail to preview in full-size Lightbox. */
+  @Output() previewMedia = new EventEmitter<string>();
+
   /** Local state indicating an in-progress asset upload for this slot. */
   isUploading = false;
-
-  /** Whether the full-size image Lightbox modal is open. */
-  isLightboxOpen = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['slot']) {
       this.isUploading = false;
-      this.cdr.markForCheck();
+      this.cdr.detectChanges();
     }
   }
 
@@ -108,23 +107,6 @@ export class ItinerarySlotCardComponent implements OnChanges {
     this.cdr.markForCheck();
   }
 
-  /**
-   * Opens full-size Lightbox modal.
-   */
-  openLightbox(): void {
-    if (this.slot.mediaUrl) {
-      this.isLightboxOpen = true;
-      this.cdr.markForCheck();
-    }
-  }
-
-  /**
-   * Closes Lightbox modal.
-   */
-  closeLightbox(): void {
-    this.isLightboxOpen = false;
-    this.cdr.markForCheck();
-  }
 
   /**
    * Computes proxy URL for optimized 400px thumbnail.
@@ -145,25 +127,37 @@ export class ItinerarySlotCardComponent implements OnChanges {
   }
 
   /**
-   * Extracts filename from mediaUrl.
+   * Opens full-size Lightbox modal.
    */
-  getAssetFilename(): string {
-    if (!this.slot.mediaUrl) return '';
-    const cleanUrl = this.slot.mediaUrl.split('?')[0];
-    const parts = cleanUrl.split('/');
-    return parts[parts.length - 1] || '';
+  openLightbox(): void {
+    if (this.slot.mediaUrl) {
+      this.previewMedia.emit(this.getFullImageUrl());
+    }
   }
 
   /**
-   * Removes attached illustration media from this slot and notifies parent.
+   * Calculates human-readable file size from bytes.
+   *
+   * @param bytes - Size in bytes.
+   * @returns Formatted size string (e.g., "1.2 MB").
+   */
+  formatFileSize(bytes?: number): string {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+  }
+
+  /**
+   * Removes current media attachment from the slot and notifies parent.
    */
   removeMedia(): void {
     if (this.isReadonly) return;
     const filename = this.getAssetFilename();
-    this.deleteMedia.emit({ slot: this.slot, filename });
     this.slot.mediaUrl = undefined;
+    this.deleteMedia.emit({ slot: this.slot, filename });
     this.notifyChange();
-    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   /**
@@ -174,6 +168,18 @@ export class ItinerarySlotCardComponent implements OnChanges {
     this.slot.status = this.slot.status === 'skipped' ? 'pending' : 'skipped';
     this.notifyChange();
     this.cdr.markForCheck();
+  }
+
+  /**
+   * Resolves the asset filename from the media proxy URL.
+   *
+   * @returns Filename string or undefined if not parseable.
+   */
+  private getAssetFilename(): string {
+    if (!this.slot.mediaUrl) return '';
+    const cleanUrl = this.slot.mediaUrl.split('?')[0];
+    const segments = cleanUrl.split('/');
+    return segments[segments.length - 1] || '';
   }
 
   /**

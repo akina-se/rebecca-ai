@@ -392,7 +392,7 @@
               @if (isDayOpen(group.dayNumber)) {
                 <div class="day-accordion-body animate-in">
                   <div class="slots-grid">
-                    @for (slot of group.slots; track slot.slotId) {
+                    @for (slot of group.slots; track (slot.slotId + (slot.mediaUrl || ''))) {
                       <app-itinerary-slot-card
                         [slot]="slot"
                         [campaignId]="campaignId || undefined"
@@ -400,6 +400,7 @@
                         (slotChange)="onSlotChange($event)"
                         (uploadMedia)="onUploadMedia($event)"
                         (deleteMedia)="onDeleteMedia($event)"
+                        (previewMedia)="openLightbox($event)"
                       ></app-itinerary-slot-card>
                     }
                   </div>
@@ -451,4 +452,11 @@
       </div>
     </div>
   }
+
+  <!-- Full Size Lightbox Dialog -->
+  <app-lightbox
+    [isOpen]="isLightboxOpen()"
+    [imageUrl]="lightboxImageUrl()"
+    (lightboxClose)="closeLightbox()"
+  ></app-lightbox>
 </div>

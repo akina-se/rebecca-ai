@@ -158,13 +158,6 @@
             </button>
           }
         </div>
-
-        <!-- Full-size Lightbox modal (loaded on demand) -->
-        <app-lightbox
-          [isOpen]="isLightboxOpen"
-          [imageUrl]="getFullImageUrl()"
-          (lightboxClose)="closeLightbox()"
-        ></app-lightbox>
       } @else {
         <!-- Upload Trigger -->
         <div class="upload-container">
