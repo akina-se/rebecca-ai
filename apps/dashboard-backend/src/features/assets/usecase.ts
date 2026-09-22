@@ -4,6 +4,7 @@ import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
+import { getGcsStorageClient } from '../../lib/storage';
 import { config } from '../../config';
 
 export interface UploadedFile {
@@ -55,9 +56,10 @@ export class AssetsUseCase {
    * Creates an instance of AssetsUseCase.
    * 
    * @param repo - The repository instance for database operations.
+   * @param storage - Optional Storage client for DI.
    */
-  constructor(private repo: AssetsRepository) {
-    this.storage = new Storage();
+  constructor(private repo: AssetsRepository, storage?: Storage) {
+    this.storage = storage ?? getGcsStorageClient();
     if (config.gemini.apiKey) {
       this.ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
     }

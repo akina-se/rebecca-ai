@@ -553,6 +553,135 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       ).rejects.toThrow('Campaign missing not found.');
     });
 
+    it('setSlotIllustration should save file to GCS and atomically update slot in Firestore', async () => {
+      const campWithSlots: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [
+          {
+            slotId: 'slot-1-0800',
+            dayNumber: 1,
+            timePeriod: 'morning',
+            scheduledTime: '2026-11-01T08:00:00Z',
+            theme: 'Togetsukyo Bridge',
+            status: 'pending',
+          },
+        ],
+      };
+      repo.getById.mockResolvedValueOnce(campWithSlots);
+      repo.update.mockImplementation(async (id, data) => ({
+        ...campWithSlots,
+        ...data,
+      }));
+
+      const res = await useCase.setSlotIllustration('c1', 'slot-1-0800', {
+        originalname: 'temple.png',
+        mimetype: 'image/png',
+        buffer: Buffer.from('mock-bytes'),
+      });
+
+      expect(mockSave).toHaveBeenCalled();
+      expect(res.mediaUrl).toContain('/api/v1/campaigns/c1/assets/');
+      expect(res.slot.mediaUrl).toBe(res.mediaUrl);
+      expect(repo.update).toHaveBeenCalledWith('c1', {
+        slots: expect.arrayContaining([
+          expect.objectContaining({
+            slotId: 'slot-1-0800',
+            mediaUrl: res.mediaUrl,
+          }),
+        ]),
+      });
+    });
+
+    it('setSlotIllustration should purge previous slot asset when updating existing image', async () => {
+      const campWithOldImage: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [
+          {
+            slotId: 'slot-1-0800',
+            dayNumber: 1,
+            timePeriod: 'morning',
+            scheduledTime: '2026-11-01T08:00:00Z',
+            theme: 'Togetsukyo Bridge',
+            status: 'pending',
+            mediaUrl: '/api/v1/campaigns/c1/assets/old_pic.png',
+          },
+        ],
+      };
+      repo.getById.mockResolvedValueOnce(campWithOldImage);
+      repo.update.mockImplementation(async (id, data) => ({
+        ...campWithOldImage,
+        ...data,
+      }));
+
+      await useCase.setSlotIllustration('c1', 'slot-1-0800', {
+        originalname: 'new_temple.jpg',
+        mimetype: 'image/jpeg',
+        buffer: Buffer.from('new-bytes'),
+      });
+
+      expect(mockDelete).toHaveBeenCalled();
+      expect(mockSave).toHaveBeenCalled();
+    });
+
+    it('setSlotIllustration should throw if slotId not found', async () => {
+      const campWithSlots: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [],
+      };
+      repo.getById.mockResolvedValueOnce(campWithSlots);
+      await expect(
+        useCase.setSlotIllustration('c1', 'nonexistent-slot', {
+          originalname: 'a.jpg',
+          mimetype: 'image/jpeg',
+          buffer: Buffer.from('a'),
+        }),
+      ).rejects.toThrow('Slot nonexistent-slot not found in campaign c1.');
+    });
+
+    it('removeSlotIllustration should delete GCS file and clear slot mediaUrl in Firestore', async () => {
+      const campWithImage: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [
+          {
+            slotId: 'slot-1-0800',
+            dayNumber: 1,
+            timePeriod: 'morning',
+            scheduledTime: '2026-11-01T08:00:00Z',
+            theme: 'Togetsukyo Bridge',
+            status: 'pending',
+            mediaUrl: '/api/v1/campaigns/c1/assets/pic.jpg',
+          },
+        ],
+      };
+      repo.getById.mockResolvedValueOnce(campWithImage);
+      repo.update.mockImplementation(async (id, data) => ({
+        ...campWithImage,
+        ...data,
+      }));
+
+      const res = await useCase.removeSlotIllustration('c1', 'slot-1-0800');
+      expect(mockDelete).toHaveBeenCalled();
+      expect(res.slot.mediaUrl).toBeUndefined();
+      const updatedSlots = (repo.update.mock.calls[0][1] as any).slots;
+      expect(updatedSlots[0].mediaUrl).toBeUndefined();
+    });
+
+    it('removeSlotIllustration should throw if slotId not found', async () => {
+      const campWithSlots: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        slots: [],
+      };
+      repo.getById.mockResolvedValueOnce(campWithSlots);
+      await expect(useCase.removeSlotIllustration('c1', 'nonexistent')).rejects.toThrow(
+        'Slot nonexistent not found in campaign c1.',
+      );
+    });
+
     it('getCampaignAssetBinary should retrieve image binary and validate inputs', async () => {
       const validPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
       mockDownload.mockResolvedValue([validPng]);
@@ -632,6 +761,8 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
         pauseCampaign: jest.fn(),
         resumeCampaign: jest.fn(),
         uploadCampaignAsset: jest.fn(),
+        setSlotIllustration: jest.fn(),
+        removeSlotIllustration: jest.fn(),
         getCampaignAssetBinary: jest.fn(),
         deleteCampaignAsset: jest.fn(),
         deleteCampaign: jest.fn(),
@@ -785,6 +916,41 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       mockUseCase.uploadCampaignAsset.mockRejectedValueOnce(new Error('Storage failure'));
       await controller.uploadAsset(mockReq as Request, mockRes as Response);
       expect(mockRes.status).toHaveBeenCalledWith(500);
+    });
+
+    it('setSlotIllustration should return 200 on success, 400 when missing file, and 404 on not found', async () => {
+      mockReq.params = { id: 'c1', slotId: 'slot-1-0800' };
+
+      // Missing file -> 400
+      await controller.setSlotIllustration(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+
+      // Success -> 200
+      (mockReq as any).file = { originalname: 'pic.jpg', mimetype: 'image/jpeg', buffer: Buffer.from('a') };
+      mockUseCase.setSlotIllustration.mockResolvedValueOnce({
+        slot: { slotId: 'slot-1-0800' } as any,
+        mediaUrl: '/api/v1/campaigns/c1/assets/pic.jpg',
+      });
+      await controller.setSlotIllustration(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+
+      // Not found -> 404
+      mockUseCase.setSlotIllustration.mockRejectedValueOnce(new Error('Campaign c1 not found.'));
+      await controller.setSlotIllustration(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(404);
+    });
+
+    it('removeSlotIllustration should return 200 on success and 404 on not found', async () => {
+      mockReq.params = { id: 'c1', slotId: 'slot-1-0800' };
+      mockUseCase.removeSlotIllustration.mockResolvedValueOnce({
+        slot: { slotId: 'slot-1-0800' } as any,
+      });
+      await controller.removeSlotIllustration(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+
+      mockUseCase.removeSlotIllustration.mockRejectedValueOnce(new Error('Slot slot-1-0800 not found in campaign c1.'));
+      await controller.removeSlotIllustration(mockReq as Request, mockRes as Response);
+      expect(mockRes.status).toHaveBeenCalledWith(404);
     });
 
     it('getAssetImage should stream image with 200, return 404 if missing, and 500 on server error', async () => {

@@ -381,7 +381,7 @@ export class CampaignEditorComponent implements OnInit {
   }
 
   /**
-   * Handles illustration file upload for an individual slot.
+   * Handles illustration file upload for an individual slot with atomic backend persistence.
    */
   onUploadMedia(event: { slot: CampaignSlot; file: File }): void {
     const campaignId = this.campaignId;
@@ -390,19 +390,19 @@ export class CampaignEditorComponent implements OnInit {
       return;
     }
 
-    this.toastService.show('Uploading illustration...', 'info');
-    this.repo.uploadAsset(campaignId, event.file).subscribe({
+    this.toastService.show(this.translation.translate('campaign.slot_uploading'), 'info');
+    this.repo.uploadSlotImage(campaignId, event.slot.slotId, event.file).subscribe({
       next: (res) => {
         const updatedSlot: CampaignSlot = {
           ...event.slot,
-          mediaUrl: res.url,
+          mediaUrl: res.mediaUrl,
         };
         this.onSlotChange(updatedSlot);
-        this.toastService.show('Illustration uploaded', 'success');
+        this.toastService.show(this.translation.translate('campaign.slot_image') + ' uploaded', 'success');
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('[CampaignEditor] Upload failed:', err);
+        console.error('[CampaignEditor] Slot upload failed:', err);
         this.toastService.show('Failed to upload image', 'error');
         this.cdr.detectChanges();
       },
@@ -410,32 +410,46 @@ export class CampaignEditorComponent implements OnInit {
   }
 
   /**
-   * Handles illustration file deletion for an individual slot.
+   * Handles illustration file deletion for an individual slot with atomic backend purge.
    */
   onDeleteMedia(event: { slot: CampaignSlot; filename: string }): void {
     const campaignId = this.campaignId;
-    const filename = event.filename;
+    if (!campaignId) return;
 
     event.slot.mediaUrl = undefined;
-    const updatedSlot: CampaignSlot = {
-      ...event.slot,
-      mediaUrl: undefined,
-    };
-    this.onSlotChange(updatedSlot);
-    this.cdr.detectChanges();
+    this.repo.deleteSlotImage(campaignId, event.slot.slotId).subscribe({
+      next: () => {
+        const updatedSlot: CampaignSlot = {
+          ...event.slot,
+          mediaUrl: undefined,
+        };
+        this.onSlotChange(updatedSlot);
+        this.toastService.show(this.translation.translate('campaign.slot_remove_image'), 'info');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[CampaignEditor] Slot delete failed:', err);
+        this.toastService.show('Failed to delete image', 'error');
+      },
+    });
+  }
 
-    if (campaignId && filename) {
-      this.repo.deleteAsset(campaignId, filename).subscribe({
-        next: () => {
-          this.toastService.show('Illustration deleted', 'info');
-        },
-        error: (err) => {
-          console.warn('[CampaignEditor] Failed to physically delete asset from GCS:', err);
-        },
-      });
-    } else {
-      this.toastService.show('Illustration deleted', 'info');
+  /**
+   * Saves campaign updates while preserving its current lifecycle status.
+   */
+  saveChanges(): void {
+    this.save(this.status);
+  }
+
+  /**
+   * Reverts a scheduled campaign back to draft status with user confirmation.
+   */
+  revertToDraft(): void {
+    const confirmMsg = this.translation.translate('campaign.revert_confirm');
+    if (!window.confirm(confirmMsg)) {
+      return;
     }
+    this.save('draft');
   }
 
   /**

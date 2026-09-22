@@ -3,6 +3,7 @@ import { Firestore } from '@google-cloud/firestore';
 import { Storage } from '@google-cloud/storage';
 import multer from 'multer';
 import { config } from '../../config';
+import { getGcsStorageClient } from '../../lib/storage';
 import { CampaignsRepository } from './repository';
 import { CampaignsUseCase, CampaignsUseCaseConfig } from './usecase';
 import { CampaignsController } from './controller';
@@ -22,13 +23,13 @@ const upload = multer({
  * Initializes the Campaign feature module.
  *
  * @param firestore - The Firestore database instance.
- * @param storage - Optional GCS Storage instance for DI (defaults to new Storage()).
+ * @param storage - Optional GCS Storage instance for DI (defaults to getGcsStorageClient()).
  * @param campaignConfig - Optional campaign configuration for DI (defaults to config.gcp.imageBucketName).
  * @returns Configured Express Router for /campaigns endpoints.
  */
 export function initializeCampaignsModule(
   firestore: Firestore,
-  storage: Storage = new Storage(),
+  storage: Storage = getGcsStorageClient(),
   campaignConfig: CampaignsUseCaseConfig = {
     imageBucketName: config.gcp.imageBucketName,
   },
@@ -54,6 +55,10 @@ export function initializeCampaignsModule(
   campaignsRouter.post('/:id/assets', upload.single('file'), controller.uploadAsset);
   campaignsRouter.delete('/:id/assets/:filename', controller.deleteAsset);
   campaignsRouter.get('/:id/assets/:filename', controller.getAssetImage);
+
+  // Slot-level Illustration Subresources (Atomic Persistence & Zero-Zombie Guarantee)
+  campaignsRouter.post('/:id/slots/:slotId/image', upload.single('file'), controller.setSlotIllustration);
+  campaignsRouter.delete('/:id/slots/:slotId/image', controller.removeSlotIllustration);
 
   // Single Item CRUD
   campaignsRouter.get('/:id', controller.getById);

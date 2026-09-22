@@ -5,11 +5,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// Forward Firebase Storage Emulator Host to GCS SDK if present
-if (process.env.FIREBASE_STORAGE_EMULATOR_HOST && !process.env.STORAGE_EMULATOR_HOST) {
-  const host = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
-  process.env.STORAGE_EMULATOR_HOST = host.startsWith('http') ? host : `http://${host}`;
-}
+
 
 /**
  * Global configuration loader for dashboard-backend
