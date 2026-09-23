@@ -7,6 +7,9 @@ import { DrawerService } from '../../core/services/drawer.service';
 import { CopilotService } from '../../core/services/copilot.service';
 import { CopilotContextService } from '../../core/services/copilot-context.service';
 import { CopilotAction } from '@rebecca/types';
+import { ConfigService } from '../../core/services/config.service';
+import { TranslationService } from '../../core/services/translation.service';
+import { SettingsService } from '../../core/services/settings.service';
 
 describe('AiDrawerComponent', () => {
   let component: AiDrawerComponent;
@@ -35,6 +38,9 @@ describe('AiDrawerComponent', () => {
       providers: [
         DrawerService,
         CopilotContextService,
+        ConfigService,
+        TranslationService,
+        SettingsService,
         { provide: CopilotService, useValue: copilotServiceSpy }
       ]
     }).compileComponents();
@@ -107,5 +113,14 @@ describe('AiDrawerComponent', () => {
   it('should trigger scroll in ngAfterViewChecked when shouldScrollToBottom is true', () => {
     component.ngAfterViewChecked();
     expect(component).toBeTruthy();
+  });
+
+  it('should resolve localized personaName according to active language', () => {
+    const settingsService = TestBed.inject(SettingsService);
+    settingsService.setLanguage('ja');
+    expect(component.personaName).toBe('レベッカ');
+
+    settingsService.setLanguage('en');
+    expect(component.personaName).toBe('Rebecca');
   });
 });

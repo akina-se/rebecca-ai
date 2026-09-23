@@ -71,6 +71,7 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/campaigns')) return this.translationService.t('nav.campaigns');
     if (route.includes('/assets')) return this.translationService.t('nav.assets');
     if (route.includes('/users')) return this.translationService.t('nav.users');
     if (route.includes('/memory')) return this.translationService.t('nav.memory');
@@ -88,6 +89,7 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/campaigns')) return 'Page: Campaign Narrative (Managing multi-day event campaigns, itinerary slots, AI storytelling prompts, and scheduled posts)';
     if (route.includes('/assets')) return 'Page: Assets Library (Managing image assets, caption embeddings, and bulk retries)';
     if (route.includes('/users')) return 'Page: User Relations (Managing followers, interaction metrics, RAG memory status, and blocklist)';
     if (route.includes('/memory')) return 'Page: Memory Management (Managing Persona Core Prompt, Extended Tuning, and Global Timeline Summary)';
@@ -121,6 +123,11 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/campaigns')) {
+      return isEn 
+        ? ['Active campaign status', 'How to schedule narrative slots?', 'Advice for campaign prompts']
+        : ['進行中キャンペーンの状況は？', '旅程スロットの設定方法は？', '演出プロンプトのアドバイス'];
+    }
     if (route.includes('/assets')) {
       return isEn 
         ? ['Check failed captions', 'Find unused assets', 'Bulk regenerate captions']

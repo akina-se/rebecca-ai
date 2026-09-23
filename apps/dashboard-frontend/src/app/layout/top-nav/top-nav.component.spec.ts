@@ -49,6 +49,9 @@ describe('TopNavComponent', () => {
   it('should calculate pageTitle properly based on router url', () => {
     expect(component.pageTitle).toBeDefined();
 
+    Object.defineProperty(mockRouter, 'url', { value: '/campaigns', configurable: true });
+    expect(component.pageTitle).toBe('キャンペーン管理');
+
     Object.defineProperty(mockRouter, 'url', { value: '/memory', configurable: true });
     expect(component.pageTitle).toBeDefined();
 
@@ -117,5 +120,14 @@ describe('TopNavComponent', () => {
     component.logout();
     expect(mockAuthService.logout).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('should resolve localized personaName according to active language', () => {
+    const settingsService = TestBed.inject(SettingsService);
+    settingsService.setLanguage('ja');
+    expect(component.personaName).toBe('レベッカ');
+
+    settingsService.setLanguage('en');
+    expect(component.personaName).toBe('Rebecca');
   });
 });
