@@ -31,3 +31,6 @@ export const getAdminFirestore = (): Firestore => {
   return cachedFirestore;
 };
 export const getAdminStorage = (): Storage => getStorage(getFirebaseAdminApp());
+
+export { getGcsStorageClient } from './storage';
+

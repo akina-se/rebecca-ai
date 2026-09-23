@@ -568,6 +568,130 @@ export class CampaignsUseCase {
   }
 
   /**
+   * Uploads an illustration for a specific campaign slot and atomically updates Firestore.
+   * If a previous illustration exists for this slot, it is automatically purged from GCS.
+   *
+   * @param campaignId - Document ID of the campaign.
+   * @param slotId - Identifier of the slot within the campaign.
+   * @param file - Uploaded image file buffer and metadata.
+   * @returns Updated slot object and mediaUrl.
+   */
+  async setSlotIllustration(
+    campaignId: string,
+    slotId: string,
+    file: UploadedCampaignFile,
+  ): Promise<{ slot: CampaignSlot; mediaUrl: string }> {
+    const campaign = await this.repo.getById(campaignId);
+    if (!campaign) {
+      throw new Error(`Campaign ${campaignId} not found.`);
+    }
+
+    const slotIndex = campaign.slots.findIndex((s) => s.slotId === slotId);
+    if (slotIndex === -1) {
+      throw new Error(`Slot ${slotId} not found in campaign ${campaignId}.`);
+    }
+
+    if (!file.mimetype.startsWith('image/')) {
+      throw new Error('Only image uploads are permitted for campaign assets.');
+    }
+
+    const targetSlot = campaign.slots[slotIndex];
+
+    // If an illustration already exists on this slot, delete old file to prevent zombie objects
+    if (targetSlot.mediaUrl) {
+      const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
+      if (match && match[1]) {
+        // Enforce physical deletion to guarantee Zero Zombie Assets
+        await this.deleteCampaignAsset(campaignId, match[1]);
+      }
+    }
+
+    const bucketName = this.config.imageBucketName;
+    const bucket = this.storage.bucket(bucketName);
+
+    const ext = file.originalname.includes('.')
+      ? file.originalname.split('.').pop()
+      : 'jpg';
+    const cleanFilename = `${Date.now()}_${crypto.randomUUID().slice(0, 6)}.${ext}`;
+    const destination = `campaigns/${campaignId}/${cleanFilename}`;
+
+    const gcsFile = bucket.file(destination);
+    await gcsFile.save(file.buffer, {
+      metadata: {
+        contentType: file.mimetype,
+        cacheControl: 'public, max-age=31536000',
+      },
+      resumable: false,
+    });
+
+    const proxyUrl = `/api/v1/campaigns/${campaignId}/assets/${cleanFilename}`;
+
+    const updatedSlots = [...campaign.slots];
+    updatedSlots[slotIndex] = {
+      ...targetSlot,
+      mediaUrl: proxyUrl,
+    };
+
+    const updatedCampaign = await this.repo.update(campaignId, { slots: updatedSlots });
+    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId);
+    if (!persistedSlot) {
+      throw new Error(`[CampaignsUseCase] Invariant violation: Slot "${slotId}" not found in updated campaign "${campaignId}".`);
+    }
+
+    return {
+      slot: persistedSlot,
+      mediaUrl: proxyUrl,
+    };
+  }
+
+  /**
+   * Removes an illustration from a campaign slot and deletes the physical file from GCS.
+   * Atomically clears mediaUrl on the slot in Firestore.
+   *
+   * @param campaignId - Document ID of the campaign.
+   * @param slotId - Identifier of the slot within the campaign.
+   * @returns Updated slot object.
+   */
+  async removeSlotIllustration(
+    campaignId: string,
+    slotId: string,
+  ): Promise<{ slot: CampaignSlot }> {
+    const campaign = await this.repo.getById(campaignId);
+    if (!campaign) {
+      throw new Error(`Campaign ${campaignId} not found.`);
+    }
+
+    const slotIndex = campaign.slots.findIndex((s) => s.slotId === slotId);
+    if (slotIndex === -1) {
+      throw new Error(`Slot ${slotId} not found in campaign ${campaignId}.`);
+    }
+
+    const targetSlot = campaign.slots[slotIndex];
+    if (targetSlot.mediaUrl) {
+      const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
+      if (match && match[1]) {
+        // Enforce physical deletion to guarantee Zero Zombie Assets
+        await this.deleteCampaignAsset(campaignId, match[1]);
+      }
+    }
+
+    const updatedSlots = [...campaign.slots];
+    const cleanedSlot: CampaignSlot = { ...targetSlot };
+    delete cleanedSlot.mediaUrl;
+    updatedSlots[slotIndex] = cleanedSlot;
+
+    const updatedCampaign = await this.repo.update(campaignId, { slots: updatedSlots });
+    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId);
+    if (!persistedSlot) {
+      throw new Error(`[CampaignsUseCase] Invariant violation: Slot "${slotId}" not found in updated campaign "${campaignId}".`);
+    }
+
+    return {
+      slot: persistedSlot,
+    };
+  }
+
+  /**
    * Retrieves the binary content of a campaign asset.
    * Supports on-demand WebP thumbnail generation (400px width) with multi-tier caching (RAM -> GCS -> On-demand).
    *
@@ -627,13 +751,10 @@ export class CampaignsUseCase {
         : filename.toLowerCase().endsWith('.webp')
           ? 'image/webp'
           : 'image/jpeg';
-      try {
-        const [metadata] = await originalFile.getMetadata();
-        if (metadata?.contentType) {
-          contentType = metadata.contentType;
-        }
-      } catch {
-        // ignore metadata error
+
+      const [metadata] = await originalFile.getMetadata();
+      if (metadata?.contentType) {
+        contentType = metadata.contentType;
       }
 
       if (size === 'thumbnail') {
@@ -668,7 +789,7 @@ export class CampaignsUseCase {
       return { buffer: originalBuffer, contentType };
     } catch (err) {
       console.error(`Failed to read campaign asset ${originalPath}:`, err);
-      return null;
+      throw err;
     }
   }
 
@@ -696,8 +817,8 @@ export class CampaignsUseCase {
     const thumbPath = `campaigns/${campaignId}/thumbnails/${filename}.webp`;
 
     await Promise.all([
-      bucket.file(originalPath).delete({ ignoreNotFound: true }).catch(() => {}),
-      bucket.file(thumbPath).delete({ ignoreNotFound: true }).catch(() => {}),
+      bucket.file(originalPath).delete({ ignoreNotFound: true }),
+      bucket.file(thumbPath).delete({ ignoreNotFound: true }),
     ]);
   }
 

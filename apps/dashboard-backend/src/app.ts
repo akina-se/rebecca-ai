@@ -3,9 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { Firestore } from 'firebase-admin/firestore';
+import { Storage } from '@google-cloud/storage';
+import { getGcsStorageClient } from './lib/storage';
 
 import { config } from './config';
-
 // Middleware
 import { verifyAuth } from './middleware/auth';
 
@@ -21,12 +22,16 @@ import { initializeConfigModule } from './features/config';
 import { initializeCampaignsModule } from './features/campaign';
 
 /**
- * Creates and configures the Express application with all middlewares, routes, and security policies.
+ * Creates and configures the Express application instance with dependency injection.
  * 
  * @param firestore - The Firestore instance to be injected into feature modules.
+ * @param storage - The Storage instance to be injected into features (defaults to singleton getGcsStorageClient at composition root).
  * @returns Configured Express application instance.
  */
-export function createApp(firestore: Firestore): Express {
+export function createApp(
+  firestore: Firestore,
+  storage: Storage = getGcsStorageClient(),
+): Express {
   const app = express();
 
   // Trust the first proxy (Google Cloud Run / Firebase Hosting) to fix express-rate-limit ValidationError
@@ -77,10 +82,10 @@ export function createApp(firestore: Firestore): Express {
   const { dashboardRouter: timelineRouter, postsRouter } = initializeTimelineModule(firestore);
   const usersRouter = initializeUsersModule(firestore);
   const systemMemoryRouter = initializeSystemMemoryModule(firestore);
-  const { assetsRouter, publicImagesRouter } = initializeAssetsModule(firestore);
+  const { assetsRouter, publicImagesRouter } = initializeAssetsModule(firestore, storage);
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
-  const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(firestore);
+  const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(firestore, storage);
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);
