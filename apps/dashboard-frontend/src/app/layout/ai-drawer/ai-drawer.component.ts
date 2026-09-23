@@ -1,9 +1,11 @@
-﻿import { Component, OnInit, inject, ElementRef, ViewChild, AfterViewChecked, signal } from '@angular/core';
+import { Component, OnInit, inject, ElementRef, ViewChild, AfterViewChecked, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../core/services/drawer.service';
 import { CopilotService } from '../../core/services/copilot.service';
 import { CopilotContextService } from '../../core/services/copilot-context.service';
+import { ConfigService } from '../../core/services/config.service';
+import { TranslationService } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { CopilotAction } from '@rebecca/types';
 
@@ -22,6 +24,12 @@ export class AiDrawerComponent implements OnInit, AfterViewChecked {
   drawerService = inject(DrawerService);
   copilotService = inject(CopilotService);
   contextService = inject(CopilotContextService);
+  private readonly configService = inject(ConfigService);
+  private readonly translationService = inject(TranslationService);
+
+  get personaName(): string {
+    return this.configService.getPersonaName(this.translationService.currentLang());
+  }
 
   @ViewChild('chatScroll') private chatScrollContainer?: ElementRef;
 
