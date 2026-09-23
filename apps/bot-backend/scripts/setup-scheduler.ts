@@ -63,7 +63,7 @@ const jobs: SchedulerJobConfig[] = [
     },
     {
         name: 'rebecca-random-engagement',
-        schedule: '0 15,18 * * *', // 15:00, 18:00 JST (2 times/day afternoon break & evening commute)
+        schedule: process.env.RANDOM_ENGAGEMENT_SCHEDULE || '0 18 * * *', // Daily at 18:00 JST (1 time/day evening commute)
         url: `${serviceUrl}/batch/random-engagement`
     },
     {
