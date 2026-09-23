@@ -1,6 +1,7 @@
 import { CampaignsRepository } from '../../src/features/campaign/repository';
 import {
   CampaignsUseCase,
+  CampaignsUseCaseConfig,
   generateSlotsForSchedule,
   getTimePeriodForHour,
   sanitizeHashtag,
@@ -87,28 +88,37 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(getTimePeriodForHour('02:00')).toBe('night');
     });
 
-    it('generateSlotsForSchedule should generate slots for multi-day date range', () => {
-      const slots = generateSlotsForSchedule('2026-07-01', '2026-07-02', ['09:00', '18:00']);
+    it('generateSlotsForSchedule should generate slots for multi-day date range with authentic UTC ISO times', () => {
+      const slots = generateSlotsForSchedule('2026-07-01', '2026-07-02', ['09:00', '18:00'], 'Asia/Tokyo');
       expect(slots).toHaveLength(4);
       expect(slots[0]).toEqual({
         slotId: 'slot-1-0900',
         dayNumber: 1,
         timePeriod: 'morning',
-        scheduledTime: '2026-07-01T09:00:00Z',
+        scheduledTime: '2026-07-01T00:00:00.000Z',
         theme: 'Day 1 Morning',
         status: 'pending',
       });
-      expect(slots[1].dayNumber).toBe(1);
-      expect(slots[1].timePeriod).toBe('evening');
+      expect(slots[1]).toEqual({
+        slotId: 'slot-1-1800',
+        dayNumber: 1,
+        timePeriod: 'evening',
+        scheduledTime: '2026-07-01T09:00:00.000Z',
+        theme: 'Day 1 Evening',
+        status: 'pending',
+      });
       expect(slots[2].dayNumber).toBe(2);
       expect(slots[2].timePeriod).toBe('morning');
+      expect(slots[2].scheduledTime).toBe('2026-07-02T00:00:00.000Z');
       expect(slots[3].dayNumber).toBe(2);
       expect(slots[3].timePeriod).toBe('evening');
+      expect(slots[3].scheduledTime).toBe('2026-07-02T09:00:00.000Z');
     });
 
-    it('generateSlotsForSchedule should throw if dates are invalid', () => {
-      expect(() => generateSlotsForSchedule('invalid', 'dates', ['08:00'])).toThrow('Dates must be in YYYY-MM-DD format.');
-      expect(() => generateSlotsForSchedule('2026-07-05', '2026-07-01', ['08:00'])).toThrow('startDate cannot be after endDate.');
+    it('generateSlotsForSchedule should throw if dates or timezone are invalid', () => {
+      expect(() => generateSlotsForSchedule('invalid', 'dates', ['08:00'], 'Asia/Tokyo')).toThrow('Dates must be in YYYY-MM-DD format.');
+      expect(() => generateSlotsForSchedule('2026-07-05', '2026-07-01', ['08:00'], 'Asia/Tokyo')).toThrow('startDate cannot be after endDate.');
+      expect(() => generateSlotsForSchedule('2026-07-01', '2026-07-02', ['08:00'], '')).toThrow('timezone is required for slot generation.');
     });
   });
 
@@ -275,7 +285,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
   describe('CampaignsUseCase', () => {
     let repo: jest.Mocked<CampaignsRepository>;
     let mockStorage: any;
-    let mockConfig: { imageBucketName: string };
+    let mockConfig: CampaignsUseCaseConfig;
     let useCase: CampaignsUseCase;
 
     beforeEach(() => {
@@ -307,7 +317,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
           deleteFiles: mockDeleteFiles,
         }),
       };
-      mockConfig = { imageBucketName: 'test-bucket' };
+      mockConfig = { imageBucketName: 'test-bucket', timezone: 'Asia/Tokyo' };
       useCase = new CampaignsUseCase(repo, mockStorage as any, mockConfig);
     });
 

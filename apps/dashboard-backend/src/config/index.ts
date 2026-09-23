@@ -12,9 +12,28 @@ if (process.env.FIREBASE_STORAGE_EMULATOR_HOST && !process.env.STORAGE_EMULATOR_
 }
 
 /**
+ * Validates whether the provided string is a valid IANA time zone identifier (RFC 6557 / ECMA-402).
+ * Throws on invalid input (fail-fast) or defaults to 'Asia/Tokyo' if unset.
+ */
+export const getValidatedTimezone = (tz?: string): string => {
+  if (tz === undefined || tz.trim() === '') {
+    return 'Asia/Tokyo';
+  }
+  const trimmed = tz.trim();
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: trimmed });
+    return trimmed;
+  } catch (e) {
+    throw new Error(`Invalid IANA timezone "${trimmed}".`, { cause: e });
+  }
+};
+
+/**
  * Global configuration loader for dashboard-backend
  */
 export const config = {
+  /** Application timezone */
+  appTimezone: getValidatedTimezone(process.env.APP_TIMEZONE),
   /** Server configuration */
   server: {
     port: parseInt(process.env.PORT || '8081', 10),

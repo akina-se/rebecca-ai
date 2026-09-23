@@ -40,6 +40,7 @@ export const createMockDeps = (): AppDependencies => {
             getAssetsPendingEmbedding: jest.fn().mockResolvedValue([]),
             updateAssetEmbedding: jest.fn().mockResolvedValue(undefined),
             getActiveCampaign: jest.fn().mockResolvedValue(null),
+            getScheduledCampaignDueToday: jest.fn().mockResolvedValue(null),
             getCampaignById: jest.fn().mockResolvedValue(null),
             updateCampaign: jest.fn().mockResolvedValue(undefined),
         } as any,

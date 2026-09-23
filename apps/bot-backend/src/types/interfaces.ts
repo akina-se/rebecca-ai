@@ -97,6 +97,7 @@ export interface IFirestoreService {
   updateLastListInteraction(userId: string): Promise<void>;
   getListMembersFromCache(): Promise<Pick<XApiUser, 'id'>[]>;
   getActiveCampaign(): Promise<CampaignDoc | null>;
+  getScheduledCampaignDueToday(): Promise<CampaignDoc | null>;
   getCampaignById(campaignId: string): Promise<CampaignDoc | null>;
   updateCampaign(campaignId: string, data: Partial<CampaignDoc>): Promise<void>;
 }

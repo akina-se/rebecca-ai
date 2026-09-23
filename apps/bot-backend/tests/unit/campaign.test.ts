@@ -69,6 +69,8 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
   beforeEach(() => {
     deps = createMockDeps();
     jest.clearAllMocks();
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-18T08:00:00.000Z'));
     (getZonedDateParts as jest.Mock).mockReturnValue({
       year: '2026',
       month: '09',
@@ -82,6 +84,10 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       numericHour: 8,
       numericMinute: 0,
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('mapHourToTimePeriod', () => {
@@ -322,6 +328,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
     });
 
     it('should strictly skip when current time period does not match any pending slot on that day', async () => {
+      jest.setSystemTime(new Date('2026-09-18T20:00:00.000Z'));
       (getZonedDateParts as jest.Mock).mockReturnValue({
         year: '2026',
         month: '09',
@@ -332,7 +339,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
         numericYear: 2026,
         numericMonth: 9,
         numericDay: 18,
-        numericHour: 20, // night -> no night slot on Day 1
+        numericHour: 20,
         numericMinute: 0,
       });
 
@@ -343,12 +350,62 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       const result = await useCase.execute();
 
       expect(result.status).toBe('skipped');
-      expect(result.reason).toContain('No pending slot configured for period "night" on Day 1.');
+      expect(result.reason).toContain('No pending slot scheduled for current execution window on Day 1.');
       expect(deps.gemini.generateStructuredTimelinePost).not.toHaveBeenCalled();
       expect(deps.xApi.tweet).not.toHaveBeenCalled();
     });
 
+    it('should auto-activate scheduled campaign due today upon executing first pending slot', async () => {
+      const scheduledCampaign: CampaignDoc = {
+        ...JSON.parse(JSON.stringify(mockActiveCampaign)),
+        status: 'scheduled',
+      };
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(null);
+      (deps.firestore.getScheduledCampaignDueToday as jest.Mock).mockResolvedValue(scheduledCampaign);
+      (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
+        reply: '初日スタート！アロハ！🌺',
+        thought: 'キャンペーン開始！',
+      });
+      (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('media_999');
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_scheduled_1' } });
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(deps.firestore.updateCampaign).toHaveBeenCalledWith(
+        'camp_hawaii_1',
+        expect.objectContaining({ status: 'active' }),
+      );
+    });
+
+    it('should transition campaign to completed status when the final pending slot finishes', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      // First slot already posted, only 1 pending slot remains
+      campaign.slots[0].status = 'posted';
+      campaign.slots[1].status = 'pending';
+      campaign.slots[1].scheduledTime = '2026-09-18T08:00:00.000Z'; // matches current mock time
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
+        reply: 'ラストスロット完了！楽しかった〜🌺',
+        thought: '完走！',
+      });
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_final_1' } });
+
+      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(deps.firestore.updateCampaign).toHaveBeenCalledWith(
+        'camp_hawaii_1',
+        expect.objectContaining({ status: 'completed' }),
+      );
+    });
+
     it('should prioritize exact hour match when multiple slots exist within the same time period', async () => {
+      jest.setSystemTime(new Date('2026-09-18T10:00:00.000Z'));
       (getZonedDateParts as jest.Mock).mockReturnValue({
         year: '2026',
         month: '09',
@@ -369,7 +426,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
           slotId: 'slot-1-0800',
           dayNumber: 1,
           timePeriod: 'morning',
-          scheduledTime: '2026-09-22T08:00:00Z',
+          scheduledTime: '2026-09-18T08:00:00Z',
           theme: 'Theme 8am',
           status: 'pending',
           fixedTextOverride: 'Fixed 8am',
@@ -378,7 +435,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
           slotId: 'slot-1-1000',
           dayNumber: 1,
           timePeriod: 'morning',
-          scheduledTime: '2026-09-22T10:00:00Z',
+          scheduledTime: '2026-09-18T10:00:00Z',
           theme: 'Theme 10am',
           status: 'pending',
           fixedTextOverride: 'Fixed 10am',

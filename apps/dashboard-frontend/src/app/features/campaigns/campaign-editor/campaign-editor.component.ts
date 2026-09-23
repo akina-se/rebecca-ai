@@ -330,8 +330,10 @@ export class CampaignEditorComponent implements OnInit {
         const [h, m] = timeStr.split(':').map((v) => parseInt(v, 10));
         const hour = isNaN(h) ? 8 : h;
         const timePeriod = this.mapHourToPeriod(hour);
-        const scheduledTime = `${dateStr}T${String(hour).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}:00Z`;
-        const slotId = `slot-${day}-${String(hour).padStart(2, '0')}${String(m || 0).padStart(2, '0')}`;
+        const hourStr = String(hour).padStart(2, '0');
+        const minStr = String(m || 0).padStart(2, '0');
+        const scheduledTime = new Date(`${dateStr}T${hourStr}:${minStr}:00+09:00`).toISOString();
+        const slotId = `slot-${day}-${hourStr}${minStr}`;
 
         // Preserve existing slot settings if slotId matches
         const existing = this.slots.find((s) => s.slotId === slotId);

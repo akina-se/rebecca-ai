@@ -31,6 +31,7 @@ export function initializeCampaignsModule(
   storage: Storage = new Storage(),
   campaignConfig: CampaignsUseCaseConfig = {
     imageBucketName: config.gcp.imageBucketName,
+    timezone: config.appTimezone,
   },
 ): { campaignsRouter: Router; publicCampaignImagesRouter: Router } {
   const campaignsRouter = Router();

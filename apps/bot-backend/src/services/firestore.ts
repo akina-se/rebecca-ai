@@ -1077,6 +1077,7 @@ export {
   updateLastListInteraction,
   getListMembersFromCache,
   getActiveCampaign,
+  getScheduledCampaignDueToday,
   getCampaignById,
   updateCampaign,
 };

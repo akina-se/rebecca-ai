@@ -80,19 +80,14 @@ export class ItinerarySlotCardComponent implements OnChanges {
    */
   formatTimeDisplay(isoString: string): string {
     if (!isoString) return '--:--';
-    try {
-      const match = isoString.match(/T(\d{2}):(\d{2})/);
-      if (match) {
-        return `${match[1]}:${match[2]}`;
-      }
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return isoString;
-      const hours = String(date.getUTCHours()).padStart(2, '0');
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch {
-      return isoString;
-    }
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+    return new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Asia/Tokyo',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(date);
   }
 
   /**
