@@ -41,7 +41,7 @@ describe('Functions Config', () => {
     expect(cfg.xApi.accessSecret).toBe('test_token_secret');
     expect(cfg.xApi.bearerToken).toBe('test_bearer');
     expect(cfg.xApi.myUserId).toBe('test_user_id');
-    expect(cfg.xApi.syncMaxResults).toBe(100);
+    expect(cfg.xApi.syncMaxResults).toBe(30);
   });
 
   it('should parse X_SYNC_MAX_RESULTS properly when configured', () => {
@@ -55,11 +55,11 @@ describe('Functions Config', () => {
 
     process.env.X_SYNC_MAX_RESULTS = 'invalid';
     cfg = getConfig();
-    expect(cfg.xApi.syncMaxResults).toBe(100);
+    expect(cfg.xApi.syncMaxResults).toBe(30);
 
     process.env.X_SYNC_MAX_RESULTS = '2';
     cfg = getConfig();
-    expect(cfg.xApi.syncMaxResults).toBe(100);
+    expect(cfg.xApi.syncMaxResults).toBe(30);
   });
 
   it('should handle empty environment variables gracefully', () => {
@@ -78,6 +78,6 @@ describe('Functions Config', () => {
     expect(cfg.xApi.accessSecret).toBe('');
     expect(cfg.xApi.bearerToken).toBe('');
     expect(cfg.xApi.myUserId).toBe('');
-    expect(cfg.xApi.syncMaxResults).toBe(100);
+    expect(cfg.xApi.syncMaxResults).toBe(30);
   });
 });

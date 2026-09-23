@@ -121,7 +121,7 @@ export class XApiService implements IXApiService {
       return [];
     }
 
-    const effectiveLimit = limit ?? this.xApiConfig.syncMaxResults ?? 100;
+    const effectiveLimit = limit ?? this.xApiConfig.syncMaxResults ?? 30;
 
     const response = (await this.client.users.getPosts(targetUserId, {
       maxResults: effectiveLimit,

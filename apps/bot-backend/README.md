@@ -68,7 +68,7 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 | `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
 | `/batch/anniversary-post` | `GET` | 08:30 Daily | 180s | Sources real-world memorial days ("◯◯の日") from Wikipedia and posts contextual commentary. |
 | `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and enrolls them into the special engagement list. |
-| `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Sends surprise spontaneous mentions to enrolled special treatment list members. |
+| `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Sends surprise spontaneous mentions to enrolled special treatment list members. |
 | `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates text embeddings for newly uploaded images missing vector representation. |
 | `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180s | **Campaign Slot Dispatcher**: Evaluates active narrative campaign slots and publishes episodic story posts. |
 
