@@ -174,15 +174,13 @@ test.describe('Active Campaign Critical User Journey (CUJ)', () => {
     const updatedDesc = 'Updated active live briefing: Shinjuku Omoide Yokocho culinary tour.';
     await descTextarea.fill(updatedDesc);
 
-    // Click Save Changes
+    // Click Save Changes (redirects back to /campaigns upon success)
     const saveBtn = page.locator('.topbar-actions button.btn-primary:has-text("変更を保存")');
     await saveBtn.click();
+    await page.waitForURL('**/campaigns', { timeout: 20000 });
 
-    // Wait for save indicator or toast
-    await page.waitForTimeout(1000);
-
-    // Reload page to verify description was saved into Firestore
-    await page.reload();
+    // Navigate back to editor to verify description was saved into Firestore
+    await page.goto(`/campaigns/${campaignId}`);
     await expect(page.locator('.editor-heading h2')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('textarea.form-textarea').first()).toHaveValue(updatedDesc);
 
