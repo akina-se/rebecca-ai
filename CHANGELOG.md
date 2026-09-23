@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.22.0](https://github.com/akina-se/rebecca-ai/compare/v1.21.0...v1.22.0) (2026-09-23)
+
+
+### Features
+
+* **campaigns:** atomic slot asset persistence, state-driven action bar, and storage DI refactor ([#254](https://github.com/akina-se/rebecca-ai/issues/254)) ([b89d28a](https://github.com/akina-se/rebecca-ai/commit/b89d28a5ff3a5b2e949854942d6e99b552652ed8))
+* **campaigns:** authentic UTC slot scheduling, timezone display conversion, and lifecycle auto-activation ([#256](https://github.com/akina-se/rebecca-ai/issues/256)) ([65b821b](https://github.com/akina-se/rebecca-ai/commit/65b821b256df2900e52ec7a83791fe28ef892e07))
+* **campaigns:** Campaign Asset Security, Physical GCS Cleanup and Slot UI/UX Modernization ([#252](https://github.com/akina-se/rebecca-ai/issues/252)) ([3a31307](https://github.com/akina-se/rebecca-ai/commit/3a3130720835e17301a707ffe575022143f30a5a))
+* **dreaming:** separate self-reflection batch and enforce robust user consolidation ([#243](https://github.com/akina-se/rebecca-ai/issues/243)) ([ff3642a](https://github.com/akina-se/rebecca-ai/commit/ff3642ac939f680221d48aa150a098ac2a667da0))
+* implement campaign narrative event engine ([#248](https://github.com/akina-se/rebecca-ai/issues/248)) ([#249](https://github.com/akina-se/rebecca-ai/issues/249)) ([579b7ad](https://github.com/akina-se/rebecca-ai/commit/579b7ad2307fb6b8a2a22dafc05e2775f1adecb1))
+* release campaign narrative event engine ([#248](https://github.com/akina-se/rebecca-ai/issues/248)) ([#250](https://github.com/akina-se/rebecca-ai/issues/250)) ([fe6424a](https://github.com/akina-se/rebecca-ai/commit/fe6424a7c8edc8af4c4396942e3e318a54d67934))
+* release campaign timezone scheduling and slot asset persistence ([#254](https://github.com/akina-se/rebecca-ai/issues/254), [#256](https://github.com/akina-se/rebecca-ai/issues/256)) ([ae98662](https://github.com/akina-se/rebecca-ai/commit/ae98662d016dade4817a7dee58a11f4c8bd04526))
+
+
+### Bug Fixes
+
+* **bot-backend:** expand structured post maxOutputTokens to 1000 ([#246](https://github.com/akina-se/rebecca-ai/issues/246)) ([4ccf91b](https://github.com/akina-se/rebecca-ai/commit/4ccf91bcd09503fd2e9831e67f3da59cf76b77ef))
+* **bot-backend:** expand structured post maxOutputTokens to 1000 ([#246](https://github.com/akina-se/rebecca-ai/issues/246)) ([#247](https://github.com/akina-se/rebecca-ai/issues/247)) ([a86451d](https://github.com/akina-se/rebecca-ai/commit/a86451dc838ee40f90d378d045812ba8091e64a1))
+* **campaigns:** persist isFixedText slot flag and resolve relative mediaUrl via GCS ([#258](https://github.com/akina-se/rebecca-ai/issues/258)) ([#259](https://github.com/akina-se/rebecca-ai/issues/259)) ([a770156](https://github.com/akina-se/rebecca-ai/commit/a7701564877785180449088e262f323791076c0f))
+* **dashboard:** campaign copilot context, breadcrumbs, and persona name localization ([#260](https://github.com/akina-se/rebecca-ai/issues/260)) ([dee1098](https://github.com/akina-se/rebecca-ai/commit/dee1098c7095421ca67881c38144aebbc3243f67))
+
 ## [1.21.0](https://github.com/akina-se/rebecca-ai/compare/v1.20.0...v1.21.0) (2026-09-17)
 
 
