@@ -487,6 +487,69 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(res.completedSlotsCount).toBe(1);
     });
 
+    it('updateCampaign should allow reverting scheduled campaign to draft status', async () => {
+      const scheduledCampaign: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        status: 'scheduled',
+      };
+      repo.getById.mockResolvedValueOnce(scheduledCampaign);
+      repo.update.mockImplementation(async (id, data) => ({
+        ...scheduledCampaign,
+        ...data,
+      }));
+
+      const res = await useCase.updateCampaign('c1', { status: 'draft' });
+      expect(res.status).toBe('draft');
+      expect(repo.update).toHaveBeenCalledWith('c1', expect.objectContaining({
+        status: 'draft',
+      }));
+    });
+
+    it('updateCampaign should preserve active status when saving changes to live active campaign', async () => {
+      const activeCampaign: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c1',
+        status: 'active',
+        isPaused: false,
+      };
+      repo.getById.mockResolvedValueOnce(activeCampaign);
+      repo.update.mockImplementation(async (id, data) => ({
+        ...activeCampaign,
+        ...data,
+      }));
+
+      const res = await useCase.updateCampaign('c1', {
+        description: 'Updated live campaign description',
+      });
+      expect(res.status).toBe('active');
+      expect(res.description).toBe('Updated live campaign description');
+      expect(repo.update).toHaveBeenCalledWith('c1', expect.objectContaining({
+        description: 'Updated live campaign description',
+      }));
+    });
+
+    it('pauseCampaign and resumeCampaign should toggle isPaused on active campaign while preserving active status', async () => {
+      const activeCampaign: CampaignDocWithId = {
+        ...sampleCampaign,
+        id: 'c_active_1',
+        status: 'active',
+        isPaused: false,
+      };
+      repo.getById.mockResolvedValue({ ...activeCampaign });
+      repo.update.mockImplementation(async (id, data) => ({ ...activeCampaign, ...data } as any));
+
+      const paused = await useCase.pauseCampaign('c_active_1');
+      expect(paused.status).toBe('active');
+      expect(paused.isPaused).toBe(true);
+      expect(repo.update).toHaveBeenCalledWith('c_active_1', expect.objectContaining({ isPaused: true }));
+
+      const resumed = await useCase.resumeCampaign('c_active_1');
+      expect(resumed.status).toBe('active');
+      expect(resumed.isPaused).toBe(false);
+      expect(repo.update).toHaveBeenCalledWith('c_active_1', expect.objectContaining({ isPaused: false }));
+    });
+
     it('cloneCampaign should duplicate campaign with draft status and reset slots', async () => {
       repo.getById.mockResolvedValueOnce({
         ...sampleCampaign,
