@@ -78,7 +78,7 @@ const jobs: SchedulerJobConfig[] = [
     },
     {
         name: 'rebecca-campaign-batch',
-        schedule: '0 8,12,19 * * *', // Daily at 8:00, 12:00, 19:00 JST (Narrative Event slot heartbeat)
+        schedule: '0 * * * *', // Every hour JST (matches UI's 1-hour slot granularity for campaign posts)
         url: `${serviceUrl}/batch/campaign-post`,
         attemptDeadline: '180s',
     }

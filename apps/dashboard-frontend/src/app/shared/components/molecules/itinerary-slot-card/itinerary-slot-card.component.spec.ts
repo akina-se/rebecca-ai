@@ -36,7 +36,8 @@ describe('ItinerarySlotCardComponent', () => {
     expect(component.getTimePeriodIcon('afternoon')).toBe('wb_sunny');
     expect(component.getTimePeriodIcon('evening')).toBe('nights_stay');
     expect(component.getTimePeriodIcon('night')).toBe('bedtime');
-    expect(component.formatTimeDisplay('2026-11-01T08:00:00Z')).toBe('08:00');
+    // 2026-10-31T23:00:00Z in UTC is 2026-11-01 08:00 in Asia/Tokyo (UTC+9)
+    expect(component.formatTimeDisplay('2026-10-31T23:00:00.000Z')).toBe('08:00');
     expect(component.formatTimeDisplay('2026-09-23T03:00:00+09:00')).toBe('03:00');
   });
 

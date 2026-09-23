@@ -12,6 +12,7 @@ export interface RuntimeConfig {
     messagingSenderId: string;
     appId: string;
   };
+  appTimezone?: string;
   apiUrl: string;
   version?: string;
   publicSiteUrl: string;
@@ -39,6 +40,7 @@ export interface RuntimeConfig {
 })
 export class ConfigService {
   private config: RuntimeConfig | null = null;
+  readonly appTimezone = signal<string>('Asia/Tokyo');
   readonly publicSiteUrl = signal<string>('https://rebecca-ai.net');
   readonly version = signal<string>('');
   readonly brandName = signal<string>('Rebecca AI');
@@ -57,6 +59,9 @@ export class ConfigService {
       const data = await firstValueFrom(http.get<RuntimeConfig>('/api/v1/config'));
       if (data) {
         this.config = data;
+        if (data.appTimezone) {
+          this.appTimezone.set(data.appTimezone);
+        }
         if (data.publicSiteUrl) {
           this.publicSiteUrl.set(data.publicSiteUrl);
         }
