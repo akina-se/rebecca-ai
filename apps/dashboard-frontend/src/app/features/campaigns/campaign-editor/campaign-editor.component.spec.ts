@@ -538,4 +538,102 @@ describe('CampaignEditorComponent', () => {
     expect(saveSpy).not.toHaveBeenCalled();
     confirmSpy.mockRestore();
   });
+
+  describe('State-Driven Action Bar Button Matrix', () => {
+    const getButtonLabels = (): string[] => {
+      const buttons = fixture.nativeElement.querySelectorAll('.topbar-actions button');
+      return Array.from(buttons).map((btn: any) => btn.textContent.trim());
+    };
+
+    it('draft: should display delete, save draft, and schedule campaign only', () => {
+      component.status = 'draft';
+      component.isPaused = false;
+      fixture.detectChanges();
+
+      const labels = getButtonLabels().join(' ');
+      expect(labels).toContain('削除');
+      expect(labels).toContain('下書き保存');
+      expect(labels).toContain('スケジュール確定');
+      expect(labels).not.toContain('一時停止');
+      expect(labels).not.toContain('再開');
+      expect(labels).not.toContain('下書きに戻す');
+      expect(labels).not.toContain('変更を保存');
+    });
+
+    it('scheduled (active): should display delete, pause, revert to draft, and save changes', () => {
+      component.status = 'scheduled';
+      component.isPaused = false;
+      fixture.detectChanges();
+
+      const labels = getButtonLabels().join(' ');
+      expect(labels).toContain('削除');
+      expect(labels).toContain('一時停止');
+      expect(labels).toContain('下書きに戻す');
+      expect(labels).toContain('変更を保存');
+      expect(labels).not.toContain('再開');
+      expect(labels).not.toContain('下書き保存');
+      expect(labels).not.toContain('配信スケジュール確定');
+    });
+
+    it('scheduled (paused): should display delete, resume, revert to draft, and save changes', () => {
+      component.status = 'scheduled';
+      component.isPaused = true;
+      fixture.detectChanges();
+
+      const labels = getButtonLabels().join(' ');
+      expect(labels).toContain('削除');
+      expect(labels).toContain('再開');
+      expect(labels).toContain('下書きに戻す');
+      expect(labels).toContain('変更を保存');
+      expect(labels).not.toContain('一時停止');
+      expect(labels).not.toContain('下書き保存');
+      expect(labels).not.toContain('配信スケジュール確定');
+    });
+
+    it('active (running): should display delete, pause, and save changes, and NEVER revert to draft', () => {
+      component.status = 'active';
+      component.isPaused = false;
+      fixture.detectChanges();
+
+      const labels = getButtonLabels().join(' ');
+      expect(labels).toContain('削除');
+      expect(labels).toContain('一時停止');
+      expect(labels).toContain('変更を保存');
+      // Critical invariant: live active campaign must never allow reverting to draft
+      expect(labels).not.toContain('下書きに戻す');
+      expect(labels).not.toContain('再開');
+      expect(labels).not.toContain('下書き保存');
+      expect(labels).not.toContain('配信スケジュール確定');
+    });
+
+    it('active (paused): should display delete, resume, and save changes, and NEVER revert to draft', () => {
+      component.status = 'active';
+      component.isPaused = true;
+      fixture.detectChanges();
+
+      const labels = getButtonLabels().join(' ');
+      expect(labels).toContain('削除');
+      expect(labels).toContain('再開');
+      expect(labels).toContain('変更を保存');
+      expect(labels).not.toContain('下書きに戻す');
+      expect(labels).not.toContain('一時停止');
+      expect(labels).not.toContain('下書き保存');
+      expect(labels).not.toContain('配信スケジュール確定');
+    });
+
+    it('completed: should display delete and save changes only', () => {
+      component.status = 'completed';
+      component.isPaused = false;
+      fixture.detectChanges();
+
+      const labels = getButtonLabels().join(' ');
+      expect(labels).toContain('削除');
+      expect(labels).toContain('変更を保存');
+      expect(labels).not.toContain('一時停止');
+      expect(labels).not.toContain('再開');
+      expect(labels).not.toContain('下書きに戻す');
+      expect(labels).not.toContain('下書き保存');
+      expect(labels).not.toContain('配信スケジュール確定');
+    });
+  });
 });
