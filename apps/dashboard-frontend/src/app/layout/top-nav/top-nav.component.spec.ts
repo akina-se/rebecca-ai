@@ -121,4 +121,13 @@ describe('TopNavComponent', () => {
     expect(mockAuthService.logout).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  it('should resolve localized personaName according to active language', () => {
+    const settingsService = TestBed.inject(SettingsService);
+    settingsService.setLanguage('ja');
+    expect(component.personaName).toBe('レベッカ');
+
+    settingsService.setLanguage('en');
+    expect(component.personaName).toBe('Rebecca');
+  });
 });

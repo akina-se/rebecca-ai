@@ -40,6 +40,10 @@ export class TopNavComponent {
     return this.translationService.t('nav.dashboard');
   }
 
+  get personaName(): string {
+    return this.configService.getPersonaName(this.translationService.currentLang());
+  }
+
   get userInitial(): string {
     const rawName = this.user?.displayName || this.user?.email || 'A';
     const trimmed = rawName.trim();

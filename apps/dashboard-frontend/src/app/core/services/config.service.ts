@@ -45,9 +45,18 @@ export class ConfigService {
   readonly version = signal<string>('');
   readonly brandName = signal<string>('Rebecca AI');
   readonly adminTitle = signal<string>('REBECCA AI CORE ADMIN');
+  readonly personaDisplayName = signal<string>('レベッカ');
+  readonly personaEnglishName = signal<string>('Rebecca');
   readonly personaName = signal<string>('Rebecca');
   readonly avatarUrl = signal<string>('rebecca_icon.png');
   private readonly httpBackend = inject(HttpBackend);
+
+  /**
+   * Returns localized persona name based on active language.
+   */
+  getPersonaName(lang: string): string {
+    return lang === 'en' ? this.personaEnglishName() : this.personaDisplayName();
+  }
 
   /**
    * Asynchronously fetches the runtime configuration before the Angular application bootstraps.
@@ -71,7 +80,9 @@ export class ConfigService {
         if (data.persona) {
           this.brandName.set(data.persona.brandName);
           this.adminTitle.set(data.persona.adminTitle);
-          this.personaName.set(data.persona.displayName);
+          this.personaDisplayName.set(data.persona.displayName || 'レベッカ');
+          this.personaEnglishName.set(data.persona.englishName || 'Rebecca');
+          this.personaName.set(data.persona.displayName || 'Rebecca');
           this.avatarUrl.set(data.persona.avatarUrl);
         }
       }
