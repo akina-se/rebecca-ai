@@ -39,6 +39,7 @@ export class ConfigController {
     const activePersona = getActivePersona(appConfig.persona.activeId);
 
     const config = {
+      appTimezone: appConfig.appTimezone,
       firebase: {
         apiKey: (process.env.FIREBASE_WEB_API_KEY || '').trim() || (isProd ? '' : 'YOUR_API_KEY'),
         authDomain: (process.env.FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`).trim(),

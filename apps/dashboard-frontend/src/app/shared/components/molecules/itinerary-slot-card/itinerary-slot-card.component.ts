@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
+import { ConfigService } from '../../../../core/services/config.service';
 
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
@@ -19,6 +20,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 })
 export class ItinerarySlotCardComponent implements OnChanges {
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly configService = inject(ConfigService);
 
   /** The slot data model. */
   @Input({ required: true }) slot!: CampaignSlot;
@@ -83,7 +85,7 @@ export class ItinerarySlotCardComponent implements OnChanges {
     const date = new Date(isoString);
     if (isNaN(date.getTime())) return isoString;
     return new Intl.DateTimeFormat('ja-JP', {
-      timeZone: 'Asia/Tokyo',
+      timeZone: this.configService.appTimezone(),
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,

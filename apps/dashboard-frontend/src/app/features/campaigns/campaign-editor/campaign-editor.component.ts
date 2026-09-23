@@ -13,9 +13,11 @@ import {
 import { CAMPAIGNS_REPOSITORY } from '../../../core/ports/campaigns.repository';
 import { ToastService } from '../../../shared/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
+import { ConfigService } from '../../../core/services/config.service';
 import { ItinerarySlotCardComponent } from '../../../shared/components/molecules/itinerary-slot-card/itinerary-slot-card.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
+import { DateTime } from 'luxon';
 
 export interface DaySlotGroup {
   dayNumber: number;
@@ -51,6 +53,7 @@ export class CampaignEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly toastService = inject(ToastService);
   private readonly translation = inject(TranslationService);
+  private readonly configService = inject(ConfigService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   campaignId: string | null = null;
@@ -321,6 +324,8 @@ export class CampaignEditorComponent implements OnInit {
     const dayMs = 24 * 60 * 60 * 1000;
     const totalDays = Math.round((end.getTime() - start.getTime()) / dayMs) + 1;
 
+    const timezone = this.configService.appTimezone();
+
     for (let day = 1; day <= totalDays; day++) {
       this.openDays.add(day);
       const currentDayDate = new Date(start.getTime() + (day - 1) * dayMs);
@@ -332,7 +337,14 @@ export class CampaignEditorComponent implements OnInit {
         const timePeriod = this.mapHourToPeriod(hour);
         const hourStr = String(hour).padStart(2, '0');
         const minStr = String(m || 0).padStart(2, '0');
-        const scheduledTime = new Date(`${dateStr}T${hourStr}:${minStr}:00+09:00`).toISOString();
+        const localDt = DateTime.fromISO(`${dateStr}T${hourStr}:${minStr}:00`, { zone: timezone });
+        if (!localDt.isValid) {
+          throw new Error(`Invalid slot datetime "${dateStr}T${hourStr}:${minStr}:00" in timezone "${timezone}".`);
+        }
+        const scheduledTime = localDt.toUTC().toISO();
+        if (!scheduledTime) {
+          throw new Error('Failed to convert slot datetime to UTC ISO string.');
+        }
         const slotId = `slot-${day}-${hourStr}${minStr}`;
 
         // Preserve existing slot settings if slotId matches
