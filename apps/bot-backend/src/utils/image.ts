@@ -14,7 +14,17 @@ export const downloadImage = async (url: string): Promise<{ buffer: Buffer; mime
     }
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const mimeType = response.headers.get('content-type') || 'image/jpeg';
+    
+    const contentTypeHeader = response.headers.get('content-type');
+    let mimeType = 'image/jpeg';
+    if (contentTypeHeader) {
+        const clean = contentTypeHeader.split(';')[0].trim().toLowerCase();
+        if (clean.startsWith('image/')) {
+            mimeType = clean;
+        } else {
+            throw new Error(`Invalid non-image content-type "${contentTypeHeader}" received when downloading from ${url}`);
+        }
+    }
     
     return { buffer, mimeType };
 };

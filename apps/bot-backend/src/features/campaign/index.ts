@@ -18,7 +18,10 @@ export * from './routes';
  * @returns Configured Express Router.
  */
 export const createCampaignPostModule = (deps: AppDependencies): Router => {
-  const useCase = new CampaignPostUseCase(deps, { timezone: config.appTimezone });
+  const useCase = new CampaignPostUseCase(deps, {
+    timezone: config.appTimezone,
+    bucketName: config.images.bucketName,
+  });
   const controller = new CampaignPostController(useCase);
   return createCampaignPostRouter(controller);
 };
