@@ -885,6 +885,75 @@ paths:
         '500':
           description: Internal server error
 
+  /campaigns/{id}/slots/{slotId}/image:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Campaign document ID
+        schema:
+          type: string
+      - name: slotId
+        in: path
+        required: true
+        description: Target slot ID within the campaign
+        schema:
+          type: string
+    post:
+      summary: Atomically upload and attach illustration to slot
+      description: Uploads image file to Google Cloud Storage, removes old slot asset if present, and atomically updates Firestore slot mediaUrl.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Illustration image binary (max 15MB)
+      responses:
+        '200':
+          description: Slot illustration uploaded and atomically attached
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slot:
+                    $ref: '#/components/schemas/CampaignSlot'
+                  mediaUrl:
+                    type: string
+                    example: /api/v1/campaigns/c1/assets/172000000_abc123.jpg
+        '400':
+          description: Invalid parameters or file format
+        '404':
+          description: Campaign or slot not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Atomically delete illustration from slot and purge from GCS
+      description: Physically deletes illustration file and cached thumbnail from GCS and resets slot mediaUrl in Firestore.
+      responses:
+        '200':
+          description: Slot illustration deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slot:
+                    $ref: '#/components/schemas/CampaignSlot'
+        '400':
+          description: Invalid parameters
+        '404':
+          description: Campaign or slot not found
+        '500':
+          description: Internal server error
+
 components:
   schemas:
     SystemAlert:

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Firestore } from '@google-cloud/firestore';
 import multer from 'multer';
+import { Storage } from '@google-cloud/storage';
 import { AssetsRepository } from './repository';
 import { AssetsUseCase } from './usecase';
 import { AssetsController } from './controller';
@@ -18,14 +19,18 @@ const upload = multer({
  * Initializes the assets feature module, setting up dependencies and routes.
  * 
  * @param firestore - The Firestore instance used for database operations.
+ * @param storage - Strictly required Storage client for GCS operations (pure DI).
  * @returns An object containing the protected assets router and public image streaming router.
  */
-export function initializeAssetsModule(firestore: Firestore): { assetsRouter: Router; publicImagesRouter: Router } {
+export function initializeAssetsModule(
+  firestore: Firestore,
+  storage: Storage,
+): { assetsRouter: Router; publicImagesRouter: Router } {
   const assetsRouter = Router();
   const publicImagesRouter = Router();
   
   const repo = new AssetsRepository(firestore);
-  const useCase = new AssetsUseCase(repo);
+  const useCase = new AssetsUseCase(repo, storage);
   const controller = new AssetsController(useCase);
 
   // Public image streaming endpoint (no auth required for browser <img> / css requests)

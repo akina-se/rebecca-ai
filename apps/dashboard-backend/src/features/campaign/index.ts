@@ -19,16 +19,16 @@ const upload = multer({
 });
 
 /**
- * Initializes the Campaign feature module.
+ * Initializes the Campaign feature module with pure Dependency Injection.
  *
  * @param firestore - The Firestore database instance.
- * @param storage - Optional GCS Storage instance for DI (defaults to new Storage()).
+ * @param storage - Strictly required GCS Storage instance for DI.
  * @param campaignConfig - Optional campaign configuration for DI (defaults to config.gcp.imageBucketName).
  * @returns Configured Express Router for /campaigns endpoints.
  */
 export function initializeCampaignsModule(
   firestore: Firestore,
-  storage: Storage = new Storage(),
+  storage: Storage,
   campaignConfig: CampaignsUseCaseConfig = {
     imageBucketName: config.gcp.imageBucketName,
   },
@@ -54,6 +54,10 @@ export function initializeCampaignsModule(
   campaignsRouter.post('/:id/assets', upload.single('file'), controller.uploadAsset);
   campaignsRouter.delete('/:id/assets/:filename', controller.deleteAsset);
   campaignsRouter.get('/:id/assets/:filename', controller.getAssetImage);
+
+  // Slot-level Illustration Subresources (Atomic Persistence & Zero-Zombie Guarantee)
+  campaignsRouter.post('/:id/slots/:slotId/image', upload.single('file'), controller.setSlotIllustration);
+  campaignsRouter.delete('/:id/slots/:slotId/image', controller.removeSlotIllustration);
 
   // Single Item CRUD
   campaignsRouter.get('/:id', controller.getById);
