@@ -1,4 +1,5 @@
 import { initializeAssetsModule } from '../../src/features/assets/index';
+import { initializeCampaignsModule } from '../../src/features/campaign/index';
 import { initializeUsersModule } from '../../src/features/users/index';
 import { initializeTimelineModule } from '../../src/features/timeline/index';
 import { initializeSystemMemoryModule } from '../../src/features/system-memory/index';
@@ -9,14 +10,29 @@ import { createMockFirestore } from './testUtils';
 
 describe('Dashboard Backend Module Initializers Unit Tests', () => {
   let mockFirestore: any;
+  let mockStorage: any;
 
   beforeEach(() => {
     mockFirestore = createMockFirestore().firestore;
+    mockStorage = {
+      bucket: jest.fn().mockReturnValue({
+        file: jest.fn().mockReturnValue({
+          save: jest.fn(),
+          delete: jest.fn(),
+          exists: jest.fn().mockResolvedValue([true]),
+          download: jest.fn().mockResolvedValue([Buffer.from('data')]),
+          getMetadata: jest.fn().mockResolvedValue([{ contentType: 'image/png' }]),
+        }),
+      }),
+    };
   });
 
   it('should initialize all feature routers without errors', () => {
-    const assetsRouter = initializeAssetsModule(mockFirestore);
+    const assetsRouter = initializeAssetsModule(mockFirestore, mockStorage);
     expect(assetsRouter).toBeDefined();
+
+    const campaignsRouter = initializeCampaignsModule(mockFirestore, mockStorage);
+    expect(campaignsRouter).toBeDefined();
 
     const usersRouter = initializeUsersModule(mockFirestore);
     expect(usersRouter).toBeDefined();

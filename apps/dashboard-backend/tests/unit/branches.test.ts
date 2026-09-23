@@ -849,7 +849,19 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         update: jest.fn().mockResolvedValue(undefined)
       } as any;
 
-      const assetsUseCase = new AssetsUseCase(assetsRepo);
+      const mockStorage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue({
+            save: jest.fn().mockResolvedValue(undefined),
+            delete: jest.fn().mockResolvedValue(undefined),
+            exists: jest.fn().mockResolvedValue([true]),
+            download: jest.fn().mockResolvedValue([Buffer.from('mock-png-data')]),
+            getMetadata: jest.fn().mockResolvedValue([{ contentType: 'image/png' }]),
+          }),
+        }),
+      } as any;
+
+      const assetsUseCase = new AssetsUseCase(assetsRepo, mockStorage);
 
       // 1. Successful Vision analysis & Embedding
       mockGenerateContent.mockResolvedValueOnce({ text: '綺麗なアニメイラスト' });
@@ -1072,8 +1084,6 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         getRawDoc: jest.fn().mockResolvedValue({ url: 'gs://rebecca-ai-gal-images/images/test_thumb.png' })
       } as any;
 
-      const assetsUseCase = new AssetsUseCase(assetsRepo);
-
       // 1x1 valid PNG base64 for sharp resize
       const validPngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
       const mockFile = {
@@ -1083,11 +1093,13 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         save: jest.fn().mockResolvedValue([])
       };
 
-      (assetsUseCase as any).storage = {
+      const mockStorage = {
         bucket: jest.fn().mockReturnValue({
           file: jest.fn().mockReturnValue(mockFile)
         })
-      };
+      } as any;
+
+      const assetsUseCase = new AssetsUseCase(assetsRepo, mockStorage);
 
       // 1. On-demand thumbnail generation with sharp
       const generatedThumb = await assetsUseCase.getAssetBinary('test_thumb.png', 'thumbnail');
@@ -1544,7 +1556,18 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         getRawDoc: jest.fn().mockResolvedValue({ url: 'gs://rebecca-ai-gal-images/images/cached_thumb.png' })
       } as any;
 
-      const assetsUseCase = new AssetsUseCase(assetsRepo);
+      const mockGcsFile = {
+        exists: jest.fn().mockResolvedValue([true]),
+        download: jest.fn().mockResolvedValue([Buffer.from('gcs-cached-thumb')]),
+        getMetadata: jest.fn().mockResolvedValue([{ contentType: 'image/png' }]),
+      };
+      const mockStorage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue(mockGcsFile)
+        })
+      } as any;
+
+      const assetsUseCase = new AssetsUseCase(assetsRepo, mockStorage);
 
       // 1. Memory cache hit
       (assetsUseCase as any).thumbnailMemoryCache.set('cached_thumb.png', {
@@ -1555,15 +1578,6 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(memHit?.buffer).toEqual(Buffer.from('mem-cached'));
 
       // 2. GCS thumbnail cache hit
-      const mockGcsFile = {
-        exists: jest.fn().mockResolvedValue([true]),
-        download: jest.fn().mockResolvedValue([Buffer.from('gcs-cached-thumb')])
-      };
-      (assetsUseCase as any).storage = {
-        bucket: jest.fn().mockReturnValue({
-          file: jest.fn().mockReturnValue(mockGcsFile)
-        })
-      };
       const gcsHit = await assetsUseCase.getAssetBinary('gcs_thumb.png', 'thumbnail');
       expect(gcsHit?.buffer).toEqual(Buffer.from('gcs-cached-thumb'));
 
@@ -1643,7 +1657,13 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
 
     it('AssetsUseCase getAssetBinary prefix search metadata branches', async () => {
       const assetsRepo = new AssetsRepository(mock.firestore as any);
-      const assetsUseCase = new (await import('../../src/features/assets/usecase')).AssetsUseCase(assetsRepo);
+      const mockStorage = {
+        bucket: jest.fn().mockReturnValue({
+          file: jest.fn().mockReturnValue({ exists: jest.fn().mockResolvedValue([false]) }),
+          getFiles: jest.fn().mockResolvedValue([[]]),
+        }),
+      } as any;
+      const assetsUseCase = new (await import('../../src/features/assets/usecase')).AssetsUseCase(assetsRepo, mockStorage);
 
       assetsRepo.getRawDoc = jest.fn().mockResolvedValue({
         id: 'prefix_test_asset',

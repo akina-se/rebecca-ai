@@ -212,6 +212,60 @@ export class CampaignsController {
   };
 
   /**
+   * POST /:id/slots/:slotId/image - Atomically upload illustration for a specific campaign slot.
+   *
+   * @param req - Express Request containing campaign ID, slotId path params, and image file.
+   * @param res - Express Response object.
+   */
+  setSlotIllustration = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractRequiredId(req.params.id);
+      const slotId = req.params.slotId;
+      if (!slotId || typeof slotId !== 'string') {
+        res.status(400).json({ error: 'slotId parameter is required.' });
+        return;
+      }
+      const file = req.file;
+      if (!file) {
+        res.status(400).json({ error: 'No image file uploaded.' });
+        return;
+      }
+
+      const result = await this.useCase.setSlotIllustration(id, slotId, {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        buffer: file.buffer,
+      });
+
+      res.status(200).json(result);
+    } catch (err: unknown) {
+      handleControllerError(res, err, 'setSlotIllustration');
+    }
+  };
+
+  /**
+   * DELETE /:id/slots/:slotId/image - Atomically remove illustration from a campaign slot.
+   *
+   * @param req - Express Request containing campaign ID and slotId path params.
+   * @param res - Express Response object.
+   */
+  removeSlotIllustration = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = extractRequiredId(req.params.id);
+      const slotId = req.params.slotId;
+      if (!slotId || typeof slotId !== 'string') {
+        res.status(400).json({ error: 'slotId parameter is required.' });
+        return;
+      }
+
+      const result = await this.useCase.removeSlotIllustration(id, slotId);
+      res.status(200).json(result);
+    } catch (err: unknown) {
+      handleControllerError(res, err, 'removeSlotIllustration');
+    }
+  };
+
+  /**
    * GET /:id/assets/:filename - Stream campaign illustration with on-demand thumbnail generation.
    *
    * @param req - Express Request object.
