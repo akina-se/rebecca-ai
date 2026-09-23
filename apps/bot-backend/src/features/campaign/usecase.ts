@@ -10,6 +10,7 @@ import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
  */
 export interface CampaignPostUseCaseConfig {
   timezone: string;
+  bucketName: string;
 }
 
 /**
@@ -39,7 +40,14 @@ export class CampaignPostUseCase {
   constructor(
     private readonly deps: AppDependencies,
     private readonly config: CampaignPostUseCaseConfig,
-  ) {}
+  ) {
+    if (!config.timezone || !config.timezone.trim()) {
+      throw new Error('[CampaignPostUseCase] Invariant violation: config.timezone is required.');
+    }
+    if (!config.bucketName || !config.bucketName.trim()) {
+      throw new Error('[CampaignPostUseCase] Invariant violation: config.bucketName is required.');
+    }
+  }
 
   /**
    * Executes the campaign slot post workflow.
@@ -137,7 +145,10 @@ export class CampaignPostUseCase {
     const hashtagsBlock = hashtagsList.length > 0 ? `\n${hashtagsList.join(' ')}` : '';
 
     try {
-      if (targetSlot.fixedTextOverride && targetSlot.fixedTextOverride.trim()) {
+      if (targetSlot.isFixedText) {
+        if (!targetSlot.fixedTextOverride || !targetSlot.fixedTextOverride.trim()) {
+          throw new Error(`Slot ${targetSlot.slotId} is configured for fixed text but fixedTextOverride is empty.`);
+        }
         postText = targetSlot.fixedTextOverride.trim();
         thought = 'Pre-defined narrative script for campaign slot.';
         if (campaignHashtag && !postText.includes(campaignHashtag)) {
@@ -213,7 +224,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       const mediaIds: string[] = [];
       if (targetSlot.mediaUrl) {
         try {
-          const { buffer, mimeType } = await downloadImage(targetSlot.mediaUrl);
+          const { buffer, mimeType } = await this.fetchSlotMedia(targetSlot.mediaUrl);
           const uploadedMediaId = await this.deps.xApi.uploadMedia(buffer, mimeType);
           if (uploadedMediaId) {
             mediaIds.push(uploadedMediaId);
@@ -288,5 +299,78 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
       // Re-throw so Cloud Scheduler registers a failure and can retry (Fail-Loudly)
       throw err;
     }
+  }
+
+  private static readonly ALLOWED_IMAGE_EXTENSIONS: Readonly<Record<string, string>> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+  };
+
+  /**
+   * Downloads and infers MIME type for a slot media attachment.
+   * Resolves direct GCS URIs (gs://...), relative campaign asset proxy URLs (/api/v1/campaigns/:id/assets/:filename),
+   * and absolute HTTPS URLs.
+   *
+   * @param mediaUrl - Image path or URL configured on the slot.
+   * @returns Buffer and verified MIME type.
+   */
+  private async fetchSlotMedia(mediaUrl: string): Promise<{ buffer: Buffer; mimeType: string }> {
+    const trimmed = mediaUrl.trim();
+    if (!trimmed) {
+      throw new Error('[CampaignPostUseCase] Empty mediaUrl provided.');
+    }
+
+    // Direct Cloud Storage URI (gs://...)
+    if (trimmed.startsWith('gs://')) {
+      const buffer = await this.deps.storage.downloadImage(trimmed);
+      const mimeType = this.resolveImageMimeType(trimmed);
+      return { buffer, mimeType };
+    }
+
+    // Relative campaign asset proxy path: /api/v1/campaigns/:campaignId/assets/:filename or /api/campaigns/...
+    const campaignAssetMatch = trimmed.match(
+      /^(?:\/api\/v1|\/api)?\/campaigns\/([a-zA-Z0-9_.-]+)\/assets\/([a-zA-Z0-9_.-]+)$/,
+    );
+    if (campaignAssetMatch) {
+      const campaignId = campaignAssetMatch[1];
+      const filename = campaignAssetMatch[2];
+      const gsUri = `gs://${this.config.bucketName}/campaigns/${campaignId}/${filename}`;
+      const buffer = await this.deps.storage.downloadImage(gsUri);
+      const mimeType = this.resolveImageMimeType(filename);
+      return { buffer, mimeType };
+    }
+
+    // Absolute HTTPS URL (strict RFC validation via URL constructor)
+    try {
+      const parsedUrl = new URL(trimmed);
+      if (parsedUrl.protocol !== 'https:') {
+        throw new Error(
+          `[CampaignPostUseCase] Insecure protocol "${parsedUrl.protocol}" in mediaUrl: "${trimmed}". Only https:// is permitted.`,
+        );
+      }
+      return await downloadImage(parsedUrl.href);
+    } catch (urlErr) {
+      if (urlErr instanceof Error && urlErr.message.startsWith('[CampaignPostUseCase]')) {
+        throw urlErr;
+      }
+      throw new Error(
+        `[CampaignPostUseCase] Unsupported or malformed mediaUrl: "${mediaUrl}". Expected gs:// URI, campaign asset path, or https:// URL.`,
+        { cause: urlErr },
+      );
+    }
+  }
+
+  private resolveImageMimeType(pathOrFilename: string): string {
+    const clean = pathOrFilename.split('?')[0].split('#')[0].trim();
+    const ext = clean.split('.').pop()?.toLowerCase();
+    if (!ext || !CampaignPostUseCase.ALLOWED_IMAGE_EXTENSIONS[ext]) {
+      throw new Error(
+        `[CampaignPostUseCase] Unsupported media extension in "${pathOrFilename}". Allowed extensions: ${Object.keys(CampaignPostUseCase.ALLOWED_IMAGE_EXTENSIONS).join(', ')}`,
+      );
+    }
+    return CampaignPostUseCase.ALLOWED_IMAGE_EXTENSIONS[ext];
   }
 }
