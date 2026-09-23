@@ -20,12 +20,18 @@ jest.mock('../../src/core/grpcClient', () => ({
 
 // Mock Google Cloud Storage
 const mockSave = jest.fn().mockResolvedValue(undefined);
-const mockFile = jest.fn().mockReturnValue({ save: mockSave });
+const mockDelete = jest.fn().mockResolvedValue(undefined);
+const mockFile = jest.fn().mockReturnValue({
+  save: mockSave,
+  delete: mockDelete,
+  exists: jest.fn().mockResolvedValue([true]),
+  download: jest.fn().mockResolvedValue([Buffer.from('fake')]),
+  getMetadata: jest.fn().mockResolvedValue([{ contentType: 'image/jpeg' }]),
+});
 const mockBucket = jest.fn().mockReturnValue({ file: mockFile });
+const mockStorage = { bucket: mockBucket } as any;
 jest.mock('@google-cloud/storage', () => ({
-  Storage: jest.fn().mockImplementation(() => ({
-    bucket: mockBucket
-  }))
+  Storage: jest.fn().mockImplementation(() => mockStorage)
 }));
 
 // Mock Gemini AI
@@ -132,11 +138,12 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         getPaginated: jest.fn(),
         getAll: jest.fn(),
         getById: jest.fn(),
+        getRawDoc: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
         update: jest.fn(),
         deleteMany: jest.fn()
       } as unknown as jest.Mocked<AssetsRepository>;
-      useCase = new AssetsUseCase(repo);
+      useCase = new AssetsUseCase(repo, mockStorage);
     });
 
     it('getPaginatedAssets should delegate to repository', async () => {
@@ -416,7 +423,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
 
     it('regenerateCaptions fallback without AI key', async () => {
       (config.gemini as any).apiKey = '';
-      const noAiUseCase = new AssetsUseCase(repo);
+      const noAiUseCase = new AssetsUseCase(repo, mockStorage);
 
       repo.getAll.mockResolvedValueOnce([
         {

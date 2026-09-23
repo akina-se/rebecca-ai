@@ -40,22 +40,6 @@
           }
         </button>
       } @else {
-        <!-- Pause / Resume Toggle for Active or Scheduled Campaign -->
-        @if (status === 'active' || status === 'scheduled') {
-          <button
-            type="button"
-            class="btn"
-            [class.btn-warning]="isPaused"
-            [class.btn-secondary]="!isPaused"
-            [disabled]="isTogglingPause()"
-            (click)="togglePause()"
-            [title]="(isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate"
-          >
-            <span class="material-icons">{{ isPaused ? 'play_arrow' : 'pause' }}</span>
-            {{ (isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate }}
-          </button>
-        }
-
         <!-- Delete Button -->
         <button
           type="button"
@@ -68,32 +52,111 @@
           {{ 'campaign.delete' | translate }}
         </button>
 
-        <!-- Save Draft Button -->
-        <button
-          type="button"
-          class="btn btn-secondary"
-          [disabled]="isSaving()"
-          (click)="save('draft')"
-        >
-          <span class="material-icons">save</span>
-          {{ 'campaign.save_draft' | translate }}
-        </button>
+        <!-- Pause / Resume Toggle for Active or Scheduled Campaign -->
+        @if (status === 'active' || status === 'scheduled') {
+          <button
+            type="button"
+            class="btn"
+            [class.btn-warning]="isPaused"
+            [class.btn-secondary]="!isPaused"
+            [disabled]="isTogglingPause() || isSaving()"
+            (click)="togglePause()"
+            [title]="(isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate"
+          >
+            <span class="material-icons">{{ isPaused ? 'play_arrow' : 'pause' }}</span>
+            {{ (isPaused ? 'campaign.resume_campaign' : 'campaign.pause_campaign') | translate }}
+          </button>
+        }
 
-        <!-- Schedule Button -->
-        <button
-          type="button"
-          class="btn btn-primary"
-          [disabled]="isSaving() || !title.trim()"
-          (click)="save('scheduled')"
-        >
-          @if (isSaving()) {
-            <span class="material-icons spinning">sync</span>
-            {{ 'common.saving' | translate }}
-          } @else {
-            <span class="material-icons">check_circle</span>
-            {{ 'campaign.schedule_campaign' | translate }}
-          }
-        </button>
+        <!-- Status === 'draft' Actions -->
+        @if (status === 'draft') {
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="isSaving()"
+            (click)="save('draft')"
+          >
+            <span class="material-icons">save</span>
+            {{ 'campaign.save_draft' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isSaving() || !title.trim()"
+            (click)="save('scheduled')"
+          >
+            @if (isSaving()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.saving' | translate }}
+            } @else {
+              <span class="material-icons">check_circle</span>
+              {{ 'campaign.schedule_campaign' | translate }}
+            }
+          </button>
+        }
+
+        <!-- Status === 'scheduled' Actions -->
+        @if (status === 'scheduled') {
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="isSaving()"
+            (click)="revertToDraft()"
+          >
+            <span class="material-icons">undo</span>
+            {{ 'campaign.revert_to_draft' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isSaving() || !title.trim()"
+            (click)="saveChanges()"
+          >
+            @if (isSaving()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.saving' | translate }}
+            } @else {
+              <span class="material-icons">save</span>
+              {{ 'campaign.save_changes' | translate }}
+            }
+          </button>
+        }
+
+        <!-- Status === 'active' Actions -->
+        @if (status === 'active') {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isSaving() || !title.trim()"
+            (click)="saveChanges()"
+          >
+            @if (isSaving()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.saving' | translate }}
+            } @else {
+              <span class="material-icons">save</span>
+              {{ 'campaign.save_changes' | translate }}
+            }
+          </button>
+        }
+
+        <!-- Other status (completed / archived) Actions -->
+        @if (status !== 'draft' && status !== 'scheduled' && status !== 'active') {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="isSaving() || !title.trim()"
+            (click)="saveChanges()"
+          >
+            @if (isSaving()) {
+              <span class="material-icons spinning">sync</span>
+              {{ 'common.saving' | translate }}
+            } @else {
+              <span class="material-icons">save</span>
+              {{ 'campaign.save_changes' | translate }}
+            }
+          </button>
+        }
       }
     </div>
   </div>

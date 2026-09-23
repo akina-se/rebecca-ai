@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import sharp from 'sharp';
 import { Storage } from '@google-cloud/storage';
+import { DateTime } from 'luxon';
 import {
   CampaignDoc,
   CampaignDocWithId,
@@ -48,10 +49,11 @@ class ThumbnailMemoryCache {
 /**
  * Configuration options required by CampaignsUseCase.
  * Follows Principle of Least Privilege / Interface Segregation:
- * Only requires the specific GCS bucket name rather than the full application config.
+ * Only requires the specific GCS bucket name and application timezone rather than the full config.
  */
 export interface CampaignsUseCaseConfig {
   imageBucketName: string;
+  timezone: string;
 }
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -112,16 +114,19 @@ export const getTimePeriodForHour = (timeStr: string): SlotTimePeriod => {
 
 /**
  * Generates an initial sequence of CampaignSlots for every day and slot time in the window.
+ * Converts local wall-clock dates and slot times in the given timezone into canonical UTC ISO8601 strings.
  *
  * @param startDate - YYYY-MM-DD
  * @param endDate - YYYY-MM-DD
  * @param dailySlotTimes - Array of HH:mm strings (e.g. ['08:00', '12:00', '19:00'])
- * @returns Array of initialized pending CampaignSlot objects.
+ * @param timezone - IANA time zone identifier (e.g. 'Asia/Tokyo')
+ * @returns Array of initialized pending CampaignSlot objects with authentic UTC scheduledTime values.
  */
 export const generateSlotsForSchedule = (
   startDate: string,
   endDate: string,
   dailySlotTimes: string[],
+  timezone: string,
 ): CampaignSlot[] => {
   if (!DATE_REGEX.test(startDate) || !DATE_REGEX.test(endDate)) {
     throw new Error('Dates must be in YYYY-MM-DD format.');
@@ -137,34 +142,51 @@ export const generateSlotsForSchedule = (
       throw new Error(`Invalid slot time "${t}". Expected HH:mm format.`);
     }
   }
+  if (!timezone || timezone.trim() === '') {
+    throw new Error('timezone is required for slot generation.');
+  }
 
   const slots: CampaignSlot[] = [];
-  const start = new Date(`${startDate}T00:00:00Z`);
-  const end = new Date(`${endDate}T00:00:00Z`);
+  const startDt = DateTime.fromISO(startDate, { zone: timezone }).startOf('day');
+  const endDt = DateTime.fromISO(endDate, { zone: timezone }).startOf('day');
+
+  if (!startDt.isValid || !endDt.isValid) {
+    throw new Error(`Invalid date interval: "${startDate}" - "${endDate}" with timezone "${timezone}".`);
+  }
 
   let dayNum = 1;
-  const current = new Date(start);
+  let currentDt = startDt;
 
-  while (current <= end) {
-    const y = current.getUTCFullYear();
-    const m = String(current.getUTCMonth() + 1).padStart(2, '0');
-    const d = String(current.getUTCDate()).padStart(2, '0');
-    const dateStr = `${y}-${m}-${d}`;
+  while (currentDt <= endDt) {
+    const dateStr = currentDt.toISODate();
+    if (!dateStr) {
+      throw new Error(`Failed to format date for day ${dayNum}.`);
+    }
 
     for (const time of dailySlotTimes) {
       const period = getTimePeriodForHour(time);
       const cleanTime = time.replace(':', '');
+
+      const localSlotDt = DateTime.fromISO(`${dateStr}T${time}:00`, { zone: timezone });
+      if (!localSlotDt.isValid) {
+        throw new Error(`Invalid slot datetime "${dateStr}T${time}:00" in timezone "${timezone}".`);
+      }
+      const scheduledUtcIso = localSlotDt.toUTC().toISO();
+      if (!scheduledUtcIso) {
+        throw new Error('Failed to convert slot datetime to UTC ISO string.');
+      }
+
       slots.push({
         slotId: `slot-${dayNum}-${cleanTime}`,
         dayNumber: dayNum,
         timePeriod: period,
-        scheduledTime: `${dateStr}T${time}:00Z`,
+        scheduledTime: scheduledUtcIso,
         theme: `Day ${dayNum} ${period.charAt(0).toUpperCase() + period.slice(1)}`,
         status: 'pending',
       });
     }
 
-    current.setUTCDate(current.getUTCDate() + 1);
+    currentDt = currentDt.plus({ days: 1 });
     dayNum++;
   }
 
@@ -269,7 +291,13 @@ export class CampaignsUseCase {
     // Generate slots if not supplied, or validate provided slots
     const slots: CampaignSlot[] = Array.isArray(data.slots) && data.slots.length > 0
       ? data.slots
-      : generateSlotsForSchedule(startDate, endDate, data.dailySlotTimes);
+      : generateSlotsForSchedule(startDate, endDate, data.dailySlotTimes, this.config.timezone);
+
+    for (const slot of slots) {
+      if (!slot.scheduledTime || isNaN(new Date(slot.scheduledTime).getTime())) {
+        throw new Error(`Invalid scheduledTime "${slot.scheduledTime}" for slot "${slot.slotId}".`);
+      }
+    }
 
     if ((data.status === 'scheduled' || data.status === 'active') && slots.length === 0) {
       throw new Error('A scheduled or active campaign must contain at least one slot.');
@@ -540,6 +568,130 @@ export class CampaignsUseCase {
   }
 
   /**
+   * Uploads an illustration for a specific campaign slot and atomically updates Firestore.
+   * If a previous illustration exists for this slot, it is automatically purged from GCS.
+   *
+   * @param campaignId - Document ID of the campaign.
+   * @param slotId - Identifier of the slot within the campaign.
+   * @param file - Uploaded image file buffer and metadata.
+   * @returns Updated slot object and mediaUrl.
+   */
+  async setSlotIllustration(
+    campaignId: string,
+    slotId: string,
+    file: UploadedCampaignFile,
+  ): Promise<{ slot: CampaignSlot; mediaUrl: string }> {
+    const campaign = await this.repo.getById(campaignId);
+    if (!campaign) {
+      throw new Error(`Campaign ${campaignId} not found.`);
+    }
+
+    const slotIndex = campaign.slots.findIndex((s) => s.slotId === slotId);
+    if (slotIndex === -1) {
+      throw new Error(`Slot ${slotId} not found in campaign ${campaignId}.`);
+    }
+
+    if (!file.mimetype.startsWith('image/')) {
+      throw new Error('Only image uploads are permitted for campaign assets.');
+    }
+
+    const targetSlot = campaign.slots[slotIndex];
+
+    // If an illustration already exists on this slot, delete old file to prevent zombie objects
+    if (targetSlot.mediaUrl) {
+      const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
+      if (match && match[1]) {
+        // Enforce physical deletion to guarantee Zero Zombie Assets
+        await this.deleteCampaignAsset(campaignId, match[1]);
+      }
+    }
+
+    const bucketName = this.config.imageBucketName;
+    const bucket = this.storage.bucket(bucketName);
+
+    const ext = file.originalname.includes('.')
+      ? file.originalname.split('.').pop()
+      : 'jpg';
+    const cleanFilename = `${Date.now()}_${crypto.randomUUID().slice(0, 6)}.${ext}`;
+    const destination = `campaigns/${campaignId}/${cleanFilename}`;
+
+    const gcsFile = bucket.file(destination);
+    await gcsFile.save(file.buffer, {
+      metadata: {
+        contentType: file.mimetype,
+        cacheControl: 'public, max-age=31536000',
+      },
+      resumable: false,
+    });
+
+    const proxyUrl = `/api/v1/campaigns/${campaignId}/assets/${cleanFilename}`;
+
+    const updatedSlots = [...campaign.slots];
+    updatedSlots[slotIndex] = {
+      ...targetSlot,
+      mediaUrl: proxyUrl,
+    };
+
+    const updatedCampaign = await this.repo.update(campaignId, { slots: updatedSlots });
+    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId);
+    if (!persistedSlot) {
+      throw new Error(`[CampaignsUseCase] Invariant violation: Slot "${slotId}" not found in updated campaign "${campaignId}".`);
+    }
+
+    return {
+      slot: persistedSlot,
+      mediaUrl: proxyUrl,
+    };
+  }
+
+  /**
+   * Removes an illustration from a campaign slot and deletes the physical file from GCS.
+   * Atomically clears mediaUrl on the slot in Firestore.
+   *
+   * @param campaignId - Document ID of the campaign.
+   * @param slotId - Identifier of the slot within the campaign.
+   * @returns Updated slot object.
+   */
+  async removeSlotIllustration(
+    campaignId: string,
+    slotId: string,
+  ): Promise<{ slot: CampaignSlot }> {
+    const campaign = await this.repo.getById(campaignId);
+    if (!campaign) {
+      throw new Error(`Campaign ${campaignId} not found.`);
+    }
+
+    const slotIndex = campaign.slots.findIndex((s) => s.slotId === slotId);
+    if (slotIndex === -1) {
+      throw new Error(`Slot ${slotId} not found in campaign ${campaignId}.`);
+    }
+
+    const targetSlot = campaign.slots[slotIndex];
+    if (targetSlot.mediaUrl) {
+      const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
+      if (match && match[1]) {
+        // Enforce physical deletion to guarantee Zero Zombie Assets
+        await this.deleteCampaignAsset(campaignId, match[1]);
+      }
+    }
+
+    const updatedSlots = [...campaign.slots];
+    const cleanedSlot: CampaignSlot = { ...targetSlot };
+    delete cleanedSlot.mediaUrl;
+    updatedSlots[slotIndex] = cleanedSlot;
+
+    const updatedCampaign = await this.repo.update(campaignId, { slots: updatedSlots });
+    const persistedSlot = updatedCampaign.slots.find((s) => s.slotId === slotId);
+    if (!persistedSlot) {
+      throw new Error(`[CampaignsUseCase] Invariant violation: Slot "${slotId}" not found in updated campaign "${campaignId}".`);
+    }
+
+    return {
+      slot: persistedSlot,
+    };
+  }
+
+  /**
    * Retrieves the binary content of a campaign asset.
    * Supports on-demand WebP thumbnail generation (400px width) with multi-tier caching (RAM -> GCS -> On-demand).
    *
@@ -599,13 +751,10 @@ export class CampaignsUseCase {
         : filename.toLowerCase().endsWith('.webp')
           ? 'image/webp'
           : 'image/jpeg';
-      try {
-        const [metadata] = await originalFile.getMetadata();
-        if (metadata?.contentType) {
-          contentType = metadata.contentType;
-        }
-      } catch {
-        // ignore metadata error
+
+      const [metadata] = await originalFile.getMetadata();
+      if (metadata?.contentType) {
+        contentType = metadata.contentType;
       }
 
       if (size === 'thumbnail') {
@@ -640,7 +789,7 @@ export class CampaignsUseCase {
       return { buffer: originalBuffer, contentType };
     } catch (err) {
       console.error(`Failed to read campaign asset ${originalPath}:`, err);
-      return null;
+      throw err;
     }
   }
 
@@ -668,8 +817,8 @@ export class CampaignsUseCase {
     const thumbPath = `campaigns/${campaignId}/thumbnails/${filename}.webp`;
 
     await Promise.all([
-      bucket.file(originalPath).delete({ ignoreNotFound: true }).catch(() => {}),
-      bucket.file(thumbPath).delete({ ignoreNotFound: true }).catch(() => {}),
+      bucket.file(originalPath).delete({ ignoreNotFound: true }),
+      bucket.file(thumbPath).delete({ ignoreNotFound: true }),
     ]);
   }
 
