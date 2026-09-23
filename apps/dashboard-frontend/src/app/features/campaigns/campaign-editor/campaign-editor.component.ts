@@ -13,9 +13,11 @@ import {
 import { CAMPAIGNS_REPOSITORY } from '../../../core/ports/campaigns.repository';
 import { ToastService } from '../../../shared/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
+import { ConfigService } from '../../../core/services/config.service';
 import { ItinerarySlotCardComponent } from '../../../shared/components/molecules/itinerary-slot-card/itinerary-slot-card.component';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
+import { DateTime } from 'luxon';
 
 export interface DaySlotGroup {
   dayNumber: number;
@@ -51,6 +53,7 @@ export class CampaignEditorComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly toastService = inject(ToastService);
   private readonly translation = inject(TranslationService);
+  private readonly configService = inject(ConfigService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   campaignId: string | null = null;
@@ -321,6 +324,8 @@ export class CampaignEditorComponent implements OnInit {
     const dayMs = 24 * 60 * 60 * 1000;
     const totalDays = Math.round((end.getTime() - start.getTime()) / dayMs) + 1;
 
+    const timezone = this.configService.appTimezone();
+
     for (let day = 1; day <= totalDays; day++) {
       this.openDays.add(day);
       const currentDayDate = new Date(start.getTime() + (day - 1) * dayMs);
@@ -330,8 +335,17 @@ export class CampaignEditorComponent implements OnInit {
         const [h, m] = timeStr.split(':').map((v) => parseInt(v, 10));
         const hour = isNaN(h) ? 8 : h;
         const timePeriod = this.mapHourToPeriod(hour);
-        const scheduledTime = `${dateStr}T${String(hour).padStart(2, '0')}:${String(m || 0).padStart(2, '0')}:00Z`;
-        const slotId = `slot-${day}-${String(hour).padStart(2, '0')}${String(m || 0).padStart(2, '0')}`;
+        const hourStr = String(hour).padStart(2, '0');
+        const minStr = String(m || 0).padStart(2, '0');
+        const localDt = DateTime.fromISO(`${dateStr}T${hourStr}:${minStr}:00`, { zone: timezone });
+        if (!localDt.isValid) {
+          throw new Error(`Invalid slot datetime "${dateStr}T${hourStr}:${minStr}:00" in timezone "${timezone}".`);
+        }
+        const scheduledTime = localDt.toUTC().toISO();
+        if (!scheduledTime) {
+          throw new Error('Failed to convert slot datetime to UTC ISO string.');
+        }
+        const slotId = `slot-${day}-${hourStr}${minStr}`;
 
         // Preserve existing slot settings if slotId matches
         const existing = this.slots.find((s) => s.slotId === slotId);
@@ -381,7 +395,7 @@ export class CampaignEditorComponent implements OnInit {
   }
 
   /**
-   * Handles illustration file upload for an individual slot.
+   * Handles illustration file upload for an individual slot with atomic backend persistence.
    */
   onUploadMedia(event: { slot: CampaignSlot; file: File }): void {
     const campaignId = this.campaignId;
@@ -390,19 +404,20 @@ export class CampaignEditorComponent implements OnInit {
       return;
     }
 
-    this.toastService.show('Uploading illustration...', 'info');
-    this.repo.uploadAsset(campaignId, event.file).subscribe({
+    this.toastService.show(this.translation.translate('campaign.slot_uploading'), 'info');
+    this.repo.uploadSlotImage(campaignId, event.slot.slotId, event.file).subscribe({
       next: (res) => {
+        event.slot.mediaUrl = res.mediaUrl;
         const updatedSlot: CampaignSlot = {
           ...event.slot,
-          mediaUrl: res.url,
+          mediaUrl: res.mediaUrl,
         };
         this.onSlotChange(updatedSlot);
-        this.toastService.show('Illustration uploaded', 'success');
+        this.toastService.show(this.translation.translate('campaign.slot_image') + ' uploaded', 'success');
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('[CampaignEditor] Upload failed:', err);
+        console.error('[CampaignEditor] Slot upload failed:', err);
         this.toastService.show('Failed to upload image', 'error');
         this.cdr.detectChanges();
       },
@@ -410,32 +425,53 @@ export class CampaignEditorComponent implements OnInit {
   }
 
   /**
-   * Handles illustration file deletion for an individual slot.
+   * Handles illustration file deletion for an individual slot with atomic backend purge.
    */
   onDeleteMedia(event: { slot: CampaignSlot; filename: string }): void {
     const campaignId = this.campaignId;
-    const filename = event.filename;
+    if (!campaignId) return;
 
-    event.slot.mediaUrl = undefined;
-    const updatedSlot: CampaignSlot = {
-      ...event.slot,
-      mediaUrl: undefined,
-    };
-    this.onSlotChange(updatedSlot);
-    this.cdr.detectChanges();
+    const previousMediaUrl = event.slot.mediaUrl;
+    this.repo.deleteSlotImage(campaignId, event.slot.slotId).subscribe({
+      next: () => {
+        event.slot.mediaUrl = undefined;
+        const updatedSlot: CampaignSlot = {
+          ...event.slot,
+          mediaUrl: undefined,
+        };
+        this.onSlotChange(updatedSlot);
+        this.toastService.show(this.translation.translate('campaign.slot_remove_image'), 'info');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('[CampaignEditor] Slot delete failed:', err);
+        this.toastService.show('Failed to delete image', 'error');
+        // Rollback: ensure slot card retains original mediaUrl on failure
+        this.onSlotChange({
+          ...event.slot,
+          mediaUrl: previousMediaUrl,
+        });
+        this.cdr.detectChanges();
+      },
+    });
+  }
 
-    if (campaignId && filename) {
-      this.repo.deleteAsset(campaignId, filename).subscribe({
-        next: () => {
-          this.toastService.show('Illustration deleted', 'info');
-        },
-        error: (err) => {
-          console.warn('[CampaignEditor] Failed to physically delete asset from GCS:', err);
-        },
-      });
-    } else {
-      this.toastService.show('Illustration deleted', 'info');
+  /**
+   * Saves campaign updates while preserving its current lifecycle status.
+   */
+  saveChanges(): void {
+    this.save(this.status);
+  }
+
+  /**
+   * Reverts a scheduled campaign back to draft status with user confirmation.
+   */
+  revertToDraft(): void {
+    const confirmMsg = this.translation.translate('campaign.revert_confirm');
+    if (!window.confirm(confirmMsg)) {
+      return;
     }
+    this.save('draft');
   }
 
   /**

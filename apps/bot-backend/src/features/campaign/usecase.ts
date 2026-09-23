@@ -49,16 +49,23 @@ export class CampaignPostUseCase {
   async execute(): Promise<CampaignPostResult> {
     console.log('[CampaignPostUseCase] Starting Narrative Event Campaign Slot Execution...');
 
-    const campaign = await this.deps.firestore.getActiveCampaign();
+    let campaign = await this.deps.firestore.getActiveCampaign();
+    if (!campaign) {
+      const scheduledCampaign = await this.deps.firestore.getScheduledCampaignDueToday();
+      if (scheduledCampaign && !scheduledCampaign.isPaused) {
+        campaign = scheduledCampaign;
+      }
+    }
+
     if (!campaign || campaign.isPaused) {
-      console.log('[CampaignPostUseCase] No active campaign running or campaign is paused.');
+      console.log('[CampaignPostUseCase] No active or scheduled campaign ready for today, or campaign is paused.');
       return {
         status: 'no_active_campaign',
-        reason: 'No active campaign found or campaign is paused.',
+        reason: 'No active or scheduled campaign found or campaign is paused.',
       };
     }
 
-    const { year, month, day, numericHour } = getZonedDateParts(new Date(), this.config.timezone);
+    const { year, month, day } = getZonedDateParts(new Date(), this.config.timezone);
     const todayStr = `${year}-${month}-${day}`;
 
     // Calculate current day index relative to campaign start
@@ -74,9 +81,7 @@ export class CampaignPostUseCase {
       };
     }
 
-    const currentPeriod = mapHourToTimePeriod(numericHour);
-
-    // Find the pending slot for today matching the current period strictly
+    // Find the pending slots for today
     const pendingSlotsForToday = campaign.slots.filter(
       (s: CampaignSlot) => s.dayNumber === dayNumber && s.status === 'pending',
     );
@@ -89,30 +94,36 @@ export class CampaignPostUseCase {
       };
     }
 
-    // Find matching pending slot:
-    // Priority 1: Match exact hour from scheduledTime (handles 1-hour granular slots)
-    // Priority 2: Fallback to canonical timePeriod matching for full backward compatibility
-    const targetSlot =
-      pendingSlotsForToday.find((s) => {
-        if (s.scheduledTime) {
-          const timePart = s.scheduledTime.includes('T')
-            ? s.scheduledTime.split('T')[1]
-            : s.scheduledTime;
-          const [hStr] = timePart.split(':');
-          const slotHour = parseInt(hStr, 10);
-          if (!isNaN(slotHour) && slotHour === numericHour) {
-            return true;
-          }
-        }
-        return false;
-      }) ?? pendingSlotsForToday.find((s) => s.timePeriod === currentPeriod);
+    const now = new Date();
+    const nowTime = now.getTime();
+
+    // Match pending slot scheduled within current hourly execution window (within 30 minutes of scheduler trigger)
+    const targetSlot = pendingSlotsForToday.find((s) => {
+      const slotTime = new Date(s.scheduledTime).getTime();
+      if (isNaN(slotTime)) {
+        throw new Error(`Invalid scheduledTime for slot ${s.slotId}: "${s.scheduledTime}". Expected valid ISO8601 string.`);
+      }
+      return Math.abs(nowTime - slotTime) <= 30 * 60 * 1000;
+    });
 
     if (!targetSlot) {
-      console.log(`[CampaignPostUseCase] No pending slot configured for hour ${numericHour} (period "${currentPeriod}") on Day ${dayNumber}. Skipping.`);
+      console.log(`[CampaignPostUseCase] No pending slot scheduled for current execution window (${now.toISOString()}) on Day ${dayNumber}. Skipping.`);
       return {
         status: 'skipped',
-        reason: `No pending slot configured for period "${currentPeriod}" on Day ${dayNumber}.`,
+        reason: `No pending slot scheduled for current execution window on Day ${dayNumber}.`,
       };
+    }
+
+    // Auto-activate scheduled campaign upon executing its first matched slot
+    if (campaign.status === 'scheduled') {
+      console.log(`[CampaignPostUseCase] Auto-activating scheduled campaign "${campaign.title}" (${campaign.id}) at first slot post.`);
+      campaign.status = 'active';
+      if (campaign.id) {
+        await this.deps.firestore.updateCampaign(campaign.id, {
+          status: 'active',
+          updatedAt: new Date().toISOString(),
+        });
+      }
     }
 
     console.log(`[CampaignPostUseCase] Target slot matched: ID=${targetSlot.slotId}, Day=${targetSlot.dayNumber}, Period=${targetSlot.timePeriod}, Theme="${targetSlot.theme}"`);

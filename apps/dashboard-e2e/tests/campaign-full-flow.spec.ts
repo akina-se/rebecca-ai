@@ -3,26 +3,20 @@ import { loginWithEmulatorAndSeedDB } from './auth-helper';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || path.resolve(__dirname, '../artifacts');
+const ARTIFACTS_DIR = process.env.ARTIFACTS_DIR || 'C:/Users/Anabuki Motoshi/.gemini/antigravity/brain/4f99e6aa-a578-4806-a0e3-56b41dbbfe07';
 if (!fs.existsSync(ARTIFACTS_DIR)) {
   fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 }
 
 test.describe('Campaign Full End-to-End User Flow Verification', () => {
-  test('Complete lifecycle: List -> Create -> Edit/Upload -> List Verification -> Clone -> Delete', async ({ page }) => {
-    test.setTimeout(90000);
+  test('Complete lifecycle: List -> Create -> Edit/Upload -> Reload Persistence -> Schedule -> Save Changes -> Revert to Draft -> Clone -> Delete', async ({ page }) => {
+    test.setTimeout(120000);
 
     page.on('console', (msg) => console.log(`[BROWSER LOG] ${msg.type()}: ${msg.text()}`));
     page.on('pageerror', (err) => console.log(`[BROWSER ERROR] ${err}`));
-    page.on('request', (req) => {
-      if (req.url().includes('/api/')) {
-        process.stdout.write(`[HTTP REQ] ${req.method()} ${req.url()}\n`);
-      }
-    });
-    page.on('response', (res) => {
-      if (res.url().includes('/api/')) {
-        process.stdout.write(`[HTTP RES] ${res.status()} ${res.url()}\n`);
-      }
+    page.on('dialog', (dialog) => {
+      console.log(`[BROWSER DIALOG] ${dialog.type()}: ${dialog.message()}`);
+      dialog.accept();
     });
 
     // 1. Authenticate via emulator
@@ -97,43 +91,34 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
 
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_03_campaign_editor_filled.png'), fullPage: true });
 
-    // 6. Save as Draft
-    const saveDraftBtn = page.locator('.topbar-actions button').filter({ hasText: /下書き保存|Save Draft/ });
-    await saveDraftBtn.click();
-
-    // Wait for redirect to /campaigns
-    await page.waitForURL('**/campaigns', { timeout: 20000 });
-    await page.waitForTimeout(1000);
-
-    // 7. Verify the created campaign is listed
-    const campaignRow = page.locator('.campaign-row', { hasText: title });
-    await expect(campaignRow).toBeVisible({ timeout: 15000 });
-    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_04_campaign_created_in_list.png'), fullPage: true });
-
-    // 8. Open the created campaign to test image upload
-    await campaignRow.locator('.btn-icon', { hasText: 'edit' }).click();
-    await page.waitForURL('**/campaigns/**', { timeout: 15000 });
-    await expect(page.locator('.editor-heading h2')).toBeVisible();
-
-    // Attach sample image to Slot 1
-    const slot1 = page.locator('app-itinerary-slot-card').first();
-    await expect(slot1).toBeVisible({ timeout: 20000 });
-
-    // Attach sample image to Slot 1 via setInputFiles
-    const fileInput1 = slot1.locator('input[type="file"]');
+    // 6. Test Atomic Image Upload & Browser Reload Persistence (Zero Zombie Guarantee)
+    const fileInput1 = firstCard.locator('input[type="file"]');
     await fileInput1.setInputFiles(path.resolve(__dirname, '../test-assets/sample.png'));
 
     // Wait for image thumbnail preview to appear
-    const thumbPreview = slot1.locator('.attached-media-preview');
+    const thumbPreview = firstCard.locator('.attached-media-preview');
     await expect(thumbPreview).toBeVisible({ timeout: 15000 });
     const thumbImg = thumbPreview.locator('img.media-thumb');
     await expect(thumbImg).toBeVisible();
     expect(await thumbImg.getAttribute('src')).toContain('size=thumbnail');
-    await slot1.scrollIntoViewIfNeeded();
+    await firstCard.scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_uploaded.png') });
 
-    // 8a. Test Lightbox Open on Thumbnail Click
-    await thumbPreview.click();
+    // RELOAD browser page directly WITHOUT clicking save!
+    // The image must remain intact because it is atomically saved to Firestore on upload!
+    await page.reload();
+    await expect(page.locator('.editor-heading h2')).toBeVisible({ timeout: 15000 });
+    const reloadedFirstCard = page.locator('app-itinerary-slot-card').first();
+    await expect(reloadedFirstCard).toBeVisible({ timeout: 10000 });
+    const reloadedThumbPreview = reloadedFirstCard.locator('.attached-media-preview');
+    await expect(reloadedThumbPreview).toBeVisible({ timeout: 15000 });
+    const reloadedThumbImg = reloadedThumbPreview.locator('img.media-thumb');
+    await expect(reloadedThumbImg).toBeVisible();
+    await reloadedFirstCard.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_persisted_after_reload.png') });
+
+    // 6b. Test Lightbox Open on Thumbnail Click
+    await reloadedThumbPreview.click();
     const lightbox = page.locator('app-lightbox .lightbox-overlay');
     await expect(lightbox).toBeVisible({ timeout: 10000 });
     const lightboxImg = lightbox.locator('.image-container img');
@@ -141,42 +126,99 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     expect(await lightboxImg.getAttribute('src')).toContain('size=full');
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05b_campaign_lightbox_open.png') });
 
-    // 8b. Close Lightbox
+    // 6c. Close Lightbox
     const closeLightboxBtn = lightbox.locator('.close-btn');
     await closeLightboxBtn.click();
     await expect(lightbox).toBeHidden({ timeout: 5000 });
 
-    // 8c. Test Image Deletion (Physical GCS Cleanup & UI Reset)
-    const deleteMediaBtn = slot1.locator('.btn-delete-media');
+    // 6d. Test Image Deletion (Atomic GCS Purge & Firestore Reset)
+    const deleteMediaBtn = reloadedFirstCard.locator('.btn-delete-media');
     await expect(deleteMediaBtn).toBeVisible({ timeout: 5000 });
     await deleteMediaBtn.click();
 
-    // Verify thumbnail is removed and "イラストを追加" button is restored
-    await expect(thumbPreview).toBeHidden({ timeout: 10000 });
-    const restoredUploadBtn = slot1.locator('.upload-btn');
+    // Verify thumbnail is removed and upload button is restored
+    await expect(reloadedThumbPreview).toBeHidden({ timeout: 10000 });
+    const restoredUploadBtn = reloadedFirstCard.locator('.upload-btn');
     await expect(restoredUploadBtn).toBeVisible({ timeout: 10000 });
-    await slot1.scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05c_campaign_image_deleted.png') });
 
-    // 8d. Re-upload image to test saving and cloning with media
-    await slot1.locator('input[type="file"]').setInputFiles(path.resolve(__dirname, '../test-assets/sample.png'));
-    await expect(thumbPreview).toBeVisible({ timeout: 15000 });
+    // Re-upload image so campaign has an asset for scheduling & clone
+    await reloadedFirstCard.locator('input[type="file"]').setInputFiles(path.resolve(__dirname, '../test-assets/sample.png'));
+    await expect(reloadedFirstCard.locator('.attached-media-preview')).toBeVisible({ timeout: 15000 });
 
-    // Save changes
-    const saveBtn = page.locator('.topbar-actions button').filter({ hasText: /下書き保存|Save Draft/ });
-    await saveBtn.click();
+    // Refill Context Layers that were reset during browser reload before scheduling
+    const masterContextPostReload = page.locator('.form-grid textarea.form-textarea').nth(1);
+    await masterContextPostReload.fill('Master narrative context: Rebecca is exploring retro electronics in Akihabara.');
+    const replyContextPostReload = page.locator('.form-grid textarea.form-textarea').nth(2);
+    await replyContextPostReload.fill('Reply context: Show enthusiasm for retro gaming consoles and maid cafe snacks.');
+
+    // 7. Test Transition to Scheduled Status & State-Driven Topbar Actions
+    // In draft status: buttons must be [削除] [下書き保存] [配信スケジュール登録]
+    const scheduleBtn = page.locator('.topbar-actions button').filter({ hasText: /スケジュール確定|Schedule Campaign/ });
+    await expect(scheduleBtn).toBeVisible();
+    await scheduleBtn.click();
+
+    // Wait for redirect to /campaigns
+    await page.waitForURL('**/campaigns', { timeout: 20000 });
+    await page.waitForTimeout(1000);
+
+    // Verify the created campaign is listed with scheduled status
+    const campaignRow = page.locator('.campaign-row', { hasText: title });
+    await expect(campaignRow).toBeVisible({ timeout: 15000 });
+    await expect(campaignRow.locator('.badge-scheduled')).toBeVisible();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_04_campaign_created_in_list.png'), fullPage: true });
+
+    // 8. Re-open the scheduled campaign and verify State-Driven Action Bar
+    await campaignRow.locator('.btn-icon', { hasText: 'edit' }).click();
+    await page.waitForURL('**/campaigns/**', { timeout: 15000 });
+    await expect(page.locator('.editor-heading h2')).toBeVisible();
+
+    // Verify "変更を保存" (Save Changes) and "下書きに戻す" (Revert to Draft) appear!
+    const saveChangesBtn = page.locator('.topbar-actions button').filter({ hasText: /変更を保存|Save Changes/ });
+    const revertToDraftBtn = page.locator('.topbar-actions button').filter({ hasText: /下書きに戻す|Revert to Draft/ });
+    await expect(saveChangesBtn).toBeVisible({ timeout: 10000 });
+    await expect(revertToDraftBtn).toBeVisible({ timeout: 10000 });
+
+    // Verify old "配信スケジュール登録" and "下書き保存" are NOT visible
+    await expect(page.locator('.topbar-actions button').filter({ hasText: /スケジュール確定|Schedule Campaign/ })).toBeHidden();
+    await expect(page.locator('.topbar-actions button').filter({ hasText: /下書き保存|Save as Draft/ })).toBeHidden();
+
+    // Verify Pause toggle is available
+    const pauseBtn = page.locator('.topbar-actions button').filter({ hasText: /一時停止|Pause/ });
+    await expect(pauseBtn).toBeVisible();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05d_campaign_scheduled_action_bar.png'), fullPage: true });
+
+    // 8a. Test "変更を保存" (Save Changes) keeps scheduled status
+    const descInputInEdit = page.locator('textarea.form-textarea').first();
+    await descInputInEdit.fill('Updated narrative context: Exploring Radio Kaikan with Rebecca in Akihabara.');
+    await saveChangesBtn.click();
     await page.waitForURL('**/campaigns', { timeout: 20000 });
 
+    // Verify row still has scheduled status
+    const updatedRow = page.locator('.campaign-row', { hasText: title });
+    await expect(updatedRow.locator('.badge-scheduled')).toBeVisible();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05e_campaign_scheduled_changes_saved.png'), fullPage: true });
+
+    // 8b. Test "下書きに戻す" (Revert to Draft)
+    await updatedRow.locator('.btn-icon', { hasText: 'edit' }).click();
+    await page.waitForURL('**/campaigns/**', { timeout: 15000 });
+    const revertBtn = page.locator('.topbar-actions button').filter({ hasText: /下書きに戻す|Revert to Draft/ });
+    await expect(revertBtn).toBeVisible();
+    await revertBtn.click();
+    await page.waitForURL('**/campaigns', { timeout: 20000 });
+
+    // Verify campaign is now in draft status
+    const draftRow = page.locator('.campaign-row', { hasText: title });
+    await expect(draftRow.locator('.badge-draft')).toBeVisible();
+    await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05f_campaign_reverted_to_draft.png'), fullPage: true });
+
     // 9. Test Campaign Clone
-    const targetRow = page.locator('.campaign-row', { hasText: title });
-    await expect(targetRow).toBeVisible();
-    const cloneBtn = targetRow.locator('.btn-icon', { hasText: 'content_copy' });
+    const cloneBtn = draftRow.locator('.btn-icon', { hasText: 'content_copy' });
     await cloneBtn.click();
 
     const cloneModal = page.locator('.modal-backdrop');
     await expect(cloneModal).toBeVisible();
 
-    // Set clone start and end date (30 days after original end date)
     const cloneStartObj = new Date(endDateObj);
     cloneStartObj.setUTCDate(cloneStartObj.getUTCDate() + 30);
     const cloneEndObj = new Date(cloneStartObj);

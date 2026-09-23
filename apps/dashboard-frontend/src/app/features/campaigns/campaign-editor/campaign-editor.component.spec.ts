@@ -53,6 +53,12 @@ describe('CampaignEditorComponent', () => {
       uploadAsset: jest.fn().mockReturnValue(
         of({ url: '/api/v1/campaigns/camp_edit_1/assets/pic.png', filename: 'pic.png' }),
       ),
+      uploadSlotImage: jest.fn().mockReturnValue(
+        of({ slot: sampleCampaign.slots[0], mediaUrl: '/api/v1/campaigns/camp_edit_1/assets/pic.png' }),
+      ),
+      deleteSlotImage: jest.fn().mockReturnValue(
+        of({ slot: { ...sampleCampaign.slots[0], mediaUrl: undefined } }),
+      ),
       deleteAsset: jest.fn().mockReturnValue(of({ success: true })),
     };
 
@@ -202,9 +208,10 @@ describe('CampaignEditorComponent', () => {
 
   it('should upload illustration asset and attach url to slot', () => {
     const file = new File(['abc'], 'kyoto.png', { type: 'image/png' });
+    const slotId = component.slots[0].slotId;
     component.onUploadMedia({ slot: component.slots[0], file });
 
-    expect(mockRepo.uploadAsset).toHaveBeenCalledWith('camp_edit_1', file);
+    expect(mockRepo.uploadSlotImage).toHaveBeenCalledWith('camp_edit_1', slotId, file);
     expect(component.slots[0].mediaUrl).toBe('/api/v1/campaigns/camp_edit_1/assets/pic.png');
   });
 
@@ -336,11 +343,11 @@ describe('CampaignEditorComponent', () => {
       'Please save campaign before uploading images',
       'warning',
     );
-    expect(mockRepo.uploadAsset).not.toHaveBeenCalled();
+    expect(mockRepo.uploadSlotImage).not.toHaveBeenCalled();
   });
 
   it('should handle asset upload failure gracefully', () => {
-    mockRepo.uploadAsset.mockReturnValue(throwError(() => new Error('Upload error')));
+    mockRepo.uploadSlotImage.mockReturnValue(throwError(() => new Error('Upload error')));
     const file = new File(['test'], 'dummy.png', { type: 'image/png' });
     component.onUploadMedia({ slot: component.slots[0], file });
 
@@ -503,7 +510,32 @@ describe('CampaignEditorComponent', () => {
 
     component.onDeleteMedia({ slot: targetSlot, filename: 'pic.png' });
     expect(targetSlot.mediaUrl).toBeUndefined();
-    expect(mockRepo.deleteAsset).toHaveBeenCalledWith('camp_edit_1', 'pic.png');
-    expect(mockToast.show).toHaveBeenCalledWith('Illustration deleted', 'info');
+    expect(mockRepo.deleteSlotImage).toHaveBeenCalledWith('camp_edit_1', targetSlot.slotId);
+    expect(mockToast.show).toHaveBeenCalledWith(expect.stringContaining('削除'), 'info');
+  });
+
+  it('should saveChanges keeping current status', () => {
+    component.status = 'scheduled';
+    const saveSpy = jest.spyOn(component, 'save');
+    component.saveChanges();
+    expect(saveSpy).toHaveBeenCalledWith('scheduled');
+  });
+
+  it('should revertToDraft after user confirmation', () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    const saveSpy = jest.spyOn(component, 'save');
+    component.revertToDraft();
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(saveSpy).toHaveBeenCalledWith('draft');
+    confirmSpy.mockRestore();
+  });
+
+  it('should not revertToDraft if user cancels confirmation', () => {
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+    const saveSpy = jest.spyOn(component, 'save');
+    component.revertToDraft();
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(saveSpy).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
   });
 });

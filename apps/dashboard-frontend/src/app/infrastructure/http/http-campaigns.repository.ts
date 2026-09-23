@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { CampaignsRepository } from '../../core/ports/campaigns.repository';
 import {
   CampaignDocWithId,
+  CampaignSlot,
   PaginatedResponse,
   CreateCampaignRequest,
   UpdateCampaignRequest,
@@ -103,7 +104,35 @@ export class HttpCampaignsRepository implements CampaignsRepository {
   }
 
   /**
-   * Physically deletes an isolated campaign asset from GCS.
+   * Atomically uploads an illustration for a specific campaign slot and locks into Firestore.
+   */
+  uploadSlotImage(
+    campaignId: string,
+    slotId: string,
+    file: File,
+  ): Observable<{ slot: CampaignSlot; mediaUrl: string }> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<{ slot: CampaignSlot; mediaUrl: string }>(
+      `${this.baseUrl}/campaigns/${campaignId}/slots/${encodeURIComponent(slotId)}/image`,
+      formData,
+    );
+  }
+
+  /**
+   * Atomically removes an illustration from a campaign slot and purges from GCS.
+   */
+  deleteSlotImage(
+    campaignId: string,
+    slotId: string,
+  ): Observable<{ slot: CampaignSlot }> {
+    return this.http.delete<{ slot: CampaignSlot }>(
+      `${this.baseUrl}/campaigns/${campaignId}/slots/${encodeURIComponent(slotId)}/image`,
+    );
+  }
+
+  /**
+   * Physically deletes an isolated media asset from GCS.
    */
   deleteAsset(campaignId: string, filename: string): Observable<unknown> {
     return this.http.delete<unknown>(
