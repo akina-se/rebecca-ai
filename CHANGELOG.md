@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/akina-se/rebecca-ai/compare/v1.22.0...v1.23.0) (2026-09-23)
+
+
+### Features
+
+* **x-api:** optimize x api usage and billing costs ([#263](https://github.com/akina-se/rebecca-ai/issues/263)) ([3065222](https://github.com/akina-se/rebecca-ai/commit/3065222318ed5c54fa6c3aa343be97886e27a120))
+
 ## [1.22.0](https://github.com/akina-se/rebecca-ai/compare/v1.21.0...v1.22.0) (2026-09-23)
 
 
