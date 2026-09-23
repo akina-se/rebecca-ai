@@ -39,7 +39,7 @@ The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes tri
 | `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
 | `/batch/anniversary-post` | `GET` | 08:30 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
 | `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
-| `/batch/random-engagement` | `GET` | 13:00, 18:00 | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
+| `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
 | `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates vector embeddings for image assets missing representations. |
 | `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180s | **Campaign Slot Dispatcher**: Evaluates active campaign itinerary slots and publishes narrative story tweets with grounded persona anchors. |
 | `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | - | Generates structured `{ thought, reply }` response and posts reply to X. |
