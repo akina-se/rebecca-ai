@@ -25,9 +25,9 @@ export interface FunctionsConfig {
 }
 
 const parseMaxResults = (envValue: string | undefined): number => {
-  if (!envValue) return 100;
+  if (!envValue) return 30;
   const parsed = parseInt(envValue, 10);
-  if (isNaN(parsed) || parsed < 5) return 100;
+  if (isNaN(parsed) || parsed < 5) return 30;
   return Math.min(parsed, 100);
 };
 
