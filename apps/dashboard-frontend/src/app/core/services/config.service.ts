@@ -80,9 +80,9 @@ export class ConfigService {
         if (data.persona) {
           this.brandName.set(data.persona.brandName);
           this.adminTitle.set(data.persona.adminTitle);
-          this.personaDisplayName.set(data.persona.displayName || 'レベッカ');
-          this.personaEnglishName.set(data.persona.englishName || 'Rebecca');
-          this.personaName.set(data.persona.displayName || 'Rebecca');
+          this.personaDisplayName.set(data.persona.displayName);
+          this.personaEnglishName.set(data.persona.englishName);
+          this.personaName.set(data.persona.displayName);
           this.avatarUrl.set(data.persona.avatarUrl);
         }
       }
