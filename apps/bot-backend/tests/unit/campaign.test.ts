@@ -219,9 +219,26 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
   });
 
   describe('CampaignPostUseCase', () => {
+    const defaultUseCaseConfig = {
+      timezone: 'Asia/Tokyo',
+      bucketName: 'rebecca-ai-gal-images',
+    };
+
+    it('should throw error in constructor if timezone is missing or empty', () => {
+      expect(() => new CampaignPostUseCase(deps, { timezone: '', bucketName: 'rebecca-ai-gal-images' })).toThrow(
+        'config.timezone is required',
+      );
+    });
+
+    it('should throw error in constructor if bucketName is missing or empty', () => {
+      expect(() => new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo', bucketName: '  ' })).toThrow(
+        'config.bucketName is required',
+      );
+    });
+
     it('should return no_active_campaign when getActiveCampaign returns null', async () => {
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(null);
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
       expect(result.status).toBe('no_active_campaign');
     });
@@ -231,7 +248,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
         ...mockActiveCampaign,
         isPaused: true,
       });
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
       expect(result.status).toBe('no_active_campaign');
     });
@@ -249,7 +266,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('media_12345');
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_camp_999' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -293,7 +310,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       });
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_camp_hashtag_1' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -313,13 +330,14 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
     it('should append campaign hashtag to fixedTextOverride if not already present and space permits', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
       campaign.hashtag = 'レベッカ京都旅';
+      campaign.slots[0].isFixedText = true;
       campaign.slots[0].fixedTextOverride = '金閣寺にやってきました！金色が眩しい！';
       delete campaign.slots[0].mediaUrl;
 
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_fixed_hashtag_1' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -346,7 +364,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('skipped');
@@ -370,7 +388,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('media_999');
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_scheduled_1' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -394,7 +412,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       });
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_final_1' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -429,6 +447,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
           scheduledTime: '2026-09-18T08:00:00Z',
           theme: 'Theme 8am',
           status: 'pending',
+          isFixedText: true,
           fixedTextOverride: 'Fixed 8am',
         },
         {
@@ -438,13 +457,14 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
           scheduledTime: '2026-09-18T10:00:00Z',
           theme: 'Theme 10am',
           status: 'pending',
+          isFixedText: true,
           fixedTextOverride: 'Fixed 10am',
         },
       ];
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_exact_hour_123' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -459,7 +479,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       });
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('no_pending_slot');
@@ -485,7 +505,7 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('skipped');
@@ -495,13 +515,14 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
 
     it('should use fixedTextOverride directly without calling Gemini when specified', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
       campaign.slots[0].fixedTextOverride = '【公式告知】ハワイ到着イベント開幕！';
       delete campaign.slots[0].mediaUrl;
 
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
       (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_fixed_1' } });
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
       const result = await useCase.execute();
 
       expect(result.status).toBe('success');
@@ -513,13 +534,14 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
 
     it('Fail-Loudly: should update slot as failed in Firestore and rethrow error when tweet fails', async () => {
       const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
       campaign.slots[0].fixedTextOverride = 'Fail test';
       delete campaign.slots[0].mediaUrl;
 
       (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
       (deps.xApi.tweet as jest.Mock).mockRejectedValue(new Error('X API 403 Forbidden'));
 
-      const useCase = new CampaignPostUseCase(deps, { timezone: 'Asia/Tokyo' });
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
 
       await expect(useCase.execute()).rejects.toThrow('X API 403 Forbidden');
       expect(deps.firestore.updateCampaign).toHaveBeenCalledWith(
@@ -534,6 +556,115 @@ describe('Campaign Narrative Event Engine Unit Tests', () => {
           ]),
         }),
       );
+    });
+
+    it('should generate with Gemini when isFixedText is false even if fixedTextOverride contains text', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = false;
+      campaign.slots[0].fixedTextOverride = 'Unused fixed text draft';
+      delete campaign.slots[0].mediaUrl;
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
+        thought: 'AI generated thought',
+        reply: 'Waikiki beach is sunny! #Hawaii',
+      });
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_ai_1' } });
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalled();
+      expect(result.post).toContain('Waikiki beach is sunny! #Hawaii');
+    });
+
+    it('should throw error when isFixedText is true but fixedTextOverride is empty', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
+      campaign.slots[0].fixedTextOverride = '   ';
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      await expect(useCase.execute()).rejects.toThrow('configured for fixed text but fixedTextOverride is empty');
+    });
+
+    it('should resolve relative campaign asset proxy path to GCS and upload media', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
+      campaign.slots[0].fixedTextOverride = 'Fixed text with photo';
+      campaign.slots[0].mediaUrl = '/api/v1/campaigns/camp_hawaii_1/assets/1790081914358_e5cf4b.jpeg';
+
+      const mockBuffer = Buffer.from('jpeg-binary-data');
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.storage.downloadImage as jest.Mock).mockResolvedValue(mockBuffer);
+      (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('uploaded_media_999');
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_media_1' } });
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(deps.storage.downloadImage).toHaveBeenCalledWith('gs://rebecca-ai-gal-images/campaigns/camp_hawaii_1/1790081914358_e5cf4b.jpeg');
+      expect(deps.xApi.uploadMedia).toHaveBeenCalledWith(mockBuffer, 'image/jpeg');
+      expect(deps.xApi.tweet).toHaveBeenCalledWith(expect.any(String), { mediaIds: ['uploaded_media_999'] });
+    });
+
+    it('should download directly from GCS when mediaUrl starts with gs://', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
+      campaign.slots[0].fixedTextOverride = 'Fixed text with gs uri';
+      campaign.slots[0].mediaUrl = 'gs://rebecca-ai-gal-images/campaigns/custom/pic.png';
+
+      const mockBuffer = Buffer.from('png-binary-data');
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+      (deps.storage.downloadImage as jest.Mock).mockResolvedValue(mockBuffer);
+      (deps.xApi.uploadMedia as jest.Mock).mockResolvedValue('uploaded_media_png');
+      (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'tweet_media_2' } });
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      const result = await useCase.execute();
+
+      expect(result.status).toBe('success');
+      expect(deps.storage.downloadImage).toHaveBeenCalledWith('gs://rebecca-ai-gal-images/campaigns/custom/pic.png');
+      expect(deps.xApi.uploadMedia).toHaveBeenCalledWith(mockBuffer, 'image/png');
+    });
+
+    it('should throw error when mediaUrl has unsupported format', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
+      campaign.slots[0].fixedTextOverride = 'Fixed text with bad mediaUrl';
+      campaign.slots[0].mediaUrl = '/invalid/relative/path.jpg';
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      await expect(useCase.execute()).rejects.toThrow('Unsupported or malformed mediaUrl');
+    });
+
+    it('should throw error when mediaUrl uses insecure http protocol', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
+      campaign.slots[0].fixedTextOverride = 'Fixed text with insecure http';
+      campaign.slots[0].mediaUrl = 'http://example.com/image.jpg';
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      await expect(useCase.execute()).rejects.toThrow('Insecure protocol "http:" in mediaUrl');
+    });
+
+    it('should throw error when mediaUrl has unsupported image extension', async () => {
+      const campaign = JSON.parse(JSON.stringify(mockActiveCampaign));
+      campaign.slots[0].isFixedText = true;
+      campaign.slots[0].fixedTextOverride = 'Fixed text with svg';
+      campaign.slots[0].mediaUrl = 'gs://rebecca-ai-gal-images/campaigns/c1/vector.svg';
+
+      (deps.firestore.getActiveCampaign as jest.Mock).mockResolvedValue(campaign);
+
+      const useCase = new CampaignPostUseCase(deps, defaultUseCaseConfig);
+      await expect(useCase.execute()).rejects.toThrow('Unsupported media extension in');
     });
   });
 

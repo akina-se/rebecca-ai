@@ -369,6 +369,8 @@ describe('@rebecca/db Unit Tests', () => {
             theme: 'Arrival at Daniel K. Inouye Airport',
             mediaUrl: 'https://storage.googleapis.com/rebecca-ai-gal-images/campaigns/c1/img1.png',
             captionPromptHint: 'Excited about the ocean breeze',
+            fixedTextOverride: 'Aloha Hawaii!',
+            isFixedText: true,
             status: 'pending',
           },
         ],
@@ -385,6 +387,8 @@ describe('@rebecca/db Unit Tests', () => {
       expect(result['isPaused']).toBe(false);
       expect(result['slots']).toHaveLength(1);
       expect(result['slots'][0].slotId).toBe('slot-1');
+      expect(result['slots'][0].isFixedText).toBe(true);
+      expect(result['slots'][0].fixedTextOverride).toBe('Aloha Hawaii!');
       expect(result['slots'][0].mediaUrl).toBe('https://storage.googleapis.com/rebecca-ai-gal-images/campaigns/c1/img1.png');
     });
 
@@ -407,6 +411,8 @@ describe('@rebecca/db Unit Tests', () => {
               timePeriod: 'morning',
               scheduledTime: '2026-07-01T08:00:00Z',
               theme: 'Arrival',
+              isFixedText: true,
+              fixedTextOverride: 'Welcome to Hawaii!',
               status: 'pending',
             },
           ],
@@ -426,6 +432,8 @@ describe('@rebecca/db Unit Tests', () => {
       expect(campaign.recurringApprovedYear).toBe(2026);
       expect(campaign.slots).toHaveLength(1);
       expect(campaign.slots[0].theme).toBe('Arrival');
+      expect(campaign.slots[0].isFixedText).toBe(true);
+      expect(campaign.slots[0].fixedTextOverride).toBe('Welcome to Hawaii!');
     });
 
     it('toFirestore should serialize campaign document with optional recurring fields', () => {

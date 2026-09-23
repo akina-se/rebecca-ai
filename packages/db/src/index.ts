@@ -322,6 +322,7 @@ const campaignDocConverter: FirestoreDataConverter<CampaignDoc> = {
             mediaUrl: slot.mediaUrl ?? null,
             captionPromptHint: slot.captionPromptHint ?? null,
             fixedTextOverride: slot.fixedTextOverride ?? null,
+            isFixedText: Boolean(slot.isFixedText),
             status: slot.status,
             postedTweetId: slot.postedTweetId ?? null,
             postedAt: slot.postedAt ?? null,
