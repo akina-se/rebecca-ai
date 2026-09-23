@@ -106,4 +106,37 @@ describe('ConfigService', () => {
     expect(service.apiUrl).toBeDefined();
     expect(service.isEmulator).toBeFalse();
   });
+
+  it('should support localized persona names with getPersonaName', async () => {
+    expect(service.personaDisplayName()).toBe('レベッカ');
+    expect(service.personaEnglishName()).toBe('Rebecca');
+    expect(service.getPersonaName('ja')).toBe('レベッカ');
+    expect(service.getPersonaName('en')).toBe('Rebecca');
+
+    const mockConfigWithPersona = {
+      firebase: { apiKey: 'k', authDomain: 'd', projectId: 'p', storageBucket: 'b', messagingSenderId: 'm', appId: 'a' },
+      apiUrl: '/api',
+      publicSiteUrl: 'https://rebecca-ai.net',
+      production: true,
+      useEmulators: false,
+      persona: {
+        id: 'rebecca',
+        displayName: 'レベッカ (カスタム)',
+        englishName: 'Rebecca (Custom)',
+        adminTitle: 'Custom Admin',
+        brandName: 'Custom Brand',
+        avatarUrl: 'custom.png'
+      }
+    };
+
+    const loadPromise = service.loadAppConfig();
+    const req = httpMock.expectOne('/api/v1/config');
+    req.flush(mockConfigWithPersona);
+    await loadPromise;
+
+    expect(service.personaDisplayName()).toBe('レベッカ (カスタム)');
+    expect(service.personaEnglishName()).toBe('Rebecca (Custom)');
+    expect(service.getPersonaName('ja')).toBe('レベッカ (カスタム)');
+    expect(service.getPersonaName('en')).toBe('Rebecca (Custom)');
+  });
 });
