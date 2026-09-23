@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
+import { ConfigService } from '../../../../core/services/config.service';
 
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
@@ -19,6 +20,7 @@ import { TranslatePipe } from '../../../pipes/translate.pipe';
 })
 export class ItinerarySlotCardComponent implements OnChanges {
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly configService = inject(ConfigService);
 
   /** The slot data model. */
   @Input({ required: true }) slot!: CampaignSlot;
@@ -80,19 +82,14 @@ export class ItinerarySlotCardComponent implements OnChanges {
    */
   formatTimeDisplay(isoString: string): string {
     if (!isoString) return '--:--';
-    try {
-      const match = isoString.match(/T(\d{2}):(\d{2})/);
-      if (match) {
-        return `${match[1]}:${match[2]}`;
-      }
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return isoString;
-      const hours = String(date.getUTCHours()).padStart(2, '0');
-      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch {
-      return isoString;
-    }
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+    return new Intl.DateTimeFormat('ja-JP', {
+      timeZone: this.configService.appTimezone(),
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(date);
   }
 
   /**

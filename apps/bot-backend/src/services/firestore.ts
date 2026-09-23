@@ -980,6 +980,33 @@ const getActiveCampaign = async (): Promise<CampaignDoc | null> => {
 };
 
 /**
+ * Retrieves a scheduled campaign whose startDate has arrived but has not yet been activated.
+ * Used by CampaignPostUseCase to auto-transition a campaign from 'scheduled' to 'active'
+ * at the moment of its first slot post.
+ * Fail-Loudly: If Firestore access encounters an error, the error is re-raised to the caller.
+ *
+ * @returns The first matching CampaignDoc with status 'scheduled' and startDate <= today, or null.
+ */
+const getScheduledCampaignDueToday = async (): Promise<CampaignDoc | null> => {
+  const { year, month, day } = getZonedDateParts(new Date(), config.appTimezone);
+  const todayStr = `${year}-${month}-${day}`;
+
+  const snapshot = await db.campaigns
+    .where('status', '==', 'scheduled')
+    .where('isPaused', '==', false)
+    .get();
+
+  for (const doc of snapshot.docs) {
+    const campaign = doc.data();
+    if (campaign.startDate <= todayStr && campaign.endDate >= todayStr) {
+      return { ...campaign, id: doc.id };
+    }
+  }
+
+  return null;
+};
+
+/**
  * Retrieves a campaign by its document ID.
  *
  * @param campaignId - The Firestore document ID.
@@ -1050,6 +1077,7 @@ export {
   updateLastListInteraction,
   getListMembersFromCache,
   getActiveCampaign,
+  getScheduledCampaignDueToday,
   getCampaignById,
   updateCampaign,
 };
