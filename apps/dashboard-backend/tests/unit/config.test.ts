@@ -63,6 +63,7 @@ describe('Config Feature Unit Tests', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
+      appTimezone: 'Asia/Tokyo',
       firebase: {
         apiKey: 'PROD_API_KEY_123',
         authDomain: 'rebecca-prod.firebaseapp.com',
