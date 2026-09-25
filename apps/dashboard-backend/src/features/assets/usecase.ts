@@ -360,12 +360,14 @@ export class AssetsUseCase {
             const parts = rawUrl.replace('gs://', '').split('/');
             parts.shift(); // remove bucket name
             originalPath = parts.join('/');
-          } else if (rawUrl.includes('storage.googleapis.com')) {
+          } else {
             try {
               const parsed = new URL(rawUrl);
-              const parts = parsed.pathname.replace(/^\/+/, '').split('/');
-              parts.shift(); // remove bucket name
-              originalPath = parts.join('/');
+              if (parsed.hostname === 'storage.googleapis.com' || parsed.hostname.endsWith('.storage.googleapis.com')) {
+                const parts = parsed.pathname.replace(/^\/+/, '').split('/');
+                parts.shift(); // remove bucket name
+                originalPath = parts.join('/');
+              }
             } catch {
               // ignore url parse error
             }
@@ -380,7 +382,8 @@ export class AssetsUseCase {
           }
         }
       } catch (err) {
-        console.warn(`[AssetsUseCase] Warning during GCS physical deletion for asset ${id}:`, err);
+        const sanitizedId = String(id).replace(/[\r\n]/g, '');
+        console.warn('[AssetsUseCase] Warning during GCS physical deletion for asset %s:', sanitizedId, err);
       }
     }
     await this.repo.deleteMany(ids);
