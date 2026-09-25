@@ -27,21 +27,22 @@ For the administration control panel, a dedicated **BFF (Backend-For-Frontend)**
 - **Admin Copilot**: A specialized AI assistant on the dashboard. Unconstrained by 130-character limits, it conducts multi-dimensional analytics on KPIs, user trends, and assets, issuing 2-phase Human-In-The-Loop (HITL) action proposals when administrative intervention is needed.
 
 ### 1.2 Batch & Worker API Specifications
-The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes triggered by Cloud Scheduler or BFF manual triggers, and `/worker/*` routes invoked asynchronously by Cloud Tasks.
+The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes triggered by Cloud Scheduler or BFF manual triggers, and `/worker/*` routes invoked asynchronously by Cloud Tasks. In addition, Cloud Functions (`functions`) coordinates daily timeline synchronization.
 
 | Endpoint | Method | Schedule (JST) | Deadline | Description |
 |---|---|---|---|---|
+| `/batch/stealth-onboarding` | `GET` | 03:15 Daily | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
+| `batchTimelineSync` (Functions) | `GET`/`POST` | 04:00 Daily | 120s | **Timeline Sync**: Synchronizes published post records and engagement metrics from X API into Firestore. |
 | `/batch/self-reflection` | `GET` | 04:05 Daily | 180s | **Layer 2 Global Timeline Summary**: Distills recent timeline posts into `system/persona.timeline_summary`. Fail-fast on Gemini quota exhaustion or empty responses. |
 | `/batch/dreaming` | `GET` | 04:30 Daily | 900s | **User Memory Consolidation (Layer 3)**: Compresses user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and per-user failure isolation. |
 | `/batch/evolution` | `GET` | 05:00 Daily | 300s | **Layer 1 Self-Evolution**: Analyzes cross-user dialogue patterns to dynamically evolve the system prompt (`system/persona.extended_prompt`). |
-| `/batch/mentions` | `GET` | Every 5 min | 180s | Polls new mentions, checks dynamic DAU rate limits, and enqueues delayed reply tasks to Cloud Tasks. |
-| `/batch/news-post` | `GET` | 07:00, 11:30, 19:00 | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
-| `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
-| `/batch/anniversary-post` | `GET` | 08:30 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
-| `/batch/stealth-onboarding` | `GET` | Every 30 min | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
+| `/batch/anniversary-post` | `GET` | 07:00 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
+| `/batch/mentions` | `GET` | 03:00, 07:00-23:00 Hourly (18x/day) | 180s | Polls new mentions, checks dynamic DAU rate limits, and enqueues delayed reply tasks to Cloud Tasks. |
+| `/batch/news-post` | `GET` | 12:11 Daily | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
 | `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
-| `/batch/asset-embeddings` | `GET` | Every 6 hours | 300s | Generates vector embeddings for image assets missing representations. |
-| `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180s | **Campaign Slot Dispatcher**: Evaluates active campaign itinerary slots and publishes narrative story tweets with grounded persona anchors. |
+| `/batch/soliloquy-post` | `GET` | 22:00 Daily | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
+| `/batch/asset-embeddings` | `GET` | 03:30, 09:30, 15:30, 21:30 (4x/day) | 300s | Generates vector embeddings for image assets missing representations (self-healing backfill). |
+| `/batch/campaign-post` | `GET` | Hourly at :00 | 180s | **Campaign Slot Dispatcher**: Evaluates active campaign itinerary slots and publishes narrative story tweets with grounded persona anchors. |
 | `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | - | Generates structured `{ thought, reply }` response and posts reply to X. |
 
 ## 2. Character Specification & Persona
@@ -95,57 +96,156 @@ Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her
 
 ## 4. Database Schema & Data Types (Firestore)
 
+The system organizes Firestore documents into 100% flat root-level collections. For complete entity relationships and TTL index policies, refer to [database-schema.md](database-schema.md).
+
 ### Collection: `users`
-Manages memories and status per user.
-- **Document ID**: X User ID
+Tracks individual user profile, memory buffers, and interaction frequency.
+- **Document ID**: X User ID (or normalized handle without `@`)
 - **Format** (`FirestoreUser`):
-  - `coreProfile` (Map): Long-term memory of attributes, preferences, etc. (`UserCoreProfile`)
-  - `working_memory` (Array): Recent conversation logs (`ConversationLogEntry[]`)
-  - `episodicBuffer` (Array): Unprocessed logs awaiting batch processing (`ConversationLogEntry[]`)
-  - `last_reply_date` (String - ISO): Date/time of last reply
-  - `daily_reply_count` (Number): Today's reply count
+  - `name` (string): User display name on X
+  - `username` (string): Handle without `@`
+  - `avatarUrl` (string): Avatar image URL
+  - `status` (`'ACTIVE' | 'BLOCKED' | 'MUTED'`): Account status
+  - `coreProfile` (Map): Long-term memory profile (`UserCoreProfile`) synthesized via Dreaming
+  - `working_memory` (Array): Immediate active conversation turns (`ConversationLogEntry[]`)
+  - `episodicBuffer` (Array): Sliding turn buffer for dreaming synthesis (retains recent 20 entries)
+  - `firstSeen` (string - ISO 8601): Initial observation timestamp
+  - `lastSeen` (string - ISO 8601): Latest interaction timestamp
+  - `lastReplyDate` (string - YYYY-MM-DD): Date of most recent automated reply
+  - `dailyReplyCount` (number): Reply count for `lastReplyDate`
+
+### Collection: `campaigns`
+Orchestrates narrative episodic event campaigns (travel arcs, festivals, anniversary weeks).
+- **Document ID**: Auto-generated UID (e.g., `camp_<timestamp>_<uuid>`)
+- **Format** (`CampaignDoc`):
+  - `title` (string): Campaign title
+  - `description` (string - optional): Narrative overview
+  - `hashtag` (string - optional): Campaign hashtag (without `#`)
+  - `startDate`, `endDate` (string - YYYY-MM-DD): Inclusive campaign window
+  - `status` (`'draft' | 'scheduled' | 'active' | 'completed' | 'archived'`): Lifecycle state
+  - `dailySlotTimes` (string[] - HH:mm): Configured daily publication time slots
+  - `masterContext` (string): World-building narrative instructions injected into slot prompts
+  - `replyContextSummary` (string): Event situation summary injected into mention reply prompts
+  - `isAnnualRecurring` (boolean): Annual recurrence flag
+  - `recurringApprovedYear` (number - optional): Approved year for recurring arcs
+  - `isPaused` (boolean): Emergency kill-switch flag
+  - `slots` (`CampaignSlot[]`): Detailed itinerary slots array
+  - `totalSlotsCount`, `completedSlotsCount` (number): Progress tracking counters
+  - `createdAt`, `updatedAt` (string - ISO 8601): Entity audit timestamps
+
+### Collection: `timeline_history`
+Public posts authored and published by Rebecca to X (5-year TTL).
+- **Document ID**: Auto-generated UID or post identifier
+- **Format** (`TimelinePost`):
+  - `tweetId` (string - optional): X Status Tweet ID
+  - `text` (string): Published status text (<= 140 chars)
+  - `thought` (string - optional): Persona internal thought monologue
+  - `postType` (`'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign'`): Post category
+  - `status` (`'SUCCESS' | 'FAILED' | 'PENDING'`): Delivery status
+  - `impressions`, `likes`, `reposts`, `replies` (number): Engagement metrics
+  - `mediaUrls` (string[]): Attached image URLs
+  - `assetId` (string - optional): Linked asset library ID
+  - `newsTitle` (string - optional): Associated news headline
+  - `newsEmbedding` (number[] - optional): Vector embedding for headline deduplication
+  - `anniversaryTitle` (string - optional): Memorial day title
+  - `timestamp` (string - ISO 8601): Publication timestamp
+  - `expireAt` (Timestamp/ISO): 5-year automatic TTL timestamp
+
+### Collection: `conversation_logs`
+Full-fidelity audit log of all 1-on-1 conversations (5-year TTL).
+- **Document ID**: Auto-generated UID
+- **Format** (`RawConversationLog`):
+  - `userId` (string): User ID
+  - `userText` (string): User input text
+  - `aiText` (string): Generated persona reply
+  - `thought` (string - optional): Inner thought process during generation
+  - `timestamp` (string - ISO 8601): Message timestamp
+  - `expireAt` (Timestamp/ISO): 5-year automatic TTL timestamp
 
 ### Collection: `rag_memories`
-Vector search collection for episodic memory.
+Vector-indexed episodic long-term memory entries (FIFO pruning, max 20 per user).
 - **Format** (`RagMemory`):
-  - `userId` (String): User ID
-  - `text` (String): Conversation episode text
-  - `embedding` (Array of Numbers): Vector representation
-  - `timestamp` (String - ISO): Creation timestamp
-
-### Collection: `system`
-Global system settings and state management.
-- **Document: `limits`**
-  - `current_month` (String), `monthly_count` (Number): For monthly limit monitoring
-  - `current_date` (String), `daily_count` (Number), `user_daily_limit` (Number): For daily limits and dynamic allocation
-- **Document: `persona`** (`PersonaDoc`)
-  - `extended_prompt` (String): Additional prompt generated by Evolution batch
-  - `timeline_summary` (String): Summary of recent proactive posts
-- **Document: `xapi_state`** (`XApiStateDoc`)
-  - `last_mention_id` (String): ID of the last processed mention
+  - `userId` (string): User ID
+  - `text` (string): Episode summary text
+  - `embedding` (number[]): 768-dimensional embedding vector (`text-embedding-004`)
+  - `timestamp` (string - ISO 8601): Creation timestamp
 
 ### Collection: `images`
-Image management for post attachments.
+Media asset repository metadata for AI-generated and curated illustrations.
+- **Document ID**: Image SHA-256 hash or unique asset ID
 - **Format** (`ImageDoc`):
-  - `url` (String): Image URL on GCS
-  - `caption` (String): Image description
-  - `embedding` (Array of Numbers): Caption vector representation
-  - `lastUsedAt` (Timestamp): Last used date/time
-  - `useCount` (Number): Number of times used
+  - `url` (string): Cloud Storage URI (`gs://...`)
+  - `filename` (string - optional): File name
+  - `caption` (string): Japanese semantic description of visual content
+  - `embedding` (number[]): 768-dimensional multimodal/text vector
+  - `lastUsedAt` (Timestamp/ISO): Datetime of last timeline attachment
+  - `useCount` (number): Attachment counter
+  - `status` (`'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED'`): Processing state
+  - `createdAt` (string - ISO 8601 - optional): Ingestion timestamp
+
+### Collection: `rate_limits`
+Atomic sliding-window rate limit counters protecting API quotas.
+- **Document ID**: `global_daily_YYYY-MM-DD`, `user_daily_{userId}_YYYY-MM-DD`, `user_minute_{userId}_YYYY-MM-DDTHH:mm`
+- **Format** (`RateLimitDoc`):
+  - `count` (number): Window request count incremented via `FieldValue.increment(1)`
+
+### Collection: `admin_users`
+Authorized dashboard administrator accounts for Role-Based Access Control (RBAC).
+- **Document ID**: Firebase Auth UID
+- **Format** (`AdminUser`):
+  - `email` (string): Administrator email
+  - `role` (`'SUPER_ADMIN' | 'ADMIN'`): RBAC level
+  - `status` (`'ACTIVE' | 'REVOKED'`): Account status
+  - `createdAt` (string - ISO 8601): Authorization timestamp
+
+### Collection: `system_stats`
+Metrics and trend data queried by Dashboard BFF.
+- **Document: `global`**: Follower metrics, average engagement rate, DAU trend, API calls
+- **Document: `dau_YYYY-MM-DD`**:
+  - `count` (number): Daily active user count
+  - `active_users` (string[]): Set of unique user IDs active on date (`arrayUnion`)
+  - `total_interactions` (number): Total interactions recorded for the date
 
 ### Collection: `processed_followers`
-Tracks followers who have gone through onboarding.
-- **Document ID**: X User ID
+Onboarding status and list curation tracking for followers.
+- **Document ID**: Follower X User ID
 - **Format** (`ProcessedFollower`):
-  - `userId` (String): User ID
-  - `timestamp` (String - ISO): Processing timestamp
+  - `userId` (string): Follower X ID
+  - `timestamp` (string - ISO 8601): Detection timestamp
+  - `listStatus` (`'ADDED' | 'FAILED' | 'REJECTED'`): Curation membership status
 
 ### Collection: `list_interaction_history`
-Tracks random engagement history for list members.
+Cooldown tracker for random engagement targeting list members.
 - **Document ID**: X User ID
 - **Format** (`ListInteraction`):
-  - `userId` (String): User ID
-  - `lastInteractionAt` (Timestamp): Timestamp of last engagement
+  - `userId` (string): Target user ID
+  - `lastInteractionAt` (Timestamp/ISO): Datetime of most recent proactive interaction
+
+### Collection: `processed_mentions`
+Idempotency registry preventing duplicate responses to the same X mention tweet.
+- **Document ID**: X Tweet ID
+- **Format**: `processedAt` (Timestamp)
+
+### Collection: `processed_events`
+Idempotency registry for asynchronous Eventarc events triggered by Cloud Functions.
+- **Document ID**: Eventarc `eventId`
+- **Format** (`ProcessedEvent`):
+  - `processedAt` (Timestamp)
+  - `type` (string): Trigger type name
+  - `logId` (string - optional): Source document ID
+
+### Collection: `system`
+Global system configuration and operational state singletons.
+- **Document: `persona`** (`PersonaDoc`):
+  - `extended_prompt` (string): Dynamic instructions updated by Evolution batch
+  - `timeline_summary` (string): Recent timeline activity summary updated by Self-Reflection batch
+  - `updatedAt`, `timelineSummaryUpdatedAt` (string - ISO 8601)
+- **Document: `x_api_state`** (`XApiStateDoc`):
+  - `last_mention_id` (string): Highest processed X Tweet ID
+  - `updatedAt` (string - ISO 8601)
+- **Document: `preferences`**:
+  - `language` (`'ja' | 'en'`): Display language
+  - `timezone` (string): System timezone (e.g. `'Asia/Tokyo'`)
 
 ## 5. Process Flows
 
@@ -189,7 +289,7 @@ Tracks random engagement history for list members.
 5. Upon per-user success, updates that user's `coreProfile` and trims `episodicBuffer` to the sliding window (retaining last 20 items). Failures for individual users are isolated and do not halt or corrupt the remaining batch.
 
 ### 5.6 Proactive News & Autonomous Soliloquy Flow
-1. Triggered periodically multiple times a day.
+1. Triggered daily on fixed schedules (Anniversary: 07:00, News: 12:11, Soliloquy: 22:00 JST).
 2. Fetches an RSS feed (e.g., Yahoo! News) and extracts top news from a random category.
 3. **Vector Deduplication**: Fetches embeddings of news posted in the past 48 hours (`newsEmbedding`) and computes cosine similarity (`cosineSimilarity >= 0.82`) against candidate headlines to deterministically exclude previously covered topics.
 4. **Fallback to Autonomous Soliloquy**:
