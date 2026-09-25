@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.23.1](https://github.com/akina-se/rebecca-ai/compare/v1.23.0...v1.23.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **x-api:** specify expansions=author_id for mentions and remove invalid tweet.fields ([#272](https://github.com/akina-se/rebecca-ai/issues/272)) ([1cb890b](https://github.com/akina-se/rebecca-ai/commit/1cb890b1a3bf260a203203cf1a49156598024139))
+* **x-api:** specify expansions=author_id for mentions and remove invalid tweet.fields ([#272](https://github.com/akina-se/rebecca-ai/issues/272)) ([#268](https://github.com/akina-se/rebecca-ai/issues/268)) ([6223667](https://github.com/akina-se/rebecca-ai/commit/622366780a0c9e6057762ae79f1b6ba693e8c3f0))
+
 ## [1.23.0](https://github.com/akina-se/rebecca-ai/compare/v1.22.0...v1.23.0) (2026-09-23)
 
 
