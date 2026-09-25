@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.24.0](https://github.com/akina-se/rebecca-ai/compare/v1.23.0...v1.24.0) (2026-09-25)
+
+
+### Features
+
+* **landing:** public launch of gemitec official web portal and rebecca showcase ([#271](https://github.com/akina-se/rebecca-ai/issues/271)) ([6840ca0](https://github.com/akina-se/rebecca-ai/commit/6840ca07fae063b81bc87c77b3c66950c0ee6c25))
+
+
+### Bug Fixes
+
+* **x-api:** specify expansions=author_id for mentions and remove invalid tweet.fields ([#272](https://github.com/akina-se/rebecca-ai/issues/272)) ([#268](https://github.com/akina-se/rebecca-ai/issues/268)) ([70ec02d](https://github.com/akina-se/rebecca-ai/commit/70ec02d16e2473cd0d2446c616e8d57c638ecbe0))
+
 ## [1.23.0](https://github.com/akina-se/rebecca-ai/compare/v1.22.0...v1.23.0) (2026-09-23)
 
 
