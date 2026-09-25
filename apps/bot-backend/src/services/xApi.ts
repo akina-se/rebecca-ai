@@ -215,9 +215,10 @@ export class XApiService implements IXApiService {
         userId = this.cachedNumericMyUserId;
       }
 
+      // The X API v2 requires the author_id expansion to populate authorId on mention objects.
       const params: Record<string, unknown> = {
         "max_results": 100,
-        "tweet.fields": ["created_at", "text", "author_id", "in_reply_to_user_id", "referenced_tweets", "conversation_id"]
+        "expansions": ["author_id"]
       };
       if (sinceId) {
         params.since_id = sinceId;
