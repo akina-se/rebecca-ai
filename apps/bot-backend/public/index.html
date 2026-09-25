@@ -834,10 +834,16 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 14px;
       padding: 12px 14px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
+    }
+
+    .tier-info {
+      flex: 1;
+      min-width: 0;
     }
 
     .tier-title {
@@ -849,6 +855,29 @@
     .tier-sub {
       font-size: 12px;
       color: var(--text-muted);
+    }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-main);
+      line-height: 1;
+    }
+
+    .tier-badge.highlight {
+      border-color: var(--border-purple);
+      color: var(--gemitec-purple-light);
+      background: rgba(139, 92, 246, 0.1);
     }
 
     /* Footer */
@@ -1673,7 +1702,7 @@
 
             <div class="tiers-list">
               <div class="tier-box">
-                <div>
+                <div class="tier-info">
                   <div class="tier-title">
                     <span class="t-ja">Coffee Supporter（¥100〜 / ワンタイム）</span>
                     <span class="t-en">Coffee Supporter (¥100+ / One-time)</span>
@@ -1683,25 +1712,23 @@
                     <span class="t-en">Support daily compute &amp; memory resources</span>
                   </div>
                 </div>
-                <span class="btn-outline"
-                  style="padding: 3px 8px; font-size: 11px; font-family: var(--font-mono);">
+                <span class="tier-badge">
                   <span class="t-ja">単発支援</span>
                   <span class="t-en">One-time</span>
                 </span>
               </div>
               <div class="tier-box">
-                <div>
+                <div class="tier-info">
                   <div class="tier-title">
-                    <span class="t-ja">月額サブスクライバー（¥250 / 月）</span>
-                    <span class="t-en">Monthly Subscriber (¥250 / mo)</span>
+                    <span class="t-ja">月額サブスクライバー（¥100〜 / 月）</span>
+                    <span class="t-en">Monthly Subscriber (¥100+ / mo)</span>
                   </div>
                   <div class="tier-sub">
                     <span class="t-ja">サーバー維持エネルギーの継続支援・限定活動報告</span>
                     <span class="t-en">Continuous server energy support &amp; special updates</span>
                   </div>
                 </div>
-                <span class="btn-outline"
-                  style="padding: 3px 8px; font-size: 11px; font-family: var(--font-mono); border-color: var(--border-purple); color: var(--gemitec-purple-light);">
+                <span class="tier-badge highlight">
                   <span class="t-ja">月額サブスク</span>
                   <span class="t-en">Monthly</span>
                 </span>
