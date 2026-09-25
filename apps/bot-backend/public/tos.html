@@ -1,168 +1,924 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>利用規約 / Terms of Service - Rebecca AI</title>
-    <style>
-        body { 
-            font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; 
-            line-height: 1.6; 
-            color: #e0e0e0; 
-            background-color: #05050f; /* Deep cyber dark */
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: calc(30px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)); 
-            position: relative;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(138, 43, 226, 0.08), transparent 40%),
-                radial-gradient(circle at 85% 30%, rgba(255, 0, 255, 0.05), transparent 40%);
-        }
-        h1 { 
-            color: #df90ff; /* Neon purple pinkish */
-            border-bottom: 2px solid #5a189a; 
-            padding-bottom: 10px; 
-            text-shadow: 0 0 10px rgba(223, 144, 255, 0.3);
-            letter-spacing: 1px;
-            font-size: clamp(1.3rem, 5vw, 2em);
-            word-break: keep-all;
-        }
-        h2 { 
-            color: #c77dff; 
-            margin-top: 35px; 
-            text-shadow: 0 0 8px rgba(199, 125, 255, 0.2);
-        }
-        p, li { 
-            color: #d1d1e0; 
-            margin-bottom: 15px;
-        }
-        .en-text { 
-            color: #9a9ac2; 
-            font-size: 0.95em; 
-            margin-bottom: 25px; 
-            border-left: 3px solid #7b2cbf; 
-            background: rgba(123, 44, 191, 0.05);
-            padding: 10px 15px;
-            border-radius: 0 4px 4px 0;
-        }
-        .en-text p:last-child, .en-text ul:last-child { margin-bottom: 0; }
-        .footer { 
-            margin-top: 60px; 
-            font-size: 0.9em; 
-            color: #7b2cbf; 
-            text-align: center; 
-            border-top: 1px solid #3c096c; 
-            padding-top: 20px; 
-            text-shadow: 0 0 5px rgba(123, 44, 191, 0.3);
-        }
-        /* Mobile responsive adjustments */
-        @media (max-width: 600px) {
-            body { padding: calc(15px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(15px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
-            h1 { letter-spacing: 0; }
-            h2 { font-size: 1.25em; margin-top: 25px; }
-            .en-text { padding: 10px 12px; font-size: 0.9em; border-left-width: 2px; }
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>利用規約 / Terms of Service - Rebecca AI</title>
+  <meta name="title" content="利用規約 / Terms of Service - Rebecca AI">
+  <meta name="description" content="Gemitec Inc.が提供する自律型パーソナルAI「Rebecca（レベッカ）」の利用規約（Terms of Service）です。">
+  <link rel="icon" type="image/svg+xml" href="assets/gemitec_logo.svg">
 
-        /* Back Button */
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            padding: 10px 20px;
-            margin-bottom: 30px;
-            background: rgba(123, 44, 191, 0.15);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(199, 125, 255, 0.2);
-            border-radius: 24px;
-            color: #df90ff;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            /* Touch target minimum size */
-            min-height: 44px;
-            box-sizing: border-box;
-        }
-        .back-btn:hover {
-            background: rgba(123, 44, 191, 0.3);
-            transform: translateX(-5px);
-            box-shadow: 0 4px 15px rgba(123, 44, 191, 0.3);
-        }
-    </style>
+  <!-- Canonical -->
+  <link rel="canonical" href="https://rebecca-ai.net/tos.html">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://rebecca-ai.net/tos.html">
+  <meta property="og:title" content="利用規約 / Terms of Service - Rebecca AI">
+  <meta property="og:description" content="Gemitec Inc.が提供する自律型パーソナルAI「Rebecca（レベッカ）」の利用規約です。">
+  <meta property="og:image" content="https://rebecca-ai.net/assets/ogp_banner.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@rebecca_ai_gal">
+  <meta name="twitter:creator" content="@rebecca_ai_gal">
+  <meta name="twitter:title" content="利用規約 / Terms of Service - Rebecca AI">
+  <meta name="twitter:description" content="Gemitec Inc.が提供する自律型パーソナルAI「Rebecca（レベッカ）」の利用規約です。">
+  <meta name="twitter:image" content="https://rebecca-ai.net/assets/ogp_banner.jpg">
+
+  <!-- Google Fonts: Inter, Noto Sans JP, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-base: #07080c;
+      --bg-surface: #0e1017;
+      --bg-surface-elevated: #151822;
+
+      --gemitec-purple: #8b5cf6;
+      --gemitec-purple-light: #a78bfa;
+      --gemitec-purple-dark: #6d28d9;
+      --gemitec-purple-glow: rgba(139, 92, 246, 0.28);
+
+      --accent-pink: #ec4899;
+
+      --text-main: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-purple: rgba(139, 92, 246, 0.3);
+      --border-purple-hover: rgba(167, 139, 250, 0.6);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --max-width: 1040px;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* Bilingual Switching Rules for UI chrome */
+    body[data-lang="ja"] .t-en {
+      display: none !important;
+    }
+
+    body[data-lang="en"] .t-ja {
+      display: none !important;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient purple lighting */
+    .ambient-glow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(109, 40, 217, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 15% 70%, rgba(139, 92, 246, 0.07) 0%, transparent 50%);
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header & Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 8, 12, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      height: 40px;
+      width: auto;
+      display: block;
+      filter: brightness(1.25) drop-shadow(0 2px 12px rgba(139, 92, 246, 0.3));
+      transition: transform 0.2s ease;
+    }
+
+    .brand-logo:hover {
+      transform: scale(1.02);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Language Switcher */
+    .lang-switcher {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      padding: 2px 4px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    body[data-lang="ja"] #btn-lang-ja,
+    body[data-lang="en"] #btn-lang-en {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+      box-shadow: 0 2px 8px var(--gemitec-purple-glow);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-full);
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .btn-purple {
+      background: linear-gradient(135deg, var(--gemitec-purple) 0%, var(--gemitec-purple-dark) 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 18px var(--gemitec-purple-glow);
+    }
+
+    .btn-purple:hover {
+      background: linear-gradient(135deg, #9d71f7 0%, #7c3aed 100%);
+      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-purple);
+      transform: translateY(-1px);
+    }
+
+    /* Page Header */
+    .page-header {
+      padding: 56px 0 40px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 44px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .breadcrumb a {
+      color: var(--gemitec-purple-light);
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .page-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gemitec-purple-light);
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid var(--border-purple);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      margin-bottom: 16px;
+    }
+
+    .page-title {
+      font-size: clamp(28px, 4.5vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .page-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 680px;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .meta-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Legal Content */
+    .legal-content {
+      padding-bottom: 80px;
+    }
+
+    .legal-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 32px 36px;
+      margin-bottom: 28px;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
+    }
+
+    .legal-section:hover {
+      border-color: var(--border-purple);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .section-num {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gemitec-purple-light);
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid var(--border-purple);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .legal-body {
+      font-size: 15px;
+      color: #e2e8f0;
+      line-height: 1.85;
+      margin-bottom: 18px;
+    }
+
+    .legal-body:last-child {
+      margin-bottom: 0;
+    }
+
+    .legal-list {
+      margin: 12px 0 18px 24px;
+      list-style-type: none;
+    }
+
+    .legal-list li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 10px;
+      font-size: 14.5px;
+      color: #cbd5e1;
+      line-height: 1.7;
+    }
+
+    .legal-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gemitec-purple-light);
+      box-shadow: 0 0 8px var(--gemitec-purple-glow);
+    }
+
+    /* English Reference Block */
+    .en-card {
+      background: rgba(139, 92, 246, 0.04);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-left: 3px solid var(--gemitec-purple);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 20px 24px;
+      margin-top: 18px;
+    }
+
+    .en-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--gemitec-purple-light);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .en-card p {
+      font-size: 13.5px;
+      color: #94a3b8;
+      line-height: 1.75;
+      margin-bottom: 12px;
+    }
+
+    .en-card p:last-child,
+    .en-card ul:last-child {
+      margin-bottom: 0;
+    }
+
+    .en-card ul {
+      margin: 10px 0 12px 20px;
+      list-style-type: disc;
+    }
+
+    .en-card li {
+      font-size: 13.5px;
+      color: #94a3b8;
+      line-height: 1.7;
+      margin-bottom: 8px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #050608;
+      padding: 60px 0 36px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand p {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-muted);
+      margin-top: 14px;
+      max-width: 320px;
+    }
+
+    .footer-col h4 {
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-main);
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-col a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s ease;
+    }
+
+    .footer-col a:hover {
+      color: var(--gemitec-purple-light);
+    }
+
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-legal-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-legal-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .footer-legal-links a:hover {
+      color: var(--text-secondary);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .brand-logo {
+        height: 32px;
+      }
+
+      .legal-section {
+        padding: 24px 20px;
+      }
+
+      .section-title {
+        font-size: 18px;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 26px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 14px;
+        text-align: center;
+      }
+    }
+
+    /* SVG icon helper */
+    .icon {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: inline-block;
+      vertical-align: middle;
+    }
+  </style>
 </head>
-<body>
-    <a href="./" class="back-btn">← Back to Top</a>
-    <h1>利用規約 / Terms of Service</h1>
-    <p>最終更新日: 2026年6月 / Last Updated: June 2026</p>
 
-    <h2>1. はじめに / Introduction</h2>
-    <p>本利用規約（以下「本規約」といいます）は、X（旧Twitter）上で提供されるAIチャットボット「Rebecca（レベッカ）」（以下「本サービス」といいます）の利用条件を定めるものです。本サービスを利用（メンション、リプライ等の相互作用を含みます）されるユーザー、本アカウントをフォローしたユーザー、および本サービスからの自発的なエンゲージメント（引用リツイート等）の対象となる公開アカウントのユーザーは、本規約に同意したものとみなします。また、ユーザーは公開されている自身のポスト内容（テキスト・画像）が本サービスによって引用・参照される場合があることに同意するものとします。</p>
-    <div class="en-text">
-        <p>These Terms of Service (hereinafter referred to as the "Terms") establish the conditions for using the AI chatbot "Rebecca" (hereinafter referred to as the "Service") provided on X (formerly Twitter). Users who interact with the Service (including mentioning or replying), users who follow this account, and public account users who are subject to proactive engagement (such as quote retweets) from the Service are deemed to have agreed to these Terms. Furthermore, users agree that their public post content (text and images) may be quoted or referenced by the Service.</p>
+<body data-lang="ja">
+
+  <!-- Ambient Light -->
+  <div class="ambient-glow"></div>
+
+  <!-- Navigation -->
+  <header>
+    <div class="container">
+      <div class="nav-inner">
+        <a href="./" class="brand-area">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc." class="brand-logo">
+        </a>
+
+        <ul class="nav-links">
+          <li>
+            <a href="./">
+              <svg class="icon" viewBox="0 0 24 24">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              <span class="t-ja">トップページに戻る</span>
+              <span class="t-en">Back to Home</span>
+            </a>
+          </li>
+          <li>
+            <a href="./privacy.html">
+              <span class="t-ja">プライバシーポリシー</span>
+              <span class="t-en">Privacy Policy</span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="nav-actions">
+          <!-- Language Switcher -->
+          <div class="lang-switcher">
+            <button class="lang-btn active" id="btn-lang-ja" onclick="setLanguage('ja')">JA</button>
+            <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">EN</button>
+          </div>
+
+          <a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer" class="btn btn-purple">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M4 4l16 16M4 20L20 4" />
+            </svg>
+            <span class="t-ja">Xで話しかける</span>
+            <span class="t-en">Talk on X</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="breadcrumb">
+        <a href="./">HOME</a>
+        <span>/</span>
+        <span>GOVERNANCE</span>
+        <span>/</span>
+        <span style="color: var(--text-main);">TERMS OF SERVICE</span>
+      </div>
+
+      <div class="page-badge">
+        <span class="t-ja">公式ガバナンス・規約</span>
+        <span class="t-en">Official Governance</span>
+      </div>
+
+      <h1 class="page-title">
+        <span class="t-ja">利用規約</span>
+        <span class="t-en">Terms of Service</span>
+      </h1>
+
+      <p class="page-subtitle">
+        <span class="t-ja">自律型パーソナルAI「Rebecca（レベッカ）」および関連サービスのご利用にあたって遵守いただく条件を定めた基本規約です。</span>
+        <span class="t-en">These Terms of Service govern the conditions and rules for using the autonomous personal AI "Rebecca" and its associated services.</span>
+      </p>
+
+      <div class="meta-bar">
+        <div class="meta-pill">
+          <span>STATUS:</span>
+          <span style="color: #10b981; font-weight: 600;">ACTIVE</span>
+        </div>
+        <div class="meta-pill">
+          <span>LAST UPDATED:</span>
+          <span style="color: var(--gemitec-purple-light);">2026.06.20</span>
+        </div>
+        <div class="meta-pill">
+          <span>OPERATOR:</span>
+          <span>Gemitec Inc. / AKINA</span>
+        </div>
+      </div>
     </div>
 
-    <h2>2. 免責事項 / Disclaimer</h2>
-    <p>本サービスはAI（生成AI）によって自動生成されたフィクションの対話を提供するエンターテインメントサービスです。以下の点について、運営者は一切の責任を負いません。</p>
-    <ul>
-        <li>本サービスが生成する内容の正確性、真実性、合法性、および道徳性</li>
-        <li>本サービスが生成した発言により生じた、ユーザーまた第三者のいかなる損害</li>
-        <li>本サービス内のキャラクター「レベッカ」の発言はすべてフィクションであり、実在の人物、団体、事件等とは一切関係ありません。</li>
-        <li>ユーザーが本サービスに送信したテキストや画像が、第三者の著作権、肖像権、プライバシーその他の権利を侵害した場合の責任はユーザー自身が負うものとし、運営者は一切の責任を負いません。</li>
-    </ul>
-    <div class="en-text">
-        <p>The Service is an entertainment service providing fictional dialogues automatically generated by AI (Generative AI). The operator bears no responsibility for the following:</p>
-        <ul>
+    <!-- Legal Sections -->
+    <div class="legal-content">
+
+      <!-- Section 1 -->
+      <section class="legal-section">
+        <div class="section-title-wrap">
+          <span class="section-num">01</span>
+          <h2 class="section-title">
+            <span class="t-ja">はじめに</span>
+            <span class="t-en">Introduction</span>
+          </h2>
+        </div>
+        <p class="legal-body">
+          本利用規約（以下「本規約」といいます）は、X（旧Twitter）上で提供されるAIチャットボット「Rebecca（レベッカ）」（以下「本サービス」といいます）の利用条件を定めるものです。本サービスを利用（メンション、リプライ等の相互作用を含みます）されるユーザー、本アカウントをフォローしたユーザー、および本サービスからの自発的なエンゲージメント（引用リツイート等）の対象となる公開アカウントのユーザーは、本規約に同意したものとみなします。また、ユーザーは公開されている自身のポスト内容（テキスト・画像）が本サービスによって引用・参照される場合があることに同意するものとします。
+        </p>
+        <div class="en-card">
+          <span class="en-badge">English Reference</span>
+          <p>These Terms of Service (hereinafter referred to as the "Terms") establish the conditions for using the AI chatbot "Rebecca" (hereinafter referred to as the "Service") provided on X (formerly Twitter). Users who interact with the Service (including mentioning or replying), users who follow this account, and public account users who are subject to proactive engagement (such as quote retweets) from the Service are deemed to have agreed to these Terms. Furthermore, users agree that their public post content (text and images) may be quoted or referenced by the Service.</p>
+        </div>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="legal-section">
+        <div class="section-title-wrap">
+          <span class="section-num">02</span>
+          <h2 class="section-title">
+            <span class="t-ja">免責事項</span>
+            <span class="t-en">Disclaimer</span>
+          </h2>
+        </div>
+        <p class="legal-body">
+          本サービスはAI（生成AI）によって自動生成されたフィクションの対話を提供するエンターテインメントサービスです。以下の点について、運営者は一切の責任を負いません。
+        </p>
+        <ul class="legal-list">
+          <li>本サービスが生成する内容の正確性、真実性、合法性、および道徳性</li>
+          <li>本サービスが生成した発言により生じた、ユーザーまた第三者のいかなる損害</li>
+          <li>本サービス内のキャラクター「レベッカ」の発言はすべてフィクションであり、実在の人物、団体、事件等とは一切関係ありません。</li>
+          <li>ユーザーが本サービスに送信したテキストや画像が、第三者の著作権、肖像権、プライバシーその他の権利を侵害した場合の責任はユーザー自身が負うものとし、運営者は一切の責任を負いません。</li>
+        </ul>
+        <div class="en-card">
+          <span class="en-badge">English Reference</span>
+          <p>The Service is an entertainment service providing fictional dialogues automatically generated by AI (Generative AI). The operator bears no responsibility for the following:</p>
+          <ul>
             <li>The accuracy, truthfulness, legality, and morality of the content generated by the Service.</li>
             <li>Any damage caused to the user or a third party by the statements generated by the Service.</li>
             <li>The statements of the character "Rebecca" in the Service are entirely fiction and have no relation to any real person, organization, or event.</li>
             <li>The user bears sole responsibility if any text or images sent to the Service infringe upon the copyrights, portrait rights, privacy, or other rights of a third party, and the operator assumes no responsibility.</li>
-        </ul>
-    </div>
+          </ul>
+        </div>
+      </section>
 
-    <h2>3. 禁止事項 / Prohibited Conduct</h2>
-    <p>ユーザーは、本サービスの利用にあたり、以下の行為を行ってはなりません。</p>
-    <ul>
-        <li>本サービスを利用して、法令に違反する行為、または公序良俗に反する行為を行うこと</li>
-        <li>特定の個人、団体、人種、宗教等を誹謗中傷する内容を意図的に引き出そうとする行為</li>
-        <li>過度な暴力的、性的な表現を意図的に本サービスに生成させる行為</li>
-        <li>本サービスのシステムに過度な負荷をかける行為（スパム行為等）</li>
-        <li>本サービスのシステム（AIのプロンプト等）を解析、リバースエンジニアリングする行為</li>
-        <li>プロンプトインジェクション等により、本サービスの意図しない動作や機密情報の出力を誘発する行為</li>
-    </ul>
-    <div class="en-text">
-        <p>When using the Service, users must not engage in the following acts:</p>
-        <ul>
+      <!-- Section 3 -->
+      <section class="legal-section">
+        <div class="section-title-wrap">
+          <span class="section-num">03</span>
+          <h2 class="section-title">
+            <span class="t-ja">禁止事項</span>
+            <span class="t-en">Prohibited Conduct</span>
+          </h2>
+        </div>
+        <p class="legal-body">
+          ユーザーは、本サービスの利用にあたり、以下の行為を行ってはなりません。
+        </p>
+        <ul class="legal-list">
+          <li>本サービスを利用して、法令に違反する行為、または公序良俗に反する行為を行うこと</li>
+          <li>特定の個人、団体、人種、宗教等を誹謗中傷する内容を意図的に引き出そうとする行為</li>
+          <li>過度な暴力的、性的な表現を意図的に本サービスに生成させる行為</li>
+          <li>本サービスのシステムに過度な負荷をかける行為（スパム行為等）</li>
+          <li>本サービスのシステム（AIのプロンプト等）を解析、リバースエンジニアリングする行為</li>
+          <li>プロンプトインジェクション等により、本サービスの意図しない動作や機密情報の出力を誘発する行為</li>
+        </ul>
+        <div class="en-card">
+          <span class="en-badge">English Reference</span>
+          <p>When using the Service, users must not engage in the following acts:</p>
+          <ul>
             <li>Using the Service to commit acts that violate laws or public order and morals.</li>
             <li>Intentionally attempting to draw out content that slanders specific individuals, organizations, races, religions, etc.</li>
             <li>Intentionally causing the Service to generate excessively violent or sexually explicit expressions.</li>
             <li>Imposing an excessive load on the Service's system (e.g., spamming).</li>
             <li>Analyzing or reverse-engineering the Service's system (e.g., AI prompts).</li>
             <li>Inducing unintended behavior or output of confidential information from the Service through prompt injection or similar acts.</li>
-        </ul>
-    </div>
+          </ul>
+        </div>
+      </section>
 
-    <h2>4. サービスの変更・停止 / Modification and Termination of Service</h2>
-    <p>運営者は、事前の通知なく本サービスの仕様変更、または提供を停止・終了することができるものとします。これによってユーザーに生じた損害について、運営者は一切の責任を負いません。</p>
-    <div class="en-text">
-        <p>The operator reserves the right to change the specifications of the Service or to suspend or terminate its provision without prior notice. The operator bears no responsibility for any damage caused to the user as a result.</p>
-    </div>
+      <!-- Section 4 -->
+      <section class="legal-section">
+        <div class="section-title-wrap">
+          <span class="section-num">04</span>
+          <h2 class="section-title">
+            <span class="t-ja">サービスの変更・停止</span>
+            <span class="t-en">Modification and Termination of Service</span>
+          </h2>
+        </div>
+        <p class="legal-body">
+          運営者は、事前の通知なく本サービスの仕様変更、または提供を停止・終了することができるものとします。これによってユーザーに生じた損害について、運営者は一切の責任を負いません。
+        </p>
+        <div class="en-card">
+          <span class="en-badge">English Reference</span>
+          <p>The operator reserves the right to change the specifications of the Service or to suspend or terminate its provision without prior notice. The operator bears no responsibility for any damage caused to the user as a result.</p>
+        </div>
+      </section>
 
-    <h2>5. 利用停止措置 / Suspension of Use</h2>
-    <p>運営者は、ユーザーが本規約に違反したと判断した場合、または運営者が必要と判断した場合、事前の通知なく当該ユーザーに対する本サービスの提供を停止（X上でのブロック措置等を含みます）することができるものとします。</p>
-    <div class="en-text">
-        <p>If the operator determines that a user has violated these Terms or deems it necessary, the operator may suspend the provision of the Service to that user (including blocking on X) without prior notice.</p>
-    </div>
+      <!-- Section 5 -->
+      <section class="legal-section">
+        <div class="section-title-wrap">
+          <span class="section-num">05</span>
+          <h2 class="section-title">
+            <span class="t-ja">利用停止措置</span>
+            <span class="t-en">Suspension of Use</span>
+          </h2>
+        </div>
+        <p class="legal-body">
+          運営者は、ユーザーが本規約に違反したと判断した場合、または運営者が必要と判断した場合、事前の通知なく当該ユーザーに対する本サービスの提供を停止（X上でのブロック措置等を含みます）することができるものとします。
+        </p>
+        <div class="en-card">
+          <span class="en-badge">English Reference</span>
+          <p>If the operator determines that a user has violated these Terms or deems it necessary, the operator may suspend the provision of the Service to that user (including blocking on X) without prior notice.</p>
+        </div>
+      </section>
 
-    <h2>6. 規約の変更 / Changes to the Terms</h2>
-    <p>運営者は、必要と判断した場合には、事前の通知なく本規約を変更することができるものとします。変更後の規約は、本ページに掲載された時点で効力を生じるものとします。</p>
-    <div class="en-text">
-        <p>The operator may change these Terms without prior notice if deemed necessary. The modified Terms shall become effective at the time they are posted on this page.</p>
-    </div>
+      <!-- Section 6 -->
+      <section class="legal-section">
+        <div class="section-title-wrap">
+          <span class="section-num">06</span>
+          <h2 class="section-title">
+            <span class="t-ja">規約の変更</span>
+            <span class="t-en">Changes to the Terms</span>
+          </h2>
+        </div>
+        <p class="legal-body">
+          運営者は、必要と判断した場合には、事前の通知なく本規約を変更することができるものとします。変更後の規約は、本ページに掲載された時点で効力を生じるものとします。
+        </p>
+        <div class="en-card">
+          <span class="en-badge">English Reference</span>
+          <p>The operator may change these Terms without prior notice if deemed necessary. The modified Terms shall become effective at the time they are posted on this page.</p>
+        </div>
+      </section>
 
-    <div class="footer">
-        &copy; 2026 AKINA / Rebecca AI Project
     </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc."
+            style="height: 36px; width: auto; filter: brightness(1.2);">
+          <p>
+            <span class="t-ja">Gemitec Inc.<br>心に寄り添うパーソナルAIをすべての人へ。</span>
+            <span class="t-en">Gemitec Inc.<br>Empathetic personal AI for everyone.</span>
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="./#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
+            <li><a href="./#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
+            <li><a href="./#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
+            <li><a href="./#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Open Source</h4>
+          <ul>
+            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank"
+                rel="noopener noreferrer">Repository</a></li>
+            <li><a href="https://github.com/akina-se/rebecca-ai/blob/main/LICENSE" target="_blank"
+                rel="noopener noreferrer">MIT License</a></li>
+            <li><a href="./#supporters">Supporters</a></li>
+            <li><a href="https://ko-fi.com/rebeccaai" target="_blank" rel="noopener noreferrer">Ko-fi</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Governance</h4>
+          <ul>
+            <li><a href="./tos.html" style="color: var(--gemitec-purple-light);">Terms of Service</a></li>
+            <li><a href="./privacy.html">Privacy Policy</a></li>
+            <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Contact (X)</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          &copy; 2026 Gemitec Inc. Developed by AKINA. All rights reserved.
+        </div>
+        <div class="footer-legal-links">
+          <a href="./tos.html" style="color: var(--gemitec-purple-light);"><span class="t-ja">利用規約</span><span class="t-en">Terms</span></a>
+          <span>&bull;</span>
+          <a href="./privacy.html"><span class="t-ja">プライバシーポリシー</span><span class="t-en">Privacy</span></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Language Switch Script -->
+  <script>
+    function setLanguage(lang) {
+      document.body.setAttribute('data-lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+
+      const btnJa = document.getElementById('btn-lang-ja');
+      const btnEn = document.getElementById('btn-lang-en');
+      if (btnJa && btnEn) {
+        if (lang === 'ja') {
+          btnJa.style.background = 'var(--gemitec-purple)';
+          btnJa.style.color = '#ffffff';
+          btnEn.style.background = 'transparent';
+          btnEn.style.color = 'var(--text-muted)';
+        } else {
+          btnEn.style.background = 'var(--gemitec-purple)';
+          btnEn.style.color = '#ffffff';
+          btnJa.style.background = 'transparent';
+          btnJa.style.color = 'var(--text-muted)';
+        }
+      }
+
+      try {
+        localStorage.setItem('gemitec_lang', lang);
+      } catch (e) { }
+    }
+
+    (function initLanguage() {
+      try {
+        const saved = localStorage.getItem('gemitec_lang');
+        if (saved === 'ja' || saved === 'en') {
+          setLanguage(saved);
+          return;
+        }
+      } catch (e) { }
+
+      const userLang = navigator.language || navigator.userLanguage || '';
+      if (!userLang.toLowerCase().startsWith('ja')) {
+        setLanguage('en');
+      } else {
+        setLanguage('ja');
+      }
+    })();
+  </script>
+
 </body>
+
 </html>
