@@ -1,4 +1,4 @@
-﻿.login-container {
+.login-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -26,25 +26,20 @@
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 12px;
   justify-content: center;
   margin-bottom: 0.5rem;
 }
 
-.logo-dot {
-  width: 14px;
-  height: 14px;
-  background-color: var(--color-primary);
-  border-radius: 50%;
-  box-shadow: 0 0 15px var(--color-primary-glow);
+.login-logo {
+  height: 50px;
+  width: auto;
+  display: block;
+  filter: brightness(1.35) drop-shadow(0 2px 16px rgba(168, 85, 247, 0.4));
+  transition: transform 0.2s ease;
 }
 
-.logo-text {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: 2px;
-  margin: 0;
+.login-logo:hover {
+  transform: scale(1.02);
 }
 
 .welcome-text {
