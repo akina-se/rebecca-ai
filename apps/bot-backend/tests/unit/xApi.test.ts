@@ -136,7 +136,10 @@ describe('XApiService Unit Tests', () => {
 
             const result = await api.getMentions('last_id');
             expect(result).toEqual({ data: [{ id: 'tweet1' }], meta: { resultCount: 1 } });
-            expect(mockClientInstance.users.getMentions).toHaveBeenCalledWith('999999', expect.objectContaining({ since_id: 'last_id' }));
+            expect(mockClientInstance.users.getMentions).toHaveBeenCalledWith('999999', expect.objectContaining({ 
+                since_id: 'last_id',
+                expansions: ['author_id']
+            }));
         });
 
         it('should resolve non-numeric user id using getMe()', async () => {
