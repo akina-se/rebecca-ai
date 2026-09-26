@@ -54,13 +54,12 @@ export class TimelineUseCase {
     // Call bot-backend via gRPC to delete the tweets on X prior to database removal
     await Promise.all(
       ids.map(async (id) => {
-        const safeId = String(id || '').replace(/[\r\n]/g, '');
         try {
-          logger.info(`Triggering gRPC deleteTweet for X ID: ${safeId}`);
+          logger.info('Triggering gRPC deleteTweet', { tweetId: id });
           const response = await deleteTweetViaGrpc(id);
-          logger.info(`gRPC deleteTweet response for ${safeId}`, { response });
+          logger.info('gRPC deleteTweet response received', { tweetId: id, response });
         } catch (err) {
-          logger.error(`Failed to delete tweet ${safeId} via gRPC`, err);
+          logger.error('Failed to delete tweet via gRPC', err, { tweetId: id });
         }
       })
     );
