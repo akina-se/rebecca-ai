@@ -311,8 +311,7 @@ export class UsersRepository {
     try {
       parsed = typeof coreProfileJson === 'string' ? JSON.parse(coreProfileJson) : coreProfileJson;
     } catch (e) {
-      const safeId = String(id).replace(/[\r\n]/g, '');
-      logger.error(`Failed to parse memory JSON for user ${safeId}`, e, { userId: safeId });
+      logger.error('Failed to parse memory JSON for user', e, { userId: id });
       return;
     }
     await this.collections.users.doc(rawId).set(

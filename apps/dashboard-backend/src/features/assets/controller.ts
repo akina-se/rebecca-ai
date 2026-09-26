@@ -51,8 +51,7 @@ export class AssetsController {
       }
       res.json(asset);
     } catch (err) {
-      const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
-      logger.error(`Failed to fetch asset ${safeId}`, err);
+      logger.error('Failed to fetch asset', err, { assetId: req.params.id });
       res.status(500).json({ error: 'Failed to fetch asset' });
     }
   }
@@ -79,8 +78,7 @@ export class AssetsController {
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
       res.send(binary.buffer);
     } catch (err) {
-      const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
-      logger.error(`Failed to stream image ${safeId}`, err);
+      logger.error('Failed to stream image', err, { assetId: req.params.id });
       res.status(500).send('Failed to stream image');
     }
   }
@@ -157,8 +155,7 @@ export class AssetsController {
       await this.useCase.updateAsset(id as string, req.body);
       res.json({ success: true });
     } catch (err) {
-      const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
-      logger.error(`Failed to update asset ${safeId}`, err);
+      logger.error('Failed to update asset', err, { assetId: req.params.id });
       res.status(500).json({ error: 'Failed to update asset' });
     }
   }
