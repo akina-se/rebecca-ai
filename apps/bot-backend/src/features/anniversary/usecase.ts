@@ -2,6 +2,7 @@ import { AppDependencies } from '../../types';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { IAnniversaryProvider, AnniversaryItem, AnniversaryResult } from './types';
+import { logger } from '../../utils/logger';
 
 export * from './types';
 
@@ -30,20 +31,20 @@ export class ProactiveAnniversaryUseCase {
    * @returns A promise resolving to an AnniversaryResult object.
    */
   async execute(): Promise<AnniversaryResult> {
-    console.log('Starting Proactive Anniversary Post Batch...');
+    logger.info('[ProactiveAnniversaryUseCase] Starting Proactive Anniversary Post Batch');
     try {
       const now = new Date();
       const anniversaries: AnniversaryItem[] = await this.anniversaryProvider.getAnniversaries(now);
 
       if (!anniversaries || anniversaries.length === 0) {
-        console.log('[ProactiveAnniversaryUseCase] No anniversaries found for today.');
+        logger.info('[ProactiveAnniversaryUseCase] No anniversaries found for today');
         return { status: 'skipped', reason: 'no_anniversaries' };
       }
 
-      console.log(
-        `[ProactiveAnniversaryUseCase] Retrieved ${anniversaries.length} anniversary candidates:\n`,
-        anniversaries.map((a) => `- ${a.name}: ${a.description}`).join('\n'),
-      );
+      logger.info('[ProactiveAnniversaryUseCase] Retrieved anniversary candidates', {
+        count: anniversaries.length,
+        candidates: anniversaries.map((a) => `${a.name}: ${a.description}`),
+      });
 
       const timelineSummary = await this.deps.firestore.getTimelineSummary();
       const extendedPrompt = await this.deps.firestore.getExtendedPrompt();
@@ -91,7 +92,7 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
         }
       }
 
-      console.log('[ProactiveAnniversaryUseCase] Generated Post:', postText);
+      logger.info('[ProactiveAnniversaryUseCase] Generated Post', { postText });
 
       // Identify which anniversary name was referenced
       const matchedItem = anniversaries.find((a) => postText.includes(a.name));
@@ -116,7 +117,7 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
         ...(anniversaryTitle ? { anniversaryTitle } : {}),
       };
     } catch (error) {
-      console.error('[ProactiveAnniversaryUseCase] Unexpected error during execution:', error);
+      logger.error('[ProactiveAnniversaryUseCase] Unexpected error during execution', error);
       throw error;
     }
   }

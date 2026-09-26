@@ -1,4 +1,5 @@
 import { AppDependencies } from '../../types';
+import { logger } from '../../utils/logger';
 
 /**
  * Configuration required for stealth onboarding execution.
@@ -33,17 +34,17 @@ export class StealthOnboardingUseCase {
    * Executes the stealth onboarding background workflow.
    */
   async execute(): Promise<OnboardingResult> {
-    console.log('Starting Stealth Onboarding Batch...');
+    logger.info('[StealthOnboardingUseCase] Starting Stealth Onboarding Batch');
     try {
       const myUserId = this.config.myUserId;
       if (!myUserId) {
-        console.error('X_MY_USER_ID is not set in config.');
+        logger.error('[StealthOnboardingUseCase] X_MY_USER_ID is not set in config');
         return { status: 'failed', processed: 0, reason: 'Missing X_MY_USER_ID' };
       }
 
       const targetListId = this.config.targetListId;
       if (!targetListId) {
-        console.error('X_TARGET_LIST_ID is not set in config.');
+        logger.error('[StealthOnboardingUseCase] X_TARGET_LIST_ID is not set in config');
         return { status: 'failed', processed: 0, reason: 'Missing X_TARGET_LIST_ID' };
       }
 
@@ -54,13 +55,17 @@ export class StealthOnboardingUseCase {
       const ingestedCount = await this.ingestNewFollowers(myUserId, targetListId);
 
       const totalProcessed = retriedCount + ingestedCount;
-      console.log(`Stealth Onboarding Batch completed. Processed ${totalProcessed} followers (Retried: ${retriedCount}, New: ${ingestedCount}).`);
+      logger.info('[StealthOnboardingUseCase] Stealth Onboarding Batch completed', {
+        totalProcessed,
+        retriedCount,
+        ingestedCount,
+      });
 
       await this.syncTotalFollowersCount();
 
       return { status: 'success', processed: totalProcessed };
     } catch (e) {
-      console.error('Error in StealthOnboardingUseCase.execute:', e);
+      logger.error('[StealthOnboardingUseCase] Error in StealthOnboardingUseCase.execute', e);
       throw e;
     }
   }
@@ -76,30 +81,38 @@ export class StealthOnboardingUseCase {
         return 0;
       }
 
-      console.log(`Found ${failedFollowers.length} previously FAILED followers. Retrying list addition...`);
+      logger.info('[StealthOnboardingUseCase] Found previously FAILED followers. Retrying list addition', {
+        count: failedFollowers.length,
+      });
       for (const failed of failedFollowers) {
         try {
           const added = await this.deps.xApi.addListMember(targetListId, failed.userId);
           if (added) {
             await this.deps.firestore.updateFollowerListStatus(failed.userId, 'ADDED');
-            console.log(`Self-healing retry succeeded for follower (${failed.userId}): transitioned to ADDED.`);
+            logger.info('[StealthOnboardingUseCase] Self-healing retry succeeded for follower: transitioned to ADDED', {
+              userId: failed.userId,
+            });
             retriedCount++;
           }
         } catch (retryErr: unknown) {
           const errStr = String(retryErr);
           if (errStr.includes('"status":403')) {
             await this.deps.firestore.updateFollowerListStatus(failed.userId, 'REJECTED');
-            console.log(`Self-healing retry for follower (${failed.userId}) got 403: transitioned to REJECTED.`);
+            logger.info('[StealthOnboardingUseCase] Self-healing retry for follower got 403: transitioned to REJECTED', {
+              userId: failed.userId,
+            });
           } else if (errStr.includes('"status":429')) {
-            console.warn('X API rate limit (429) encountered during self-healing retry. Halting retry phase.');
+            logger.warn('[StealthOnboardingUseCase] X API rate limit (429) encountered during self-healing retry. Halting retry phase');
             break;
           } else {
-            console.error(`Self-healing retry error for follower (${failed.userId}):`, retryErr);
+            logger.error('[StealthOnboardingUseCase] Self-healing retry error for follower', retryErr, {
+              userId: failed.userId,
+            });
           }
         }
       }
     } catch (retryPhaseErr) {
-      console.error('Error during self-healing retry phase:', retryPhaseErr);
+      logger.error('[StealthOnboardingUseCase] Error during self-healing retry phase', retryPhaseErr);
     }
     return retriedCount;
   }
@@ -120,7 +133,7 @@ export class StealthOnboardingUseCase {
       const followers = followersResp.data || [];
 
       if (followers.length === 0) {
-        console.log('No more followers retrieved.');
+        logger.info('[StealthOnboardingUseCase] No more followers retrieved');
         break;
       }
 
@@ -130,22 +143,35 @@ export class StealthOnboardingUseCase {
         fetchedCount++;
         const hasProcessed = await this.deps.firestore.hasProcessedFollower(follower.id);
         if (hasProcessed) {
-          console.log(`Follower @${follower.username} (${follower.id}) already processed. Skipping.`);
+          logger.info('[StealthOnboardingUseCase] Follower already processed. Skipping', {
+            userId: follower.id,
+            username: follower.username,
+          });
           if (fetchedCount >= maxResults) {
-            console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
+            logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
+              maxResults,
+            });
             break;
           }
           continue;
         }
 
         batchHasNewFollower = true;
-        console.log(`New follower detected: ${follower.username} (${follower.id})`);
+        logger.info('[StealthOnboardingUseCase] New follower detected', {
+          userId: follower.id,
+          username: follower.username,
+        });
         const userDoc = await this.deps.firestore.getUserDoc(follower.id);
         if (userDoc?.status === 'BLOCKED') {
-          console.log(`Follower @${follower.username} (${follower.id}) is blocked by admin. Skipping list addition.`);
+          logger.info('[StealthOnboardingUseCase] Follower is blocked by admin. Skipping list addition', {
+            userId: follower.id,
+            username: follower.username,
+          });
           await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
           if (fetchedCount >= maxResults) {
-            console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
+            logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
+              maxResults,
+            });
             break;
           }
           continue;
@@ -155,25 +181,39 @@ export class StealthOnboardingUseCase {
           const added = await this.deps.xApi.addListMember(targetListId, follower.id);
           if (added) {
             await this.deps.firestore.markFollowerProcessed(follower.id, 'ADDED');
-            console.log(`Successfully onboarded (added to list): ${follower.username}`);
+            logger.info('[StealthOnboardingUseCase] Successfully onboarded (added to list)', {
+              userId: follower.id,
+              username: follower.username,
+            });
             processedCount++;
           } else {
-            console.error(`Failed to add ${follower.username} to list: addListMember returned false.`);
+            logger.error('[StealthOnboardingUseCase] Failed to add user to list: addListMember returned false', undefined, {
+              userId: follower.id,
+              username: follower.username,
+            });
             await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
           }
         } catch (listErr: unknown) {
           const errStr = String(listErr);
           if (errStr.includes('"status":403')) {
-            console.log(`Follower @${follower.username} (${follower.id}) rejected list addition (403). Marking REJECTED.`);
+            logger.info('[StealthOnboardingUseCase] Follower rejected list addition (403). Marking REJECTED', {
+              userId: follower.id,
+              username: follower.username,
+            });
             await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
           } else {
-            console.error(`Error adding follower @${follower.username} (${follower.id}) to list. Marking FAILED:`, listErr);
+            logger.error('[StealthOnboardingUseCase] Error adding follower to list. Marking FAILED', listErr, {
+              userId: follower.id,
+              username: follower.username,
+            });
             await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
           }
         }
 
         if (fetchedCount >= maxResults) {
-          console.log(`Reached maximum followers fetch limit of ${maxResults}. Stopping batch.`);
+          logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
+            maxResults,
+          });
           break;
         }
       }
@@ -183,13 +223,13 @@ export class StealthOnboardingUseCase {
       }
 
       if (!batchHasNewFollower) {
-        console.log('All followers in the current batch have already been processed. Stopping fetch.');
+        logger.info('[StealthOnboardingUseCase] All followers in current batch already processed. Stopping fetch');
         break;
       }
 
       nextToken = followersResp.meta?.next_token;
       if (!nextToken) {
-        console.log('No nextToken found. Reached end of followers list.');
+        logger.info('[StealthOnboardingUseCase] No nextToken found. Reached end of followers list');
         break;
       }
     }
@@ -205,10 +245,10 @@ export class StealthOnboardingUseCase {
       const totalCount = await this.deps.firestore.getProcessedFollowersCount();
       if (totalCount > 0) {
         await this.deps.firestore.updateTotalFollowers(totalCount);
-        console.log(`Updated global systemStats total_followers to ${totalCount}`);
+        logger.info('[StealthOnboardingUseCase] Updated global systemStats total_followers', { totalCount });
       }
     } catch (statsErr) {
-      console.error('Failed to update systemStats total_followers:', statsErr);
+      logger.error('[StealthOnboardingUseCase] Failed to update systemStats total_followers', statsErr);
     }
   }
 }

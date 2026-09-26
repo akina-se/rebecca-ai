@@ -1,6 +1,7 @@
 import { Request } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 const client = new OAuth2Client();
 
@@ -39,7 +40,7 @@ export const verifyServerToServerAuth = async (
                 return true;
             }
         } catch (e) {
-            console.warn('OIDC token verification failed:', (e as Error).message);
+            logger.warn('OIDC token verification failed', { error: (e as Error).message });
         }
     }
 
@@ -56,7 +57,7 @@ export const verifyServerToServerAuth = async (
                 return true;
             }
         } catch (err) {
-            console.warn('Error during secret comparison', err);
+            logger.warn('Error during secret comparison', { err });
         }
     }
 

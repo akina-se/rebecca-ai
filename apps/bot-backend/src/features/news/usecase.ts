@@ -10,6 +10,7 @@ import {
   CategorySelector,
 } from './types';
 import { filterFreshNews } from './deduplicator';
+import { logger } from '../../utils/logger';
 
 export * from './types';
 export * from './deduplicator';
@@ -54,19 +55,21 @@ export class ProactiveNewsUseCase {
    * @returns A promise resolving to a NewsResult object.
    */
   async execute(): Promise<NewsResult> {
-    console.log('Starting Proactive News Post Batch...');
+    logger.info('[ProactiveNewsUseCase] Starting Proactive News Post Batch');
     try {
       const targetCategory = this.selectCategory();
-      console.log(`[ProactiveNewsUseCase] Target news category: ${targetCategory}`);
+      logger.info('[ProactiveNewsUseCase] Target news category', { targetCategory });
 
       const rawNewsItems = await this.newsProvider.getNews(targetCategory);
 
       if (rawNewsItems.length === 0) {
-        console.log(`[ProactiveNewsUseCase] No news items fetched for category "${targetCategory}".`);
+        logger.info('[ProactiveNewsUseCase] No news items fetched for category', {
+          category: targetCategory,
+        });
         return { status: 'skipped', reason: 'no_headlines' };
       }
 
-      console.log('[ProactiveNewsUseCase] Fetched news items count:', rawNewsItems.length);
+      logger.info('[ProactiveNewsUseCase] Fetched news items count', { count: rawNewsItems.length });
 
       const candidateNews = await filterFreshNews(
         this.deps,
@@ -76,12 +79,14 @@ export class ProactiveNewsUseCase {
       );
 
       if (candidateNews.length === 0) {
-        console.log('[ProactiveNewsUseCase] All candidate headlines were duplicates of recent posts.');
+        logger.info('[ProactiveNewsUseCase] All candidate headlines were duplicates of recent posts');
         return { status: 'skipped', reason: 'all_duplicates' };
       }
 
       const freshHeadlineTexts = candidateNews.map((c) => c.headline);
-      console.log('[ProactiveNewsUseCase] Fresh non-duplicate headlines:\n', freshHeadlineTexts.join('\n'));
+      logger.info('[ProactiveNewsUseCase] Fresh non-duplicate headlines', {
+        freshHeadlines: freshHeadlineTexts,
+      });
 
       const formattedNewsContext = candidateNews
         .map((c) => `・【${c.item.category}】${c.headline}\n  概要: ${c.item.summary}`)
@@ -136,15 +141,21 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
         }
       }
 
-      console.log('[ProactiveNewsUseCase] Generated Post:', postText);
-      console.log('[ProactiveNewsUseCase] Selected News Title:', structuredPost.selectedTitle);
+      logger.info('[ProactiveNewsUseCase] Generated Post', { postText });
+      logger.info('[ProactiveNewsUseCase] Selected News Title', {
+        selectedTitle: structuredPost.selectedTitle,
+      });
 
       // Deterministic resolution by exact headline matching with Fail-Fast check
       const matchedNews = candidateNews.find((c) => c.headline === structuredPost.selectedTitle);
       if (!matchedNews) {
-        console.error(
-          `[ProactiveNewsUseCase] Model selected unknown title: "${structuredPost.selectedTitle}". Available candidates:`,
-          candidateHeadlines,
+        logger.error(
+          '[ProactiveNewsUseCase] Model selected unknown title',
+          undefined,
+          {
+            selectedTitle: structuredPost.selectedTitle,
+            candidateHeadlines,
+          },
         );
         throw new Error(
           `[ProactiveNewsUseCase] Selected headline "${structuredPost.selectedTitle}" not found in candidate list.`,
@@ -174,7 +185,7 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
         attachedMedia: pipelineResult.attachedMedia,
       };
     } catch (e) {
-      console.error('[ProactiveNewsUseCase] Error in ProactiveNewsUseCase:', e);
+      logger.error('[ProactiveNewsUseCase] Error in ProactiveNewsUseCase', e);
       throw e;
     }
   }

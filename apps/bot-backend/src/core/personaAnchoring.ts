@@ -4,6 +4,7 @@ import {
   buildPersonaFewShotPrompt,
 } from '@rebecca/persona';
 import { getPersonaPatternEmbeddings } from './personaEmbeddingCache';
+import { logger } from '../utils/logger';
 
 /**
  * Resolves dynamic few-shot persona anchors from the 120-pattern master dataset
@@ -40,7 +41,7 @@ export const resolveSituationalPersonaAnchors = async (
     const topPatterns = findTopPersonaPatterns(queryVector, patternVectors, topK);
     return buildPersonaFewShotPrompt(topPatterns, lang);
   } catch (e) {
-    console.warn('Failed to resolve dynamic situational persona anchors:', e);
+    logger.warn('Failed to resolve dynamic situational persona anchors', { err: e });
     return '';
   }
 };

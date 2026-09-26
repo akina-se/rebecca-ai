@@ -3,6 +3,7 @@ import { getBasePrompt } from '@rebecca/persona';
 import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
 import { executePostPipeline } from '../../core/postPipeline';
 import { downloadImage } from '../../utils/image';
+import { logger } from '../../utils/logger';
 
 /**
  * Encapsulates the business logic for the random engagement background job.
@@ -29,12 +30,12 @@ export class RandomEngagementUseCase {
    *          and an optional reason string (if skipped or failed).
    */
   async execute(): Promise<{ status: string; processedUser?: string; reason?: string }> {
-    console.log('Starting Random Engagement Batch...');
+    logger.info('[RandomEngagementUseCase] Starting Random Engagement Batch');
     try {
       const members = await this.deps.firestore.getListMembersFromCache();
 
       if (members.length === 0) {
-        console.log('List cache is empty.');
+        logger.info('[RandomEngagementUseCase] List cache is empty');
         return { status: 'success' };
       }
 
@@ -50,7 +51,9 @@ export class RandomEngagementUseCase {
       for (const user of shuffled) {
         const userDoc = await this.deps.firestore.getUserDoc(user.id);
         if (userDoc?.status === 'BLOCKED') {
-          console.log(`User (${user.id}) is blocked by admin. Skipping random engagement.`);
+          logger.info('[RandomEngagementUseCase] User is blocked by admin. Skipping random engagement', {
+            userId: user.id,
+          });
           continue;
         }
         const lastInteraction = await this.deps.firestore.getLastListInteraction(user.id);
@@ -61,22 +64,30 @@ export class RandomEngagementUseCase {
       }
 
       if (!targetUser) {
-        console.log('No eligible users found for random engagement (all already engaged).');
+        logger.info('[RandomEngagementUseCase] No eligible users found for random engagement');
         return { status: 'success' };
       }
 
-      console.log(`Targeting user for random engagement: (${targetUser.id})`);
+      logger.info('[RandomEngagementUseCase] Targeting user for random engagement', {
+        userId: targetUser.id,
+      });
 
       const rateLimitResult = await checkAndIncrementRateLimits(this.deps, targetUser.id);
       if (!rateLimitResult.allowed) {
-        console.warn(`Rate limit hit for ${targetUser.id}: ${rateLimitResult.reason}`);
+        logger.warn('[RandomEngagementUseCase] Rate limit hit for user', {
+          userId: targetUser.id,
+          reason: rateLimitResult.reason,
+        });
         return { status: 'skipped', reason: 'rate_limited' };
       }
 
       const profileResp = await this.deps.xApi.getUserProfile(targetUser.id);
       const username = profileResp.data.username;
       const description = profileResp.data.description || '';
-      console.log(`Resolved username for random engagement: @${username} (${targetUser.id})`);
+      logger.info('[RandomEngagementUseCase] Resolved username for random engagement', {
+        userId: targetUser.id,
+        username,
+      });
       
       const profilePrompt = `あなたはAIキャラクターのシステムです。ユーザーのX(Twitter)のプロフィール文を分析し、ユーザーの属性や好みをJSONで出力してください。
 【プロフィール文】
@@ -88,7 +99,10 @@ ${description}
   "preferences": ["ゲーム", "酒"など]
 }`;
       const profileAnalysis = await this.deps.gemini.analyzeUserProfile(profilePrompt);
-      console.log('Profile Analysis:', profileAnalysis);
+      logger.info('[RandomEngagementUseCase] Profile analysis completed', {
+        userId: targetUser.id,
+        profileAnalysis,
+      });
 
       let tweetContext = '';
       let targetTweetId: string | undefined = undefined;
@@ -118,11 +132,15 @@ ${description}
           }
         }
       } catch(e) {
-        console.error('Failed to fetch recent tweets for random engagement:', e);
+        logger.error('[RandomEngagementUseCase] Failed to fetch recent tweets for random engagement', e, {
+          userId: targetUser.id,
+        });
       }
 
       if (!targetTweetId) {
-        console.log(`User ${targetUser.id} has no recent organic tweets to engage with. Skipping...`);
+        logger.info('[RandomEngagementUseCase] User has no recent organic tweets to engage with. Skipping', {
+          userId: targetUser.id,
+        });
         return { status: 'skipped', reason: 'No valid tweets to engage with' };
       }
 
@@ -140,7 +158,9 @@ ${description}
         finalText = `@${username}\n${finalText}`;
       }
 
-      console.log(`Generated Engagement Text:\n${finalText}`);
+      logger.info('[RandomEngagementUseCase] Generated Engagement Text', {
+        text: finalText,
+      });
 
       await executePostPipeline(this.deps, {
         postType: 'random_engagement',
@@ -153,7 +173,7 @@ ${description}
 
       return { status: 'success', processedUser: username };
     } catch (e) {
-      console.error('Error in RandomEngagementUseCase.execute:', e);
+      logger.error('[RandomEngagementUseCase] Error in RandomEngagementUseCase.execute', e);
       throw e;
     }
   }

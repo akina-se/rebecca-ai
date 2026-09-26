@@ -1,5 +1,6 @@
 import { GlobalEvolutionUseCase } from '../../src/features/evolution/usecase';
 import { createMockDeps } from './core/testUtils';
+import { logger } from '../../src/utils/logger';
 
 describe('evolution.ts', () => {
     let deps: any;
@@ -60,13 +61,13 @@ describe('evolution.ts', () => {
         });
 
         it('should throw error if underlying db throws', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const loggerSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
             deps.firestore.getRecentConversationLogs.mockRejectedValueOnce(new Error('DB Error'));
             
             await expect(new GlobalEvolutionUseCase(deps, { lookbackDays: 7 }).execute()).rejects.toThrow('DB Error');
             
-            expect(consoleSpy).toHaveBeenCalledWith('Error in runGlobalEvolutionBatch:', expect.any(Error));
-            consoleSpy.mockRestore();
+            expect(loggerSpy).toHaveBeenCalledWith('[GlobalEvolutionUseCase] Error in runGlobalEvolutionBatch', expect.any(Error));
+            loggerSpy.mockRestore();
         });
     });
 });

@@ -17,6 +17,7 @@ import { Firestore, FieldValue, Timestamp, DocumentData } from '@google-cloud/fi
 import { getCollections, COLLECTIONS } from '@rebecca/db';
 import config from '../config';
 import { formatZonedDateTime, getZonedDateParts } from '../utils/time';
+import { logger } from '../utils/logger';
 import type {
   FirestoreUser,
   ConversationLogEntry,
@@ -588,7 +589,7 @@ const findRagMemories = async (userId: string, queryVector: number[], limit = 3)
     });
     return memories;
   } catch (e) {
-    console.error('[FirestoreService] Vector search (findNearest) failed:', e);
+    logger.error('[FirestoreService] Vector search (findNearest) failed', e);
     return [];
   }
 };
@@ -744,7 +745,7 @@ const findImagesByVector = async (
 
     return availableImages.slice(0, limit);
   } catch (e) {
-    console.error('[FirestoreService] Image vector search failed:', e);
+    logger.error('[FirestoreService] Image vector search failed', e);
     return [];
   }
 };
@@ -849,7 +850,7 @@ const getFailedFollowers = async (limit: number = 10): Promise<ProcessedFollower
       .get();
     return snapshot.docs.map(doc => doc.data());
   } catch (error) {
-    console.error('Failed to get failed followers for retry:', error);
+    logger.error('Failed to get failed followers for retry', error);
     return [];
   }
 };
@@ -896,7 +897,7 @@ const getProcessedFollowersCount = async (): Promise<number> => {
     const snap = await db.processedFollowers.count().get();
     return snap.data().count || 0;
   } catch (error) {
-    console.error('Failed to get processed followers count:', error);
+    logger.error('Failed to get processed followers count', error);
     return 0;
   }
 };

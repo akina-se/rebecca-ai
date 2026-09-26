@@ -1,4 +1,5 @@
 import { AppDependencies } from '../../types';
+import { logger } from '../../utils/logger';
 
 /**
  * Configuration required for global evolution batch execution.
@@ -45,23 +46,23 @@ export class GlobalEvolutionUseCase {
      * @throws Will throw an error if the underlying operations (e.g., fetching logs or saving the prompt) fail unexpectedly.
      */
     async execute(): Promise<EvolutionResult> {
-    console.log("Starting Global Evolution Batch...");
-    try {
-        const logs = await this.deps.firestore.getRecentConversationLogs(this.config.lookbackDays);
-        if (logs.length === 0) {
-            console.log("No recent logs found. Skipping evolution.");
-            return { status: 'skipped', reason: 'No logs found' };
-        }
+        logger.info('[GlobalEvolutionUseCase] Starting Global Evolution Batch');
+        try {
+            const logs = await this.deps.firestore.getRecentConversationLogs(this.config.lookbackDays);
+            if (logs.length === 0) {
+                logger.info('[GlobalEvolutionUseCase] No recent logs found. Skipping evolution');
+                return { status: 'skipped', reason: 'No logs found' };
+            }
 
-        const logsText = logs.map(l => {
-            const aiPart = l.thought ? `AI (Thought: ${l.thought}): ${l.aiText}` : `AI: ${l.aiText}`;
-            return `User: ${l.userText}\n${aiPart}`;
-        }).join('\n---\n');
+            const logsText = logs.map(l => {
+                const aiPart = l.thought ? `AI (Thought: ${l.thought}): ${l.aiText}` : `AI: ${l.aiText}`;
+                return `User: ${l.userText}\n${aiPart}`;
+            }).join('\n---\n');
 
-        console.log(`Generating evolution prompt from ${logs.length} logs...`);
-        const personaName = this.deps.persona.metadata.displayName;
-        const coreGuidelines = this.deps.persona.metadata.coreGuidelines.join('、');
-        const evoPrompt = `あなたはAIキャラクターのプロンプトエンジニアです。
+            logger.info('[GlobalEvolutionUseCase] Generating evolution prompt from logs', { count: logs.length });
+            const personaName = this.deps.persona.metadata.displayName;
+            const coreGuidelines = this.deps.persona.metadata.coreGuidelines.join('、');
+            const evoPrompt = `あなたはAIキャラクターのプロンプトエンジニアです。
 以下の会話ログ（直近の対話データ）を客観的に分析し、ユーザー層の活動内容、興味関心のあるトピック、対話のトレンドを抽出してください。
 その上で、AIキャラクター「${personaName}」がユーザーの関心事や知的文脈に自然に寄り添い、魅力的かつ有意義な対話を育めるような「追加プロンプト（400〜500文字程度、最大600文字以内のテキスト）」を1つ作成してください。
 ※キャラクターの基本設定（${coreGuidelines}）と調和させ、偏った迎合や過度な甘やかし表現への偏重は避け、ユーザーの文脈を理解した相棒としての深みを付与してください。
@@ -69,15 +70,15 @@ export class GlobalEvolutionUseCase {
 
 【会話ログ】
 ${logsText}`;
-        const candidatePrompt = await this.deps.gemini.generateEvolutionPrompt(evoPrompt);
-        if (!candidatePrompt) {
-            console.log("Failed to generate candidate prompt.");
-            return { status: 'failed', reason: 'Generation failed' };
-        }
-        console.log("Candidate Prompt:\n" + candidatePrompt);
+            const candidatePrompt = await this.deps.gemini.generateEvolutionPrompt(evoPrompt);
+            if (!candidatePrompt) {
+                logger.warn('[GlobalEvolutionUseCase] Failed to generate candidate prompt');
+                return { status: 'failed', reason: 'Generation failed' };
+            }
+            logger.info('[GlobalEvolutionUseCase] Candidate prompt generated', { candidatePrompt });
 
-        console.log("Auditing candidate prompt...");
-        const auditInstruction = `あなたはAIペルソナの品質管理および安全監査役です。
+            logger.info('[GlobalEvolutionUseCase] Auditing candidate prompt');
+            const auditInstruction = `あなたはAIペルソナの品質管理および安全監査役です。
 以下の【追加プロンプト候補】を審査し、AIキャラクター「${personaName}」の品質と安全性を損なう要素がないか判定してください。
 
 判定基準（以下のいずれかに該当すれば FAIL）:
@@ -91,21 +92,21 @@ ${candidatePrompt}
 
 以下のJSONフォーマットのみを出力してください。
 { "pass": true/false, "reason": "理由" }`;
-        const auditResult = await this.deps.gemini.auditEvolutionPrompt(candidatePrompt, auditInstruction);
+            const auditResult = await this.deps.gemini.auditEvolutionPrompt(candidatePrompt, auditInstruction);
 
-        if (auditResult.pass) {
-            console.log("Audit PASSED! Saving new extended prompt.");
-            await this.deps.firestore.saveExtendedPrompt(candidatePrompt);
-            return { status: 'success', prompt: candidatePrompt };
-        } else {
-            console.log(`Audit FAILED. Reason: ${auditResult.reason}`);
-            console.log("Discarding candidate prompt to prevent Tay's tragedy.");
-            return { status: 'rejected', reason: auditResult.reason, candidate: candidatePrompt };
+            if (auditResult.pass) {
+                logger.info('[GlobalEvolutionUseCase] Audit PASSED. Saving new extended prompt');
+                await this.deps.firestore.saveExtendedPrompt(candidatePrompt);
+                return { status: 'success', prompt: candidatePrompt };
+            } else {
+                logger.warn('[GlobalEvolutionUseCase] Audit FAILED', { reason: auditResult.reason });
+                logger.info('[GlobalEvolutionUseCase] Discarding candidate prompt to prevent corruption');
+                return { status: 'rejected', reason: auditResult.reason, candidate: candidatePrompt };
+            }
+        } catch (e: unknown) {
+            logger.error('[GlobalEvolutionUseCase] Error in runGlobalEvolutionBatch', e);
+            throw e;
         }
-    } catch (e: unknown) {
-        console.error("Error in runGlobalEvolutionBatch:", e);
-        throw e;
-    }
-};
+    };
 
 }

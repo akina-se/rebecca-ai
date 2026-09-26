@@ -9,6 +9,7 @@ import { formatZonedDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile, IGeminiService } from '../types';
 import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 import { StructuredNewsPostResponse } from '../features/news/types';
+import { logger } from '../utils/logger';
 
 /**
  * Creates the JSON schema for structured news post generation with enum-constrained candidate title selection.
@@ -123,7 +124,7 @@ export class GeminiService implements IGeminiService {
 
       return JSON.parse(response.text || '{}');
     } catch (error) {
-      console.error('Error in Dreaming generation:', error);
+      logger.error('Error in Dreaming generation', error);
       throw error;
     }
   }
@@ -147,7 +148,7 @@ export class GeminiService implements IGeminiService {
       });
       return response.text?.trim() || '';
     } catch (e) {
-      console.error('Error in Evolution generation:', e);
+      logger.error('Error in Evolution generation', e);
       throw e;
     }
   }
@@ -179,7 +180,7 @@ export class GeminiService implements IGeminiService {
 
       return JSON.parse(jsonStr);
     } catch (e) {
-      console.error('Error in Evolution audit:', e);
+      logger.error('Error in Evolution audit', e);
       return { pass: false, reason: 'Audit API Error' };
     }
   }
@@ -200,7 +201,7 @@ export class GeminiService implements IGeminiService {
       });
       return JSON.parse(response.text || '{}');
     } catch (e) {
-      console.error('Error analyzing user profile:', e);
+      logger.error('Error analyzing user profile', e);
       return {} as UserCoreProfile;
     }
   }
@@ -243,7 +244,7 @@ export class GeminiService implements IGeminiService {
       }
       return parsed;
     } catch (e) {
-      console.error('Error generating structured timeline post:', e);
+      logger.error('Error generating structured timeline post', e);
       throw e;
     }
   }
@@ -315,7 +316,7 @@ export class GeminiService implements IGeminiService {
         reply: trimmedReply,
       };
     } catch (e) {
-      console.error('Error generating structured news post:', e);
+      logger.error('Error generating structured news post', e);
       throw e;
     }
   }
@@ -362,7 +363,7 @@ export class GeminiService implements IGeminiService {
       }
       return summary;
     } catch (e) {
-      console.error('[GeminiService] Failed to generate timeline summary:', e);
+      logger.error('[GeminiService] Failed to generate timeline summary', e);
       throw e;
     }
   }
@@ -386,7 +387,7 @@ export class GeminiService implements IGeminiService {
       const values = response.embeddings?.[0]?.values;
       return values || [];
     } catch (e) {
-      console.error('Error generating embedding:', e);
+      logger.error('Error generating embedding', e);
       return [];
     }
   }
@@ -409,7 +410,7 @@ export class GeminiService implements IGeminiService {
       });
       return response.text?.trim() || userInput || '';
     } catch (e) {
-      console.error('Error generating search query:', e);
+      logger.error('Error generating search query', e);
       return userInput || '';
     }
   }
@@ -431,7 +432,7 @@ export class GeminiService implements IGeminiService {
       const lang = response.text?.trim().toLowerCase() || 'ja';
       return lang.includes('en') ? 'en' : 'ja';
     } catch (e) {
-      console.error('Error detecting language:', e);
+      logger.error('Error detecting language', e);
       return 'ja';
     }
   }
@@ -468,7 +469,7 @@ export class GeminiService implements IGeminiService {
       });
       return response.text?.trim() || '';
     } catch (e) {
-      console.error('Error analyzing image caption:', e);
+      logger.error('Error analyzing image caption', e);
       return '';
     }
   }
@@ -492,7 +493,7 @@ export class GeminiService implements IGeminiService {
       const result = response.text?.trim() || null;
       return result === 'null' ? null : result;
     } catch (e) {
-      console.error('Error inferring image search query:', e);
+      logger.error('Error inferring image search query', e);
       return null;
     }
   }
@@ -548,7 +549,7 @@ ${imageCaption}
       const parsed = JSON.parse(cleaned);
       return Boolean(parsed.relevant);
     } catch (e) {
-      console.error('Error verifying image relevance:', e);
+      logger.error('Error verifying image relevance', e);
       return false;
     }
   }
@@ -574,7 +575,7 @@ ${imageCaption}
       });
       return res.text?.trim() || '該当する検索結果が見つかりませんでした。';
     } catch (err) {
-      console.warn(`[executeWebSearch] Failed to search for query "${trimmed}":`, (err as Error).message);
+      logger.warn('[executeWebSearch] Failed to search for query', { query: trimmed, error: (err as Error).message });
       return '一時的なネットワークまたは検索エラーにより情報を取得できませんでした。';
     }
   }
@@ -678,7 +679,7 @@ ${imageCaption}
       }
       return parsed;
     } catch (error) {
-      console.error('Error generating structured reply with Gemini:', error);
+      logger.error('Error generating structured reply with Gemini', error);
       throw error;
     }
   }

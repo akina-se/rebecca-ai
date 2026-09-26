@@ -1,5 +1,6 @@
 import { AnniversaryItem, IAnniversaryProvider } from '../types';
 import { getZonedDateParts } from '../../../utils/time';
+import { logger } from '../../../utils/logger';
 
 /**
  * Timeout in milliseconds for Wikipedia API requests.
@@ -140,13 +141,13 @@ export class WikipediaAnniversaryProvider implements IAnniversaryProvider {
       // Locate the "記念日・年中行事" section within the wikitext (stops at next level-2 header ==, preserving level-3 === subsections)
       const sectionMatch = fullWikitext.match(/==\s*(?:記念日|年中行事)[^\n]*\n([\s\S]*?)(?=\n==(?!=)|$)/);
       if (!sectionMatch || !sectionMatch[1]) {
-        console.warn(`[WikipediaAnniversaryProvider] No anniversary section found for ${pageTitle}`);
+        logger.warn('[WikipediaAnniversaryProvider] No anniversary section found', { pageTitle });
         return [];
       }
 
       return parseAnniversarySection(sectionMatch[1]);
     } catch (error) {
-      console.error('[WikipediaAnniversaryProvider] Error fetching anniversaries from Wikipedia:', error);
+      logger.error('[WikipediaAnniversaryProvider] Error fetching anniversaries from Wikipedia', error);
       throw error;
     }
   }

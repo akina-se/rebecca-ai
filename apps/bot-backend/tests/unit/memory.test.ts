@@ -1,6 +1,7 @@
 import { getWorkingMemory, saveInteraction } from '../../src/core/memory';
 import { GlobalDreamingUseCase } from '../../src/features/dreaming/usecase';
 import { createMockDeps } from './core/testUtils';
+import { logger } from '../../src/utils/logger';
 
 describe('Memory Module', () => {
     let deps: any;
@@ -68,15 +69,15 @@ describe('Memory Module', () => {
             });
 
             it('should catch and log error if generateDreaming fails (abnormal case)', async () => {
-                const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+                const loggerSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
                 deps.gemini.generateDreaming.mockRejectedValueOnce(new Error('API Error'));
                 
                 await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
                 
                 expect(deps.firestore.updateCoreProfile).not.toHaveBeenCalled();
-                expect(consoleSpy).toHaveBeenCalledWith('[GlobalDreamingUseCase] Dreaming failed for user: user1:', expect.any(Error));
+                expect(loggerSpy).toHaveBeenCalledWith('[GlobalDreamingUseCase] Dreaming failed for user', expect.any(Error), { userId: 'user1' });
                 
-                consoleSpy.mockRestore();
+                loggerSpy.mockRestore();
             });
         });
 

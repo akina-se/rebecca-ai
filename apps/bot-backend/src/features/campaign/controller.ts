@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { CampaignPostUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for the Campaign Post batch feature.
@@ -19,7 +20,7 @@ export class CampaignPostController {
       const result = await this.useCase.execute();
       res.status(200).json(result);
     } catch (error) {
-      console.error('[CampaignPostController] Batch execution failed:', error);
+      logger.error('[CampaignPostController] Batch execution failed', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
