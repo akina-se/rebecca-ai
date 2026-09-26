@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.24.2](https://github.com/akina-se/rebecca-ai/compare/v1.24.1...v1.24.2) (2026-09-26)
+
+
+### Bug Fixes
+
+* **security:** resolve CodeQL log injection and migrate all console calls to structured logger ([f410324](https://github.com/akina-se/rebecca-ai/commit/f4103240438ba60a6935d70ff22a74ea357b8c5a))
+* **security:** resolve CodeQL log injection in campaign controller via structured logger ([919eeea](https://github.com/akina-se/rebecca-ai/commit/919eeea58ba9e0c3ee427f0c3f3cc35f7d95577d))
+
 ## [1.24.1](https://github.com/akina-se/rebecca-ai/compare/v1.24.0...v1.24.1) (2026-09-26)
 
 
