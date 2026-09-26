@@ -1,6 +1,7 @@
 import { Firestore, FieldValue } from '@google-cloud/firestore';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { getCollections, COLLECTIONS } from '@rebecca/db';
+import { isGcsUrl } from '../../utils/gcs';
 
 export interface AssetQueryParams {
   page?: number;
@@ -63,17 +64,7 @@ export class AssetsRepository {
 
     let url = typeof data.url === 'string' ? data.url : '';
     let thumbnailUrl: string | undefined;
-    let isInternalStorage = !url || url.startsWith('gs://');
-    if (!isInternalStorage && (url.startsWith('http://') || url.startsWith('https://'))) {
-      try {
-        const parsedHost = new URL(url).hostname;
-        if (parsedHost === 'storage.googleapis.com' || parsedHost.endsWith('.storage.googleapis.com')) {
-          isInternalStorage = true;
-        }
-      } catch {
-        isInternalStorage = true;
-      }
-    }
+    const isInternalStorage = !url || isGcsUrl(url);
     if (isInternalStorage) {
       url = `/api/v1/assets/${id}/image`;
       thumbnailUrl = `/api/v1/assets/${id}/image?size=thumbnail`;
