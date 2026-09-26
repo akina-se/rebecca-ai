@@ -1,6 +1,7 @@
 import { Firestore, Query } from '@google-cloud/firestore';
 import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse, TimelinePost } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
+import { extractGcsObjectPath } from '../../utils/gcs';
 
 /**
  * Computes the relative percentage change between current and baseline metrics.
@@ -325,10 +326,12 @@ export class TimelineRepository {
     const data: PostLeaderboard[] = docs.map(doc => {
       const d = doc.data;
       const media = (d.mediaUrls || []).map(url => {
-        if (typeof url === 'string' && url.startsWith('gs://')) {
-          const parts = url.split('/');
-          const filename = parts.pop() || '';
-          return `/api/v1/assets/${filename}/image?size=thumbnail`;
+        if (typeof url === 'string') {
+          const objectPath = extractGcsObjectPath(url);
+          if (objectPath) {
+            const filename = objectPath.split('/').pop() || '';
+            return `/api/v1/assets/${filename}/image?size=thumbnail`;
+          }
         }
         return typeof url === 'string' ? url : '';
       }).filter(Boolean);
@@ -372,10 +375,12 @@ export class TimelineRepository {
 
     const data = doc.data()!;
     const mediaUrls = (data.mediaUrls || []).map(url => {
-      if (typeof url === 'string' && url.startsWith('gs://')) {
-        const parts = url.split('/');
-        const filename = parts.pop() || '';
-        return `/api/v1/assets/${filename}/image`;
+      if (typeof url === 'string') {
+        const objectPath = extractGcsObjectPath(url);
+        if (objectPath) {
+          const filename = objectPath.split('/').pop() || '';
+          return `/api/v1/assets/${filename}/image`;
+        }
       }
       return typeof url === 'string' ? url : '';
     }).filter(Boolean);

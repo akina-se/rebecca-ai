@@ -102,14 +102,20 @@ erDiagram
         string tweetId "X status ID"
         string text "Published post text"
         string thought "Persona monologue"
-        string postType "soliloquy | news | anniversary"
+        string postType "soliloquy | news | anniversary | random_engagement | campaign"
         string status "SUCCESS | FAILED | PENDING"
         int impressions "Impression count"
         int likes "Likes count"
         int reposts "Retweets count"
         int replies "Replies count"
         array mediaUrls "Image URLs"
+        string assetId "Optional image asset ID"
+        string authorId "Optional author user ID"
+        string authorName "Optional author name"
+        string authorHandle "Optional author handle"
+        string authorAvatarUrl "Optional author avatar URL"
         string newsTitle "Optional news headline"
+        string anniversaryTitle "Optional memorial day title"
         string timestamp "ISO 8601 datetime"
         timestamp expireAt "TTL managed (5-year expiry)"
     }
@@ -123,6 +129,7 @@ erDiagram
         timestamp lastUsedAt "Last timeline attachment"
         int useCount "Usage counter"
         string status "PENDING | PROCESSING | SUCCESS | FAILED"
+        string createdAt "ISO 8601 creation datetime"
     }
 
     PROCESSED_FOLLOWERS {
@@ -153,6 +160,7 @@ erDiagram
         string masterContext "Event world-building context"
         string replyContextSummary "Context injected into replies"
         boolean isAnnualRecurring "Annual recurrence flag"
+        int recurringApprovedYear "Optional approved annual recurring year"
         boolean isPaused "Emergency kill-switch flag"
         array slots "Array of CampaignSlot objects"
         int totalSlotsCount "Total configured slots"
@@ -296,18 +304,24 @@ Public posts authored and published by Rebecca to the X timeline.
 
 | Field Name | Type | Description |
 | :--- | :--- | :--- |
-| `tweetId` | `string` | X Status Tweet ID. |
+| `tweetId` | `string \| undefined` | X Status Tweet ID. |
 | `text` | `string` | Published status text (<= 140 chars). |
 | `thought` | `string \| null` | Internal persona monologue behind the post. |
-| `postType` | `'soliloquy' \| 'news' \| 'anniversary'` | Post classification origin. |
+| `postType` | `'soliloquy' \| 'news' \| 'anniversary' \| 'random_engagement' \| 'campaign'` | Post classification origin. |
 | `status` | `'SUCCESS' \| 'FAILED' \| 'PENDING'` | Delivery status. |
 | `impressions` | `number` | Total impression metric. |
 | `likes` | `number` | Like count. |
 | `reposts` | `number` | Repost / retweet count. |
 | `replies` | `number` | Reply count. |
 | `mediaUrls` | `string[]` | Attached image URLs. |
+| `assetId` | `string \| undefined` | Associated image asset ID. |
+| `authorId` | `string \| undefined` | Author user ID. |
+| `authorName` | `string \| undefined` | Author display name. |
+| `authorHandle` | `string \| undefined` | Author handle without @. |
+| `authorAvatarUrl` | `string \| undefined` | Author avatar image URL. |
 | `newsTitle` | `string \| undefined` | Associated news headline (if postType == 'news'). |
 | `newsEmbedding` | `number[] \| undefined` | Semantic headline embedding vector for deduplication. |
+| `anniversaryTitle` | `string \| undefined` | Associated memorial day title (if postType == 'anniversary'). |
 | `timestamp` | `string` (ISO 8601) | Post creation timestamp. |
 | `expireAt` | `Timestamp` (stored) / `string` (code) | Expiration datetime. |
 
@@ -327,6 +341,7 @@ Media asset repository metadata for AI-generated or curated illustration assets.
 | `lastUsedAt` | `Timestamp \| null` | Datetime of last timeline attachment (for cooldowns). |
 | `useCount` | `number` | Number of times attached to a post. |
 | `status` | `'PENDING' \| 'PROCESSING' \| 'SUCCESS' \| 'FAILED'` | Asset readiness state. |
+| `createdAt` | `string \| undefined` (ISO 8601) | Creation datetime. |
 
 ---
 
@@ -480,6 +495,7 @@ Documents are indexed at the root collection level and serialized via `@rebecca/
 | `masterContext` | `string` | World-building narrative instructions injected into Gemini prompt for slot posts. |
 | `replyContextSummary` | `string` | Compact situation summary injected into mention reply prompts during the event. |
 | `isAnnualRecurring` | `boolean` | Flag indicating whether this campaign repeats annually. |
+| `recurringApprovedYear` | `number \| undefined` | Approved annual recurrence cycle year. |
 | `isPaused` | `boolean` | Emergency kill-switch flag. If `true`, halts slot posts and suppresses prompt injection. |
 | `slots` | `CampaignSlot[]` | Array of configured itinerary slot entities. |
 | `totalSlotsCount` | `number` | Total number of generated itinerary slots across the date range. |

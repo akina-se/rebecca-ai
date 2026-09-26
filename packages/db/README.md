@@ -11,7 +11,7 @@ By encapsulating database pathways in a shared package, we guarantee:
 
 ---
 
-## 🛠️ Collection Mapping & Usage
+## Collection Mapping & Usage
 
 The module exposes the `getCollections(db: Firestore)` helper to construct typed Firestore references:
 
@@ -24,15 +24,21 @@ const collections = getCollections(firestore);
 
 // collections.users points to firestore.collection('users') with UserDoc types.
 const userSnapshot = await collections.users.doc('rebecca_oshi').get();
-const userData = userSnapshot.data(); // Strongly typed UserDoc
+const userData = userSnapshot.data(); // Strongly typed FirestoreUser
 ```
 
 ### Supported Collections
 - `users`: Core profile settings, RAG memory buffers, and interaction frequency.
-- `conversation_logs`: Raw historical logs of bot chats (managed with a 30-day TTL).
-- `timeline_history`: Proactive timeline tweets.
-- `rag_memories`: Embedded memory fragments for semantic search.
+- `campaigns`: Narrative episodic event campaign itineraries and slots.
+- `conversation_logs`: Raw historical logs of 1-on-1 bot chats (managed with a 5-year TTL).
+- `timeline_history`: Proactive and campaign timeline posts (managed with a 5-year TTL).
+- `rag_memories`: Embedded memory fragments for semantic search (max 20 per user FIFO).
 - `images`: Image assets, Gemini alt-text captions, and vector embeddings.
-- `system`: System-wide settings and persona variables (Layer 2 global memory).
-- `system_stats`: Daily KPI aggregates (such as active user lists for DAU calculation).
+- `admin_users`: Authorized dashboard administrators for RBAC.
+- `system`: System-wide settings and persona singletons (`persona`, `x_api_state`, `preferences`).
+- `system_stats`: Daily KPI aggregates (`global`, `dau_YYYY-MM-DD`).
 - `rate_limits`: Scalable daily and minute rate limit counters.
+- `processed_followers`: Follower onboarding tracking and curation list status.
+- `list_interaction_history`: Cooldown tracking for list member interactions.
+- `processed_mentions`: Mention tweet idempotency log.
+- `processed_events`: Cloud Functions Eventarc idempotency log.

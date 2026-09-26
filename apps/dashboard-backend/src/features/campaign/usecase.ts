@@ -840,7 +840,8 @@ export class CampaignsUseCase {
       const bucket = this.storage.bucket(this.config.imageBucketName);
       await bucket.deleteFiles({ prefix: `campaigns/${id}/`, force: true });
     } catch (err) {
-      console.warn(`[CampaignsUseCase] Warning during GCS cascade cleanup for campaign ${id}:`, err);
+      const sanitizedId = String(id).replace(/[\r\n]/g, '');
+      console.warn('[CampaignsUseCase] Warning during GCS cascade cleanup for campaign %s:', sanitizedId, err);
     }
 
     await this.repo.delete(id);

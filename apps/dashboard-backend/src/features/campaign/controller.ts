@@ -43,7 +43,8 @@ const handleControllerError = (res: Response, err: unknown, context: string): vo
     return;
   }
 
-  console.error(`[CampaignsController] ${context} unexpected server error:`, err);
+  const safeContext = String(context).replace(/[\r\n]/g, '');
+  console.error('[CampaignsController] %s unexpected server error:', safeContext, err);
   res.status(500).json({ error: 'Internal server error' });
 };
 

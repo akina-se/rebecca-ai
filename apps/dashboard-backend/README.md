@@ -88,15 +88,22 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 | Category | HTTP Method | Path | Description |
 |---|---|---|---|
 | **Alerts** | `GET` | `/api/v1/alerts` | Aggregates dynamic warning alerts across the system |
+| **Dashboard** | `GET` | `/api/v1/metrics` | Retrieves aggregated KPI dashboard metrics |
 | **Users** | `GET` | `/api/v1/users` | List monitored users / leaderboard (paginated, sorted) |
 | | `PUT` | `/api/v1/users/status` | Bulk update user statuses (Active, Blocked, Muted) |
 | | `GET` | `/api/v1/users/{id}` | Get specific user details and paginated chat history |
 | | `PUT` | `/api/v1/users/{id}/memory` | Update a user's memory profile (RAG attributes) |
 | **Posts** | `GET` | `/api/v1/posts` | Paginated timeline posts with JST-aligned range filtering |
+| | `GET` | `/api/v1/posts/{id}` | Get specific timeline post detail |
 | | `DELETE` | `/api/v1/posts` | Bulk delete posts from Firestore & X (gRPC client) |
-| **Images** | `GET` | `/api/v1/images` | Get paginated library image assets |
-| | `POST` | `/api/v1/images/upload` | Upload image to GCS and generate captions via Gemini |
+| **Images** | `GET` | `/api/v1/images` | Get paginated library image assets (alias: `/api/v1/assets`) |
+| | `POST` | `/api/v1/images` | Upload image(s) to GCS and generate captions via Gemini |
+| | `GET` | `/api/v1/images/{id}` | Get specific image asset metadata |
 | | `PUT` | `/api/v1/images/{id}` | Update image name or caption metadata |
+| | `DELETE` | `/api/v1/images/{id}` | Delete specific image asset from GCS and Firestore |
+| | `DELETE` | `/api/v1/images` | Bulk delete image assets |
+| | `POST` | `/api/v1/images/regenerate-captions` | Bulk trigger Gemini caption regeneration for missing assets |
+| | `GET` | `/api/v1/images/{id}/image` | Stream image binary (Public, unauthenticated for browser `<img>`) |
 | **Memory** | `GET` | `/api/v1/memory/layers` | List system memory layers metadata (level 0, 1, 2) |
 | | `GET` | `/api/v1/memory/core` | Get Layer 0 immutable Core Persona prompt |
 | | `GET` | `/api/v1/memory/global` | Get Layer 2 dynamic Global summary prompt |
@@ -111,6 +118,10 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 | | `POST` | `/api/v1/campaigns/{id}/pause` | Emergency halt campaign automated postings |
 | | `POST` | `/api/v1/campaigns/{id}/resume` | Resume paused campaign execution |
 | | `POST` | `/api/v1/campaigns/{id}/assets` | Upload illustration asset to isolated GCS partition |
+| | `DELETE` | `/api/v1/campaigns/{id}/assets/{filename}` | Delete uploaded illustration asset |
+| | `GET` | `/api/v1/campaigns/{id}/assets/{filename}` | Stream campaign illustration asset (Public, unauthenticated) |
+| | `POST` | `/api/v1/campaigns/{id}/slots/{slotId}/image` | Set slot illustration asset |
+| | `DELETE` | `/api/v1/campaigns/{id}/slots/{slotId}/image` | Remove slot illustration attachment |
 | **Copilot** | `POST` | `/api/v1/copilot/chat` | AI Copilot conversational dialogue and HITL action proposals |
 | **Settings** | `GET` | `/api/v1/settings` | Get system language and timezone preferences |
 | | `PATCH` | `/api/v1/settings` | Update system language and timezone preferences |

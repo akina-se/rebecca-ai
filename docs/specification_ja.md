@@ -30,21 +30,22 @@
 - **専属コパイロット (Admin Copilot)**: 管理画面専用のAIアシスタント機能。Xリプライのような130文字のプラットフォーム制約を受けず、KPIやアセット、会話傾向などの各種データを多角的に解析してインサイトを提示します。また、破壊的操作に対しては2段階の Human-In-The-Loop (HITL) アクション提案カードを発行します。
 
 ### 1.2 バッチおよびワーカー API 一覧 (Batch & Worker API Specifications)
-Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼び出される `/batch/*` エンドポイント、および Cloud Tasksから遅延実行される `/worker/*` エンドポイントを公開しています。
+Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼び出される `/batch/*` エンドポイント、および Cloud Tasksから遅延実行される `/worker/*` エンドポイントを公開しています。また、Cloud Functions (`functions`) によるタイムライン同期エンドポイントも連携動作します。
 
-| エンドポイント | メソッド | 定期実行スケジュール | 制限時間 | 主な処理内容・仕様 |
+| エンドポイント | メソッド | 定期実行スケジュール (JST) | 制限時間 | 主な処理内容・仕様 |
 |---|---|---|---|---|
+| `/batch/stealth-onboarding` | `GET` | 03:15 (毎日) | 180秒 | 新規フォロワーを自動検知し、特別扱いリストへ追加。 |
+| `batchTimelineSync` (Functions) | `GET`/`POST` | 04:00 (毎日) | 120秒 | **タイムライン同期**: X APIからタイムライン投稿実績・エンゲージメントメトリクスをFirestoreへ同期。 |
 | `/batch/self-reflection` | `GET` | 04:05 (毎日) | 180秒 | **自己内省 (Layer 2)**: タイムライン全体の投稿から最新要約（`system/persona.timeline_summary`）を生成。フェイルファスト設計（クォータ枯渇や空文字時の上書き破壊防止）。 |
 | `/batch/dreaming` | `GET` | 04:30 (毎日) | 900秒 | **記憶統合 (Layer 3)**: 各ユーザーの未統合ログ（`episodicBuffer`）を `coreProfile` に圧縮統合。ユーザー間4,500msスロットリングおよび個別ユーザーのトランザクション障害隔離を実施。 |
 | `/batch/evolution` | `GET` | 05:00 (毎日) | 300秒 | **自己進化 (Layer 1)**: 全ユーザーの会話ログ傾向を分析し、動的プロンプト（`system/persona.extended_prompt`）を更新。 |
-| `/batch/mentions` | `GET` | 5分毎 | 180秒 | 新規メンションをポーリングし、DAUレートリミットを判定した上で Cloud Tasks に返信タスクを登録。 |
-| `/batch/news-post` | `GET` | 07:00, 11:30, 19:00 | 180秒 | RSSニュースを取得・ベクトル重複排除（コサイン類似度 >= 0.82）し、画像付きギャル視点ポストを生成・投稿。 |
-| `/batch/soliloquy-post` | `GET` | 01:00, 15:00, 23:00 | 180秒 | タイムライン要約、自己進化プロンプト、時間帯を反映した自律独り言ポストを生成・投稿。 |
-| `/batch/anniversary-post` | `GET` | 08:30 (毎日) | 180秒 | Wikipediaから当日の「◯◯の日」を抽出し、共感性の高い記念日ポストを投稿（失敗時は独り言へフォールバック）。 |
-| `/batch/stealth-onboarding` | `GET` | 30分毎 | 180秒 | 新規フォロワーを自動検知し、特別扱いリストへ追加。 |
+| `/batch/anniversary-post` | `GET` | 07:00 (毎日) | 180秒 | Wikipediaから当日の「◯◯の日」を抽出し、共感性の高い記念日ポストを投稿（失敗時は独り言へフォールバック）。 |
+| `/batch/mentions` | `GET` | 03:00, 07:00〜23:00 毎時 (計18回/日) | 180秒 | 新規メンションをポーリングし、DAUレートリミットを判定した上で Cloud Tasks に返信タスクを登録。 |
+| `/batch/news-post` | `GET` | 12:11 (毎日) | 180秒 | RSSニュースを取得・ベクトル重複排除（コサイン類似度 >= 0.82）し、画像付きギャル視点ポストを生成・投稿。 |
 | `/batch/random-engagement` | `GET` | 18:00 (毎日) | 180秒 | 特別扱いリストの未絡みユーザーから1名を抽出し、不意打ちメンションを送信。 |
-| `/batch/asset-embeddings` | `GET` | 6時間毎 | 300秒 | アップロードされた画像のうち、埋め込み未生成の画像アセットに対してベクトルをバッチ生成。 |
-| `/batch/campaign-post` | `GET` | 08:00, 12:00, 19:00 | 180秒 | **キャンペーン投稿バッチ**: 進行中キャンペーンの当日スロットを判定し、世界観・演出ヒントに基づいたストーリー投稿をXへ自動パブリッシュ。 |
+| `/batch/soliloquy-post` | `GET` | 22:00 (毎日) | 180秒 | タイムライン要約、自己進化プロンプト、時間帯を反映した自律独り言ポストを生成・投稿。 |
+| `/batch/asset-embeddings` | `GET` | 03:30, 09:30, 15:30, 21:30 (計4回/日) | 300秒 | アップロードされた画像のうち、埋め込み未生成の画像アセットに対してベクトルをバッチ自己修復生成。 |
+| `/batch/campaign-post` | `GET` | 毎時00分 (1時間刻み) | 180秒 | **キャンペーン投稿バッチ**: 進行中キャンペーンの当日スロットを判定し、世界観・演出ヒントに基づいたストーリー投稿をXへ自動パブリッシュ。 |
 | `/worker/reply` | `POST` | Cloud Tasks (1〜3分遅延) | - | メンションへの返信文（`{ thought, reply }`）を生成し、Xへ投稿。 |
 
 ## 2. キャラクター仕様・ペルソナ (Persona Specification)
@@ -99,57 +100,157 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 
 ## 4. データベース設計とデータ種別 (Firestore Schema & Types)
 
+本システムはFirestoreのコレクション階層を100%フラットなルートコレクションとして定義しています。詳細なERDおよびTTL設計は [database-schema.md](database-schema.md) を参照してください。
+
 ### Collection: `users`
-ユーザーごとの記憶とステータスを管理。
-- **Document ID**: XのユーザーID
+ユーザーごとの記憶、ステータス、会話バッファを管理。
+- **Document ID**: XのユーザーID（または正規化ハンドル）
 - **Format** (`FirestoreUser`):
-  - `coreProfile` (Map): ユーザーの属性、好み、悩みなどの長期記憶 (`UserCoreProfile`)
-  - `working_memory` (Array): 直近の会話ログの配列 (`ConversationLogEntry[]`)
-  - `episodicBuffer` (Array): バッチ未処理の会話ログの配列 (`ConversationLogEntry[]`)
-  - `last_reply_date` (String - ISO): 最終会話日時
-  - `daily_reply_count` (Number): 本日の返信回数
+  - `name` (String): X表示名
+  - `username` (String): Xユーザー名（@なし）
+  - `avatarUrl` (String): プロフィール画像URL
+  - `status` (`'ACTIVE' | 'BLOCKED' | 'MUTED'`): ユーザー状態
+  - `coreProfile` (Map): ユーザー属性・好みなどの長期記憶 (`UserCoreProfile`)
+  - `working_memory` (Array): 直近アクティブな会話ログ配列 (`ConversationLogEntry[]`)
+  - `episodicBuffer` (Array): ドリーミングバッチ処理用スライディングバッファ（最新20件保持）
+  - `firstSeen` (String - ISO 8601): 初回観測日時
+  - `lastSeen` (String - ISO 8601): 最終対話日時
+  - `lastReplyDate` (String - YYYY-MM-DD): 最終返信日
+  - `dailyReplyCount` (Number): 当日の返信回数
+
+### Collection: `campaigns`
+叙事詩的ストーリー・複数日イベント（旅行・記念日・季節フェス等）の管理。
+- **Document ID**: 自動採番UID（例: `camp_<timestamp>_<uuid>`）
+- **Format** (`CampaignDoc`):
+  - `title` (String): キャンペーン名称
+  - `description` (String - Optional): 世界観概要
+  - `hashtag` (String - Optional): 共通ハッシュタグ（#なし）
+  - `startDate` (String - YYYY-MM-DD): 開始日
+  - `endDate` (String - YYYY-MM-DD): 終了日
+  - `status` (`'draft' | 'scheduled' | 'active' | 'completed' | 'archived'`): 状態
+  - `dailySlotTimes` (Array of Strings - HH:mm): 配信スロット時間配列
+  - `masterContext` (String): スロット生成時に注入される世界観プロンプト
+  - `replyContextSummary` (String): 期間中のメンション返信に注入される状況要約
+  - `isAnnualRecurring` (Boolean): 毎年自動再実行フラグ
+  - `recurringApprovedYear` (Number - Optional): 承認済み年次サイクル
+  - `isPaused` (Boolean): 緊急一時停止キルスイッチ
+  - `slots` (Array of `CampaignSlot`): スロット日程詳細配列
+  - `totalSlotsCount` (Number), `completedSlotsCount` (Number): 進捗管理カウント
+  - `createdAt`, `updatedAt` (String - ISO 8601): タイムスタンプ
+
+### Collection: `timeline_history`
+Xタイムラインへ投稿された自発ポスト・キャンペーンポストの履歴（5年間TTL）。
+- **Document ID**: 自動採番UIDまたはポストID
+- **Format** (`TimelinePost`):
+  - `tweetId` (String - Optional): X Status ID
+  - `text` (String): 投稿本文（140文字以内）
+  - `thought` (String - Optional): ペルソナの思考・内省プロセス
+  - `postType` (`'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign'`): 投稿種別
+  - `status` (`'SUCCESS' | 'FAILED' | 'PENDING'`): 投稿状態
+  - `impressions`, `likes`, `reposts`, `replies` (Number): エンゲージメント指標
+  - `mediaUrls` (Array of Strings): 添付画像URL一覧
+  - `assetId` (String - Optional): 使用された画像アセットID
+  - `newsTitle` (String - Optional): ニュース見出し
+  - `newsEmbedding` (Array of Numbers - Optional): ニュース重複排除用埋め込みベクトル
+  - `anniversaryTitle` (String - Optional): 記念日名称
+  - `timestamp` (String - ISO 8601): 投稿日時
+  - `expireAt` (Timestamp/ISO): 5年間保持TTLタイムスタンプ
+
+### Collection: `conversation_logs`
+1対1の会話全ログ（5年間TTL）。
+- **Document ID**: 自動採番UID
+- **Format** (`RawConversationLog`):
+  - `userId` (String): ユーザーID
+  - `userText` (String): ユーザー発言
+  - `aiText` (String): レベッカ返信
+  - `thought` (String - Optional): 返信生成時の思考過程
+  - `timestamp` (String - ISO 8601): 会話日時
+  - `expireAt` (Timestamp/ISO): 5年間保持TTLタイムスタンプ
 
 ### Collection: `rag_memories`
-エピソード記憶（長期記憶）のベクトル検索用コレクション。
+エピソード記憶（長期記憶）のベクトル検索用コレクション（1ユーザー最大20件FIFO）。
 - **Format** (`RagMemory`):
   - `userId` (String): ユーザーID
-  - `text` (String): 会話のエピソードテキスト
-  - `embedding` (Array of Numbers): テキストのベクトル表現
-  - `timestamp` (String - ISO): 生成日時
-
-### Collection: `system`
-システム全体の設定・状態管理。
-- **Document: `limits`**
-  - `current_month` (String), `monthly_count` (Number): 月間上限の監視用
-  - `current_date` (String), `daily_count` (Number), `user_daily_limit` (Number): 日間上限と動的配分用
-- **Document: `persona`** (`PersonaDoc`)
-  - `extended_prompt` (String): Evolutionバッチで生成された追加プロンプト
-  - `timeline_summary` (String): 最近の自発ポストの要約
-- **Document: `xapi_state`** (`XApiStateDoc`)
-  - `last_mention_id` (String): 最後に処理したメンションのID
+  - `text` (String): 会話のエピソード要約テキスト
+  - `embedding` (Array of Numbers): 768次元埋め込みベクトル (`text-embedding-004`)
+  - `timestamp` (String - ISO 8601): 生成日時
 
 ### Collection: `images`
-投稿添付用の画像管理。
+投稿添付用の画像アセット管理。
+- **Document ID**: 画像SHA-256ハッシュまたはアセットID
 - **Format** (`ImageDoc`):
-  - `url` (String): GCS上の画像URL
-  - `caption` (String): 画像のキャプション/説明
-  - `embedding` (Array of Numbers): キャプションのベクトル表現
-  - `lastUsedAt` (Timestamp): 最終使用日時
+  - `url` (String): GCS上の画像URI (`gs://...`)
+  - `filename` (String - Optional): ファイル名
+  - `caption` (String): 画像のキャプション/意味的説明
+  - `embedding` (Array of Numbers): 768次元ベクトル表現
+  - `lastUsedAt` (Timestamp/ISO): 最終使用日時
   - `useCount` (Number): 使用回数
+  - `status` (`'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED'`): 処理状態
+  - `createdAt` (String - ISO 8601 - Optional): 登録日時
+
+### Collection: `rate_limits`
+スライディングウィンドウ型レートリミットカウンタ。
+- **Document ID**: `global_daily_YYYY-MM-DD`, `user_daily_{userId}_YYYY-MM-DD`, `user_minute_{userId}_YYYY-MM-DDTHH:mm`
+- **Format** (`RateLimitDoc`):
+  - `count` (Number): 当該枠内での累積リクエスト数（`FieldValue.increment(1)` によりアトミック加算）
+
+### Collection: `admin_users`
+管理ダッシュボードへのアクセス権限（RBAC）。
+- **Document ID**: Firebase Auth UID
+- **Format** (`AdminUser`):
+  - `email` (String): 管理者メールアドレス
+  - `role` (`'SUPER_ADMIN' | 'ADMIN'`): 権限ロール
+  - `status` (`'ACTIVE' | 'REVOKED'`): アカウント状態
+  - `createdAt` (String - ISO 8601): 承認日時
+
+### Collection: `system_stats`
+ダッシュボードKPIおよび日別DAU集計。
+- **Document: `global`**: 総フォロワー数、平均エンゲージメント率、DAU推移、APIコール消費数
+- **Document: `dau_YYYY-MM-DD`**:
+  - `count` (Number): 当日のユニークアクティブユーザー数
+  - `active_users` (Array of Strings): 当日対話したユーザーID配列（`arrayUnion` で重複排除）
+  - `total_interactions` (Number): 当日インタラクション総数
 
 ### Collection: `processed_followers`
 オンボーディング済みのフォロワー管理。
 - **Document ID**: XのユーザーID
 - **Format** (`ProcessedFollower`):
   - `userId` (String): ユーザーID
-  - `timestamp` (String - ISO): 処理日時
+  - `timestamp` (String - ISO 8601): 検出・オンボーディング日時
+  - `listStatus` (`'ADDED' | 'FAILED' | 'REJECTED'`): リスト追加状態
 
 ### Collection: `list_interaction_history`
 リストメンバーへのランダムエンゲージメント履歴。
 - **Document ID**: XのユーザーID
 - **Format** (`ListInteraction`):
   - `userId` (String): ユーザーID
-  - `lastInteractionAt` (Timestamp): 最後にエンゲージメントを行った日時
+  - `lastInteractionAt` (Timestamp/ISO): 最後にエンゲージメントを行った日時
+
+### Collection: `processed_mentions`
+メンション重複返信防止用冪等性ログ。
+- **Document ID**: メンションTweet ID
+- **Format**: `processedAt` (Timestamp)
+
+### Collection: `processed_events`
+Cloud Functions用 Eventarc イベント重複実行防止ログ。
+- **Document ID**: Eventarc `eventId`
+- **Format** (`ProcessedEvent`):
+  - `processedAt` (Timestamp)
+  - `type` (String): イベント種別
+  - `logId` (String - Optional): 関連ログID
+
+### Collection: `system`
+システム全体の設定・状態管理シングルトン。
+- **Document: `persona`** (`PersonaDoc`):
+  - `extended_prompt` (String): Evolutionバッチで生成された追加動的プロンプト
+  - `timeline_summary` (String): Self-Reflectionバッチで生成された自発ポスト最新要約
+  - `updatedAt`, `timelineSummaryUpdatedAt` (String - ISO 8601)
+- **Document: `x_api_state`** (`XApiStateDoc`):
+  - `last_mention_id` (String): 最後に処理したメンションTweet ID
+  - `updatedAt` (String - ISO 8601)
+- **Document: `preferences`**:
+  - `language` (`'ja' | 'en'`): 表示言語
+  - `timezone` (String): タイムゾーン設定（例: `'Asia/Tokyo'`）
 
 ## 5. 処理フロー (Process Flows)
 
@@ -193,7 +294,7 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 5. ユーザーごとの更新が成功した時点で当該ユーザーの `episodicBuffer` をスライディングウィンドウ（直近20件保持）で更新。個別ユーザーのエラーは他ユーザーの処理を中断させない。
 
 ### 5.6 ニュース自発投稿 & 自律独り言バッチ (Proactive News & Autonomous Soliloquy Flow)
-1. 毎日複数回、定期的に実行。
+1. 毎日定期実行（記念日ポスト: 07:00、ニュースポスト: 12:11、独り言ポスト: 22:00 JST）。
 2. Yahoo! ニュース等のRSSフィードを取得し、ランダムなカテゴリからトップニュースを抽出。
 3. **ベクトル重複排除（RAG化）**: 過去48時間以内の投稿ニュースの埋め込みベクトル（`newsEmbedding`）を取得し、新規ヘッドラインとのコサイン類似度（`cosineSimilarity >= 0.82`）を計算して既出トピックを前段で完全除外。
 4. **自律独り言モードへのフォールバック**:
