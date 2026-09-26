@@ -41,6 +41,13 @@ graph TD
   - **User Metrics**: Increments the user's `dailyReplyCount` counter and sets the `lastReplyDate` timestamp.
   - **System Metrics**: Appends the active user's ID to `system_stats/dau_YYYY-MM-DD`'s `active_users` list (using Firestore `arrayUnion` to ensure uniqueness for DAU measurements) and increments `total_interactions`.
 
+### 2. `batchTimelineSync`
+- **Trigger Source**: HTTPS endpoint invoked daily at `04:00` JST by Cloud Scheduler (`rebecca-timeline-sync`).
+- **Functionality**:
+  - **Timeline Synchronization**: Synchronizes published post records, impressions, retweets, and likes from X API into Firestore (`timeline_history`).
+  - **KPI Metrics Updates**: Aggregates timeline performance into `system_stats/global` for dashboard analytics.
+  - **Authentication**: Secured via OIDC Bearer Token / `X-Batch-Secret`.
+
 ---
 
 ## Deployment & Development

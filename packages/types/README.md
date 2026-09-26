@@ -4,8 +4,8 @@ Houses common TypeScript interfaces, type definitions, and Enums used across all
 
 ---
 
-## Key Domain Enums
-To prevent inconsistencies in status processing, we enforce unified Enums:
+## Key Domain Enums & Types
+To prevent inconsistencies across services, we enforce unified Enums and literal unions:
 
 ### `UserStatus`
 Represents the monitoring status of X users.
@@ -15,15 +15,31 @@ Represents the monitoring status of X users.
 
 ### `AssetStatus`
 Tracks GCS and database image processing stages.
+- `PENDING`: Image uploaded, awaiting processing.
 - `PROCESSING`: Image is queued for Gemini alt-text processing.
 - `SUCCESS`: Successfully captioned and indexed.
 - `FAILED`: Vision extraction failed.
 
+### `PostStatus`
+Tracks delivery status of timeline posts: `PENDING`, `SUCCESS`, `FAILED`.
+
+### `PostType`
+Canonical post classifications: `'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign'`.
+
+### `CampaignStatus` & `CampaignSlotStatus`
+- `CampaignStatus`: `'draft' | 'scheduled' | 'active' | 'completed' | 'archived'`.
+- `CampaignSlotStatus`: `'pending' | 'posted' | 'skipped' | 'failed'`.
+
 ---
 
 ## Key Data Interfaces
-- `MemoryLayer`: Metadata fields for system prompts.
-- `MemoryContent`: Raw content wrapper for Layer 0/1/2 summaries.
-- `RawConversationLog`: Represents Firestore document schema for interactions.
-- `SystemAlert`: Aggregated warnings displayed in the admin dashboard.
-- `PaginationMeta` & `PaginatedResponse<T>`: Standardized offset-based pagination envelopes for list APIs (e.g. users, posts).
+- `CampaignDoc` & `CampaignSlot`: Multi-day narrative event campaign specifications and itinerary slots.
+- `TimelinePost`: Model for authored public timeline updates.
+- `FirestoreUser`: User profile, affinity scores, and 3-tier memory buffers (`working_memory`, `episodicBuffer`, `coreProfile`).
+- `RawConversationLog`: Represents full audit logs for 1-on-1 chats (5-year TTL).
+- `RagMemory`: 768-dimensional vector embeddings for episodic long-term memory retrieval.
+- `AdminUser`: Dashboard administrator authentication and RBAC roles.
+- `CopilotAction`, `CopilotChatMessage`, `CopilotRequest`, `CopilotResponse`: Admin Copilot dialogue and Two-Phase HITL action proposal contracts.
+- `MemoryLayer` & `MemoryContent`: Metadata and content wrappers for Layer 0/1/2 system prompts.
+- `SystemAlert`: Aggregated system warnings for dashboard operators.
+- `PaginationMeta` & `PaginatedResponse<T>`: Standardized offset-based pagination envelopes for list APIs.

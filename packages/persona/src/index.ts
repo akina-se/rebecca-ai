@@ -90,7 +90,13 @@ export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => 
     return { thought: '', reply: '' };
   }
 
-  const cleaned = raw.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?/i, '').trimStart();
+  }
+  if (cleaned.endsWith('```')) {
+    cleaned = cleaned.slice(0, -3).trimEnd();
+  }
 
   try {
     const parsed = JSON.parse(cleaned);

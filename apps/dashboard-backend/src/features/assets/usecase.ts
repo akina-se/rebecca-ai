@@ -5,6 +5,7 @@ import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import { config } from '../../config';
+import { extractGcsObjectPath } from '../../utils/gcs';
 
 export interface UploadedFile {
   originalname: string;
@@ -181,12 +182,8 @@ export class AssetsUseCase {
     const bucketName = config.gcp.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    // 1. Try reading from GCS URL specified in doc (gs://...)
     const rawUrl = String(rawDoc?.url || '');
-    let objectPathFromUrl = '';
-    if (rawUrl.startsWith('gs://')) {
-      objectPathFromUrl = rawUrl.replace(`gs://${bucketName}/`, '').replace(/^gs:\/\/[^/]+\//, '');
-    }
+    const objectPathFromUrl = extractGcsObjectPath(rawUrl);
 
     if (objectPathFromUrl) {
       try {
@@ -353,24 +350,9 @@ export class AssetsUseCase {
           await bucket.file(`thumbnails/${id}.webp`).delete({ ignoreNotFound: true }).catch(() => {});
         }
 
-        let originalPath: string | null = null;
-        if (rawDoc && typeof rawDoc.url === 'string') {
-          const rawUrl = rawDoc.url;
-          if (rawUrl.startsWith('gs://')) {
-            const parts = rawUrl.replace('gs://', '').split('/');
-            parts.shift(); // remove bucket name
-            originalPath = parts.join('/');
-          } else if (rawUrl.includes('storage.googleapis.com')) {
-            try {
-              const parsed = new URL(rawUrl);
-              const parts = parsed.pathname.replace(/^\/+/, '').split('/');
-              parts.shift(); // remove bucket name
-              originalPath = parts.join('/');
-            } catch {
-              // ignore url parse error
-            }
-          }
-        }
+        const originalPath = rawDoc && typeof rawDoc.url === 'string'
+          ? extractGcsObjectPath(rawDoc.url)
+          : null;
 
         if (originalPath) {
           await bucket.file(originalPath).delete({ ignoreNotFound: true }).catch(() => {});
@@ -380,7 +362,8 @@ export class AssetsUseCase {
           }
         }
       } catch (err) {
-        console.warn(`[AssetsUseCase] Warning during GCS physical deletion for asset ${id}:`, err);
+        const sanitizedId = String(id).replace(/[\r\n]/g, '');
+        console.warn('[AssetsUseCase] Warning during GCS physical deletion for asset %s:', sanitizedId, err);
       }
     }
     await this.repo.deleteMany(ids);
