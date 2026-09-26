@@ -1,7 +1,6 @@
 /**
- * Google Cloud Logging & Cloud Error Reporting Enterprise Structured Logger
- *
- * Facade module re-exporting from shared '@rebecca/logger' package for bot-backend.
+ * Logger facade for bot-backend.
+ * Re-exports the pre-configured Logger instance and related types from '@rebecca/logger'.
  */
 
 import {
