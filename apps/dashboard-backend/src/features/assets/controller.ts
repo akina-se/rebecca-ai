@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AssetsUseCase, UploadedFile } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for handling asset-related HTTP requests.
@@ -29,7 +30,7 @@ export class AssetsController {
       const result = await this.useCase.getPaginatedAssets({ page, limit, search, status });
       res.json(result);
     } catch (err) {
-      console.error('Failed to fetch assets:', err);
+      logger.error('Failed to fetch assets', err);
       res.status(500).json({ error: 'Failed to fetch assets' });
     }
   }
@@ -51,7 +52,7 @@ export class AssetsController {
       res.json(asset);
     } catch (err) {
       const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
-      console.error('Failed to fetch asset %s:', safeId, err);
+      logger.error(`Failed to fetch asset ${safeId}`, err);
       res.status(500).json({ error: 'Failed to fetch asset' });
     }
   }
@@ -79,7 +80,7 @@ export class AssetsController {
       res.send(binary.buffer);
     } catch (err) {
       const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
-      console.error('Failed to stream image %s:', safeId, err);
+      logger.error(`Failed to stream image ${safeId}`, err);
       res.status(500).send('Failed to stream image');
     }
   }
@@ -138,7 +139,7 @@ export class AssetsController {
         data: createdAssets
       });
     } catch (err) {
-      console.error('Failed to upload assets:', err);
+      logger.error('Failed to upload assets', err);
       res.status(500).json({ error: 'Failed to upload assets' });
     }
   }
@@ -157,7 +158,7 @@ export class AssetsController {
       res.json({ success: true });
     } catch (err) {
       const safeId = String(req.params.id || '').replace(/[\r\n]/g, '');
-      console.error('Failed to update asset %s:', safeId, err);
+      logger.error(`Failed to update asset ${safeId}`, err);
       res.status(500).json({ error: 'Failed to update asset' });
     }
   }
@@ -189,7 +190,7 @@ export class AssetsController {
       await this.useCase.deleteAssets(ids);
       res.json({ success: true });
     } catch (err) {
-      console.error('Failed to delete assets:', err);
+      logger.error('Failed to delete assets', err);
       res.status(500).json({ error: 'Failed to delete assets' });
     }
   }
@@ -211,7 +212,7 @@ export class AssetsController {
       await this.useCase.regenerateCaptions(ids);
       res.json({ success: true });
     } catch (err) {
-      console.error('Failed to regenerate captions:', err);
+      logger.error('Failed to regenerate captions', err);
       res.status(500).json({ error: 'Failed to regenerate captions' });
     }
   }

@@ -14,6 +14,7 @@ import {
   UpdateCampaignRequest,
 } from '@rebecca/types';
 import { ICampaignsRepository } from './repository';
+import { logger } from '../../utils/logger';
 
 /**
  * In-memory LRU Cache for high-frequency campaign thumbnail streaming.
@@ -776,19 +777,19 @@ export class CampaignsUseCase {
               },
             })
             .catch((err) => {
-              console.warn(`Failed to cache campaign thumbnail ${thumbPath} in GCS:`, err);
+              logger.warn(`Failed to cache campaign thumbnail ${thumbPath} in GCS:`, { err });
             });
 
           return result;
         } catch (err) {
-          console.warn(`Failed to generate thumbnail for ${cacheKey}, fallback to original:`, err);
+          logger.warn(`Failed to generate thumbnail for ${cacheKey}, fallback to original:`, { err });
           return { buffer: originalBuffer, contentType };
         }
       }
 
       return { buffer: originalBuffer, contentType };
     } catch (err) {
-      console.error(`Failed to read campaign asset ${originalPath}:`, err);
+      logger.error(`Failed to read campaign asset ${originalPath}`, err);
       throw err;
     }
   }
@@ -841,7 +842,7 @@ export class CampaignsUseCase {
       await bucket.deleteFiles({ prefix: `campaigns/${id}/`, force: true });
     } catch (err) {
       const sanitizedId = String(id).replace(/[\r\n]/g, '');
-      console.warn('[CampaignsUseCase] Warning during GCS cascade cleanup for campaign %s:', sanitizedId, err);
+      logger.warn(`[CampaignsUseCase] Warning during GCS cascade cleanup for campaign ${sanitizedId}`, { err });
     }
 
     await this.repo.delete(id);

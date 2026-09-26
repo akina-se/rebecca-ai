@@ -1,6 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
+import { logger } from '../utils/logger';
 
 const PROTO_PATH = path.resolve(__dirname, '../../../../packages/grpc-schemas/tweets.proto');
 
@@ -45,7 +46,7 @@ export function deleteTweetViaGrpc(tweetId: string): Promise<{ success: boolean;
   return new Promise((resolve, reject) => {
     client.deleteTweet({ tweet_id: tweetId }, (err, response) => {
       if (err) {
-        console.error('gRPC client error calling deleteTweet:', err);
+        logger.error('gRPC client error calling deleteTweet', err, { tweetId });
         return reject(err);
       }
       resolve(response);

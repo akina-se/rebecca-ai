@@ -6,6 +6,7 @@ import { TimelineRepository } from '../timeline/repository';
 import { UsersRepository } from '../users/repository';
 import { AssetsRepository } from '../assets/repository';
 import { SystemMemoryRepository } from '../system-memory/repository';
+import { logger } from '../../utils/logger';
 
 /**
  * UseCase for the Admin Copilot feature.
@@ -156,7 +157,7 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
           }
           throw new Error('Empty or invalid response received from Gemini API');
         } catch (err) {
-          console.error('Gemini API call failed:', err);
+          logger.error('Gemini API call failed in Copilot', err);
           return {
             reply: isEn
               ? 'A communication error occurred with the AI service (timeout or temporary outage). Please wait a moment and try again.'
@@ -172,7 +173,7 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
       // 4. In-character autonomous agent fallback (used when Gemini AI is not configured or in offline mock mode)
       return this.generateAutonomousFallbackResponse(userMessage, currentContext, telemetryContext, isEn);
     } catch (globalErr) {
-      console.error('Top-level processChat error:', globalErr);
+      logger.error('Top-level processChat error in Copilot', globalErr);
       return {
         reply: isEn
           ? 'An internal error occurred while processing the copilot request. Please try again.'
@@ -223,7 +224,7 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
         parts.push(`[Top Posts by Impressions]: ${topPosts.slice(0, 3).map((p: PostLeaderboard) => `ID=${p.id}, Impressions=${p.impressions}, Text="${p.snippet}"`).join(' | ')}`);
       }
     } catch (e) {
-      console.warn('Could not collect all repository telemetry:', e);
+      logger.warn('Could not collect all repository telemetry in Copilot', { error: e instanceof Error ? e.message : String(e) });
     }
 
     return parts.length > 0 ? parts.join('\n') : 'All systems operating within nominal parameters.';

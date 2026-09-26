@@ -1,6 +1,7 @@
 import { Firestore } from '@google-cloud/firestore';
 import { UserDetail, UserStatus, PaginatedResponse, ChatMessage } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
+import { logger } from '../../utils/logger';
 
 /**
  * Repository responsible for data access operations related to user profiles, interactions, and statuses in Firestore.
@@ -310,7 +311,8 @@ export class UsersRepository {
     try {
       parsed = typeof coreProfileJson === 'string' ? JSON.parse(coreProfileJson) : coreProfileJson;
     } catch (e) {
-      console.error('Failed to parse memory JSON', e);
+      const safeId = String(id).replace(/[\r\n]/g, '');
+      logger.error(`Failed to parse memory JSON for user ${safeId}`, e, { userId: safeId });
       return;
     }
     await this.collections.users.doc(rawId).set(

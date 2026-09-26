@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { CopilotUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for handling Copilot-related requests.
@@ -30,7 +31,7 @@ export class CopilotController {
       const response = await this.useCase.processChat({ message, currentContext, history });
       res.json(response);
     } catch (err) {
-      console.error('Failed to process chat:', err);
+      logger.error('Failed to process chat', err);
       res.status(500).json({ error: 'Failed to process chat' });
     }
   }
