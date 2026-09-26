@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { SystemMemoryUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for managing Rebecca's system memory layers.
@@ -24,7 +25,7 @@ export class SystemMemoryController {
       const layers = await this.useCase.getLayers();
       res.json(layers);
     } catch (err) {
-      console.error('Failed to fetch memory layers:', err);
+      logger.error('Failed to fetch memory layers', err);
       res.status(500).json({ error: 'Failed to fetch memory layers' });
     }
   }
@@ -41,7 +42,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getCoreMemory();
       res.json(content);
     } catch (err) {
-      console.error('Failed to fetch core memory:', err);
+      logger.error('Failed to fetch core memory', err);
       res.status(500).json({ error: 'Failed to fetch core memory' });
     }
   }
@@ -58,7 +59,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getExtendedMemory();
       res.json(content);
     } catch (err) {
-      console.error('Failed to fetch extended memory:', err);
+      logger.error('Failed to fetch extended memory', err);
       res.status(500).json({ error: 'Failed to fetch extended memory' });
     }
   }
@@ -80,7 +81,7 @@ export class SystemMemoryController {
       await this.useCase.updateExtendedMemory(content);
       res.json({ success: true });
     } catch (err) {
-      console.error('Failed to update extended memory:', err);
+      logger.error('Failed to update extended memory', err);
       res.status(500).json({ error: 'Failed to update extended memory' });
     }
   }
@@ -97,7 +98,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getGlobalMemory();
       res.json(content);
     } catch (err) {
-      console.error('Failed to fetch global memory:', err);
+      logger.error('Failed to fetch global memory', err);
       res.status(500).json({ error: 'Failed to fetch global memory' });
     }
   }
@@ -127,7 +128,7 @@ export class SystemMemoryController {
    * @returns A promise that resolves when the trigger process is acknowledged.
    */
   async triggerDreaming(req: Request, res: Response): Promise<void> {
-    this.useCase.triggerDreaming().catch(console.error);
+    this.useCase.triggerDreaming().catch((err) => logger.error('Failed to trigger dreaming background task', err));
     res.status(202).json({ success: true, message: 'Dreaming process initiated' });
   }
 }

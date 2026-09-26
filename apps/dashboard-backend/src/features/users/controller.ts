@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UsersUseCase } from './usecase';
 import { UserStatus } from '@rebecca/types';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller responsible for handling HTTP requests related to user management and profiles.
@@ -33,7 +34,7 @@ export class UsersController {
       const users = await this.useCase.getAllUsers({ page, limit, search, sortBy, sortOrder, period, date });
       res.json(users);
     } catch (err) {
-      console.error('Failed to fetch users:', err);
+      logger.error('Failed to fetch users', err);
       res.status(500).json({ error: 'Failed to fetch users' });
     }
   }
@@ -55,7 +56,8 @@ export class UsersController {
       }
       res.json(user);
     } catch (err) {
-      console.error('Failed to fetch user details:', err);
+      const safeId = String(id).replace(/[\r\n]/g, '');
+      logger.error(`Failed to fetch user details for ${safeId}`, err, { userId: safeId });
       res.status(500).json({ error: 'Failed to fetch user details' });
     }
   }

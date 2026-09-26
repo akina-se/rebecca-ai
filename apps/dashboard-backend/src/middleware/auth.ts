@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { COLLECTIONS } from '@rebecca/db/schema';
 import { AuthenticatedRequest, AuthenticatedUser } from '../types/auth';
 import { getAdminAuth, getAdminFirestore } from '../lib/firebase';
+import { logger } from '../utils/logger';
 
 export { AuthenticatedRequest, AuthenticatedUser };
 
@@ -102,10 +103,11 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
       }
     }
 
-    console.warn(`[Security Alert] Access denied for user: ${email || decodedToken.uid}`);
+    const safeUser = String(email || decodedToken.uid).replace(/[\r\n]/g, '');
+    logger.warn('[Security Alert] Access denied for user', { user: safeUser });
     res.status(403).json({ error: 'Forbidden: Access denied. You do not have administrative privileges.' });
   } catch (error) {
-    console.error('Firebase Auth Verification Error:', error);
+    logger.error('Firebase Auth Verification Error', error);
     res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
