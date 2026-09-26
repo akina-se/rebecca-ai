@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.25.0](https://github.com/akina-se/rebecca-ai/compare/v1.24.2...v1.25.0) (2026-09-26)
+
+
+### Features
+
+* **bot-backend:** migrate all console calls to structured logger ([eacdb51](https://github.com/akina-se/rebecca-ai/commit/eacdb516c942f81d6937b5a7351374adbf3e98ef))
+* **logging:** migrate functions to structured logger and record uid only for security alerts ([9b49fa8](https://github.com/akina-se/rebecca-ai/commit/9b49fa82380a722b6fe5417762612e02fe65ded7))
+
+
+### Bug Fixes
+
+* **logger:** eliminate hardcoded fallback values and unsafe || operators in logger initialization ([0073edf](https://github.com/akina-se/rebecca-ai/commit/0073edfc079dc6fcc686d2e6c02af9612c628617))
+
 ## [1.24.2](https://github.com/akina-se/rebecca-ai/compare/v1.24.1...v1.24.2) (2026-09-26)
 
 
