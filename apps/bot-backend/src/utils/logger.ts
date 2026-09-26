@@ -31,15 +31,41 @@ export interface StructuredLogPayload {
 }
 
 const SERVICE_NAME = 'bot-backend';
-const SERVICE_VERSION = process.env.K_REVISION || process.env.npm_package_version || '1.24.2';
-const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'rebecca-ai-gal';
+
+const resolveServiceVersion = (): string => {
+  const revision = process.env.K_REVISION?.trim();
+  if (revision) {
+    return revision;
+  }
+  const packageVersion = process.env.npm_package_version?.trim();
+  if (packageVersion) {
+    return packageVersion;
+  }
+  return 'unknown';
+};
+
+const resolveProjectId = (): string => {
+  const customProjectId = process.env.GCP_PROJECT_ID?.trim();
+  if (customProjectId) {
+    return customProjectId;
+  }
+  const gcpProjectId = process.env.GOOGLE_CLOUD_PROJECT?.trim();
+  if (gcpProjectId) {
+    return gcpProjectId;
+  }
+  return '';
+};
 
 export class Logger {
   private serviceName: string;
   private serviceVersion: string;
   private projectId: string;
 
-  constructor(serviceName = SERVICE_NAME, serviceVersion = SERVICE_VERSION, projectId = GCP_PROJECT_ID) {
+  constructor(
+    serviceName = SERVICE_NAME,
+    serviceVersion = resolveServiceVersion(),
+    projectId = resolveProjectId(),
+  ) {
     this.serviceName = serviceName;
     this.serviceVersion = serviceVersion;
     this.projectId = projectId;
@@ -57,11 +83,18 @@ export class Logger {
     const [traceId, spanId] = traceAndSpan.split('/');
     const sampled = options ? options.includes('o=1') : false;
 
-    return {
-      trace: traceId ? `projects/${this.projectId}/traces/${traceId}` : undefined,
-      spanId: spanId || undefined,
-      sampled,
-    };
+    const cleanTraceId = traceId?.trim();
+    const cleanSpanId = spanId?.trim();
+
+    const result: { trace?: string; spanId?: string; sampled?: boolean } = { sampled };
+    if (cleanTraceId && this.projectId) {
+      result.trace = `projects/${this.projectId}/traces/${cleanTraceId}`;
+    }
+    if (cleanSpanId) {
+      result.spanId = cleanSpanId;
+    }
+
+    return result;
   }
 
   private emit(payload: StructuredLogPayload): void {
