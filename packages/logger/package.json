@@ -1,0 +1,37 @@
+{
+  "name": "@rebecca/logger",
+  "version": "1.24.2",
+  "description": "Shared structured logger for Google Cloud Logging and Cloud Error Reporting",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "jest --coverage",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "license-check": "license-checker --summary --onlyAllow \"MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC-BY-4.0;BlueOak-1.0.0;CC-BY-3.0;CC0-1.0;Unlicense;0BSD\"",
+    "secret-check": "secretlint \"**/*\"",
+    "audit:fix": "npm audit fix"
+  },
+  "keywords": [],
+  "author": "AKINA",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.4.0",
+    "eslint": "^10.9.1",
+    "jest": "^30.5.0",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.4.12",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.68.0"
+  }
+}
