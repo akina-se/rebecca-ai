@@ -20,7 +20,7 @@ export const workerAuth = async (req: Request, res: Response, next: NextFunction
         const isAuthenticated = await verifyServerToServerAuth(
             req,
             config.gcp.workerUrl || undefined,
-            config.batchSecret, // Utilizing the same batch secret for simplicity, or we can use a worker secret
+            config.batchSecret, // Shared secret for worker authentication
             'x-worker-secret'
         );
 

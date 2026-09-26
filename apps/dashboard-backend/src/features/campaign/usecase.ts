@@ -598,11 +598,11 @@ export class CampaignsUseCase {
 
     const targetSlot = campaign.slots[slotIndex];
 
-    // If an illustration already exists on this slot, delete old file to prevent zombie objects
+    // Delete existing illustration file if present before uploading new asset
     if (targetSlot.mediaUrl) {
       const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
       if (match && match[1]) {
-        // Enforce physical deletion to guarantee Zero Zombie Assets
+        // Remove existing storage object
         await this.deleteCampaignAsset(campaignId, match[1]);
       }
     }
@@ -671,7 +671,7 @@ export class CampaignsUseCase {
     if (targetSlot.mediaUrl) {
       const match = targetSlot.mediaUrl.match(/\/assets\/([^/?#]+)/);
       if (match && match[1]) {
-        // Enforce physical deletion to guarantee Zero Zombie Assets
+        // Remove storage object associated with the slot
         await this.deleteCampaignAsset(campaignId, match[1]);
       }
     }

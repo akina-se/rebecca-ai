@@ -2,7 +2,7 @@ import { Firestore } from '@google-cloud/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
-// 🛡️ STRICT SAFETY GUARD: Prevent execution against production or staging environments
+// Safety check: Prevent execution against production or staging environments
 const targetProjectId = process.env.GCP_PROJECT_ID || 'rebecca-ai-gal-local';
 
 if (
