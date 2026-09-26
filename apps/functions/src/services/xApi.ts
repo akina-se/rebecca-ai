@@ -1,4 +1,5 @@
 import { Client, OAuth1 } from '@xdevplatform/xdk';
+import * as logger from 'firebase-functions/logger';
 import { XApiConfig } from '../config';
 
 export interface TimelineTweetDto {
@@ -97,7 +98,7 @@ export class XApiService implements IXApiService {
         return resolvedId;
       }
     } catch (error) {
-      console.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe:', error);
+      logger.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe', { error });
     }
     return null;
   }
@@ -111,13 +112,13 @@ export class XApiService implements IXApiService {
    */
   async fetchRecentTimelineTweets(userId?: string, limit?: number): Promise<TimelineTweetDto[]> {
     if (!this.client) {
-      console.warn('[XApiService] X API client is not configured.');
+      logger.warn('[XApiService] X API client is not configured');
       return [];
     }
 
     const targetUserId = userId || this.cachedMyUserId || (await this.getMyUserId());
     if (!targetUserId) {
-      console.warn('[XApiService] Target userId is not specified and could not be resolved.');
+      logger.warn('[XApiService] Target userId is not specified and could not be resolved');
       return [];
     }
 

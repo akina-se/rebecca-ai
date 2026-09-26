@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { onRequest } from 'firebase-functions/v2/https';
+import * as logger from 'firebase-functions/logger';
 import { getConfig, FUNCTION_SECRET_KEYS } from '../config';
 import { XApiService } from '../services/xApi';
 import { SyncTimelineUseCase } from '../usecases/syncTimelineUseCase';
@@ -54,7 +55,7 @@ export const batchTimelineSync = onRequest(
     const secretHeader = req.headers['x-batch-secret'] || req.headers['authorization'];
 
     if (!validateAuth(secretHeader, currentConfig.batchSecretKey)) {
-      console.warn('[Security Alert] Unauthorized attempt to invoke batchTimelineSync');
+      logger.warn('[Security Alert] Unauthorized attempt to invoke batchTimelineSync');
       res.status(401).json({
         success: false,
         error: 'Unauthorized',
@@ -64,7 +65,7 @@ export const batchTimelineSync = onRequest(
     }
 
     try {
-      console.log('[batchTimelineSync] Starting timeline and metrics synchronization...');
+      logger.info('[batchTimelineSync] Starting timeline and metrics synchronization');
       const xApiService = new XApiService(currentConfig.xApi);
       const useCase = new SyncTimelineUseCase(xApiService);
 
@@ -77,14 +78,14 @@ export const batchTimelineSync = onRequest(
       }
       const result = await useCase.execute(currentConfig.xApi.myUserId, parsedLimit);
 
-      console.log(`[batchTimelineSync] Completed successfully. Updated: ${result.updated}, Created: ${result.created}`);
+      logger.info('[batchTimelineSync] Completed successfully', { updated: result.updated, created: result.created });
       res.status(200).json({
         success: true,
         message: 'Timeline sync completed successfully.',
         data: result,
       });
     } catch (error: unknown) {
-      console.error('[batchTimelineSync] Execution failed:', error);
+      logger.error('[batchTimelineSync] Execution failed', { error });
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during timeline synchronization.';
       res.status(500).json({
         success: false,

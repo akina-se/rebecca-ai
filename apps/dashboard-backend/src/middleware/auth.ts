@@ -103,7 +103,7 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
       }
     }
 
-    logger.warn('[Security Alert] Access denied for user', { user: email || decodedToken.uid });
+    logger.warn('[Security Alert] Access denied for user', { uid: decodedToken.uid });
     res.status(403).json({ error: 'Forbidden: Access denied. You do not have administrative privileges.' });
   } catch (error) {
     logger.error('Firebase Auth Verification Error', error);
