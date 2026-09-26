@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.24.1](https://github.com/akina-se/rebecca-ai/compare/v1.24.0...v1.24.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* **security:** resolve code-scanning log injections and update vulnerable dependencies ([41d0b4e](https://github.com/akina-se/rebecca-ai/commit/41d0b4e1e0d1c5269e0de468f582c353f6cb523e))
+* **security:** resolve code-scanning log injections, update dependencies, and standardize GCS URL parsing ([0d4841b](https://github.com/akina-se/rebecca-ai/commit/0d4841b6874a30e5b54b792faf82e43118f03af8))
+
 ## [1.24.0](https://github.com/akina-se/rebecca-ai/compare/v1.23.0...v1.24.0) (2026-09-25)
 
 
