@@ -1,5 +1,6 @@
 import { AppDependencies, FirestoreUser } from '../../types';
 import { DreamingConfig, DreamingExecutionResult } from './types';
+import { logger } from '../../utils/logger';
 
 /**
  * Orchestrates the user memory consolidation (Dreaming) process.
@@ -30,7 +31,7 @@ export class GlobalDreamingUseCase {
      * @returns A promise resolving to DreamingExecutionResult detailing the execution metrics.
      */
     async execute(): Promise<DreamingExecutionResult> {
-        console.log('[GlobalDreamingUseCase] Starting user memory consolidation (dreaming)...');
+        logger.info('[GlobalDreamingUseCase] Starting user memory consolidation (dreaming)');
         const users = await this.deps.firestore.getAllUsers();
 
         const targetUsers = users.filter(
@@ -38,7 +39,7 @@ export class GlobalDreamingUseCase {
         );
 
         if (targetUsers.length === 0) {
-            console.log('[GlobalDreamingUseCase] No users with pending episodic buffers found. Skipping.');
+            logger.info('[GlobalDreamingUseCase] No users with pending episodic buffers found. Skipping');
             return {
                 status: 'skipped',
                 reason: 'no_users_with_episodic_buffer',
@@ -50,7 +51,9 @@ export class GlobalDreamingUseCase {
             };
         }
 
-        console.log(`[GlobalDreamingUseCase] Found ${targetUsers.length} users with episodic buffers to consolidate.`);
+        logger.info('[GlobalDreamingUseCase] Found users with episodic buffers to consolidate', {
+            count: targetUsers.length,
+        });
 
         let succeeded = 0;
         let failed = 0;
@@ -71,7 +74,11 @@ export class GlobalDreamingUseCase {
         }
 
         const status = failed === 0 ? 'success' : succeeded > 0 ? 'partial_success' : 'failed';
-        console.log(`[GlobalDreamingUseCase] Completed. Succeeded: ${succeeded}, Failed: ${failed}, Total: ${targetUsers.length}`);
+        logger.info('[GlobalDreamingUseCase] Completed dreaming batch', {
+            succeeded,
+            failed,
+            total: targetUsers.length,
+        });
 
         return {
             status,
@@ -103,10 +110,10 @@ export class GlobalDreamingUseCase {
             // Retain recent 10 turn-pairs (20 entries) as sliding window to preserve continuity
             const retainedBuffer = episodicBuffer.slice(-20);
             await this.deps.firestore.updateCoreProfile(userId, newCoreProfile, retainedBuffer);
-            console.log(`[GlobalDreamingUseCase] Successfully consolidated memory for user: ${userId}`);
+            logger.info('[GlobalDreamingUseCase] Successfully consolidated memory for user', { userId });
             return true;
         } catch (error) {
-            console.error(`[GlobalDreamingUseCase] Dreaming failed for user: ${userId}:`, error);
+            logger.error('[GlobalDreamingUseCase] Dreaming failed for user', error, { userId });
             return false;
         }
     }

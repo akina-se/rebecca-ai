@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { SoliloquyUseCase } from './usecase';
 import { CampaignGuard } from '../campaign';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for the Autonomous Soliloquy feature.
@@ -17,7 +18,10 @@ export class SoliloquyController {
       if (this.campaignGuard) {
         const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
         if (suppression.shouldSuppress) {
-          console.log(`[SoliloquyController] Suppressed by active campaign "${suppression.campaign?.title}" (${suppression.campaign?.id})`);
+          logger.info('[SoliloquyController] Suppressed by active campaign', {
+            campaignTitle: suppression.campaign?.title,
+            campaignId: suppression.campaign?.id,
+          });
           res.status(200).json({ status: 'suppressed_by_campaign', campaignId: suppression.campaign?.id });
           return;
         }
@@ -26,7 +30,7 @@ export class SoliloquyController {
       const result = await this.useCase.execute();
       res.status(200).json(result);
     } catch (e) {
-      console.error('soliloquy error:', e);
+      logger.error('soliloquy error', e);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };

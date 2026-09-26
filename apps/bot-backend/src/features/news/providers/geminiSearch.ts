@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { INewsProvider, NewsItem, NewsCategory } from '../types';
+import { logger } from '../../../utils/logger';
 
 /**
  * Descriptive details for each canonical category used to guide search grounding.
@@ -72,13 +73,14 @@ export class GeminiSearchNewsProvider implements INewsProvider {
    */
   async getNews(category: NewsCategory): Promise<NewsItem[]> {
     if (!this.ai) {
-      console.warn('[GeminiSearchNewsProvider] Gemini client is not initialized.');
+      logger.warn('[GeminiSearchNewsProvider] Gemini client is not initialized');
       return [];
     }
 
     try {
-      console.log(
-        `[GeminiSearchNewsProvider] Fetching structured news for category "${category}" via Google Search Grounding (model: ${this.model})...`,
+      logger.info(
+        '[GeminiSearchNewsProvider] Fetching structured news via Google Search Grounding',
+        { category, model: this.model },
       );
 
       const prompt = createNewsStructuredSearchPrompt(category);
@@ -93,7 +95,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
 
       const rawText = response.text?.trim() ?? '';
       if (!rawText) {
-        console.warn('[GeminiSearchNewsProvider] Empty response from search grounding.');
+        logger.warn('[GeminiSearchNewsProvider] Empty response from search grounding');
         return [];
       }
 
@@ -106,7 +108,7 @@ export class GeminiSearchNewsProvider implements INewsProvider {
 
       const parsed = JSON.parse(cleanJson);
       if (!Array.isArray(parsed)) {
-        console.warn('[GeminiSearchNewsProvider] Response is not a JSON array:', cleanJson);
+        logger.warn('[GeminiSearchNewsProvider] Response is not a JSON array', { cleanJson });
         return [];
       }
 
@@ -125,10 +127,13 @@ export class GeminiSearchNewsProvider implements INewsProvider {
       }
 
       const items = Array.from(uniqueItemsMap.values());
-      console.log(`[GeminiSearchNewsProvider] Successfully fetched ${items.length} news items for "${category}".`);
+      logger.info('[GeminiSearchNewsProvider] Successfully fetched news items', {
+        count: items.length,
+        category,
+      });
       return items;
     } catch (error) {
-      console.error('[GeminiSearchNewsProvider] Error fetching structured news via search grounding:', error);
+      logger.error('[GeminiSearchNewsProvider] Error fetching structured news via search grounding', error);
       throw error;
     }
   }

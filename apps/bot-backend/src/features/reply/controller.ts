@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ReplyTaskUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for handling reply task HTTP requests.
@@ -31,7 +32,7 @@ export class ReplyTaskController {
             const result = await this.useCase.execute({ tweetId, text, authorId });
             res.status(200).json(result);
         } catch (e) {
-            console.error("reply error:", e);
+            logger.error('reply error', e);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     };

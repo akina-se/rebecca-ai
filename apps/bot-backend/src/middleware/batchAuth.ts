@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import config from '../config';
 import { verifyServerToServerAuth } from './authUtils';
+import { logger } from '../utils/logger';
 
 /**
  * Express middleware to authenticate requests to batch processing endpoints.
@@ -27,10 +28,10 @@ export const batchAuth = async (req: Request, res: Response, next: NextFunction)
             return next();
         }
 
-        console.warn('Unauthorized attempt to access batch endpoint.');
+        logger.warn('[Security Alert] Unauthorized attempt to access batch endpoint');
         res.status(401).json({ error: 'Unauthorized' });
     } catch (e) {
-        console.error('Batch Auth Middleware Error:', e);
+        logger.error('Batch Auth Middleware Error', e);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };

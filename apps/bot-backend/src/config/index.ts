@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { logger } from '../utils/logger';
 
 /**
  * Validates whether the provided string is a valid IANA time zone identifier (RFC 6557 / ECMA-402).
@@ -16,7 +17,7 @@ export const getValidatedTimezone = (tz?: string): string => {
     Intl.DateTimeFormat(undefined, { timeZone: trimmed });
     return trimmed;
   } catch {
-    console.warn(`[Config] Invalid IANA timezone "${trimmed}". Falling back to default "Asia/Tokyo".`);
+    logger.warn('[Config] Invalid IANA timezone specified, falling back to default', { timezone: trimmed, defaultTimezone: 'Asia/Tokyo' });
     return 'Asia/Tokyo';
   }
 };

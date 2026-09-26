@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AssetEmbeddingsUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for the Asset Embeddings self-healing batch endpoint.
@@ -12,7 +13,7 @@ export class AssetEmbeddingsController {
       const result = await this.useCase.execute();
       res.status(200).json(result);
     } catch (e) {
-      console.error('[AssetEmbeddingsController] Batch error:', e);
+      logger.error('[AssetEmbeddingsController] Batch error', e);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };

@@ -1,5 +1,6 @@
 import { AppDependencies } from '../../types';
 import { SelfReflectionResult } from './types';
+import { logger } from '../../utils/logger';
 
 /**
  * Configuration options for the SelfReflectionUseCase.
@@ -36,11 +37,11 @@ export class SelfReflectionUseCase {
    * @throws Error if Gemini API fails or returns invalid/empty content, preventing data corruption.
    */
   async execute(): Promise<SelfReflectionResult> {
-    console.log('[SelfReflectionUseCase] Starting timeline self-reflection...');
+    logger.info('[SelfReflectionUseCase] Starting timeline self-reflection');
 
     const recentPosts = await this.deps.firestore.getRecentTimelinePosts({ limit: this.postLimit });
     if (!recentPosts || recentPosts.length === 0) {
-      console.log('[SelfReflectionUseCase] No recent timeline posts found. Skipping summarization.');
+      logger.info('[SelfReflectionUseCase] No recent timeline posts found. Skipping summarization');
       return { status: 'skipped', reason: 'no_recent_timeline_posts', postsCount: 0 };
     }
 
@@ -67,7 +68,7 @@ ${formattedPosts.join('\n')}`;
       }
 
       await this.deps.firestore.saveTimelineSummary(trimmedSummary);
-      console.log('[SelfReflectionUseCase] Timeline summary successfully updated.');
+      logger.info('[SelfReflectionUseCase] Timeline summary successfully updated');
 
       return {
         status: 'success',
@@ -76,7 +77,7 @@ ${formattedPosts.join('\n')}`;
         postsCount: recentPosts.length,
       };
     } catch (error) {
-      console.error('[SelfReflectionUseCase] Timeline summary generation failed:', error);
+      logger.error('[SelfReflectionUseCase] Timeline summary generation failed', error);
       throw error;
     }
   }

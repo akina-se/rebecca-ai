@@ -7,6 +7,7 @@ import type {
   XApiTweetDetailsResponse,
   IXApiService
 } from '../types';
+import { logger } from '../utils/logger';
 
 /**
  * Configuration options required by XApiService.
@@ -67,7 +68,7 @@ export class XApiService implements IXApiService {
     options?: { mediaIds?: string[] }
   ): Promise<XApiCreateResponse> {
     if (!this.client) {
-      console.warn('Twitter API client not initialized. Skipping actual API call.');
+      logger.warn('Twitter API client not initialized, skipping actual API call');
       return { data: { id: 'mock_tweet_id', text } };
     }
     try {
@@ -81,7 +82,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;
     } catch (error) {
-      console.error('Error replying to mention:', error);
+      logger.error('Error replying to mention', error, { tweetId });
       throw error;
     }
   }
@@ -101,7 +102,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.posts.getById>[1]);
       return response as unknown as XApiTweetDetailsResponse;
     } catch (error) {
-      console.error('Error getting tweet details:', error);
+      logger.error('Error getting tweet details', error, { tweetId });
       throw error;
     }
   }
@@ -139,7 +140,7 @@ export class XApiService implements IXApiService {
       }
       return data.media_id_string;
     } catch (error) {
-      console.error('Error uploading media:', error);
+      logger.error('Error uploading media to X', error);
       throw error;
     }
   }
@@ -153,7 +154,7 @@ export class XApiService implements IXApiService {
    */
   async tweet(text: string, options?: { mediaIds?: string[], quote_tweet_id?: string }): Promise<XApiCreateResponse> {
     if (!this.client) {
-      console.warn('Twitter API client not initialized. Skipping actual API call.');
+      logger.warn('Twitter API client not initialized, skipping actual API call');
       return { data: { id: 'mock_tweet_id', text } };
     }
     try {
@@ -167,7 +168,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;
     } catch (error) {
-      console.error('Error posting tweet:', error);
+      logger.error('Error posting tweet', error);
       throw error;
     }
   }
@@ -186,7 +187,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.users.getById>[1]);
       return response as unknown as { data: XApiUser };
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      logger.error('Error getting user profile', error, { userId });
       throw error;
     }
   }
@@ -202,7 +203,7 @@ export class XApiService implements IXApiService {
     try {
       let userId = this.config.myUserId;
       if (!userId) {
-        console.error('X_MY_USER_ID is not set in config!');
+        logger.error('X_MY_USER_ID is not set in config');
         return { data: [], meta: { resultCount: 0 } };
       }
 
@@ -210,7 +211,7 @@ export class XApiService implements IXApiService {
         if (!this.cachedNumericMyUserId) {
           const me = await this.client.users.getMe();
           this.cachedNumericMyUserId = me.data.id;
-          console.log(`Resolved numeric user ID for bot: ${this.cachedNumericMyUserId}`);
+          logger.info('Resolved numeric user ID for bot', { userId: this.cachedNumericMyUserId });
         }
         userId = this.cachedNumericMyUserId;
       }
@@ -227,7 +228,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.users.getMentions(userId, params as Parameters<typeof this.client.users.getMentions>[1]);
       return response as unknown as XApiMentionResponse;
     } catch (error) {
-      console.error('Error fetching mentions:', error);
+      logger.error('Error fetching mentions', error, { sinceId });
       throw error;
     }
   }
@@ -254,7 +255,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.users.getFollowers(userId, params as Parameters<typeof this.client.users.getFollowers>[1]);
       return response as unknown as XApiFollowersResponse;
     } catch (error) {
-      console.error('Error getting followers:', error);
+      logger.error('Error getting followers', error, { userId, paginationToken });
       throw error;
     }
   }
@@ -286,7 +287,7 @@ export class XApiService implements IXApiService {
       }
       return true;
     } catch (error) {
-      console.error('Error adding list member:', error);
+      logger.error('Error adding list member', error, { listId, userId });
       throw error;
     }
   }
@@ -309,7 +310,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.users.getPosts>[1]);
       return response as unknown as XApiMentionResponse;
     } catch (error) {
-      console.error('Error getting user tweets:', error);
+      logger.error('Error getting user tweets', error, { userId, maxResults });
       throw error;
     }
   }
@@ -352,7 +353,7 @@ export class XApiService implements IXApiService {
       }
       throw new Error('No client or oauth1Client available to delete tweet');
     } catch (error) {
-      console.error('Error deleting tweet:', error);
+      logger.error('Error deleting tweet', error, { tweetId });
       throw error;
     }
   }

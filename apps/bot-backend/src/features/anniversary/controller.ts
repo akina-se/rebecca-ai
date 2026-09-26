@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ProactiveAnniversaryUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
 import { CampaignGuard } from '../campaign';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for the Proactive Anniversary feature.
@@ -33,7 +34,10 @@ export class ProactiveAnniversaryController {
       if (this.campaignGuard) {
         const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
         if (suppression.shouldSuppress) {
-          console.log(`[ProactiveAnniversaryController] Suppressed by active campaign "${suppression.campaign?.title}" (${suppression.campaign?.id})`);
+          logger.info('[ProactiveAnniversaryController] Routine post suppressed by active campaign', {
+            campaignTitle: suppression.campaign?.title,
+            campaignId: suppression.campaign?.id,
+          });
           res.status(200).json({ status: 'suppressed_by_campaign', campaignId: suppression.campaign?.id });
           return;
         }
@@ -41,14 +45,14 @@ export class ProactiveAnniversaryController {
 
       const result = await this.useCase.execute();
       if (result.status === 'skipped') {
-        console.log(`[ProactiveAnniversaryController] Anniversary post skipped (${result.reason}). Executing alternate soliloquy post...`);
+        logger.info('[ProactiveAnniversaryController] Anniversary post skipped, executing alternate soliloquy post', { reason: result.reason });
         const fallbackResult = await this.soliloquyUseCase.execute();
         res.status(200).json(fallbackResult);
         return;
       }
       res.status(200).json(result);
     } catch (error) {
-      console.error('[ProactiveAnniversaryController] Batch execution failed:', error);
+      logger.error('[ProactiveAnniversaryController] Batch execution failed', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };

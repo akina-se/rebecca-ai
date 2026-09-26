@@ -30,7 +30,7 @@ export interface StructuredLogPayload {
   [key: string]: unknown;
 }
 
-const SERVICE_NAME = 'dashboard-backend';
+const SERVICE_NAME = 'bot-backend';
 
 const resolveServiceVersion = (): string => {
   const revision = process.env.K_REVISION?.trim();
@@ -139,7 +139,21 @@ export class Logger {
     });
   }
 
-  public error(message: string, err?: unknown, context?: Record<string, unknown>, traceHeader?: string): void {
+  public error(
+    message: string,
+    errOrContext?: unknown,
+    context?: Record<string, unknown>,
+    traceHeader?: string
+  ): void {
+    let err: unknown = errOrContext;
+    let effectiveContext = context;
+
+    // Support both signatures: logger.error(msg, err, context) and logger.error(msg, context)
+    if (errOrContext && !(errOrContext instanceof Error) && typeof errOrContext === 'object' && context === undefined) {
+      effectiveContext = errOrContext as Record<string, unknown>;
+      err = undefined;
+    }
+
     const traceInfo = this.parseTraceContext(traceHeader);
     let errorObj: { name?: string; message?: string; stack?: string } | undefined;
 
@@ -168,7 +182,7 @@ export class Logger {
       ...(traceInfo.trace ? { 'logging.googleapis.com/trace': traceInfo.trace } : {}),
       ...(traceInfo.spanId ? { 'logging.googleapis.com/spanId': traceInfo.spanId } : {}),
       ...(traceInfo.sampled !== undefined ? { 'logging.googleapis.com/trace_sampled': traceInfo.sampled } : {}),
-      context,
+      context: effectiveContext,
       '@type': 'type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent',
     });
   }

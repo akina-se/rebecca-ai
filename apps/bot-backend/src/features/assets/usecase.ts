@@ -1,4 +1,5 @@
 import { AppDependencies } from '../../types';
+import { logger } from '../../utils/logger';
 
 export interface AssetEmbeddingsResult {
   status: 'success' | 'failed';
@@ -16,10 +17,10 @@ export class AssetEmbeddingsUseCase {
   constructor(private deps: AppDependencies) {}
 
   async execute(): Promise<AssetEmbeddingsResult> {
-    console.log('[AssetEmbeddingsUseCase] Starting asset embeddings backfill batch...');
+    logger.info('[AssetEmbeddingsUseCase] Starting asset embeddings backfill batch');
     try {
       const pendingAssets = await this.deps.firestore.getAssetsPendingEmbedding();
-      console.log(`[AssetEmbeddingsUseCase] Found ${pendingAssets.length} assets pending embeddings.`);
+      logger.info('[AssetEmbeddingsUseCase] Found assets pending embeddings', { count: pendingAssets.length });
 
       if (pendingAssets.length === 0) {
         return { status: 'success', processed: 0, failed: 0, totalPending: 0 };
@@ -34,14 +35,14 @@ export class AssetEmbeddingsUseCase {
           if (embedding && embedding.length > 0) {
             await this.deps.firestore.updateAssetEmbedding(asset.id, embedding);
             processed++;
-            console.log(`[AssetEmbeddingsUseCase] Successfully generated & saved embedding for asset ${asset.id}`);
+            logger.info('[AssetEmbeddingsUseCase] Successfully generated and saved embedding for asset', { assetId: asset.id });
           } else {
             failed++;
-            console.warn(`[AssetEmbeddingsUseCase] Gemini returned empty embedding for asset ${asset.id}`);
+            logger.warn('[AssetEmbeddingsUseCase] Gemini returned empty embedding for asset', { assetId: asset.id });
           }
         } catch (err) {
           failed++;
-          console.error(`[AssetEmbeddingsUseCase] Failed to generate embedding for asset ${asset.id}:`, err);
+          logger.error('[AssetEmbeddingsUseCase] Failed to generate embedding for asset', err, { assetId: asset.id });
         }
 
         // Throttle slightly between items to respect Gemini RPM limits
@@ -50,7 +51,11 @@ export class AssetEmbeddingsUseCase {
         }
       }
 
-      console.log(`[AssetEmbeddingsUseCase] Completed batch: ${processed} processed, ${failed} failed out of ${pendingAssets.length} total.`);
+      logger.info('[AssetEmbeddingsUseCase] Completed batch', {
+        processed,
+        failed,
+        totalPending: pendingAssets.length,
+      });
       return {
         status: 'success',
         processed,
@@ -58,7 +63,7 @@ export class AssetEmbeddingsUseCase {
         totalPending: pendingAssets.length,
       };
     } catch (error) {
-      console.error('[AssetEmbeddingsUseCase] Error in asset embeddings backfill batch:', error);
+      logger.error('[AssetEmbeddingsUseCase] Error in asset embeddings backfill batch', error);
       throw error;
     }
   }

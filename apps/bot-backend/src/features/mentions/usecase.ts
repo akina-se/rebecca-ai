@@ -1,4 +1,5 @@
 import { AppDependencies } from '../../types';
+import { logger } from '../../utils/logger';
 
 /**
  * Configuration required for mention polling.
@@ -31,17 +32,17 @@ export class PollMentionsUseCase {
      *          and the newest encountered mention ID (if any).
      */
     async execute(): Promise<{ count: number, newestId?: string }> {
-        console.log("Polling mentions from X API...");
+        logger.info('[PollMentionsUseCase] Polling mentions from X API');
         const sinceId = await this.deps.firestore.getLastMentionId();
         
         const mentionsRes = await this.deps.xApi.getMentions(sinceId || undefined);
         
         if (!mentionsRes.data || mentionsRes.data.length === 0) {
-            console.log("No new mentions found.");
+            logger.info('[PollMentionsUseCase] No new mentions found');
             return { count: 0 };
         }
 
-        console.log(`Found ${mentionsRes.data.length} new mentions.`);
+        logger.info('[PollMentionsUseCase] Found new mentions', { count: mentionsRes.data.length });
         let newestId = sinceId;
 
         for (const tweet of mentionsRes.data) {
@@ -54,12 +55,15 @@ export class PollMentionsUseCase {
             }
 
             if (!authorId) {
-                console.warn(`Could not determine author ID for tweet ${tweetId}. Tweet object:`, JSON.stringify(tweet));
+                logger.warn('[PollMentionsUseCase] Could not determine author ID for tweet', {
+                    tweetId,
+                    tweet: JSON.stringify(tweet),
+                });
                 continue;
             }
 
             if (authorId === this.config.myUserId) {
-                console.log(`Ignoring self-mention ${tweetId}`);
+                logger.info('[PollMentionsUseCase] Ignoring self-mention', { tweetId });
                 continue;
             }
 
@@ -71,15 +75,15 @@ export class PollMentionsUseCase {
                     text,
                     authorId
                 }, delaySeconds);
-                console.log(`Enqueued mention ${tweetId} from ${authorId}`);
+                logger.info('[PollMentionsUseCase] Enqueued mention task', { tweetId, authorId });
             } catch (e) {
-                console.error(`Failed to enqueue task for mention ${tweetId}`, e);
+                logger.error('[PollMentionsUseCase] Failed to enqueue task for mention', e, { tweetId });
             }
         }
 
         if (newestId && newestId !== sinceId) {
             await this.deps.firestore.setLastMentionId(newestId);
-            console.log(`Updated last_mention_id to ${newestId}`);
+            logger.info('[PollMentionsUseCase] Updated last_mention_id', { newestId });
         }
 
         return { count: mentionsRes.data.length, newestId: newestId || undefined };

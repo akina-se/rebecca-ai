@@ -4,6 +4,7 @@ import { CampaignPostResult } from './types';
 import { getZonedDateParts } from '../../utils/time';
 import { downloadImage } from '../../utils/image';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
+import { logger } from '../../utils/logger';
 
 /**
  * Configuration for the CampaignPostUseCase.
@@ -55,7 +56,7 @@ export class CampaignPostUseCase {
    * @returns A Promise resolving to the CampaignPostResult.
    */
   async execute(): Promise<CampaignPostResult> {
-    console.log('[CampaignPostUseCase] Starting Narrative Event Campaign Slot Execution...');
+    logger.info('[CampaignPostUseCase] Starting Narrative Event Campaign Slot Execution');
 
     let campaign = await this.deps.firestore.getActiveCampaign();
     if (!campaign) {
@@ -66,7 +67,7 @@ export class CampaignPostUseCase {
     }
 
     if (!campaign || campaign.isPaused) {
-      console.log('[CampaignPostUseCase] No active or scheduled campaign ready for today, or campaign is paused.');
+      logger.info('[CampaignPostUseCase] No active or scheduled campaign ready for today, or campaign is paused');
       return {
         status: 'no_active_campaign',
         reason: 'No active or scheduled campaign found or campaign is paused.',
@@ -82,7 +83,11 @@ export class CampaignPostUseCase {
     const dayNumber = Math.floor((currentTime - startTime) / (1000 * 60 * 60 * 24)) + 1;
 
     if (dayNumber < 1 || todayStr > campaign.endDate) {
-      console.log(`[CampaignPostUseCase] Current date ${todayStr} is outside campaign bounds (${campaign.startDate} to ${campaign.endDate}).`);
+      logger.info('[CampaignPostUseCase] Current date is outside campaign bounds', {
+        today: todayStr,
+        startDate: campaign.startDate,
+        endDate: campaign.endDate,
+      });
       return {
         status: 'skipped',
         reason: `Current date ${todayStr} is outside campaign window.`,
@@ -95,7 +100,10 @@ export class CampaignPostUseCase {
     );
 
     if (pendingSlotsForToday.length === 0) {
-      console.log(`[CampaignPostUseCase] No pending slots found for Day ${dayNumber} (${todayStr}).`);
+      logger.info('[CampaignPostUseCase] No pending slots found for Day', {
+        dayNumber,
+        today: todayStr,
+      });
       return {
         status: 'no_pending_slot',
         reason: `No pending slots found for Day ${dayNumber}.`,
@@ -115,7 +123,10 @@ export class CampaignPostUseCase {
     });
 
     if (!targetSlot) {
-      console.log(`[CampaignPostUseCase] No pending slot scheduled for current execution window (${now.toISOString()}) on Day ${dayNumber}. Skipping.`);
+      logger.info('[CampaignPostUseCase] No pending slot scheduled for current execution window on Day. Skipping', {
+        now: now.toISOString(),
+        dayNumber,
+      });
       return {
         status: 'skipped',
         reason: `No pending slot scheduled for current execution window on Day ${dayNumber}.`,
@@ -124,7 +135,10 @@ export class CampaignPostUseCase {
 
     // Auto-activate scheduled campaign upon executing its first matched slot
     if (campaign.status === 'scheduled') {
-      console.log(`[CampaignPostUseCase] Auto-activating scheduled campaign "${campaign.title}" (${campaign.id}) at first slot post.`);
+      logger.info('[CampaignPostUseCase] Auto-activating scheduled campaign at first slot post', {
+        title: campaign.title,
+        campaignId: campaign.id,
+      });
       campaign.status = 'active';
       if (campaign.id) {
         await this.deps.firestore.updateCampaign(campaign.id, {
@@ -134,7 +148,12 @@ export class CampaignPostUseCase {
       }
     }
 
-    console.log(`[CampaignPostUseCase] Target slot matched: ID=${targetSlot.slotId}, Day=${targetSlot.dayNumber}, Period=${targetSlot.timePeriod}, Theme="${targetSlot.theme}"`);
+    logger.info('[CampaignPostUseCase] Target slot matched', {
+      slotId: targetSlot.slotId,
+      dayNumber: targetSlot.dayNumber,
+      timePeriod: targetSlot.timePeriod,
+      theme: targetSlot.theme,
+    });
 
     let postText: string;
     let thought: string;
@@ -218,7 +237,10 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         }
       }
 
-      console.log(`[CampaignPostUseCase] Generated text for slot ${targetSlot.slotId}: "${postText}"`);
+      logger.info('[CampaignPostUseCase] Generated text for slot', {
+        slotId: targetSlot.slotId,
+        postText,
+      });
 
       // Handle media attachment if mediaUrl is provided (Strict Asset Segregation: isolated event illustration)
       const mediaIds: string[] = [];
@@ -230,7 +252,9 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
             mediaIds.push(uploadedMediaId);
           }
         } catch (mediaErr) {
-          console.error(`[CampaignPostUseCase] Failed to download or upload campaign media (${targetSlot.mediaUrl}):`, mediaErr);
+          logger.error('[CampaignPostUseCase] Failed to download or upload campaign media', mediaErr, {
+            mediaUrl: targetSlot.mediaUrl,
+          });
           throw mediaErr;
         }
       }
@@ -270,7 +294,10 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         });
       }
 
-      console.log(`[CampaignPostUseCase] Successfully posted slot ${targetSlot.slotId} (Tweet ID: ${tweetId})`);
+      logger.info('[CampaignPostUseCase] Successfully posted slot', {
+        slotId: targetSlot.slotId,
+        tweetId,
+      });
 
       return {
         status: 'success',
@@ -282,7 +309,9 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         attachedMedia: mediaIds.length > 0,
       };
     } catch (err: unknown) {
-      console.error(`[CampaignPostUseCase] Failed to post campaign slot ${targetSlot.slotId}:`, err);
+      logger.error('[CampaignPostUseCase] Failed to post campaign slot', err, {
+        slotId: targetSlot.slotId,
+      });
       // Mark slot as failed in Firestore for dashboard visibility
       targetSlot.status = 'failed';
       targetSlot.errorReason = err instanceof Error ? err.message : 'Unknown error occurred during posting';
@@ -293,7 +322,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
             updatedAt: new Date().toISOString(),
           });
         } catch (updateErr) {
-          console.error('[CampaignPostUseCase] Failed to persist slot failure status:', updateErr);
+          logger.error('[CampaignPostUseCase] Failed to persist slot failure status', updateErr);
         }
       }
       // Re-throw so Cloud Scheduler registers a failure and can retry (Fail-Loudly)

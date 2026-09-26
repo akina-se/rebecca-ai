@@ -7,6 +7,7 @@
  * retain responsibility for persisting timeline posts or conversation logs.
  */
 import { AppDependencies, ImageDocWithId } from '../types';
+import { logger } from '../utils/logger';
 
 export interface PublishPostOptions {
   /** The text content to post. */
@@ -76,7 +77,7 @@ ${text}
       const searchQuery = await deps.gemini.inferImageSearchQuery(searchPrompt);
 
       if (searchQuery) {
-        console.log(`[PostPublisher] Inferred image search query: ${searchQuery}`);
+        logger.info('[PostPublisher] Inferred image search query', { searchQuery });
         const queryVector = await deps.gemini.generateEmbedding(searchQuery);
 
         const candidates = queryVector.length > 0 ? await deps.firestore.findImagesByVector(queryVector, undefined, 3) : [];
@@ -84,18 +85,18 @@ ${text}
         if (candidates.length > 0) {
           for (let i = 0; i < candidates.length; i++) {
             const candidate = candidates[i];
-            console.log(`[PostPublisher] Evaluating image candidate ${i + 1}/${candidates.length}: ${candidate.url}`);
+            logger.info('[PostPublisher] Evaluating image candidate', { candidateIndex: i + 1, totalCandidates: candidates.length, url: candidate.url });
             const isRelevant = await deps.gemini.verifyImageRelevance(
               candidate.caption || '',
               text,
             );
 
             if (isRelevant) {
-              console.log(`[PostPublisher] Image approved by LLM re-ranking (candidate ${i + 1}).`);
+              logger.info('[PostPublisher] Image approved by LLM re-ranking', { candidateIndex: i + 1 });
               bestImage = candidate;
               break;
             } else {
-              console.log(`[PostPublisher] Image candidate ${i + 1} rejected by LLM re-ranking.`);
+              logger.info('[PostPublisher] Image candidate rejected by LLM re-ranking', { candidateIndex: i + 1 });
             }
           }
 
@@ -110,20 +111,20 @@ ${text}
               if (mediaId && mediaId !== 'mock_media_id') {
                 mediaIds.push(mediaId);
                 await deps.firestore.updateImageLastUsed(bestImage.id);
-                console.log(`[PostPublisher] Attached media ID: ${mediaId}`);
+                logger.info('[PostPublisher] Attached media ID', { mediaId });
               }
             } catch (e) {
-              console.error('[PostPublisher] Failed to upload media to X:', e);
+              logger.error('[PostPublisher] Failed to upload media to X', e);
             }
           } else {
-            console.log('[PostPublisher] All image candidates rejected by LLM re-ranking. Fallback to text-only.');
+            logger.info('[PostPublisher] All image candidates rejected by LLM re-ranking, falling back to text-only');
           }
         } else {
-          console.log('[PostPublisher] No matching image found or all are in cooldown.');
+          logger.info('[PostPublisher] No matching image found or all are in cooldown');
         }
       }
     } catch (err) {
-      console.warn('[PostPublisher] Image inference/attachment encountered non-fatal error, falling back to text-only:', err);
+      logger.warn('[PostPublisher] Image inference/attachment encountered non-fatal error, falling back to text-only', { err });
     }
   }
 

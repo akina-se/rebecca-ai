@@ -6,10 +6,7 @@ import { publishPost } from '../../core/postPublisher';
 import { downloadImage } from '../../utils/image';
 import { extractCleanTextForLanguageDetection } from '../../utils/text';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
-
-const sanitizeForLog = (value: unknown): string => {
-    return String(value).replace(/[\r\n\u2028\u2029]/g, '');
-};
+import { logger } from '../../utils/logger';
 
 /**
  * Use case for handling reply tasks.
@@ -37,19 +34,25 @@ export class ReplyTaskUseCase {
         // Prevent duplicate processing of the same mention
         const alreadyProcessed = await deps.firestore.hasProcessedMention(tweetId);
         if (alreadyProcessed) {
-            console.log(`Mention ${sanitizeForLog(tweetId)} already processed. Skipping.`);
+            logger.info('[ReplyTaskUseCase] Mention already processed. Skipping', { tweetId });
             return { status: 'already_processed' };
         }
 
         // Enforce rate limits to prevent abuse and manage LLM API budget
         const rateLimit = await checkAndIncrementRateLimits(deps, authorId);
         if (!rateLimit.allowed) {
-            console.log(`Rate limit exceeded for user ${sanitizeForLog(authorId)}, reason: ${sanitizeForLog(rateLimit.reason)}`);
+            logger.info('[ReplyTaskUseCase] Rate limit exceeded for user', {
+                userId: authorId,
+                reason: rateLimit.reason,
+            });
             return { status: 'rate_limited', reason: rateLimit.reason };
         }
         let userData = await deps.firestore.getUserDoc(authorId);
         if (userData?.status === 'BLOCKED') {
-            console.log(`User ${sanitizeForLog(authorId)} is blocked by admin. Skipping reply for tweet ${sanitizeForLog(tweetId)}.`);
+            logger.info('[ReplyTaskUseCase] User is blocked by admin. Skipping reply', {
+                userId: authorId,
+                tweetId,
+            });
             await deps.firestore.markMentionProcessed(tweetId);
             return { status: 'blocked', reason: 'User is blocked by admin' };
         }
@@ -93,7 +96,9 @@ ${desc}
                     });
                 }
             } catch(e) {
-                console.error("Failed to fetch/analyze user profile", e);
+                logger.error('[ReplyTaskUseCase] Failed to fetch or analyze user profile', e, {
+                    userId: authorId,
+                });
             }
         }
 
@@ -120,7 +125,7 @@ ${desc}
                 }
             }
         } catch (e) {
-            console.error('Failed to process mention image', e);
+            logger.error('[ReplyTaskUseCase] Failed to process mention image', e, { tweetId });
         }
 
         // Retrieve relevant past memories and inject context to build the system prompt
@@ -180,12 +185,18 @@ ${processedText}
         let aiResponseText = structuredReply.reply;
         const internalThought = structuredReply.thought;
 
-        console.log(`Generated AI Reply for tweet ${sanitizeForLog(tweetId)}: ${sanitizeForLog(aiResponseText)}`);
+        logger.info('[ReplyTaskUseCase] Generated AI Reply for tweet', {
+            tweetId,
+            reply: aiResponseText,
+        });
 
         // Fallback: X API limits Japanese text effectively to 140 characters.
         if (aiResponseText.length > 138) {
             aiResponseText = aiResponseText.substring(0, 137) + '…';
-            console.log(`Truncated AI Reply to 138 characters: ${sanitizeForLog(aiResponseText)}`);
+            logger.info('[ReplyTaskUseCase] Truncated AI Reply to 138 characters', {
+                tweetId,
+                reply: aiResponseText,
+            });
         }
 
         // Publish the reply back to the user on X via unified PostPublisher (thought is private; image is disabled for replies)
@@ -212,7 +223,10 @@ ${processedText}
         // Preserve the raw logs for future analysis or model evolution
         await deps.firestore.saveRawConversationLog(authorId, processedText, aiResponseText, internalThought);
 
-        console.log(`Successfully replied to tweet ${sanitizeForLog(tweetId)} by user ${sanitizeForLog(authorId)}`);
+        logger.info('[ReplyTaskUseCase] Successfully replied to tweet', {
+            tweetId,
+            userId: authorId,
+        });
         return { status: 'success' };
     }
 }
