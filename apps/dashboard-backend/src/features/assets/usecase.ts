@@ -6,6 +6,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Storage } from '@google-cloud/storage';
 import { config } from '../../config';
 import { extractGcsObjectPath } from '../../utils/gcs';
+import { logger } from '../../utils/logger';
 
 export interface UploadedFile {
   originalname: string;
@@ -158,12 +159,12 @@ export class AssetsUseCase {
         bucket.file(cachePath).save(thumbnailBuffer, {
           metadata: { contentType: 'image/webp', cacheControl: 'public, max-age=31536000, immutable' }
         }).catch(err => {
-          console.warn(`Failed to cache thumbnail ${cachePath} in GCS:`, err);
+          logger.warn(`Failed to cache thumbnail ${cachePath} in GCS:`, { err });
         });
 
         return result;
       } catch (err) {
-        console.warn(`Failed to generate thumbnail for ${id}, falling back to original:`, err);
+        logger.warn(`Failed to generate thumbnail for ${id}, falling back to original:`, { err });
         return original;
       }
     }
@@ -203,7 +204,7 @@ export class AssetsUseCase {
           return { buffer, contentType };
         }
       } catch (err) {
-        console.warn(`Failed to download object from GCS path ${objectPathFromUrl}:`, err);
+        logger.warn(`Failed to download object from GCS path ${objectPathFromUrl}:`, { err });
       }
     }
 
@@ -269,7 +270,7 @@ export class AssetsUseCase {
         }
       }
     } catch (err) {
-      console.warn(`Failed to search prefix in GCS for ${id}:`, err);
+      logger.warn(`Failed to search prefix in GCS for ${id}:`, { err });
     }
 
     // 5. Try base64 data URI in url field
@@ -314,7 +315,7 @@ export class AssetsUseCase {
           }
         } catch (err) {
           const safeId = String(id).replace(/[\r\n%]/g, '');
-          console.error('Failed to generate embedding during updateAsset for %s:', safeId, err);
+          logger.error(`Failed to generate embedding during updateAsset for ${safeId}`, err);
           repoUpdates.embedding = null;
           repoUpdates.status = AssetStatus.FAILED;
         }
@@ -363,7 +364,7 @@ export class AssetsUseCase {
         }
       } catch (err) {
         const sanitizedId = String(id).replace(/[\r\n]/g, '');
-        console.warn('[AssetsUseCase] Warning during GCS physical deletion for asset %s:', sanitizedId, err);
+        logger.warn(`[AssetsUseCase] Warning during GCS physical deletion for asset ${sanitizedId}`, { err });
       }
     }
     await this.repo.deleteMany(ids);
@@ -503,7 +504,7 @@ export class AssetsUseCase {
       return { caption, embedding, status };
     } catch (visionErr) {
       const safeName = String(file.originalname || '').replace(/[\r\n]/g, '');
-      console.error('Gemini Vision analysis failed for %s:', safeName, visionErr);
+      logger.error(`Gemini Vision analysis failed for ${safeName}`, visionErr);
       return { caption: '', embedding: [], status: AssetStatus.FAILED };
     }
   }
@@ -552,7 +553,7 @@ export class AssetsUseCase {
       const status = embedding.length > 0 ? AssetStatus.SUCCESS : AssetStatus.FAILED;
       return { caption, embedding, status };
     } catch (e) {
-      console.warn(`Gemini Vision regenerate caption error for asset ${assetId}, using fallback:`, e);
+      logger.warn(`Gemini Vision regenerate caption error for asset ${assetId}, using fallback:`, { err: e });
       const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
       return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
     }
@@ -571,7 +572,7 @@ export class AssetsUseCase {
       });
       return embResponse.embeddings?.[0]?.values || [];
     } catch (embErr) {
-      console.warn('Failed to generate embedding:', embErr);
+      logger.warn('Failed to generate embedding:', { err: embErr });
       return [];
     }
   }

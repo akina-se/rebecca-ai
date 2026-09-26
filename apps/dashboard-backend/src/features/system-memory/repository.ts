@@ -3,6 +3,7 @@ import { MemoryLayer, MemoryContent } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { getActivePersona } from '@rebecca/persona';
 import { config } from '../../config';
+import { logger } from '../../utils/logger';
 
 /**
  * Repository class for managing and loading system memory layers from Firestore and local static sources.
@@ -135,13 +136,13 @@ export class SystemMemoryRepository {
   async triggerDreaming(): Promise<void> {
     const botUrl = config.services.botBackendUrl;
     if (!botUrl) {
-      console.warn('BOT_BACKEND_URL is not configured. Skipping dreaming trigger.');
+      logger.warn('BOT_BACKEND_URL is not configured. Skipping dreaming trigger.');
       return;
     }
 
     const isEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
     if (isEmulator) {
-      console.log(`[Local/Emulator fallback] Triggering async dreaming at ${botUrl}/batch/dreaming`);
+      logger.info(`[Local/Emulator fallback] Triggering async dreaming at ${botUrl}/batch/dreaming`);
       return;
     }
 
@@ -150,26 +151,26 @@ export class SystemMemoryRepository {
       const auth = new GoogleAuth();
       const client = await auth.getIdTokenClient(botUrl);
       
-      console.log(`Triggering self-reflection at ${botUrl}/batch/self-reflection`);
+      logger.info(`Triggering self-reflection at ${botUrl}/batch/self-reflection`);
       await client.request({
         url: `${botUrl}/batch/self-reflection`,
         method: 'POST',
       });
 
-      console.log(`Triggering dreaming at ${botUrl}/batch/dreaming`);
+      logger.info(`Triggering dreaming at ${botUrl}/batch/dreaming`);
       await client.request({
         url: `${botUrl}/batch/dreaming`,
         method: 'POST',
       });
 
-      console.log(`Triggering evolution at ${botUrl}/batch/evolution`);
+      logger.info(`Triggering evolution at ${botUrl}/batch/evolution`);
       await client.request({
         url: `${botUrl}/batch/evolution`,
         method: 'POST',
       });
-      console.log('Successfully completed Self-Reflection, Dreaming & Evolution batch executions.');
+      logger.info('Successfully completed Self-Reflection, Dreaming & Evolution batch executions.');
     } catch (e) {
-      console.error('Failed to trigger dreaming on bot-backend', e);
+      logger.error('Failed to trigger dreaming on bot-backend', e);
     }
   }
 }

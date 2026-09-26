@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { CloneCampaignRequest } from '@rebecca/types';
 import { CampaignsUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Validates and extracts a required non-empty string ID from request params.
@@ -44,7 +45,7 @@ const handleControllerError = (res: Response, err: unknown, context: string): vo
   }
 
   const safeContext = String(context).replace(/[\r\n]/g, '');
-  console.error('[CampaignsController] %s unexpected server error:', safeContext, err);
+  logger.error(`[CampaignsController] ${safeContext} unexpected server error`, err, { context: safeContext });
   res.status(500).json({ error: 'Internal server error' });
 };
 

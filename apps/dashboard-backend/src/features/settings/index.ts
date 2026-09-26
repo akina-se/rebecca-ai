@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Firestore } from '@google-cloud/firestore';
 import { SystemSettings } from '@rebecca/types';
 import { COLLECTIONS } from '@rebecca/db/schema';
+import { logger } from '../../utils/logger';
 
 function isValidTimezone(tz: string): boolean {
   try {
@@ -42,7 +43,7 @@ export function initializeSettingsModule(firestore: Firestore): Router {
         }
       });
     } catch (error) {
-      console.error('Failed to get system settings:', error);
+      logger.error('Failed to get system settings', error);
       res.status(500).json({ error: 'Failed to retrieve settings' });
     }
   });
@@ -82,7 +83,7 @@ export function initializeSettingsModule(firestore: Firestore): Router {
         }
       });
     } catch (error) {
-      console.error('Failed to update system settings:', error);
+      logger.error('Failed to update system settings', error);
       res.status(500).json({ error: 'Failed to update settings' });
     }
   });

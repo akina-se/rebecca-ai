@@ -1,6 +1,7 @@
 import { TimelineRepository } from './repository';
 import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginationMeta } from '@rebecca/types';
 import { deleteTweetViaGrpc } from '../../core/grpcClient';
+import { logger } from '../../utils/logger';
 
 /**
  * Contains business logic and orchestrates operations related to the timeline and system metrics.
@@ -55,11 +56,11 @@ export class TimelineUseCase {
       ids.map(async (id) => {
         const safeId = String(id || '').replace(/[\r\n]/g, '');
         try {
-          console.log('Triggering gRPC deleteTweet for X ID: %s', safeId);
+          logger.info(`Triggering gRPC deleteTweet for X ID: ${safeId}`);
           const response = await deleteTweetViaGrpc(id);
-          console.log('gRPC deleteTweet response for %s: %j', safeId, response);
+          logger.info(`gRPC deleteTweet response for ${safeId}`, { response });
         } catch (err) {
-          console.error('Failed to delete tweet %s via gRPC:', safeId, err);
+          logger.error(`Failed to delete tweet ${safeId} via gRPC`, err);
         }
       })
     );
