@@ -20,10 +20,10 @@ try {
     ];
 
     execFileSync('gcloud', args, { stdio: 'inherit', shell: true });
-    console.log(`✅ Successfully created queue ${queueName}`);
+    console.log(`Successfully created queue ${queueName}`);
 } catch (e) {
     console.log(`Queue ${queueName} might already exist or creation failed.`, e);
-    // We could attempt an update, but for basic queues this is usually sufficient.
+    // If the queue already exists, creation fails gracefully
 }
 
 console.log('Finished setting up Cloud Tasks queue.');

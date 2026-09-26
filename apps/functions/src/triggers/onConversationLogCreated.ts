@@ -80,15 +80,12 @@ export const onConversationLogCreated = onDocumentCreated(
     const dateStr = log.timestamp ? log.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
     const dauRef = db.collection(COLLECTIONS.SYSTEM_STATS).doc(`dau_${dateStr}`);
     
-    // We can use an array union to keep track of unique active users today
+    // Record unique active user ID in daily set and increment total interactions counter
     batch.set(
       dauRef,
       {
         date: dateStr,
         active_users: FieldValue.arrayUnion(log.userId),
-        // For simple numeric count in dashboard, we could increment a raw counter,
-        // but array size is more accurate for DAU to prevent double counting same user.
-        // We will increment total_interactions for the day as well.
         total_interactions: FieldValue.increment(1),
       },
       { merge: true }

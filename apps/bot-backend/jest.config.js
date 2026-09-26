@@ -15,7 +15,7 @@ module.exports = {
   // Specify coverage reporters needed for GitHub Actions
   coverageReporters: ['text', 'json-summary', 'lcov'],
 
-  // Coverage thresholds based on industry best practice (80% "Goldilocks zone").
+  // Code coverage thresholds (80% minimum).
   // Jest will exit with a non-zero code if any threshold is not met,
   // which blocks PR merges when enforced as a required CI check.
   coverageThreshold: {
