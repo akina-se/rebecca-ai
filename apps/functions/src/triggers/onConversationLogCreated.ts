@@ -33,7 +33,7 @@ export const onConversationLogCreated = onDocumentCreated(
 
     const log = snapshot.data() as RawConversationLog;
     if (!log.userId) {
-      logger.warn('No userId in the conversation log', { logId: event.params?.logId || snapshot.id });
+      logger.warn('No userId in the conversation log', { logId: snapshot.id });
       return;
     }
 
@@ -58,7 +58,7 @@ export const onConversationLogCreated = onDocumentCreated(
       batch.set(eventRef, {
         processedAt: FieldValue.serverTimestamp(),
         type: 'conversation_log_created',
-        logId: event.params?.logId || snapshot.id,
+        logId: snapshot.id,
       });
     }
 
