@@ -1,5 +1,5 @@
 /**
- * Logger facade for dashboard-backend.
+ * Logger facade for bot-backend.
  * Re-exports the pre-configured Logger instance and related types from '@rebecca/logger'.
  */
 
@@ -12,4 +12,4 @@ import {
 
 export { Logger, StructuredLogPayload, LogSeverity, createLogger };
 
-export const logger = createLogger('dashboard-backend');
+export const logger = createLogger('bot-backend');

@@ -1,5 +1,6 @@
 import { AppDependencies } from '../../types';
 import { cosineSimilarity } from '@rebecca/persona';
+import { logger } from '../../utils/logger';
 
 import { NewsItem, CandidateNewsItem } from './types';
 
@@ -31,7 +32,9 @@ export const filterFreshNews = async (
       try {
         return await deps.gemini.generateEmbedding(item.title);
       } catch (error) {
-        console.warn('[NewsDeduplicator] Failed to compute embedding for headline:', error);
+        logger.error('[NewsDeduplicator] Failed to compute embedding for headline', error, {
+          title: item.title,
+        });
         return [];
       }
     }),
@@ -48,9 +51,12 @@ export const filterFreshNews = async (
       for (const past of recentNews) {
         const sim = cosineSimilarity(embedding, past.embedding);
         if (sim >= similarityThreshold) {
-          console.log(
-            `[NewsDeduplicator] Filtered duplicate headline (sim=${sim.toFixed(3)} >= ${similarityThreshold}): "${item.title}" matches past: "${past.title}"`,
-          );
+          logger.info('[NewsDeduplicator] Filtered duplicate headline', {
+            similarity: sim,
+            threshold: similarityThreshold,
+            title: item.title,
+            pastTitle: past.title,
+          });
           isDuplicate = true;
           break;
         }

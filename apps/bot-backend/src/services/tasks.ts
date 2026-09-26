@@ -5,6 +5,7 @@
 
 import { CloudTasksClient  } from '@google-cloud/tasks';
 import config from '../config';
+import { logger } from '../utils/logger';
 
 /**
  * Cloud Tasks client instance.
@@ -25,7 +26,7 @@ const getClient = () => {
         try {
             client = new CloudTasksClient();
         } catch (e) {
-            console.warn("Cloud Tasks Client could not be initialized:", e.message);
+            logger.warn('Cloud Tasks Client could not be initialized', { error: (e as Error).message });
         }
     }
     return client;
@@ -83,10 +84,10 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
 
     try {
         const [response] = await cTasksClient.createTask({ parent, task });
-        console.log(`Created task ${response.name}`);
+        logger.info('Created task', { taskName: response.name });
         return response;
     } catch (error) {
-        console.error('Error enqueuing task:', error);
+        logger.error('Error enqueuing task', error);
         throw error;
     }
 };

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { StealthOnboardingUseCase } from './usecase';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for handling stealth onboarding HTTP requests.
@@ -25,7 +26,7 @@ export class StealthOnboardingController {
             const result = await this.useCase.execute();
             res.status(200).json(result);
         } catch (e) {
-            console.error("onboarding error:", e);
+            logger.error('onboarding error', e);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     };

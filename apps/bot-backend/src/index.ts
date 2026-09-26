@@ -18,6 +18,7 @@ import { AppDependencies } from './types';
 import { createBatchRoutes } from './routes/batchRoutes';
 import { createWorkerRoutes } from './routes/workerRoutes';
 import { publicRateLimiter, batchRateLimiter, workerRateLimiter } from './middleware/apiRateLimiter';
+import { logger } from './utils/logger';
 import { startGrpcServer } from './services/grpcServer';
 
 /**
@@ -69,7 +70,7 @@ const app = createApp(defaultDeps);
 const PORT = config.port;
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Rebecca AI Chatbot listening on port ${PORT}`);
+    logger.info('Rebecca AI Chatbot server started', { port: PORT });
   });
   startGrpcServer(defaultDeps.xApi);
 }

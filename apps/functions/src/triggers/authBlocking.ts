@@ -1,5 +1,6 @@
 import { beforeUserSignedIn, HttpsError } from 'firebase-functions/v2/identity';
 import { getFirestore } from 'firebase-admin/firestore';
+import * as logger from 'firebase-functions/logger';
 
 /**
  * Blocking Function that executes before a user is signed in via Firebase Authentication.
@@ -28,7 +29,7 @@ export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
     .get();
 
   if (adminSnapshot.empty) {
-    console.warn(`[Security Alert] Blocked unauthorized sign-in attempt from: ${email}`);
+    logger.warn('[Security Alert] Blocked unauthorized sign-in attempt', { uid: user?.uid });
     throw new HttpsError(
       'permission-denied',
       'Access Denied: Your account is not registered as an authorized administrator.'

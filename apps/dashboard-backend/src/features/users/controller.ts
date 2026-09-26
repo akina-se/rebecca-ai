@@ -56,8 +56,7 @@ export class UsersController {
       }
       res.json(user);
     } catch (err) {
-      const safeId = String(id).replace(/[\r\n]/g, '');
-      logger.error(`Failed to fetch user details for ${safeId}`, err, { userId: safeId });
+      logger.error('Failed to fetch user details', err, { userId: id });
       res.status(500).json({ error: 'Failed to fetch user details' });
     }
   }

@@ -1,5 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import * as logger from 'firebase-functions/logger';
 
 const COLLECTIONS = {
   USERS: 'users',
@@ -26,13 +27,13 @@ export const onConversationLogCreated = onDocumentCreated(
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
-      console.log('No data associated with the event');
+      logger.info('No data associated with the event');
       return;
     }
 
     const log = snapshot.data() as RawConversationLog;
     if (!log.userId) {
-      console.log('No userId in the conversation log');
+      logger.warn('No userId in the conversation log', { logId: snapshot.id });
       return;
     }
 
@@ -44,7 +45,7 @@ export const onConversationLogCreated = onDocumentCreated(
       const eventRef = db.collection(COLLECTIONS.PROCESSED_EVENTS).doc(eventId);
       const eventDoc = await eventRef.get();
       if (eventDoc?.exists) {
-        console.log(`Event ${eventId} has already been processed. Skipping to maintain idempotency.`);
+        logger.info('Event has already been processed. Skipping to maintain idempotency.', { eventId });
         return;
       }
     }
@@ -57,7 +58,7 @@ export const onConversationLogCreated = onDocumentCreated(
       batch.set(eventRef, {
         processedAt: FieldValue.serverTimestamp(),
         type: 'conversation_log_created',
-        logId: event.params?.logId || snapshot.id,
+        logId: snapshot.id,
       });
     }
 
@@ -79,15 +80,12 @@ export const onConversationLogCreated = onDocumentCreated(
     const dateStr = log.timestamp ? log.timestamp.split('T')[0] : new Date().toISOString().split('T')[0];
     const dauRef = db.collection(COLLECTIONS.SYSTEM_STATS).doc(`dau_${dateStr}`);
     
-    // We can use an array union to keep track of unique active users today
+    // Record unique active user ID in daily set and increment total interactions counter
     batch.set(
       dauRef,
       {
         date: dateStr,
         active_users: FieldValue.arrayUnion(log.userId),
-        // For simple numeric count in dashboard, we could increment a raw counter,
-        // but array size is more accurate for DAU to prevent double counting same user.
-        // We will increment total_interactions for the day as well.
         total_interactions: FieldValue.increment(1),
       },
       { merge: true }
@@ -95,6 +93,6 @@ export const onConversationLogCreated = onDocumentCreated(
 
     // Commit the batch
     await batch.commit();
-    console.log(`Successfully updated stats for user ${log.userId} and DAU for ${dateStr}`);
+    logger.info('Successfully updated stats for user and DAU', { userId: log.userId, date: dateStr });
   }
 );

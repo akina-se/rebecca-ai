@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import config from '../config';
 import { verifyServerToServerAuth } from './authUtils';
+import { logger } from '../utils/logger';
 
 /**
  * Express middleware to authenticate requests to worker endpoints.
@@ -19,7 +20,7 @@ export const workerAuth = async (req: Request, res: Response, next: NextFunction
         const isAuthenticated = await verifyServerToServerAuth(
             req,
             config.gcp.workerUrl || undefined,
-            config.batchSecret, // Utilizing the same batch secret for simplicity, or we can use a worker secret
+            config.batchSecret, // Shared secret for worker authentication
             'x-worker-secret'
         );
 
@@ -27,10 +28,10 @@ export const workerAuth = async (req: Request, res: Response, next: NextFunction
             return next();
         }
 
-        console.warn('Unauthorized attempt to access worker endpoint.');
+        logger.warn('[Security Alert] Unauthorized attempt to access worker endpoint');
         res.status(401).json({ error: 'Unauthorized' });
     } catch (e) {
-        console.error('Worker Auth Middleware Error:', e);
+        logger.error('Worker Auth Middleware Error', e);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };

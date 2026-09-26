@@ -314,8 +314,7 @@ export class AssetsUseCase {
             repoUpdates.status = AssetStatus.FAILED;
           }
         } catch (err) {
-          const safeId = String(id).replace(/[\r\n%]/g, '');
-          logger.error(`Failed to generate embedding during updateAsset for ${safeId}`, err);
+          logger.error('Failed to generate embedding during updateAsset', err, { assetId: id });
           repoUpdates.embedding = null;
           repoUpdates.status = AssetStatus.FAILED;
         }
@@ -363,8 +362,7 @@ export class AssetsUseCase {
           }
         }
       } catch (err) {
-        const sanitizedId = String(id).replace(/[\r\n]/g, '');
-        logger.warn(`[AssetsUseCase] Warning during GCS physical deletion for asset ${sanitizedId}`, { err });
+        logger.warn('[AssetsUseCase] Warning during GCS physical deletion for asset', { assetId: id, err });
       }
     }
     await this.repo.deleteMany(ids);
@@ -503,8 +501,7 @@ export class AssetsUseCase {
       const status = embedding.length > 0 ? AssetStatus.SUCCESS : AssetStatus.FAILED;
       return { caption, embedding, status };
     } catch (visionErr) {
-      const safeName = String(file.originalname || '').replace(/[\r\n]/g, '');
-      logger.error(`Gemini Vision analysis failed for ${safeName}`, visionErr);
+      logger.error('Gemini Vision analysis failed', visionErr, { originalname: file.originalname });
       return { caption: '', embedding: [], status: AssetStatus.FAILED };
     }
   }

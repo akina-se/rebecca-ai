@@ -8,8 +8,8 @@ import { ConfigService } from '../../../../core/services/config.service';
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
  *
- * Atomic UI molecule component representing an individual scheduled narrative campaign slot.
- * Complies with strict Glassmorphism theme, zero emojis (Material Icons only), and enterprise UX.
+ * Component representing an individual scheduled narrative campaign slot.
+ * Handles slot form controls, content editing, timing selection, and image attachments.
  */
 @Component({
   selector: 'app-itinerary-slot-card',

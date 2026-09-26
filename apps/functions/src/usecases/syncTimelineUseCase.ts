@@ -1,4 +1,5 @@
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import * as logger from 'firebase-functions/logger';
 import { IXApiService } from '../services/xApi';
 
 const COLLECTIONS = {
@@ -34,7 +35,7 @@ export class SyncTimelineUseCase {
       // 1. Fetch normalized tweets from external service adapter (auto-resolves userId if omitted)
       const tweets = await this.xApiService.fetchRecentTimelineTweets(userId, limit);
       if (tweets.length === 0) {
-        console.log('[SyncTimelineUseCase] No tweets retrieved from X API.');
+        logger.info('[SyncTimelineUseCase] No tweets retrieved from X API');
         return { processed: 0, updated: 0, created: 0, errors: 0 };
       }
 
@@ -119,10 +120,10 @@ export class SyncTimelineUseCase {
         await batch.commit();
       }
 
-      console.log(`[SyncTimelineUseCase] Processed ${tweets.length} tweets (Updated: ${updatedCount}, Created: ${createdCount}).`);
+      logger.info('[SyncTimelineUseCase] Processed tweets', { count: tweets.length, updated: updatedCount, created: createdCount });
       return { processed: tweets.length, updated: updatedCount, created: createdCount, errors: 0 };
     } catch (error) {
-      console.error('[SyncTimelineUseCase] Sync workflow encountered an error:', error);
+      logger.error('[SyncTimelineUseCase] Sync workflow encountered an error', { error });
       return { processed: 0, updated: 0, created: 0, errors: 1 };
     }
   }

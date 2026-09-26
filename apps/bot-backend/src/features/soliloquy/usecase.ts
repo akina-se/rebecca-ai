@@ -2,6 +2,7 @@ import { AppDependencies, ProactiveBatchResult } from '../../types';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { formatZonedDateTime } from '../../utils/time';
+import { logger } from '../../utils/logger';
 
 /**
  * Configuration required for autonomous soliloquy execution.
@@ -59,7 +60,7 @@ export class SoliloquyUseCase {
   ) {}
 
   async execute(): Promise<SoliloquyResult> {
-    console.log('Starting Autonomous Soliloquy Post...');
+    logger.info('[SoliloquyUseCase] Starting Autonomous Soliloquy Post');
     try {
       const now = new Date();
       const timeContext = getTimeOfDayGreetingContext(now, this.config.timezone);
@@ -125,7 +126,7 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
         }
       }
 
-      console.log('Generated Soliloquy Post:', postText);
+      logger.info('[SoliloquyUseCase] Generated Soliloquy Post', { postText });
 
       const pipelineResult = await executePostPipeline(this.deps, {
         postType: 'soliloquy',
@@ -140,7 +141,7 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
         attachedMedia: pipelineResult.attachedMedia,
       };
     } catch (e) {
-      console.error('Error in SoliloquyUseCase:', e);
+      logger.error('[SoliloquyUseCase] Error in SoliloquyUseCase', e);
       throw e;
     }
   }

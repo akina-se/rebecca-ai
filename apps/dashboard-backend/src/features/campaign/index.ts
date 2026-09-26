@@ -56,7 +56,7 @@ export function initializeCampaignsModule(
   campaignsRouter.delete('/:id/assets/:filename', controller.deleteAsset);
   campaignsRouter.get('/:id/assets/:filename', controller.getAssetImage);
 
-  // Slot-level Illustration Subresources (Atomic Persistence & Zero-Zombie Guarantee)
+  // Slot-level illustration subresources
   campaignsRouter.post('/:id/slots/:slotId/image', upload.single('file'), controller.setSlotIllustration);
   campaignsRouter.delete('/:id/slots/:slotId/image', controller.removeSlotIllustration);
 

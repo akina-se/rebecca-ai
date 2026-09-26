@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ProactiveNewsUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
 import { CampaignGuard } from '../campaign';
+import { logger } from '../../utils/logger';
 
 /**
  * Controller for the Proactive News feature.
@@ -31,7 +32,10 @@ export class ProactiveNewsController {
             if (this.campaignGuard) {
                 const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
                 if (suppression.shouldSuppress) {
-                    console.log(`[ProactiveNewsController] Suppressed by active campaign "${suppression.campaign?.title}" (${suppression.campaign?.id})`);
+                    logger.info('[ProactiveNewsController] Suppressed by active campaign', {
+                        campaignTitle: suppression.campaign?.title,
+                        campaignId: suppression.campaign?.id,
+                    });
                     res.status(200).json({ status: 'suppressed_by_campaign', campaignId: suppression.campaign?.id });
                     return;
                 }
@@ -39,14 +43,16 @@ export class ProactiveNewsController {
 
             const result = await this.useCase.execute();
             if (result.status === 'skipped') {
-                console.log(`[ProactiveNewsController] News post skipped (${result.reason}). Executing alternate soliloquy post...`);
+                logger.info('[ProactiveNewsController] News post skipped. Executing alternate soliloquy post', {
+                    reason: result.reason,
+                });
                 const fallbackResult = await this.soliloquyUseCase.execute();
                 res.status(200).json(fallbackResult);
                 return;
             }
             res.status(200).json(result);
         } catch (error) {
-            console.error('[ProactiveNewsController] Batch execution failed:', error);
+            logger.error('[ProactiveNewsController] Batch execution failed', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     };

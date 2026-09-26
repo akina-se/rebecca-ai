@@ -91,7 +91,7 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
 
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_03_campaign_editor_filled.png'), fullPage: true });
 
-    // 6. Test Atomic Image Upload & Browser Reload Persistence (Zero Zombie Guarantee)
+    // 6. Test image upload and browser reload persistence
     const fileInput1 = firstCard.locator('input[type="file"]');
     await fileInput1.setInputFiles(path.resolve(__dirname, '../test-assets/sample.png'));
 

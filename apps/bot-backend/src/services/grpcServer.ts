@@ -7,6 +7,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import { IXApiService } from '../types';
+import { logger } from '../utils/logger';
 
 const PROTO_PATH = path.resolve(__dirname, '../../../../packages/grpc-schemas/tweets.proto');
 
@@ -68,13 +69,13 @@ export function startGrpcServer(xApiService: IXApiService): grpc.Server {
       callback: grpc.sendUnaryData<TweetDeleteResponse>
     ) => {
       const tweetId = call.request.tweet_id;
-      console.log(`gRPC server received delete request for tweet: ${tweetId}`);
+      logger.info('gRPC server received delete request for tweet', { tweetId });
       try {
         await xApiService.deleteTweet(tweetId);
         callback(null, { success: true, message: 'Tweet successfully deleted' });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        console.error(`gRPC error deleting tweet ${tweetId}:`, err);
+        logger.error('gRPC error deleting tweet', err, { tweetId });
         callback(null, { success: false, message });
       }
     }
@@ -83,10 +84,10 @@ export function startGrpcServer(xApiService: IXApiService): grpc.Server {
   const port = '0.0.0.0:50051';
   server.bindAsync(port, grpc.ServerCredentials.createInsecure(), (err, portNumber) => {
     if (err) {
-      console.error('Failed to bind gRPC server:', err);
+      logger.error('Failed to bind gRPC server', err, { port });
       return;
     }
-    console.log(`gRPC server running at ${port} (bound to port ${portNumber})`);
+    logger.info('gRPC server running', { port, portNumber });
   });
   
   return server;
