@@ -104,6 +104,10 @@ jest.mock('../../src/features/news/providers/geminiSearch', () => ({
 describe('Integration Tests', () => {
     beforeAll(() => {
         require('../../src/config').default.batchSecret = 'test_secret';
+        // Disable workerUrl so integration tests run in secret-only auth mode.
+        // In this mode the shared secret is sufficient, which matches a local/test
+        // environment where Cloud Scheduler OIDC tokens are not available.
+        require('../../src/config').default.gcp.workerUrl = undefined;
         require('../../src/config').default.xApi.myUserId = 'test_my_user_id';
         require('../../src/config').default.xApi.targetListId = 'test_target_list_id';
         app = createApp();
