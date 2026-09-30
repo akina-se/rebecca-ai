@@ -134,9 +134,9 @@ X_MY_USER_ID=your-bot-twitter-user-id
 # Gemini API Models
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash-lite
-GEMINI_JUDGE_MODEL=gemma-4-26b-a4b-it
-GEMINI_LANGUAGE_MODEL=gemma-4-26b-a4b-it
-GEMINI_EMBEDDING_MODEL=text-embedding-004
+GEMINI_JUDGE_MODEL=gemini-3.1-flash-lite
+GEMINI_LANGUAGE_MODEL=gemini-3.1-flash-lite
+GEMINI_EMBEDDING_MODEL=gemini-embedding-2
 GEMINI_VISION_MODEL=gemini-3.5-flash-lite
 GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.5-flash-lite
 

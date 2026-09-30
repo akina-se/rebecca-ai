@@ -196,11 +196,10 @@ describe('GeminiService Unit Tests', () => {
             expect(result).toBeNull();
         });
 
-        it('should return null on error', async () => {
+        it('should throw on error', async () => {
             const gemini = getGeminiService();
             mockGenerateContent.mockRejectedValueOnce(new Error('Error'));
-            const result = await gemini.inferImageSearchQuery('tweet text');
-            expect(result).toBeNull();
+            await expect(gemini.inferImageSearchQuery('tweet text')).rejects.toThrow('Error');
         });
     });
 
@@ -466,12 +465,11 @@ describe('GeminiService Unit Tests', () => {
             expect(res).toBe(false);
         });
 
-        it('should handle parsing error and return false safely', async () => {
+        it('should throw on API or generation error', async () => {
             const gemini = getGeminiService();
             mockGenerateContent.mockRejectedValueOnce(new Error('API error'));
 
-            const res = await gemini.verifyImageRelevance('Caption', 'Post text');
-            expect(res).toBe(false);
+            await expect(gemini.verifyImageRelevance('Caption', 'Post text')).rejects.toThrow('API error');
         });
     });
 
