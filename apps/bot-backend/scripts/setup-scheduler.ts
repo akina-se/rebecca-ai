@@ -142,7 +142,7 @@ const upsertJob = (job: SchedulerJobConfig) => {
     const maxRetryDuration = job.maxRetryDuration || '600s';
 
     baseArgs.push('--max-retry-attempts', String(maxRetryAttempts));
-    baseArgs.push('--min-backoff-duration', minBackoffDuration);
+    baseArgs.push('--min-backoff', minBackoffDuration);
     baseArgs.push('--max-retry-duration', maxRetryDuration);
 
     // Try update first (handles the common case where the job already exists).
