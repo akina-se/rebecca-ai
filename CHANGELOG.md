@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.1](https://github.com/akina-se/rebecca-ai/compare/v1.27.0...v1.27.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **scheduler:** document SERVICE_ACCOUNT_EMAIL in env examples and fix min-backoff flag ([#298](https://github.com/akina-se/rebecca-ai/issues/298)) ([#299](https://github.com/akina-se/rebecca-ai/issues/299)) ([a620a05](https://github.com/akina-se/rebecca-ai/commit/a620a05aa6a6360574afaa3b0b0d54e5bb20de5b))
+
 ## [1.27.0](https://github.com/akina-se/rebecca-ai/compare/v1.26.0...v1.27.0) (2026-09-30)
 
 
