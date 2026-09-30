@@ -8,13 +8,18 @@ const client = new OAuth2Client();
 /**
  * Authenticates server-to-server requests by verifying a Google OIDC token or a fallback shared secret.
  *
- * This function first attempts to validate a Bearer token as an OIDC token using the Google Auth Library.
- * If the OIDC verification fails or the token is absent, it falls back to a timing-safe comparison of a
- * provided shared secret against a custom HTTP header.
+ * Authentication mode is determined by the presence of `expectedAudience`:
+ * - **OIDC mode** (`expectedAudience` is set): the Bearer token MUST pass Google OIDC verification.
+ *   The shared secret is NOT checked as a fallback, preventing credential-downgrade attacks where
+ *   an attacker bypasses OIDC by supplying only the shared secret.
+ * - **Secret-only mode** (`expectedAudience` is undefined): the shared secret header is checked
+ *   instead. This mode is intended for local development or scheduler jobs that have not yet been
+ *   provisioned with an OIDC service account.
  *
  * @param req - The Express request object containing the authorization headers.
  * @param expectedAudience - The expected audience claim for the OIDC token (typically the service URL).
- * @param fallbackSecret - The pre-shared secret key used for fallback authentication.
+ *   When set, enforces strict OIDC-only authentication with no shared-secret fallback.
+ * @param fallbackSecret - The pre-shared secret key used when OIDC is not configured.
  * @param secretHeaderName - The name of the custom HTTP header that carries the fallback secret.
  * @returns A promise that resolves to `true` if the request is successfully authenticated; otherwise `false`.
  */
@@ -24,35 +29,37 @@ export const verifyServerToServerAuth = async (
     fallbackSecret: string | undefined,
     secretHeaderName: string
 ): Promise<boolean> => {
-    // Try OIDC Token Verification (Cloud Scheduler / Cloud Tasks)
     const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
     const token = authHeader.replace(/^bearer\s+/i, '').trim();
 
     if (expectedAudience) {
+        // OIDC-only mode: shared secret fallback is intentionally disabled to prevent
+        // credential-downgrade attacks. OIDC verification must succeed or the request is rejected.
         try {
             const ticket = await client.verifyIdToken({
-                idToken: token, // Pass token directly, even if empty. Let library handle validation.
+                idToken: token,
                 audience: expectedAudience,
             });
             const payload = ticket.getPayload();
-            
+
             if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
                 return true;
             }
         } catch (e) {
             logger.warn('OIDC token verification failed', { error: (e as Error).message });
         }
+
+        return false;
     }
 
-    // Shared Secret Fallback (for local testing or alternative trigger)
+    // Secret-only mode: used for local development or jobs without OIDC provisioning.
     if (fallbackSecret) {
         try {
             const secretHeader = typeof req.headers[secretHeaderName.toLowerCase()] === 'string' ? req.headers[secretHeaderName.toLowerCase()] as string : '';
-            
-            // Perform comparison regardless of whether secretHeader is empty or not
+
             const providedBuffer = Buffer.from(secretHeader, 'utf8');
             const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
-            
+
             if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
                 return true;
             }
