@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.26.0](https://github.com/akina-se/rebecca-ai/compare/v1.25.1...v1.26.0) (2026-09-30)
+
+
+### Features
+
+* **persona:** add progressive conversation catchball stance to reply prompts ([#292](https://github.com/akina-se/rebecca-ai/issues/292)) ([#293](https://github.com/akina-se/rebecca-ai/issues/293)) ([8b18e78](https://github.com/akina-se/rebecca-ai/commit/8b18e7858dcb9a0519e537326b318a6832539a2d))
+
+
+### Bug Fixes
+
+* **deploy:** include @rebecca/logger in bot-backend and dashboard-backend Dockerfiles ([#289](https://github.com/akina-se/rebecca-ai/issues/289)) ([#290](https://github.com/akina-se/rebecca-ai/issues/290)) ([94d2021](https://github.com/akina-se/rebecca-ai/commit/94d2021f76800e2bacf050f9f70d9c4d2c731d07))
+
 ## [1.25.1](https://github.com/akina-se/rebecca-ai/compare/v1.25.0...v1.25.1) (2026-09-30)
 
 
