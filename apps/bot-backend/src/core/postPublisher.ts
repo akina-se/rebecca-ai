@@ -79,8 +79,11 @@ ${text}
       if (searchQuery) {
         logger.info('[PostPublisher] Inferred image search query', { searchQuery });
         const queryVector = await deps.gemini.generateEmbedding(searchQuery);
+        if (!queryVector || queryVector.length === 0) {
+          throw new Error('Failed to generate embedding for image search query');
+        }
 
-        const candidates = queryVector.length > 0 ? await deps.firestore.findImagesByVector(queryVector, undefined, 3) : [];
+        const candidates = await deps.firestore.findImagesByVector(queryVector, undefined, 3);
 
         if (candidates.length > 0) {
           for (let i = 0; i < candidates.length; i++) {
@@ -101,20 +104,16 @@ ${text}
           }
 
           if (bestImage) {
-            try {
-              const buffer = await deps.storage.downloadImage(bestImage.url);
-              let mimeType = 'image/jpeg';
-              if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
-              else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
+            const buffer = await deps.storage.downloadImage(bestImage.url);
+            let mimeType = 'image/jpeg';
+            if (bestImage.url.endsWith('.png')) mimeType = 'image/png';
+            else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
 
-              const mediaId = await deps.xApi.uploadMedia(buffer, mimeType);
-              if (mediaId && mediaId !== 'mock_media_id') {
-                mediaIds.push(mediaId);
-                await deps.firestore.updateImageLastUsed(bestImage.id);
-                logger.info('[PostPublisher] Attached media ID', { mediaId });
-              }
-            } catch (e) {
-              logger.error('[PostPublisher] Failed to upload media to X', e);
+            const mediaId = await deps.xApi.uploadMedia(buffer, mimeType);
+            if (mediaId && mediaId !== 'mock_media_id') {
+              mediaIds.push(mediaId);
+              await deps.firestore.updateImageLastUsed(bestImage.id);
+              logger.info('[PostPublisher] Attached media ID', { mediaId });
             }
           } else {
             logger.info('[PostPublisher] All image candidates rejected by LLM re-ranking, falling back to text-only');
@@ -122,9 +121,12 @@ ${text}
         } else {
           logger.info('[PostPublisher] No matching image found or all are in cooldown');
         }
+      } else {
+        logger.info('[PostPublisher] Image inference determined no image needed, posting text-only');
       }
     } catch (err) {
-      logger.warn('[PostPublisher] Image inference/attachment encountered non-fatal error, falling back to text-only', { err });
+      logger.error('[PostPublisher] Error during image selection/attachment pipeline, aborting post to allow retry', { err });
+      throw err;
     }
   }
 

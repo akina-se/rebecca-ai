@@ -180,4 +180,81 @@ describe('PostPublisher Unit Tests', () => {
       { mediaIds: ['media_reply_gif'] },
     );
   });
+
+  it('should throw error and abort post publication when verifyImageRelevance throws an API error', async () => {
+    (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('music query');
+    (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([0.1, 0.2]);
+    (deps.firestore.findImagesByVector as jest.Mock).mockResolvedValue([
+      {
+        id: 'img_music',
+        url: 'https://storage.googleapis.com/music.png',
+        caption: 'music dj rebecca',
+      },
+    ]);
+    (deps.gemini.verifyImageRelevance as jest.Mock).mockRejectedValue(new Error('Google API 500 Internal Error'));
+
+    await expect(
+      publishPost(deps, {
+        text: '国際音楽の日ね♡ #全肯定AIレベッカ',
+        attachImage: true,
+      }),
+    ).rejects.toThrow('Google API 500 Internal Error');
+
+    expect(deps.xApi.tweet).not.toHaveBeenCalled();
+    expect(deps.xApi.uploadMedia).not.toHaveBeenCalled();
+  });
+
+  it('should throw error and abort post publication when inferImageSearchQuery throws an error', async () => {
+    (deps.gemini.inferImageSearchQuery as jest.Mock).mockRejectedValue(new Error('Quota exceeded 429'));
+
+    await expect(
+      publishPost(deps, {
+        text: '国際音楽の日ね♡ #全肯定AIレベッカ',
+        attachImage: true,
+      }),
+    ).rejects.toThrow('Quota exceeded 429');
+
+    expect(deps.firestore.findImagesByVector).not.toHaveBeenCalled();
+    expect(deps.xApi.tweet).not.toHaveBeenCalled();
+  });
+
+  it('should throw error and abort post publication when generateEmbedding returns empty array', async () => {
+    (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('music query');
+    (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([]);
+
+    await expect(
+      publishPost(deps, {
+        text: '国際音楽の日ね♡ #全肯定AIレベッカ',
+        attachImage: true,
+      }),
+    ).rejects.toThrow('Failed to generate embedding for image search query');
+
+    expect(deps.firestore.findImagesByVector).not.toHaveBeenCalled();
+    expect(deps.xApi.tweet).not.toHaveBeenCalled();
+  });
+
+  it('should throw error and abort post publication when uploadMedia throws an error', async () => {
+    (deps.gemini.inferImageSearchQuery as jest.Mock).mockResolvedValue('music query');
+    (deps.gemini.generateEmbedding as jest.Mock).mockResolvedValue([0.1, 0.2]);
+    (deps.firestore.findImagesByVector as jest.Mock).mockResolvedValue([
+      {
+        id: 'img_music',
+        url: 'https://storage.googleapis.com/music.png',
+        caption: 'music dj rebecca',
+      },
+    ]);
+    (deps.gemini.verifyImageRelevance as jest.Mock).mockResolvedValue(true);
+    (deps.storage.downloadImage as jest.Mock).mockResolvedValue(Buffer.from('fake'));
+    (deps.xApi.uploadMedia as jest.Mock).mockRejectedValue(new Error('X API Media Upload Failed'));
+
+    await expect(
+      publishPost(deps, {
+        text: '国際音楽の日ね♡ #全肯定AIレベッカ',
+        attachImage: true,
+      }),
+    ).rejects.toThrow('X API Media Upload Failed');
+
+    expect(deps.xApi.tweet).not.toHaveBeenCalled();
+  });
 });
+
