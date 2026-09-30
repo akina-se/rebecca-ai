@@ -7,7 +7,7 @@
 import { GoogleGenAI, Content, Type } from '@google/genai';
 import { formatZonedDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile, IGeminiService } from '../types';
-import { parsePersonaResponse, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
+import { parsePersonaResponse, cleanJsonString, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 import { StructuredNewsPostResponse } from '../features/news/types';
 import { logger } from '../utils/logger';
 
@@ -294,7 +294,7 @@ export class GeminiService implements IGeminiService {
         throw new Error('Gemini API returned empty response for structured news post');
       }
 
-      const cleaned = rawText.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
+      const cleaned = cleanJsonString(rawText);
       const parsed = JSON.parse(cleaned);
 
       if (
