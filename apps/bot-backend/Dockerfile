@@ -10,7 +10,7 @@ COPY apps/bot-backend ./apps/bot-backend
 
 # Install dependencies and build shared packages & bot-backend
 RUN npm ci
-RUN npm run build --workspace=@rebecca/types --workspace=@rebecca/db --workspace=@rebecca/persona --workspace=bot-backend
+RUN npm run build --workspace=@rebecca/types --workspace=@rebecca/db --workspace=@rebecca/persona --workspace=@rebecca/logger --workspace=bot-backend
 
 # Stage 2: Minimal production image
 FROM node:24-alpine AS runner
@@ -22,6 +22,7 @@ COPY package*.json ./
 COPY packages/types/package.json ./packages/types/
 COPY packages/db/package.json ./packages/db/
 COPY packages/persona/package.json ./packages/persona/
+COPY packages/logger/package.json ./packages/logger/
 COPY packages/grpc-schemas ./packages/grpc-schemas
 COPY apps/bot-backend/package.json ./apps/bot-backend/
 
@@ -32,6 +33,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/packages/types/dist ./packages/types/dist
 COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/persona/dist ./packages/persona/dist
+COPY --from=builder /app/packages/logger/dist ./packages/logger/dist
 COPY --from=builder /app/apps/bot-backend/dist ./apps/bot-backend/dist
 COPY --from=builder /app/apps/bot-backend/public ./apps/bot-backend/public
 
