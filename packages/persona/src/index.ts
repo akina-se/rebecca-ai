@@ -82,12 +82,18 @@ export const PERSONA_RESPONSE_SCHEMA = {
 };
 
 /**
- * Parses structured persona responses from Gemini.
- * Fails fast and returns empty strings if the output is not valid JSON conforming to the schema.
+ * Sanitizes JSON strings output by LLMs by:
+ * 1. Stripping markdown code fences (```json ... ``` or ``` ... ```)
+ * 2. Trimming leading/trailing whitespace
+ * 3. Escaping raw unescaped control characters (newlines, carriage returns, tabs) inside string literals
+ *    to prevent `SyntaxError: Unterminated string in JSON`.
+ *
+ * @param raw - The raw text received from the model.
+ * @returns A cleaned JSON string ready for JSON.parse.
  */
-export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => {
+export const cleanJsonString = (raw: string): string => {
   if (!raw || typeof raw !== 'string') {
-    return { thought: '', reply: '' };
+    return '';
   }
 
   let cleaned = raw.trim();
@@ -97,6 +103,59 @@ export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => 
   if (cleaned.endsWith('```')) {
     cleaned = cleaned.slice(0, -3).trimEnd();
   }
+
+  // Fast path: if already valid JSON, return immediately
+  try {
+    JSON.parse(cleaned);
+    return cleaned;
+  } catch {
+    // Fallback: escape raw control characters inside JSON string literals
+    let result = '';
+    let inString = false;
+    let isEscaped = false;
+
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i];
+      if (inString) {
+        if (isEscaped) {
+          result += char;
+          isEscaped = false;
+        } else if (char === '\\') {
+          result += char;
+          isEscaped = true;
+        } else if (char === '"') {
+          result += char;
+          inString = false;
+        } else if (char === '\n') {
+          result += '\\n';
+        } else if (char === '\r') {
+          result += '\\r';
+        } else if (char === '\t') {
+          result += '\\t';
+        } else {
+          result += char;
+        }
+      } else {
+        if (char === '"') {
+          inString = true;
+        }
+        result += char;
+      }
+    }
+    return result;
+  }
+};
+
+/**
+ * Parses structured persona responses from Gemini.
+ * Fails fast and returns empty strings if the output is not valid JSON conforming to the schema.
+ */
+export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => {
+  if (!raw || typeof raw !== 'string') {
+    return { thought: '', reply: '' };
+  }
+
+  const cleaned = cleanJsonString(raw);
 
   try {
     const parsed = JSON.parse(cleaned);

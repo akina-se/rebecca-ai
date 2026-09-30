@@ -9,6 +9,7 @@ import {
   getFormattedPersonaPatternsText,
   PERSONA_RESPONSE_SCHEMA,
   parsePersonaResponse,
+  cleanJsonString,
   getActivePersona
 } from '../src/index';
 
@@ -135,8 +136,25 @@ describe('persona package exports verification', () => {
     expect(resPlain.thought).toBe('');
     expect(resPlain.reply).toBe('');
 
+    const rawNewlineJson = '{\n"thought": "1行目\n2行目",\n"reply": "本文1行目\n本文2行目"\n}';
+    const resRawNewline = parsePersonaResponse(rawNewlineJson);
+    expect(resRawNewline.thought).toBe('1行目\n2行目');
+    expect(resRawNewline.reply).toBe('本文1行目\n本文2行目');
+
     expect(parsePersonaResponse('')).toEqual({ thought: '', reply: '' });
     expect(parsePersonaResponse(null as unknown as string)).toEqual({ thought: '', reply: '' });
+  });
+
+  test('cleanJsonString should strip markdown fences and sanitize raw newlines in string literals', () => {
+    expect(cleanJsonString('')).toBe('');
+    expect(cleanJsonString('```json\n{"key": "value"}\n```')).toBe('{"key": "value"}');
+
+    // Raw unescaped newlines inside string values
+    const rawWithNewlines = '{"thought": "line1\nline2", "reply": "msg\nnext"}';
+    const cleaned = cleanJsonString(rawWithNewlines);
+    const parsed = JSON.parse(cleaned);
+    expect(parsed.thought).toBe('line1\nline2');
+    expect(parsed.reply).toBe('msg\nnext');
   });
 
   test('getDreamingPrompt should return the dreaming instruction', () => {

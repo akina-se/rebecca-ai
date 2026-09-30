@@ -26,6 +26,9 @@ interface SchedulerJobConfig {
     schedule: string;
     url: string;
     attemptDeadline?: string;
+    maxRetryAttempts?: number;
+    minBackoffDuration?: string;
+    maxRetryDuration?: string;
 }
 
 const jobs: SchedulerJobConfig[] = [
@@ -64,7 +67,10 @@ const jobs: SchedulerJobConfig[] = [
     {
         name: 'rebecca-news-batch',
         schedule: '11 12 * * *', // Daily at 12:11 JST (avoid top-of-hour API demand spike)
-        url: `${serviceUrl}/batch/news-post`
+        url: `${serviceUrl}/batch/news-post`,
+        maxRetryAttempts: 3,
+        minBackoffDuration: '10s',
+        maxRetryDuration: '600s',
     },
     {
         name: 'rebecca-random-engagement',
@@ -74,7 +80,10 @@ const jobs: SchedulerJobConfig[] = [
     {
         name: 'rebecca-soliloquy-batch',
         schedule: '0 22 * * *', // Daily at 22:00 JST (night reflection & Master-affirming soliloquy)
-        url: `${serviceUrl}/batch/soliloquy-post`
+        url: `${serviceUrl}/batch/soliloquy-post`,
+        maxRetryAttempts: 3,
+        minBackoffDuration: '10s',
+        maxRetryDuration: '600s',
     },
     {
         name: 'rebecca-asset-embeddings',
@@ -130,6 +139,18 @@ const upsertJob = (job: SchedulerJobConfig) => {
 
     if (job.attemptDeadline) {
         baseArgs.push('--attempt-deadline', job.attemptDeadline);
+    }
+
+    if (job.maxRetryAttempts !== undefined) {
+        baseArgs.push('--max-retry-attempts', String(job.maxRetryAttempts));
+    }
+
+    if (job.minBackoffDuration) {
+        baseArgs.push('--min-backoff-duration', job.minBackoffDuration);
+    }
+
+    if (job.maxRetryDuration) {
+        baseArgs.push('--max-retry-duration', job.maxRetryDuration);
     }
 
     // Try update first (handles the common case where the job already exists).
