@@ -12,6 +12,11 @@ if (!projectId || !serviceUrl) {
     process.exit(1);
 }
 
+if (!serviceAccount) {
+    console.warn('WARNING: SERVICE_ACCOUNT_EMAIL is not set. Jobs will be authenticated with shared secret only.');
+    console.warn('         Set SERVICE_ACCOUNT_EMAIL in .env to enable OIDC authentication (recommended for production).');
+}
+
 console.log(`Setting up Cloud Scheduler jobs for ${projectId} in ${region}...`);
 
 const timeZone = process.env.APP_TIMEZONE || 'Asia/Tokyo';
@@ -84,68 +89,78 @@ const jobs: SchedulerJobConfig[] = [
     }
 ];
 
-const createJob = (job: SchedulerJobConfig) => {
-    try {
-        const args = [
-            'scheduler', 'jobs', 'create', 'http', job.name,
-            '--schedule', `"${job.schedule}"`,
-            '--time-zone', timeZone,
-            '--uri', job.url,
-            '--http-method', 'GET',
-            '--location', region,
-            '--project', projectId
+/**
+ * Builds the authentication flags for a scheduler job.
+ * Authentication credentials are read exclusively from environment variables;
+ * no secrets are embedded in this script.
+ *
+ * Priority:
+ * 1. OIDC (SERVICE_ACCOUNT_EMAIL) — recommended for production; uses Google-signed
+ *    short-lived tokens so the shared secret is not required.
+ * 2. Shared secret (BATCH_SECRET_KEY) — fallback for local dev or jobs not yet
+ *    provisioned with a service account.
+ */
+const buildAuthArgs = (headerFlag: '--headers' | '--update-headers'): string[] => {
+    if (serviceAccount) {
+        console.log('  Auth: OIDC (SERVICE_ACCOUNT_EMAIL)');
+        return [
+            '--oidc-service-account-email', serviceAccount,
+            '--oidc-token-audience', serviceUrl as string,
         ];
+    }
+    if (batchSecret) {
+        console.log('  Auth: shared secret (BATCH_SECRET_KEY)');
+        return [headerFlag, `X-Batch-Secret=${batchSecret}`];
+    }
+    console.warn('  Auth: NONE — no SERVICE_ACCOUNT_EMAIL or BATCH_SECRET_KEY configured');
+    return [];
+};
 
-        if (job.attemptDeadline) {
-            args.push('--attempt-deadline', job.attemptDeadline);
-        }
+const upsertJob = (job: SchedulerJobConfig) => {
+    // Always attempt `update` first (idempotent). If the job does not yet exist,
+    // `update` exits non-zero and we fall through to `create`.
+    const baseArgs = [
+        '--schedule', `"${job.schedule}"`,
+        '--time-zone', timeZone,
+        '--uri', job.url,
+        '--http-method', 'GET',
+        '--location', region,
+        '--project', projectId as string,
+    ];
 
-        // Use OIDC if service account is provided, otherwise fallback to shared secret
-        if (serviceAccount) {
-            args.push('--oidc-service-account-email', serviceAccount);
-            args.push('--oidc-token-audience', serviceUrl);
-            console.log(`Using OIDC authentication for ${job.name}`);
-        } else if (batchSecret) {
-            args.push('--headers', `X-Batch-Secret=${batchSecret}`);
-            console.log(`Using Shared Secret authentication for ${job.name}`);
-        } else {
-            console.warn(`WARNING: No authentication configured for ${job.name}. Add SERVICE_ACCOUNT_EMAIL or BATCH_SECRET_KEY to .env`);
-        }
+    if (job.attemptDeadline) {
+        baseArgs.push('--attempt-deadline', job.attemptDeadline);
+    }
 
-        console.log(`Creating job: ${job.name} -> ${job.schedule} (${timeZone})`);
-        execFileSync('gcloud', args, { stdio: 'inherit', shell: true });
+    // Try update first (handles the common case where the job already exists).
+    try {
+        console.log(`Updating job: ${job.name}`);
+        const updateArgs = [
+            'scheduler', 'jobs', 'update', 'http', job.name,
+            ...baseArgs,
+            ...buildAuthArgs('--update-headers'),
+        ];
+        execFileSync('gcloud', updateArgs, { stdio: 'inherit', shell: true });
+        console.log(`✅ Successfully updated ${job.name}`);
+        return;
+    } catch {
+        // Job does not exist yet — fall through to create.
+    }
+
+    // Create (new job).
+    try {
+        console.log(`Creating job: ${job.name}`);
+        const createArgs = [
+            'scheduler', 'jobs', 'create', 'http', job.name,
+            ...baseArgs,
+            ...buildAuthArgs('--headers'),
+        ];
+        execFileSync('gcloud', createArgs, { stdio: 'inherit', shell: true });
         console.log(`✅ Successfully created ${job.name}`);
     } catch {
-        // If it already exists, update it instead
-        try {
-            console.log(`Job ${job.name} might already exist. Attempting to update...`);
-            const updateArgs = [
-                'scheduler', 'jobs', 'update', 'http', job.name,
-                '--schedule', `"${job.schedule}"`,
-                '--time-zone', timeZone,
-                '--uri', job.url,
-                '--location', region,
-                '--project', projectId
-            ];
-
-            if (job.attemptDeadline) {
-                updateArgs.push('--attempt-deadline', job.attemptDeadline);
-            }
-
-            if (serviceAccount) {
-                updateArgs.push('--oidc-service-account-email', serviceAccount);
-                updateArgs.push('--oidc-token-audience', serviceUrl);
-            } else if (batchSecret) {
-                updateArgs.push('--update-headers', `X-Batch-Secret=${batchSecret}`);
-            }
-
-            execFileSync('gcloud', updateArgs, { stdio: 'inherit', shell: true });
-            console.log(`✅ Successfully updated ${job.name}`);
-        } catch {
-            console.error(`❌ Failed to create or update job ${job.name}.`);
-        }
+        console.error(`❌ Failed to create or update job ${job.name}.`);
     }
 };
 
-jobs.forEach(createJob);
+jobs.forEach(upsertJob);
 console.log('Finished setting up Cloud Scheduler jobs.');
