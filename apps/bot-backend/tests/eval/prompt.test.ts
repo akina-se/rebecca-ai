@@ -7,7 +7,7 @@ import config from '../../src/config';
 
 const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'mock_api_key' && process.env.GEMINI_API_KEY !== 'test-key');
 const ai = hasApiKey ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }) : null;
-const JUDGE_MODEL = process.env.JUDGE_MODEL || config.gemini.judgeModel || 'gemma-4-26b-a4b-it';
+const JUDGE_MODEL = process.env.JUDGE_MODEL || config.gemini.judgeModel || 'gemini-3.1-flash-lite';
 const persona = getActivePersona(config.persona.activeId);
 const gemini = new GeminiService(config.gemini);
 
