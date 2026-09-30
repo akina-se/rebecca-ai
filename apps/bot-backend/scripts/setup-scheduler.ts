@@ -67,10 +67,7 @@ const jobs: SchedulerJobConfig[] = [
     {
         name: 'rebecca-news-batch',
         schedule: '11 12 * * *', // Daily at 12:11 JST (avoid top-of-hour API demand spike)
-        url: `${serviceUrl}/batch/news-post`,
-        maxRetryAttempts: 3,
-        minBackoffDuration: '10s',
-        maxRetryDuration: '600s',
+        url: `${serviceUrl}/batch/news-post`
     },
     {
         name: 'rebecca-random-engagement',
@@ -80,10 +77,7 @@ const jobs: SchedulerJobConfig[] = [
     {
         name: 'rebecca-soliloquy-batch',
         schedule: '0 22 * * *', // Daily at 22:00 JST (night reflection & Master-affirming soliloquy)
-        url: `${serviceUrl}/batch/soliloquy-post`,
-        maxRetryAttempts: 3,
-        minBackoffDuration: '10s',
-        maxRetryDuration: '600s',
+        url: `${serviceUrl}/batch/soliloquy-post`
     },
     {
         name: 'rebecca-asset-embeddings',
@@ -141,17 +135,15 @@ const upsertJob = (job: SchedulerJobConfig) => {
         baseArgs.push('--attempt-deadline', job.attemptDeadline);
     }
 
-    if (job.maxRetryAttempts !== undefined) {
-        baseArgs.push('--max-retry-attempts', String(job.maxRetryAttempts));
-    }
+    // Default retry policy applied to all scheduler jobs:
+    // Retries up to 3 times with exponential backoff (min 10s, max 10m) upon 5xx or transient errors.
+    const maxRetryAttempts = job.maxRetryAttempts !== undefined ? job.maxRetryAttempts : 3;
+    const minBackoffDuration = job.minBackoffDuration || '10s';
+    const maxRetryDuration = job.maxRetryDuration || '600s';
 
-    if (job.minBackoffDuration) {
-        baseArgs.push('--min-backoff-duration', job.minBackoffDuration);
-    }
-
-    if (job.maxRetryDuration) {
-        baseArgs.push('--max-retry-duration', job.maxRetryDuration);
-    }
+    baseArgs.push('--max-retry-attempts', String(maxRetryAttempts));
+    baseArgs.push('--min-backoff-duration', minBackoffDuration);
+    baseArgs.push('--max-retry-duration', maxRetryDuration);
 
     // Try update first (handles the common case where the job already exists).
     try {
