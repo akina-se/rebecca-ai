@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.25.1](https://github.com/akina-se/rebecca-ai/compare/v1.25.0...v1.25.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **security:** enforce strict OIDC-only auth to prevent credential-downgrade attacks ([#285](https://github.com/akina-se/rebecca-ai/issues/285)) ([#287](https://github.com/akina-se/rebecca-ai/issues/287)) ([568318d](https://github.com/akina-se/rebecca-ai/commit/568318d19299a0dc23471eea4db120ad70c7aa34))
+
 ## [1.25.0](https://github.com/akina-se/rebecca-ai/compare/v1.24.2...v1.25.0) (2026-09-26)
 
 
