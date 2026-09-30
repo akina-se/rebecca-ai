@@ -125,7 +125,7 @@ ${text}
         logger.info('[PostPublisher] Image inference determined no image needed, posting text-only');
       }
     } catch (err) {
-      logger.error('[PostPublisher] Error during image selection/attachment pipeline, aborting post to allow retry', { err });
+      logger.error('[PostPublisher] Image selection or attachment pipeline failed; aborting post publication', { err });
       throw err;
     }
   }
