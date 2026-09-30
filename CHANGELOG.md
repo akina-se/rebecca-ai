@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.0](https://github.com/akina-se/rebecca-ai/compare/v1.26.0...v1.27.0) (2026-09-30)
+
+
+### Features
+
+* **portal:** add official Pixiv and YouTube channel sections to public landing page ([#294](https://github.com/akina-se/rebecca-ai/issues/294)) ([#295](https://github.com/akina-se/rebecca-ai/issues/295)) ([18fb74b](https://github.com/akina-se/rebecca-ai/commit/18fb74b6674bcb5f2a6db70e7bc5ffaf0f179ff9))
+
 ## [1.26.0](https://github.com/akina-se/rebecca-ai/compare/v1.25.1...v1.26.0) (2026-09-30)
 
 
