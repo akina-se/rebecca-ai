@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.27.2](https://github.com/akina-se/rebecca-ai/compare/v1.27.1...v1.27.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **bot-backend:** isolate judge model to gemini-3.1-flash-lite and propagate image verification errors for retry ([#302](https://github.com/akina-se/rebecca-ai/issues/302)) ([78a99e9](https://github.com/akina-se/rebecca-ai/commit/78a99e9ca1e362e6c525cd4ac4171a43d4200d08))
+
 ## [1.27.1](https://github.com/akina-se/rebecca-ai/compare/v1.27.0...v1.27.1) (2026-09-30)
 
 
