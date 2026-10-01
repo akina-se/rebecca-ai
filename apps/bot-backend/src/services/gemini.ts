@@ -494,7 +494,7 @@ export class GeminiService implements IGeminiService {
       return result === 'null' ? null : result;
     } catch (e) {
       logger.error('Error inferring image search query', e);
-      return null;
+      throw e;
     }
   }
 
@@ -550,7 +550,7 @@ ${imageCaption}
       return Boolean(parsed.relevant);
     } catch (e) {
       logger.error('Error verifying image relevance', e);
-      return false;
+      throw e;
     }
   }
 

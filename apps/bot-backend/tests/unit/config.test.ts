@@ -11,6 +11,7 @@ describe('Config', () => {
         delete process.env.GEMINI_MODEL;
         delete process.env.GEMINI_EMBEDDING_MODEL;
         delete process.env.GEMINI_JUDGE_MODEL;
+        delete process.env.JUDGE_MODEL;
         delete process.env.GEMINI_LANGUAGE_MODEL;
         delete process.env.RAG_MAX_MEMORIES;
         delete process.env.GLOBAL_DAILY_LIMIT;
@@ -29,8 +30,8 @@ describe('Config', () => {
         expect(config.gcp.queueName).toBe('rebecca-reply-queue');
         expect(config.gemini.model).toBe('gemini-3.5-flash-lite');
         expect(config.gemini.embeddingModel).toBe('gemini-embedding-2');
-        expect(config.gemini.judgeModel).toBe('gemma-4-26b-a4b-it');
-        expect(config.gemini.languageModel).toBe('gemma-4-26b-a4b-it');
+        expect(config.gemini.judgeModel).toBe('gemini-3.1-flash-lite');
+        expect(config.gemini.languageModel).toBe('gemini-3.1-flash-lite');
         expect(Number(config.rag.maxMemories)).toBe(100);
         expect(Number(config.limits.globalDailyLimit)).toBe(500);
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);
