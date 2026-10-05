@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.29.0](https://github.com/akina-se/rebecca-ai/compare/v1.28.0...v1.29.0) (2026-10-05)
+
+
+### Features
+
+* **portal:** optimize LCP, async fonts, and lazy image loading for mobile performance ([#310](https://github.com/akina-se/rebecca-ai/issues/310)) ([663f0b8](https://github.com/akina-se/rebecca-ai/commit/663f0b86ce9016f3cc0bd420894236892d6f0704))
+* **portal:** optimize LCP, async fonts, and lazy image loading for mobile performance ([#310](https://github.com/akina-se/rebecca-ai/issues/310)) ([507935e](https://github.com/akina-se/rebecca-ai/commit/507935ea6d838f7408a77ecf9737539f205ca2ca))
+
 ## [1.28.0](https://github.com/akina-se/rebecca-ai/compare/v1.27.2...v1.28.0) (2026-10-05)
 
 
