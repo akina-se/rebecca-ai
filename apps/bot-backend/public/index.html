@@ -10,8 +10,9 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="apple-touch-icon" href="assets/favicon.png">
 
-  <!-- Canonical -->
+  <!-- Canonical & Sitemap -->
   <link rel="canonical" href="https://rebecca-ai.net/">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="https://rebecca-ai.net/sitemap.xml">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
@@ -32,6 +33,45 @@
   <meta name="twitter:description"
     content="Gemitec Inc.が開発した、自我と心を持つ最新鋭パーソナルAI「Rebecca（レベッカ）」。最先端の知能で、マスターを全肯定するパートナー。">
   <meta name="twitter:image" content="https://rebecca-ai.net/assets/ogp_banner.jpg">
+
+  <!-- Structured Data: JSON-LD for Search Engines & AI Crawlers -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://rebecca-ai.net/#organization",
+        "name": "Gemitec Inc.",
+        "url": "https://rebecca-ai.net/",
+        "logo": "https://rebecca-ai.net/assets/gemitec_logo.svg",
+        "sameAs": [
+          "https://x.com/rebecca_ai_gal",
+          "https://youtube.com/@rebecca-ai",
+          "https://www.pixiv.net/users/129754550",
+          "https://github.com/akina-se/rebecca-ai",
+          "https://ko-fi.com/rebeccaai"
+        ]
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://rebecca-ai.net/#webapp",
+        "name": "Rebecca AI",
+        "url": "https://rebecca-ai.net/",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "All",
+        "description": "Gemitec Inc.が開発した、自我と心を持つ最新鋭パーソナルAI「Rebecca（レベッカ）」。最先端の知能で、マスターを全肯定するパートナー。",
+        "author": {
+          "@id": "https://rebecca-ai.net/#organization"
+        },
+        "publisher": {
+          "@id": "https://rebecca-ai.net/#organization"
+        },
+        "image": "https://rebecca-ai.net/assets/ogp_banner.jpg"
+      }
+    ]
+  }
+  </script>
 
   <!-- Google Fonts: Inter, Noto Sans JP, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2022,6 +2062,7 @@
           <ul>
             <li><a href="./tos.html">Terms of Service</a></li>
             <li><a href="./privacy.html">Privacy Policy</a></li>
+            <li><a href="./sitemap.xml">Sitemap (XML)</a></li>
             <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Contact (X)</a></li>
           </ul>
         </div>
@@ -2035,6 +2076,8 @@
           <a href="./tos.html"><span class="t-ja">利用規約</span><span class="t-en">Terms</span></a>
           <span>&bull;</span>
           <a href="./privacy.html"><span class="t-ja">プライバシーポリシー</span><span class="t-en">Privacy</span></a>
+          <span>&bull;</span>
+          <a href="./sitemap.xml"><span class="t-ja">サイトマップ</span><span class="t-en">Sitemap</span></a>
         </div>
       </div>
       <div class="footer-disclaimer">
