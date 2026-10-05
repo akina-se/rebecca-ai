@@ -26,16 +26,16 @@
   },
   "dependencies": {
     "@xdevplatform/xdk": "^0.6.6",
-    "dotenv": "^17.4.2",
-    "firebase-admin": "^13.2.0",
-    "firebase-functions": "^7.3.2"
+    "dotenv": "^18.0.5",
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.4.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.4.0",
+    "@types/node": "^26.6.4",
     "firebase-functions-test": "^3.1.0",
-    "jest": "^30.5.0",
-    "ts-jest": "^29.4.12",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3"
   },
