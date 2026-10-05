@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.28.0](https://github.com/akina-se/rebecca-ai/compare/v1.27.2...v1.28.0) (2026-10-05)
+
+
+### Features
+
+* **portal:** add sitemap.xml, robots.txt, llms.txt, and structured data for search and AI discovery ([#306](https://github.com/akina-se/rebecca-ai/issues/306)) ([04d73c8](https://github.com/akina-se/rebecca-ai/commit/04d73c8c7d5a7e378321157f76012bec35ef87c1))
+* **portal:** add sitemap.xml, robots.txt, llms.txt, and structured data for search and AI discovery ([#306](https://github.com/akina-se/rebecca-ai/issues/306)) ([5522395](https://github.com/akina-se/rebecca-ai/commit/55223956d5787bdaa568e21c7b71b414d17bc1f7))
+
 ## [1.27.2](https://github.com/akina-se/rebecca-ai/compare/v1.27.1...v1.27.2) (2026-09-30)
 
 
