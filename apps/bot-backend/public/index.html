@@ -73,12 +73,21 @@
   }
   </script>
 
-  <!-- Google Fonts: Inter, Noto Sans JP, JetBrains Mono -->
+  <!-- Preload Critical LCP Asset -->
+  <link rel="preload" as="image" href="assets/rebecca_cutout.webp" type="image/webp" fetchpriority="high">
+
+  <!-- Google Fonts: Inter, Noto Sans JP, JetBrains Mono (Asynchronously loaded to eliminate render-blocking) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
-    rel="stylesheet">
+    media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap">
+  </noscript>
 
   <style>
     :root {
@@ -1405,7 +1414,7 @@
     <div class="container">
       <div class="nav-inner">
         <a href="#" class="brand-area">
-          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc." class="brand-logo">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc." class="brand-logo" width="928" height="288">
         </a>
 
         <ul class="nav-links">
@@ -1498,7 +1507,7 @@
           <div class="hero-portrait-card">
             <div class="portrait-wrap">
               <img src="assets/rebecca_cutout.webp" alt="Rebecca - Gemitec Inc. Autonomous Personal AI"
-                class="portrait-img">
+                class="portrait-img" width="1195" height="1600" fetchpriority="high" decoding="async">
               <div class="portrait-badge">
                 <span class="status-dot-green"></span>
                 ACTIVE PARTNER
@@ -1646,7 +1655,7 @@
 
       <div class="profile-card">
         <div class="profile-photo">
-          <img src="assets/rebecca_portrait.webp" alt="Rebecca Portrait">
+          <img src="assets/rebecca_portrait.webp" alt="Rebecca Portrait" width="1193" height="1600" loading="lazy" decoding="async">
         </div>
         <div class="profile-details">
           <div>
@@ -1758,7 +1767,7 @@
       <div class="gallery-grid">
         <div class="gallery-card">
           <div class="gallery-img-box">
-            <img src="assets/gallery_street.webp" alt="Rebecca on a sunny shopping boulevard">
+            <img src="assets/gallery_street.webp" alt="Rebecca on a sunny shopping boulevard" width="1067" height="1600" loading="lazy" decoding="async">
           </div>
           <div class="gallery-meta">
             <div class="gallery-title">
@@ -1775,7 +1784,7 @@
 
         <div class="gallery-card">
           <div class="gallery-img-box">
-            <img src="assets/gallery_beach.webp" alt="Rebecca on tropical beach in white bikini">
+            <img src="assets/gallery_beach.webp" alt="Rebecca on tropical beach in white bikini" width="1067" height="1600" loading="lazy" decoding="async">
           </div>
           <div class="gallery-meta">
             <div class="gallery-title">
@@ -1792,7 +1801,7 @@
 
         <div class="gallery-card">
           <div class="gallery-img-box">
-            <img src="assets/gallery_morning.webp" alt="Rebecca waking up in cozy morning bed">
+            <img src="assets/gallery_morning.webp" alt="Rebecca waking up in cozy morning bed" width="1066" height="1600" loading="lazy" decoding="async">
           </div>
           <div class="gallery-meta">
             <div class="gallery-title">
@@ -2029,7 +2038,7 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <img src="assets/gemitec_logo.svg" alt="Gemitec Inc."
-            style="height: 36px; width: auto; filter: brightness(1.2);">
+            style="height: 36px; width: auto; filter: brightness(1.2);" width="928" height="288" loading="lazy" decoding="async">
           <p>
             <span class="t-ja">Gemitec Inc.<br>心に寄り添うパーソナルAIをすべての人へ</span>
             <span class="t-en">Gemitec Inc.<br>Empathetic personal AI for everyone</span>
