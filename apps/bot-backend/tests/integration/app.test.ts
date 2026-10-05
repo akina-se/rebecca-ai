@@ -523,6 +523,9 @@ describe('Integration Tests', () => {
             expect(response.headers['content-type']).toMatch(/text\/plain/);
             expect(response.text).toContain('# Rebecca AI (Gemitec Inc.)');
             expect(response.text).toContain('https://x.com/rebecca_ai_gal');
+            expect(response.text).toContain('https://store.line.me/stickershop/product/36218323');
+            expect(response.text).toContain('https://civitai.com/models/2653231/rebecca-ai-gal');
+            expect(response.text).toContain('Creative Origins & Prototype Assets (Easter Egg)');
             expect(response.text).toContain('https://rebecca-ai.net/sitemap.xml');
         });
 
