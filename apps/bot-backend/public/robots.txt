@@ -1,0 +1,27 @@
+# Robots.txt for https://rebecca-ai.net/
+# Welcome search engine crawlers and modern AI agents
+
+User-agent: *
+Allow: /
+
+# Dedicated AI Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# Sitemaps and AI Knowledge Documentation
+Sitemap: https://rebecca-ai.net/sitemap.xml
