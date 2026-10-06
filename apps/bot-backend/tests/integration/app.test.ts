@@ -539,6 +539,7 @@ describe('Integration Tests', () => {
             expect(response.text).toContain('"@type": "WebApplication"');
             expect(response.text).toContain('"name": "全肯定AIレベッカ (Rebecca AI)"');
             expect(response.text).toContain('"alternateName": [');
+            expect(response.text).toContain('isSearchCrawler');
         });
     });
 });
