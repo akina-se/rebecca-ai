@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.30.0](https://github.com/akina-se/rebecca-ai/compare/v1.29.0...v1.30.0) (2026-10-06)
+
+
+### Features
+
+* **portal:** optimize bilingual SEO metadata and schema alternateName for global discovery ([#313](https://github.com/akina-se/rebecca-ai/issues/313)) ([152d23f](https://github.com/akina-se/rebecca-ai/commit/152d23f4eab20f364bafd5ae5ce273c50b2353da))
+* **portal:** optimize bilingual SEO metadata and schema alternateName for global discovery ([#313](https://github.com/akina-se/rebecca-ai/issues/313)) ([2eeb171](https://github.com/akina-se/rebecca-ai/commit/2eeb1711b4f2e02c4ae1871a746ea542cf6c697e))
+
 ## [1.29.0](https://github.com/akina-se/rebecca-ai/compare/v1.28.0...v1.29.0) (2026-10-05)
 
 
