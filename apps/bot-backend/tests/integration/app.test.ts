@@ -533,9 +533,12 @@ describe('Integration Tests', () => {
             const response = await request(app).get('/');
             expect(response.status).toBe(200);
             expect(response.text).toContain('<link rel="sitemap" type="application/xml" title="Sitemap" href="https://rebecca-ai.net/sitemap.xml">');
+            expect(response.text).toContain('<title>全肯定AIレベッカ (Rebecca AI) - Autonomous Personal AI | Gemitec Inc.</title>');
             expect(response.text).toContain('<script type="application/ld+json">');
             expect(response.text).toContain('"@type": "Organization"');
             expect(response.text).toContain('"@type": "WebApplication"');
+            expect(response.text).toContain('"name": "全肯定AIレベッカ (Rebecca AI)"');
+            expect(response.text).toContain('"alternateName": [');
         });
     });
 });
