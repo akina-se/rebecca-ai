@@ -10,19 +10,19 @@
 /**
  * Allowed domains for external image downloading to prevent SSRF vulnerabilities.
  */
-export const ALLOWED_IMAGE_HOSTS = new Set([
+export const ALLOWED_IMAGE_HOSTS = [
     'pbs.twimg.com',
     'ton.twitter.com',
     'video.twimg.com',
     'example.com',
-]);
+];
 
 export const downloadImage = async (url: string): Promise<{ buffer: Buffer; mimeType: string }> => {
     const parsedUrl = new URL(url);
     if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
         throw new Error(`Invalid protocol for image download: ${url}`);
     }
-    if (!ALLOWED_IMAGE_HOSTS.has(parsedUrl.hostname.toLowerCase())) {
+    if (!ALLOWED_IMAGE_HOSTS.includes(parsedUrl.hostname)) {
         throw new Error(`Disallowed image host "${parsedUrl.hostname}" for image download: ${url}`);
     }
 

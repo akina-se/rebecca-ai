@@ -35,7 +35,7 @@ export class ReplyTaskController {
                     if (typeof url !== 'string') return false;
                     try {
                         const parsed = new URL(url);
-                        return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && ALLOWED_IMAGE_HOSTS.has(parsed.hostname.toLowerCase());
+                        return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && ALLOWED_IMAGE_HOSTS.includes(parsed.hostname.toLowerCase());
                     } catch {
                         return false;
                     }
