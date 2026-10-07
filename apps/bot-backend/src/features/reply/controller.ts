@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ReplyTaskUseCase } from './usecase';
 import { logger } from '../../utils/logger';
+import { isAllowedImageHost } from '../../utils/image';
 
 /**
  * Controller for handling reply task HTTP requests.
@@ -30,7 +31,15 @@ export class ReplyTaskController {
                 return;
             }
             const validatedMediaUrls = Array.isArray(mediaUrls)
-                ? mediaUrls.filter((url): url is string => typeof url === 'string')
+                ? mediaUrls.filter((url): url is string => {
+                    if (typeof url !== 'string') return false;
+                    try {
+                        const parsed = new URL(url);
+                        return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && isAllowedImageHost(parsed.hostname);
+                    } catch {
+                        return false;
+                    }
+                })
                 : undefined;
             const result = await this.useCase.execute({
                 tweetId,

@@ -42,4 +42,8 @@ describe('Image Utils', () => {
 
         await expect(downloadImage('http://example.com/image.jpg')).rejects.toThrow('Failed to download image from http://example.com/image.jpg: Not Found');
     });
+
+    it('should reject image download from disallowed hosts to prevent SSRF', async () => {
+        await expect(downloadImage('http://malicious-host.internal/secret.jpg')).rejects.toThrow('Disallowed image host');
+    });
 });

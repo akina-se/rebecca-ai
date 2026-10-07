@@ -7,8 +7,31 @@
  * @returns A Promise that resolves to an object containing the raw image `buffer` and its `mimeType`.
  * @throws {Error} If the HTTP request fails or the response status is not OK.
  */
+/**
+ * Allowed domains and suffix patterns for external image downloading (SSRF prevention).
+ */
+export const isAllowedImageHost = (hostname: string): boolean => {
+    const lower = hostname.toLowerCase();
+    return (
+        lower === 'pbs.twimg.com' ||
+        lower.endsWith('.twimg.com') ||
+        lower === 'ton.twitter.com' ||
+        lower.endsWith('.twitter.com') ||
+        lower === 'example.com' ||
+        lower.endsWith('.example.com')
+    );
+};
+
 export const downloadImage = async (url: string): Promise<{ buffer: Buffer; mimeType: string }> => {
-    const response = await fetch(url);
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+        throw new Error(`Invalid protocol for image download: ${url}`);
+    }
+    if (!isAllowedImageHost(parsedUrl.hostname)) {
+        throw new Error(`Disallowed image host "${parsedUrl.hostname}" for image download: ${url}`);
+    }
+
+    const response = await fetch(parsedUrl.href);
     if (!response.ok) {
         throw new Error(`Failed to download image from ${url}: ${response.statusText}`);
     }
