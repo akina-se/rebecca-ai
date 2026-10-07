@@ -2160,6 +2160,15 @@
         }
       } catch (e) { }
 
+      // Keep default pre-rendered Japanese markup intact for search engine crawlers
+      // 1. W3C standard automation signal
+      // 2. Exact token matching for official search engine crawlers
+      const isSearchCrawler = Boolean(navigator.webdriver) ||
+        /\b(googlebot|google-inspectiontool|bingbot|baiduspider|duckduckbot)\b/i.test(navigator.userAgent);
+      if (isSearchCrawler) {
+        return;
+      }
+
       const userLang = navigator.language || navigator.userLanguage || '';
       if (!userLang.toLowerCase().startsWith('ja')) {
         setLanguage('en');
