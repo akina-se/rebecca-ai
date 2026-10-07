@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.31.0](https://github.com/akina-se/rebecca-ai/compare/v1.30.0...v1.31.0) (2026-10-07)
+
+
+### Features
+
+* **portal:** safeguard crawler language initialization for search indexing ([#317](https://github.com/akina-se/rebecca-ai/issues/317)) ([c9076af](https://github.com/akina-se/rebecca-ai/commit/c9076af8182b9cd6f423ad47f79a0e616f1bd74a))
+
 ## [1.30.0](https://github.com/akina-se/rebecca-ai/compare/v1.29.0...v1.30.0) (2026-10-06)
 
 
