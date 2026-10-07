@@ -220,8 +220,7 @@ export class XApiService implements IXApiService {
       const params: Record<string, unknown> = {
         "max_results": 100,
         "expansions": ["author_id", "attachments.media_keys"],
-        "media.fields": ["url", "type", "preview_image_url"],
-        "tweet.fields": ["attachments", "author_id", "created_at"]
+        "media.fields": ["url", "type", "preview_image_url"]
       };
       if (sinceId) {
         params.since_id = sinceId;
