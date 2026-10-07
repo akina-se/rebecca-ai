@@ -34,7 +34,7 @@ interface SchedulerJobConfig {
 const jobs: SchedulerJobConfig[] = [
     {
         name: 'rebecca-mentions-polling',
-        schedule: '0 3,7-23 * * *', // 7:00-23:00 every hour + 3:00 AM JST (18 times/day)
+        schedule: '0 3,8,10,12,14,16,18,20,22 * * *', // 8:00-22:00 every 2 hours (even hours) + 3:00 AM JST (10 times/day)
         url: `${serviceUrl}/batch/mentions`
     },
     {

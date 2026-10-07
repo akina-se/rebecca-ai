@@ -244,7 +244,7 @@ describe('Firestore Service Unit Tests', () => {
         '2026-01-01',
         '2026-01',
         '2026-01-01T12:00',
-        { globalDaily: 100, spamMinute: 5 }
+        { globalDaily: 100, userDaily: 5, spamMinute: 5 }
       );
       expect(res.allowed).toBe(false);
       expect(res.reason).toBe('user_minute_spam');
@@ -271,23 +271,23 @@ describe('Firestore Service Unit Tests', () => {
         '2026-01-01',
         '2026-01',
         '2026-01-01T12:00',
-        { globalDaily: 100, spamMinute: 5 }
+        { globalDaily: 100, userDaily: 5, spamMinute: 5 }
       );
       expect(res.allowed).toBe(false);
       expect(res.reason).toBe('global_daily');
     });
 
-    it('checkAndConsumeRateLimit should reject when dynamic user limit is exceeded', async () => {
+    it('checkAndConsumeRateLimit should reject when user daily hard limit is exceeded', async () => {
       mockRunTransaction.mockImplementationOnce(async (callback) => {
         const mockTx = {
           get: jest
             .fn()
-            .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 0 }) }) // globalDoc
+            .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 10 }) }) // globalDoc
             .mockResolvedValueOnce({
               exists: true,
-              data: () => ({ daily: 50, minute: 0, lastMinute: '2026-01-01T11:00' }),
-            }) // userDoc
-            .mockResolvedValueOnce({ exists: true, data: () => ({ count: 10 }) }), // dauDoc
+              data: () => ({ daily: 5, minute: 0, lastMinute: '2026-01-01T11:00' }),
+            }) // userDoc (5 >= userDaily: 5)
+            .mockResolvedValueOnce({ exists: true, data: () => ({ count: 1 }) }), // dauDoc (low DAU so dynamic wouldn't trigger)
           set: jest.fn(),
         };
         return callback(mockTx);
@@ -298,7 +298,34 @@ describe('Firestore Service Unit Tests', () => {
         '2026-01-01',
         '2026-01',
         '2026-01-01T12:00',
-        { globalDaily: 100, spamMinute: 5 }
+        { globalDaily: 100, userDaily: 5, spamMinute: 5 }
+      );
+      expect(res.allowed).toBe(false);
+      expect(res.reason).toBe('user_daily');
+    });
+
+    it('checkAndConsumeRateLimit should reject when dynamic user limit is exceeded', async () => {
+      mockRunTransaction.mockImplementationOnce(async (callback) => {
+        const mockTx = {
+          get: jest
+            .fn()
+            .mockResolvedValueOnce({ exists: true, data: () => ({ daily: 0 }) }) // globalDoc
+            .mockResolvedValueOnce({
+              exists: true,
+              data: () => ({ daily: 3, minute: 0, lastMinute: '2026-01-01T11:00' }),
+            }) // userDoc
+            .mockResolvedValueOnce({ exists: true, data: () => ({ count: 50 }) }), // dauDoc (floor(100/50)=2 -> min(3,5)=3)
+          set: jest.fn(),
+        };
+        return callback(mockTx);
+      });
+
+      const res = await firestoreService.checkAndConsumeRateLimit(
+        'u1',
+        '2026-01-01',
+        '2026-01',
+        '2026-01-01T12:00',
+        { globalDaily: 100, userDaily: 5, spamMinute: 5 }
       );
       expect(res.allowed).toBe(false);
       expect(res.reason).toBe('user_daily');
@@ -323,7 +350,7 @@ describe('Firestore Service Unit Tests', () => {
         '2026-01-01',
         '2026-01',
         '2026-01-01T12:00',
-        { globalDaily: 100, spamMinute: 5 }
+        { globalDaily: 100, userDaily: 5, spamMinute: 5 }
       );
       expect(res.allowed).toBe(true);
     });

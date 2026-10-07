@@ -27,8 +27,8 @@ export class ReplyTaskUseCase {
      * @param payload An object containing the tweet ID, the tweet text, and the author ID.
      * @returns A promise resolving to an object containing the execution status and optionally a reason if not successful.
      */
-    async execute(payload: { tweetId: string, text: string, authorId: string }): Promise<{ status: string, reason?: string }> {
-        const { tweetId, text, authorId } = payload;
+    async execute(payload: { tweetId: string, text: string, authorId: string, mediaUrls?: string[] }): Promise<{ status: string, reason?: string }> {
+        const { tweetId, text, authorId, mediaUrls } = payload;
         const { deps } = this;
         
         // Prevent duplicate processing of the same mention
@@ -105,17 +105,10 @@ ${desc}
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
         let processedText = text;
-        try {
-            const tweetDetails = await deps.xApi.getTweetDetails(tweetId);
-            const mediaKeys = tweetDetails?.data?.attachments?.mediaKeys;
-            const mediaIncludes = tweetDetails.includes?.media || [];
-
-            const hasMedia = mediaKeys && mediaKeys.length > 0 && mediaIncludes.length > 0;
-            if (hasMedia) {
-                for (const media of mediaIncludes) {
-                    if (media.type !== 'photo' || !media.url) continue;
-
-                    const { buffer, mimeType } = await downloadImage(media.url);
+        if (mediaUrls && mediaUrls.length > 0) {
+            try {
+                for (const url of mediaUrls) {
+                    const { buffer, mimeType } = await downloadImage(url);
                     const captionPrompt = `この画像に写っている状況、被写体の表情、および感情を説明するテキスト（キャプション）を生成してください。ベクトル検索のクエリとして使用するため、具体的なキーワード（場所、服の色、表情、シチュエーション）を豊富に含めた自然な日本語にしてください。途中で途切れないように、必ず完全な文章（句点で終わる）で出力してください。`;
                     const imageCaption = await deps.gemini.analyzeImageCaption(buffer, mimeType, captionPrompt);
                     
@@ -123,9 +116,9 @@ ${desc}
                         processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
                     }
                 }
+            } catch (e) {
+                logger.error('[ReplyTaskUseCase] Failed to process mention image', e, { tweetId });
             }
-        } catch (e) {
-            logger.error('[ReplyTaskUseCase] Failed to process mention image', e, { tweetId });
         }
 
         // Retrieve relevant past memories and inject context to build the system prompt

@@ -102,6 +102,7 @@ export default {
    */
   limits: {
     globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '500', 10),
+    userDailyLimit: parseInt(process.env.USER_DAILY_LIMIT || '5', 10),
     spamMinuteLimit: parseInt(process.env.SPAM_MINUTE_LIMIT || '3', 10),
     publicIpRateLimit: parseInt(process.env.PUBLIC_IP_RATE_LIMIT || '100', 10),
   },

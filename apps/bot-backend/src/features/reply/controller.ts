@@ -24,12 +24,20 @@ export class ReplyTaskController {
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { tweetId, text, authorId } = req.body;
+            const { tweetId, text, authorId, mediaUrls } = req.body;
             if (!tweetId || !text || !authorId) {
                 res.status(400).json({ error: 'Missing required task payload fields' });
                 return;
             }
-            const result = await this.useCase.execute({ tweetId, text, authorId });
+            const validatedMediaUrls = Array.isArray(mediaUrls)
+                ? mediaUrls.filter((url): url is string => typeof url === 'string')
+                : undefined;
+            const result = await this.useCase.execute({
+                tweetId,
+                text,
+                authorId,
+                mediaUrls: validatedMediaUrls,
+            });
             res.status(200).json(result);
         } catch (e) {
             logger.error('reply error', e);
