@@ -95,6 +95,10 @@ export default {
     cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '14', 10),
     similarityThreshold: parseFloat(process.env.IMAGE_SIMILARITY_THRESHOLD || '0.35'),
     bucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
+    allowedDomains: (process.env.ALLOWED_IMAGE_DOMAINS || 'twimg.com,twitter.com,x.com,example.com')
+      .split(',')
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean),
   },
 
   /**

@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { ReplyTaskUseCase } from './usecase';
 import { logger } from '../../utils/logger';
-import { ALLOWED_IMAGE_HOSTS } from '../../utils/image';
+import { isAllowedDomain } from '../../utils/image';
+import config from '../../config';
 
 /**
  * Controller for handling reply task HTTP requests.
@@ -30,17 +31,25 @@ export class ReplyTaskController {
                 res.status(400).json({ error: 'Missing required task payload fields' });
                 return;
             }
-            const validatedMediaUrls = Array.isArray(mediaUrls)
-                ? mediaUrls.filter((url): url is string => {
-                    if (typeof url !== 'string') return false;
-                    try {
-                        const parsed = new URL(url);
-                        return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && ALLOWED_IMAGE_HOSTS.includes(parsed.hostname.toLowerCase());
-                    } catch {
-                        return false;
+
+            let validatedMediaUrls: string[] | undefined;
+            if (Array.isArray(mediaUrls)) {
+                validatedMediaUrls = [];
+                for (const url of mediaUrls) {
+                    if (typeof url !== 'string') {
+                        throw new Error(`Invalid media URL format: ${String(url)}`);
                     }
-                })
-                : undefined;
+                    const parsed = new URL(url);
+                    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+                        throw new Error(`Invalid protocol for media URL: ${url}`);
+                    }
+                    if (!isAllowedDomain(parsed.hostname, config.images.allowedDomains)) {
+                        throw new Error(`Disallowed image host "${parsed.hostname}" for media URL: ${url}`);
+                    }
+                    validatedMediaUrls.push(url);
+                }
+            }
+
             const result = await this.useCase.execute({
                 tweetId,
                 text,
