@@ -46,4 +46,8 @@ describe('Image Utils', () => {
     it('should reject image download from disallowed hosts to prevent SSRF', async () => {
         await expect(downloadImage('http://malicious-host.internal/secret.jpg')).rejects.toThrow('Disallowed image host');
     });
+
+    it('should reject image download with path traversal', async () => {
+        await expect(downloadImage('http://example.com/../etc/passwd')).rejects.toThrow('Path traversal detected');
+    });
 });
