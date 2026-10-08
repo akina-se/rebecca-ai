@@ -239,8 +239,10 @@ export interface ListInteraction {
 
 /** Represents a media attachment on an X tweet. */
 export interface XApiMedia {
+  mediaKey?: string;
   type: string;
   url?: string;
+  previewImageUrl?: string;
 }
 
 /** Represents a tweet object returned from the X API v2. */

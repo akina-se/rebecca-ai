@@ -136,7 +136,39 @@ describe('Integration Tests', () => {
             expect(response.status).toBe(200);
             expect(xApi.getMentions).toHaveBeenCalled();
             expect(tasks.enqueueReplyTask).toHaveBeenCalledWith(
-                { tweetId: '12345', text: '@rebecca_ai Hello', authorId: 'user_1' },
+                { tweetId: '12345', text: '@rebecca_ai Hello', authorId: 'user_1', mediaUrls: [] },
+                expect.any(Number)
+            );
+        });
+
+        it('should fetch mentions with attachments and enqueue tasks with mapped mediaUrls', async () => {
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
+                data: [
+                    {
+                        id: '12346',
+                        text: '@rebecca_ai Check this picture',
+                        authorId: 'user_2',
+                        attachments: { mediaKeys: ['media_pic_1'] }
+                    }
+                ],
+                includes: {
+                    media: [
+                        { mediaKey: 'media_pic_1', type: 'photo', url: 'https://example.com/pic1.jpg' }
+                    ]
+                },
+                meta: { resultCount: 1 }
+            });
+
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
+            
+            expect(response.status).toBe(200);
+            expect(tasks.enqueueReplyTask).toHaveBeenCalledWith(
+                {
+                    tweetId: '12346',
+                    text: '@rebecca_ai Check this picture',
+                    authorId: 'user_2',
+                    mediaUrls: ['https://example.com/pic1.jpg']
+                },
                 expect.any(Number)
             );
         });
@@ -221,11 +253,7 @@ describe('Integration Tests', () => {
             expect(gemini.generateStructuredReply).not.toHaveBeenCalled();
         });
 
-        it('should process reply task with image attachment', async () => {
-            (xApi.getTweetDetails as jest.Mock).mockResolvedValueOnce({
-                data: { text: 'hello image', attachments: { mediaKeys: ['media_1'] } },
-                includes: { media: [{ media_key: 'media_1', type: 'photo', url: 'https://example.com/image.jpg' }] }
-            });
+        it('should process reply task with image attachment without calling getTweetDetails', async () => {
             const originalFetch = global.fetch;
             global.fetch = jest.fn().mockResolvedValueOnce({
                 ok: true,
@@ -233,11 +261,17 @@ describe('Integration Tests', () => {
                 headers: { get: jest.fn().mockReturnValue('image/jpeg') }
             }) as any;
 
-            const payload = { tweetId: 'with_image', text: 'hello image', authorId: 'user_1' };
+            const payload = {
+                tweetId: 'with_image',
+                text: 'hello image',
+                authorId: 'user_1',
+                mediaUrls: ['https://example.com/image.jpg']
+            };
             const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
             
             global.fetch = originalFetch; // Restore fetch
             expect(response.status).toBe(200);
+            expect(xApi.getTweetDetails).not.toHaveBeenCalled();
             expect(gemini.generateStructuredReply).toHaveBeenCalled();
         });
 

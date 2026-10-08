@@ -216,10 +216,11 @@ export class XApiService implements IXApiService {
         userId = this.cachedNumericMyUserId;
       }
 
-      // The X API v2 requires the author_id expansion to populate authorId on mention objects.
+      // The X API v2 requires expansions to populate authorId and attached media objects in includes.media.
       const params: Record<string, unknown> = {
         "max_results": 100,
-        "expansions": ["author_id"]
+        "expansions": ["author_id", "attachments.media_keys"],
+        "media.fields": ["url", "type", "preview_image_url"]
       };
       if (sinceId) {
         params.since_id = sinceId;

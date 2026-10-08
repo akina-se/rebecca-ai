@@ -49,7 +49,7 @@ export interface IFirestoreService {
     dateStr: string,
     monthStr: string,
     minuteStr: string,
-    limits: { globalDaily: number; spamMinute: number },
+    limits: { globalDaily: number; userDaily: number; spamMinute: number },
   ): Promise<{ allowed: boolean; reason?: string }>;
   getAllUsers(): Promise<FirestoreUser[]>;
   saveRawConversationLog(userId: string, userText: string, aiText: string, thought?: string): Promise<void>;

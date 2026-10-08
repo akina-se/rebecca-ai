@@ -11,6 +11,7 @@ jest.mock('../../src/config', () => ({
         appTimezone: 'Asia/Tokyo',
         limits: {
             globalDailyLimit: 45,
+            userDailyLimit: 5,
             spamMinuteLimit: 3
         },
         gcp: {
@@ -58,7 +59,7 @@ describe('rateLimiter.ts', () => {
             '2024-01-01',
             '2024-01',
             '2024-01-01T12:30',
-            { globalDaily: 45, spamMinute: 3 }
+            { globalDaily: 45, userDaily: 5, spamMinute: 3 }
         );
     });
 
@@ -87,26 +88,16 @@ describe('rateLimiter.ts', () => {
         expect(result).toEqual({ allowed: false, reason: 'user_daily' });
     });
 
-    it('should use default fallback limits when config values are not set', async () => {
-        const config = require('../../src/config').default;
-        const originalGlobal = config.limits.globalDailyLimit;
-        const originalSpam = config.limits.spamMinuteLimit;
-
-        delete config.limits.globalDailyLimit;
-        delete config.limits.spamMinuteLimit;
-
+    it('should pass configured limits to firestore checkAndConsumeRateLimit', async () => {
         deps.firestore.checkAndConsumeRateLimit.mockResolvedValueOnce({ allowed: true });
-        await checkAndIncrementRateLimits(deps, 'user_fallback');
+        await checkAndIncrementRateLimits(deps, 'user_test');
 
         expect(deps.firestore.checkAndConsumeRateLimit).toHaveBeenCalledWith(
-            'user_fallback',
+            'user_test',
             expect.any(String),
             expect.any(String),
             expect.any(String),
-            { globalDaily: 45, spamMinute: 3 }
+            { globalDaily: 45, userDaily: 5, spamMinute: 3 }
         );
-
-        config.limits.globalDailyLimit = originalGlobal;
-        config.limits.spamMinuteLimit = originalSpam;
     });
 });

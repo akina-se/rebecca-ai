@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { ReplyTaskUseCase } from './usecase';
 import { logger } from '../../utils/logger';
+import { isAllowedDomain } from '../../utils/image';
+import config from '../../config';
 
 /**
  * Controller for handling reply task HTTP requests.
@@ -24,12 +26,36 @@ export class ReplyTaskController {
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { tweetId, text, authorId } = req.body;
+            const { tweetId, text, authorId, mediaUrls } = req.body;
             if (!tweetId || !text || !authorId) {
                 res.status(400).json({ error: 'Missing required task payload fields' });
                 return;
             }
-            const result = await this.useCase.execute({ tweetId, text, authorId });
+
+            let validatedMediaUrls: string[] | undefined;
+            if (Array.isArray(mediaUrls)) {
+                validatedMediaUrls = [];
+                for (const url of mediaUrls) {
+                    if (typeof url !== 'string') {
+                        throw new Error(`Invalid media URL format: ${String(url)}`);
+                    }
+                    const parsed = new URL(url);
+                    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+                        throw new Error(`Invalid protocol for media URL: ${url}`);
+                    }
+                    if (!isAllowedDomain(parsed.hostname, config.images.allowedDomains)) {
+                        throw new Error(`Disallowed image host "${parsed.hostname}" for media URL: ${url}`);
+                    }
+                    validatedMediaUrls.push(url);
+                }
+            }
+
+            const result = await this.useCase.execute({
+                tweetId,
+                text,
+                authorId,
+                mediaUrls: validatedMediaUrls,
+            });
             res.status(200).json(result);
         } catch (e) {
             logger.error('reply error', e);

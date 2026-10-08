@@ -45,6 +45,16 @@ export class PollMentionsUseCase {
         logger.info('[PollMentionsUseCase] Found new mentions', { count: mentionsRes.data.length });
         let newestId = sinceId;
 
+        // Build media lookup map from includes.media
+        const mediaMap = new Map<string, string>();
+        if (mentionsRes.includes?.media) {
+            for (const media of mentionsRes.includes.media) {
+                if (media.mediaKey && media.type === 'photo' && media.url) {
+                    mediaMap.set(media.mediaKey, media.url);
+                }
+            }
+        }
+
         for (const tweet of mentionsRes.data) {
             const tweetId = tweet.id;
             const text = tweet.text;
@@ -67,15 +77,31 @@ export class PollMentionsUseCase {
                 continue;
             }
 
+            const mediaKeys = tweet.attachments?.mediaKeys;
+            const mediaUrls: string[] = [];
+            if (mediaKeys) {
+                for (const key of mediaKeys) {
+                    const url = mediaMap.get(key);
+                    if (url) {
+                        mediaUrls.push(url);
+                    }
+                }
+            }
+
             try {
                 // Enqueue with intentional delay (60 to 180 seconds) to seem more human-like
                 const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
                 await this.deps.tasks.enqueueReplyTask({
                     tweetId,
                     text,
-                    authorId
+                    authorId,
+                    mediaUrls,
                 }, delaySeconds);
-                logger.info('[PollMentionsUseCase] Enqueued mention task', { tweetId, authorId });
+                logger.info('[PollMentionsUseCase] Enqueued mention task', {
+                    tweetId,
+                    authorId,
+                    mediaCount: mediaUrls.length,
+                });
             } catch (e) {
                 logger.error('[PollMentionsUseCase] Failed to enqueue task for mention', e, { tweetId });
             }

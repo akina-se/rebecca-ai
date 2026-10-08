@@ -241,13 +241,13 @@ const getDailyActiveUsersCount = async (dateStr: string): Promise<number> => {
  * Enforced limits (in order):
  *  1. Spam guard: user per-minute (resets each minute).
  *  2. Global daily cap across all users.
- *  3. Dynamic per-user daily cap derived from `globalDaily / DAU` (min 3).
+ *  3. Per-user daily quota: enforce hard limit (`limits.userDaily`) and dynamic DAU distribution.
  *
  * @param userId    - The user's ID.
  * @param dateStr   - Current date (YYYY-MM-DD).
  * @param monthStr  - Current month (YYYY-MM) — reserved for future monthly quotas.
  * @param minuteStr - Current minute (YYYY-MM-DDTHH:mm).
- * @param limits    - `{ globalDaily, spamMinute }` configuration.
+ * @param limits    - `{ globalDaily, userDaily, spamMinute }` configuration.
  * @returns `{ allowed: true }` on success, `{ allowed: false, reason }` on rejection.
  */
 const checkAndConsumeRateLimit = async (
@@ -255,7 +255,7 @@ const checkAndConsumeRateLimit = async (
   dateStr: string,
   monthStr: string,
   minuteStr: string,
-  limits: { globalDaily: number; spamMinute: number },
+  limits: { globalDaily: number; userDaily: number; spamMinute: number },
 ): Promise<{ allowed: boolean; reason?: string }> => {
   const globalDocRef = firestore.collection(COLLECTIONS.RATE_LIMITS).doc(`global_${dateStr}`);
   const userDocRef = firestore.collection(COLLECTIONS.RATE_LIMITS).doc(`user_${userId}_${dateStr}`);
@@ -284,13 +284,21 @@ const checkAndConsumeRateLimit = async (
       return { allowed: false, reason: 'global_daily' };
     }
 
-    // Dynamic per-user cap = floor(globalDaily / DAU), min 3.
+    // Per-user daily quota: enforce hard ceiling (limits.userDaily) and dynamic DAU distribution.
     const userDailyCount = userData?.['daily'] || 0;
+    if (userDailyCount >= limits.userDaily) {
+      return { allowed: false, reason: 'user_daily' };
+    }
+
     const isNewDau = userDailyCount === 0;
     if (isNewDau) dauCount += 1;
 
     let dynamicUserLimit = Math.floor(limits.globalDaily / dauCount);
-    if (dynamicUserLimit < 3) dynamicUserLimit = 3;
+    if (dynamicUserLimit > limits.userDaily) {
+      dynamicUserLimit = limits.userDaily;
+    } else if (dynamicUserLimit < 3) {
+      dynamicUserLimit = Math.min(3, limits.userDaily);
+    }
 
     if (userDailyCount >= dynamicUserLimit) {
       return { allowed: false, reason: 'user_daily' };

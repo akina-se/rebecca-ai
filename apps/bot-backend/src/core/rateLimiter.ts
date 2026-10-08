@@ -33,15 +33,16 @@ export const getRateLimitTimeKeys = (
 const checkAndIncrementRateLimits = async (deps: AppDependencies, userId: string): Promise<{ allowed: boolean; reason?: string }> => {
     const { dateStr, monthStr, minuteStr } = getRateLimitTimeKeys();
 
-    const globalDailyLimit = config.limits.globalDailyLimit || 45;
-    const spamMinuteLimit = config.limits.spamMinuteLimit || 3;
+    const globalDailyLimit = config.limits.globalDailyLimit;
+    const userDailyLimit = config.limits.userDailyLimit;
+    const spamMinuteLimit = config.limits.spamMinuteLimit;
 
     return deps.firestore.checkAndConsumeRateLimit(
         userId,
         dateStr,
         monthStr,
         minuteStr,
-        { globalDaily: globalDailyLimit, spamMinute: spamMinuteLimit }
+        { globalDaily: globalDailyLimit, userDaily: userDailyLimit, spamMinute: spamMinuteLimit }
     );
 };
 

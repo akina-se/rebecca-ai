@@ -138,7 +138,8 @@ describe('XApiService Unit Tests', () => {
             expect(result).toEqual({ data: [{ id: 'tweet1' }], meta: { resultCount: 1 } });
             expect(mockClientInstance.users.getMentions).toHaveBeenCalledWith('999999', expect.objectContaining({ 
                 since_id: 'last_id',
-                expansions: ['author_id']
+                expansions: ['author_id', 'attachments.media_keys'],
+                'media.fields': ['url', 'type', 'preview_image_url']
             }));
         });
 

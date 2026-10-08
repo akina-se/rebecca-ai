@@ -37,7 +37,7 @@ The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes tri
 | `/batch/dreaming` | `GET` | 04:30 Daily | 900s | **User Memory Consolidation (Layer 3)**: Compresses user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and per-user failure isolation. |
 | `/batch/evolution` | `GET` | 05:00 Daily | 300s | **Layer 1 Self-Evolution**: Analyzes cross-user dialogue patterns to dynamically evolve the system prompt (`system/persona.extended_prompt`). |
 | `/batch/anniversary-post` | `GET` | 07:00 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
-| `/batch/mentions` | `GET` | 03:00, 07:00-23:00 Hourly (18x/day) | 180s | Polls new mentions, checks dynamic DAU rate limits, and enqueues delayed reply tasks to Cloud Tasks. |
+| `/batch/mentions` | `GET` | 03:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 (10x/day) | 180s | Polls new mentions with batch media retrieval, checks dynamic DAU & user rate limits (max 5/day/user), and enqueues delayed reply tasks to Cloud Tasks. |
 | `/batch/news-post` | `GET` | 12:11 Daily | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
 | `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
 | `/batch/soliloquy-post` | `GET` | 22:00 Daily | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
@@ -90,7 +90,7 @@ Rebecca is designed as a state-of-the-art personal AI developed by Gemitech. Her
 7. **Proactive News Post & Image Re-ranking**
    - Fetches news feeds, generates Gyaru commentary, selects images using similarity threshold filtering (`IMAGE_SIMILARITY_THRESHOLD`) and LLM-as-a-Judge re-ranking (`verifyImageRelevance`), falling back to text-only if irrelevant.
 8. **Dynamic Rate Limit**
-   - Dynamically adjusts the daily reply limit per user based on Daily Active Users (DAU) to prevent exceeding API limits. Robustly managed via Firestore transactions.
+   - Dynamically calculates the daily reply quota per user based on Daily Active Users (DAU) to prevent exceeding API limits, with a strict hard ceiling of 5 replies per user per day (configurable via `USER_DAILY_LIMIT`). Managed via atomic Firestore transactions.
 9. **System Memory Layers Management**
    - Inspects Layer 0 persona master data (all 120 patterns) in text format on the dashboard, alongside Layer 1 (extended prompt) and Layer 2 (timeline summary).
 
@@ -313,7 +313,7 @@ Global system configuration and operational state singletons.
    - Emergency Kill-Switch: Dashboard enables instant 1-click toggling of `isPaused`, halting all automated postings immediately.
 
 ## 6. Rate Limit Handling Specifications
-When the daily reply limit is reached, the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.
+When the daily reply limit is reached (either the global budget or the 5 replies/day per-user quota), the system will temporarily halt new reply processing as a fail-safe. Rather than failing silently, the system is designed to gracefully incorporate these operational constraints into the character's persona by mentioning her "compute resource limits" or "daily reply rations" in subsequent proactive posts (e.g., the following morning's post). This specification maintains the integrity of the fictional world while managing backend scaling limitations.
 
 ## 7. Admin Dashboard & Copilot Specifications
 
