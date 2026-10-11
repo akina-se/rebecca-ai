@@ -80,7 +80,6 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             attributes: ['エンジニア'],
             preferences: ['アニメ']
         });
-        deps.xApi.getTweetDetails.mockResolvedValue({ data: { text: '初めまして！' } });
         deps.firestore.getExtendedPrompt.mockResolvedValue('Extended tuning');
         deps.firestore.getTimelineSummary.mockResolvedValue('Summary');
         deps.gemini.generateSearchQuery.mockResolvedValue('query');
@@ -103,6 +102,40 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.firestore.appendEpisodicBuffer).toHaveBeenCalled();
     });
 
+    it('should process attached mediaUrls, download image, caption it, and never call getTweetDetails', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.analyzeImageCaption.mockResolvedValue('渋谷のカフェで微笑む女の子のイラスト');
+        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: 'イラスト認識', reply: '可愛いイラスト！' });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        const result = await usecase.execute({
+            tweetId: 'tweet_img_1',
+            text: 'これ見て！',
+            authorId: 'user_img_1',
+            mediaUrls: ['https://pbs.twimg.com/media/pic1.jpg']
+        });
+
+        expect(result.status).toBe('success');
+        expect(downloadImage).toHaveBeenCalledWith('https://pbs.twimg.com/media/pic1.jpg');
+        expect(deps.gemini.analyzeImageCaption).toHaveBeenCalled();
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(Array),
+            expect.stringContaining('渋谷のカフェで微笑む女の子のイラスト')
+        );
+        expect(deps.xApi.getTweetDetails).not.toHaveBeenCalled();
+        expect(deps.xApi.replyToMention).toHaveBeenCalledWith('tweet_img_1', '可愛いイラスト！');
+    });
+
     it('should truncate reply if it exceeds 138 characters', async () => {
         deps.firestore.hasProcessedMention.mockResolvedValue(false);
         deps.firestore.getUserDoc.mockResolvedValue({
@@ -110,7 +143,6 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             episodicBuffer: [],
             coreProfile: {}
         });
-        deps.xApi.getTweetDetails.mockResolvedValue({ data: {} });
         deps.firestore.getExtendedPrompt.mockResolvedValue('');
         deps.firestore.getTimelineSummary.mockResolvedValue('');
         deps.gemini.generateSearchQuery.mockResolvedValue(null);
@@ -140,7 +172,6 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             episodicBuffer: [],
             coreProfile: {}
         });
-        deps.xApi.getTweetDetails.mockResolvedValue({ data: {} });
         deps.firestore.getExtendedPrompt.mockResolvedValue('');
         deps.firestore.getTimelineSummary.mockResolvedValue('');
         deps.gemini.generateSearchQuery.mockResolvedValue(null);
@@ -166,7 +197,6 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             episodicBuffer: [],
             coreProfile: {}
         });
-        deps.xApi.getTweetDetails.mockResolvedValue({ data: {} });
         deps.firestore.getExtendedPrompt.mockResolvedValue('');
         deps.firestore.getTimelineSummary.mockResolvedValue('');
         deps.gemini.generateSearchQuery.mockResolvedValue(null);

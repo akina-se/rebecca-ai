@@ -95,6 +95,10 @@ export default {
     cooldownDays: parseInt(process.env.IMAGE_COOLDOWN_DAYS || '14', 10),
     similarityThreshold: parseFloat(process.env.IMAGE_SIMILARITY_THRESHOLD || '0.35'),
     bucketName: process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images',
+    allowedDomains: (process.env.ALLOWED_IMAGE_DOMAINS || 'twimg.com,twitter.com,x.com,example.com')
+      .split(',')
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean),
   },
 
   /**
@@ -102,6 +106,7 @@ export default {
    */
   limits: {
     globalDailyLimit: parseInt(process.env.GLOBAL_DAILY_LIMIT || '500', 10),
+    userDailyLimit: parseInt(process.env.USER_DAILY_LIMIT || '5', 10),
     spamMinuteLimit: parseInt(process.env.SPAM_MINUTE_LIMIT || '3', 10),
     publicIpRateLimit: parseInt(process.env.PUBLIC_IP_RATE_LIMIT || '100', 10),
   },
