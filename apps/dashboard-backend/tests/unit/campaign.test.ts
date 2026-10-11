@@ -825,7 +825,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       expect(fullRes?.buffer).toEqual(validPng);
       expect(fullRes?.contentType).toBe('image/png');
 
-      // Thumbnail generation via sharp
+      // Thumbnail generation via Photon
       const thumbRes = await useCase.getCampaignAssetBinary('c1', 'temple.png', 'thumbnail');
       expect(thumbRes).toBeDefined();
       expect(thumbRes?.contentType).toBe('image/webp');
@@ -841,7 +841,7 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
       const gcsCachedThumb = await useCase.getCampaignAssetBinary('c1', 'temple2.png', 'thumbnail');
       expect(gcsCachedThumb).toBeDefined();
 
-      // Sharp error fallback to original
+      // Thumbnail error fallback to original
       const invalidImage = Buffer.from('not-an-image');
       mockExists.mockResolvedValueOnce([false]); // thumb does not exist in GCS
       mockExists.mockResolvedValueOnce([true]);  // original exists

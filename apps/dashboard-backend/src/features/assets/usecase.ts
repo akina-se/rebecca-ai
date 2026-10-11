@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import sharp from 'sharp';
+import { generateWebpThumbnail } from '../../utils/image';
 import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
@@ -143,13 +143,10 @@ export class AssetsUseCase {
       return null;
     }
 
-    // 3. If thumbnail requested and not pre-cached, generate compressed WebP via sharp
+    // 3. If thumbnail requested and not pre-cached, generate compressed WebP via WebAssembly (Photon)
     if (size === 'thumbnail') {
       try {
-        const thumbnailBuffer = await sharp(original.buffer)
-          .resize({ width: 400, withoutEnlargement: true })
-          .webp({ quality: 80 })
-          .toBuffer();
+        const thumbnailBuffer = await generateWebpThumbnail(original.buffer, 400);
 
         const result = { buffer: thumbnailBuffer, contentType: 'image/webp' };
         this.thumbnailMemoryCache.set(cleanId, result);

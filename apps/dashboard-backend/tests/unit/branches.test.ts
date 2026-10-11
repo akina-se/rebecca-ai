@@ -1079,13 +1079,13 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       delete process.env.FIRESTORE_EMULATOR_HOST;
     });
 
-    it('AssetsUseCase on-demand sharp thumbnail generation and LRU cache eviction', async () => {
+    it('AssetsUseCase on-demand Photon thumbnail generation and LRU cache eviction', async () => {
       const { AssetsUseCase } = require('../../src/features/assets/usecase');
       const assetsRepo = {
         getRawDoc: jest.fn().mockResolvedValue({ url: 'gs://rebecca-ai-gal-images/images/test_thumb.png' })
       } as any;
 
-      // 1x1 valid PNG base64 for sharp resize
+      // 1x1 valid PNG base64 for Photon resize
       const validPngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
       const mockFile = {
         exists: jest.fn().mockResolvedValue([true]),
@@ -1102,12 +1102,12 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
 
       const assetsUseCase = new AssetsUseCase(assetsRepo, mockStorage);
 
-      // 1. On-demand thumbnail generation with sharp
+      // 1. On-demand thumbnail generation with Photon
       const generatedThumb = await assetsUseCase.getAssetBinary('test_thumb.png', 'thumbnail');
       expect(generatedThumb).not.toBeNull();
       expect(generatedThumb?.contentType).toBe('image/webp');
 
-      // 2. Sharp failure fallback to original
+      // 2. Thumbnail generation failure fallback to original
       const invalidBuffer = Buffer.from('invalid-non-image-data');
       (assetsUseCase as any).storage.bucket().file().download = jest.fn().mockResolvedValue([invalidBuffer]);
       (assetsUseCase as any).thumbnailMemoryCache = new (assetsUseCase as any).thumbnailMemoryCache.constructor(2);
