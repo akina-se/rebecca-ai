@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import sharp from 'sharp';
+import { generateWebpThumbnail } from '../../utils/image';
 import { Storage } from '@google-cloud/storage';
 import { DateTime } from 'luxon';
 import {
@@ -760,10 +760,7 @@ export class CampaignsUseCase {
 
       if (size === 'thumbnail') {
         try {
-          const thumbnailBuffer = await sharp(originalBuffer)
-            .resize({ width: 400, withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toBuffer();
+          const thumbnailBuffer = await generateWebpThumbnail(originalBuffer, 400);
           const result = { buffer: thumbnailBuffer, contentType: 'image/webp' };
           this.thumbnailMemoryCache.set(cacheKey, result);
 
