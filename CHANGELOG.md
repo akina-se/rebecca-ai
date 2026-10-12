@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.0](https://github.com/akina-se/rebecca-ai/compare/v1.31.0...v1.32.0) (2026-10-12)
+
+
+### Features
+
+* **bot:** optimize X API cost with batch media fetch and strict rate limits ([#320](https://github.com/akina-se/rebecca-ai/issues/320)) ([e4401dc](https://github.com/akina-se/rebecca-ai/commit/e4401dc89190d67255249c51cec259e1e245d629))
+
 ## [1.31.0](https://github.com/akina-se/rebecca-ai/compare/v1.30.0...v1.31.0) (2026-10-07)
 
 
