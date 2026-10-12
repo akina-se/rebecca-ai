@@ -64,6 +64,8 @@
     "fast-uri": "^3.1.6",
     "browserslist": "^4.28.7",
     "qs": "^6.16.0",
-    "hono": "^4.13.9"
+    "hono": "^4.13.9",
+    "@firebase/app": "0.16.3",
+    "@firebase/app-compat": "0.5.19"
   }
 }
