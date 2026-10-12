@@ -1,4 +1,4 @@
-﻿module.exports = {
+module.exports = {
   preset: 'jest-preset-angular',
   setupFiles: ['<rootDir>/setup-fetch.js'],
   setupFilesAfterEnv: ['<rootDir>/setup-jest.ts'],
@@ -25,5 +25,7 @@
   transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$|@firebase|firebase)'],
   moduleNameMapper: {
     '^@rebecca/types$': '<rootDir>/../../packages/types/src/index.ts',
+    '^firebase/app$': '<rootDir>/../../node_modules/@firebase/app',
+    '^firebase/auth$': '<rootDir>/../../node_modules/@firebase/auth',
   },
 };
