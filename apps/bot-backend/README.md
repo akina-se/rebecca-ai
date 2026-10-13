@@ -68,7 +68,7 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 | `/batch/mentions` | `GET` | `03:00`, `07:00-23:00` Hourly (18x/day) | 180s | Polls recent X mentions, verifies DAU rate limits, and enqueues reply tasks to Cloud Tasks. |
 | `/batch/news-post` | `GET` | `12:11` Daily | 180s | Ingests RSS news, applies vector deduplication, and posts Gyaru commentary with KNN-matched images. |
 | `/batch/random-engagement` | `GET` | `18:00` Daily | 180s | Sends surprise spontaneous mentions to enrolled special treatment list members. |
-| `/batch/soliloquy-post` | `GET` | `22:00` Daily | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
+| `/batch/soliloquy-post` | `GET` | `21:00` Daily | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
 | `/batch/asset-embeddings` | `GET` | `03:30, 09:30, 15:30, 21:30` (4x/day) | 300s | Generates text embeddings for newly uploaded images missing vector representation (self-healing backfill). |
 | `/batch/campaign-post` | `GET` | Hourly at `:00` | 180s | **Campaign Slot Dispatcher**: Evaluates active narrative campaign slots and publishes episodic story posts. |
 

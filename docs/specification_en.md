@@ -40,7 +40,7 @@ The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes tri
 | `/batch/mentions` | `GET` | 03:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 (10x/day) | 180s | Polls new mentions with batch media retrieval, checks dynamic DAU & user rate limits (max 5/day/user), and enqueues delayed reply tasks to Cloud Tasks. |
 | `/batch/news-post` | `GET` | 12:11 Daily | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
 | `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
-| `/batch/soliloquy-post` | `GET` | 22:00 Daily | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
+| `/batch/soliloquy-post` | `GET` | 21:00 Daily | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
 | `/batch/asset-embeddings` | `GET` | 03:30, 09:30, 15:30, 21:30 (4x/day) | 300s | Generates vector embeddings for image assets missing representations (self-healing backfill). |
 | `/batch/campaign-post` | `GET` | Hourly at :00 | 180s | **Campaign Slot Dispatcher**: Evaluates active campaign itinerary slots and publishes narrative story tweets with grounded persona anchors. |
 | `/worker/reply` | `POST` | Cloud Tasks (1-3 min delay) | - | Generates structured `{ thought, reply }` response and posts reply to X. |
@@ -289,7 +289,7 @@ Global system configuration and operational state singletons.
 5. Upon per-user success, updates that user's `coreProfile` and trims `episodicBuffer` to the sliding window (retaining last 20 items). Failures for individual users are isolated and do not halt or corrupt the remaining batch.
 
 ### 5.6 Proactive News & Autonomous Soliloquy Flow
-1. Triggered daily on fixed schedules (Anniversary: 07:00, News: 12:11, Soliloquy: 22:00 JST).
+1. Triggered daily on fixed schedules (Anniversary: 07:00, News: 12:11, Soliloquy: 21:00 JST).
 2. Fetches an RSS feed (e.g., Yahoo! News) and extracts top news from a random category.
 3. **Vector Deduplication**: Fetches embeddings of news posted in the past 48 hours (`newsEmbedding`) and computes cosine similarity (`cosineSimilarity >= 0.82`) against candidate headlines to deterministically exclude previously covered topics.
 4. **Fallback to Autonomous Soliloquy**:
