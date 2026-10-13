@@ -45,13 +45,21 @@ const buildSystemPrompt = (
         prompt += `\n\n${personaFewShotPrompt}`;
     }
 
-    if (userData?.coreProfile) {
-        const userCallsign = persona.metadata.userCallsign;
-        const callsign = lang === 'en' ? userCallsign.en : userCallsign.ja;
-        prompt += lang === 'en' 
-            ? `\n\n[${callsign}'s Core Profile]\n`
-            : `\n\n【${callsign}のプロファイル（Core Profile）】\n`;
-        prompt += JSON.stringify(userData.coreProfile, null, 2);
+    if (userData) {
+        const callsign = lang === 'en' ? persona.metadata.userCallsign.en : persona.metadata.userCallsign.ja;
+
+        if (userData.name && userData.username) {
+            prompt += lang === 'en'
+                ? `\n\n[Interlocutor Account Info (${callsign})]\nDisplay Name: ${userData.name}\nX Handle: @${userData.username}`
+                : `\n\n【対話相手のアカウント情報（${callsign}）】\n表示名: ${userData.name}\nXユーザーID: @${userData.username}`;
+        }
+
+        if (userData.coreProfile) {
+            prompt += lang === 'en' 
+                ? `\n\n[${callsign}'s Core Profile]\n`
+                : `\n\n【${callsign}のプロファイル（Core Profile）】\n`;
+            prompt += JSON.stringify(userData.coreProfile, null, 2);
+        }
     }
 
     if (ragMemories && ragMemories.length > 0) {

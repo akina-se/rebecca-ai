@@ -64,7 +64,11 @@ describe('persona package exports verification', () => {
     expect(getBasePrompt('chat', 'en')).not.toContain('130');
 
     expect(getBasePrompt('reply', 'ja')).toContain('【情報検索】');
+    expect(getBasePrompt('reply', 'ja')).toContain('【メンション（@ID）の正しい理解と使用ルール】');
+    expect(getBasePrompt('reply', 'ja')).toContain('@rebecca_ai_gal');
     expect(getBasePrompt('reply', 'en')).toContain('[Information Search]');
+    expect(getBasePrompt('reply', 'en')).toContain('[Proper @Mention Semantics]');
+    expect(getBasePrompt('reply', 'en')).toContain('@rebecca_ai_gal');
   });
 
   test('cosineSimilarity should compute vector similarity correctly', () => {
