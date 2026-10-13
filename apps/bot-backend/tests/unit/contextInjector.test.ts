@@ -112,5 +112,25 @@ describe('Context Injector', () => {
         expect(prompt).toContain('Context: Absence Reaction');
         expect(prompt).toContain('4 days');
     });
+
+    it('should inject interlocutor account info (display name and @username) in Japanese and English', () => {
+        (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(12));
+        const userWithIdentity = {
+            name: 'Test Master',
+            username: 'test_master_01',
+            coreProfile: {},
+            episodicBuffer: [],
+        };
+
+        const jaPrompt = buildSystemPrompt(rebeccaPersona, 'reply', userWithIdentity, 'こんにちは', '', '', [], 'ja');
+        expect(jaPrompt).toContain('【対話相手のアカウント情報（マスター）】');
+        expect(jaPrompt).toContain('表示名: Test Master');
+        expect(jaPrompt).toContain('XユーザーID: @test_master_01');
+
+        const enPrompt = buildSystemPrompt(rebeccaPersona, 'reply', userWithIdentity, 'Hello', '', '', [], 'en');
+        expect(enPrompt).toContain('[Interlocutor Account Info (Master)]');
+        expect(enPrompt).toContain('Display Name: Test Master');
+        expect(enPrompt).toContain('X Handle: @test_master_01');
+    });
 });
 

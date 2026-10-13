@@ -211,4 +211,42 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.gemini.detectLanguage).not.toHaveBeenCalled();
         expect(deps.xApi.replyToMention).toHaveBeenCalledWith('tweet_empty', 'どうしたの？');
     });
+
+    it('should inject interlocutor identity into systemPrompt when replying', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'テストマスター',
+            username: 'test_master_01',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '内省',
+            reply: 'こちらこそよろしくね♡'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        await usecase.execute({
+            tweetId: 'tweet_identity_1',
+            text: '@rebecca_ai_gal ありがとうございます😊',
+            authorId: 'user_identity_1'
+        });
+
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('XユーザーID: @test_master_01'),
+            expect.any(Array),
+            '@rebecca_ai_gal ありがとうございます😊'
+        );
+        expect(deps.firestore.saveRawConversationLog).toHaveBeenCalledWith(
+            'user_identity_1',
+            '@rebecca_ai_gal ありがとうございます😊',
+            'こちらこそよろしくね♡',
+            '内省'
+        );
+    });
 });
