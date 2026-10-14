@@ -627,7 +627,7 @@ ${imageCaption}
 
       const baseConfig = {
         systemInstruction: systemInstruction,
-        maxOutputTokens: 300,
+        maxOutputTokens: 1000,
         responseMimeType: 'application/json',
         responseSchema: PERSONA_RESPONSE_SCHEMA,
         safetySettings: [] as never[],

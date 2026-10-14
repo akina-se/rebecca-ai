@@ -31,6 +31,9 @@ const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 4, initialDelay 
                 String(error?.message || '').includes('429') ||
                 String(error?.message || '').includes('Internal error') ||
                 String(error?.message || '').includes('high demand') ||
+                String(error?.message || '').includes('empty reply') ||
+                String(error?.message || '').includes('filtered') ||
+                String(error?.message || '').includes('JSON') ||
                 String(error?.message || '').includes('UNAVAILABLE');
             if (attempt < maxRetries && isTransient) {
                 console.warn(`[Eval Retry] Transient Gemini API error (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
