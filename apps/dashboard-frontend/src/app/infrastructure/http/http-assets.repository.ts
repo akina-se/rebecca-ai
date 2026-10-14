@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { HttpClient, HttpParams, HttpRequest, HttpEventType, HttpResponse } from '@angular/common/http';
+import { Observable, map, tap, filter } from 'rxjs';
 import { AssetsRepository } from '../../core/ports/assets.repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
@@ -75,9 +75,10 @@ export class HttpAssetsRepository implements AssetsRepository {
    * Uploads one or multiple image files to the server using multipart/form-data.
    * 
    * @param files - Single File or array of Files.
+   * @param onProgress - Optional callback receiving upload progress percentage (0-100).
    * @returns Observable resolving when upload completes.
    */
-  upload(files: File[] | File): Observable<unknown> {
+  upload(files: File[] | File, onProgress?: (progress: number) => void): Observable<unknown> {
     const formData = new FormData();
     if (Array.isArray(files)) {
       for (const f of files) {
@@ -86,7 +87,27 @@ export class HttpAssetsRepository implements AssetsRepository {
     } else {
       formData.append('files', files, files.name);
     }
-    return this.http.post<unknown>(`${this.baseUrl}/images`, formData);
+
+    if (!onProgress) {
+      return this.http.post<unknown>(`${this.baseUrl}/images`, formData);
+    }
+
+    const req = new HttpRequest('POST', `${this.baseUrl}/images`, formData, {
+      reportProgress: true,
+    });
+
+    return this.http.request(req).pipe(
+      tap((event) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          const percent = Math.round((100 * event.loaded) / event.total);
+          onProgress(percent);
+        } else if (event.type === HttpEventType.Response) {
+          onProgress(100);
+        }
+      }),
+      filter((event): event is HttpResponse<unknown> => event.type === HttpEventType.Response),
+      map((res: HttpResponse<unknown>) => res.body)
+    );
   }
 
   /**

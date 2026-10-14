@@ -4,7 +4,7 @@
  * and performing various semantic NLP tasks using Google's generative AI models.
  */
 
-import { GoogleGenAI, Content, Type } from '@google/genai';
+import { GoogleGenAI, Content, Type, ThinkingLevel } from '@google/genai';
 import { formatZonedDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile, IGeminiService } from '../types';
 import { parsePersonaResponse, cleanJsonString, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
@@ -67,6 +67,9 @@ export interface GeminiServiceConfig {
   newsSearchModel?: string;
   newsPostModel?: string;
   appTimezone?: string;
+  temperature?: number;
+  topP?: number;
+  thinkingLevel?: ThinkingLevel;
 }
 
 /**
@@ -232,6 +235,11 @@ export class GeminiService implements IGeminiService {
           responseMimeType: 'application/json',
           responseSchema: PERSONA_RESPONSE_SCHEMA,
           safetySettings: [] as never[],
+          temperature: this.config.temperature ?? 1.20,
+          topP: this.config.topP ?? 0.95,
+          thinkingConfig: {
+            thinkingLevel: this.config.thinkingLevel ?? ThinkingLevel.MEDIUM,
+          },
         },
       });
       const rawText = response.text?.trim();
@@ -286,6 +294,11 @@ export class GeminiService implements IGeminiService {
           responseMimeType: 'application/json',
           responseSchema,
           safetySettings: [] as never[],
+          temperature: this.config.temperature ?? 1.20,
+          topP: this.config.topP ?? 0.95,
+          thinkingConfig: {
+            thinkingLevel: this.config.thinkingLevel ?? ThinkingLevel.MEDIUM,
+          },
         },
       });
 
@@ -614,10 +627,15 @@ ${imageCaption}
 
       const baseConfig = {
         systemInstruction: systemInstruction,
-        maxOutputTokens: 300,
+        maxOutputTokens: 1000,
         responseMimeType: 'application/json',
         responseSchema: PERSONA_RESPONSE_SCHEMA,
         safetySettings: [] as never[],
+        temperature: this.config.temperature ?? 1.20,
+        topP: this.config.topP ?? 0.95,
+        thinkingConfig: {
+          thinkingLevel: this.config.thinkingLevel ?? ThinkingLevel.MEDIUM,
+        },
       };
 
       const response = await this.ai.models.generateContent({

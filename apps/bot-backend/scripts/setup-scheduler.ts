@@ -76,7 +76,7 @@ const jobs: SchedulerJobConfig[] = [
     },
     {
         name: 'rebecca-soliloquy-batch',
-        schedule: '0 22 * * *', // Daily at 22:00 JST (night reflection & Master-affirming soliloquy)
+        schedule: '0 21 * * *', // Daily at 21:00 JST (night reflection & Master-affirming soliloquy)
         url: `${serviceUrl}/batch/soliloquy-post`
     },
     {

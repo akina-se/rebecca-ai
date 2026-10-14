@@ -94,6 +94,17 @@ describe('AssetsPageComponent', () => {
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to upload/), 'error');
   });
 
+  it('should calculate correct stroke-dashoffset based on uploadProgress', () => {
+    component.uploadProgress.set(0);
+    expect(component.getArcStrokeDashoffset()).toBe('56.55');
+
+    component.uploadProgress.set(50);
+    expect(component.getArcStrokeDashoffset()).toBe('28.27');
+
+    component.uploadProgress.set(100);
+    expect(component.getArcStrokeDashoffset()).toBe('0.00');
+  });
+
   it('should execute bulk delete on selected assets and handle error', async () => {
     assetsRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
     assetsRepoSpy.deleteMany.and.returnValue(of({ deletedCount: 1 }));

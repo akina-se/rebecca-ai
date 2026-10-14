@@ -475,13 +475,22 @@ export class AssetsUseCase {
     }
 
     try {
+      let visionBuffer = file.buffer;
+      let visionMimeType = file.mimetype;
+      try {
+        visionBuffer = await generateWebpThumbnail(file.buffer, 1024);
+        visionMimeType = 'image/webp';
+      } catch (resizeErr) {
+        logger.warn('Failed to resize image for Gemini Vision analysis, using original', { err: resizeErr });
+      }
+
       const response = await this.ai.models.generateContent({
         model: config.gemini.model,
         contents: [
           {
             inlineData: {
-              data: file.buffer.toString('base64'),
-              mimeType: file.mimetype
+              data: visionBuffer.toString('base64'),
+              mimeType: visionMimeType
             }
           },
           AssetsUseCase.CAPTION_PROMPT
