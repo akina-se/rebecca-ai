@@ -132,6 +132,10 @@ NEWS_DEDUP_SIMILARITY_THRESHOLD=0.82
 # Secrets & Keys
 BATCH_SECRET_KEY=your-secret-key-for-batch-verification
 GEMINI_API_KEY=your-google-gemini-api-key
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_TEMPERATURE=1.20
+GEMINI_TOP_P=0.95
+GEMINI_THINKING_LEVEL=MEDIUM
 
 # GCP Configuration
 GCP_PROJECT_ID=rebecca-ai-gal-local

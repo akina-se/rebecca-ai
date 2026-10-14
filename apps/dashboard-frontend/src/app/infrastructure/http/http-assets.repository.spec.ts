@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpEventType } from '@angular/common/http';
 import { HttpAssetsRepository } from './http-assets.repository';
 import { AssetStatus } from '@rebecca/types';
 
@@ -56,6 +57,19 @@ describe('HttpAssetsRepository', () => {
     const req = httpMock.expectOne((r) => r.url.endsWith('/images') && r.method === 'POST');
     expect(req.request.body instanceof FormData).toBeTrue();
     req.flush({ success: true });
+  });
+
+  it('should report upload progress when onProgress callback is provided', () => {
+    const file = new File(['data'], 'test.jpg', { type: 'image/jpeg' });
+    const progressSpy = jasmine.createSpy('onProgress');
+    repository.upload(file, progressSpy).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/images') && r.method === 'POST');
+    req.event({ type: HttpEventType.UploadProgress, loaded: 50, total: 100 } as any);
+    expect(progressSpy).toHaveBeenCalledWith(50);
+
+    req.flush({ success: true });
+    expect(progressSpy).toHaveBeenCalledWith(100);
   });
 
   it('should update asset properties via PUT', () => {

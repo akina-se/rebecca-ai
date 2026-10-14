@@ -24,7 +24,20 @@
         class="btn btn-primary"
         (click)="triggerFileUpload(fileInput)"
         [disabled]="isUploading">
-        <span class="material-icons" [class.spinning]="isUploading">{{ isUploading ? 'sync' : 'upload_file' }}</span>
+        @if (isUploading) {
+          <svg class="circular-progress-arc" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="arc-track" cx="12" cy="12" r="9" />
+            <circle
+              class="arc-fill"
+              cx="12"
+              cy="12"
+              r="9"
+              [style.strokeDashoffset]="getArcStrokeDashoffset()"
+            />
+          </svg>
+        } @else {
+          <span class="material-icons">upload_file</span>
+        }
         {{ isUploading ? ('assets.uploading' | translate) : ('assets.upload' | translate) }}
       </button>
     </div>

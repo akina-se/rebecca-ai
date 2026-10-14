@@ -14,7 +14,7 @@ This system is built with a highly scalable, fully serverless architecture that 
 - **Image Storage**: Cloud Storage (GCS)
 - **Scheduled Batch Processing**: Cloud Scheduler
 - **LLM Engine**: 
-  - Main Conversation, Memory Consolidation, Inference: `gemini-3.5-flash-lite`
+  - Main Conversation, Memory Consolidation, Inference: `gemini-3.5-flash-lite` (Thinking Level: `MEDIUM`, Temperature: `1.20`, Top-P: `0.95`)
   - Image Recognition (Vision): `gemini-3.5-flash-lite`
   - Language Detection & Safety Audit (LLM-as-a-Judge): `gemini-3.1-flash-lite`
   - Vectorization: `gemini-embedding-2`
