@@ -139,6 +139,9 @@ GEMINI_LANGUAGE_MODEL=gemini-3.1-flash-lite
 GEMINI_EMBEDDING_MODEL=gemini-embedding-2
 GEMINI_VISION_MODEL=gemini-3.5-flash-lite
 GEMINI_IMAGE_INFERENCE_MODEL=gemini-3.5-flash-lite
+GEMINI_TEMPERATURE=1.20
+GEMINI_TOP_P=0.95
+GEMINI_THINKING_LEVEL=MEDIUM
 
 # CORS Configuration (Dashboard BFF)
 CORS_ALLOWED_ORIGINS=http://localhost:4200,https://your-dashboard-app.web.app

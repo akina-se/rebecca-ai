@@ -14,7 +14,7 @@
 - **画像ストレージ**: Cloud Storage (GCS)
 - **定期バッチ処理**: Cloud Scheduler
 - **LLMエンジン**: 
-  - メイン会話・記憶統合・キーワード推論: Gemini 3.5 Flash Lite
+  - メイン会話・記憶統合・キーワード推論: Gemini 3.5 Flash Lite（Thinking Level: `MEDIUM`, Temperature: `1.20`, Top-P: `0.95`）
   - 画像認識 (Vision): Gemini 3.5 Flash Lite
   - 言語判定・安全性監査 (LLM-as-a-Judge): Gemini 3.1 Flash Lite
   - ベクトル化処理: gemini-embedding-2
