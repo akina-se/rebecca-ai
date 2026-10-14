@@ -25,7 +25,7 @@ export const generateWebpThumbnail = async (
     if (width > maxWidth && width > 0) {
       const targetWidth = maxWidth;
       const targetHeight = Math.max(1, Math.round((height * targetWidth) / width));
-      resized = resize(img, targetWidth, targetHeight, SamplingFilter.Lanczos3);
+      resized = resize(img, targetWidth, targetHeight, SamplingFilter.Triangle);
       const webpBytes = resized.get_bytes_webp();
       return Buffer.from(webpBytes);
     }
