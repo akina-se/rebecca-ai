@@ -56,6 +56,7 @@ steps:
       - '--platform=managed'
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/bot-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
+      - '--memory=1Gi'
       - '--quiet'
 
   # ----------------------------------------------------------------------------
@@ -91,6 +92,7 @@ steps:
       - '--platform=managed'
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
+      - '--memory=1Gi'
       - '--allow-unauthenticated'
       - '--set-env-vars=NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,GCP_LOCATION=$_DEPLOY_REGION,PUBLIC_SITE_URL=$_PUBLIC_SITE_URL,IMAGE_BUCKET_NAME=rebecca-ai-gal-images'
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,FIREBASE_WEB_API_KEY=FIREBASE_WEB_API_KEY:latest,FIREBASE_WEB_APP_ID=FIREBASE_WEB_APP_ID:latest,FIREBASE_MESSAGING_SENDER_ID=FIREBASE_MESSAGING_SENDER_ID:latest'
