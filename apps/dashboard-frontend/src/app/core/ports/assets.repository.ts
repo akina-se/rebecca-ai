@@ -28,9 +28,10 @@ export interface AssetsRepository {
    * Uploads one or more image files using multipart/form-data.
    * 
    * @param files - Array of File objects or single File.
+   * @param onProgress - Optional callback receiving upload progress percentage (0-100).
    * @returns Observable resolving with upload result.
    */
-  upload(files: File[] | File): Observable<unknown>;
+  upload(files: File[] | File, onProgress?: (progress: number) => void): Observable<unknown>;
 
   /**
    * Updates an existing asset with partial changes.

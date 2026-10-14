@@ -1,5 +1,21 @@
 import 'dotenv/config';
+import { ThinkingLevel } from '@google/genai';
 import { logger } from '../utils/logger';
+
+/**
+ * Validates and normalizes Gemini ThinkingLevel enum.
+ * Defaults to ThinkingLevel.MEDIUM if unspecified or unrecognized.
+ *
+ * @param level - Thinking level string from environment.
+ * @returns Strongly-typed ThinkingLevel enum.
+ */
+export const getValidatedThinkingLevel = (level?: string): ThinkingLevel => {
+  const upper = (level || '').trim().toUpperCase();
+  if (upper === 'MINIMAL') return ThinkingLevel.MINIMAL;
+  if (upper === 'LOW') return ThinkingLevel.LOW;
+  if (upper === 'HIGH') return ThinkingLevel.HIGH;
+  return ThinkingLevel.MEDIUM;
+};
 
 /**
  * Validates whether the provided string is a valid IANA time zone identifier (RFC 6557 / ECMA-402).
@@ -79,6 +95,9 @@ export default {
     imageInferenceModel: process.env.GEMINI_IMAGE_INFERENCE_MODEL || 'gemini-3.5-flash-lite',
     newsSearchModel: process.env.GEMINI_NEWS_SEARCH_MODEL || 'gemini-2.5-flash',
     newsPostModel: process.env.GEMINI_NEWS_POST_MODEL || 'gemini-3.5-flash-lite',
+    temperature: parseFloat(process.env.GEMINI_TEMPERATURE || '1.20'),
+    topP: parseFloat(process.env.GEMINI_TOP_P || '0.95'),
+    thinkingLevel: getValidatedThinkingLevel(process.env.GEMINI_THINKING_LEVEL),
   },
 
   /**

@@ -1,4 +1,5 @@
 import { GeminiService, GeminiServiceConfig } from '../../src/services/gemini';
+import { ThinkingLevel } from '@google/genai';
 
 describe('GeminiService Unit Tests', () => {
     let mockGenerateContent: jest.Mock;
@@ -285,6 +286,37 @@ describe('GeminiService Unit Tests', () => {
             await gemini.generateStructuredNewsPost('sys', 'prompt', ['h1']);
             expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
                 config: expect.objectContaining({ maxOutputTokens: 1000 }),
+            }));
+        });
+
+        it('should call generateContent with temperature, topP, and thinkingConfig', async () => {
+            const gemini = getGeminiService({
+                temperature: 1.25,
+                topP: 0.9,
+                thinkingLevel: ThinkingLevel.HIGH,
+            });
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"thought":"t","reply":"text"}'
+            });
+            await gemini.generateStructuredTimelinePost('sys', 'prompt');
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+                config: expect.objectContaining({
+                    temperature: 1.25,
+                    topP: 0.9,
+                    thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
+                }),
+            }));
+
+            mockGenerateContent.mockResolvedValueOnce({
+                text: '{"thought":"t","reply":"text"}'
+            });
+            await gemini.generateStructuredReply('sys', [], 'hello');
+            expect(mockGenerateContent).toHaveBeenCalledWith(expect.objectContaining({
+                config: expect.objectContaining({
+                    temperature: 1.25,
+                    topP: 0.9,
+                    thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
+                }),
             }));
         });
 

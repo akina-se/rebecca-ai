@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
@@ -24,7 +24,7 @@ import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
   templateUrl: './assets-page.component.html',
   styleUrl: './assets-page.component.css'
 })
-export class AssetsPageComponent implements OnInit {
+export class AssetsPageComponent implements OnInit, OnDestroy {
   readonly isDrawerOpen = signal<boolean>(false);
   readonly selectedAssetId = signal<string | null>(null);
   readonly drawerTitle = signal<string>('');
@@ -47,6 +47,8 @@ export class AssetsPageComponent implements OnInit {
   isDeletingBulk = false;
   isRetryingBulk = false;
   isUploading = false;
+  readonly uploadProgress = signal<number>(0);
+  private analysisTimer: ReturnType<typeof setInterval> | null = null;
   readonly isLoading = signal<boolean>(false);
 
   toastService = inject(ToastService);
@@ -54,6 +56,13 @@ export class AssetsPageComponent implements OnInit {
 
   ngOnInit() {
     this.loadAssets(1);
+  }
+
+  ngOnDestroy() {
+    if (this.analysisTimer) {
+      clearInterval(this.analysisTimer);
+      this.analysisTimer = null;
+    }
   }
 
   loadAssets(page = 1) {
@@ -137,23 +146,58 @@ export class AssetsPageComponent implements OnInit {
     fileInput.click();
   }
 
+  getArcStrokeDashoffset(): string {
+    const circumference = 56.55;
+    const progress = Math.max(0, Math.min(100, this.uploadProgress()));
+    const offset = circumference * (1 - progress / 100);
+    return offset.toFixed(2);
+  }
+
   onFilesSelected(event: Event, fileInput: HTMLInputElement) {
     const target = event.target as HTMLInputElement;
     if (!target.files || target.files.length === 0) return;
 
     const files: File[] = Array.from(target.files);
     this.isUploading = true;
+    this.uploadProgress.set(5);
 
-    this.assetsRepo.upload(files).subscribe({
+    if (this.analysisTimer) {
+      clearInterval(this.analysisTimer);
+      this.analysisTimer = null;
+    }
+
+    this.assetsRepo.upload(files, (progress: number) => {
+      const mapped = Math.min(75, Math.max(5, Math.round(progress * 0.75)));
+      this.uploadProgress.set(mapped);
+
+      if (progress >= 100 && !this.analysisTimer) {
+        this.analysisTimer = setInterval(() => {
+          if (this.uploadProgress() < 94) {
+            this.uploadProgress.update(v => v + 1);
+          }
+        }, 250);
+      }
+    }).subscribe({
       next: () => {
+        if (this.analysisTimer) {
+          clearInterval(this.analysisTimer);
+          this.analysisTimer = null;
+        }
+        this.uploadProgress.set(100);
         this.toastService.show(`Successfully uploaded asset(s)`, 'success');
         this.isUploading = false;
+        this.uploadProgress.set(0);
         fileInput.value = '';
         this.loadAssets(1);
       },
       error: () => {
+        if (this.analysisTimer) {
+          clearInterval(this.analysisTimer);
+          this.analysisTimer = null;
+        }
         this.toastService.show('Failed to upload assets', 'error');
         this.isUploading = false;
+        this.uploadProgress.set(0);
         fileInput.value = '';
       }
     });
