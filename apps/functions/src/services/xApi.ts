@@ -106,7 +106,7 @@ export class XApiService implements IXApiService {
   }
 
   /**
-   * Fetches recent timeline posts authored by the specified user, excluding retweets and replies.
+   * Fetches recent timeline posts authored by the specified user, excluding reposts and replies.
    *
    * @param userId - Optional. The X user ID whose tweets are to be fetched. If omitted, auto-resolves via getMyUserId().
    * @param limit - Maximum number of tweets to fetch (defaults to configured syncMaxResults, max 100).
