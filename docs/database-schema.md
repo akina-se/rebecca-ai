@@ -106,7 +106,7 @@ erDiagram
         string status "SUCCESS | FAILED | PENDING"
         int impressions "Impression count"
         int likes "Likes count"
-        int reposts "Retweets count"
+        int reposts "Reposts count"
         int replies "Replies count"
         array mediaUrls "Image URLs"
         string assetId "Optional image asset ID"
@@ -311,7 +311,7 @@ Public posts authored and published by Rebecca to the X timeline.
 | `status` | `'SUCCESS' \| 'FAILED' \| 'PENDING'` | Delivery status. |
 | `impressions` | `number` | Total impression metric. |
 | `likes` | `number` | Like count. |
-| `reposts` | `number` | Repost / retweet count. |
+| `reposts` | `number` | Repost count. |
 | `replies` | `number` | Reply count. |
 | `mediaUrls` | `string[]` | Attached image URLs. |
 | `assetId` | `string \| undefined` | Associated image asset ID. |

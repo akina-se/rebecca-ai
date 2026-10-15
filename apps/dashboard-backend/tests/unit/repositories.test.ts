@@ -335,7 +335,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
         { data: () => ({ userId: 'u2', timestamp: nowIso }) }
       ];
       const mockPosts = [
-        { data: () => ({ impressions: 1000, likes: 50, reposts: 20, retweets: 20, replies: 10, timestamp: nowIso }) }
+        { data: () => ({ impressions: 1000, likes: 50, reposts: 20, replies: 10, timestamp: nowIso }) }
       ];
 
       (timelineRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({

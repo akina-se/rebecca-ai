@@ -16,7 +16,7 @@ interface PostDataModel {
   impressions: string;
   status: string;
   likes: number;
-  retweets: number;
+  reposts: number;
   replies: number;
   mediaUrls: string[];
 }
@@ -61,7 +61,7 @@ export class PostDrawerComponent implements OnChanges {
           impressions: post.impressions?.toString() || '0',
           status: String(post.status || 'SUCCESS'),
           likes: post.likes || 0,
-          retweets: post.retweets || 0,
+          reposts: post.reposts || 0,
           replies: post.replies || 0,
           mediaUrls: post.mediaUrls || []
         };

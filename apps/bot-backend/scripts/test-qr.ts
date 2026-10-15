@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const run = async () => {
-    console.log('Testing Quote Retweet on master (akina-se)...');
+    console.log('Testing Quote Repost on master (akina-se)...');
     const xApi = new XApiService(config.xApi);
     const gemini = new GeminiService(config.gemini);
     try {
@@ -68,7 +68,7 @@ const run = async () => {
         const structured = await gemini.generateStructuredReply(systemPrompt, [], userInput);
         const generatedText = structured.reply;
         if (structured.thought) {
-            console.log(`Generated Quote Retweet Thought:\n${structured.thought}`);
+            console.log(`Generated Quote Repost Thought:\n${structured.thought}`);
         }
         
         let finalText = generatedText;
@@ -76,7 +76,7 @@ const run = async () => {
             finalText = `@akina_se\n${finalText}`;
         }
         
-        console.log(`Generated Quote Retweet Text:\n${finalText}`);
+        console.log(`Generated Quote Repost Text:\n${finalText}`);
         
         const tweetRes = await xApi.tweet(finalText, { quote_tweet_id: targetTweetId });
         console.log("Success! Tweet ID:", tweetRes?.data?.id);

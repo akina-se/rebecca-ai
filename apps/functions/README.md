@@ -44,7 +44,7 @@ graph TD
 ### 2. `batchTimelineSync`
 - **Trigger Source**: HTTPS endpoint invoked daily at `04:00` JST by Cloud Scheduler (`rebecca-timeline-sync`).
 - **Functionality**:
-  - **Timeline Synchronization**: Synchronizes published post records, impressions, retweets, and likes from X API into Firestore (`timeline_history`).
+  - **Timeline Synchronization**: Synchronizes published post records, impressions, reposts, and likes from X API into Firestore (`timeline_history`).
   - **KPI Metrics Updates**: Aggregates timeline performance into `system_stats/global` for dashboard analytics.
   - **Authentication**: Secured via OIDC Bearer Token / `X-Batch-Secret`.
 

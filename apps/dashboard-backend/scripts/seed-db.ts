@@ -221,7 +221,6 @@ async function seedFirestore() {
       ...(newsEmbedding ? { newsEmbedding } : {}),
       impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500 + Math.random() * 1000) + 1,
       likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
-      retweets: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),
       reposts: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),
       replies: Math.floor(8 + (120 - i) * 1 + Math.random() * 5),
       mediaUrls: i % 4 === 0 ? [`https://picsum.photos/seed/post${i}/600/400`] : [],
