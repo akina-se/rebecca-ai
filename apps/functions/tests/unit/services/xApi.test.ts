@@ -150,7 +150,7 @@ describe('XApiService', () => {
           publicMetrics: {
             impressionCount: 350,
             likeCount: 15,
-            retweetCount: 4,
+            repostCount: 4,
             replyCount: 2,
           },
           attachments: {

@@ -367,7 +367,6 @@ export interface PostDetail {
   mediaUrls: string[];
   status?: PostStatus | string;
   likes?: number;
-  retweets?: number;
   reposts?: number;
   replies?: number;
 }

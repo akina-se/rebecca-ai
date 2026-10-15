@@ -395,7 +395,7 @@ export class TimelineRepository {
       mediaUrls,
       status: String(data.status || 'SUCCESS'),
       likes: typeof data.likes === 'number' ? data.likes : 0,
-      retweets: typeof data.reposts === 'number' ? data.reposts : 0,
+      reposts: typeof data.reposts === 'number' ? data.reposts : 0,
       replies: typeof data.replies === 'number' ? data.replies : 0
     };
   }

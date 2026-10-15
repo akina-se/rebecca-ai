@@ -301,7 +301,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(post?.mediaUrls[1]).toBe('/api/v1/assets/photo.jpg/image');
     });
 
-    it('getPosts should test monthly and yearly date ranges and in-memory sort fallback with likes/retweets', async () => {
+    it('getPosts should test monthly and yearly date ranges and in-memory sort fallback with likes/reposts', async () => {
       // 1. Monthly period
       (repo as any).collections.timelineHistory = {
         where: jest.fn().mockReturnValue({
@@ -311,15 +311,15 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
               docs: [
                 {
                   id: 'p_monthly_1',
-                  data: () => ({ timestamp: '2026-08-01T00:00:00Z', likes: 10, retweets: 5 })
+                  data: () => ({ timestamp: '2026-08-01T00:00:00Z', likes: 10, reposts: 5 })
                 },
                 {
                   id: 'p_monthly_2',
-                  data: () => ({ timestamp: '2026-08-15T00:00:00Z', likes: 50, retweets: 20 })
+                  data: () => ({ timestamp: '2026-08-15T00:00:00Z', likes: 50, reposts: 20 })
                 },
                 {
                   id: 'p_monthly_3',
-                  data: () => ({ timestamp: '2026-08-15T00:00:00Z', likes: 50, retweets: 20 })
+                  data: () => ({ timestamp: '2026-08-15T00:00:00Z', likes: 50, reposts: 20 })
                 }
               ]
             })
@@ -330,18 +330,18 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const resMonthly = await repo.getPosts({ period: 'monthly', date: '2026-08', sortBy: 'likes', sortOrder: 'desc' });
       expect(resMonthly.data[0].id).toBe('p_monthly_2');
 
-      // Test sort by retweets asc
+      // Test sort by reposts asc
       (repo as any).collections.timelineHistory = {
         get: jest.fn().mockResolvedValueOnce({
           empty: false,
           docs: [
-            { id: 'p_r1', data: () => ({ retweets: 100 }) },
-            { id: 'p_r2', data: () => ({ retweets: 10 }) }
+            { id: 'p_r1', data: () => ({ reposts: 100 }) },
+            { id: 'p_r2', data: () => ({ reposts: 10 }) }
           ]
         })
       };
-      const resRetweets = await repo.getPosts({ sortBy: 'retweets', sortOrder: 'asc' });
-      expect(resRetweets.data[0].id).toBe('p_r2');
+      const resReposts = await repo.getPosts({ sortBy: 'reposts', sortOrder: 'asc' });
+      expect(resReposts.data[0].id).toBe('p_r2');
 
       // Test yearly period with created_at sort
       (repo as any).collections.timelineHistory = {
@@ -408,7 +408,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       (repo as any).collections.timelineHistory = {
         where: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({
-            docs: [{ data: () => ({ impressions: 200, likes: 10, reposts: 2, retweets: 2, replies: 0, timestamp: nowIso }) }],
+            docs: [{ data: () => ({ impressions: 200, likes: 10, reposts: 2, replies: 0, timestamp: nowIso }) }],
             size: 1
           }),
           where: jest.fn().mockReturnValue({
@@ -479,7 +479,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const post = await repo.getPostById('p_text_only');
       expect(post?.content).toBe('Text only post');
       expect(post?.likes).toBe(0);
-      expect(post?.retweets).toBe(0);
+      expect(post?.reposts).toBe(0);
       expect(post?.replies).toBe(0);
     });
 
@@ -1419,7 +1419,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       (timelineRepo as any).collections.timelineHistory = {
         where: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({
-            docs: new Array(50).fill({ data: () => ({ impressions: 500, likes: 10, retweets: 5, replies: 2, timestamp: new Date().toISOString() }) }),
+            docs: new Array(50).fill({ data: () => ({ impressions: 500, likes: 10, reposts: 5, replies: 2, timestamp: new Date().toISOString() }) }),
             size: 50
           }),
           where: jest.fn().mockReturnValue({
@@ -1427,7 +1427,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
               get: jest.fn().mockResolvedValue({ data: () => ({ count: 30 }) })
             }),
             get: jest.fn().mockResolvedValue({
-              docs: new Array(30).fill({ data: () => ({ impressions: 300, likes: 5, retweets: 2, replies: 1 }) }),
+              docs: new Array(30).fill({ data: () => ({ impressions: 300, likes: 5, reposts: 2, replies: 1 }) }),
               size: 30
             })
           }),
