@@ -1150,9 +1150,6 @@ components:
         likes:
           type: integer
           example: 12
-        retweets:
-          type: integer
-          example: 3
         reposts:
           type: integer
           example: 3

@@ -30,7 +30,9 @@ interface XdkTweetResponse {
     publicMetrics?: {
       impressionCount?: number;
       likeCount?: number;
-      retweetCount?: number;
+      repostCount?: number;
+      quoteCount?: number;
+      bookmarkCount?: number;
       replyCount?: number;
     };
   }>;
@@ -166,7 +168,7 @@ export class XApiService implements IXApiService {
         createdAt: tweet.createdAt,
         impressions: pm?.impressionCount ?? 0,
         likes: pm?.likeCount ?? 0,
-        reposts: pm?.retweetCount ?? 0,
+        reposts: pm?.repostCount ?? 0,
         replies: pm?.replyCount ?? 0,
         mediaUrls,
       };

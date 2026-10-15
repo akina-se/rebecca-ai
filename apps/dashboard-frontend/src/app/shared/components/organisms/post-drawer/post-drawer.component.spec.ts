@@ -41,7 +41,7 @@ describe('PostDrawerComponent', () => {
       impressions: 500,
       status: 'SUCCESS',
       likes: 10,
-      retweets: 5,
+      reposts: 5,
       replies: 2,
       mediaUrls: ['https://example.com/p.jpg']
     }));
@@ -63,7 +63,7 @@ describe('PostDrawerComponent', () => {
       impressions: null,
       status: null,
       likes: null,
-      retweets: null,
+      reposts: null,
       replies: null,
       mediaUrls: null
     }));
@@ -100,7 +100,7 @@ describe('PostDrawerComponent', () => {
       impressions: '100',
       status: 'SUCCESS',
       likes: 1,
-      retweets: 0,
+      reposts: 0,
       replies: 0,
       mediaUrls: []
     });
@@ -120,7 +120,7 @@ describe('PostDrawerComponent', () => {
       impressions: '100',
       status: 'SUCCESS',
       likes: 1,
-      retweets: 0,
+      reposts: 0,
       replies: 0,
       mediaUrls: []
     });
@@ -147,7 +147,7 @@ describe('PostDrawerComponent', () => {
       impressions: '100',
       status: 'SUCCESS',
       likes: 1,
-      retweets: 0,
+      reposts: 0,
       replies: 0,
       mediaUrls: []
     });
