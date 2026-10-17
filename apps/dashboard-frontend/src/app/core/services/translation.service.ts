@@ -160,6 +160,11 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'post_drawer.reposts': 'リポスト',
     'post_drawer.replies': 'リプライ',
     'post_drawer.delete_post': '投稿を削除',
+    'post_drawer.poll_results': 'アンケート結果',
+    'post_drawer.poll_open': '受付中',
+    'post_drawer.poll_closed': '終了',
+    'post_drawer.poll_votes': '票',
+    'post_drawer.poll_total_votes': '総投票数',
 
     // Ranking Modal
     'ranking_modal.rank': '順位',
@@ -454,6 +459,11 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'post_drawer.reposts': 'Reposts',
     'post_drawer.replies': 'Replies',
     'post_drawer.delete_post': 'Delete Post',
+    'post_drawer.poll_results': 'Poll Results',
+    'post_drawer.poll_open': 'Open',
+    'post_drawer.poll_closed': 'Closed',
+    'post_drawer.poll_votes': 'votes',
+    'post_drawer.poll_total_votes': 'Total Votes',
 
     // Ranking Modal
     'ranking_modal.rank': 'Rank',

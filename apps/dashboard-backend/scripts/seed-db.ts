@@ -200,8 +200,9 @@ async function seedFirestore() {
     const postDate = new Date(Date.now() - daysOffset * 24 * 3600000 - (i % 12) * 3600000);
     const authorIndex = (i - 1) % mockUsers.length;
     const author = mockUsers[authorIndex];
-    const isNews = i % 2 === 0;
-    const postType = isNews ? 'news' : 'soliloquy';
+    const isPoll = i === 1 || i === 3;
+    const isNews = !isPoll && i % 2 === 0;
+    const postType = isPoll ? 'poll' : isNews ? 'news' : 'soliloquy';
     const newsTitle = isNews ? `${topic}に関する最新ニュース速報` : undefined;
     const newsEmbedding = isNews ? Array.from({ length: 16 }, (_, idx) => Math.sin(i + idx)) : undefined;
 
@@ -219,6 +220,22 @@ async function seedFirestore() {
       postType,
       ...(newsTitle ? { newsTitle } : {}),
       ...(newsEmbedding ? { newsEmbedding } : {}),
+      ...(isPoll
+        ? {
+            poll: {
+              id: `poll_${i}`,
+              durationMinutes: 1380,
+              votingStatus: 'closed' as const,
+              options: [
+                { position: 1, label: '🎮 ゲーム・アニメ', votes: 48 },
+                { position: 2, label: '🍺 お酒・晩酌', votes: 22 },
+                { position: 3, label: '🛌 即爆睡', votes: 15 },
+                { position: 4, label: '💃 夜更かしトーク', votes: 15 },
+              ],
+            },
+            pollResultStatus: 'posted' as const,
+          }
+        : {}),
       impressions: Math.floor(1200 + (120 - i) * 80 + Math.sin(i) * 500 + Math.random() * 1000) + 1,
       likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
       reposts: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),

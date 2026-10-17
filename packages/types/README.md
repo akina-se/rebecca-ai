@@ -24,7 +24,11 @@ Tracks GCS and database image processing stages.
 Tracks delivery status of timeline posts: `PENDING`, `SUCCESS`, `FAILED`.
 
 ### `PostType`
-Canonical post classifications: `'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign'`.
+Canonical post classifications: `'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign' | 'poll' | 'poll_result'`.
+
+### `PollVotingStatus` & `PollResultStatus`
+- `PollVotingStatus`: `'open' | 'closed'`.
+- `PollResultStatus`: `'pending' | 'posted' | 'skipped'`.
 
 ### `CampaignStatus` & `CampaignSlotStatus`
 - `CampaignStatus`: `'draft' | 'scheduled' | 'active' | 'completed' | 'archived'`.
@@ -34,6 +38,7 @@ Canonical post classifications: `'soliloquy' | 'news' | 'anniversary' | 'random_
 
 ## Key Data Interfaces
 - `CampaignDoc` & `CampaignSlot`: Multi-day narrative event campaign specifications and itinerary slots.
+- `PollData` & `PollOption`: Interactive X poll options, vote tallies, duration, and voting status attached to `TimelinePost` and `PostDetail`.
 - `TimelinePost`: Model for authored public timeline updates.
 - `FirestoreUser`: User profile, affinity scores, and 3-tier memory buffers (`working_memory`, `episodicBuffer`, `coreProfile`).
 - `RawConversationLog`: Represents full audit logs for 1-on-1 chats (5-year TTL).

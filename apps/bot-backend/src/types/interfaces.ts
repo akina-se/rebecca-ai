@@ -20,11 +20,14 @@ import type {
   FollowerListStatus,
   ProcessedFollower,
   PostType,
+  PollData,
+  PollResultStatus,
   TimelinePost,
   CampaignDoc,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 import type { StructuredNewsPostResponse } from '../features/news/types';
+import type { StructuredPollPostResponse } from '../features/poll/types';
 
 export interface GetRecentTimelinePostsOptions {
   limit?: number;
@@ -68,8 +71,13 @@ export interface IFirestoreService {
     newsTitle?: string;
     newsEmbedding?: number[];
     anniversaryTitle?: string;
+    poll?: PollData;
+    pollResultStatus?: PollResultStatus;
+    pollResultTweetId?: string;
   }): Promise<void>;
   getRecentTimelinePosts(options?: GetRecentTimelinePostsOptions): Promise<TimelinePost[]>;
+  getLatestPendingPoll(): Promise<(TimelinePost & { id: string }) | null>;
+  updateTimelinePost(docId: string, data: Partial<TimelinePost>): Promise<void>;
   getRecentNewsEmbeddings(days?: number): Promise<Array<{ title?: string; embedding: number[] }>>;
   saveRagMemory(userId: string, text: string, embedding: number[]): Promise<void>;
   findRagMemories(userId: string, queryVector: number[], limit?: number): Promise<string[]>;
@@ -119,6 +127,7 @@ export interface IGeminiService {
   auditEvolutionPrompt(candidatePrompt: string, auditInstruction: string): Promise<{ pass: boolean; reason?: string }>;
   analyzeUserProfile(prompt: string): Promise<UserCoreProfile>;
   generateStructuredNewsPost(systemInstruction: string, prompt: string, candidateHeadlines: string[]): Promise<StructuredNewsPostResponse>;
+  generateStructuredPollPost(systemInstruction: string, prompt: string): Promise<StructuredPollPostResponse>;
   generateStructuredTimelinePost(systemInstruction: string, prompt: string): Promise<StructuredPersonaResponse>;
   generateTimelineSummary(prompt: string): Promise<string>;
   detectLanguage(prompt: string): Promise<'ja' | 'en'>;
@@ -140,7 +149,14 @@ export interface IGeminiService {
 export interface IXApiService {
   replyToMention(tweetId: string, text: string, options?: { mediaIds?: string[] }): Promise<XApiCreateResponse>;
   getTweetDetails(tweetId: string): Promise<XApiTweetDetailsResponse>;
-  tweet(text: string, options?: { mediaIds?: string[]; quote_tweet_id?: string }): Promise<XApiCreateResponse>;
+  tweet(
+    text: string,
+    options?: {
+      mediaIds?: string[];
+      quote_tweet_id?: string;
+      poll?: { options: string[]; durationMinutes: number };
+    },
+  ): Promise<XApiCreateResponse>;
   uploadMedia(buffer: Buffer, mimeType: string): Promise<string | null>;
   getUserProfile(userId: string): Promise<{ data: XApiUser } | null>;
   getMentions(sinceId?: string): Promise<XApiMentionResponse>;

@@ -86,6 +86,10 @@ export class SyncTimelineUseCase {
             updatePayload.media_urls = tweet.mediaUrls;
           }
 
+          if (tweet.poll) {
+            updatePayload.poll = tweet.poll;
+          }
+
           batch.set(docRef, updatePayload, { merge: true });
           updatedCount++;
         } else {
@@ -111,6 +115,7 @@ export class SyncTimelineUseCase {
             tweetId: tweet.id,
             tweet_id: tweet.id,
             lastSyncedAt: new Date().toISOString(),
+            ...(tweet.poll ? { postType: 'poll', poll: tweet.poll } : {}),
           });
           createdCount++;
         }

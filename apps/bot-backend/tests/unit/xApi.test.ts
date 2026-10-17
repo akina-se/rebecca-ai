@@ -112,6 +112,21 @@ describe('XApiService Unit Tests', () => {
                 quote_tweet_id: 'quote_123',
             });
         });
+
+        it('should include poll in payload when provided', async () => {
+            const api = createService();
+            mockClientInstance.posts.create.mockResolvedValueOnce({ data: { id: 'new_poll_tweet' } });
+            await api.tweet('Poll question', {
+                poll: { options: ['Choice A', 'Choice B', 'Choice C'], durationMinutes: 1380 },
+            });
+            expect(mockClientInstance.posts.create).toHaveBeenCalledWith({
+                text: 'Poll question',
+                poll: {
+                    options: ['Choice A', 'Choice B', 'Choice C'],
+                    duration_minutes: 1380,
+                },
+            });
+        });
     });
 
     describe('getUserProfile', () => {

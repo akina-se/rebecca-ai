@@ -23,6 +23,49 @@
     </div>
   </div>
   }
+  <!-- Poll Results (X Poll Bar Chart & Vote Counts) -->
+  @if (postData()!.poll && postData()!.poll!.options.length > 0) {
+  <div class="glass-panel poll-results-box">
+    <div class="poll-results-header">
+      <div class="stat-label">
+        <span class="material-icons" style="font-size: 1rem; vertical-align: middle; margin-right: 6px;">poll</span>
+        {{ 'post_drawer.poll_results' | translate }}
+      </div>
+      @if (postData()!.poll!.votingStatus) {
+      <span class="poll-status-badge"
+        [class.poll-status-open]="postData()!.poll!.votingStatus === 'open'"
+        [class.poll-status-closed]="postData()!.poll!.votingStatus === 'closed'">
+        {{ (postData()!.poll!.votingStatus === 'open' ? 'post_drawer.poll_open' : 'post_drawer.poll_closed') | translate }}
+      </span>
+      }
+    </div>
+    <div class="poll-options-list">
+      @for (option of postData()!.poll!.options; track option.position) {
+      <div class="poll-option-item" [class.poll-option-leading]="isLeadingPollOption(option.votes)">
+        <div class="poll-option-bar" [style.width.%]="getPollOptionPercentage(option.votes)"></div>
+        <div class="poll-option-content">
+          <span class="poll-option-label">
+            @if (isLeadingPollOption(option.votes)) {
+            <span class="material-icons poll-winner-icon">emoji_events</span>
+            }
+            {{ option.label }}
+          </span>
+          <span class="poll-option-stats">
+            <span class="poll-option-votes">{{ option.votes }} {{ 'post_drawer.poll_votes' | translate }}</span>
+            <span class="poll-option-percent">{{ getPollOptionPercentage(option.votes) }}%</span>
+          </span>
+        </div>
+      </div>
+      }
+    </div>
+    <div class="poll-footer">
+      <span>{{ 'post_drawer.poll_total_votes' | translate }}: <strong>{{ getTotalPollVotes() }}</strong> {{ 'post_drawer.poll_votes' | translate }}</span>
+      @if (postData()!.poll!.endDatetime) {
+      <span [title]="postData()!.poll!.endDatetime || ''">{{ postData()!.poll!.endDatetime | tzDate }}</span>
+      }
+    </div>
+  </div>
+  }
   <!-- Attached Media -->
   @if (postData()!.mediaUrls && postData()!.mediaUrls.length > 0) {
   <div>

@@ -42,7 +42,12 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 - Dispatches scheduled narrative storyline posts during active multi-day event campaigns (e.g. travel tours, seasonal festivals).
 - Enforces single-active resolution via `getActiveCampaign()`, matching elapsed relative days (`dayNumber`) and the current hourly window against `pending` itinerary slots.
 - Anchors generation against `masterContext` world-building constraints, slot `theme`, and `captionPromptHint` instructions while automatically appending the event `hashtag`.
-- Integrates with `CampaignGuard` to automatically suppress routine soliloquy and anniversary posts while a campaign is running to avoid timeline spam.
+- Integrates with `CampaignGuard` to automatically suppress routine soliloquy, anniversary, and poll posts while a campaign is running to avoid timeline spam.
+
+### 7. Interactive X Poll & Result Reaction Engine
+- **Persona-Grounded Poll Creation (`/batch/poll/create`)**: Fetches up to 30 past polls from Firestore for direct prompt deduplication and uses Gemini Structured Outputs (`{ thought, reply, options }`) grounded in the active persona's core prompt (`getBasePrompt`), `metadata.interests`, `timelineSummary`, and `extendedPrompt` to publish a 3-to-4 choice X poll (without media attachment due to X API v2 mutual exclusion between `poll` and `media`).
+- **Configurable Poll Duration**: Controlled via `POLL_DURATION_MINUTES` (default `1380` minutes / 23 hours, clamped to X API bounds `5..10080`).
+- **Idempotent Result Quote Post (`/batch/poll/result`)**: Queries the latest pending poll (`pollResultStatus === 'pending'`), inspects live `voting_status` and vote tallies from X API v2 (`expansions=attachments.poll_ids`), and when `votingStatus === 'closed'` with $\ge 1$ total votes, publishes a Quote Post (`quote_tweet_id`) reacting to the final tally and marks `pollResultStatus = 'posted'`.
 
 ---
 
@@ -71,6 +76,8 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 | `/batch/soliloquy-post` | `GET` | `21:00` Daily | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
 | `/batch/asset-embeddings` | `GET` | `03:30, 09:30, 15:30, 21:30` (4x/day) | 300s | Generates text embeddings for newly uploaded images missing vector representation (self-healing backfill). |
 | `/batch/campaign-post` | `GET` | Hourly at `:00` | 180s | **Campaign Slot Dispatcher**: Evaluates active narrative campaign slots and publishes episodic story posts. |
+| `/batch/poll/create` | `GET` / `POST` | Configurable (e.g. `20:00` Sat) | 180s | **Interactive X Poll Creation**: Generates a deduplicated 3-4 option X poll grounded in the active persona and saves it with `pollResultStatus: 'pending'`. |
+| `/batch/poll/result` | `GET` / `POST` | Configurable (e.g. `20:00` Sun) | 180s | **X Poll Result Reaction**: Syncs final vote tallies for the latest pending closed poll and posts a Quote Post reaction. |
 
 ### Worker Endpoints (`/worker/*`)
 
@@ -125,9 +132,10 @@ Configure these variables in your local `.env` or deployment configuration:
 PORT=8080
 APP_TIMEZONE=Asia/Tokyo
 
-# News Deduplication
+# News Deduplication & Poll Settings
 NEWS_DEDUP_LOOKBACK_DAYS=30
 NEWS_DEDUP_SIMILARITY_THRESHOLD=0.82
+POLL_DURATION_MINUTES=1380
 
 # Secrets & Keys
 BATCH_SECRET_KEY=your-secret-key-for-batch-verification
