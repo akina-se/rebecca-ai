@@ -1,4 +1,4 @@
-import { PollUseCase, resolvePollDurationMinutes } from '../../../src/features/poll/usecase';
+import { PollUseCase } from '../../../src/features/poll/usecase';
 import { PollController } from '../../../src/features/poll/controller';
 import { createMockDeps } from './testUtils';
 import { Request, Response } from 'express';
@@ -25,26 +25,6 @@ describe('X Poll & Result Reaction Unit Tests', () => {
       reply: 'アンケ結果出たよ〜！やっぱりゲーム・アニメ派が1位か〜！わかる〜♡',
     });
     (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'poll_tweet_123' } });
-  });
-
-  describe('resolvePollDurationMinutes', () => {
-    it('should return clamped default duration when no overrides are given', () => {
-      expect(resolvePollDurationMinutes(1380)).toBe(1380);
-      expect(resolvePollDurationMinutes(1)).toBe(5);
-      expect(resolvePollDurationMinutes(20000)).toBe(10080);
-    });
-
-    it('should convert durationDays override to minutes and clamp within X API bounds (5..10080)', () => {
-      expect(resolvePollDurationMinutes(1380, { durationDays: 1 })).toBe(1440);
-      expect(resolvePollDurationMinutes(1380, { durationDays: 3 })).toBe(4320);
-      expect(resolvePollDurationMinutes(1380, { durationDays: 10 })).toBe(10080);
-    });
-
-    it('should respect durationMinutes override and clamp within X API bounds (5..10080)', () => {
-      expect(resolvePollDurationMinutes(1380, { durationMinutes: 60 })).toBe(60);
-      expect(resolvePollDurationMinutes(1380, { durationMinutes: 2 })).toBe(5);
-      expect(resolvePollDurationMinutes(1380, { durationMinutes: 15000 })).toBe(10080);
-    });
   });
 
   describe('PollUseCase.executeCreatePoll', () => {
@@ -87,7 +67,7 @@ describe('X Poll & Result Reaction Unit Tests', () => {
       );
       expect(deps.gemini.generateStructuredPollPost).toHaveBeenCalledWith(
         expect.any(String),
-        expect.stringContaining('【あなたの関心領域・興味テーマ】'),
+        expect.stringContaining('【あなたの関心領域・好む話題】'),
       );
 
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
@@ -116,21 +96,6 @@ describe('X Poll & Result Reaction Unit Tests', () => {
               { position: 4, label: '💃 夜更かしトーク', votes: 0 },
             ],
           },
-        }),
-      );
-    });
-
-    it('should allow overriding poll duration via durationDays or durationMinutes', async () => {
-      (deps.firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValue([]);
-
-      await useCase.executeCreatePoll({ durationDays: 2 });
-
-      expect(deps.xApi.tweet).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          poll: expect.objectContaining({
-            durationMinutes: 2880,
-          }),
         }),
       );
     });
@@ -247,7 +212,7 @@ describe('X Poll & Result Reaction Unit Tests', () => {
 
       expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
         expect.stringContaining(deps.persona.getBasePrompt('timeline', 'ja')),
-        expect.stringContaining('1. [最多得票] 🎮 ゲーム・アニメ: 15票 (75%)'),
+        expect.stringContaining('1. 🎮 ゲーム・アニメ: 15票 (75%)\n2. 🍺 お酒・晩酌: 5票 (25%)'),
       );
 
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
@@ -295,25 +260,6 @@ describe('X Poll & Result Reaction Unit Tests', () => {
         status: 'suppressed_by_campaign',
         campaignId: 'camp_1',
       });
-    });
-
-    it('should forward durationDays query parameter to executeCreatePoll', async () => {
-      (deps.firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValue([]);
-      const spy = jest.spyOn(useCase, 'executeCreatePoll');
-      const controller = new PollController(useCase);
-      const req = { query: { durationDays: '3' }, body: {} } as unknown as Request;
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      } as unknown as Response;
-
-      await controller.handleCreate(req, res);
-
-      expect(spy).toHaveBeenCalledWith({
-        durationDays: 3,
-        durationMinutes: undefined,
-      });
-      expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('should return 200 on handleResult success', async () => {

@@ -6,29 +6,8 @@ import { formatZonedDateTime } from '../../utils/time';
 import { logger } from '../../utils/logger';
 import {
   PollUseCaseConfig,
-  CreatePollOptions,
   PollBatchResult,
 } from './types';
-
-/**
- * Resolves the effective poll duration in minutes, clamped to X API v2 bounds (5 to 10080 minutes).
- *
- * @param defaultDurationMinutes - Configured default duration in minutes from config.poll.durationMinutes.
- * @param overrides - Optional runtime overrides (durationMinutes or durationDays).
- * @returns Clamped duration in minutes (5..10080).
- */
-export const resolvePollDurationMinutes = (
-  defaultDurationMinutes: number,
-  overrides?: CreatePollOptions,
-): number => {
-  let rawMinutes = defaultDurationMinutes;
-  if (typeof overrides?.durationMinutes === 'number' && Number.isFinite(overrides.durationMinutes)) {
-    rawMinutes = Math.round(overrides.durationMinutes);
-  } else if (typeof overrides?.durationDays === 'number' && Number.isFinite(overrides.durationDays)) {
-    rawMinutes = Math.round(overrides.durationDays * 24 * 60);
-  }
-  return Math.max(5, Math.min(10080, rawMinutes));
-};
 
 /**
  * Orchestrates interactive X poll creation and poll result quote-post commentary.
@@ -43,15 +22,13 @@ export class PollUseCase {
 
   /**
    * Generates and publishes a new interactive poll post on X.
-   *
-   * @param overrides - Optional runtime duration overrides (durationMinutes or durationDays).
    */
-  async executeCreatePoll(overrides?: CreatePollOptions): Promise<PollBatchResult> {
+  async executeCreatePoll(): Promise<PollBatchResult> {
     logger.info('[PollUseCase] Starting Poll Creation');
     try {
       const now = new Date();
       const timeContext = getTimeOfDayGreetingContext(now, this.config.timezone);
-      const durationMinutes = resolvePollDurationMinutes(this.config.durationMinutes, overrides);
+      const durationMinutes = Math.max(5, Math.min(10080, Math.round(this.config.durationMinutes)));
 
       const [timelineSummary, extendedPrompt, recentPolls] = await Promise.all([
         this.deps.firestore.getTimelineSummary(),
@@ -219,13 +196,10 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
       const now = new Date();
       const timeContext = getTimeOfDayGreetingContext(now, this.config.timezone);
-      const maxVotes = Math.max(...latestPoll.options.map((o) => o.votes));
-      const winningOptions = latestPoll.options.filter((o) => o.votes === maxVotes);
       const formattedOptions = latestPoll.options
         .map((o) => {
           const pct = Math.round((o.votes / totalVotes) * 1000) / 10;
-          const marker = o.votes === maxVotes ? '[最多得票] ' : '';
-          return `${o.position}. ${marker}${o.label}: ${o.votes}票 (${pct}%)`;
+          return `${o.position}. ${o.label}: ${o.votes}票 (${pct}%)`;
         })
         .join('\n');
 
@@ -238,7 +212,7 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
         `【現在の時間帯】${timeContext.period}`,
         `【シチュエーション】アンケート結果発表と感想トーク`,
         `【アンケート内容】${pendingPoll.text}`,
-        `【結果】1位: ${winningOptions.map((w) => w.label).join(' / ')}（総投票数: ${totalVotes}票）`,
+        `【最終投票結果（合計 ${totalVotes}票）】\n${formattedOptions}`,
       ]);
 
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
@@ -256,9 +230,6 @@ ${pendingPoll.text}
 【最終投票結果（合計 ${totalVotes}票）】
 ${formattedOptions}
 
-【最多得票の選択肢】
-${winningOptions.map((w) => w.label).join('、')}${winningOptions.length > 1 ? '（同率1位）' : ''}
-
 【直近のタイムライン要約】
 ${timelineSummary || '（特記事項なし）'}
 
@@ -266,7 +237,7 @@ ${timelineSummary || '（特記事項なし）'}
 ${extendedPrompt || '（特記事項なし）'}
 ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 【生成ルール】
-- 投票してくれたフォロワーへの感謝やリアクションを入れつつ、最多得票になった選択肢（または票の割れ方・意外な結果）に対して、${personaName}自身の視点・価値観で感想を語ること。
+- 投票してくれたフォロワーへの感謝やリアクションを入れつつ、最終投票結果（各選択肢の得票数や票の割れ方、全体の傾向など）を踏まえて、${personaName}自身の視点・価値観で感想を語ること。
 - 元のアンケートツイートを引用リポスト（Quote Post）する形で投稿されるため、結果の数字を機械的に全部読み上げるのではなく、結果を見た素直なリアクションとフォロワーへの自然な語りかけにすること。
 - thought（内省思考）は150文字以内の自然な独白とすること。
 - reply（ツイート本文）は【絶対に110文字以内】にすること。
@@ -304,7 +275,7 @@ ${defaultHashtag ? `- ハッシュタグ（${defaultHashtag} 等）はシステ�
       await this.deps.firestore.updateTimelinePost(pendingPoll.id, {
         poll: latestPoll,
         pollResultStatus: 'posted',
-        ...(pipelineResult.tweetId ? { pollResultTweetId: pipelineResult.tweetId } : {}),
+        pollResultTweetId: pipelineResult.tweetId,
       });
 
       return {

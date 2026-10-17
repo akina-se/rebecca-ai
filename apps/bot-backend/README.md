@@ -46,7 +46,7 @@ Prompt contexts are dynamically modified before sending requests to the Gemini A
 
 ### 7. Interactive X Poll & Result Reaction Engine
 - **Persona-Grounded Poll Creation (`/batch/poll/create`)**: Fetches up to 30 past polls from Firestore for direct prompt deduplication and uses Gemini Structured Outputs (`{ thought, reply, options }`) grounded in the active persona's core prompt (`getBasePrompt`), `metadata.interests`, `timelineSummary`, and `extendedPrompt` to publish a 3-to-4 choice X poll (without media attachment due to X API v2 mutual exclusion between `poll` and `media`).
-- **Configurable Poll Duration**: Controlled via `POLL_DURATION_MINUTES` (default `1380` minutes / 23 hours, clamped to X API bounds `5..10080`), with optional per-request runtime overrides via `durationMinutes` or `durationDays`.
+- **Configurable Poll Duration**: Controlled via `POLL_DURATION_MINUTES` (default `1380` minutes / 23 hours, clamped to X API bounds `5..10080`).
 - **Idempotent Result Quote Post (`/batch/poll/result`)**: Queries the latest pending poll (`pollResultStatus === 'pending'`), inspects live `voting_status` and vote tallies from X API v2 (`expansions=attachments.poll_ids`), and when `votingStatus === 'closed'` with $\ge 1$ total votes, publishes a Quote Post (`quote_tweet_id`) reacting to the final tally and marks `pollResultStatus = 'posted'`.
 
 ---
@@ -76,7 +76,7 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 | `/batch/soliloquy-post` | `GET` | `21:00` Daily | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
 | `/batch/asset-embeddings` | `GET` | `03:30, 09:30, 15:30, 21:30` (4x/day) | 300s | Generates text embeddings for newly uploaded images missing vector representation (self-healing backfill). |
 | `/batch/campaign-post` | `GET` | Hourly at `:00` | 180s | **Campaign Slot Dispatcher**: Evaluates active narrative campaign slots and publishes episodic story posts. |
-| `/batch/poll/create` | `GET` / `POST` | Configurable (e.g. `20:00` Sat) | 180s | **Interactive X Poll Creation**: Generates a deduplicated 3-4 option X poll grounded in the active persona and saves it with `pollResultStatus: 'pending'`. Accepts optional `durationMinutes` or `durationDays`. |
+| `/batch/poll/create` | `GET` / `POST` | Configurable (e.g. `20:00` Sat) | 180s | **Interactive X Poll Creation**: Generates a deduplicated 3-4 option X poll grounded in the active persona and saves it with `pollResultStatus: 'pending'`. |
 | `/batch/poll/result` | `GET` / `POST` | Configurable (e.g. `20:00` Sun) | 180s | **X Poll Result Reaction**: Syncs final vote tallies for the latest pending closed poll and posts a Quote Post reaction. |
 
 ### Worker Endpoints (`/worker/*`)

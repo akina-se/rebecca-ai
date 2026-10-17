@@ -6,7 +6,7 @@ import { createPollRouter } from './routes';
 import { CampaignGuard } from '../campaign';
 import config from '../../config';
 
-export { PollUseCase, resolvePollDurationMinutes } from './usecase';
+export { PollUseCase } from './usecase';
 export * from './types';
 
 /**

@@ -13,7 +13,7 @@ export class PollController {
     private readonly campaignGuard?: CampaignGuard,
   ) {}
 
-  handleCreate = async (req: Request, res: Response): Promise<void> => {
+  handleCreate = async (_req: Request, res: Response): Promise<void> => {
     try {
       if (this.campaignGuard) {
         const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
@@ -30,17 +30,7 @@ export class PollController {
         }
       }
 
-      const rawDays = req.body?.durationDays ?? req.query?.durationDays;
-      const rawMinutes = req.body?.durationMinutes ?? req.query?.durationMinutes;
-      const durationDays =
-        rawDays !== undefined && rawDays !== '' ? Number(rawDays) : undefined;
-      const durationMinutes =
-        rawMinutes !== undefined && rawMinutes !== '' ? Number(rawMinutes) : undefined;
-
-      const result = await this.useCase.executeCreatePoll({
-        durationDays,
-        durationMinutes,
-      });
+      const result = await this.useCase.executeCreatePoll();
       res.status(200).json(result);
     } catch (e) {
       logger.error('[PollController] Error in handleCreate', e);
