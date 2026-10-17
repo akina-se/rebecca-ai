@@ -50,7 +50,7 @@ describe('TopNavComponent', () => {
     expect(component.pageTitle).toBeDefined();
 
     Object.defineProperty(mockRouter, 'url', { value: '/campaigns', configurable: true });
-    expect(component.pageTitle).toBe('キャンペーン管理');
+    expect(component.pageTitle).toBe('キャンペーン');
 
     Object.defineProperty(mockRouter, 'url', { value: '/memory', configurable: true });
     expect(component.pageTitle).toBeDefined();
