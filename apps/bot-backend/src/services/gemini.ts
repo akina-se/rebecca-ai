@@ -47,7 +47,7 @@ const STRUCTURED_POLL_POST_SCHEMA = {
     },
     reply: {
       type: 'string',
-      description: 'The public poll tweet text inviting followers to vote and reply (within 140 characters).',
+      description: 'The public poll tweet text inviting followers to vote and reply (within 100 characters).',
     },
     options: {
       type: 'array',
