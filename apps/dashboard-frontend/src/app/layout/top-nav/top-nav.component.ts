@@ -69,6 +69,11 @@ export class TopNavComponent {
     this.isUserDropdownOpen = !this.isUserDropdownOpen;
   }
 
+  navigateToSettings() {
+    this.isUserDropdownOpen = false;
+    this.router.navigate(['/settings']);
+  }
+
   logout() {
     this.isUserDropdownOpen = false;
     this.authService.logout();

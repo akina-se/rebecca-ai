@@ -302,3 +302,28 @@
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+    .drawer-content {
+        gap: 14px;
+    }
+    .content-box,
+    .inner-thought-box,
+    .poll-results-box {
+        padding: 14px 16px;
+    }
+    .metrics-grid {
+        gap: 8px;
+    }
+    .metric-box {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    .metric-icon {
+        font-size: 1.4rem;
+        padding: 6px;
+    }
+    .metric-value {
+        font-size: 1.05rem;
+    }
+}

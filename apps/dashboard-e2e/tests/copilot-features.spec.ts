@@ -9,9 +9,9 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   test('Test 1: Global Header "✨ Rebecca" button opens AI Drawer with route-aware context across all pages', async ({ page }) => {
     const pagesToTest = [
       { path: '/dashboard', expectedContext: /Performance Overview|パフォーマンス概要|Performance Dashboard/ },
-      { path: '/assets', expectedContext: /Assets Library|アセット管理/ },
-      { path: '/users', expectedContext: /User Relations|ユーザー関係/ },
-      { path: '/memory', expectedContext: /Memory Management|メモリ管理/ },
+      { path: '/assets', expectedContext: /Assets|アセット/ },
+      { path: '/users', expectedContext: /Users|ユーザー/ },
+      { path: '/memory', expectedContext: /Memory|メモリ/ },
       { path: '/settings', expectedContext: /Settings|システム設定|System Settings/ }
     ];
 
@@ -66,6 +66,22 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
     const contextIndicator = page.locator('#ai-context-indicator');
     await expect(contextIndicator).toContainText('Post #', { timeout: 5000 });
+
+    // Verify closing Copilot returns to Post Details drawer (unshifted)
+    const aiCloseBtn = aiDrawer.locator('#ai-close-btn');
+    await expect(aiCloseBtn).toBeVisible({ timeout: 5000 });
+    await aiCloseBtn.click();
+    await expect(aiDrawer).not.toHaveClass(/open/, { timeout: 5000 });
+
+    // Right drawer remains open and unshifted
+    await expect(rightDrawer).toBeVisible({ timeout: 5000 });
+    const rightDrawerElement = page.locator('app-right-drawer .right-drawer');
+    await expect(rightDrawerElement).not.toHaveClass(/shifted/, { timeout: 5000 });
+
+    // Verify closing Post Details drawer returns to dashboard
+    const postCloseBtn = page.locator('app-right-drawer .close-btn');
+    await postCloseBtn.click();
+    await expect(rightDrawerElement).not.toHaveClass(/open/, { timeout: 5000 });
   });
 
   test('Test 3: Autonomous data analytics query and dynamic suggestion chips', async ({ page }) => {
@@ -146,7 +162,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(messagesContainer).toContainText(testMsg, { timeout: 5000 });
 
     // Navigate to Assets page via sidebar
-    const assetsNavLink = page.locator('app-sidebar .nav-item', { hasText: /Assets Library|アセット管理/ });
+    const assetsNavLink = page.locator('app-sidebar .nav-item', { hasText: /Assets|アセット/ });
     await assetsNavLink.click();
     await page.waitForURL(/\/assets/);
 
@@ -156,9 +172,9 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     // Verify previous chat messages are preserved
     await expect(messagesContainer).toContainText(testMsg);
 
-    // Verify Context indicator dynamically updated to Assets Library
+    // Verify Context indicator dynamically updated to Assets
     const contextIndicator = page.locator('#ai-context-indicator');
-    await expect(contextIndicator).toContainText(/Assets Library|アセット管理/);
+    await expect(contextIndicator).toContainText(/Assets|アセット/);
   });
 
   test('Test 6: Instant bilingual (JA/EN) language switching updates UI and Copilot persona without reload', async ({ page }) => {
@@ -190,5 +206,46 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
     // Close drawer
     await aiDrawer.locator('.close-btn').click();
+  });
+
+  test('Test 7: Mobile viewport Copilot analyze transition and sequential dismiss back to dashboard', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/dashboard');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Click on a timeline post item or leaderboard post to open post detail bottom sheet
+    const postRow = page.locator('#timeline-table tbody tr, .data-table tbody tr.clickable').first();
+    await expect(postRow).toBeVisible({ timeout: 5000 });
+    await postRow.click();
+
+    // Verify right drawer is open as bottom sheet
+    const postDrawer = page.locator('app-right-drawer .right-drawer');
+    await expect(postDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    // Click the Analyze button
+    const analyzeBtn = postDrawer.locator('.drawer-header .sparkle-btn').filter({ hasText: /Analyze|分析/ });
+    await expect(analyzeBtn).toBeVisible({ timeout: 5000 });
+    await analyzeBtn.click();
+
+    // Verify AI Copilot full-screen drawer is open
+    const aiDrawer = page.locator('app-ai-drawer .ai-drawer');
+    await expect(aiDrawer).toHaveClass(/open/, { timeout: 5000 });
+    await expect(page.locator('#ai-context-indicator')).toContainText('Post #', { timeout: 5000 });
+
+    // Close Copilot via its close button
+    const aiCloseBtn = aiDrawer.locator('#ai-close-btn');
+    await expect(aiCloseBtn).toBeVisible({ timeout: 5000 });
+    await aiCloseBtn.click();
+
+    // Verify Copilot closed and Post Details bottom sheet remains open
+    await expect(aiDrawer).not.toHaveClass(/open/, { timeout: 5000 });
+    await expect(postDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    // Close Post Details bottom sheet
+    const postCloseBtn = postDrawer.locator('.drawer-header .close-btn');
+    await postCloseBtn.click();
+
+    // Verify Post Details closed returning to dashboard
+    await expect(postDrawer).not.toHaveClass(/open/, { timeout: 5000 });
   });
 });

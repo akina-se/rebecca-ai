@@ -9,10 +9,10 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     // Navigation & Global
     'nav.admin': 'Admin Console',
     'nav.dashboard': 'ダッシュボード',
-    'nav.memory': 'メモリ管理',
-    'nav.assets': 'アセット管理',
-    'nav.users': 'ユーザー関係',
-    'nav.campaigns': 'キャンペーン管理',
+    'nav.memory': 'メモリ',
+    'nav.assets': 'アセット',
+    'nav.users': 'ユーザー',
+    'nav.campaigns': 'キャンペーン',
     'nav.settings': 'システム設定',
     'nav.public_site': 'パブリックサイトへ',
 
@@ -308,10 +308,10 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     // Navigation & Global
     'nav.admin': 'Admin Console',
     'nav.dashboard': 'Dashboard',
-    'nav.memory': 'Memory Management',
-    'nav.assets': 'Assets Library',
-    'nav.users': 'User Relations',
-    'nav.campaigns': 'Campaign Narrative',
+    'nav.memory': 'Memory',
+    'nav.assets': 'Assets',
+    'nav.users': 'Users',
+    'nav.campaigns': 'Campaigns',
     'nav.settings': 'Settings',
     'nav.public_site': 'Go to Public Site',
 
