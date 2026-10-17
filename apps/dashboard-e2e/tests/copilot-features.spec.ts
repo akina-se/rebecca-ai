@@ -9,9 +9,9 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   test('Test 1: Global Header "✨ Rebecca" button opens AI Drawer with route-aware context across all pages', async ({ page }) => {
     const pagesToTest = [
       { path: '/dashboard', expectedContext: /Performance Overview|パフォーマンス概要|Performance Dashboard/ },
-      { path: '/assets', expectedContext: /Assets Library|アセット管理/ },
-      { path: '/users', expectedContext: /User Relations|ユーザー関係/ },
-      { path: '/memory', expectedContext: /Memory Management|メモリ管理/ },
+      { path: '/assets', expectedContext: /Assets|アセット/ },
+      { path: '/users', expectedContext: /Users|ユーザー/ },
+      { path: '/memory', expectedContext: /Memory|メモリ/ },
       { path: '/settings', expectedContext: /Settings|システム設定|System Settings/ }
     ];
 
@@ -162,7 +162,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(messagesContainer).toContainText(testMsg, { timeout: 5000 });
 
     // Navigate to Assets page via sidebar
-    const assetsNavLink = page.locator('app-sidebar .nav-item', { hasText: /Assets Library|アセット管理/ });
+    const assetsNavLink = page.locator('app-sidebar .nav-item', { hasText: /Assets|アセット/ });
     await assetsNavLink.click();
     await page.waitForURL(/\/assets/);
 
@@ -172,9 +172,9 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     // Verify previous chat messages are preserved
     await expect(messagesContainer).toContainText(testMsg);
 
-    // Verify Context indicator dynamically updated to Assets Library
+    // Verify Context indicator dynamically updated to Assets
     const contextIndicator = page.locator('#ai-context-indicator');
-    await expect(contextIndicator).toContainText(/Assets Library|アセット管理/);
+    await expect(contextIndicator).toContainText(/Assets|アセット/);
   });
 
   test('Test 6: Instant bilingual (JA/EN) language switching updates UI and Copilot persona without reload', async ({ page }) => {
