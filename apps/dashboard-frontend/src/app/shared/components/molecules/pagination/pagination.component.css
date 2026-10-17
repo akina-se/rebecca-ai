@@ -93,3 +93,22 @@
 .spinning {
   animation: spin 1s linear infinite;
 }
+
+@media (max-width: 768px) {
+  .pagination-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .total-items-text,
+  .page-info {
+    font-size: 0.78rem;
+  }
+}

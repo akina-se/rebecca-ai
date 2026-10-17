@@ -122,6 +122,13 @@ describe('TopNavComponent', () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });
 
+  it('should navigate to /settings and close dropdown on navigateToSettings', () => {
+    component.isUserDropdownOpen = true;
+    component.navigateToSettings();
+    expect(component.isUserDropdownOpen).toBeFalse();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings']);
+  });
+
   it('should resolve localized personaName according to active language', () => {
     const settingsService = TestBed.inject(SettingsService);
     settingsService.setLanguage('ja');

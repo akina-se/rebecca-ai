@@ -59,3 +59,19 @@
   from { transform: translateX(120%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+@media (max-width: 768px) {
+  .toast-container {
+    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    left: 12px;
+    right: 12px;
+  }
+
+  .toast {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+  }
+}
