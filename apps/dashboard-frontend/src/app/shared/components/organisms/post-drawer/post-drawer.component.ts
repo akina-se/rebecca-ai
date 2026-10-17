@@ -90,18 +90,36 @@ export class PostDrawerComponent implements OnChanges {
     return this.postData();
   }
 
+  /**
+   * Computes the total number of votes cast across all options of the active poll.
+   *
+   * @returns Total vote count, or `0` if the post has no poll options.
+   */
   getTotalPollVotes(): number {
     const options = this.postData()?.poll?.options;
     if (!options || options.length === 0) return 0;
     return options.reduce((sum, opt) => sum + (Number(opt.votes) || 0), 0);
   }
 
+  /**
+   * Calculates the vote share percentage for a single poll option rounded to 1 decimal place.
+   *
+   * @param votes - Number of votes received by the option.
+   * @returns Percentage in the range `[0, 100]`.
+   */
   getPollOptionPercentage(votes: number): number {
     const total = this.getTotalPollVotes();
     if (total <= 0) return 0;
     return Math.round(((Number(votes) || 0) / total) * 1000) / 10;
   }
 
+  /**
+   * Determines whether a poll option has the highest vote count (including ties for first place)
+   * when at least one vote has been cast.
+   *
+   * @param votes - Number of votes received by the option.
+   * @returns `true` if the option is a top-voted choice with > 0 votes.
+   */
   isLeadingPollOption(votes: number): boolean {
     const options = this.postData()?.poll?.options;
     if (!options || options.length === 0) return false;

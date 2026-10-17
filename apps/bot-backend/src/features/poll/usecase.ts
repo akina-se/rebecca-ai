@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Domain use case for autonomous X poll creation and closed poll result quote-post reactions.
+ */
+
 import { AppDependencies, PollData } from '../../types';
 import { executePostPipeline } from '../../core/postPipeline';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
@@ -15,13 +19,21 @@ import {
  * to the injected IPersonaDefinition (@rebecca/persona).
  */
 export class PollUseCase {
+  /**
+   * @param deps - Injected application dependencies (Firestore, Gemini, X API, Persona).
+   * @param config - Poll use case configuration including timezone and poll duration in minutes.
+   */
   constructor(
     private readonly deps: AppDependencies,
     private readonly config: PollUseCaseConfig,
   ) {}
 
   /**
-   * Generates and publishes a new interactive poll post on X.
+   * Generates and publishes a new interactive poll post on X, persisting both the public tweet
+   * and the persona's inner thought to Firestore.
+   *
+   * @returns A promise resolving to the poll creation batch result.
+   * @throws Error if LLM generation, X API publishing, or Firestore persistence fails.
    */
   async executeCreatePoll(): Promise<PollBatchResult> {
     logger.info('[PollUseCase] Starting Poll Creation');
@@ -148,7 +160,11 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
   }
 
   /**
-   * Fetches the final results of the latest closed, unanswered poll and publishes a quote post reaction.
+   * Fetches the final results of the latest closed, unanswered poll, synchronizes option tallies
+   * to Firestore, and publishes a quote post reaction along with the persona's inner thought.
+   *
+   * @returns A promise resolving to the poll result reaction batch outcome.
+   * @throws Error if X API lookup, LLM generation, or Firestore update fails.
    */
   async executePollResult(): Promise<PollBatchResult> {
     logger.info('[PollUseCase] Starting Poll Result Reaction');

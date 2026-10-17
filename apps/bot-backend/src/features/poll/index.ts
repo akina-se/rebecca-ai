@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Module entry point and factory for the X Poll & Result Reaction feature.
+ */
+
 import { Router } from 'express';
 import { PollController } from './controller';
 import { PollUseCase } from './usecase';
@@ -11,7 +15,8 @@ export * from './types';
 
 /**
  * Creates and configures the router module for the X Poll & Result Reaction feature.
- * @param deps The application dependencies.
+ *
+ * @param deps - The application dependencies.
  * @returns An Express Router instance configured with poll routes.
  */
 export const createPollModule = (deps: AppDependencies): Router => {
