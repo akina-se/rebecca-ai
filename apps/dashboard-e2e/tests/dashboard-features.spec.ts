@@ -353,6 +353,18 @@ test.describe('Dashboard Features E2E Tests', () => {
     const thoughtText = await postInnerThought.locator('.inner-thought-text').innerText();
     expect(thoughtText.trim().length).toBeGreaterThan(0);
 
+    // Verify Poll Results visualization (bar chart, winner highlight, vote counts, and total votes)
+    const pollResultsBox = postDrawerContent.locator('.poll-results-box');
+    await expect(pollResultsBox).toBeVisible();
+    await expect(pollResultsBox.locator('.poll-status-badge.closed')).toBeVisible();
+    const pollOptions = pollResultsBox.locator('.poll-option-item');
+    await expect(pollOptions).toHaveCount(4);
+    await expect(pollResultsBox.locator('.poll-option-item.winner')).toHaveCount(1);
+    await expect(pollResultsBox.locator('.poll-option-bar.winner')).toBeVisible();
+    await expect(pollResultsBox.locator('.poll-option-item.winner .poll-option-label')).toContainText('🎮 ゲーム・アニメ');
+    await expect(pollResultsBox.locator('.poll-option-item.winner .poll-option-stats')).toContainText('48%');
+    await expect(pollResultsBox.locator('.poll-footer')).toContainText('100');
+
     // Verify "View on X" button in Post Details drawer navigates to x.com post.
     // Note: window.open with noopener/noreferrer prevents Playwright popup detection,
     // so we stub window.open to capture the URL argument instead.

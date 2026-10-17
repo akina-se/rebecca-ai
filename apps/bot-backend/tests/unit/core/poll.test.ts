@@ -1,45 +1,54 @@
-import { PollUseCase, getWeeklyPollCategory } from '../../../src/features/poll/usecase';
+import { PollUseCase, resolvePollDurationMinutes } from '../../../src/features/poll/usecase';
 import { PollController } from '../../../src/features/poll/controller';
-import { POLL_CATEGORIES } from '../../../src/features/poll/types';
 import { createMockDeps } from './testUtils';
 import { Request, Response } from 'express';
 
-describe('Weekly Poll & Result Reaction Unit Tests', () => {
+describe('X Poll & Result Reaction Unit Tests', () => {
   let deps: ReturnType<typeof createMockDeps>;
   let useCase: PollUseCase;
 
   beforeEach(() => {
     deps = createMockDeps();
-    useCase = new PollUseCase(deps, { timezone: 'Asia/Tokyo' });
+    useCase = new PollUseCase(deps, {
+      timezone: 'Asia/Tokyo',
+      durationMinutes: 1380,
+    });
     (deps.firestore.getTimelineSummary as jest.Mock).mockResolvedValue('Recent timeline context');
-    (deps.firestore.getExtendedPrompt as jest.Mock).mockResolvedValue('Weekend mood');
+    (deps.firestore.getExtendedPrompt as jest.Mock).mockResolvedValue('Current mood context');
     (deps.gemini.generateStructuredPollPost as jest.Mock).mockResolvedValue({
-      thought: '土曜の夜だしみんなの夜更かし事情が気になるな',
-      reply: '土曜の夜ってみんな何して過ごすのが一番幸せ？選んだ理由もリプで教えて〜！',
-      options: ['🎮 ゲーム・アニメ', '🍺 お酒・晩酌', '🛌 即爆睡', '💃 レベッカと夜更かし'],
+      thought: 'みんなの夜更かし事情が気になるな',
+      reply: '夜ってみんな何して過ごすのが一番幸せ？選んだ理由もリプで教えて〜！',
+      options: ['🎮 ゲーム・アニメ', '🍺 お酒・晩酌', '🛌 即爆睡', '💃 夜更かしトーク'],
     });
     (deps.gemini.generateStructuredTimelinePost as jest.Mock).mockResolvedValue({
       thought: 'ゲーム・アニメ派が圧倒的だったな〜！',
-      reply: 'アンケ結果出たよ〜！やっぱり週末はゲーム・アニメ派が1位か〜！わかる〜♡',
+      reply: 'アンケ結果出たよ〜！やっぱりゲーム・アニメ派が1位か〜！わかる〜♡',
     });
     (deps.xApi.tweet as jest.Mock).mockResolvedValue({ data: { id: 'poll_tweet_123' } });
   });
 
-  describe('getWeeklyPollCategory', () => {
-    it('should deterministically select a valid category from POLL_CATEGORIES', () => {
-      const date1 = new Date('2026-10-17T20:00:00+09:00');
-      const date2 = new Date('2026-10-24T20:00:00+09:00');
-      const cat1 = getWeeklyPollCategory(date1, 'Asia/Tokyo');
-      const cat2 = getWeeklyPollCategory(date2, 'Asia/Tokyo');
+  describe('resolvePollDurationMinutes', () => {
+    it('should return clamped default duration when no overrides are given', () => {
+      expect(resolvePollDurationMinutes(1380)).toBe(1380);
+      expect(resolvePollDurationMinutes(1)).toBe(5);
+      expect(resolvePollDurationMinutes(20000)).toBe(10080);
+    });
 
-      expect(POLL_CATEGORIES).toContain(cat1);
-      expect(POLL_CATEGORIES).toContain(cat2);
-      expect(cat1).not.toBe(cat2);
+    it('should convert durationDays override to minutes and clamp within X API bounds (5..10080)', () => {
+      expect(resolvePollDurationMinutes(1380, { durationDays: 1 })).toBe(1440);
+      expect(resolvePollDurationMinutes(1380, { durationDays: 3 })).toBe(4320);
+      expect(resolvePollDurationMinutes(1380, { durationDays: 10 })).toBe(10080);
+    });
+
+    it('should respect durationMinutes override and clamp within X API bounds (5..10080)', () => {
+      expect(resolvePollDurationMinutes(1380, { durationMinutes: 60 })).toBe(60);
+      expect(resolvePollDurationMinutes(1380, { durationMinutes: 2 })).toBe(5);
+      expect(resolvePollDurationMinutes(1380, { durationMinutes: 15000 })).toBe(10080);
     });
   });
 
   describe('PollUseCase.executeCreatePoll', () => {
-    it('should fetch past polls, generate a new poll, publish without image, and save with pending status', async () => {
+    it('should fetch past polls, inject persona interests and core prompt, publish without image, and save with pending status', async () => {
       (deps.firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValue([
         {
           text: '過去のアンケート質問',
@@ -64,7 +73,7 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
         '🎮 ゲーム・アニメ',
         '🍺 お酒・晩酌',
         '🛌 即爆睡',
-        '💃 レベッカと夜更かし',
+        '💃 夜更かしトーク',
       ]);
 
       expect(deps.firestore.getRecentTimelinePosts).toHaveBeenCalledWith({
@@ -73,16 +82,20 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
       });
 
       expect(deps.gemini.generateStructuredPollPost).toHaveBeenCalledWith(
-        expect.any(String),
+        expect.stringContaining(deps.persona.getBasePrompt('timeline', 'ja')),
         expect.stringContaining('過去のアンケート質問 (選択肢: 選択肢A / 選択肢B)'),
+      );
+      expect(deps.gemini.generateStructuredPollPost).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('【あなたの関心領域・興味テーマ】'),
       );
 
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
-        expect.stringContaining('土曜の夜ってみんな何して過ごすのが一番幸せ？'),
+        expect.stringContaining('夜ってみんな何して過ごすのが一番幸せ？'),
         {
           mediaIds: [],
           poll: {
-            options: ['🎮 ゲーム・アニメ', '🍺 お酒・晩酌', '🛌 即爆睡', '💃 レベッカと夜更かし'],
+            options: ['🎮 ゲーム・アニメ', '🍺 お酒・晩酌', '🛌 即爆睡', '💃 夜更かしトーク'],
             durationMinutes: 1380,
           },
         },
@@ -100,9 +113,24 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
               { position: 1, label: '🎮 ゲーム・アニメ', votes: 0 },
               { position: 2, label: '🍺 お酒・晩酌', votes: 0 },
               { position: 3, label: '🛌 即爆睡', votes: 0 },
-              { position: 4, label: '💃 レベッカと夜更かし', votes: 0 },
+              { position: 4, label: '💃 夜更かしトーク', votes: 0 },
             ],
           },
+        }),
+      );
+    });
+
+    it('should allow overriding poll duration via durationDays or durationMinutes', async () => {
+      (deps.firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValue([]);
+
+      await useCase.executeCreatePoll({ durationDays: 2 });
+
+      expect(deps.xApi.tweet).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          poll: expect.objectContaining({
+            durationMinutes: 2880,
+          }),
         }),
       );
     });
@@ -123,11 +151,11 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
       (deps.firestore.getLatestPendingPoll as jest.Mock).mockResolvedValue({
         id: 'poll_doc_1',
         tweetId: 'poll_tweet_123',
-        text: '土曜のアンケート',
+        text: 'アンケート質問',
         pollResultStatus: 'pending',
       });
       (deps.xApi.getTweetDetails as jest.Mock).mockResolvedValue({
-        data: { id: 'poll_tweet_123', text: '土曜のアンケート' },
+        data: { id: 'poll_tweet_123', text: 'アンケート質問' },
         includes: {
           polls: [
             {
@@ -190,11 +218,11 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
       (deps.firestore.getLatestPendingPoll as jest.Mock).mockResolvedValue({
         id: 'poll_doc_closed',
         tweetId: 'poll_tweet_closed_1',
-        text: '土曜の夜ってみんな何して過ごす？',
+        text: '夜ってみんな何して過ごす？',
         pollResultStatus: 'pending',
       });
       (deps.xApi.getTweetDetails as jest.Mock).mockResolvedValue({
-        data: { id: 'poll_tweet_closed_1', text: '土曜の夜ってみんな何して過ごす？' },
+        data: { id: 'poll_tweet_closed_1', text: '夜ってみんな何して過ごす？' },
         includes: {
           polls: [
             {
@@ -216,6 +244,11 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
       expect(result.status).toBe('success');
       expect(result.attachedMedia).toBe(false);
       expect(result.tweetId).toBe('result_tweet_999');
+
+      expect(deps.gemini.generateStructuredTimelinePost).toHaveBeenCalledWith(
+        expect.stringContaining(deps.persona.getBasePrompt('timeline', 'ja')),
+        expect.stringContaining('1. [最多得票] 🎮 ゲーム・アニメ: 15票 (75%)'),
+      );
 
       expect(deps.xApi.tweet).toHaveBeenCalledWith(
         expect.stringContaining('アンケ結果出たよ〜！'),
@@ -262,6 +295,25 @@ describe('Weekly Poll & Result Reaction Unit Tests', () => {
         status: 'suppressed_by_campaign',
         campaignId: 'camp_1',
       });
+    });
+
+    it('should forward durationDays query parameter to executeCreatePoll', async () => {
+      (deps.firestore.getRecentTimelinePosts as jest.Mock).mockResolvedValue([]);
+      const spy = jest.spyOn(useCase, 'executeCreatePoll');
+      const controller = new PollController(useCase);
+      const req = { query: { durationDays: '3' }, body: {} } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await controller.handleCreate(req, res);
+
+      expect(spy).toHaveBeenCalledWith({
+        durationDays: 3,
+        durationMinutes: undefined,
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('should return 200 on handleResult success', async () => {

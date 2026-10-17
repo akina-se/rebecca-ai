@@ -366,7 +366,7 @@ export class GeminiService implements IGeminiService {
    * Generates a structured poll post (inner thought, public tweet text, and 3-4 poll options).
    *
    * @param systemInstruction - System instruction defining character persona and behavior.
-   * @param prompt - Contextual prompt containing past polls, weekly category, and persona context.
+   * @param prompt - Contextual prompt containing past polls and persona context.
    * @returns A promise resolving to the strongly-typed StructuredPollPostResponse.
    */
   async generateStructuredPollPost(

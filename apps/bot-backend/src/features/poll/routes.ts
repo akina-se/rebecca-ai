@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { PollController } from './controller';
 
 /**
- * Configures the Express routes for the Weekly X Poll & Result Reaction feature.
+ * Configures the Express routes for the X Poll & Result Reaction feature.
  * @param controller The PollController instance.
  * @returns An Express Router configured with `/create` and `/result` endpoints.
  */

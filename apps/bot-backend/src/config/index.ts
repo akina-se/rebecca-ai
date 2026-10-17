@@ -146,6 +146,14 @@ export default {
   },
 
   /**
+   * Configuration for interactive X poll posts.
+   * X API v2 requires poll duration_minutes between 5 (5 minutes) and 10080 (7 days).
+   */
+  poll: {
+    durationMinutes: Math.max(5, Math.min(10080, parseInt(process.env.POLL_DURATION_MINUTES || '1380', 10) || 1380)),
+  },
+
+  /**
    * Active persona configuration.
    */
   persona: {

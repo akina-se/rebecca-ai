@@ -4,7 +4,7 @@ import { CampaignGuard } from '../campaign';
 import { logger } from '../../utils/logger';
 
 /**
- * Controller for the Weekly X Poll & Result Reaction feature.
+ * Controller for the X Poll & Result Reaction feature.
  * Adapts HTTP batch requests to PollUseCase executions while respecting active campaign suppression.
  */
 export class PollController {
@@ -13,7 +13,7 @@ export class PollController {
     private readonly campaignGuard?: CampaignGuard,
   ) {}
 
-  handleCreate = async (_req: Request, res: Response): Promise<void> => {
+  handleCreate = async (req: Request, res: Response): Promise<void> => {
     try {
       if (this.campaignGuard) {
         const suppression = await this.campaignGuard.shouldSuppressRoutinePost();
@@ -30,7 +30,17 @@ export class PollController {
         }
       }
 
-      const result = await this.useCase.executeCreatePoll();
+      const rawDays = req.body?.durationDays ?? req.query?.durationDays;
+      const rawMinutes = req.body?.durationMinutes ?? req.query?.durationMinutes;
+      const durationDays =
+        rawDays !== undefined && rawDays !== '' ? Number(rawDays) : undefined;
+      const durationMinutes =
+        rawMinutes !== undefined && rawMinutes !== '' ? Number(rawMinutes) : undefined;
+
+      const result = await this.useCase.executeCreatePoll({
+        durationDays,
+        durationMinutes,
+      });
       res.status(200).json(result);
     } catch (e) {
       logger.error('[PollController] Error in handleCreate', e);
