@@ -9,8 +9,8 @@
 .breadcrumb-current { color: var(--text-main); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mobile-logo-img {
   display: none;
-  height: 20px;
-  width: auto;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
   filter: brightness(1.35) drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
   vertical-align: middle;
