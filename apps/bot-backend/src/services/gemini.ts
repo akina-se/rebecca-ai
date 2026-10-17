@@ -9,6 +9,7 @@ import { formatZonedDateTime } from '../utils/time';
 import { ConversationLogEntry, UserCoreProfile, IGeminiService } from '../types';
 import { parsePersonaResponse, cleanJsonString, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 import { StructuredNewsPostResponse } from '../features/news/types';
+import { StructuredPollPostResponse } from '../features/poll/types';
 import { logger } from '../utils/logger';
 
 /**
@@ -33,6 +34,33 @@ const createStructuredNewsPostSchema = (candidateHeadlines: string[]) => ({
   },
   required: ['selectedTitle', 'thought', 'reply'],
 });
+
+/**
+ * JSON schema for structured poll post generation (thought, reply, and 3-4 poll options).
+ */
+const STRUCTURED_POLL_POST_SCHEMA = {
+  type: 'object',
+  properties: {
+    thought: {
+      type: 'string',
+      description: 'Inner thoughts, true feelings, and why this poll topic was chosen (within 150 characters).',
+    },
+    reply: {
+      type: 'string',
+      description: 'The public poll tweet text inviting followers to vote and reply (within 100 characters).',
+    },
+    options: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+      minItems: 3,
+      maxItems: 4,
+      description: '3 to 4 poll choices, each strictly within 25 characters.',
+    },
+  },
+  required: ['thought', 'reply', 'options'],
+};
 
 const SEARCH_WEB_TOOL = {
   functionDeclarations: [
@@ -330,6 +358,84 @@ export class GeminiService implements IGeminiService {
       };
     } catch (e) {
       logger.error('Error generating structured news post', e);
+      throw e;
+    }
+  }
+
+  /**
+   * Generates a structured poll post (inner thought, public tweet text, and 3-4 poll options).
+   *
+   * @param systemInstruction - System instruction defining character persona and behavior.
+   * @param prompt - Contextual prompt containing past polls and persona context.
+   * @returns A promise resolving to the strongly-typed StructuredPollPostResponse.
+   */
+  async generateStructuredPollPost(
+    systemInstruction: string,
+    prompt: string | string[],
+  ): Promise<StructuredPollPostResponse> {
+    if (!this.ai) {
+      throw new Error('Gemini API client not initialized');
+    }
+    if (!prompt || (Array.isArray(prompt) && prompt.length === 0)) {
+      throw new Error('Prompt cannot be empty for structured poll post generation');
+    }
+
+    try {
+      const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
+      const response = await this.ai.models.generateContent({
+        model: this.config.model,
+        contents: contentStr,
+        config: {
+          systemInstruction,
+          maxOutputTokens: 1000,
+          responseMimeType: 'application/json',
+          responseSchema: STRUCTURED_POLL_POST_SCHEMA,
+          safetySettings: [] as never[],
+          temperature: this.config.temperature ?? 1.20,
+          topP: this.config.topP ?? 0.95,
+          thinkingConfig: {
+            thinkingLevel: this.config.thinkingLevel ?? ThinkingLevel.MEDIUM,
+          },
+        },
+      });
+
+      const rawText = response.text?.trim();
+      if (!rawText) {
+        throw new Error('Gemini API returned empty response for structured poll post');
+      }
+
+      const cleaned = cleanJsonString(rawText);
+      const parsed = JSON.parse(cleaned);
+
+      if (
+        typeof parsed.thought !== 'string' ||
+        typeof parsed.reply !== 'string' ||
+        !Array.isArray(parsed.options)
+      ) {
+        throw new Error('Gemini API returned malformed response schema for structured poll post');
+      }
+
+      const trimmedReply = parsed.reply.trim();
+      if (!trimmedReply) {
+        throw new Error('Gemini API returned structured poll post with empty reply');
+      }
+
+      const validOptions = parsed.options
+        .filter((opt: unknown): opt is string => typeof opt === 'string' && opt.trim().length > 0)
+        .map((opt: string) => opt.trim().slice(0, 25))
+        .slice(0, 4);
+
+      if (validOptions.length < 2) {
+        throw new Error('Gemini API returned fewer than 2 valid poll options');
+      }
+
+      return {
+        thought: parsed.thought.trim(),
+        reply: trimmedReply,
+        options: validOptions,
+      };
+    } catch (e) {
+      logger.error('Error generating structured poll post', e);
       throw e;
     }
   }

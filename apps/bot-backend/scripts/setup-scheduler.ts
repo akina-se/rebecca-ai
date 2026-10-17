@@ -89,6 +89,18 @@ const jobs: SchedulerJobConfig[] = [
         schedule: '0 * * * *', // Every hour JST (matches UI's 1-hour slot granularity for campaign posts)
         url: `${serviceUrl}/batch/campaign-post`,
         attemptDeadline: '180s',
+    },
+    {
+        name: 'rebecca-poll-create-batch',
+        schedule: '0 20 * * 6', // Weekly on Saturdays at 20:00 JST (23h poll creation)
+        url: `${serviceUrl}/batch/poll/create`,
+        attemptDeadline: '180s',
+    },
+    {
+        name: 'rebecca-poll-result-batch',
+        schedule: '0 20 * * 0', // Weekly on Sundays at 20:00 JST (poll result reaction post)
+        url: `${serviceUrl}/batch/poll/result`,
+        attemptDeadline: '180s',
     }
 ];
 

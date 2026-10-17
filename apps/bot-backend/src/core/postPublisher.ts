@@ -14,6 +14,13 @@ export interface PublishPostOptions {
   text: string;
   /** Optional tweet ID to reply to. When specified, executes replyToMention instead of tweet. */
   inReplyToTweetId?: string;
+  /** Optional tweet ID to quote (Quote Post). */
+  quoteTweetId?: string;
+  /** Optional X Poll attachment configuration. */
+  poll?: {
+    options: string[];
+    durationMinutes: number;
+  };
   /** Whether to run multimodal image inference and attach relevant media. Defaults to true. */
   attachImage?: boolean;
   /**
@@ -47,7 +54,7 @@ export const publishPost = async (
   deps: AppDependencies,
   options: PublishPostOptions,
 ): Promise<PublishPostResult> => {
-  const { text, inReplyToTweetId, attachImage = true, context } = options;
+  const { text, inReplyToTweetId, quoteTweetId, poll, attachImage = true, context } = options;
 
   const mediaIds: string[] = [];
   let bestImage: ImageDocWithId | null = null;
@@ -137,9 +144,18 @@ ${text}
       ? await deps.xApi.replyToMention(inReplyToTweetId, text, { mediaIds })
       : await deps.xApi.replyToMention(inReplyToTweetId, text);
   } else {
-    tweetRes = mediaIds.length > 0
-      ? await deps.xApi.tweet(text, { mediaIds })
-      : await deps.xApi.tweet(text, { mediaIds: [] });
+    const tweetOptions: {
+      mediaIds: string[];
+      quote_tweet_id?: string;
+      poll?: { options: string[]; durationMinutes: number };
+    } = { mediaIds };
+    if (quoteTweetId) {
+      tweetOptions.quote_tweet_id = quoteTweetId;
+    }
+    if (poll) {
+      tweetOptions.poll = poll;
+    }
+    tweetRes = await deps.xApi.tweet(text, tweetOptions);
   }
 
   const tweetId = tweetRes?.data?.id;

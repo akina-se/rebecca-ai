@@ -97,8 +97,10 @@ export class XApiService implements IXApiService {
     if (!this.client) return {};
     try {
       const response = await this.client.posts.getById(tweetId, {
-        expansions: ['attachments.media_keys'],
-        'media.fields': ['url', 'type']
+        expansions: ['attachments.media_keys', 'attachments.poll_ids'],
+        postFields: ['attachments'],
+        'media.fields': ['url', 'type'],
+        pollFields: ['duration_minutes', 'end_datetime', 'id', 'options', 'voting_status'],
       } as Parameters<typeof this.client.posts.getById>[1]);
       return response as unknown as XApiTweetDetailsResponse;
     } catch (error) {
@@ -146,13 +148,20 @@ export class XApiService implements IXApiService {
   }
 
   /**
-   * Publishes a new top-level tweet, optionally attaching media or quoting an existing tweet.
+   * Publishes a new top-level tweet, optionally attaching media, a poll, or quoting an existing tweet.
    *
    * @param text - The primary text content of the tweet.
-   * @param options - Optional configuration for media IDs and quote tweet ID.
+   * @param options - Optional configuration for media IDs, poll, and quote tweet ID.
    * @returns A Promise resolving to the newly created tweet data.
    */
-  async tweet(text: string, options?: { mediaIds?: string[], quote_tweet_id?: string }): Promise<XApiCreateResponse> {
+  async tweet(
+    text: string,
+    options?: {
+      mediaIds?: string[];
+      quote_tweet_id?: string;
+      poll?: { options: string[]; durationMinutes: number };
+    },
+  ): Promise<XApiCreateResponse> {
     if (!this.client) {
       logger.warn('Twitter API client not initialized, skipping actual API call');
       return { data: { id: 'mock_tweet_id', text } };
@@ -164,6 +173,12 @@ export class XApiService implements IXApiService {
       }
       if (options?.quote_tweet_id) {
         payload.quote_tweet_id = options.quote_tweet_id;
+      }
+      if (options?.poll) {
+        payload.poll = {
+          options: options.poll.options,
+          duration_minutes: options.poll.durationMinutes,
+        };
       }
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;

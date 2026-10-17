@@ -101,6 +101,32 @@ describe('SyncTimelineUseCase', () => {
         reposts: 0,
         replies: 0,
         mediaUrls: ['https://pbs.twimg.com/media/img4.jpg'],
+        poll: {
+          id: 'poll_4',
+          options: [
+            { position: 1, label: 'Yes', votes: 10 },
+            { position: 2, label: 'No', votes: 2 },
+          ],
+          votingStatus: 'open',
+        },
+      },
+      {
+        id: 'tweet_new_poll_5',
+        text: 'Untracked poll tweet',
+        createdAt: '2026-08-26T12:00:00.000Z',
+        impressions: 80,
+        likes: 8,
+        reposts: 1,
+        replies: 2,
+        mediaUrls: [],
+        poll: {
+          id: 'poll_5',
+          options: [
+            { position: 1, label: 'A', votes: 5 },
+            { position: 2, label: 'B', votes: 3 },
+          ],
+          votingStatus: 'closed',
+        },
       },
     ];
 
@@ -138,7 +164,7 @@ describe('SyncTimelineUseCase', () => {
 
     const result = await useCase.execute('12345');
 
-    expect(result).toEqual({ processed: 4, updated: 3, created: 1, errors: 0 });
+    expect(result).toEqual({ processed: 5, updated: 3, created: 2, errors: 0 });
 
     // Verify existing doc 1 update (media added)
     expect(mockBatchSet).toHaveBeenCalledWith(
@@ -173,14 +199,26 @@ describe('SyncTimelineUseCase', () => {
       })
     );
 
-    // Verify doc 4 update
+    // Verify doc 4 update with poll
     expect(mockBatchSet).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'doc_existing_4' }),
       expect.objectContaining({
         tweetId: 'tweet_empty_matched_4',
         mediaUrls: ['https://pbs.twimg.com/media/img4.jpg'],
+        poll: expect.objectContaining({ id: 'poll_4', votingStatus: 'open' }),
       }),
       { merge: true }
+    );
+
+    // Verify new poll doc 5 creation with postType: 'poll'
+    expect(mockBatchSet).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        text: 'Untracked poll tweet',
+        tweetId: 'tweet_new_poll_5',
+        postType: 'poll',
+        poll: expect.objectContaining({ id: 'poll_5', votingStatus: 'closed' }),
+      })
     );
 
     expect(mockBatchCommit).toHaveBeenCalled();

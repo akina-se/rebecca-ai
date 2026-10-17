@@ -2,6 +2,20 @@ import { Client, OAuth1 } from '@xdevplatform/xdk';
 import * as logger from 'firebase-functions/logger';
 import { XApiConfig } from '../config';
 
+export interface PollOptionDto {
+  position: number;
+  label: string;
+  votes: number;
+}
+
+export interface PollDataDto {
+  id?: string;
+  options: PollOptionDto[];
+  durationMinutes?: number;
+  endDatetime?: string;
+  votingStatus?: 'open' | 'closed';
+}
+
 export interface TimelineTweetDto {
   id: string;
   text: string;
@@ -11,6 +25,7 @@ export interface TimelineTweetDto {
   reposts: number;
   replies: number;
   mediaUrls: string[];
+  poll?: PollDataDto;
 }
 
 export interface IXApiService {
@@ -26,6 +41,7 @@ interface XdkTweetResponse {
     createdAt?: string;
     attachments?: {
       mediaKeys?: string[];
+      pollIds?: string[];
     };
     publicMetrics?: {
       impressionCount?: number;
@@ -42,6 +58,17 @@ interface XdkTweetResponse {
       url?: string;
       previewImageUrl?: string;
       type?: string;
+    }>;
+    polls?: Array<{
+      id: string;
+      options: Array<{
+        position: number;
+        label: string;
+        votes: number;
+      }>;
+      durationMinutes?: number;
+      endDatetime?: string;
+      votingStatus?: 'open' | 'closed';
     }>;
   };
 }
@@ -130,8 +157,9 @@ export class XApiService implements IXApiService {
       maxResults: effectiveLimit,
       exclude: ['retweets', 'replies'],
       postFields: ['created_at', 'public_metrics', 'attachments', 'text'],
-      expansions: ['attachments.media_keys'],
+      expansions: ['attachments.media_keys', 'attachments.poll_ids'],
       mediaFields: ['url', 'preview_image_url', 'type'],
+      pollFields: ['duration_minutes', 'end_datetime', 'id', 'options', 'voting_status'],
     } as Parameters<typeof this.client.users.getPosts>[1])) as XdkTweetResponse;
 
     const tweets = response?.data || [];
@@ -150,9 +178,30 @@ export class XApiService implements IXApiService {
       }
     }
 
+    // Build poll map for fast lookups
+    const pollMap = new Map<string, PollDataDto>();
+    if (response.includes?.polls) {
+      for (const poll of response.includes.polls) {
+        if (poll.id && Array.isArray(poll.options)) {
+          pollMap.set(poll.id, {
+            id: poll.id,
+            options: poll.options.map((opt) => ({
+              position: Number(opt.position) || 0,
+              label: String(opt.label || ''),
+              votes: Number(opt.votes) || 0,
+            })),
+            ...(typeof poll.durationMinutes === 'number' ? { durationMinutes: poll.durationMinutes } : {}),
+            ...(poll.endDatetime ? { endDatetime: poll.endDatetime } : {}),
+            ...(poll.votingStatus ? { votingStatus: poll.votingStatus } : {}),
+          });
+        }
+      }
+    }
+
     return tweets.map((tweet) => {
       const pm = tweet.publicMetrics;
       const mediaKeys = tweet.attachments?.mediaKeys;
+      const pollId = tweet.attachments?.pollIds?.[0];
 
       const mediaUrls: string[] = [];
       if (Array.isArray(mediaKeys)) {
@@ -161,6 +210,8 @@ export class XApiService implements IXApiService {
           if (url) mediaUrls.push(url);
         }
       }
+
+      const poll = pollId ? pollMap.get(pollId) : undefined;
 
       return {
         id: tweet.id,
@@ -171,6 +222,7 @@ export class XApiService implements IXApiService {
         reposts: pm?.repostCount ?? 0,
         replies: pm?.replyCount ?? 0,
         mediaUrls,
+        ...(poll ? { poll } : {}),
       };
     });
   }

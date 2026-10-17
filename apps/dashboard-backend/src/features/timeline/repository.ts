@@ -396,7 +396,8 @@ export class TimelineRepository {
       status: String(data.status || 'SUCCESS'),
       likes: typeof data.likes === 'number' ? data.likes : 0,
       reposts: typeof data.reposts === 'number' ? data.reposts : 0,
-      replies: typeof data.replies === 'number' ? data.replies : 0
+      replies: typeof data.replies === 'number' ? data.replies : 0,
+      ...(data.poll ? { poll: data.poll } : {}),
     };
   }
 

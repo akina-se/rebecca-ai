@@ -158,6 +158,9 @@ const timelinePostConverter: FirestoreDataConverter<TimelinePost> = {
       newsTitle: data['newsTitle'],
       newsEmbedding: data['newsEmbedding'],
       anniversaryTitle: data['anniversaryTitle'],
+      poll: data['poll'],
+      pollResultStatus: data['pollResultStatus'],
+      pollResultTweetId: data['pollResultTweetId'],
     };
   },
 };

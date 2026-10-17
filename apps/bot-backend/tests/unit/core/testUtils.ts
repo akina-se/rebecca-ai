@@ -43,6 +43,8 @@ export const createMockDeps = (): AppDependencies => {
             getScheduledCampaignDueToday: jest.fn().mockResolvedValue(null),
             getCampaignById: jest.fn().mockResolvedValue(null),
             updateCampaign: jest.fn().mockResolvedValue(undefined),
+            getLatestPendingPoll: jest.fn().mockResolvedValue(null),
+            updateTimelinePost: jest.fn().mockResolvedValue(undefined),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),
@@ -57,6 +59,7 @@ export const createMockDeps = (): AppDependencies => {
             generateEvolutionPrompt: jest.fn(),
             auditEvolutionPrompt: jest.fn(),
             generateStructuredNewsPost: jest.fn(),
+            generateStructuredPollPost: jest.fn(),
             generateStructuredTimelinePost: jest.fn(),
             inferImageSearchQuery: jest.fn(),
         } as any,

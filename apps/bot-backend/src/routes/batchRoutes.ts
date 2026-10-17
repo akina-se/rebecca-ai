@@ -13,6 +13,7 @@ import { createAssetEmbeddingsModule } from '../features/assets';
 import { createProactiveAnniversaryModule } from '../features/anniversary';
 import { createSelfReflectionModule } from '../features/self-reflection';
 import { createCampaignPostModule } from '../features/campaign';
+import { createPollModule } from '../features/poll';
 
 export const createBatchRoutes = (deps: AppDependencies): Router => {
     const router = Router();
@@ -31,6 +32,7 @@ export const createBatchRoutes = (deps: AppDependencies): Router => {
     router.use('/random-engagement', createRandomEngagementModule(deps));
     router.use('/asset-embeddings', createAssetEmbeddingsModule(deps));
     router.use('/campaign-post', createCampaignPostModule(deps));
+    router.use('/poll', createPollModule(deps));
 
     return router;
 };

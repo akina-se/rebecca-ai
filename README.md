@@ -25,6 +25,7 @@ Developed with the technical rigor expected of enterprise-grade cloud architectu
 - **Proactive Engagement and Evolution**: Background processes scrape news and timelines to proactively engage users, while the "Evolution" batch system extracts collective consciousness from past interactions to refine and audit Rebecca's persona using LLM-as-a-Judge mechanisms.
 - **Generic Web Search Grounding & Multi-Context Dialogue**: Supports unconstrained 1-on-1 private dialogue (`chat`) alongside public X mentions (`reply`). Incorporates Google Search Grounding (`search_web`) to autonomously look up up-to-date information, facts, and answers during conversations without hardcoded news dependencies.
 - **Narrative Campaign Event Engine**: Enables temporal, episodic storytelling arcs (e.g. multi-day travel itineraries, seasonal festivals, special anniversary weeks) orchestrated through automated timetable slot dispatching. Features strict date overlap rejection, atomic slot state progression, situational persona anchoring with world-building context, and automatic routine post suppression during active events.
+- **Interactive X Poll & Result Reaction Engine**: Autonomously authors interactive X polls grounded in the active persona's interests, timeline memory, and recent 30-poll history for deduplication. Once a poll closes on X, the system fetches the final vote distribution, synchronizes option tallies to Firestore, and publishes a Quote Post reaction while visualizing poll progress bars and winning choices in the Admin Dashboard.
 - **Admin Dashboard & Copilot**: A dedicated administration interface with route-aware AI Copilot performing multi-dimensional data analytics and two-phase Human-In-The-Loop (HITL) action proposals. Layer 0 exposes all 120 persona master patterns for inspection.
 - **Strict Rate Limiting and Cost Controls**: Built-in, multi-tiered quota management prevents unexpected billing spikes from the GCP or X APIs, dynamically distributing limits globally, daily, and per user.
 
@@ -146,10 +147,11 @@ GEMINI_THINKING_LEVEL=MEDIUM
 # CORS Configuration (Dashboard BFF)
 CORS_ALLOWED_ORIGINS=http://localhost:4200,https://your-dashboard-app.web.app
 
-# Rate Limits
+# Rate Limits & Feature Settings
 GLOBAL_DAILY_LIMIT=500
 SPAM_MINUTE_LIMIT=3
 PUBLIC_IP_RATE_LIMIT=100
+POLL_DURATION_MINUTES=1380
 ```
 
 ### Applications (`apps/`)

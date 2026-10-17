@@ -1,4 +1,4 @@
-import { AppDependencies, PostType } from '../types';
+import { AppDependencies, PostType, PollData, PollResultStatus } from '../types';
 import { publishPost, PublishPostResult } from './postPublisher';
 
 export interface ExecutePostPipelineParams {
@@ -6,10 +6,19 @@ export interface ExecutePostPipelineParams {
   text: string;
   thought?: string;
   imageContext?: string;
+  attachImage?: boolean;
+  quoteTweetId?: string;
+  poll?: {
+    options: string[];
+    durationMinutes: number;
+  };
   metadata?: {
     newsTitle?: string;
     newsEmbedding?: number[];
     anniversaryTitle?: string;
+    pollData?: PollData;
+    pollResultStatus?: PollResultStatus;
+    pollResultTweetId?: string;
   };
 }
 
@@ -36,12 +45,23 @@ export const executePostPipeline = async (
   deps: AppDependencies,
   params: ExecutePostPipelineParams,
 ): Promise<PostPipelineResult> => {
-  const { postType, text, thought, imageContext, metadata } = params;
+  const {
+    postType,
+    text,
+    thought,
+    imageContext,
+    attachImage = true,
+    quoteTweetId,
+    poll,
+    metadata,
+  } = params;
 
   const publishResult: PublishPostResult = await publishPost(deps, {
     text,
     context: imageContext,
-    attachImage: true,
+    attachImage,
+    ...(quoteTweetId ? { quoteTweetId } : {}),
+    ...(poll ? { poll } : {}),
   });
 
   await deps.firestore.saveTimelinePost({
@@ -56,6 +76,9 @@ export const executePostPipeline = async (
       ? { newsEmbedding: metadata.newsEmbedding }
       : {}),
     ...(metadata?.anniversaryTitle ? { anniversaryTitle: metadata.anniversaryTitle } : {}),
+    ...(metadata?.pollData ? { poll: metadata.pollData } : {}),
+    ...(metadata?.pollResultStatus ? { pollResultStatus: metadata.pollResultStatus } : {}),
+    ...(metadata?.pollResultTweetId ? { pollResultTweetId: metadata.pollResultTweetId } : {}),
   });
 
   return {

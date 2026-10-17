@@ -161,5 +161,68 @@ describe('PostDrawerComponent', () => {
     component.onViewOnX();
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Tweet ID is not available/), 'info');
   });
+
+  it('should compute poll vote totals, percentages, and leading option accurately', () => {
+    dashboardRepoSpy.getPostById.and.returnValue(of({
+      id: 'p_poll',
+      time: '2026-10-17T11:00:00Z',
+      content: 'Weekly poll question',
+      impressions: 800,
+      status: 'SUCCESS',
+      likes: 20,
+      reposts: 4,
+      replies: 6,
+      mediaUrls: [],
+      poll: {
+        id: 'poll_100',
+        options: [
+          { position: 1, label: 'Option A', votes: 30 },
+          { position: 2, label: 'Option B', votes: 15 },
+          { position: 3, label: 'Option C', votes: 5 }
+        ],
+        votingStatus: 'closed'
+      }
+    }));
+
+    component.postId = 'p_poll';
+    component.ngOnChanges();
+
+    expect(component.postData()?.poll?.id).toBe('poll_100');
+    expect(component.getTotalPollVotes()).toBe(50);
+    expect(component.getPollOptionPercentage(30)).toBe(60);
+    expect(component.getPollOptionPercentage(15)).toBe(30);
+    expect(component.getPollOptionPercentage(5)).toBe(10);
+    expect(component.isLeadingPollOption(30)).toBeTrue();
+    expect(component.isLeadingPollOption(15)).toBeFalse();
+  });
+
+  it('should return 0 votes and false leading option when poll has 0 votes or is absent', () => {
+    component.postData.set({
+      id: 'p_empty_poll',
+      time: '2026-10-17T11:00:00Z',
+      text: 'Zero votes poll',
+      impressions: '10',
+      status: 'SUCCESS',
+      likes: 0,
+      reposts: 0,
+      replies: 0,
+      mediaUrls: [],
+      poll: {
+        options: [
+          { position: 1, label: 'A', votes: 0 },
+          { position: 2, label: 'B', votes: 0 }
+        ],
+        votingStatus: 'open'
+      }
+    });
+
+    expect(component.getTotalPollVotes()).toBe(0);
+    expect(component.getPollOptionPercentage(0)).toBe(0);
+    expect(component.isLeadingPollOption(0)).toBeFalse();
+
+    component.postData.set(null);
+    expect(component.getTotalPollVotes()).toBe(0);
+    expect(component.isLeadingPollOption(10)).toBeFalse();
+  });
 });
 
