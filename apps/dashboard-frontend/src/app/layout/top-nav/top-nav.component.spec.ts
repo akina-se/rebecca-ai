@@ -50,7 +50,7 @@ describe('TopNavComponent', () => {
     expect(component.pageTitle).toBeDefined();
 
     Object.defineProperty(mockRouter, 'url', { value: '/campaigns', configurable: true });
-    expect(component.pageTitle).toBe('キャンペーン管理');
+    expect(component.pageTitle).toBe('キャンペーン');
 
     Object.defineProperty(mockRouter, 'url', { value: '/memory', configurable: true });
     expect(component.pageTitle).toBeDefined();
@@ -120,6 +120,13 @@ describe('TopNavComponent', () => {
     component.logout();
     expect(mockAuthService.logout).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('should navigate to /settings and close dropdown on navigateToSettings', () => {
+    component.isUserDropdownOpen = true;
+    component.navigateToSettings();
+    expect(component.isUserDropdownOpen).toBeFalse();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/settings']);
   });
 
   it('should resolve localized personaName according to active language', () => {

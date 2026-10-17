@@ -53,3 +53,28 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+@media (max-width: 768px) {
+  .card {
+    padding: 0.95rem 1rem;
+  }
+
+  .card-title {
+    font-size: 0.72rem;
+    gap: 5px;
+    margin-bottom: 0.35rem;
+  }
+
+  .card-value {
+    font-size: 1.45rem;
+  }
+
+  .card-trend {
+    font-size: 0.72rem;
+  }
+
+  .sparkline {
+    height: 28px;
+    margin-top: 6px;
+  }
+}
