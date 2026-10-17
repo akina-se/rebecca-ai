@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.33.0](https://github.com/akina-se/rebecca-ai/compare/v1.32.0...v1.33.0) (2026-10-17)
+
+
+### Features
+
+* **bot,dashboard:** add Gemini thinking & sampling config and circular arc upload progress ([#339](https://github.com/akina-se/rebecca-ai/issues/339)) ([5bcda2b](https://github.com/akina-se/rebecca-ai/commit/5bcda2bde468a867c4a4c9eb51efcd7534dd7cdb))
+* **poll:** add weekly X poll & result reaction workflow and dashboard poll visualization ([#345](https://github.com/akina-se/rebecca-ai/issues/345)) ([b2ebd8c](https://github.com/akina-se/rebecca-ai/commit/b2ebd8c2011b87b7081b834aa81e65dd203009b0))
+* **poll:** implement interactive X poll & result reaction engine ([#345](https://github.com/akina-se/rebecca-ai/issues/345)) ([c911f8d](https://github.com/akina-se/rebecca-ai/commit/c911f8d35bc597cbf4f253bcc0c66e6d1c1bb823))
+
+
+### Bug Fixes
+
+* **bot-backend,persona:** inject interlocutor account identity and clarify reply mention semantics ([#335](https://github.com/akina-se/rebecca-ai/issues/335)) ([bb41dad](https://github.com/akina-se/rebecca-ai/commit/bb41dad98b13a7cd56948c1b2cfd831a58481909))
+* **bot-backend:** expand maxOutputTokens to 1000 for thinking tokens in reply generation ([00304dc](https://github.com/akina-se/rebecca-ai/commit/00304dca2383dcb656e5e1057c25a3cbd00b6e19))
+* **dashboard-backend:** increase Cloud Run memory to 1Gi and use Triangle filter for image thumbnailing ([847b228](https://github.com/akina-se/rebecca-ai/commit/847b228bfe6f22b7de4cbafdde580f75cce23b27))
+* **dashboard-backend:** increase Cloud Run memory to 1Gi and use Triangle filter for image thumbnailing ([391fa82](https://github.com/akina-se/rebecca-ai/commit/391fa82792280e5cb78f9adb206c9959c3c52dcc))
+* **metrics:** standardize repost metrics across services and fix XDK mapping ([#343](https://github.com/akina-se/rebecca-ai/issues/343)) ([0f84ca2](https://github.com/akina-se/rebecca-ai/commit/0f84ca27b219dfd2dfb866c4968c4cccf620bee6))
+* **metrics:** standardize repost metrics and fix XDK mapping ([8f16133](https://github.com/akina-se/rebecca-ai/commit/8f161336e84c1ea44151dca6e532279cb85ca33f))
+* **poll:** align poll and result tweet length limit to 100 chars for hashtag budget ([#345](https://github.com/akina-se/rebecca-ai/issues/345)) ([58be878](https://github.com/akina-se/rebecca-ai/commit/58be878e70b7ef833d10095d70879275e6add6f1))
+
 ## [1.32.0](https://github.com/akina-se/rebecca-ai/compare/v1.31.0...v1.32.0) (2026-10-12)
 
 
