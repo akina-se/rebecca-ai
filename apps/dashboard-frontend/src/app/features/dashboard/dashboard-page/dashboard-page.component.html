@@ -18,7 +18,7 @@
   @if (systemAlerts() && systemAlerts().length > 0) {
     <div>
       @for (alert of systemAlerts(); track alert) {
-        <div class="alert-banner" style="margin: -2rem -2rem 2rem -2rem;">
+        <div class="alert-banner dashboard-alert">
           <span class="material-icons">{{ alert.type === 'warning' ? 'warning' : alert.type === 'error' ? 'error' : 'info' }}</span>
           <span><strong>{{ (alert.type === 'warning' ? 'common.action_required' : alert.type === 'error' ? 'common.error' : 'common.info') | translate }}</strong> {{ (alert.message === '3 image captions failed generation.' ? 'dashboard.alert_captions_failed' : alert.message) | translate }}</span>
           @if (alert.link) {

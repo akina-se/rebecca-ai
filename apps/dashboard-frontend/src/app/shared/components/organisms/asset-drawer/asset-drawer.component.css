@@ -123,3 +123,37 @@
 @keyframes spin {
     100% { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+    .drawer-content {
+        gap: 14px;
+    }
+    .asset-preview {
+        min-height: 160px;
+        max-height: 220px;
+    }
+    .preview-img {
+        max-height: 220px;
+        object-fit: contain;
+    }
+    .stat-box {
+        padding: 14px 16px;
+    }
+    .metrics-grid {
+        gap: 10px;
+    }
+    .metric-box {
+        padding: 10px 12px;
+        gap: 8px;
+        min-width: 0;
+    }
+    .metric-icon {
+        font-size: 1.35rem;
+        padding: 6px;
+    }
+    .metric-value {
+        font-size: 0.82rem !important;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+}

@@ -309,3 +309,34 @@
 .tag-input::placeholder {
     color: rgba(255,255,255,0.3);
 }
+
+@media (max-width: 768px) {
+    .drawer-content {
+        gap: 14px;
+    }
+    .profile-box,
+    .stat-box {
+        padding: 14px 16px;
+    }
+    .avatar-placeholder {
+        width: 48px;
+        height: 48px;
+    }
+    .metrics-grid {
+        gap: 10px;
+    }
+    .metric-box {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    .metric-icon {
+        font-size: 1.4rem;
+        padding: 6px;
+    }
+    .metric-value {
+        font-size: 1.05rem;
+    }
+    .chat-history {
+        max-height: 280px;
+    }
+}

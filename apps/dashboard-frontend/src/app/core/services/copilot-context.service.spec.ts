@@ -120,7 +120,7 @@ describe('CopilotContextService', () => {
     service.currentRoute.set('/dashboard');
     expect(service.suggestionChips().length).toBe(3);
     service.currentRoute.set('/campaigns');
-    expect(service.contextBadge()).toBe('Campaign Narrative');
+    expect(service.contextBadge()).toBe('Campaigns');
     expect(service.suggestionChips().length).toBe(3);
     expect(service.suggestionChips()[0]).toBe('Active campaign status');
     service.currentRoute.set('/assets');
