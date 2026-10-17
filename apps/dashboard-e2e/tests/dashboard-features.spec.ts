@@ -356,13 +356,13 @@ test.describe('Dashboard Features E2E Tests', () => {
     // Verify Poll Results visualization (bar chart, winner highlight, vote counts, and total votes)
     const pollResultsBox = postDrawerContent.locator('.poll-results-box');
     await expect(pollResultsBox).toBeVisible();
-    await expect(pollResultsBox.locator('.poll-status-badge.closed')).toBeVisible();
+    await expect(pollResultsBox.locator('.poll-status-badge.poll-status-closed')).toBeVisible();
     const pollOptions = pollResultsBox.locator('.poll-option-item');
     await expect(pollOptions).toHaveCount(4);
-    await expect(pollResultsBox.locator('.poll-option-item.winner')).toHaveCount(1);
-    await expect(pollResultsBox.locator('.poll-option-bar.winner')).toBeVisible();
-    await expect(pollResultsBox.locator('.poll-option-item.winner .poll-option-label')).toContainText('🎮 ゲーム・アニメ');
-    await expect(pollResultsBox.locator('.poll-option-item.winner .poll-option-stats')).toContainText('48%');
+    await expect(pollResultsBox.locator('.poll-option-item.poll-option-leading')).toHaveCount(1);
+    await expect(pollResultsBox.locator('.poll-option-item.poll-option-leading .poll-option-bar')).toBeVisible();
+    await expect(pollResultsBox.locator('.poll-option-item.poll-option-leading .poll-option-label')).toContainText('🎮 ゲーム・アニメ');
+    await expect(pollResultsBox.locator('.poll-option-item.poll-option-leading .poll-option-stats')).toContainText('48%');
     await expect(pollResultsBox.locator('.poll-footer')).toContainText('100');
 
     // Verify "View on X" button in Post Details drawer navigates to x.com post.
