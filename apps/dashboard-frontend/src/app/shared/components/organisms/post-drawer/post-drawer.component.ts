@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, inject, OnChanges, signal } from '@angular/core';
+import { PollData } from '@rebecca/types';
 
 import { DrawerService } from '../../../../core/services/drawer.service';
 import { ToastService } from '../../../services/toast.service';
@@ -19,6 +20,7 @@ interface PostDataModel {
   reposts: number;
   replies: number;
   mediaUrls: string[];
+  poll?: PollData;
 }
 
 @Component({
@@ -52,7 +54,7 @@ export class PostDrawerComponent implements OnChanges {
     this.isLoading.set(true);
     this.dashboardRepo.getPostById(id).subscribe({
       next: (post) => {
-        const postData = {
+        const postData: PostDataModel = {
           id: post.id,
           tweetId: post.tweetId,
           time: post.time,
@@ -63,7 +65,8 @@ export class PostDrawerComponent implements OnChanges {
           likes: post.likes || 0,
           reposts: post.reposts || 0,
           replies: post.replies || 0,
-          mediaUrls: post.mediaUrls || []
+          mediaUrls: post.mediaUrls || [],
+          ...(post.poll ? { poll: post.poll } : {}),
         };
         this.postData.set(postData);
 
@@ -85,6 +88,25 @@ export class PostDrawerComponent implements OnChanges {
 
   get displayPost(): PostDataModel | null {
     return this.postData();
+  }
+
+  getTotalPollVotes(): number {
+    const options = this.postData()?.poll?.options;
+    if (!options || options.length === 0) return 0;
+    return options.reduce((sum, opt) => sum + (Number(opt.votes) || 0), 0);
+  }
+
+  getPollOptionPercentage(votes: number): number {
+    const total = this.getTotalPollVotes();
+    if (total <= 0) return 0;
+    return Math.round(((Number(votes) || 0) / total) * 1000) / 10;
+  }
+
+  isLeadingPollOption(votes: number): boolean {
+    const options = this.postData()?.poll?.options;
+    if (!options || options.length === 0) return false;
+    const maxVotes = Math.max(...options.map((opt) => Number(opt.votes) || 0));
+    return maxVotes > 0 && (Number(votes) || 0) === maxVotes;
   }
 
   onMediaClick(url: string): void {

@@ -187,8 +187,9 @@ describe('XApiService', () => {
         maxResults: 100,
         exclude: ['retweets', 'replies'],
         postFields: ['created_at', 'public_metrics', 'attachments', 'text'],
-        expansions: ['attachments.media_keys'],
+        expansions: ['attachments.media_keys', 'attachments.poll_ids'],
         mediaFields: ['url', 'preview_image_url', 'type'],
+        pollFields: ['duration_minutes', 'end_datetime', 'id', 'options', 'voting_status'],
       })
     );
     expect(tweets).toHaveLength(1);
@@ -201,6 +202,67 @@ describe('XApiService', () => {
       reposts: 4,
       replies: 2,
       mediaUrls: ['https://pbs.twimg.com/media/camel.jpg'],
+    });
+  });
+
+  it('should map poll attachments from includes.polls onto TimelineTweetDto', async () => {
+    mockGetPosts.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'tweet_poll_1',
+          text: 'Weekly poll question',
+          createdAt: '2026-10-17T11:00:00.000Z',
+          publicMetrics: {
+            impressionCount: 500,
+            likeCount: 20,
+            repostCount: 3,
+            replyCount: 5,
+          },
+          attachments: {
+            pollIds: ['poll_999'],
+          },
+        },
+      ],
+      includes: {
+        polls: [
+          {
+            id: 'poll_999',
+            options: [
+              { position: 1, label: 'Option A', votes: 30 },
+              { position: 2, label: 'Option B', votes: 15 },
+              { position: 3, label: 'Option C', votes: 5 },
+            ],
+            durationMinutes: 1380,
+            endDatetime: '2026-10-18T10:00:00.000Z',
+            votingStatus: 'closed',
+          },
+        ],
+      },
+    });
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '12345',
+      syncMaxResults: 100,
+    };
+    const service = new XApiService(cfg);
+    const tweets = await service.fetchRecentTimelineTweets('12345');
+
+    expect(tweets).toHaveLength(1);
+    expect(tweets[0].poll).toEqual({
+      id: 'poll_999',
+      options: [
+        { position: 1, label: 'Option A', votes: 30 },
+        { position: 2, label: 'Option B', votes: 15 },
+        { position: 3, label: 'Option C', votes: 5 },
+      ],
+      durationMinutes: 1380,
+      endDatetime: '2026-10-18T10:00:00.000Z',
+      votingStatus: 'closed',
     });
   });
 

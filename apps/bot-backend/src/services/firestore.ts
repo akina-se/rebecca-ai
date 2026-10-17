@@ -30,6 +30,9 @@ import type {
   XApiUser,
   FollowerListStatus,
   GetRecentTimelinePostsOptions,
+  PostType,
+  PollData,
+  PollResultStatus,
   TimelinePost,
   CampaignDoc,
 } from '../types';
@@ -434,10 +437,13 @@ export interface SaveTimelinePostParams {
   mediaUrls?: string[];
   assetId?: string;
   tweetId?: string;
-  postType?: 'news' | 'soliloquy' | 'random_engagement' | 'anniversary';
+  postType?: PostType;
   newsTitle?: string;
   newsEmbedding?: number[];
   anniversaryTitle?: string;
+  poll?: PollData;
+  pollResultStatus?: PollResultStatus;
+  pollResultTweetId?: string;
 }
 
 /**
@@ -465,6 +471,9 @@ const saveTimelinePost = async (params: SaveTimelinePostParams): Promise<void> =
     ...(params.newsTitle ? { newsTitle: params.newsTitle } : {}),
     ...(params.newsEmbedding ? { newsEmbedding: params.newsEmbedding } : {}),
     ...(params.anniversaryTitle ? { anniversaryTitle: params.anniversaryTitle } : {}),
+    ...(params.poll ? { poll: params.poll } : {}),
+    ...(params.pollResultStatus ? { pollResultStatus: params.pollResultStatus } : {}),
+    ...(params.pollResultTweetId ? { pollResultTweetId: params.pollResultTweetId } : {}),
     impressions: 0,
     likes: 0,
     reposts: 0,
@@ -523,6 +532,37 @@ const getRecentTimelinePosts = async (
     .get();
 
   return snapshot.docs.map((doc) => doc.data()).reverse();
+};
+
+/**
+ * Retrieves the most recent unanswered poll post (`postType === 'poll'` and `pollResultStatus === 'pending'`).
+ *
+ * @returns The latest pending poll TimelinePost with its Firestore document ID, or null if none exists.
+ */
+const getLatestPendingPoll = async (): Promise<(TimelinePost & { id: string }) | null> => {
+  const snapshot = await db.timelineHistory
+    .where('postType', '==', 'poll')
+    .orderBy('timestamp', 'desc')
+    .limit(10)
+    .get();
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    if (data.pollResultStatus === 'pending') {
+      return { ...data, id: doc.id };
+    }
+  }
+  return null;
+};
+
+/**
+ * Merges partial updates into an existing timeline post document.
+ *
+ * @param docId - The Firestore document ID in timeline_history.
+ * @param data - Partial TimelinePost fields to update.
+ */
+const updateTimelinePost = async (docId: string, data: Partial<TimelinePost>): Promise<void> => {
+  await firestore.collection(COLLECTIONS.TIMELINE_HISTORY).doc(docId).set(data as DocumentData, { merge: true });
 };
 
 // ---------------------------------------------------------------------------
@@ -1063,6 +1103,8 @@ export {
   saveTimelineSummary,
   saveTimelinePost,
   getRecentTimelinePosts,
+  getLatestPendingPoll,
+  updateTimelinePost,
   getRecentNewsEmbeddings,
   saveRagMemory,
   findRagMemories,

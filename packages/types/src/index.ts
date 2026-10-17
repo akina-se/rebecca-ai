@@ -123,7 +123,29 @@ export interface RawConversationLog {
 }
 
 /** Canonical post types supported on the timeline. */
-export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign';
+export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign' | 'poll' | 'poll_result';
+
+/** Canonical voting status of an X poll as returned by X API v2. */
+export type PollVotingStatus = 'open' | 'closed';
+
+/** Lifecycle status of the follow-up poll result reaction post. */
+export type PollResultStatus = 'pending' | 'posted' | 'skipped';
+
+/** Represents a single choice within an X poll. */
+export interface PollOption {
+  position: number;
+  label: string;
+  votes: number;
+}
+
+/** Represents poll metadata attached to a timeline post. */
+export interface PollData {
+  id?: string;
+  options: PollOption[];
+  durationMinutes: number;
+  endDatetime?: string;
+  votingStatus?: PollVotingStatus;
+}
 
 /**
  * Represents a post on the AI's timeline.
@@ -153,6 +175,9 @@ export interface TimelinePost {
   newsTitle?: string;
   newsEmbedding?: number[];
   anniversaryTitle?: string;
+  poll?: PollData;
+  pollResultStatus?: PollResultStatus;
+  pollResultTweetId?: string;
 }
 
 /** Rate-limit tracking document for a user within a time window. */
@@ -255,7 +280,7 @@ export interface XApiTweet {
   inReplyToUserId?: string;
   referencedTweets?: Array<{ type: string; id: string }>;
   conversationId?: string;
-  attachments?: { mediaKeys?: string[] };
+  attachments?: { mediaKeys?: string[]; pollIds?: string[] };
 }
 
 /** Represents a user object returned from the X API v2. */
@@ -289,6 +314,7 @@ export interface XApiTweetDetailsResponse {
   data?: XApiTweet;
   includes?: {
     media?: XApiMedia[];
+    polls?: PollData[];
   };
 }
 
@@ -369,6 +395,7 @@ export interface PostDetail {
   likes?: number;
   reposts?: number;
   replies?: number;
+  poll?: PollData;
 }
 
 export interface UserLeaderboard {

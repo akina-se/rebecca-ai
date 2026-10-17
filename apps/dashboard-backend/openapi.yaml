@@ -1111,11 +1111,52 @@ components:
           example: "マスターが喜びそうな話題を選んでみたわ"
         postType:
           type: string
-          enum: [news, soliloquy]
+          enum: [news, soliloquy, campaign, poll, poll_result]
           example: "news"
         newsTitle:
           type: string
           example: "ITパスポート最新シラバス公開"
+
+    PollOption:
+      type: object
+      required:
+        - position
+        - label
+        - votes
+      properties:
+        position:
+          type: integer
+          example: 1
+        label:
+          type: string
+          example: "おうちでコード書く"
+        votes:
+          type: integer
+          example: 42
+
+    PollData:
+      type: object
+      required:
+        - options
+      properties:
+        id:
+          type: string
+          example: "1934600616791482000"
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollOption'
+        durationMinutes:
+          type: integer
+          example: 1380
+        endDatetime:
+          type: string
+          format: date-time
+          example: "2026-10-18T10:00:00.000Z"
+        votingStatus:
+          type: string
+          enum: [open, closed]
+          example: "closed"
 
     PostDetail:
       type: object
@@ -1158,11 +1199,13 @@ components:
           example: 5
         postType:
           type: string
-          enum: [news, soliloquy]
+          enum: [news, soliloquy, campaign, poll, poll_result]
           example: "news"
         newsTitle:
           type: string
           example: "ITパスポート最新シラバス公開"
+        poll:
+          $ref: '#/components/schemas/PollData'
 
     UserLeaderboard:
       type: object

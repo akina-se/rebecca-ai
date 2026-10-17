@@ -440,7 +440,7 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(res.data[0].impressions).toBe(300);
     });
 
-    it('getPostById should resolve streaming API URLs for gs:// images', async () => {
+    it('getPostById should resolve streaming API URLs for gs:// images and forward poll data when present', async () => {
       (timelineRepo as any).collections.timelineHistory = {
         doc: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValueOnce({
@@ -450,7 +450,15 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
               text: 'Image tweet',
               timestamp: '2026-08-18T12:00:00Z',
               impressions: 150,
-              mediaUrls: ['gs://rebecca-ai-gal-images/media_assets/photo.jpg']
+              mediaUrls: ['gs://rebecca-ai-gal-images/media_assets/photo.jpg'],
+              poll: {
+                id: 'poll_1',
+                options: [
+                  { position: 1, label: 'Option 1', votes: 12 },
+                  { position: 2, label: 'Option 2', votes: 8 },
+                ],
+                votingStatus: 'closed',
+              }
             })
           })
         })
@@ -459,6 +467,9 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       const post = await timelineRepo.getPostById('post_1');
       expect(post).not.toBeNull();
       expect(post?.mediaUrls[0]).toBe('/api/v1/assets/photo.jpg/image');
+      expect(post?.poll?.id).toBe('poll_1');
+      expect(post?.poll?.options).toHaveLength(2);
+      expect(post?.poll?.votingStatus).toBe('closed');
     });
 
     it('deletePosts should perform batch soft deletion', async () => {
