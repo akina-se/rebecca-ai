@@ -451,6 +451,30 @@ describe('Firestore Service Unit Tests', () => {
       expect(filtered[0].text).toBe('Soliloquy content');
     });
 
+    it('getTimelinePostByTweetId should return post when found and null when not found or invalid id', async () => {
+      // 1. Found
+      mockQueryGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [{ data: () => ({ tweetId: 'tw_123', text: 'Parent tweet', postType: 'soliloquy' }) }],
+      });
+      const found = await firestoreService.getTimelinePostByTweetId('tw_123');
+      expect(mockQueryWhere).toHaveBeenCalledWith('tweetId', '==', 'tw_123');
+      expect(mockQueryLimit).toHaveBeenCalledWith(1);
+      expect(found).toEqual({ tweetId: 'tw_123', text: 'Parent tweet', postType: 'soliloquy' });
+
+      // 2. Not found
+      mockQueryGet.mockResolvedValueOnce({
+        empty: true,
+        docs: [],
+      });
+      const notFound = await firestoreService.getTimelinePostByTweetId('tw_nonexistent');
+      expect(notFound).toBeNull();
+
+      // 3. Empty string
+      const emptyId = await firestoreService.getTimelinePostByTweetId('');
+      expect(emptyId).toBeNull();
+    });
+
     it('getRecentNewsEmbeddings should return titles and embeddings within cutoff', async () => {
       mockQueryGet.mockResolvedValueOnce({
         forEach: (cb: any) => [

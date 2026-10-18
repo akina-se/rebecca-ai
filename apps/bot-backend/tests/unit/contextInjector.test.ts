@@ -132,5 +132,45 @@ describe('Context Injector', () => {
         expect(enPrompt).toContain('Display Name: Test Master');
         expect(enPrompt).toContain('X Handle: @test_master_01');
     });
+
+    it('should inject parent post context in Japanese and English when replying to root posts', () => {
+        (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(12));
+        const parentPost = '最近急に寒くなってきたね〜。みんな風邪ひいてない？';
+
+        const jaPrompt = buildSystemPrompt(
+            rebeccaPersona,
+            'reply',
+            null,
+            'こっちはまだ半袖だよ',
+            '',
+            '',
+            [],
+            'ja',
+            '',
+            '',
+            parentPost
+        );
+        expect(jaPrompt).toContain('【文脈：ユーザーが返信しているレベッカの元ポスト】');
+        expect(jaPrompt).toContain(`「${parentPost}」`);
+        expect(jaPrompt).toContain('あなたが元ポストで投げかけた話題や問いかけを踏まえた上で');
+
+        const enPrompt = buildSystemPrompt(
+            rebeccaPersona,
+            'reply',
+            null,
+            'Still warm here',
+            '',
+            '',
+            [],
+            'en',
+            '',
+            '',
+            'It is getting chilly lately!'
+        );
+        expect(enPrompt).toContain('[Context: Your Original Post Being Replied To]');
+        expect(enPrompt).toContain('"It is getting chilly lately!"');
+        expect(enPrompt).toContain('Take into account your original post and the question/topic you raised');
+    });
 });
+
 

@@ -21,6 +21,7 @@ export const createMockDeps = (): AppDependencies => {
             updateCoreProfile: jest.fn(),
             getAllUsers: jest.fn(),
             getRecentTimelinePosts: jest.fn().mockResolvedValue([]),
+            getTimelinePostByTweetId: jest.fn().mockResolvedValue(null),
             saveTimelineSummary: jest.fn(),
             getRecentConversationLogs: jest.fn(),
             saveExtendedPrompt: jest.fn(),

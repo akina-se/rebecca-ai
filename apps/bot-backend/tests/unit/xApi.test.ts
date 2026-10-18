@@ -154,7 +154,8 @@ describe('XApiService Unit Tests', () => {
             expect(mockClientInstance.users.getMentions).toHaveBeenCalledWith('999999', expect.objectContaining({ 
                 since_id: 'last_id',
                 expansions: ['author_id', 'attachments.media_keys'],
-                'media.fields': ['url', 'type', 'preview_image_url']
+                'media.fields': ['url', 'type', 'preview_image_url'],
+                'tweet.fields': ['author_id', 'in_reply_to_user_id', 'referenced_tweets', 'attachments'],
             }));
         });
 
