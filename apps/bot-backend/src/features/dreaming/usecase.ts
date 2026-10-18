@@ -5,7 +5,8 @@ import { logger } from '../../utils/logger';
 /**
  * Orchestrates the user memory consolidation (Dreaming) process.
  * 
- * Consolidates short-term episodic buffers into long-term core profiles for all registered users.
+ * Consolidates short-term episodic buffers into long-term core profiles for users
+ * who have had conversation activity since their last dreaming session.
  * Enforces a 15 RPM throttling delay between users to avoid Gemini API quota exhaustion,
  * and ensures isolated per-user transactional updates so partial failures do not corrupt data.
  */
@@ -26,7 +27,7 @@ export class GlobalDreamingUseCase {
     }
 
     /**
-     * Executes the dreaming process across all users with pending episodic buffers.
+     * Executes the dreaming process across users with pending, unconsolidated episodic buffers.
      * 
      * @returns A promise resolving to DreamingExecutionResult detailing the execution metrics.
      */
@@ -34,9 +35,7 @@ export class GlobalDreamingUseCase {
         logger.info('[GlobalDreamingUseCase] Starting user memory consolidation (dreaming)');
         const users = await this.deps.firestore.getAllUsers();
 
-        const targetUsers = users.filter(
-            (user) => Array.isArray(user.episodicBuffer) && user.episodicBuffer.length > 0,
-        );
+        const targetUsers = users.filter((user) => this.hasUnconsolidatedActivity(user));
 
         if (targetUsers.length === 0) {
             logger.info('[GlobalDreamingUseCase] No users with pending episodic buffers found. Skipping');
@@ -51,7 +50,7 @@ export class GlobalDreamingUseCase {
             };
         }
 
-        logger.info('[GlobalDreamingUseCase] Found users with episodic buffers to consolidate', {
+        logger.info('[GlobalDreamingUseCase] Found users with unconsolidated episodic buffers', {
             count: targetUsers.length,
         });
 
@@ -92,7 +91,8 @@ export class GlobalDreamingUseCase {
 
     /**
      * Processes dreaming synthesis for an individual user.
-     * Consolidates episodic buffer into core profile and atomically trims the buffer window.
+     * Consolidates episodic buffer into core profile, atomically updates lastDreamedAt,
+     * and retains the sliding window (up to 20 recent turns).
      * 
      * @param userId - Target user identifier.
      * @param userData - The user record containing episodicBuffer and coreProfile.
@@ -109,12 +109,38 @@ export class GlobalDreamingUseCase {
             const newCoreProfile = await this.deps.gemini.generateDreaming(systemPrompt, episodicBuffer, coreProfile);
             // Retain recent 10 turn-pairs (20 entries) as sliding window to preserve continuity
             const retainedBuffer = episodicBuffer.slice(-20);
-            await this.deps.firestore.updateCoreProfile(userId, newCoreProfile, retainedBuffer);
+            const dreamedAt = new Date().toISOString();
+            await this.deps.firestore.updateCoreProfile(userId, newCoreProfile, retainedBuffer, dreamedAt);
             logger.info('[GlobalDreamingUseCase] Successfully consolidated memory for user', { userId });
             return true;
         } catch (error) {
             logger.error('[GlobalDreamingUseCase] Dreaming failed for user', error, { userId });
             return false;
         }
+    }
+
+    /**
+     * Determines whether a user has pending conversational activity requiring memory consolidation.
+     *
+     * Evaluates that the user has an episodic buffer and unconsolidated activity
+     * since their last dreaming session. Uses epoch millisecond comparison to guard
+     * against ISO-8601 string formatting or timezone offset differences.
+     *
+     * @param user - Firestore user entity to evaluate.
+     * @returns True if the user has pending episodic activity; false otherwise.
+     */
+    private hasUnconsolidatedActivity(user: FirestoreUser): boolean {
+        if (!Array.isArray(user.episodicBuffer) || user.episodicBuffer.length === 0) {
+            return false;
+        }
+
+        if (!user.lastDreamedAt) {
+            return true;
+        }
+
+        const lastSeenMs = user.lastSeen ? new Date(user.lastSeen).getTime() : 0;
+        const lastDreamedMs = new Date(user.lastDreamedAt).getTime();
+
+        return Number.isFinite(lastSeenMs) && Number.isFinite(lastDreamedMs) && lastSeenMs > lastDreamedMs;
     }
 }
