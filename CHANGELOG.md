@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.0](https://github.com/akina-se/rebecca-ai/compare/v1.33.2...v1.34.0) (2026-10-18)
+
+
+### Features
+
+* **bot-backend:** ground first-turn replies with parent timeline post context ([#362](https://github.com/akina-se/rebecca-ai/issues/362)) ([#363](https://github.com/akina-se/rebecca-ai/issues/363)) ([f0f1876](https://github.com/akina-se/rebecca-ai/commit/f0f18760fd90ab107696438aea5eb129e08601e1))
+
 ## [1.33.2](https://github.com/akina-se/rebecca-ai/compare/v1.33.1...v1.33.2) (2026-10-18)
 
 
