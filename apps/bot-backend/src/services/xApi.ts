@@ -232,11 +232,12 @@ export class XApiService implements IXApiService {
       }
 
       // The X API v2 requires expansions to populate authorId and attached media objects in includes.media.
-      // Request tweet.fields (referenced_tweets, in_reply_to_user_id) to resolve parent posts with 0 extra API reads.
+      // Request postFields / tweet.fields (referenced_tweets, in_reply_to_user_id) to resolve parent posts with 0 extra API reads.
       const params: Record<string, unknown> = {
         "max_results": 100,
         "expansions": ["author_id", "attachments.media_keys"],
         "media.fields": ["url", "type", "preview_image_url"],
+        "postFields": ["author_id", "in_reply_to_user_id", "referenced_tweets", "attachments"],
         "tweet.fields": ["author_id", "in_reply_to_user_id", "referenced_tweets", "attachments"],
       };
       if (sinceId) {
