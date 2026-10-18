@@ -38,10 +38,10 @@
     "jest": "^30.5.2",
     "license-checker": "^25.0.1",
     "secretlint": "^13.0.7",
-    "ts-jest": "^29.4.14",
+    "ts-jest": "^29.4.15",
     "turbo": "latest",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.0"
+    "typescript-eslint": "^8.71.2"
   },
   "overrides": {
     "@google-cloud/firestore": "^9.0.0",
