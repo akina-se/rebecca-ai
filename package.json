@@ -41,7 +41,7 @@
     "ts-jest": "^29.4.14",
     "turbo": "latest",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.0"
+    "typescript-eslint": "^8.71.2"
   },
   "overrides": {
     "@google-cloud/firestore": "^9.0.0",
