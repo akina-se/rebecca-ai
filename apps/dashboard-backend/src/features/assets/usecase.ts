@@ -495,7 +495,7 @@ export class AssetsUseCase {
           },
           AssetsUseCase.CAPTION_PROMPT
         ],
-        config: { maxOutputTokens: 1000, thinkingConfig: { thinkingBudget: 0 } }
+        config: { maxOutputTokens: 1000 }
       });
 
       const caption = response.text?.trim() || '';
@@ -542,7 +542,7 @@ export class AssetsUseCase {
       const response = await this.ai.models.generateContent({
         model: config.gemini.model,
         contents,
-        config: { maxOutputTokens: 1000, thinkingConfig: { thinkingBudget: 0 } }
+        config: { maxOutputTokens: 1000 }
       });
 
       const caption = response.text?.trim() || '';
