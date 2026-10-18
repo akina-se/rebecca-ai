@@ -537,6 +537,27 @@ const getRecentTimelinePosts = async (
 };
 
 /**
+ * Retrieves a timeline post by its unique X tweet ID.
+ *
+ * @param tweetId - The tweet ID on X.
+ * @returns The matching TimelinePost document, or null if not found.
+ */
+const getTimelinePostByTweetId = async (tweetId: string): Promise<TimelinePost | null> => {
+  if (!tweetId) {
+    return null;
+  }
+  const snapshot = await db.timelineHistory
+    .where('tweetId', '==', tweetId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+  return snapshot.docs[0].data();
+};
+
+/**
  * Retrieves the most recent unanswered poll post (`postType === 'poll'` and `pollResultStatus === 'pending'`).
  *
  * @returns The latest pending poll TimelinePost with its Firestore document ID, or null if none exists.
@@ -1105,6 +1126,7 @@ export {
   saveTimelineSummary,
   saveTimelinePost,
   getRecentTimelinePosts,
+  getTimelinePostByTweetId,
   getLatestPendingPoll,
   updateTimelinePost,
   getRecentNewsEmbeddings,

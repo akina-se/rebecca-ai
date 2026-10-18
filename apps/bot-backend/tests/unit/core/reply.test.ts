@@ -249,4 +249,98 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             '内省'
         );
     });
+
+    it('should resolve parent timeline post from Firestore and inject into processedText, searchContext, and systemPrompt', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'テストマスター',
+            username: 'test_master_01',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getTimelinePostByTweetId.mockResolvedValue({
+            tweetId: 'parent_tweet_100',
+            text: '最近急に寒くなってきたね〜。みんな風邪ひいてない？',
+            postType: 'soliloquy'
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue('防寒 対策');
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '相手はまだ半袖らしい！元気だなあ',
+            reply: '半袖！？すごーい！風邪ひかないように気をつけてね！'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        const result = await usecase.execute({
+            tweetId: 'mention_tweet_200',
+            text: '@rebecca_ai_gal こっちはまだ半袖で過ごせるくらい暑いよ！',
+            authorId: 'user_100',
+            inReplyToTweetId: 'parent_tweet_100'
+        });
+
+        expect(result.status).toBe('success');
+        expect(deps.firestore.getTimelinePostByTweetId).toHaveBeenCalledWith('parent_tweet_100');
+
+        const expectedProcessedText = `【返信元の${deps.persona.metadata.displayName}の投稿】\n最近急に寒くなってきたね〜。みんな風邪ひいてない？\n\n【対話相手の発言】\n@rebecca_ai_gal こっちはまだ半袖で過ごせるくらい暑いよ！`;
+
+        // 1. Search query generator receives parent post context in Turn 1
+        expect(deps.gemini.generateSearchQuery).toHaveBeenCalledWith(
+            expect.stringContaining(`${deps.persona.metadata.displayName}: 最近急に寒くなってきたね〜。みんな風邪ひいてない？`)
+        );
+
+        // 2. generateStructuredReply receives contextualized prompt and processedText
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('【文脈：ユーザーが返信している'),
+            expect.any(Array),
+            expectedProcessedText
+        );
+
+        // 3. Conversation log and episodic buffer receive the contextualized text
+        expect(deps.firestore.saveRawConversationLog).toHaveBeenCalledWith(
+            'user_100',
+            expectedProcessedText,
+            '半袖！？すごーい！風邪ひかないように気をつけてね！',
+            '相手はまだ半袖らしい！元気だなあ'
+        );
+    });
+
+    it('should gracefully fallback to standard text when inReplyToTweetId is not found in Firestore', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'テストマスター',
+            username: 'test_master_01',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getTimelinePostByTweetId.mockResolvedValue(null);
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '内省',
+            reply: 'お返事です'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        const result = await usecase.execute({
+            tweetId: 'mention_tweet_300',
+            text: '@rebecca_ai_gal こんばんは',
+            authorId: 'user_200',
+            inReplyToTweetId: 'unknown_parent_tweet'
+        });
+
+        expect(result.status).toBe('success');
+        expect(deps.firestore.getTimelinePostByTweetId).toHaveBeenCalledWith('unknown_parent_tweet');
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.not.stringContaining('【文脈：ユーザーが返信している'),
+            expect.any(Array),
+            '@rebecca_ai_gal こんばんは'
+        );
+    });
 });
+

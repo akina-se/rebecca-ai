@@ -47,6 +47,29 @@ describe('ReplyTaskController', () => {
             text: 'hello',
             authorId: 'user_1',
             mediaUrls: undefined,
+            inReplyToTweetId: undefined,
+        });
+    });
+
+    it('should pass inReplyToTweetId to useCase when provided in payload', async () => {
+        mockReq = {
+            body: {
+                tweetId: '123',
+                text: 'hello reply',
+                authorId: 'user_1',
+                inReplyToTweetId: 'parent_999',
+            },
+        };
+
+        await controller.handle(mockReq as Request, mockRes as Response);
+
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockUseCase.execute).toHaveBeenCalledWith({
+            tweetId: '123',
+            text: 'hello reply',
+            authorId: 'user_1',
+            mediaUrls: undefined,
+            inReplyToTweetId: 'parent_999',
         });
     });
 
@@ -77,6 +100,7 @@ describe('ReplyTaskController', () => {
                 'https://ton.twitter.com/pic.png',
                 'https://media.x.com/test.jpg',
             ],
+            inReplyToTweetId: undefined,
         });
     });
 

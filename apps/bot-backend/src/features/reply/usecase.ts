@@ -24,11 +24,11 @@ export class ReplyTaskUseCase {
      * Executes the reply task logic.
      * It processes a mention, ensures idempotency, applies rate limits, generates an AI response, and publishes it.
      * 
-     * @param payload An object containing the tweet ID, the tweet text, and the author ID.
+     * @param payload An object containing the tweet ID, the tweet text, the author ID, and optional reply metadata.
      * @returns A promise resolving to an object containing the execution status and optionally a reason if not successful.
      */
-    async execute(payload: { tweetId: string, text: string, authorId: string, mediaUrls?: string[] }): Promise<{ status: string, reason?: string }> {
-        const { tweetId, text, authorId, mediaUrls } = payload;
+    async execute(payload: { tweetId: string, text: string, authorId: string, mediaUrls?: string[], inReplyToTweetId?: string }): Promise<{ status: string, reason?: string }> {
+        const { tweetId, text, authorId, mediaUrls, inReplyToTweetId } = payload;
         const { deps } = this;
         
         // Prevent duplicate processing of the same mention
@@ -102,9 +102,34 @@ ${desc}
             }
         }
 
+        // Check if this mention is a direct reply to a root timeline post
+        let parentPostText: string | undefined;
+        if (inReplyToTweetId) {
+            try {
+                const parentPost = await deps.firestore.getTimelinePostByTweetId(inReplyToTweetId);
+                if (parentPost?.text) {
+                    parentPostText = parentPost.text;
+                    logger.info('[ReplyTaskUseCase] Resolved parent timeline post context from Firestore cache', {
+                        tweetId,
+                        inReplyToTweetId,
+                    });
+                }
+            } catch (error) {
+                logger.warn('[ReplyTaskUseCase] Failed to lookup parent timeline post', {
+                    tweetId,
+                    inReplyToTweetId,
+                    error: (error as Error).message,
+                });
+            }
+        }
+
         const workingMemory = getWorkingMemory(userData.episodicBuffer);
 
-        let processedText = text;
+        const personaName = deps.persona.metadata.displayName;
+        let processedText = parentPostText
+            ? `【返信元の${personaName}の投稿】\n${parentPostText}\n\n【対話相手の発言】\n${text}`
+            : text;
+
         if (mediaUrls && mediaUrls.length > 0) {
             try {
                 for (const url of mediaUrls) {
@@ -126,7 +151,9 @@ ${desc}
         const timelineSummary = await deps.firestore.getTimelineSummary();
         
         let ragMemories: string[] = [];
-        const searchContext = workingMemory.map(m => `${m.role}: ${m.content}`).join('\n');
+        const searchContext = workingMemory.length > 0
+            ? workingMemory.map(m => `${m.role}: ${m.content}`).join('\n')
+            : (parentPostText ? `${personaName}: ${parentPostText}` : '');
         const searchPrompt = `あなたは検索クエリ生成AIです。以下の直近の会話文脈とユーザーの最新の発言を踏まえて、ユーザーの意図を汲み取った「検索用クエリ（短い一文または単語の羅列）」を生成してください。
 【直前の会話文脈】
 ${searchContext}
@@ -170,7 +197,8 @@ ${processedText}
             ragMemories,
             lang,
             personaFewShotPrompt,
-            campaignContext
+            campaignContext,
+            parentPostText
         );
 
         // Generate the structured AI response (thought + reply) based on the contextualized prompt
