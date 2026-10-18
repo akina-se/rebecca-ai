@@ -233,9 +233,9 @@ textarea.form-control,
 .modal-body { padding: 0; overflow-y: auto; flex: 1; }
 
 /* ============================================================
-   Global Mobile Responsive Overrides (<= 768px)
+   Global Mobile Responsive Overrides (<= 1024px)
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   html, body {
     height: 100dvh;
     min-height: 100dvh;

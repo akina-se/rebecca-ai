@@ -447,7 +447,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .delete-target-title { color: var(--text-muted); font-style: italic; margin: 0; }
 .modal-footer { padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); background: rgba(0, 0, 0, 0.2); }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .editor-topbar { flex-direction: column; align-items: stretch; gap: 0.75rem; }
   .topbar-left, .topbar-actions, .day-accordion-header, .day-accordion-left { flex-wrap: wrap; gap: 8px; }
   .topbar-actions { width: 100%; }

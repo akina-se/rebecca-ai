@@ -421,7 +421,7 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       }));
     });
 
-    it('regenerateCaptions fallback without AI key', async () => {
+    it('regenerateCaptions should throw without AI key and not save fallback', async () => {
       (config.gemini as any).apiKey = '';
       const noAiUseCase = new AssetsUseCase(repo, mockStorage);
 
@@ -436,12 +436,8 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         }
       ]);
 
-      await noAiUseCase.regenerateCaptions(['img_fallback']);
-      expect(repo.update).toHaveBeenCalledWith('img_fallback', {
-        caption: expect.stringContaining('fallback.png'),
-        status: AssetStatus.FAILED,
-        embedding: null
-      });
+      await expect(noAiUseCase.regenerateCaptions(['img_fallback'])).rejects.toThrow('Gemini API is not configured or missing API key');
+      expect(repo.update).not.toHaveBeenCalled();
     });
   });
 

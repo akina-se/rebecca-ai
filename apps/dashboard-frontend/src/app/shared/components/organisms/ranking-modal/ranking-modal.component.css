@@ -244,7 +244,7 @@
     color: var(--text-muted);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .modal-container {
         width: calc(100vw - 24px);
         max-height: 85dvh;

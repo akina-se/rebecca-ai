@@ -88,9 +88,9 @@
 }
 
 /* ============================================================
-   Mobile Bottom Navigation Bar (<= 768px)
+   Mobile Bottom Navigation Bar (<= 1024px)
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   :host {
     position: fixed;
     bottom: 0;
