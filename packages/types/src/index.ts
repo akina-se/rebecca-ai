@@ -91,6 +91,8 @@ export interface FirestoreUser {
   status?: UserStatus;
   firstSeen?: string;
   lastSeen?: string;
+  /** ISO 8601 datetime of the last completed dreaming memory consolidation */
+  lastDreamedAt?: string;
 }
 
 // ---------------------------------------------------------------------------

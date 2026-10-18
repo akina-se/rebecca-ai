@@ -116,14 +116,16 @@ const appendEpisodicBuffer = async (userId: string, logEntry: ConversationLogEnt
  * @param userId         - Target user's document ID.
  * @param profileData    - New core profile object.
  * @param retainedBuffer - The sliding window of recent conversation turns to retain (defaults to empty).
+ * @param lastDreamedAt  - ISO 8601 timestamp of consolidation (defaults to current time).
  */
 const updateCoreProfile = async (
   userId: string,
   profileData: UserCoreProfile,
   retainedBuffer: ConversationLogEntry[] = [],
+  lastDreamedAt: string = new Date().toISOString(),
 ): Promise<void> => {
   await db.users.doc(userId).set(
-    { coreProfile: profileData, episodicBuffer: retainedBuffer } as unknown as FirestoreUser,
+    { coreProfile: profileData, episodicBuffer: retainedBuffer, lastDreamedAt } as unknown as FirestoreUser,
     { merge: true },
   );
 };

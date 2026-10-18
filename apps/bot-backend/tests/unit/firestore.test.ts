@@ -138,7 +138,7 @@ describe('Firestore Service Unit Tests', () => {
       const retained = [{ role: 'user' as const, content: 'hi' }];
       await firestoreService.updateCoreProfile('u1', profile, retained);
       expect(mockDocSet).toHaveBeenCalledWith(
-        { coreProfile: profile, episodicBuffer: retained },
+        { coreProfile: profile, episodicBuffer: retained, lastDreamedAt: expect.any(String) },
         { merge: true }
       );
     });

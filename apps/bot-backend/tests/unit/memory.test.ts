@@ -65,7 +65,7 @@ describe('Memory Module', () => {
                 await (useCase as any).processDreamingForUser('user1', { episodicBuffer: [{ role: 'user', content: 'hi' }] } as unknown as any);
                 
                 expect(deps.gemini.generateDreaming).toHaveBeenCalled();
-                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] }, [{ role: 'user', content: 'hi' }]);
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('user1', { attributes: ['cool'] }, [{ role: 'user', content: 'hi' }], expect.any(String));
             });
 
             it('should catch and log error if generateDreaming fails (abnormal case)', async () => {
@@ -98,6 +98,7 @@ describe('Memory Module', () => {
                     'u1',
                     { attributes: ['friendly'] },
                     expect.any(Array),
+                    expect.any(String),
                 );
                 expect(result).toEqual({
                     status: 'success',
@@ -106,6 +107,91 @@ describe('Memory Module', () => {
                     succeeded: 1,
                     failed: 0,
                     skipped: 1,
+                });
+            });
+
+            it('should skip users whose lastSeen is older than lastDreamedAt (already consolidated)', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([
+                    // u1: chatted before last dreaming -> skipped
+                    {
+                        id: 'u1',
+                        lastSeen: '2026-10-18T04:00:00.000Z',
+                        lastDreamedAt: '2026-10-18T04:30:00.000Z',
+                        episodicBuffer: [{ role: 'user', content: 'old turn' }]
+                    },
+                    // u2: chatted after last dreaming -> processed
+                    {
+                        id: 'u2',
+                        lastSeen: '2026-10-18T10:00:00.000Z',
+                        lastDreamedAt: '2026-10-18T04:30:00.000Z',
+                        episodicBuffer: [{ role: 'user', content: 'new turn' }]
+                    }
+                ]);
+                deps.gemini.generateDreaming.mockResolvedValue({ attributes: ['engaged'] });
+
+                const customUseCase = new GlobalDreamingUseCase(deps, { throttleMs: 5 });
+                const result = await customUseCase.execute();
+
+                expect(deps.gemini.generateDreaming).toHaveBeenCalledTimes(1);
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith(
+                    'u2',
+                    { attributes: ['engaged'] },
+                    expect.any(Array),
+                    expect.any(String),
+                );
+                expect(result).toEqual({
+                    status: 'success',
+                    totalUsers: 2,
+                    processedUsers: 1,
+                    succeeded: 1,
+                    failed: 0,
+                    skipped: 1,
+                });
+            });
+
+            it('should correctly handle timezone offsets, equal timestamps, and invalid dates via epoch comparison', async () => {
+                deps.firestore.getAllUsers.mockResolvedValue([
+                    // u_equal: lastSeen == lastDreamedAt -> skipped
+                    {
+                        id: 'u_equal',
+                        lastSeen: '2026-10-18T04:30:00.000Z',
+                        lastDreamedAt: '2026-10-18T04:30:00.000Z',
+                        episodicBuffer: [{ role: 'user', content: 'turn' }]
+                    },
+                    // u_offset: JST (+09:00) vs UTC (Z), lastSeen (13:31 JST = 04:31 UTC) is after lastDreamedAt (04:30 UTC) -> processed
+                    {
+                        id: 'u_offset',
+                        lastSeen: '2026-10-18T13:31:00.000+09:00',
+                        lastDreamedAt: '2026-10-18T04:30:00.000Z',
+                        episodicBuffer: [{ role: 'user', content: 'new turn with tz offset' }]
+                    },
+                    // u_invalid: corrupted date string -> skipped safely
+                    {
+                        id: 'u_invalid',
+                        lastSeen: 'invalid-date-string',
+                        lastDreamedAt: '2026-10-18T04:30:00.000Z',
+                        episodicBuffer: [{ role: 'user', content: 'turn' }]
+                    }
+                ]);
+                deps.gemini.generateDreaming.mockResolvedValue({ attributes: ['engaged'] });
+
+                const customUseCase = new GlobalDreamingUseCase(deps, { throttleMs: 5 });
+                const result = await customUseCase.execute();
+
+                expect(deps.gemini.generateDreaming).toHaveBeenCalledTimes(1);
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith(
+                    'u_offset',
+                    { attributes: ['engaged'] },
+                    expect.any(Array),
+                    expect.any(String),
+                );
+                expect(result).toEqual({
+                    status: 'success',
+                    totalUsers: 3,
+                    processedUsers: 1,
+                    succeeded: 1,
+                    failed: 0,
+                    skipped: 2,
                 });
             });
 
@@ -140,7 +226,7 @@ describe('Memory Module', () => {
                 expect(result.succeeded).toBe(1);
                 expect(result.failed).toBe(1);
                 expect(deps.firestore.updateCoreProfile).toHaveBeenCalledTimes(1);
-                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('u1', expect.any(Object), expect.any(Array));
+                expect(deps.firestore.updateCoreProfile).toHaveBeenCalledWith('u1', expect.any(Object), expect.any(Array), expect.any(String));
             });
 
             it('should report failed status when all target users fail', async () => {

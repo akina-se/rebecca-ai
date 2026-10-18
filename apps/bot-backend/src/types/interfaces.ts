@@ -46,7 +46,7 @@ export interface IFirestoreService {
   getUserDoc(userId: string): Promise<FirestoreUser | null>;
   updateUserDoc(userId: string, data: Partial<FirestoreUser>): Promise<void>;
   appendEpisodicBuffer(userId: string, log: ConversationLogEntry): Promise<void>;
-  updateCoreProfile(userId: string, profile: UserCoreProfile, retainedBuffer?: ConversationLogEntry[]): Promise<void>;
+  updateCoreProfile(userId: string, profile: UserCoreProfile, retainedBuffer?: ConversationLogEntry[], lastDreamedAt?: string): Promise<void>;
   checkAndConsumeRateLimit(
     userId: string,
     dateStr: string,
