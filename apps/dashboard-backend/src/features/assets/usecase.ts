@@ -495,7 +495,7 @@ export class AssetsUseCase {
           },
           AssetsUseCase.CAPTION_PROMPT
         ],
-        config: { maxOutputTokens: 300 }
+        config: { maxOutputTokens: 1000, thinkingConfig: { thinkingBudget: 0 } }
       });
 
       const caption = response.text?.trim() || '';
@@ -517,8 +517,7 @@ export class AssetsUseCase {
    */
   private async generateCaptionForAsset(filename: string, assetId: string): Promise<{ caption: string; embedding: number[]; status: AssetStatus }> {
     if (!this.ai || !config.gemini.apiKey) {
-      const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
-      return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
+      throw new Error('Gemini API is not configured or missing API key');
     }
 
     try {
@@ -543,22 +542,20 @@ export class AssetsUseCase {
       const response = await this.ai.models.generateContent({
         model: config.gemini.model,
         contents,
-        config: { maxOutputTokens: 300 }
+        config: { maxOutputTokens: 1000, thinkingConfig: { thinkingBudget: 0 } }
       });
 
       const caption = response.text?.trim() || '';
       if (!caption) {
-        const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
-        return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
+        throw new Error(`Gemini Vision returned empty caption for asset ${assetId}`);
       }
 
       const embedding = await this.generateEmbedding(caption);
       const status = embedding.length > 0 ? AssetStatus.SUCCESS : AssetStatus.FAILED;
       return { caption, embedding, status };
     } catch (e) {
-      logger.warn(`Gemini Vision regenerate caption error for asset ${assetId}, using fallback:`, { err: e });
-      const fallbackCaption = `AIにより再生成された「${filename}」の美麗なイラストレーション。`;
-      return { caption: fallbackCaption, embedding: [], status: AssetStatus.FAILED };
+      logger.error(`Gemini Vision regenerate caption error for asset ${assetId}:`, { err: e });
+      throw e;
     }
   }
 

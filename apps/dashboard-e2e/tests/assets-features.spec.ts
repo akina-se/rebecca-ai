@@ -205,6 +205,15 @@ test.describe('Assets Features E2E Tests', () => {
     // Capture screenshot of asset selection state with action bar
     await page.screenshot({ path: 'screenshots/08a_assets_bulk_actions_selected.png' });
 
+    // Mock regeneration endpoint for E2E emulator environment where Gemini API key is not present
+    await page.route(/\/images\/regenerate-captions/, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ queued: 1, message: 'Captions regenerated successfully' }),
+      });
+    });
+
     // 4. Click Retry AI Gen button
     await retryBulkBtn.click();
 

@@ -255,6 +255,10 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       useCase.regenerateCaptions.mockRejectedValueOnce(new Error('err'));
       await controller.regenerateCaptions(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
+
+      useCase.regenerateCaptions.mockRejectedValueOnce({ status: 429 });
+      await controller.regenerateCaptions(req, res);
+      expect(res.status).toHaveBeenCalledWith(429);
     });
   });
 

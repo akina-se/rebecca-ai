@@ -310,7 +310,7 @@
     color: rgba(255,255,255,0.3);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .drawer-content {
         gap: 14px;
     }

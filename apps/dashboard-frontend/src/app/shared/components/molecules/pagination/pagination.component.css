@@ -94,7 +94,7 @@
   animation: spin 1s linear infinite;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .pagination-container {
     flex-direction: column;
     align-items: center;

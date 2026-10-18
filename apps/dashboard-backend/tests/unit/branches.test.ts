@@ -924,19 +924,15 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         status: AssetStatus.SUCCESS
       }));
 
-      // 5. Regenerate caption with empty response (fallback applied)
+      // 5. Regenerate caption with empty response (rejects with error)
+      jest.spyOn(assetsUseCase, 'getAssetBinary').mockResolvedValueOnce(null);
       mockGenerateContent.mockResolvedValueOnce({ text: '' });
-      await assetsUseCase.regenerateCaptions(['img_test']);
-      expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.FAILED
-      }));
+      await expect(assetsUseCase.regenerateCaptions(['img_test'])).rejects.toThrow('Gemini Vision returned empty caption');
 
-      // 6. Regenerate caption with error throw (fallback applied)
+      // 6. Regenerate caption with error throw (propagates error without fallback)
+      jest.spyOn(assetsUseCase, 'getAssetBinary').mockResolvedValueOnce(null);
       mockGenerateContent.mockRejectedValueOnce(new Error('Regen error'));
-      await assetsUseCase.regenerateCaptions(['img_test']);
-      expect(assetsRepo.update).toHaveBeenCalledWith('img_test', expect.objectContaining({
-        status: AssetStatus.FAILED
-      }));
+      await expect(assetsUseCase.regenerateCaptions(['img_test'])).rejects.toThrow('Regen error');
 
       // 7. getAssetBinary branches
       // A. Invalid ID
