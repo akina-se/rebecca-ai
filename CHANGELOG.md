@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.2](https://github.com/akina-se/rebecca-ai/compare/v1.33.1...v1.33.2) (2026-10-18)
+
+
+### Bug Fixes
+
+* **bot-backend:** prevent dreaming quota exhaustion by filtering unconsolidated users ([#357](https://github.com/akina-se/rebecca-ai/issues/357)) ([#358](https://github.com/akina-se/rebecca-ai/issues/358)) ([81f070d](https://github.com/akina-se/rebecca-ai/commit/81f070da3f74b4a3d069d0aa7ce72d27ef269b9a))
+
 ## [1.33.1](https://github.com/akina-se/rebecca-ai/compare/v1.33.0...v1.33.1) (2026-10-18)
 
 
