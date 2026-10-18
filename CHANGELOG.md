@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.34.1](https://github.com/akina-se/rebecca-ai/compare/v1.34.0...v1.34.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **dashboard-backend:** remove unsupported thinkingBudget in caption generation ([#366](https://github.com/akina-se/rebecca-ai/issues/366)) ([ba5242f](https://github.com/akina-se/rebecca-ai/commit/ba5242f07fee5daa07fa75645aa3f428c43d94c2))
+* **dashboard-backend:** remove unsupported thinkingBudget in caption generation ([#366](https://github.com/akina-se/rebecca-ai/issues/366)) ([a781dfd](https://github.com/akina-se/rebecca-ai/commit/a781dfdcefc39a074a9526369bf1a0f746678347))
+
 ## [1.34.0](https://github.com/akina-se/rebecca-ai/compare/v1.33.2...v1.34.0) (2026-10-18)
 
 
