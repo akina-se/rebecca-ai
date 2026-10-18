@@ -331,7 +331,7 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .campaign-list-container {
     padding: 1rem 1rem calc(88px + env(safe-area-inset-bottom, 0px)) 1rem;
     gap: 1rem;

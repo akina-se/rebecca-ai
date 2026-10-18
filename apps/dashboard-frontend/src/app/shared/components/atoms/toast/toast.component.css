@@ -60,7 +60,7 @@
   to { transform: translateX(0); opacity: 1; }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .toast-container {
     bottom: calc(74px + env(safe-area-inset-bottom, 0px));
     left: 12px;

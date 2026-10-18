@@ -208,9 +208,12 @@ export class AssetsController {
       }
       await this.useCase.regenerateCaptions(ids);
       res.json({ success: true });
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Failed to regenerate captions', err);
-      res.status(500).json({ error: 'Failed to regenerate captions' });
+      const isRateLimit = (typeof err === 'object' && err !== null && 'status' in err && (err as { status: unknown }).status === 429);
+      const statusCode = isRateLimit ? 429 : 500;
+      const errorMessage = isRateLimit ? 'Gemini API rate limit exceeded. Please try again later.' : 'Failed to regenerate captions';
+      res.status(statusCode).json({ error: errorMessage });
     }
   }
 }

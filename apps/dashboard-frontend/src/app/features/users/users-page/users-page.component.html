@@ -1,4 +1,4 @@
-﻿<div class="view-section active">
+<div class="view-section active">
   <div class="block-header" style="margin-top: 0;">
     <h2><span class="material-icons">group</span> {{ 'users.title' | translate }}</h2>
     <input
@@ -21,17 +21,17 @@
       {{ selectedUsers.size > 0 ? (selectedUsers.size + ' ' + ('users.users_selected' | translate)) : ('users.select_users_hint' | translate) }}
     </span>
     <button class="btn bulk-btn"
-      [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
+      [style.display]="selectedUsers.size > 0 ? 'inline-flex' : 'none'"
       [disabled]="isBlocking || isUnblocking"
-      style="min-width: 110px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); display: flex; align-items: center; gap: 4px; white-space: nowrap;"
+      style="min-width: 110px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger); align-items: center; gap: 4px; white-space: nowrap;"
       (click)="executeBulkBlock()">
       <span class="material-icons" [class.spinning]="isBlocking" style="font-size: 1rem">{{ isBlocking ? 'sync' : 'block' }}</span>
       {{ isBlocking ? ('users.blocking' | translate) : ('users.block' | translate) }}
     </button>
     <button class="btn bulk-btn"
-      [style.visibility]="selectedUsers.size > 0 ? 'visible' : 'hidden'"
+      [style.display]="selectedUsers.size > 0 ? 'inline-flex' : 'none'"
       [disabled]="isBlocking || isUnblocking"
-      style="min-width: 120px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: var(--text-main); background: var(--color-primary); display: flex; align-items: center; gap: 4px; white-space: nowrap;"
+      style="min-width: 120px; justify-content: center; padding: 4px 8px; font-size: 0.8rem; border-color: var(--color-primary); color: var(--text-main); background: var(--color-primary); align-items: center; gap: 4px; white-space: nowrap;"
       (click)="executeBulkUnblock()">
       <span class="material-icons" [class.spinning]="isUnblocking" style="font-size: 1rem">{{ isUnblocking ? 'sync' : 'lock_open' }}</span>
       {{ isUnblocking ? ('users.unblocking' | translate) : ('users.unblock' | translate) }}

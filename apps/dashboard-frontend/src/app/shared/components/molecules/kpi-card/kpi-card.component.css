@@ -54,7 +54,7 @@
   stroke-linejoin: round;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .card {
     padding: 0.95rem 1rem;
   }
