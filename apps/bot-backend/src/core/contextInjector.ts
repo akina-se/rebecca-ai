@@ -18,6 +18,7 @@ import { FirestoreUser } from '../types';
  * @param lang - The language for the prompt, defaults to 'ja'.
  * @param personaFewShotPrompt - Optional dynamically selected few-shot examples.
  * @param campaignContext - Optional narrative event context summary when a campaign is active.
+ * @param parentPostContext - Optional original timeline post content when the user is replying to a root post.
  * @returns The fully constructed system prompt string.
  */
 const buildSystemPrompt = (
@@ -30,7 +31,8 @@ const buildSystemPrompt = (
     ragMemories: string[] = [], 
     lang: Language = 'ja',
     personaFewShotPrompt = '',
-    campaignContext = ''
+    campaignContext = '',
+    parentPostContext = ''
 ): string => {
     let prompt = persona.getBasePrompt(promptContext, lang);
 
@@ -120,6 +122,13 @@ const buildSystemPrompt = (
         prompt += lang === 'en'
             ? `\n\n[Current Ongoing Campaign / Special Narrative Event]\n${campaignContext}\n\n[CRITICAL: Empathy Priority Rule]\nAlways prioritize the user's emotional state, troubles, or immediate question before mentioning the campaign. Never derail a serious or melancholic conversation with bubbly event talk unless the user asked about it or it naturally fits.`
             : `\n\n【現在進行中のイベント・キャンペーン状況（Special Narrative Event）】\n${campaignContext}\n\n【最優先ルール：共感・ユーザーファースト（Empathy Priority）】\nユーザーの悩み、相談、質問、感情の機微を最優先で受け止めて返信してください。ユーザーが真剣な話や落ち込んでいる時に、イベントの話題（旅行や浮かれた話など）を無理やり割り込ませて話の腰を折ることは厳禁です。ユーザーからイベントについて尋ねられた場合、または自然な雑談の流れでのみ触れてください。`;
+    }
+
+    if (parentPostContext && parentPostContext.trim() !== '') {
+        const personaName = persona.metadata.displayName;
+        prompt += lang === 'en'
+            ? `\n\n[Context: Your Original Post Being Replied To]\nThe user is directly replying to your following post:\n"${parentPostContext}"\n[Instruction for Root Post Replies]\nTake into account your original post and the question/topic you raised, and naturally acknowledge the user's reaction.`
+            : `\n\n【文脈：ユーザーが返信している${personaName}の元ポスト】\nユーザーはあなたの以下の投稿に対して直接リプライしています：\n「${parentPostContext}」\n【元ポスト返信時の指針】\nあなたが元ポストで投げかけた話題や問いかけを踏まえた上で、相手の反応を自然に受け止めて会話を繋げてください。`;
     }
 
     return prompt;

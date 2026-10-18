@@ -191,6 +191,35 @@ describe('Integration Tests', () => {
             const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
             expect(response.status).toBe(200);
         });
+
+        it('should extract inReplyToTweetId from referencedTweets and include in enqueueReplyTask payload', async () => {
+            (xApi.getMentions as jest.Mock).mockResolvedValueOnce({
+                data: [
+                    {
+                        id: 'mention_99',
+                        text: '@rebecca_ai Great post!',
+                        authorId: 'user_99',
+                        referencedTweets: [
+                            { type: 'replied_to', id: 'root_post_88' }
+                        ]
+                    }
+                ],
+                meta: { resultCount: 1 }
+            });
+
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
+            expect(response.status).toBe(200);
+            expect(tasks.enqueueReplyTask).toHaveBeenCalledWith(
+                {
+                    tweetId: 'mention_99',
+                    text: '@rebecca_ai Great post!',
+                    authorId: 'user_99',
+                    mediaUrls: [],
+                    inReplyToTweetId: 'root_post_88',
+                },
+                expect.any(Number)
+            );
+        });
     });
 
     describe('POST /worker/reply', () => {

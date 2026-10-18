@@ -88,6 +88,12 @@ export class PollMentionsUseCase {
                 }
             }
 
+            // Resolve parent tweet ID if this mention is a direct reply
+            const refTweets = tweet.referencedTweets ?? (tweet as unknown as { referenced_tweets?: Array<{ type: string; id: string }> }).referenced_tweets;
+            const inReplyToTweetId = Array.isArray(refTweets)
+                ? refTweets.find((ref) => ref.type === 'replied_to')?.id
+                : undefined;
+
             try {
                 // Enqueue with intentional delay (60 to 180 seconds) to seem more human-like
                 const delaySeconds = Math.floor(Math.random() * (180 - 60 + 1)) + 60;
@@ -96,11 +102,13 @@ export class PollMentionsUseCase {
                     text,
                     authorId,
                     mediaUrls,
+                    ...(inReplyToTweetId ? { inReplyToTweetId } : {}),
                 }, delaySeconds);
                 logger.info('[PollMentionsUseCase] Enqueued mention task', {
                     tweetId,
                     authorId,
                     mediaCount: mediaUrls.length,
+                    inReplyToTweetId,
                 });
             } catch (e) {
                 logger.error('[PollMentionsUseCase] Failed to enqueue task for mention', e, { tweetId });

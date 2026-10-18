@@ -26,7 +26,7 @@ export class ReplyTaskController {
      */
     handle = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { tweetId, text, authorId, mediaUrls } = req.body;
+            const { tweetId, text, authorId, mediaUrls, inReplyToTweetId } = req.body;
             if (!tweetId || !text || !authorId) {
                 res.status(400).json({ error: 'Missing required task payload fields' });
                 return;
@@ -55,6 +55,7 @@ export class ReplyTaskController {
                 text,
                 authorId,
                 mediaUrls: validatedMediaUrls,
+                inReplyToTweetId: typeof inReplyToTweetId === 'string' ? inReplyToTweetId : undefined,
             });
             res.status(200).json(result);
         } catch (e) {
