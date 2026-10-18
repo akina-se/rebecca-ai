@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.1](https://github.com/akina-se/rebecca-ai/compare/v1.33.0...v1.33.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* expand mobile responsive breakpoint to 1024px and throw on caption error ([#352](https://github.com/akina-se/rebecca-ai/issues/352)) ([#353](https://github.com/akina-se/rebecca-ai/issues/353)) ([59c537b](https://github.com/akina-se/rebecca-ai/commit/59c537b4e6f5fda28932257683b75dc92f7cc051))
+
 ## [1.33.0](https://github.com/akina-se/rebecca-ai/compare/v1.32.0...v1.33.0) (2026-10-17)
 
 
