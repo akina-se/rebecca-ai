@@ -86,6 +86,7 @@ const userConverter: FirestoreDataConverter<FirestoreUser> = {
       status: data['status'],
       firstSeen: toIsoString(data['firstSeen'] ?? data['first_seen']) || '',
       lastSeen: toIsoString(data['lastSeen'] ?? data['last_seen'] ?? data['last_reply_date']) || '',
+      lastDreamedAt: toIsoString(data['lastDreamedAt'] ?? data['last_dreamed_at']) || undefined,
       coreProfile: data['coreProfile'] ?? {},
       working_memory: data['working_memory'],
       episodicBuffer: data['episodicBuffer'] ?? [],
