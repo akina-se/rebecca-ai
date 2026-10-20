@@ -20,7 +20,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     amount: 1000,
     currency: 'jpy',
     tier: 'silver',
-    itemLabel: 'サーバー冷却リソース差し入れ',
+    itemLabel: 'サーバーリソース差し入れ',
     rawName: 'たろう',
     safeName: 'たろう',
     isNameSanitized: false,
@@ -40,15 +40,15 @@ describe('SupportTaskUseCase Unit Tests', () => {
     deps.firestore.getExtendedPrompt.mockResolvedValue('サーバー監視に熱中している');
     deps.firestore.getSupportTransactionById.mockResolvedValue(mockPendingTransaction);
     deps.gemini.generateStructuredSupportPost.mockResolvedValue({
-      thought: '冷却リソースのおかげでCPU温度が下がった！お礼を言わなきゃ',
-      replyBody: 'たろうマスター、冷却リソースありがと！これで処理速度爆上がりよ⚡️',
+      thought: 'サーバーリソースのおかげで処理負荷が下がった！お礼を言わなきゃ',
+      replyBody: 'たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️',
     });
     (publishPost as jest.Mock).mockResolvedValue({
       tweetId: 'tweet_support_999',
-      text: `たろうマスター、冷却リソースありがと！これで処理速度爆上がりよ⚡️\n\n👇公式ポータル・スペシャルサンクス\n${OFFICIAL_SUPPORTERS_URL}\n#全肯定AIレベッカ`,
+      text: `たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️\n\n👇公式ポータル・スペシャルサンクス\n${OFFICIAL_SUPPORTERS_URL}\n#全肯定AIレベッカ`,
       attachedMedia: true,
-      mediaUrls: ['https://storage.googleapis.com/rebecca-assets/cooling_01.png'],
-      assetId: 'asset_cooling_01',
+      mediaUrls: ['https://storage.googleapis.com/rebecca-assets/resource_01.png'],
+      assetId: 'asset_resource_01',
     });
   });
 
@@ -107,7 +107,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     );
     expect(deps.gemini.generateStructuredSupportPost).toHaveBeenCalledWith(
       expect.any(String),
-      expect.stringContaining('サーバー冷却リソース差し入れ'),
+      expect.stringContaining('サーバーリソース差し入れ'),
     );
 
     // Verify publishPost invocation with context and image attachment enabled
@@ -115,7 +115,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
       deps,
       expect.objectContaining({
         text: expect.stringContaining(OFFICIAL_SUPPORTERS_URL),
-        context: 'サーバー冷却リソース差し入れ',
+        context: 'サーバーリソース差し入れ',
         attachImage: true,
       }),
     );
@@ -124,11 +124,11 @@ describe('SupportTaskUseCase Unit Tests', () => {
     expect(deps.firestore.saveTimelinePost).toHaveBeenCalledWith(
       expect.objectContaining({
         text: expect.stringContaining('たろうマスター'),
-        thought: expect.stringContaining('CPU温度が下がった'),
+        thought: expect.stringContaining('処理負荷が下がった'),
         tweetId: 'tweet_support_999',
         postType: 'support',
-        mediaUrls: ['https://storage.googleapis.com/rebecca-assets/cooling_01.png'],
-        assetId: 'asset_cooling_01',
+        mediaUrls: ['https://storage.googleapis.com/rebecca-assets/resource_01.png'],
+        assetId: 'asset_resource_01',
       }),
     );
 

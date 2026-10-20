@@ -650,6 +650,39 @@ export interface CampaignAssetUploadResult {
 /** Sponsor / Tipping Tiers */
 export type SupportTier = 'bronze' | 'silver' | 'gold' | 'vip';
 
+/** Official in-universe item definitions and tier mapping */
+export const SUPPORT_TIER_CONFIG = {
+  bronze: {
+    amount: 300,
+    itemLabel: 'エナドリ1本差し入れ',
+    tier: 'bronze' as SupportTier,
+    displayName: 'Bronze Supporter',
+  },
+  silver: {
+    amount: 1000,
+    itemLabel: 'サーバーリソース差し入れ',
+    tier: 'silver' as SupportTier,
+    displayName: 'Silver Supporter',
+  },
+  gold: {
+    amount: 3000,
+    itemLabel: '開発サポート',
+    tier: 'gold' as SupportTier,
+    displayName: 'Gold Sponsor',
+  },
+} as const;
+
+/** Resolves the support tier and in-universe item label from payment amount in JPY */
+export function resolveSupportTierFromAmount(amount: number): { tier: SupportTier; itemLabel: string } {
+  if (amount >= 3000) {
+    return { tier: 'gold', itemLabel: SUPPORT_TIER_CONFIG.gold.itemLabel };
+  }
+  if (amount >= 1000) {
+    return { tier: 'silver', itemLabel: SUPPORT_TIER_CONFIG.silver.itemLabel };
+  }
+  return { tier: 'bronze', itemLabel: SUPPORT_TIER_CONFIG.bronze.itemLabel };
+}
+
 /** Processing lifecycle states for support transactions */
 export type SupportTransactionStatus = 'pending' | 'completed' | 'failed' | 'manual';
 
