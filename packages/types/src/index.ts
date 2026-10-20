@@ -125,7 +125,7 @@ export interface RawConversationLog {
 }
 
 /** Canonical post types supported on the timeline. */
-export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign' | 'poll' | 'poll_result';
+export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign' | 'poll' | 'poll_result' | 'support';
 
 /** Canonical voting status of an X poll as returned by X API v2. */
 export type PollVotingStatus = 'open' | 'closed';
@@ -642,3 +642,52 @@ export interface CampaignAssetUploadResult {
 }
 
 
+
+// ---------------------------------------------------------------------------
+// Support & Tipping Models
+// ---------------------------------------------------------------------------
+
+/** Sponsor / Tipping Tiers */
+export type SupportTier = 'bronze' | 'silver' | 'gold' | 'vip';
+
+/** Processing lifecycle states for support transactions */
+export type SupportTransactionStatus = 'pending' | 'completed' | 'failed' | 'manual';
+
+/** Credit visibility on official portal */
+export type CreditVisibility = 'show' | 'hide';
+
+/** Digital reward catalog item */
+export interface RewardImageDoc {
+  id: string;
+  title: string;
+  imageUrl: string;
+  storagePath: string;
+  isActive: boolean;
+  distributedCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Tipping / Support transaction record */
+export interface SupportTransactionDoc {
+  id: string;
+  stripeSessionId: string;
+  stripePaymentIntentId?: string;
+  rawName: string;
+  safeName: string;
+  isNameSanitized: boolean;
+  creditVisibility: CreditVisibility;
+  amount: number;
+  currency: 'jpy';
+  tier: SupportTier;
+  itemLabel: string;
+  rewardImageId: string;
+  status: SupportTransactionStatus;
+  isBanned: boolean;
+  tweetId?: string;
+  tweetText?: string;
+  errorMessage?: string;
+  createdAt: string;
+  processedAt?: string;
+  updatedAt?: string;
+}

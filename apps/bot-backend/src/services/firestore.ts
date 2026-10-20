@@ -35,6 +35,7 @@ import type {
   PollResultStatus,
   TimelinePost,
   CampaignDoc,
+  SupportTransactionDoc,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -1099,6 +1100,41 @@ const updateCampaign = async (campaignId: string, data: Partial<CampaignDoc>): P
   await db.campaigns.doc(campaignId).set(data as DocumentData, { merge: true });
 };
 
+/**
+ * Retrieves a support transaction document by its unique ID.
+ *
+ * @param transactionId - The unique ID of the support transaction.
+ * @returns The SupportTransactionDoc or null if not found.
+ */
+async function getSupportTransactionById(
+  transactionId: string
+): Promise<SupportTransactionDoc | null> {
+  const docRef = db.supportTransactions.doc(transactionId);
+  const snap = await docRef.get();
+  if (!snap.exists) {
+    return null;
+  }
+  return { id: snap.id, ...snap.data() } as SupportTransactionDoc;
+}
+
+/**
+ * Updates an existing support transaction document.
+ *
+ * @param transactionId - The unique ID of the support transaction to update.
+ * @param data - The partial fields to update.
+ */
+async function updateSupportTransaction(
+  transactionId: string,
+  data: Partial<SupportTransactionDoc>
+): Promise<void> {
+  const docRef = db.supportTransactions.doc(transactionId);
+  const updateData: Record<string, unknown> = {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  await docRef.set(updateData, { merge: true });
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -1155,4 +1191,6 @@ export {
   getScheduledCampaignDueToday,
   getCampaignById,
   updateCampaign,
+  getSupportTransactionById,
+  updateSupportTransaction,
 };

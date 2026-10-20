@@ -24,10 +24,12 @@ import type {
   PollResultStatus,
   TimelinePost,
   CampaignDoc,
+  SupportTransactionDoc,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 import type { StructuredNewsPostResponse } from '../features/news/types';
 import type { StructuredPollPostResponse } from '../features/poll/types';
+import type { StructuredSupportPostResponse } from '../features/support/types';
 
 export interface GetRecentTimelinePostsOptions {
   limit?: number;
@@ -109,6 +111,8 @@ export interface IFirestoreService {
   getScheduledCampaignDueToday(): Promise<CampaignDoc | null>;
   getCampaignById(campaignId: string): Promise<CampaignDoc | null>;
   updateCampaign(campaignId: string, data: Partial<CampaignDoc>): Promise<void>;
+  getSupportTransactionById(transactionId: string): Promise<SupportTransactionDoc | null>;
+  updateSupportTransaction(transactionId: string, data: Partial<SupportTransactionDoc>): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +140,7 @@ export interface IGeminiService {
   generateSearchQuery(prompt: string): Promise<string>;
   analyzeImageCaption(imageBuffer: Buffer, mimeType: string, prompt: string): Promise<string>;
   inferImageSearchQuery(prompt: string): Promise<string | null>;
+  generateStructuredSupportPost(systemInstruction: string, prompt: string): Promise<StructuredSupportPostResponse>;
 }
 
 // ---------------------------------------------------------------------------

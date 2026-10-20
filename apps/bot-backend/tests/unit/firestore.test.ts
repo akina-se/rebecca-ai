@@ -84,6 +84,8 @@ jest.mock('@rebecca/db', () => {
       system: mockCollection,
       systemStats: mockCollection,
       processedMentions: mockCollection,
+      supportTransactions: mockCollection,
+      rewardImages: mockCollection,
     })),
   };
 });
@@ -751,6 +753,33 @@ describe('Firestore Service Unit Tests', () => {
       const result = await firestoreService.getListMembersFromCache();
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('supportTransactions', () => {
+    it('getSupportTransactionById should return doc if exists, null if not', async () => {
+      mockDocGet.mockResolvedValueOnce({
+        exists: true,
+        id: 'tx_123',
+        data: () => ({ amount: 1000, rawName: 'たろう' }),
+      });
+      const tx = await firestoreService.getSupportTransactionById('tx_123');
+      expect(tx).toEqual({ id: 'tx_123', amount: 1000, rawName: 'たろう' });
+
+      mockDocGet.mockResolvedValueOnce({ exists: false });
+      const missing = await firestoreService.getSupportTransactionById('tx_none');
+      expect(missing).toBeNull();
+    });
+
+    it('updateSupportTransaction should merge updated data with updatedAt timestamp', async () => {
+      await firestoreService.updateSupportTransaction('tx_123', { status: 'completed' });
+      expect(mockDocSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'completed',
+          updatedAt: expect.any(String),
+        }),
+        { merge: true },
+      );
     });
   });
 });
