@@ -253,12 +253,39 @@ describe('SupportTaskUseCase Unit Tests', () => {
     }
   });
 
+  it('should use injected SupportConfig overrides for URL, fallbackName, and maxNameLength', async () => {
+    const customConfig = {
+      officialPortalUrl: 'https://staging.rebecca-ai.net/#supporters',
+      fallbackName: '名無しのテストマスター',
+      maxNameLength: 10,
+    };
+    const customUseCase = new SupportTaskUseCase(deps, customConfig);
+
+    // Provide a name exceeding 10 characters (11 characters)
+    deps.firestore.getSupportTransactionById.mockResolvedValueOnce({
+      ...mockPendingTransaction,
+      rawName: '12345678901',
+    });
+
+    const result = await customUseCase.execute({ transactionId: 'tx_123' });
+
+    expect(result.status).toBe('completed');
+    expect(result.safeName).toBe('名無しのテストマスター');
+    expect(result.isNameSanitized).toBe(true);
+    expect(publishPost).toHaveBeenCalledWith(
+      deps,
+      expect.objectContaining({
+        text: expect.stringContaining('https://staging.rebecca-ai.net/#supporters'),
+      }),
+    );
+  });
+
   it('should support injecting custom ISupportRepository instance', async () => {
     const mockCustomRepo = {
       getTransactionById: jest.fn().mockResolvedValue(null),
       updateTransaction: jest.fn().mockResolvedValue(undefined),
     };
-    const customUseCase = new SupportTaskUseCase(deps, mockCustomRepo);
+    const customUseCase = new SupportTaskUseCase(deps, {}, mockCustomRepo);
     const result = await customUseCase.execute({ transactionId: 'tx_custom' });
 
     expect(result.status).toBe('failed');

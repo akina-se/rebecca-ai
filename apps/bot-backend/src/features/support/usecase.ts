@@ -2,38 +2,67 @@
  * @fileoverview Orchestrates autonomous appreciation tweet generation and posting for supporters.
  *
  * Adheres to:
- * - Deterministic input pre-filtering (sanitizer.ts)
- * - Persona encapsulation via @rebecca/persona
- * - Living context injection (extendedPrompt, timelineSummary, personaAnchors)
+ * - Deterministic input pre-filtering (sanitizer.ts) with injected runtime config
+ * - Strict persona encapsulation via @rebecca/persona (zero leaked persona text)
+ * - Living context injection (extendedPrompt, timelineSummary, dynamic personaAnchors)
  * - Multimodal image asset attachment via publishPost
- * - Fault tolerance (marks status: failed on error without crashing Cloud Tasks)
+ * - Fault tolerance (Error Boundary: marks status 'failed' on downstream errors without throwing)
  */
 
 import { AppDependencies } from '../../types';
 import { publishPost } from '../../core/postPublisher';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { logger } from '../../utils/logger';
+import appConfig from '../../config';
 import { sanitizeSupporterName } from './sanitizer';
 import { ISupportRepository, SupportRepository } from './repository';
-import { SupportTaskPayload, SupportTaskResult } from './types';
+import { SupportTaskPayload, SupportTaskResult, SupportConfig } from './types';
 
-export const OFFICIAL_SUPPORTERS_URL = 'https://rebecca-ai.net/#supporters';
+/** Default fallback official supporters URL when unconfigured */
+export const DEFAULT_OFFICIAL_SUPPORTERS_URL = 'https://rebecca-ai.net/#supporters';
 
+// Export legacy alias for backward compatibility
+export const OFFICIAL_SUPPORTERS_URL = DEFAULT_OFFICIAL_SUPPORTERS_URL;
+
+/**
+ * Use case responsible for processing supporter appreciation posts.
+ */
 export class SupportTaskUseCase {
-  private repository: ISupportRepository;
+  private readonly repository: ISupportRepository;
+  private readonly config: SupportConfig;
 
+  /**
+   * Initializes a new instance of SupportTaskUseCase with injected dependencies.
+   *
+   * @param deps - Injected application dependencies (Firestore, Gemini, X API, Persona).
+   * @param config - Injected runtime configuration for portal URLs and sanitization rules.
+   * @param repository - Optional repository instance for data persistence overrides (useful in testing).
+   */
   constructor(
     private readonly deps: AppDependencies,
+    config?: Partial<SupportConfig>,
     repository?: ISupportRepository,
   ) {
+    this.config = {
+      officialPortalUrl: config?.officialPortalUrl || appConfig.support?.officialPortalUrl || DEFAULT_OFFICIAL_SUPPORTERS_URL,
+      fallbackName: config?.fallbackName || appConfig.support?.fallbackName || '名無しのマスター',
+      maxNameLength: config?.maxNameLength || appConfig.support?.maxNameLength || 20,
+    };
     this.repository = repository || new SupportRepository(deps.firestore);
   }
 
   /**
    * Executes the support appreciation post workflow for a given transaction.
    *
+   * @remarks
+   * Error Boundary Contract:
+   * This method captures all downstream LLM (Gemini 500) and X API exceptions, logs the incident,
+   * updates the Firestore transaction document to `status: 'failed'` with the error message,
+   * and returns a graceful `{ status: 'failed', reason }` result. It deliberately does NOT throw
+   * to ensure Cloud Tasks acknowledges the message and prevents infinite poison-pill retry loops.
+   *
    * @param payload - The task payload containing the target transactionId.
-   * @returns Result indicating whether the post was completed, skipped, or failed.
+   * @returns A Promise resolving to {@link SupportTaskResult} indicating completed, skipped, or failed.
    */
   async execute(payload: SupportTaskPayload): Promise<SupportTaskResult> {
     const { transactionId } = payload;
@@ -49,7 +78,7 @@ export class SupportTaskUseCase {
       };
     }
 
-    // Idempotency check: Skip if already processed or manual
+    // Idempotency check: Skip if already processed or manually resolved
     if (transaction.status !== 'pending') {
       logger.info('[SupportTaskUseCase] Transaction already processed. Skipping', {
         transactionId,
@@ -62,8 +91,11 @@ export class SupportTaskUseCase {
       };
     }
 
-    // Step 1: Deterministic Pre-Filtering (Single responsibility security policy)
-    const { safeName, isSanitized } = sanitizeSupporterName(transaction.rawName);
+    // Step 1: Deterministic Pre-Filtering (Single-responsibility security invariant)
+    const { safeName, isSanitized } = sanitizeSupporterName(transaction.rawName, {
+      fallbackName: this.config.fallbackName,
+      maxNameLength: this.config.maxNameLength,
+    });
     const isNameSanitized = isSanitized;
 
     try {
@@ -117,11 +149,11 @@ ${personaAnchors ? `【ペルソナ表現・アンカー例】\n${personaAnchors
         prompt,
       );
 
-      // Step 4: Final Text Assembly with Mandatory Anchors
+      // Step 4: Final Text Assembly with Injected Official Portal Anchor
       const cleanReplyBody = geminiResponse.replyBody.trim();
-      const finalText = `${cleanReplyBody}\n\n👇公式ポータル・スペシャルサンクス\n${OFFICIAL_SUPPORTERS_URL}\n${defaultHashtag}`;
+      const finalText = `${cleanReplyBody}\n\n👇公式ポータル・スペシャルサンクス\n${this.config.officialPortalUrl}\n${defaultHashtag}`;
 
-      // Step 5: Post to X with Automated Image Asset Attachment
+      // Step 5: Post to X with Automated Multimodal Image Asset Attachment
       const publishResult = await publishPost(this.deps, {
         text: finalText,
         context: transaction.itemLabel,

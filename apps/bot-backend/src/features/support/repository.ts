@@ -1,36 +1,57 @@
 /**
- * @fileoverview Repository layer for support transactions.
+ * @fileoverview Repository interface and implementation for support transactions.
  */
 
-import { SupportTransactionDoc } from './types';
 import { IFirestoreService } from '../../types';
+import { SupportTransactionDoc } from './types';
 
 /**
- * Interface contract for support transaction data access.
+ * Persistence abstraction contract for support transactions.
  */
 export interface ISupportRepository {
   /**
-   * Fetches a transaction by its Firestore document ID.
+   * Retrieves a support transaction by its unique ID.
+   *
+   * @param transactionId - Unique ID of the target transaction.
+   * @returns A Promise resolving to {@link SupportTransactionDoc} or null if not found.
    */
   getTransactionById(transactionId: string): Promise<SupportTransactionDoc | null>;
 
   /**
-   * Updates partial fields of a transaction document.
+   * Updates partial fields of an existing support transaction.
+   *
+   * @param transactionId - Unique ID of the transaction to update.
+   * @param data - Partial fields to merge into the document.
+   * @returns A Promise resolving when the update completes.
    */
   updateTransaction(transactionId: string, data: Partial<SupportTransactionDoc>): Promise<void>;
 }
 
 /**
- * Production implementation of ISupportRepository delegating to IFirestoreService.
+ * Concrete Firestore implementation of {@link ISupportRepository}.
  */
 export class SupportRepository implements ISupportRepository {
-  constructor(private firestoreService: IFirestoreService) {}
+  /**
+   * Initializes a new instance of SupportRepository.
+   *
+   * @param firestore - Injected Firestore service implementing database operations.
+   */
+  constructor(private readonly firestore: IFirestoreService) {}
 
+  /**
+   * @inheritdoc
+   */
   async getTransactionById(transactionId: string): Promise<SupportTransactionDoc | null> {
-    return this.firestoreService.getSupportTransactionById(transactionId);
+    return this.firestore.getSupportTransactionById(transactionId);
   }
 
-  async updateTransaction(transactionId: string, data: Partial<SupportTransactionDoc>): Promise<void> {
-    return this.firestoreService.updateSupportTransaction(transactionId, data);
+  /**
+   * @inheritdoc
+   */
+  async updateTransaction(
+    transactionId: string,
+    data: Partial<SupportTransactionDoc>,
+  ): Promise<void> {
+    return this.firestore.updateSupportTransaction(transactionId, data);
   }
 }

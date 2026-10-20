@@ -94,4 +94,27 @@ describe('Supporter Name Sanitizer Unit Tests', () => {
     expect(result.safeName).toBe(exactName);
     expect(result.isSanitized).toBe(false);
   });
+
+  it('should respect custom config overrides for fallbackName and maxNameLength', () => {
+    const customConfig = {
+      fallbackName: 'Anonymous Backer',
+      maxNameLength: 5,
+    };
+    // Exceeds custom max length of 5
+    const resultLong = sanitizeSupporterName('VeryLongName', customConfig);
+    expect(resultLong.safeName).toBe('Anonymous Backer');
+    expect(resultLong.isSanitized).toBe(true);
+    expect(resultLong.reason).toBe('too_long');
+
+    // Empty input returns custom fallback
+    const resultEmpty = sanitizeSupporterName('', customConfig);
+    expect(resultEmpty.safeName).toBe('Anonymous Backer');
+    expect(resultEmpty.isSanitized).toBe(true);
+    expect(resultEmpty.reason).toBe('empty');
+
+    // Valid short name
+    const resultOk = sanitizeSupporterName('Alice', customConfig);
+    expect(resultOk.safeName).toBe('Alice');
+    expect(resultOk.isSanitized).toBe(false);
+  });
 });

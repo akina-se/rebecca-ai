@@ -159,5 +159,16 @@ export default {
   persona: {
     activeId: (process.env.ACTIVE_PERSONA || 'rebecca').trim() || 'rebecca',
   },
+
+  /**
+   * Configuration for supporter appreciation and tipping system.
+   */
+  support: {
+    officialPortalUrl: process.env.SUPPORT_OFFICIAL_PORTAL_URL || 'https://rebecca-ai.net/#supporters',
+    fallbackName: process.env.SUPPORT_FALLBACK_NAME || '名無しのマスター',
+    maxNameLength: Math.max(5, Math.min(50, parseInt(process.env.SUPPORT_MAX_NAME_LENGTH || '20', 10) || 20)),
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+  },
 };
 
