@@ -1,14 +1,16 @@
-import {
-  sanitizeSupporterName,
-  FALLBACK_SUPPORTER_NAME,
-  MAX_SUPPORTER_NAME_LENGTH,
-} from '../../src/features/support/sanitizer';
+import { sanitizeSupporterName } from '../../src/features/support/sanitizer';
+import config from '../../src/config';
 
 describe('Supporter Name Sanitizer Unit Tests', () => {
+  const defaultOptions = {
+    fallbackName: config.support.fallbackName,
+    maxNameLength: config.support.maxNameLength,
+  };
+
   it('should accept clean and valid supporter names', () => {
     const validNames = ['たろう', 'Alice', 'Tech Master', 'AIマスター_01'];
     for (const name of validNames) {
-      const result = sanitizeSupporterName(name);
+      const result = sanitizeSupporterName(name, defaultOptions);
       expect(result.safeName).toBe(name);
       expect(result.isSanitized).toBe(false);
       expect(result.reason).toBe('none');
@@ -16,30 +18,30 @@ describe('Supporter Name Sanitizer Unit Tests', () => {
   });
 
   it('should trim surrounding whitespace from clean names', () => {
-    const result = sanitizeSupporterName('  たろう  ');
+    const result = sanitizeSupporterName('  たろう  ', defaultOptions);
     expect(result.safeName).toBe('たろう');
     expect(result.isSanitized).toBe(false);
     expect(result.reason).toBe('none');
   });
 
   it('should fallback on undefined, null, or empty string', () => {
-    expect(sanitizeSupporterName(undefined)).toEqual({
-      safeName: FALLBACK_SUPPORTER_NAME,
+    expect(sanitizeSupporterName(undefined, defaultOptions)).toEqual({
+      safeName: config.support.fallbackName,
       isSanitized: true,
       reason: 'empty',
     });
-    expect(sanitizeSupporterName(null)).toEqual({
-      safeName: FALLBACK_SUPPORTER_NAME,
+    expect(sanitizeSupporterName(null, defaultOptions)).toEqual({
+      safeName: config.support.fallbackName,
       isSanitized: true,
       reason: 'empty',
     });
-    expect(sanitizeSupporterName('')).toEqual({
-      safeName: FALLBACK_SUPPORTER_NAME,
+    expect(sanitizeSupporterName('', defaultOptions)).toEqual({
+      safeName: config.support.fallbackName,
       isSanitized: true,
       reason: 'empty',
     });
-    expect(sanitizeSupporterName('   ')).toEqual({
-      safeName: FALLBACK_SUPPORTER_NAME,
+    expect(sanitizeSupporterName('   ', defaultOptions)).toEqual({
+      safeName: config.support.fallbackName,
       isSanitized: true,
       reason: 'empty',
     });
@@ -48,8 +50,8 @@ describe('Supporter Name Sanitizer Unit Tests', () => {
   it('should reject names with @ (unsolicited mention prevention)', () => {
     const mentionNames = ['@rebecca_ai_gal', 'test@user', 'Hello @world'];
     for (const name of mentionNames) {
-      const result = sanitizeSupporterName(name);
-      expect(result.safeName).toBe(FALLBACK_SUPPORTER_NAME);
+      const result = sanitizeSupporterName(name, defaultOptions);
+      expect(result.safeName).toBe(config.support.fallbackName);
       expect(result.isSanitized).toBe(true);
       expect(result.reason).toBe('mention');
     }
@@ -58,8 +60,8 @@ describe('Supporter Name Sanitizer Unit Tests', () => {
   it('should reject names with # (hashtag hijacking prevention)', () => {
     const hashtagNames = ['#tag', 'Master #1', 'super#hashtag'];
     for (const name of hashtagNames) {
-      const result = sanitizeSupporterName(name);
-      expect(result.safeName).toBe(FALLBACK_SUPPORTER_NAME);
+      const result = sanitizeSupporterName(name, defaultOptions);
+      expect(result.safeName).toBe(config.support.fallbackName);
       expect(result.isSanitized).toBe(true);
       expect(result.reason).toBe('hashtag');
     }
@@ -73,24 +75,24 @@ describe('Supporter Name Sanitizer Unit Tests', () => {
       'Visit https://malicious.io now',
     ];
     for (const name of urlNames) {
-      const result = sanitizeSupporterName(name);
-      expect(result.safeName).toBe(FALLBACK_SUPPORTER_NAME);
+      const result = sanitizeSupporterName(name, defaultOptions);
+      expect(result.safeName).toBe(config.support.fallbackName);
       expect(result.isSanitized).toBe(true);
       expect(result.reason).toBe('url');
     }
   });
 
   it('should reject names exceeding max length', () => {
-    const longName = 'あ'.repeat(MAX_SUPPORTER_NAME_LENGTH + 1);
-    const result = sanitizeSupporterName(longName);
-    expect(result.safeName).toBe(FALLBACK_SUPPORTER_NAME);
+    const longName = 'あ'.repeat(config.support.maxNameLength + 1);
+    const result = sanitizeSupporterName(longName, defaultOptions);
+    expect(result.safeName).toBe(config.support.fallbackName);
     expect(result.isSanitized).toBe(true);
     expect(result.reason).toBe('too_long');
   });
 
   it('should accept names exactly at max length', () => {
-    const exactName = 'あ'.repeat(MAX_SUPPORTER_NAME_LENGTH);
-    const result = sanitizeSupporterName(exactName);
+    const exactName = 'あ'.repeat(config.support.maxNameLength);
+    const result = sanitizeSupporterName(exactName, defaultOptions);
     expect(result.safeName).toBe(exactName);
     expect(result.isSanitized).toBe(false);
   });

@@ -1,5 +1,6 @@
-import { SupportTaskUseCase, OFFICIAL_SUPPORTERS_URL } from '../../src/features/support/usecase';
+import { SupportTaskUseCase } from '../../src/features/support/usecase';
 import { SupportTaskController } from '../../src/features/support/controller';
+import config from '../../src/config';
 import { createMockDeps } from './core/testUtils';
 import { publishPost } from '../../src/core/postPublisher';
 import { SupportTransactionDoc } from '@rebecca/types';
@@ -34,7 +35,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     deps = createMockDeps();
-    useCase = new SupportTaskUseCase(deps);
+    useCase = new SupportTaskUseCase(deps, config.support);
 
     deps.firestore.getTimelineSummary.mockResolvedValue('今日のタイムラインは穏やか');
     deps.firestore.getExtendedPrompt.mockResolvedValue('サーバー監視に熱中している');
@@ -45,7 +46,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     });
     (publishPost as jest.Mock).mockResolvedValue({
       tweetId: 'tweet_support_999',
-      text: `たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️\n\n👇公式ポータル・スペシャルサンクス\n${OFFICIAL_SUPPORTERS_URL}\n#全肯定AIレベッカ`,
+      text: `たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️\n\n👇公式ポータル・スペシャルサンクス\n${config.support.officialPortalUrl}\n#全肯定AIレベッカ`,
       attachedMedia: true,
       mediaUrls: ['https://storage.googleapis.com/rebecca-assets/resource_01.png'],
       assetId: 'asset_resource_01',
@@ -114,7 +115,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     expect(publishPost).toHaveBeenCalledWith(
       deps,
       expect.objectContaining({
-        text: expect.stringContaining(OFFICIAL_SUPPORTERS_URL),
+        text: expect.stringContaining(config.support.officialPortalUrl),
         context: 'サーバーリソース差し入れ',
         attachImage: true,
       }),
@@ -285,7 +286,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
       getTransactionById: jest.fn().mockResolvedValue(null),
       updateTransaction: jest.fn().mockResolvedValue(undefined),
     };
-    const customUseCase = new SupportTaskUseCase(deps, {}, mockCustomRepo);
+    const customUseCase = new SupportTaskUseCase(deps, config.support, mockCustomRepo);
     const result = await customUseCase.execute({ transactionId: 'tx_custom' });
 
     expect(result.status).toBe('failed');

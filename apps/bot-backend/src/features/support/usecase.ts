@@ -13,23 +13,15 @@ import { AppDependencies } from '../../types';
 import { publishPost } from '../../core/postPublisher';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { logger } from '../../utils/logger';
-import appConfig from '../../config';
 import { sanitizeSupporterName } from './sanitizer';
 import { ISupportRepository, SupportRepository } from './repository';
 import { SupportTaskPayload, SupportTaskResult, SupportConfig } from './types';
-
-/** Default fallback official supporters URL when unconfigured */
-export const DEFAULT_OFFICIAL_SUPPORTERS_URL = 'https://rebecca-ai.net/#supporters';
-
-// Export legacy alias for backward compatibility
-export const OFFICIAL_SUPPORTERS_URL = DEFAULT_OFFICIAL_SUPPORTERS_URL;
 
 /**
  * Use case responsible for processing supporter appreciation posts.
  */
 export class SupportTaskUseCase {
   private readonly repository: ISupportRepository;
-  private readonly config: SupportConfig;
 
   /**
    * Initializes a new instance of SupportTaskUseCase with injected dependencies.
@@ -40,14 +32,9 @@ export class SupportTaskUseCase {
    */
   constructor(
     private readonly deps: AppDependencies,
-    config?: Partial<SupportConfig>,
+    private readonly config: SupportConfig,
     repository?: ISupportRepository,
   ) {
-    this.config = {
-      officialPortalUrl: config?.officialPortalUrl || appConfig.support?.officialPortalUrl || DEFAULT_OFFICIAL_SUPPORTERS_URL,
-      fallbackName: config?.fallbackName || appConfig.support?.fallbackName || '名無しのマスター',
-      maxNameLength: config?.maxNameLength || appConfig.support?.maxNameLength || 20,
-    };
     this.repository = repository || new SupportRepository(deps.firestore);
   }
 

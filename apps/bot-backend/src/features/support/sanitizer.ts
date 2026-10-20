@@ -2,7 +2,7 @@
  * @fileoverview Deterministic pre-filter for supporter display names.
  *
  * Implements a strict single-responsibility security & formatting policy:
- * - Replaces empty, whitespace-only, or overly long names with a configurable fallback.
+ * - Replaces empty, whitespace-only, or overly long names with a configured fallback.
  * - Strips or rejects names containing prohibited characters: '@' (unsolicited mentions),
  *   '#' (hashtags), or URLs (spam/phishing links).
  */
@@ -23,66 +23,58 @@ export interface NameSanitizationResult {
   reason: 'none' | 'empty' | 'mention' | 'hashtag' | 'url' | 'too_long';
 }
 
-/** Default fallback supporter name when unconfigured. */
-export const DEFAULT_FALLBACK_SUPPORTER_NAME = '名無しのマスター';
-
-/** Default maximum permitted character length for supporter display names. */
-export const DEFAULT_MAX_SUPPORTER_NAME_LENGTH = 20;
-
-// Export legacy aliases for backward compatibility with existing tests
-export const FALLBACK_SUPPORTER_NAME = DEFAULT_FALLBACK_SUPPORTER_NAME;
-export const MAX_SUPPORTER_NAME_LENGTH = DEFAULT_MAX_SUPPORTER_NAME_LENGTH;
+/** Configuration options required for name sanitization. */
+export type SanitizerOptions = Pick<SupportConfig, 'fallbackName' | 'maxNameLength'>;
 
 /**
  * Sanitizes untrusted user-provided supporter names using deterministic security invariants.
  *
  * @remarks
- * Security Filtering Invariants (Order of Precedence):
- * 1. Null / Undefined / Empty Check: Replaces with fallback.
+ * Security Invariants & Filter Order:
+ * 1. Null / Undefined / Empty Check: Replaces with options.fallbackName.
  * 2. Unsolicited Mention Check (`@`): Blocks mention injections that could spam or harass third parties.
  * 3. Hashtag Check (`#`): Blocks hashtag hijacking or tag clutter.
  * 4. URL / Phishing Check (`http://`, `https://`, `www.`): Blocks malicious domain promotion.
- * 5. Length Check: Bounds string length to `maxNameLength` (default: 20) to maintain tweet brevity.
+ * 5. Length Check: Bounds string length to options.maxNameLength to maintain tweet brevity.
  *
  * @param rawName - Untrusted input string from Stripe checkout custom fields.
- * @param config - Optional configuration overrides for fallback name and max length.
+ * @param options - Configuration options containing fallbackName and maxNameLength.
  * @returns {@link NameSanitizationResult} containing the safeName and audit metadata.
  */
 export function sanitizeSupporterName(
-  rawName?: string | null,
-  config?: Partial<Pick<SupportConfig, 'fallbackName' | 'maxNameLength'>>,
+  rawName: string | null | undefined,
+  options: SanitizerOptions,
 ): NameSanitizationResult {
-  const fallback = config?.fallbackName || DEFAULT_FALLBACK_SUPPORTER_NAME;
-  const maxLength = config?.maxNameLength || DEFAULT_MAX_SUPPORTER_NAME_LENGTH;
+  const { fallbackName, maxNameLength } = options;
 
   if (!rawName || typeof rawName !== 'string') {
-    return { safeName: fallback, isSanitized: true, reason: 'empty' };
+    return { safeName: fallbackName, isSanitized: true, reason: 'empty' };
   }
 
   const trimmed = rawName.trim();
   if (trimmed.length === 0) {
-    return { safeName: fallback, isSanitized: true, reason: 'empty' };
+    return { safeName: fallbackName, isSanitized: true, reason: 'empty' };
   }
 
   // 1. Reject unsolicited X mentions (@) - highest security priority to prevent harassment
   if (trimmed.includes('@')) {
-    return { safeName: fallback, isSanitized: true, reason: 'mention' };
+    return { safeName: fallbackName, isSanitized: true, reason: 'mention' };
   }
 
   // 2. Reject hashtags (#) - prevents timeline spam & tag hijacking
   if (trimmed.includes('#')) {
-    return { safeName: fallback, isSanitized: true, reason: 'hashtag' };
+    return { safeName: fallbackName, isSanitized: true, reason: 'hashtag' };
   }
 
   // 3. Reject URLs (http://, https://, www., or suspicious domain patterns) - anti-phishing
   const urlPattern = /(https?:\/\/|www\.)/i;
   if (urlPattern.test(trimmed)) {
-    return { safeName: fallback, isSanitized: true, reason: 'url' };
+    return { safeName: fallbackName, isSanitized: true, reason: 'url' };
   }
 
   // 4. Reject overly long names
-  if (trimmed.length > maxLength) {
-    return { safeName: fallback, isSanitized: true, reason: 'too_long' };
+  if (trimmed.length > maxNameLength) {
+    return { safeName: fallbackName, isSanitized: true, reason: 'too_long' };
   }
 
   return { safeName: trimmed, isSanitized: false, reason: 'none' };
