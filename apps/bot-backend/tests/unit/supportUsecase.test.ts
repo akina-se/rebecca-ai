@@ -230,7 +230,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     );
   });
 
-  it('should fallback to default hashtag and handle empty persona anchors', async () => {
+  it('should handle empty persona hashtag and empty persona anchors gracefully', async () => {
     const originalHashtag = deps.persona.metadata.defaultHashtag;
     try {
       deps.persona.metadata.defaultHashtag = '';
@@ -246,7 +246,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
       expect(publishPost).toHaveBeenCalledWith(
         deps,
         expect.objectContaining({
-          text: expect.stringContaining('#全肯定AIレベッカ'),
+          text: expect.not.stringContaining('#全肯定AIレベッカ'),
         }),
       );
     } finally {

@@ -92,6 +92,62 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
     }
 };
 
+/**
+ * Enqueues a supporter appreciation post task targeted at /worker/support-post.
+ *
+ * @param payload - Task payload containing transactionId.
+ * @param delaySeconds - Optional scheduling delay in seconds.
+ * @returns The created task response.
+ */
+const enqueueSupportTask = async (payload: { transactionId: string }, delaySeconds = 0) => {
+    const project = config.gcp.projectId;
+    const queue = config.gcp.queueName;
+    const location = config.gcp.location;
+    const url = `${config.gcp.workerUrl}/worker/support-post`;
+
+    if (!project || !queue || !location || !config.gcp.workerUrl) {
+        throw new Error('Cloud Tasks configuration missing (projectId, queueName, location, or workerUrl not set)');
+    }
+
+    const cTasksClient = getClient();
+    if (!cTasksClient) {
+        throw new Error('Cloud Tasks client not initialized');
+    }
+
+    const parent = cTasksClient.queuePath(project, location, queue);
+
+    const task: any = {
+        httpRequest: {
+            httpMethod: 'POST',
+            url,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: Buffer.from(JSON.stringify(payload)).toString('base64'),
+            oidcToken: {
+                serviceAccountEmail: config.gcp.serviceAccountEmail,
+                audience: config.gcp.workerUrl,
+            },
+        },
+    };
+
+    if (delaySeconds > 0) {
+        task.scheduleTime = {
+            seconds: delaySeconds + Date.now() / 1000,
+        };
+    }
+
+    try {
+        const [response] = await cTasksClient.createTask({ parent, task });
+        logger.info('Created support post task', { taskName: response.name, transactionId: payload.transactionId });
+        return response;
+    } catch (error) {
+        logger.error('Error enqueuing support task', error);
+        throw error;
+    }
+};
+
 export { 
-    enqueueReplyTask
- };
+    enqueueReplyTask,
+    enqueueSupportTask,
+};

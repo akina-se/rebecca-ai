@@ -25,6 +25,7 @@ import type {
   TimelinePost,
   CampaignDoc,
   SupportTransactionDoc,
+  RewardImageDoc,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 import type { StructuredNewsPostResponse } from '../features/news/types';
@@ -113,6 +114,11 @@ export interface IFirestoreService {
   updateCampaign(campaignId: string, data: Partial<CampaignDoc>): Promise<void>;
   getSupportTransactionById(transactionId: string): Promise<SupportTransactionDoc | null>;
   updateSupportTransaction(transactionId: string, data: Partial<SupportTransactionDoc>): Promise<void>;
+  createSupportTransaction(doc: SupportTransactionDoc): Promise<void>;
+  getSupportTransactionBySessionId(stripeSessionId: string): Promise<SupportTransactionDoc | null>;
+  getActiveRewardImage(): Promise<RewardImageDoc | null>;
+  incrementRewardImageDistributedCount(rewardImageId: string): Promise<void>;
+  getPublicSupporters(limitCount?: number): Promise<Array<Pick<SupportTransactionDoc, 'id' | 'safeName' | 'tier' | 'itemLabel' | 'createdAt' | 'tweetId'>>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,6 +189,7 @@ export interface IXApiService {
  */
 export interface ITasksService {
   enqueueReplyTask(payload: Record<string, unknown>, delaySeconds?: number): Promise<unknown>;
+  enqueueSupportTask(payload: { transactionId: string }, delaySeconds?: number): Promise<unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -196,4 +203,5 @@ export interface ITasksService {
 export interface IStorageService {
   downloadImage(gsUri: string): Promise<Buffer>;
   uploadImage(hash: string, buffer: Buffer, mimeType: string): Promise<string>;
+  generateSignedUrl(storagePathOrGsUri: string, expiresInMinutes?: number): Promise<string>;
 }

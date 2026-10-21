@@ -99,7 +99,7 @@ export class SupportTaskUseCase {
 
       const systemInstruction = this.deps.persona.getBasePrompt('timeline', 'ja');
       const personaName = this.deps.persona.metadata.displayName;
-      const defaultHashtag = this.deps.persona.metadata.defaultHashtag || '#全肯定AIレベッカ';
+      const defaultHashtag = this.deps.persona.metadata.defaultHashtag ?? '';
 
       const prompt = `あなたはAIキャラクター「${personaName}」です。
 今、サポーター（マスター）から差し入れ（エネルギーサポート）が届きました！

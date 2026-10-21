@@ -169,6 +169,11 @@ export default {
     maxNameLength: Math.max(5, Math.min(50, parseInt(process.env.SUPPORT_MAX_NAME_LENGTH || '20', 10) || 20)),
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+    paymentLinks: {
+      bronze: process.env.STRIPE_PAYMENT_LINK_BRONZE || '',
+      silver: process.env.STRIPE_PAYMENT_LINK_SILVER || '',
+      gold: process.env.STRIPE_PAYMENT_LINK_GOLD || '',
+    },
   },
 };
 

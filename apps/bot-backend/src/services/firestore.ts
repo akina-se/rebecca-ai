@@ -36,6 +36,8 @@ import type {
   TimelinePost,
   CampaignDoc,
   SupportTransactionDoc,
+  RewardImageDoc,
+  SupportTier,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -1123,6 +1125,118 @@ async function getSupportTransactionById(
  * @param transactionId - The unique ID of the support transaction to update.
  * @param data - The partial fields to update.
  */
+/**
+ * Creates a new support transaction document in Firestore.
+ *
+ * @param doc - The full SupportTransactionDoc document.
+ */
+async function createSupportTransaction(doc: SupportTransactionDoc): Promise<void> {
+  const docRef = db.supportTransactions.doc(doc.id);
+  await docRef.set(doc as any);
+}
+
+/**
+ * Retrieves a support transaction document by its Stripe Checkout Session ID.
+ *
+ * @param stripeSessionId - The unique Stripe checkout session ID.
+ * @returns The matching SupportTransactionDoc or null if not found.
+ */
+async function getSupportTransactionBySessionId(
+  stripeSessionId: string
+): Promise<SupportTransactionDoc | null> {
+  const snap = await db.supportTransactions
+    .where('stripeSessionId', '==', stripeSessionId)
+    .limit(1)
+    .get();
+  if (snap.empty) {
+    return null;
+  }
+  const doc = snap.docs[0];
+  return { id: doc.id, ...doc.data() } as SupportTransactionDoc;
+}
+
+/**
+ * Retrieves the currently active reward image from Firestore.
+ *
+ * @returns The active RewardImageDoc or null if none active.
+ */
+async function getActiveRewardImage(): Promise<RewardImageDoc | null> {
+  const snap = await db.rewardImages
+    .where('isActive', '==', true)
+    .limit(1)
+    .get();
+  if (snap.empty) {
+    return null;
+  }
+  const doc = snap.docs[0];
+  return { id: doc.id, ...doc.data() } as RewardImageDoc;
+}
+
+/**
+ * Atomically increments the distributed download count for a reward image asset.
+ *
+ * @param rewardImageId - The target reward image document ID.
+ */
+async function incrementRewardImageDistributedCount(rewardImageId: string): Promise<void> {
+  const docRef = db.rewardImages.doc(rewardImageId);
+  await docRef.set(
+    {
+      distributedCount: FieldValue.increment(1),
+      updatedAt: new Date().toISOString(),
+    } as any,
+    { merge: true }
+  );
+}
+
+export interface PublicSupporterCredit {
+  id: string;
+  safeName: string;
+  tier: SupportTier;
+  itemLabel: string;
+  createdAt: string;
+  tweetId?: string;
+}
+
+/**
+ * Retrieves the public list of supporters opted-in to the Special Thanks ledger.
+ *
+ * @param limitCount - Maximum number of supporter entries to return (default: 100).
+ * @returns Array of PublicSupporterCredit ordered by prestige (VIP > Gold > Silver > Bronze) then newest first.
+ */
+async function getPublicSupporters(limitCount = 100): Promise<PublicSupporterCredit[]> {
+  const snap = await db.supportTransactions
+    .where('creditVisibility', '==', 'show')
+    .where('isBanned', '==', false)
+    .where('status', 'in', ['completed', 'manual'])
+    .limit(limitCount)
+    .get();
+
+  const supporters: PublicSupporterCredit[] = snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      safeName: data.safeName,
+      tier: data.tier,
+      itemLabel: data.itemLabel,
+      createdAt: data.createdAt,
+      tweetId: data.tweetId,
+    };
+  });
+
+  const tierWeight: Record<SupportTier, number> = {
+    vip: 4,
+    gold: 3,
+    silver: 2,
+    bronze: 1,
+  };
+
+  return supporters.sort((a, b) => {
+    const diff = (tierWeight[b.tier] || 0) - (tierWeight[a.tier] || 0);
+    if (diff !== 0) return diff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
 async function updateSupportTransaction(
   transactionId: string,
   data: Partial<SupportTransactionDoc>
@@ -1193,4 +1307,9 @@ export {
   updateCampaign,
   getSupportTransactionById,
   updateSupportTransaction,
+  createSupportTransaction,
+  getSupportTransactionBySessionId,
+  getActiveRewardImage,
+  incrementRewardImageDistributedCount,
+  getPublicSupporters,
 };

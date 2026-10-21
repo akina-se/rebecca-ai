@@ -52,6 +52,15 @@ export interface SupportConfig {
    * Stripe API Secret Key for server-side verification calls.
    */
   stripeSecretKey?: string;
+
+  /**
+   * Public Stripe payment links for supporter tiers (Test or Live mode URLs).
+   */
+  paymentLinks?: {
+    bronze: string;
+    silver: string;
+    gold: string;
+  };
 }
 
 /**

@@ -48,6 +48,11 @@ export const createMockDeps = (): AppDependencies => {
             updateTimelinePost: jest.fn().mockResolvedValue(undefined),
             getSupportTransactionById: jest.fn().mockResolvedValue(null),
             updateSupportTransaction: jest.fn().mockResolvedValue(undefined),
+            createSupportTransaction: jest.fn().mockResolvedValue(undefined),
+            getSupportTransactionBySessionId: jest.fn().mockResolvedValue(null),
+            getActiveRewardImage: jest.fn().mockResolvedValue(null),
+            incrementRewardImageDistributedCount: jest.fn().mockResolvedValue(undefined),
+            getPublicSupporters: jest.fn().mockResolvedValue([]),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),
@@ -81,9 +86,12 @@ export const createMockDeps = (): AppDependencies => {
         } as any,
         tasks: {
             enqueueReplyTask: jest.fn(),
+            enqueueSupportTask: jest.fn().mockResolvedValue({ name: 'task_support_1' }),
         } as any,
         storage: {
             downloadImage: jest.fn(),
+            uploadImage: jest.fn().mockResolvedValue('gs://bucket/img'),
+            generateSignedUrl: jest.fn().mockResolvedValue('https://storage.googleapis.com/signed-url'),
         } as any,
     };
 };
