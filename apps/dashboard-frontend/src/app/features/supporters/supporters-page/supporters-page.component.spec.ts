@@ -114,18 +114,18 @@ describe('SupportersPageComponent', () => {
     );
   });
 
-  it('should open edit modal and save modified safeName and VIP tier', () => {
+  it('should open edit modal and save modified safeName and gold tier', () => {
     component.openEditModal(mockTransaction);
     expect(component.isEditModalOpen()).toBe(true);
     expect(component.editSafeName).toBe('Alice Master');
 
-    component.editSafeName = 'Alice (VIP)';
-    component.editTier = 'vip';
+    component.editSafeName = 'Alice (Gold)';
+    component.editTier = 'gold';
     component.saveEdit();
 
     expect(mockRepo.updateTransaction).toHaveBeenCalledWith('tx_123', {
-      safeName: 'Alice (VIP)',
-      tier: 'vip',
+      safeName: 'Alice (Gold)',
+      tier: 'gold',
       creditVisibility: 'show',
       isBanned: false,
     });

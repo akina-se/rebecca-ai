@@ -18,14 +18,14 @@
     </div>
   </div>
 
-  <!-- Failure Alert Banner -->
+  <!-- Failure Alert Banner (Rendered only when tasks require attention) -->
   @if (summary().failedCount > 0) {
     <div class="alert-banner failure">
       <div class="alert-content">
-        <span class="material-icons alert-icon">error</span>
+        <span class="material-icons alert-icon">error_outline</span>
         <div>
           <span class="alert-title">{{ summary().failedCount }} {{ 'supporters.alert_failed' | translate }}</span>
-          <span class="alert-desc">Gemini APIまたはX APIの一時的な障害により自動お礼ポストが停止しています。再試行または手動解決を行ってください。</span>
+          <span class="alert-desc">API一時障害により自動お礼ポストが保留されています。再試行または手動解決を行ってください。</span>
         </div>
       </div>
       <button class="alert-action-btn" (click)="filterByFailed()">
@@ -34,45 +34,39 @@
     </div>
   }
 
-  <!-- KPI Metrics Grid -->
+  <!-- KPI Metrics Grid (Unified Dark Glassmorphism) -->
   <div class="kpi-grid">
     <div class="kpi-card glass-panel">
-      <div class="kpi-icon revenue">
-        <span class="material-icons">payments</span>
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.total_revenue' | translate }}</span>
+        <span class="material-icons kpi-icon">payments</span>
       </div>
-      <div class="kpi-info">
-        <div class="kpi-label">{{ 'supporters.total_revenue' | translate }}</div>
-        <div class="kpi-value">¥{{ summary().totalAmount | number }}</div>
-      </div>
+      <div class="kpi-value">¥{{ summary().totalAmount | number }}</div>
     </div>
 
     <div class="kpi-card glass-panel">
-      <div class="kpi-icon donations">
-        <span class="material-icons">volunteer_activism</span>
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.total_donations' | translate }}</span>
+        <span class="material-icons kpi-icon">volunteer_activism</span>
       </div>
-      <div class="kpi-info">
-        <div class="kpi-label">{{ 'supporters.total_donations' | translate }}</div>
-        <div class="kpi-value">{{ summary().totalCount }} <span class="unit">件</span></div>
-      </div>
+      <div class="kpi-value">{{ summary().totalCount }} <span class="unit">件</span></div>
     </div>
 
     <div class="kpi-card glass-panel">
-      <div class="kpi-icon completed">
-        <span class="material-icons">check_circle</span>
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.filter_completed' | translate }}</span>
+        <span class="material-icons kpi-icon">check_circle</span>
       </div>
-      <div class="kpi-info">
-        <div class="kpi-label">{{ 'supporters.filter_completed' | translate }}</div>
-        <div class="kpi-value">{{ summary().completedCount }} <span class="unit">件</span></div>
-      </div>
+      <div class="kpi-value">{{ summary().completedCount }} <span class="unit">件</span></div>
     </div>
 
     <div class="kpi-card glass-panel" [class.kpi-alert]="summary().failedCount > 0">
-      <div class="kpi-icon failed">
-        <span class="material-icons">warning</span>
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.failed_tasks' | translate }}</span>
+        <span class="material-icons kpi-icon" [class.text-danger]="summary().failedCount > 0">warning_amber</span>
       </div>
-      <div class="kpi-info">
-        <div class="kpi-label">{{ 'supporters.failed_tasks' | translate }}</div>
-        <div class="kpi-value" [class.text-danger]="summary().failedCount > 0">{{ summary().failedCount }} <span class="unit">件</span></div>
+      <div class="kpi-value" [class.text-danger]="summary().failedCount > 0">
+        {{ summary().failedCount }} <span class="unit">件</span>
       </div>
     </div>
   </div>
@@ -80,15 +74,15 @@
   <!-- Filters & Search Toolbar -->
   <div class="toolbar glass-panel">
     <div class="toolbar-left">
-      <!-- Status Pills -->
+      <!-- Status Filter Pills -->
       <div class="filter-pills">
         <button [class.active]="selectedStatus === 'all'" (click)="selectedStatus = 'all'; onFilterChange()">
           {{ 'supporters.filter_all' | translate }}
         </button>
-        <button [class.active]="selectedStatus === 'failed'" class="pill-danger" (click)="selectedStatus = 'failed'; onFilterChange()">
+        <button [class.active]="selectedStatus === 'failed'" (click)="selectedStatus = 'failed'; onFilterChange()">
           {{ 'supporters.filter_failed' | translate }}
           @if (summary().failedCount > 0) {
-            <span class="badge-count">{{ summary().failedCount }}</span>
+            <span class="badge-count" [class.badge-danger]="selectedStatus !== 'failed'">{{ summary().failedCount }}</span>
           }
         </button>
         <button [class.active]="selectedStatus === 'pending'" (click)="selectedStatus = 'pending'; onFilterChange()">
@@ -102,13 +96,12 @@
         </button>
       </div>
 
-      <!-- Tier Selector -->
+      <!-- Tier Selector (Bronze, Silver, Gold) -->
       <select class="form-select" [(ngModel)]="selectedTier" (change)="onFilterChange()">
         <option value="all">全プラン (All Tiers)</option>
-        <option value="gold">Gold (¥3,000)</option>
+        <option value="gold">Gold (¥3,000 / ¥10,000)</option>
         <option value="silver">Silver (¥1,000)</option>
         <option value="bronze">Bronze (¥300)</option>
-        <option value="vip">VIP</option>
       </select>
     </div>
 
@@ -131,7 +124,7 @@
     </div>
   </div>
 
-  <!-- Transactions Ledger Table (Focused 4 Columns) -->
+  <!-- Transactions Ledger Table (Clean 4 Columns + Chevron) -->
   <div class="table-container glass-panel">
     @if (isLoading()) {
       <div class="loading-state">
@@ -158,30 +151,27 @@
           @for (tx of transactions(); track tx.id) {
             <tr class="clickable-row" [class.row-failed]="tx.status === 'failed'" (click)="openTransactionDrawer(tx)">
               
-              <!-- Desktop / Mobile Column 1: Date -->
+              <!-- Column 1: Date -->
               <td class="td-date">
                 <span class="date-text">{{ tx.createdAt | tzDate:'short' }}</span>
               </td>
 
-              <!-- Desktop / Mobile Column 2: Supporter Name & Handle -->
+              <!-- Column 2: Supporter Name -->
               <td class="td-backer">
                 <div class="backer-cell">
                   <div class="name-line">
                     <span class="supporter-name">{{ tx.safeName || tx.rawName }}</span>
-                    @if (tx.isVip) {
-                      <span class="vip-tag">VIP</span>
+                    @if (tx.isNameSanitized) {
+                      <span class="sanitized-tag" title="入力名がシステムにより安全に補正されました">[修正済]</span>
                     }
                     @if (tx.isBanned) {
                       <span class="banned-tag">公開停止</span>
                     }
                   </div>
-                  @if (tx.xHandle) {
-                    <div class="handle-line">&#64;{{ tx.xHandle }}</div>
-                  }
                 </div>
               </td>
 
-              <!-- Desktop / Mobile Column 3: Amount & Tier -->
+              <!-- Column 3: Amount & Tier -->
               <td class="td-tier">
                 <div class="tier-cell">
                   <span class="tier-pill" [class]="tx.tier">
@@ -191,7 +181,7 @@
                 </div>
               </td>
 
-              <!-- Desktop / Mobile Column 4: Credit & Status -->
+              <!-- Column 4: Credit Visibility & Post Status -->
               <td class="td-credit">
                 <div class="credit-cell">
                   <span class="credit-pill" [class.hidden]="tx.creditVisibility === 'hide'">
@@ -202,23 +192,23 @@
                   <span class="status-chip" [class]="tx.status">
                     @switch (tx.status) {
                       @case ('completed') {
-                        <span class="material-icons">check_circle</span> 完了
+                        <span class="material-icons icon-done">check_circle</span> 完了
                       }
                       @case ('pending') {
-                        <span class="material-icons">hourglass_empty</span> 処理待ち
+                        <span class="material-icons icon-pending">hourglass_empty</span> 処理待ち
                       }
                       @case ('failed') {
-                        <span class="material-icons">error</span> 失敗
+                        <span class="material-icons icon-failed">error</span> 要対応
                       }
                       @case ('manual') {
-                        <span class="material-icons">build</span> 手動完了
+                        <span class="material-icons icon-manual">build</span> 手動解決
                       }
                     }
                   </span>
                 </div>
               </td>
 
-              <!-- Column 5: Chevron Indicator -->
+              <!-- Column 5: Chevron -->
               <td class="td-chevron">
                 <span class="material-icons chevron-icon">chevron_right</span>
               </td>
@@ -239,7 +229,7 @@
     @if (selectedTx(); as tx) {
       <div class="drawer-inner-content">
 
-        <!-- Top Status Card -->
+        <!-- Top Overview Card -->
         <div class="drawer-header-card glass-panel" [class.border-failed]="tx.status === 'failed'">
           <div class="header-card-top">
             <div class="tier-badge-large" [class]="tx.tier">
@@ -250,19 +240,19 @@
             </div>
           </div>
           <div class="header-card-bottom">
-            <span class="status-badge" [class]="tx.status">
+            <span class="status-chip" [class]="tx.status">
               @switch (tx.status) {
                 @case ('completed') {
-                  <span class="material-icons">check_circle</span> お礼ポスト完了
+                  <span class="material-icons icon-done">check_circle</span> お礼ポスト完了
                 }
                 @case ('pending') {
-                  <span class="material-icons">hourglass_empty</span> 処理待ち
+                  <span class="material-icons icon-pending">hourglass_empty</span> 処理待ち
                 }
                 @case ('failed') {
-                  <span class="material-icons">error</span> ポスト失敗（要対応）
+                  <span class="material-icons icon-failed">error</span> ポスト失敗（要対応）
                 }
                 @case ('manual') {
-                  <span class="material-icons">build</span> 手動解決済み
+                  <span class="material-icons icon-manual">build</span> 手動解決済み
                 }
               }
             </span>
@@ -310,7 +300,7 @@
           </div>
         </div>
 
-        <!-- Section 2: Automated Appreciation Tweet Operations -->
+        <!-- Section 2: Automated Appreciation Post Status -->
         <div class="drawer-section glass-panel">
           <h3 class="section-heading">
             <span class="material-icons">send</span>
@@ -324,7 +314,7 @@
                 自動お礼ポストに失敗しました
               </div>
               <div class="error-alert-desc">
-                {{ tx.errorMessage || 'Gemini API または X APIのレートリミット・一時的障害' }}
+                {{ tx.errorMessage || 'APIのレートリミットまたは一時的ネットワークエラー' }}
               </div>
               <div class="error-alert-actions">
                 <button
@@ -369,7 +359,7 @@
           }
         </div>
 
-        <!-- Section 3: Supporter Profile Settings (Producer Overrides) -->
+        <!-- Section 3: Supporter Settings -->
         <div class="drawer-section glass-panel">
           <h3 class="section-heading">
             <span class="material-icons">manage_accounts</span>
@@ -379,18 +369,8 @@
           <div class="form-group">
             <label>{{ 'supporters.modal_safe_name' | translate }}</label>
             <input type="text" [(ngModel)]="drawerSafeName" class="form-control" />
-            <span class="form-hint">元入力名: {{ tx.rawName }}</span>
+            <span class="form-hint">決済時入力名: {{ tx.rawName }}</span>
           </div>
-
-          @if (tx.xHandle) {
-            <div class="detail-row">
-              <span class="detail-label">{{ 'supporters.x_handle' | translate }}</span>
-              <a [href]="'https://x.com/' + tx.xHandle" target="_blank" rel="noopener noreferrer" class="x-profile-link">
-                &#64;{{ tx.xHandle }}
-                <span class="material-icons">open_in_new</span>
-              </a>
-            </div>
-          }
 
           <div class="toggle-group">
             <div class="toggle-item">
@@ -403,20 +383,6 @@
                   type="checkbox"
                   [checked]="drawerCreditVisibility === 'show'"
                   (change)="drawerCreditVisibility = drawerCreditVisibility === 'show' ? 'hide' : 'show'"
-                />
-                <span class="slider round"></span>
-              </label>
-            </div>
-
-            <div class="toggle-item">
-              <div class="toggle-text">
-                <span class="toggle-title">{{ 'supporters.vip_status' | translate }}</span>
-                <span class="toggle-desc">最上位VIPバッジと特別ハイライト掲載の付与</span>
-              </div>
-              <label class="switch">
-                <input
-                  type="checkbox"
-                  [(ngModel)]="drawerIsVip"
                 />
                 <span class="slider round"></span>
               </label>
@@ -453,7 +419,7 @@
     }
   </app-right-drawer>
 
-  <!-- Edit Supporter Modal (Legacy / Standalone) -->
+  <!-- Standalone Edit Modal -->
   @if (isEditModalOpen()) {
     <div class="modal-backdrop" (click)="closeEditModal()">
       <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
@@ -475,8 +441,7 @@
             <select [(ngModel)]="editTier" class="form-select">
               <option value="bronze">Bronze (¥300)</option>
               <option value="silver">Silver (¥1,000)</option>
-              <option value="gold">Gold (¥3,000)</option>
-              <option value="vip">VIP (特別昇格)</option>
+              <option value="gold">Gold (¥3,000 / ¥10,000)</option>
             </select>
           </div>
 
@@ -518,27 +483,32 @@
         </div>
 
         <div class="modal-body">
-          <p class="modal-desc">
-            X APIのエラーやレートリミット等で自動ポストが行えなかった場合、プロデューサーが手動でポスト内容を確認・完了としてマークできます。
-          </p>
+          <p class="modal-desc">{{ 'supporters.modal_manual_desc' | translate }}</p>
 
           <div class="form-group">
-            <label>{{ 'supporters.modal_tweet_text' | translate }}</label>
-            <textarea [(ngModel)]="manualTweetText" class="form-textarea" rows="4"></textarea>
+            <label>{{ 'supporters.modal_manual_text_label' | translate }}</label>
+            <textarea
+              [(ngModel)]="manualTweetText"
+              class="form-textarea"
+              rows="4"
+              maxlength="140"
+              placeholder="プロデューサー、差し入れありがと！大切に使うからね！ #RebeccaAI"
+            ></textarea>
+            <span class="form-hint">{{ manualTweetText.length }}/140 文字</span>
           </div>
         </div>
 
         <div class="modal-footer">
           <button class="btn btn-secondary" (click)="closeManualResolveModal()">{{ 'common.cancel' | translate }}</button>
-          <button class="btn btn-primary" [disabled]="isResolvingManual()" (click)="saveManualResolve()">
-            {{ 'supporters.manual_resolve' | translate }}として確定
+          <button class="btn btn-primary" [disabled]="isResolvingManual() || !manualTweetText.trim()" (click)="saveManualResolve()">
+            {{ isResolvingManual() ? ('common.saving' | translate) : ('supporters.manual_resolve' | translate) }}
           </button>
         </div>
       </div>
     </div>
   }
 
-  <!-- Manual Ingestion Modal -->
+  <!-- Manual Ingestion Entry Modal -->
   @if (isManualEntryModalOpen()) {
     <div class="modal-backdrop" (click)="closeManualEntryModal()">
       <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
@@ -550,19 +520,21 @@
         </div>
 
         <div class="modal-body">
+          <p class="modal-desc">Stripeダッシュボードで直接作成された支払いやオフライン寄付を手動登録します。</p>
+
           <div class="form-group">
             <label>Stripe Checkout Session ID (必須)</label>
             <input type="text" [(ngModel)]="entrySessionId" class="form-control" placeholder="cs_live_..." />
           </div>
 
           <div class="form-group">
-            <label>サポーターのお名前 (必須)</label>
-            <input type="text" [(ngModel)]="entryRawName" class="form-control" placeholder="マスター名" />
+            <label>{{ 'supporters.col_backer' | translate }}名</label>
+            <input type="text" [(ngModel)]="entryRawName" class="form-control" placeholder="名無しのマスター" />
           </div>
 
           <div class="form-group">
             <label>支援金額 (円)</label>
-            <input type="number" [(ngModel)]="entryAmount" class="form-control" />
+            <input type="number" [(ngModel)]="entryAmount" class="form-control" min="300" step="100" />
           </div>
 
           <div class="form-group">
@@ -576,18 +548,22 @@
 
         <div class="modal-footer">
           <button class="btn btn-secondary" (click)="closeManualEntryModal()">{{ 'common.cancel' | translate }}</button>
-          <button class="btn btn-primary" [disabled]="isSubmittingEntry()" (click)="submitManualEntry()">
-            {{ isSubmittingEntry() ? ('common.saving' | translate) : 'トランザクション登録' }}
+          <button
+            class="btn btn-primary"
+            [disabled]="isSubmittingEntry() || !entrySessionId.trim() || entryAmount <= 0"
+            (click)="submitManualEntry()"
+          >
+            {{ isSubmittingEntry() ? ('common.saving' | translate) : ('common.save' | translate) }}
           </button>
         </div>
       </div>
     </div>
   }
 
-  <!-- Rewards Catalog Modal -->
+  <!-- Rewards Catalog Manager Modal -->
   @if (isRewardsModalOpen()) {
     <div class="modal-backdrop" (click)="closeRewardsModal()">
-      <div class="modal-content glass-panel modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-content modal-lg glass-panel" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h2>{{ 'supporters.rewards_catalog' | translate }}</h2>
           <button class="close-btn" (click)="closeRewardsModal()">
@@ -596,47 +572,53 @@
         </div>
 
         <div class="modal-body">
-          <!-- Upload Form -->
-          <div class="upload-section glass-panel">
-            <h4>{{ 'supporters.upload_reward' | translate }}</h4>
-            <div class="upload-form">
-              <input type="file" (change)="onRewardFileSelected($event)" accept="image/*" class="file-input" />
+          <!-- Reward Upload Box -->
+          <div class="reward-upload-box glass-panel">
+            <h3>{{ 'supporters.reward_upload_new' | translate }}</h3>
+            <div class="upload-inputs">
               <input
                 type="text"
                 [(ngModel)]="newRewardTitle"
-                placeholder="特典イラストタイトル (例: 2026年10月ハロウィン限定)"
-                class="form-control"
+                class="form-control flex-1"
+                placeholder="2026年11月限定：サイバースタジオ描き下ろし壁紙"
               />
-              <button class="btn btn-primary" [disabled]="isUploadingReward() || !selectedRewardFile" (click)="uploadReward()">
-                <span class="material-icons">{{ isUploadingReward() ? 'sync' : 'cloud_upload' }}</span>
-                アップロード
+              <input type="file" accept="image/*" (change)="onRewardFileSelected($event)" class="form-control" />
+              <button
+                class="btn btn-primary"
+                [disabled]="isUploadingReward() || !newRewardTitle.trim() || !selectedRewardFile"
+                (click)="uploadReward()"
+              >
+                {{ isUploadingReward() ? ('common.uploading' | translate) : ('common.upload' | translate) }}
               </button>
             </div>
           </div>
 
-          <!-- Existing Rewards List -->
+          <!-- Reward List Grid -->
           <div class="rewards-grid">
             @for (reward of rewards(); track reward.id) {
-              <div class="reward-card glass-panel" [class.inactive]="!reward.isActive">
+              <div class="reward-card glass-panel" [class.active-reward]="reward.isActive">
                 <div class="reward-preview">
-                  <img [src]="reward.imageUrl" [alt]="reward.title" />
-                  <span class="badge" [class.badge-success]="reward.isActive" [class.badge-muted]="!reward.isActive">
-                    {{ reward.isActive ? '提供中 (Active)' : '停止中 (Inactive)' }}
+                  <img [src]="'/api/v1/supporters/rewards/' + reward.id + '/image'" [alt]="reward.title" />
+                  <span class="reward-badge" [class.active]="reward.isActive">
+                    {{ reward.isActive ? '現在配布中' : 'アーカイブ' }}
                   </span>
                 </div>
-                <div class="reward-info">
-                  <div class="reward-title">{{ reward.title }}</div>
-                  <div class="reward-meta">
-                    配布実績: {{ reward.distributedCount || 0 }} 回
+                <div class="reward-meta">
+                  <div class="reward-title" [title]="reward.title">{{ reward.title }}</div>
+                  <div class="reward-stats">配布回数: {{ reward.distributedCount }}回</div>
+                  <div class="reward-actions">
+                    <button
+                      class="btn btn-sm"
+                      [class.btn-primary]="!reward.isActive"
+                      [class.btn-secondary]="reward.isActive"
+                      (click)="toggleRewardActive(reward)"
+                    >
+                      {{ reward.isActive ? '配布を停止' : '今月の報酬に設定' }}
+                    </button>
+                    <button class="btn btn-sm btn-danger" (click)="deleteReward(reward)">
+                      <span class="material-icons">delete</span>
+                    </button>
                   </div>
-                </div>
-                <div class="reward-actions">
-                  <button class="btn btn-sm" [class.btn-warning]="reward.isActive" [class.btn-primary]="!reward.isActive" (click)="toggleRewardActive(reward)">
-                    {{ reward.isActive ? '提供停止' : '提供開始' }}
-                  </button>
-                  <button class="btn btn-sm btn-danger-icon" (click)="deleteReward(reward)">
-                    <span class="material-icons">delete</span>
-                  </button>
                 </div>
               </div>
             }

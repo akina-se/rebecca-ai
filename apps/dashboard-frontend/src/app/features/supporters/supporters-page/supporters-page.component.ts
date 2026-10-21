@@ -49,7 +49,6 @@ export class SupportersPageComponent implements OnInit {
   drawerSafeName = '';
   drawerTier: SupportTier = 'bronze';
   drawerCreditVisibility: CreditVisibility = 'show';
-  drawerIsVip = false;
   drawerIsBanned = false;
   readonly isSavingDrawer = signal<boolean>(false);
   readonly copiedKey = signal<string | null>(null);
@@ -148,7 +147,6 @@ export class SupportersPageComponent implements OnInit {
     this.drawerSafeName = tx.safeName || tx.rawName;
     this.drawerTier = tx.tier;
     this.drawerCreditVisibility = tx.creditVisibility;
-    this.drawerIsVip = Boolean(tx.isVip);
     this.drawerIsBanned = Boolean(tx.isBanned);
     this.isDrawerOpen.set(true);
   }
@@ -169,7 +167,6 @@ export class SupportersPageComponent implements OnInit {
         tier: this.drawerTier,
         creditVisibility: this.drawerCreditVisibility,
         isBanned: this.drawerIsBanned,
-        isVip: this.drawerIsVip,
       })
       .subscribe({
         next: (updated) => {

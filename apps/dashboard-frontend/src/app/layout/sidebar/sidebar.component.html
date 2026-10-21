@@ -1,4 +1,4 @@
-<div class="sidebar glass-panel" style="border-radius: 0;">
+<div class="sidebar glass-panel" style="border-radius: 0;" #sidebarNav (scroll)="onNavScroll($event)">
     <div class="logo"><img src="assets/gemitec_icon.svg" alt="GEMITEC" class="sidebar-logo-icon">{{ brandName() }}</div>
     <div class="nav-item" routerLink="/dashboard" routerLinkActive="active">
         <span class="material-icons">dashboard</span>
@@ -38,3 +38,7 @@
         <div class="sidebar-version">v{{ version() }}</div>
     }
 </div>
+
+<!-- Mobile Horizontal Scroll Affordances (Purple Glow & Edge Bar) -->
+<div class="mobile-scroll-affordance left" [class.active]="canScrollLeft()" aria-hidden="true"></div>
+<div class="mobile-scroll-affordance right" [class.active]="canScrollRight()" aria-hidden="true"></div>
