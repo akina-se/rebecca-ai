@@ -60,6 +60,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: CAMPAIGNS_REPOSITORY,
       useClass: HttpCampaignsRepository
+    },
+    {
+      provide: SUPPORTERS_REPOSITORY,
+      useClass: HttpSupportersRepository
     }
   ]
 };
