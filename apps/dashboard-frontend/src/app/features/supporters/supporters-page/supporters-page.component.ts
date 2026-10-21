@@ -13,6 +13,7 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
+import { CopilotContextService } from '../../../core/services/copilot-context.service';
 
 @Component({
   selector: 'app-supporters-page',
@@ -25,6 +26,7 @@ export class SupportersPageComponent implements OnInit {
   private readonly repo = inject(SUPPORTERS_REPOSITORY);
   private readonly toast = inject(ToastService);
   readonly translationService = inject(TranslationService);
+  private readonly contextService = inject(CopilotContextService);
 
   readonly transactions = signal<SupportTransactionDoc[]>([]);
   readonly summary = signal({
@@ -149,11 +151,27 @@ export class SupportersPageComponent implements OnInit {
     this.drawerCreditVisibility = tx.creditVisibility;
     this.drawerIsBanned = Boolean(tx.isBanned);
     this.isDrawerOpen.set(true);
+    this.contextService.setFocusedEntity({
+      type: 'supporter',
+      id: tx.id,
+      label: tx.safeName || tx.rawName,
+      details: {
+        amount: tx.amount,
+        tier: tx.tier,
+        status: tx.status,
+        stripeSessionId: tx.stripeSessionId,
+        stripePaymentIntentId: tx.stripePaymentIntentId,
+        creditVisibility: tx.creditVisibility,
+        isBanned: tx.isBanned,
+        errorMessage: tx.errorMessage,
+      },
+    });
   }
 
   closeTransactionDrawer(): void {
     this.isDrawerOpen.set(false);
     this.selectedTx.set(null);
+    this.contextService.clearFocusedEntity();
   }
 
   saveDrawerSettings(): void {
