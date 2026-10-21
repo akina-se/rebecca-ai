@@ -353,6 +353,74 @@ describe('Supporters Feature Unit Tests', () => {
       expect(res.transaction.status).toBe('pending');
     });
 
+    it('retryTransaction throws 404 if missing', async () => {
+      repo.getTransactionById.mockResolvedValue(null);
+      await expect(useCase.retryTransaction('missing')).rejects.toThrow('not found');
+    });
+
+    it('manualResolve validates transaction presence', async () => {
+      repo.getTransactionById.mockResolvedValueOnce(null);
+      await expect(useCase.manualResolve('missing', { tweetText: 'hi' })).rejects.toThrow('not found');
+    });
+
+    it('uploadReward validates file buffer', async () => {
+      await expect(useCase.uploadReward({} as any, 'title')).rejects.toThrow('Image file is required');
+    });
+
+    it('deleteReward throws 404 when missing', async () => {
+      repo.getRewardImageById.mockResolvedValue(null);
+      await expect(useCase.deleteReward('missing')).rejects.toThrow('not found');
+    });
+
+    it('getRewardBinary handles missing image or missing file in bucket', async () => {
+      repo.getRewardImageById.mockResolvedValueOnce(null);
+      const res1 = await useCase.getRewardBinary('missing');
+      expect(res1).toBeNull();
+
+      repo.getRewardImageById.mockResolvedValueOnce({ id: 'r1', storagePath: 'rewards/art.png' } as any);
+      mockFile.exists.mockResolvedValueOnce([false]);
+      const res2 = await useCase.getRewardBinary('r1');
+      expect(res2).toBeNull();
+    });
+
+    it('manualEntry validates required fields', async () => {
+      await expect(useCase.manualEntry({ stripeSessionId: '', rawName: 'User', amount: 300 } as any)).rejects.toThrow('required');
+      await expect(useCase.manualEntry({ stripeSessionId: 'cs_1', rawName: '', amount: 300 } as any)).rejects.toThrow('required');
+      await expect(useCase.manualEntry({ stripeSessionId: 'cs_1', rawName: 'User', amount: 0 } as any)).rejects.toThrow('required');
+    });
+
+    it('retryTransaction dispatches to bot-backend worker when botBackendUrl is configured', async () => {
+      const origUrl = require('../../src/config').config.services.botBackendUrl;
+      const origSecret = require('../../src/config').config.services.batchSecret;
+      require('../../src/config').config.services.botBackendUrl = 'http://localhost:8080';
+      require('../../src/config').config.services.batchSecret = 'test_secret';
+
+      const mockFetch = jest.fn().mockResolvedValue({ ok: true });
+      global.fetch = mockFetch as any;
+
+      repo.getTransactionById.mockResolvedValueOnce({
+        id: 'tx_retry_fetch',
+        status: 'failed',
+      } as any);
+
+      repo.getTransactionById.mockResolvedValueOnce({
+        id: 'tx_retry_fetch',
+        status: 'pending',
+      } as any);
+
+      await useCase.retryTransaction('tx_retry_fetch');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:8080/worker/support-post',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'x-worker-secret': 'test_secret' }),
+        })
+      );
+
+      require('../../src/config').config.services.botBackendUrl = origUrl;
+      require('../../src/config').config.services.batchSecret = origSecret;
+    });
+
     it('retryTransaction throws error when trying to retry a completed transaction', async () => {
       repo.getTransactionById.mockResolvedValue({
         id: 'tx_comp',
@@ -631,6 +699,278 @@ describe('Supporters Feature Unit Tests', () => {
       await controller.deleteReward(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith({ success: true });
+    });
+
+    it('handles controller exceptions with 500 or error status response', async () => {
+      const err = new Error('Database down');
+      useCase.getLedger.mockRejectedValue(err);
+      await controller.getLedger(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.retryTransaction.mockRejectedValue(err);
+      await controller.retry(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.manualResolve.mockRejectedValue(err);
+      await controller.manualResolve(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.manualEntry.mockRejectedValue(err);
+      await controller.manualEntry(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.getTransactionById.mockRejectedValue(err);
+      await controller.getById(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.updateTransaction.mockRejectedValue(err);
+      await controller.update(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.getRewards.mockRejectedValue(err);
+      await controller.getRewards(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      req.file = { originalname: 'test.png', buffer: Buffer.from('data') } as any;
+      useCase.uploadReward.mockRejectedValue(err);
+      await controller.uploadReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.getRewardBinary.mockRejectedValue(err);
+      await controller.getRewardImage(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.updateReward.mockRejectedValue(err);
+      await controller.updateReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+
+      useCase.deleteReward.mockRejectedValue(err);
+      await controller.deleteReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+    });
+  });
+
+  describe('SupportersRepository Additional Coverage', () => {
+    let repo: SupportersRepository;
+
+    beforeEach(() => {
+      repo = new SupportersRepository(mockFirestore);
+    });
+
+    it('queries transactions with status and tier filters and search', async () => {
+      mockSupportTransactionsColl.get.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'tx_alpha',
+            data: () => ({
+              stripeSessionId: 'cs_alpha',
+              rawName: 'Alice Alpha',
+              safeName: 'Alice Alpha',
+              amount: 3000,
+              tier: 'silver',
+              status: 'completed',
+              createdAt: '2026-10-21T00:00:00.000Z',
+            }),
+          },
+          {
+            id: 'tx_beta',
+            data: () => ({
+              stripeSessionId: 'cs_beta',
+              rawName: 'Bob Beta',
+              safeName: 'Bob Beta',
+              amount: 10000,
+              tier: 'gold',
+              status: 'completed',
+              createdAt: '2026-10-21T01:00:00.000Z',
+            }),
+          },
+        ],
+      });
+
+      const res = await repo.getTransactions({ status: 'completed', tier: 'silver', search: 'Alice' });
+      expect(mockSupportTransactionsColl.where).toHaveBeenCalledWith('status', '==', 'completed');
+      expect(mockSupportTransactionsColl.where).toHaveBeenCalledWith('tier', '==', 'silver');
+      expect(res.transactions).toHaveLength(1);
+      expect(res.transactions[0].id).toBe('tx_alpha');
+    });
+
+    it('updates and creates transactions', async () => {
+      const docSet = jest.fn().mockResolvedValue(undefined);
+      mockSupportTransactionsColl.doc.mockReturnValue({ set: docSet, id: 'tx_gen_id' });
+
+      await repo.updateTransaction('tx_existing', { safeName: 'Renamed' });
+      expect(docSet).toHaveBeenCalledWith({ safeName: 'Renamed' }, { merge: true });
+
+      const newId = await repo.createTransaction({
+        stripeSessionId: 'cs_new',
+        rawName: 'New Donor',
+        safeName: 'New Donor',
+        isNameSanitized: false,
+        creditVisibility: 'show',
+        amount: 300,
+        currency: 'jpy',
+        tier: 'bronze',
+        itemLabel: 'Energy Drink',
+        rewardImageId: 'reward_1',
+        status: 'pending',
+        isBanned: false,
+        createdAt: '2026-10-21T02:00:00.000Z',
+      });
+      expect(newId).toBe('tx_gen_id');
+    });
+
+    it('manages reward images CRUD', async () => {
+      mockRewardImagesColl.get.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'rew_1',
+            data: () => ({
+              title: 'Halloween 2026',
+              imageUrl: 'https://example.com/art.png',
+              storagePath: 'rewards/art.png',
+              isActive: true,
+              distributedCount: 15,
+              createdAt: { toDate: () => new Date('2026-10-01T00:00:00Z') },
+              updatedAt: { toDate: () => new Date('2026-10-02T00:00:00Z') },
+            }),
+          },
+        ],
+      });
+
+      const rewards = await repo.getRewardImages();
+      expect(rewards).toHaveLength(1);
+      expect(rewards[0].id).toBe('rew_1');
+
+      // getRewardImageById found & not found
+      const docGet = jest.fn()
+        .mockResolvedValueOnce({
+          exists: true,
+          id: 'rew_1',
+          data: () => ({ title: 'Halloween 2026', isActive: true }),
+        })
+        .mockResolvedValueOnce({ exists: false });
+
+      mockRewardImagesColl.doc.mockReturnValue({ get: docGet, set: jest.fn(), delete: jest.fn(), id: 'rew_new' });
+
+      const found = await repo.getRewardImageById('rew_1');
+      expect(found).not.toBeNull();
+      expect(found?.title).toBe('Halloween 2026');
+
+      const notFound = await repo.getRewardImageById('rew_missing');
+      expect(notFound).toBeNull();
+
+      // create, update, delete
+      const createdId = await repo.createRewardImage({
+        title: 'New Art',
+        imageUrl: 'https://img',
+        storagePath: 'path',
+        isActive: true,
+        distributedCount: 0,
+        createdAt: '2026-10-21T00:00:00.000Z',
+        updatedAt: '2026-10-21T00:00:00.000Z',
+      });
+      expect(createdId).toBe('rew_new');
+
+      await repo.updateRewardImage('rew_1', { isActive: false });
+      await repo.deleteRewardImage('rew_1');
+    });
+
+    it('covers pagination cursor and nextCursor in getTransactions', async () => {
+      mockSupportTransactionsColl.get.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'tx_1',
+            data: () => ({ stripeSessionId: 'cs_1', rawName: 'One', safeName: 'One', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+          {
+            id: 'tx_2',
+            data: () => ({ stripeSessionId: 'cs_2', rawName: 'Two', safeName: 'Two', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+          {
+            id: 'tx_3',
+            data: () => ({ stripeSessionId: 'cs_3', rawName: 'Three', safeName: 'Three', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+        ],
+      });
+
+      const resWithNext = await repo.getTransactions({ limit: 1 });
+      expect(resWithNext.transactions).toHaveLength(1);
+      expect(resWithNext.nextCursor).toBe('tx_1');
+
+      mockSupportTransactionsColl.get.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'tx_1',
+            data: () => ({ stripeSessionId: 'cs_1', rawName: 'One', safeName: 'One', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+          {
+            id: 'tx_2',
+            data: () => ({ stripeSessionId: 'cs_2', rawName: 'Two', safeName: 'Two', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+        ],
+      });
+
+      const resWithCursor = await repo.getTransactions({ cursor: 'tx_1', limit: 1 });
+      expect(resWithCursor.transactions).toHaveLength(1);
+      expect(resWithCursor.transactions[0].id).toBe('tx_2');
+
+      mockSupportTransactionsColl.get.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'tx_1',
+            data: () => ({ stripeSessionId: 'cs_1', rawName: 'One', safeName: 'One', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+        ],
+      });
+
+      const resUnknownCursor = await repo.getTransactions({ cursor: 'unknown_id', limit: 1 });
+      expect(resUnknownCursor.transactions).toHaveLength(1);
+    });
+
+    it('handles repository errors with logger and rethrow', async () => {
+      const err = new Error('Firestore Error');
+      mockSupportTransactionsColl.get.mockRejectedValueOnce(err);
+      await expect(repo.getTransactions({})).rejects.toThrow('Firestore Error');
+
+      mockSupportTransactionsColl.doc.mockReturnValueOnce({
+        get: jest.fn().mockRejectedValueOnce(err),
+      });
+      await expect(repo.getTransactionById('tx_err')).rejects.toThrow('Firestore Error');
+
+      mockSupportTransactionsColl.doc.mockReturnValueOnce({
+        set: jest.fn().mockRejectedValueOnce(err),
+      });
+      await expect(repo.updateTransaction('tx_err', {})).rejects.toThrow('Firestore Error');
+
+      mockSupportTransactionsColl.doc.mockReturnValueOnce({
+        set: jest.fn().mockRejectedValueOnce(err),
+        id: 'new_id',
+      });
+      await expect(repo.createTransaction({} as any)).rejects.toThrow('Firestore Error');
+
+      mockRewardImagesColl.get.mockRejectedValueOnce(err);
+      await expect(repo.getRewardImages()).rejects.toThrow('Firestore Error');
+
+      mockRewardImagesColl.doc.mockReturnValueOnce({
+        get: jest.fn().mockRejectedValueOnce(err),
+      });
+      await expect(repo.getRewardImageById('rew_err')).rejects.toThrow('Firestore Error');
+
+      mockRewardImagesColl.doc.mockReturnValueOnce({
+        set: jest.fn().mockRejectedValueOnce(err),
+        id: 'new_id',
+      });
+      await expect(repo.createRewardImage({} as any)).rejects.toThrow('Firestore Error');
+
+      mockRewardImagesColl.doc.mockReturnValueOnce({
+        set: jest.fn().mockRejectedValueOnce(err),
+      });
+      await expect(repo.updateRewardImage('rew_err', {})).rejects.toThrow('Firestore Error');
+
+      mockRewardImagesColl.doc.mockReturnValueOnce({
+        delete: jest.fn().mockRejectedValueOnce(err),
+      });
+      await expect(repo.deleteRewardImage('rew_err')).rejects.toThrow('Firestore Error');
     });
   });
 });
