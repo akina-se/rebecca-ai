@@ -4,6 +4,7 @@ import { MemoryPageComponent } from './features/memory/memory-page/memory-page.c
 import { AssetsPageComponent } from './features/assets/assets-page/assets-page.component';
 import { UsersPageComponent } from './features/users/users-page/users-page.component';
 import { SettingsPageComponent } from './features/settings/settings-page/settings-page.component';
+import { SupportersPageComponent } from './features/supporters/supporters-page/supporters-page.component';
 import { LoginPageComponent } from './features/auth/login-page/login-page.component';
 import { CampaignListComponent } from './features/campaigns/campaign-list/campaign-list.component';
 import { CampaignEditorComponent } from './features/campaigns/campaign-editor/campaign-editor.component';
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'campaigns', component: CampaignListComponent, canActivate: [authGuard] },
   { path: 'campaigns/new', component: CampaignEditorComponent, canActivate: [authGuard] },
   { path: 'campaigns/:id', component: CampaignEditorComponent, canActivate: [authGuard] },
+  { path: 'supporters', component: SupportersPageComponent, canActivate: [authGuard] },
   { path: 'settings', component: SettingsPageComponent, canActivate: [authGuard] }
 ];
 

@@ -1,0 +1,477 @@
+<div class="supporters-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ 'supporters.title' | translate }}</h1>
+      <p class="page-subtitle">{{ 'supporters.subtitle' | translate }}</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="openRewardsModal()">
+        <span class="material-icons">photo_library</span>
+        {{ 'supporters.rewards_catalog' | translate }}
+      </button>
+      <button class="btn btn-primary" (click)="openManualEntryModal()">
+        <span class="material-icons">add</span>
+        {{ 'supporters.modal_manual_entry_title' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Failure Alert Banner -->
+  @if (summary().failedCount > 0) {
+    <div class="alert-banner failure">
+      <div class="alert-content">
+        <span class="material-icons alert-icon">error</span>
+        <div>
+          <span class="alert-title">{{ summary().failedCount }} {{ 'supporters.alert_failed' | translate }}</span>
+          <span class="alert-desc">Gemini APIまたはX APIの一時的な障害により自動お礼ポストが停止しています。再試行または手動解決を行ってください。</span>
+        </div>
+      </div>
+      <button class="alert-action-btn" (click)="filterByFailed()">
+        {{ 'supporters.filter_failed' | translate }}
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card glass-panel">
+      <div class="kpi-icon revenue">
+        <span class="material-icons">payments</span>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">{{ 'supporters.total_revenue' | translate }}</div>
+        <div class="kpi-value">¥{{ summary().totalAmount | number }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card glass-panel">
+      <div class="kpi-icon donations">
+        <span class="material-icons">volunteer_activism</span>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">{{ 'supporters.total_donations' | translate }}</div>
+        <div class="kpi-value">{{ summary().totalCount }} <span class="unit">件</span></div>
+      </div>
+    </div>
+
+    <div class="kpi-card glass-panel">
+      <div class="kpi-icon completed">
+        <span class="material-icons">check_circle</span>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">{{ 'supporters.filter_completed' | translate }}</div>
+        <div class="kpi-value">{{ summary().completedCount }} <span class="unit">件</span></div>
+      </div>
+    </div>
+
+    <div class="kpi-card glass-panel" [class.kpi-alert]="summary().failedCount > 0">
+      <div class="kpi-icon failed">
+        <span class="material-icons">warning</span>
+      </div>
+      <div class="kpi-info">
+        <div class="kpi-label">{{ 'supporters.failed_tasks' | translate }}</div>
+        <div class="kpi-value" [class.text-danger]="summary().failedCount > 0">{{ summary().failedCount }} <span class="unit">件</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="toolbar glass-panel">
+    <div class="toolbar-left">
+      <!-- Status Pills -->
+      <div class="filter-pills">
+        <button [class.active]="selectedStatus === 'all'" (click)="selectedStatus = 'all'; onFilterChange()">
+          {{ 'supporters.filter_all' | translate }}
+        </button>
+        <button [class.active]="selectedStatus === 'failed'" class="pill-danger" (click)="selectedStatus = 'failed'; onFilterChange()">
+          {{ 'supporters.filter_failed' | translate }}
+          @if (summary().failedCount > 0) {
+            <span class="badge-count">{{ summary().failedCount }}</span>
+          }
+        </button>
+        <button [class.active]="selectedStatus === 'pending'" (click)="selectedStatus = 'pending'; onFilterChange()">
+          {{ 'supporters.filter_pending' | translate }}
+        </button>
+        <button [class.active]="selectedStatus === 'completed'" (click)="selectedStatus = 'completed'; onFilterChange()">
+          {{ 'supporters.filter_completed' | translate }}
+        </button>
+        <button [class.active]="selectedStatus === 'manual'" (click)="selectedStatus = 'manual'; onFilterChange()">
+          {{ 'supporters.filter_manual' | translate }}
+        </button>
+      </div>
+
+      <!-- Tier Selector -->
+      <select class="form-select" [(ngModel)]="selectedTier" (change)="onFilterChange()">
+        <option value="all">全プラン (All Tiers)</option>
+        <option value="gold">Gold (¥3,000)</option>
+        <option value="silver">Silver (¥1,000)</option>
+        <option value="bronze">Bronze (¥300)</option>
+        <option value="vip">VIP</option>
+      </select>
+    </div>
+
+    <div class="toolbar-right">
+      <div class="search-box">
+        <span class="material-icons">search</span>
+        <input
+          type="text"
+          [placeholder]="'supporters.search_placeholder' | translate"
+          [(ngModel)]="searchQuery"
+          (keyup.enter)="onSearch()"
+        />
+        @if (searchQuery) {
+          <button class="clear-btn" (click)="searchQuery = ''; onSearch()">
+            <span class="material-icons">close</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Ledger Table -->
+  <div class="table-container glass-panel">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>{{ 'common.loading' | translate }}</span>
+      </div>
+    } @else if (transactions().length === 0) {
+      <div class="empty-state">
+        <span class="material-icons empty-icon">inbox</span>
+        <p>該当する取引データがありません</p>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'supporters.col_date' | translate }}</th>
+            <th>Stripe Session ID</th>
+            <th>{{ 'supporters.col_backer' | translate }}</th>
+            <th>{{ 'supporters.col_tier' | translate }}</th>
+            <th>{{ 'supporters.col_status' | translate }}</th>
+            <th>{{ 'supporters.col_credit' | translate }}</th>
+            <th>{{ 'supporters.col_ban' | translate }}</th>
+            <th class="text-right">{{ 'supporters.col_actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tx of transactions(); track tx.id) {
+            <tr [class.row-failed]="tx.status === 'failed'">
+              <!-- Date -->
+              <td class="td-date">
+                {{ tx.createdAt | tzDate:'short' }}
+              </td>
+
+              <!-- Session ID -->
+              <td class="td-session">
+                <span class="mono-code" [title]="tx.stripeSessionId">
+                  {{ tx.stripeSessionId.slice(0, 14) }}...
+                </span>
+              </td>
+
+              <!-- Supporter Name -->
+              <td class="td-name">
+                <div class="name-wrapper">
+                  <span class="display-name">{{ tx.safeName }}</span>
+                  @if (tx.isNameSanitized) {
+                    <span class="sanitized-badge" [title]="'元の入力名: ' + tx.rawName">
+                      正規化済
+                    </span>
+                  }
+                </div>
+              </td>
+
+              <!-- Tier & Amount -->
+              <td class="td-tier">
+                <span class="tier-pill" [class]="tx.tier">
+                  {{ tx.tier.toUpperCase() }}
+                </span>
+                <span class="amount-text">¥{{ tx.amount | number }}</span>
+              </td>
+
+              <!-- Status -->
+              <td class="td-status">
+                <span class="status-badge" [class]="tx.status">
+                  @switch (tx.status) {
+                    @case ('completed') {
+                      <span class="material-icons">check_circle</span> 完了
+                    }
+                    @case ('pending') {
+                      <span class="material-icons">hourglass_empty</span> 処理待ち
+                    }
+                    @case ('failed') {
+                      <span class="material-icons">error</span> 失敗
+                    }
+                    @case ('manual') {
+                      <span class="material-icons">build</span> 手動完了
+                    }
+                  }
+                </span>
+
+                @if (tx.status === 'failed' && tx.errorMessage) {
+                  <div class="error-tooltip" [title]="tx.errorMessage">
+                    {{ tx.errorMessage }}
+                  </div>
+                }
+              </td>
+
+              <!-- Credit Visibility -->
+              <td class="td-credit">
+                <span class="credit-pill" [class.hidden]="tx.creditVisibility === 'hide'">
+                  {{ tx.creditVisibility === 'show' ? '掲載' : '非公開' }}
+                </span>
+              </td>
+
+              <!-- Ban Switch -->
+              <td class="td-ban">
+                <button
+                  class="btn-ban"
+                  [class.banned]="tx.isBanned"
+                  (click)="toggleBan(tx)"
+                  [title]="tx.isBanned ? '公開停止中（クリックで解除）' : '公開中（クリックで停止）'"
+                >
+                  <span class="material-icons">{{ tx.isBanned ? 'block' : 'visibility' }}</span>
+                </button>
+              </td>
+
+              <!-- Actions -->
+              <td class="td-actions text-right">
+                <div class="action-buttons">
+                  @if (tx.status === 'failed') {
+                    <button
+                      class="btn btn-retry"
+                      [disabled]="retryingId() === tx.id"
+                      (click)="retry(tx)"
+                      title="お礼ポストを再試行"
+                    >
+                      <span class="material-icons" [class.spin]="retryingId() === tx.id">refresh</span>
+                      {{ retryingId() === tx.id ? ('supporters.retrying' | translate) : ('supporters.retry' | translate) }}
+                    </button>
+                  }
+
+                  @if (tx.tweetId) {
+                    <a
+                      [href]="'https://x.com/i/status/' + tx.tweetId"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn-icon"
+                      title="Xでお礼ポストを確認"
+                    >
+                      <span class="material-icons">open_in_new</span>
+                    </a>
+                  }
+
+                  <button class="btn-icon" (click)="openManualResolveModal(tx)" title="手動解決">
+                    <span class="material-icons">edit_note</span>
+                  </button>
+
+                  <button class="btn-icon" (click)="openEditModal(tx)" title="編集">
+                    <span class="material-icons">more_vert</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Edit Supporter Modal -->
+  @if (isEditModalOpen()) {
+    <div class="modal-backdrop" (click)="closeEditModal()">
+      <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.modal_edit_title' | translate }}</h2>
+          <button class="close-btn" (click)="closeEditModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>{{ 'supporters.modal_safe_name' | translate }}</label>
+            <input type="text" [(ngModel)]="editSafeName" class="form-input" />
+            <span class="form-hint">公式Webスペシャルサンクス欄およびお礼ポストで使用される表示名です。</span>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.modal_tier_override' | translate }}</label>
+            <select [(ngModel)]="editTier" class="form-select">
+              <option value="bronze">Bronze (¥300)</option>
+              <option value="silver">Silver (¥1,000)</option>
+              <option value="gold">Gold (¥3,000)</option>
+              <option value="vip">VIP (特別コミュニティ表彰)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.col_credit' | translate }}</label>
+            <select [(ngModel)]="editCreditVisibility" class="form-select">
+              <option value="show">公式Web名簿に掲載 (Show)</option>
+              <option value="hide">非公開 (Hide)</option>
+            </select>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editIsBanned" />
+              <span>不適切ネームとして公開停止（BAN）にする</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeEditModal()">{{ 'common.cancel' | translate }}</button>
+          <button class="btn btn-primary" [disabled]="isSavingEdit()" (click)="saveEdit()">
+            {{ 'common.save_changes' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Manual Resolve Modal -->
+  @if (isManualModalOpen()) {
+    <div class="modal-backdrop" (click)="closeManualResolveModal()">
+      <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.modal_manual_title' | translate }}</h2>
+          <button class="close-btn" (click)="closeManualResolveModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">
+            X APIのエラーやレートリミット等で自動ポストが行えなかった場合、プロデューサーが手動でポスト内容を確認・完了としてマークできます。
+          </p>
+
+          <div class="form-group">
+            <label>{{ 'supporters.modal_tweet_text' | translate }}</label>
+            <textarea [(ngModel)]="manualTweetText" class="form-textarea" rows="4"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeManualResolveModal()">{{ 'common.cancel' | translate }}</button>
+          <button class="btn btn-primary" [disabled]="isResolvingManual()" (click)="saveManualResolve()">
+            {{ 'supporters.manual_resolve' | translate }}として確定
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Manual Ingestion Modal -->
+  @if (isManualEntryModalOpen()) {
+    <div class="modal-backdrop" (click)="closeManualEntryModal()">
+      <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.modal_manual_entry_title' | translate }}</h2>
+          <button class="close-btn" (click)="closeManualEntryModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">
+            Webhookドロップ等の緊急時に、Stripeダッシュボード上の決済情報を元に直接トランザクションを登録します。
+          </p>
+
+          <div class="form-group">
+            <label>Stripe Checkout Session ID *</label>
+            <input type="text" [(ngModel)]="entrySessionId" placeholder="cs_live_..." class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label>サポーターお名前 (Raw Name) *</label>
+            <input type="text" [(ngModel)]="entryRawName" placeholder="たろうマスター" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label>決済金額 (JPY) *</label>
+            <input type="number" [(ngModel)]="entryAmount" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.col_credit' | translate }}</label>
+            <select [(ngModel)]="entryCreditVisibility" class="form-select">
+              <option value="show">公式Web名簿に掲載 (Show)</option>
+              <option value="hide">非公開 (Hide)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeManualEntryModal()">{{ 'common.cancel' | translate }}</button>
+          <button class="btn btn-primary" [disabled]="isSubmittingEntry()" (click)="submitManualEntry()">
+            トランザクションを登録
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Rewards Catalog Modal -->
+  @if (isRewardsModalOpen()) {
+    <div class="modal-backdrop" (click)="closeRewardsModal()">
+      <div class="modal-content glass-panel modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.rewards_catalog' | translate }}</h2>
+          <button class="close-btn" (click)="closeRewardsModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Upload Form -->
+          <div class="reward-upload-box">
+            <h3>{{ 'supporters.upload_reward' | translate }}</h3>
+            <div class="upload-inputs">
+              <input type="file" accept="image/*" (change)="onRewardFileSelected($event)" class="file-input" />
+              <input type="text" [(ngModel)]="newRewardTitle" placeholder="特典イラストタイトル" class="form-input" />
+              <button class="btn btn-primary" [disabled]="isUploadingReward() || !selectedRewardFile" (click)="uploadReward()">
+                <span class="material-icons">cloud_upload</span>
+                アップロード
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing Rewards List -->
+          <div class="rewards-grid">
+            @for (reward of rewards(); track reward.id) {
+              <div class="reward-card glass-panel" [class.inactive]="!reward.isActive">
+                <div class="reward-preview">
+                  <img [src]="reward.imageUrl" [alt]="reward.title" />
+                  <span class="reward-badge" [class.active]="reward.isActive">
+                    {{ reward.isActive ? '提供中 (Active)' : '停止中 (Inactive)' }}
+                  </span>
+                </div>
+                <div class="reward-meta">
+                  <div class="reward-title">{{ reward.title }}</div>
+                  <div class="reward-stats">配布実績: {{ reward.distributedCount }} 回</div>
+                  <div class="reward-actions">
+                    <button class="btn btn-sm" [class.btn-secondary]="reward.isActive" [class.btn-primary]="!reward.isActive" (click)="toggleRewardActive(reward)">
+                      {{ reward.isActive ? '提供停止' : '提供開始' }}
+                    </button>
+                    <button class="btn btn-sm btn-danger" (click)="deleteReward(reward)">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRewardsModal()">{{ 'common.close' | translate }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

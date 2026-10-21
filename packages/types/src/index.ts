@@ -724,3 +724,46 @@ export interface SupportTransactionDoc {
   processedAt?: string;
   updatedAt?: string;
 }
+
+/** Query parameters for supporter ledger pagination and filtering */
+export interface SupporterLedgerQuery {
+  limit?: number;
+  cursor?: string;
+  status?: SupportTransactionStatus | 'all';
+  tier?: SupportTier | 'all';
+  search?: string;
+}
+
+/** Summary statistics and list response for supporter ledger */
+export interface SupporterLedgerResponse {
+  transactions: SupportTransactionDoc[];
+  summary: {
+    totalCount: number;
+    failedCount: number;
+    pendingCount: number;
+    completedCount: number;
+    totalAmount: number;
+  };
+  nextCursor?: string;
+}
+
+/** Producer override payload for updating a supporter transaction */
+export interface UpdateSupportTransactionDto {
+  safeName?: string;
+  tier?: SupportTier;
+  isBanned?: boolean;
+  creditVisibility?: CreditVisibility;
+}
+
+/** Manual resolution payload for resolving a failed/manual transaction */
+export interface ManualResolveSupportDto {
+  tweetText: string;
+}
+
+/** Manual transaction ingestion fallback payload */
+export interface ManualEntrySupportDto {
+  stripeSessionId: string;
+  rawName: string;
+  amount: number;
+  creditVisibility?: CreditVisibility;
+}
