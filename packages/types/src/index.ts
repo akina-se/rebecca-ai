@@ -717,7 +717,10 @@ export interface SupportTransactionDoc {
   rewardImageId: string;
   status: SupportTransactionStatus;
   isBanned: boolean;
+  isVip?: boolean;
+  xHandle?: string;
   tweetId?: string;
+  tweetUrl?: string;
   tweetText?: string;
   errorMessage?: string;
   createdAt: string;
@@ -753,6 +756,7 @@ export interface UpdateSupportTransactionDto {
   tier?: SupportTier;
   isBanned?: boolean;
   creditVisibility?: CreditVisibility;
+  isVip?: boolean;
 }
 
 /** Manual resolution payload for resolving a failed/manual transaction */

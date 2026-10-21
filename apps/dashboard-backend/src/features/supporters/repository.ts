@@ -56,6 +56,8 @@ export class SupportersRepository {
           currency: 'jpy',
           tier: data.tier || 'bronze',
           itemLabel: data.itemLabel || '',
+          xHandle: data.xHandle || undefined,
+          isVip: Boolean(data.isVip),
           rewardImageId: data.rewardImageId || 'default',
           status: data.status || 'pending',
           isBanned: Boolean(data.isBanned),
@@ -77,14 +79,17 @@ export class SupportersRepository {
         totalAmount: allDocs.reduce((acc, curr) => acc + (curr.amount || 0), 0),
       };
 
-      // In-memory filter for search keywords (rawName, safeName, stripeSessionId)
+      // In-memory filter for search keywords (rawName, safeName, stripeSessionId, stripePaymentIntentId, xHandle, id)
       if (query.search && query.search.trim()) {
         const s = query.search.trim().toLowerCase();
         allDocs = allDocs.filter(
           (d) =>
             d.rawName.toLowerCase().includes(s) ||
             d.safeName.toLowerCase().includes(s) ||
-            d.stripeSessionId.toLowerCase().includes(s)
+            d.stripeSessionId.toLowerCase().includes(s) ||
+            (d.stripePaymentIntentId && d.stripePaymentIntentId.toLowerCase().includes(s)) ||
+            (d.xHandle && d.xHandle.toLowerCase().includes(s)) ||
+            d.id.toLowerCase().includes(s)
         );
       }
 

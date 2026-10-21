@@ -12,11 +12,12 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
+import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 
 @Component({
   selector: 'app-supporters-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, TzDatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, TzDatePipe, RightDrawerComponent],
   templateUrl: './supporters-page.component.html',
   styleUrls: ['./supporters-page.component.css'],
 })
@@ -42,7 +43,18 @@ export class SupportersPageComponent implements OnInit {
   selectedTier = 'all';
   searchQuery = '';
 
-  // Edit Modal State
+  // Detail Right Drawer State
+  readonly isDrawerOpen = signal<boolean>(false);
+  readonly selectedTx = signal<SupportTransactionDoc | null>(null);
+  drawerSafeName = '';
+  drawerTier: SupportTier = 'bronze';
+  drawerCreditVisibility: CreditVisibility = 'show';
+  drawerIsVip = false;
+  drawerIsBanned = false;
+  readonly isSavingDrawer = signal<boolean>(false);
+  readonly copiedKey = signal<string | null>(null);
+
+  // Edit Modal State (Kept for standalone edit)
   readonly isEditModalOpen = signal<boolean>(false);
   readonly editingTransaction = signal<SupportTransactionDoc | null>(null);
   editSafeName = '';
@@ -90,6 +102,14 @@ export class SupportersPageComponent implements OnInit {
           this.transactions.set(res.transactions);
           this.summary.set(res.summary);
           this.isLoading.set(false);
+
+          // Sync drawer if currently open
+          if (this.selectedTx()) {
+            const fresh = res.transactions.find((t) => t.id === this.selectedTx()!.id);
+            if (fresh) {
+              this.selectedTx.set(fresh);
+            }
+          }
         },
         error: () => {
           this.toast.show('サポーター台帳の取得に失敗しました', 'error');
@@ -122,6 +142,76 @@ export class SupportersPageComponent implements OnInit {
     this.loadLedger();
   }
 
+  // Detail Drawer Actions
+  openTransactionDrawer(tx: SupportTransactionDoc): void {
+    this.selectedTx.set(tx);
+    this.drawerSafeName = tx.safeName || tx.rawName;
+    this.drawerTier = tx.tier;
+    this.drawerCreditVisibility = tx.creditVisibility;
+    this.drawerIsVip = Boolean(tx.isVip);
+    this.drawerIsBanned = Boolean(tx.isBanned);
+    this.isDrawerOpen.set(true);
+  }
+
+  closeTransactionDrawer(): void {
+    this.isDrawerOpen.set(false);
+    this.selectedTx.set(null);
+  }
+
+  saveDrawerSettings(): void {
+    const tx = this.selectedTx();
+    if (!tx || !this.drawerSafeName.trim()) return;
+
+    this.isSavingDrawer.set(true);
+    this.repo
+      .updateTransaction(tx.id, {
+        safeName: this.drawerSafeName.trim(),
+        tier: this.drawerTier,
+        creditVisibility: this.drawerCreditVisibility,
+        isBanned: this.drawerIsBanned,
+        isVip: this.drawerIsVip,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.toast.show('サポーター設定を保存しました', 'success');
+          this.isSavingDrawer.set(false);
+          this.selectedTx.set(updated);
+          this.loadLedger();
+        },
+        error: () => {
+          this.toast.show('設定の保存に失敗しました', 'error');
+          this.isSavingDrawer.set(false);
+        },
+      });
+  }
+
+  copyToClipboard(text: string, key: string): void {
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(text).then(() => {
+        this.copiedKey.set(key);
+        this.toast.show('クリップボードにコピーしました', 'info');
+        setTimeout(() => this.copiedKey.set(null), 2000);
+      });
+    } catch (_e) {
+      this.toast.show(text, 'info');
+    }
+  }
+
+  retryFromDrawer(): void {
+    const tx = this.selectedTx();
+    if (tx) {
+      this.retry(tx);
+    }
+  }
+
+  openManualResolveFromDrawer(): void {
+    const tx = this.selectedTx();
+    if (tx) {
+      this.openManualResolveModal(tx);
+    }
+  }
+
   // 1-Click Retry
   retry(tx: SupportTransactionDoc): void {
     if (this.retryingId()) return;
@@ -140,8 +230,9 @@ export class SupportersPageComponent implements OnInit {
     });
   }
 
-  // Edit Modal Actions
-  openEditModal(tx: SupportTransactionDoc): void {
+  // Edit Modal Actions (Legacy / Standalone)
+  openEditModal(tx: SupportTransactionDoc, event?: Event): void {
+    if (event) event.stopPropagation();
     this.editingTransaction.set(tx);
     this.editSafeName = tx.safeName;
     this.editTier = tx.tier;
@@ -182,7 +273,8 @@ export class SupportersPageComponent implements OnInit {
   }
 
   // Manual Resolve Modal Actions
-  openManualResolveModal(tx: SupportTransactionDoc): void {
+  openManualResolveModal(tx: SupportTransactionDoc, event?: Event): void {
+    if (event) event.stopPropagation();
     this.manualTransaction.set(tx);
     this.manualTweetText = tx.tweetText || `マスター ${tx.safeName}、${tx.itemLabel}差し入れありがとう！レベッカの演算パワー充填完了だよ♡\n\n👇スペシャルサンクス\nhttps://rebecca-ai.net/#supporters\n#全肯定AIレベッカ`;
     this.isManualModalOpen.set(true);
@@ -217,7 +309,8 @@ export class SupportersPageComponent implements OnInit {
   }
 
   // Quick Ban Toggle
-  toggleBan(tx: SupportTransactionDoc): void {
+  toggleBan(tx: SupportTransactionDoc, event?: Event): void {
+    if (event) event.stopPropagation();
     const nextState = !tx.isBanned;
     this.repo
       .updateTransaction(tx.id, { isBanned: nextState })

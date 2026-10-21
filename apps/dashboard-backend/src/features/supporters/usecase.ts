@@ -65,6 +65,9 @@ export class SupportersUseCase {
     if (dto.creditVisibility !== undefined) {
       updates.creditVisibility = dto.creditVisibility;
     }
+    if (dto.isVip !== undefined) {
+      updates.isVip = dto.isVip;
+    }
 
     await this.repo.updateTransaction(id, updates);
     const updated = await this.repo.getTransactionById(id);
