@@ -479,15 +479,83 @@
       transform: translateY(-2px);
     }
 
-    .btn-support.btn-disabled {
+    /* Disabled Tier Card & Button State */
+    .tier-card.tier-disabled {
       opacity: 0.55;
+      filter: grayscale(60%);
+      background: rgba(14, 16, 23, 0.5) !important;
+      border-color: rgba(255, 255, 255, 0.05) !important;
+      box-shadow: none !important;
+      transition: var(--transition);
+    }
+
+    .tier-card.tier-disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+      border-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .tier-card.tier-disabled .featured-ribbon {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: rgba(255, 255, 255, 0.4) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: none !important;
+    }
+
+    .tier-card.tier-disabled .tier-icon-badge {
+      opacity: 0.5;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #94a3b8 !important;
+    }
+
+    .tier-card.tier-disabled .tier-name {
+      color: #94a3b8 !important;
+    }
+
+    .tier-card.tier-disabled .tier-item-label {
+      color: #64748b !important;
+      opacity: 0.8;
+    }
+
+    .tier-card.tier-disabled .tier-price {
+      color: #64748b !important;
+    }
+
+    .tier-card.tier-disabled .tier-price span {
+      color: #475569 !important;
+    }
+
+    .tier-card.tier-disabled .tier-perks {
+      border-top-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .tier-card.tier-disabled .tier-perk-item {
+      color: #64748b !important;
+    }
+
+    .tier-card.tier-disabled .tier-perk-item svg {
+      color: #475569 !important;
+      opacity: 0.5;
+    }
+
+    .btn-support.btn-disabled {
       cursor: not-allowed;
       pointer-events: none;
-      background: rgba(255, 255, 255, 0.05) !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-      color: var(--text-muted) !important;
+      background: rgba(255, 255, 255, 0.02) !important;
+      border: 1px dashed rgba(255, 255, 255, 0.14) !important;
+      color: #64748b !important;
       box-shadow: none !important;
       transform: none !important;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-support.btn-disabled svg {
+      opacity: 0.6;
+      width: 14px;
+      height: 14px;
     }
 
     /* Supporter Roster */
@@ -1078,15 +1146,18 @@
           data.plans.forEach(function(plan) {
             const btn = document.getElementById('btn-plan-' + plan.tier);
             if (!btn) return;
+            const card = btn.closest('.tier-card');
             if (plan.available && plan.paymentUrl) {
               btn.href = plan.paymentUrl;
               btn.classList.remove('btn-disabled');
               btn.removeAttribute('aria-disabled');
+              if (card) card.classList.remove('tier-disabled');
             } else {
               btn.removeAttribute('href');
               btn.classList.add('btn-disabled');
               btn.setAttribute('aria-disabled', 'true');
-              btn.innerHTML = '<span class="t-ja">準備中（受付開始までお待ちください）</span><span class="t-en">Coming Soon</span>';
+              if (card) card.classList.add('tier-disabled');
+              btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6; flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="t-ja">準備中（受付開始までお待ちください）</span><span class="t-en">Coming Soon</span>';
             }
           });
         }
