@@ -98,7 +98,90 @@ describe('SupportersPageComponent', () => {
     expect(component.rewards()).toHaveLength(1);
   });
 
-  it('should handle retry action and display toast', () => {
+  it('should handle loadLedger and loadRewards error gracefully', () => {
+    mockRepo.getLedger.mockReturnValueOnce(throwError(() => new Error('Ledger failure')));
+    component.loadLedger();
+    expect(mockToast.show).toHaveBeenCalledWith('サポーター台帳の取得に失敗しました', 'error');
+
+    mockRepo.getRewards.mockReturnValueOnce(throwError(() => new Error('Rewards failure')));
+    component.loadRewards();
+    expect(component.rewards()).toHaveLength(1); // Unchanged
+  });
+
+  it('should handle filter and search changes', () => {
+    component.selectedStatus = 'completed';
+    component.onFilterChange();
+    expect(mockRepo.getLedger).toHaveBeenCalled();
+
+    component.searchQuery = 'Alice';
+    component.onSearch();
+    expect(mockRepo.getLedger).toHaveBeenCalled();
+
+    component.filterByFailed();
+    expect(component.selectedStatus).toBe('failed');
+    expect(mockRepo.getLedger).toHaveBeenCalled();
+  });
+
+  it('should open and close transaction detail drawer', () => {
+    component.openTransactionDrawer(mockTransaction);
+    expect(component.isDrawerOpen()).toBe(true);
+    expect(component.selectedTx()).toEqual(mockTransaction);
+    expect(component.drawerSafeName).toBe('Alice Master');
+
+    component.closeTransactionDrawer();
+    expect(component.isDrawerOpen()).toBe(false);
+    expect(component.selectedTx()).toBeNull();
+  });
+
+  it('should save drawer settings and handle failure', () => {
+    component.openTransactionDrawer(mockTransaction);
+    component.drawerSafeName = 'Alice VIP';
+    component.drawerTier = 'vip';
+    component.saveDrawerSettings();
+
+    expect(mockRepo.updateTransaction).toHaveBeenCalledWith('tx_123', expect.objectContaining({
+      safeName: 'Alice VIP',
+      tier: 'vip',
+    }));
+    expect(mockToast.show).toHaveBeenCalledWith('サポーター設定を保存しました', 'success');
+
+    // Blank safeName early return
+    component.drawerSafeName = '   ';
+    component.saveDrawerSettings();
+
+    // Error branch
+    component.drawerSafeName = 'Valid Name';
+    mockRepo.updateTransaction.mockReturnValueOnce(throwError(() => new Error('Save error')));
+    component.saveDrawerSettings();
+    expect(mockToast.show).toHaveBeenCalledWith('設定の保存に失敗しました', 'error');
+  });
+
+  it('should trigger retry and manual resolve from drawer', () => {
+    component.openTransactionDrawer(mockTransaction);
+    component.retryFromDrawer();
+    expect(mockRepo.retryTransaction).toHaveBeenCalledWith('tx_123');
+
+    component.openManualResolveFromDrawer();
+    expect(component.isManualModalOpen()).toBe(true);
+  });
+
+  it('should copy text to clipboard safely', async () => {
+    const originalClipboard = navigator.clipboard;
+    const writeTextMock = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText: writeTextMock },
+    });
+
+    component.copyToClipboard('cs_test_123', 'session_id');
+    expect(writeTextMock).toHaveBeenCalledWith('cs_test_123');
+
+    // Early return on empty text
+    component.copyToClipboard('', 'empty');
+
+    Object.assign(navigator, { clipboard: originalClipboard });
+  });
+
+  it('should handle retry action and error states', () => {
     const failedTx: SupportTransactionDoc = {
       ...mockTransaction,
       id: 'tx_failed',
@@ -112,10 +195,17 @@ describe('SupportersPageComponent', () => {
       expect.stringContaining('再試行タスクをスケジュールしました'),
       'success',
     );
+
+    // Error state
+    mockRepo.retryTransaction.mockReturnValueOnce(throwError(() => ({ error: { error: 'Rate limit' } })));
+    component.retry(failedTx);
+    expect(mockToast.show).toHaveBeenCalledWith('再試行に失敗しました: Rate limit', 'error');
   });
 
-  it('should open edit modal and save modified safeName and gold tier', () => {
-    component.openEditModal(mockTransaction);
+  it('should open edit modal, save modifications, close, and handle failure', () => {
+    const dummyEvent = { stopPropagation: jest.fn() } as unknown as Event;
+    component.openEditModal(mockTransaction, dummyEvent);
+    expect(dummyEvent.stopPropagation).toHaveBeenCalled();
     expect(component.isEditModalOpen()).toBe(true);
     expect(component.editSafeName).toBe('Alice Master');
 
@@ -129,15 +219,24 @@ describe('SupportersPageComponent', () => {
       creditVisibility: 'show',
       isBanned: false,
     });
-    expect(mockToast.show).toHaveBeenCalledWith(
-      'サポーター情報を更新しました',
-      'success',
-    );
+    expect(mockToast.show).toHaveBeenCalledWith('サポーター情報を更新しました', 'success');
+    expect(component.isEditModalOpen()).toBe(false);
+
+    // Error state
+    component.openEditModal(mockTransaction);
+    component.editSafeName = 'Alice Error';
+    mockRepo.updateTransaction.mockReturnValueOnce(throwError(() => new Error('Update error')));
+    component.saveEdit();
+    expect(mockToast.show).toHaveBeenCalledWith('更新に失敗しました', 'error');
+
+    component.closeEditModal();
     expect(component.isEditModalOpen()).toBe(false);
   });
 
-  it('should open manual resolve modal and mark as manual with custom tweetText', () => {
-    component.openManualResolveModal(mockTransaction);
+  it('should open manual resolve modal, save resolution, close, and handle failure', () => {
+    const dummyEvent = { stopPropagation: jest.fn() } as unknown as Event;
+    component.openManualResolveModal(mockTransaction, dummyEvent);
+    expect(dummyEvent.stopPropagation).toHaveBeenCalled();
     expect(component.isManualModalOpen()).toBe(true);
 
     component.manualTweetText = 'Custom resolution tweet text';
@@ -146,28 +245,49 @@ describe('SupportersPageComponent', () => {
     expect(mockRepo.manualResolve).toHaveBeenCalledWith('tx_123', {
       tweetText: 'Custom resolution tweet text',
     });
-    expect(mockToast.show).toHaveBeenCalledWith(
-      '手動ポストとして解決しました',
-      'success',
-    );
+    expect(mockToast.show).toHaveBeenCalledWith('手動ポストとして解決しました', 'success');
+    expect(component.isManualModalOpen()).toBe(false);
+
+    // Error state
+    component.openManualResolveModal(mockTransaction);
+    component.manualTweetText = 'Error text';
+    mockRepo.manualResolve.mockReturnValueOnce(throwError(() => new Error('Manual fail')));
+    component.saveManualResolve();
+    expect(mockToast.show).toHaveBeenCalledWith('手動解決の登録に失敗しました', 'error');
+
+    component.closeManualResolveModal();
     expect(component.isManualModalOpen()).toBe(false);
   });
 
-  it('should toggle ban status on a transaction', () => {
+  it('should toggle ban status and handle error', () => {
+    const dummyEvent = { stopPropagation: jest.fn() } as unknown as Event;
+    component.toggleBan(mockTransaction, dummyEvent);
+    expect(dummyEvent.stopPropagation).toHaveBeenCalled();
+    expect(mockRepo.updateTransaction).toHaveBeenCalledWith('tx_123', { isBanned: true });
+    expect(mockToast.show).toHaveBeenCalledWith('公開を停止しました', 'info');
+
+    // Unban toggle
+    const bannedTx = { ...mockTransaction, isBanned: true };
+    component.toggleBan(bannedTx);
+    expect(mockRepo.updateTransaction).toHaveBeenCalledWith('tx_123', { isBanned: false });
+    expect(mockToast.show).toHaveBeenCalledWith('公開を再開しました', 'info');
+
+    // Error state
+    mockRepo.updateTransaction.mockReturnValueOnce(throwError(() => new Error('Toggle error')));
     component.toggleBan(mockTransaction);
-    expect(mockRepo.updateTransaction).toHaveBeenCalledWith('tx_123', {
-      isBanned: true,
-    });
-    expect(mockToast.show).toHaveBeenCalledWith(
-      '公開を停止しました',
-      'info',
-    );
+    expect(mockToast.show).toHaveBeenCalledWith('変更に失敗しました', 'error');
   });
 
-  it('should handle manual transaction entry', () => {
+  it('should handle manual transaction entry, validations, and errors', () => {
     component.openManualEntryModal();
     expect(component.isManualEntryModalOpen()).toBe(true);
 
+    // Validation failure on empty fields
+    component.entrySessionId = '';
+    component.submitManualEntry();
+    expect(mockToast.show).toHaveBeenCalledWith('すべての必須項目を入力してください', 'error');
+
+    // Success
     component.entrySessionId = 'cs_manual_999';
     component.entryRawName = 'Bob';
     component.entryAmount = 1000;
@@ -179,19 +299,79 @@ describe('SupportersPageComponent', () => {
       amount: 1000,
       creditVisibility: 'show',
     });
-    expect(mockToast.show).toHaveBeenCalledWith(
-      '手動トランザクションを登録しました',
-      'success',
-    );
+    expect(mockToast.show).toHaveBeenCalledWith('手動トランザクションを登録しました', 'success');
+    expect(component.isManualEntryModalOpen()).toBe(false);
+
+    // Error state
+    component.openManualEntryModal();
+    component.entrySessionId = 'cs_fail';
+    component.entryRawName = 'Charlie';
+    mockRepo.manualEntry.mockReturnValueOnce(throwError(() => new Error('Fail')));
+    component.submitManualEntry();
+    expect(mockToast.show).toHaveBeenCalledWith('登録に失敗しました', 'error');
+
+    component.closeManualEntryModal();
     expect(component.isManualEntryModalOpen()).toBe(false);
   });
 
-  it('should toggle reward active status', () => {
+  it('should manage reward modal, file upload, activate/deactivate, and deletion', () => {
+    component.openRewardsModal();
+    expect(component.isRewardsModalOpen()).toBe(true);
+
+    // Upload with no file
+    component.selectedRewardFile = null;
+    component.uploadReward();
+    expect(mockToast.show).toHaveBeenCalledWith('画像ファイルを選択してください', 'error');
+
+    // File selected event
+    const file = new File(['content'], 'special_art.png', { type: 'image/png' });
+    const fakeEvent = {
+      target: { files: [file] },
+    } as unknown as Event;
+    component.onRewardFileSelected(fakeEvent);
+    expect(component.selectedRewardFile).toBe(file);
+    expect(component.newRewardTitle).toBe('special_art');
+
+    // Upload success
+    component.uploadReward();
+    expect(mockRepo.uploadReward).toHaveBeenCalledWith(file, 'special_art');
+    expect(mockToast.show).toHaveBeenCalledWith('デジタル特典画像をアップロードしました', 'success');
+
+    // Upload error
+    component.selectedRewardFile = file;
+    mockRepo.uploadReward.mockReturnValueOnce(throwError(() => new Error('Upload error')));
+    component.uploadReward();
+    expect(mockToast.show).toHaveBeenCalledWith('アップロードに失敗しました', 'error');
+
+    // Toggle active
     component.toggleRewardActive(mockReward);
     expect(mockRepo.updateReward).toHaveBeenCalledWith('r_1', { isActive: false });
-    expect(mockToast.show).toHaveBeenCalledWith(
-      '特典を非アクティブにしました',
-      'info',
-    );
+    expect(mockToast.show).toHaveBeenCalledWith('特典を非アクティブにしました', 'info');
+
+    const inactiveReward = { ...mockReward, isActive: false };
+    component.toggleRewardActive(inactiveReward);
+    expect(mockRepo.updateReward).toHaveBeenCalledWith('r_1', { isActive: true });
+    expect(mockToast.show).toHaveBeenCalledWith('特典をアクティブ化しました', 'info');
+
+    // Delete confirm rejected
+    const originalConfirm = window.confirm;
+    window.confirm = jest.fn().mockReturnValue(false);
+    component.deleteReward(mockReward);
+    expect(mockRepo.deleteReward).not.toHaveBeenCalled();
+
+    // Delete confirm accepted
+    window.confirm = jest.fn().mockReturnValue(true);
+    component.deleteReward(mockReward);
+    expect(mockRepo.deleteReward).toHaveBeenCalledWith('r_1');
+    expect(mockToast.show).toHaveBeenCalledWith('特典を削除しました', 'success');
+
+    // Delete error
+    mockRepo.deleteReward.mockReturnValueOnce(throwError(() => new Error('Delete error')));
+    component.deleteReward(mockReward);
+    expect(mockToast.show).toHaveBeenCalledWith('削除に失敗しました', 'error');
+
+    window.confirm = originalConfirm;
+    component.closeRewardsModal();
+    expect(component.isRewardsModalOpen()).toBe(false);
   });
 });
