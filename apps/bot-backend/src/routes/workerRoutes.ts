@@ -3,6 +3,7 @@ import { AppDependencies } from '../types';
 import { workerAuth } from '../middleware/workerAuth';
 
 import { createReplyTaskModule } from '../features/reply';
+import { createSupportTaskModule } from '../features/support';
 
 export const createWorkerRoutes = (deps: AppDependencies): Router => {
     const router = Router();
@@ -11,6 +12,7 @@ export const createWorkerRoutes = (deps: AppDependencies): Router => {
     router.use(workerAuth);
 
     router.use('/reply', createReplyTaskModule(deps));
+    router.use('/support-post', createSupportTaskModule(deps));
 
     return router;
 };

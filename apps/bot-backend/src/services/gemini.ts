@@ -10,6 +10,7 @@ import { ConversationLogEntry, UserCoreProfile, IGeminiService } from '../types'
 import { parsePersonaResponse, cleanJsonString, StructuredPersonaResponse, PERSONA_RESPONSE_SCHEMA } from '@rebecca/persona';
 import { StructuredNewsPostResponse } from '../features/news/types';
 import { StructuredPollPostResponse } from '../features/poll/types';
+import { StructuredSupportPostResponse } from '../features/support/types';
 import { logger } from '../utils/logger';
 
 /**
@@ -60,6 +61,25 @@ const STRUCTURED_POLL_POST_SCHEMA = {
     },
   },
   required: ['thought', 'reply', 'options'],
+};
+
+
+/**
+ * JSON schema for structured support appreciation post generation.
+ */
+const STRUCTURED_SUPPORT_POST_SCHEMA = {
+  type: 'object',
+  properties: {
+    thought: {
+      type: 'string',
+      description: 'レベッカの内心の思考。差し入れをもらって照れたり強がったりしながら、今の自分の作業や近況と結びつけて喜ぶ心の声。',
+    },
+    replyBody: {
+      type: 'string',
+      description: 'レベッカがサポーターの名前を直接呼びながら、アイテムへの感謝とツンデレな激励をゼロから語るオリジナル本文（最大90文字以内）。定型文は厳禁。',
+    },
+  },
+  required: ['thought', 'replyBody'],
 };
 
 const SEARCH_WEB_TOOL = {
@@ -443,6 +463,70 @@ export class GeminiService implements IGeminiService {
   /**
    * Generates a structured timeline post (inner thought and public tweet text) based on situational context.
    */
+
+
+  /**
+   * Generates a structured support appreciation post (inner thought and dynamic tsundere replyBody).
+   */
+  async generateStructuredSupportPost(
+    systemInstruction: string,
+    prompt: string
+  ): Promise<StructuredSupportPostResponse> {
+    if (!prompt || !prompt.trim()) {
+      throw new Error('Prompt cannot be empty for structured support post generation');
+    }
+
+    try {
+      const contentStr = Array.isArray(prompt) ? prompt.join('\n') : prompt;
+      const response = await this.ai.models.generateContent({
+        model: this.config.model,
+        contents: contentStr,
+        config: {
+          systemInstruction,
+          maxOutputTokens: 1000,
+          responseMimeType: 'application/json',
+          responseSchema: STRUCTURED_SUPPORT_POST_SCHEMA,
+          safetySettings: [] as never[],
+          temperature: this.config.temperature ?? 1.20,
+          topP: this.config.topP ?? 0.95,
+          thinkingConfig: {
+            thinkingLevel: this.config.thinkingLevel ?? ThinkingLevel.MEDIUM,
+          },
+        },
+      });
+
+      const rawText = response.text?.trim();
+      if (!rawText) {
+        throw new Error('Gemini API returned empty response for structured support post');
+      }
+
+      const cleaned = cleanJsonString(rawText);
+      const parsed = JSON.parse(cleaned);
+
+      if (
+        typeof parsed.thought !== 'string' ||
+        typeof parsed.replyBody !== 'string'
+      ) {
+        throw new Error('Gemini API returned malformed response schema for structured support post');
+      }
+
+      const trimmedReply = parsed.replyBody.trim();
+      if (!trimmedReply) {
+        throw new Error('Gemini API returned structured support post with empty replyBody');
+      }
+
+      return {
+        thought: parsed.thought.trim(),
+        replyBody: trimmedReply,
+      };
+    } catch (error) {
+      logger.error('Failed to generate structured support post via Gemini', error, {
+        promptLength: prompt.length,
+      });
+      throw error;
+    }
+  }
+
   async generateStructuredTimelinePost(
     systemInstruction: string,
     prompt: string | string[]
