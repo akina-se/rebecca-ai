@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.34.2](https://github.com/akina-se/rebecca-ai/compare/v1.34.1...v1.34.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **eval:** initialize undici dispatcher for node 24 jest compatibility in prompt eval ([3b2e691](https://github.com/akina-se/rebecca-ai/commit/3b2e691baa79659a3cdf14c54902b4b59b2d8cdf))
+* **security:** remediate npm advisories and align node 24 runtime environments ([194fbdd](https://github.com/akina-se/rebecca-ai/commit/194fbdd1d2d7a37c67dcc0554fc05241b41f110d))
+* **security:** remediate npm advisories and align node 24 runtime environments ([92f1c63](https://github.com/akina-se/rebecca-ai/commit/92f1c639a304b108c9daa865f171e5e3989ff227))
+
 ## [1.34.1](https://github.com/akina-se/rebecca-ai/compare/v1.34.0...v1.34.1) (2026-10-18)
 
 
