@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.34.2](https://github.com/akina-se/rebecca-ai/compare/v1.34.1...v1.34.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **eval:** initialize undici dispatcher for node 24 jest compatibility in prompt eval ([3b2e691](https://github.com/akina-se/rebecca-ai/commit/3b2e691baa79659a3cdf14c54902b4b59b2d8cdf))
+* **security:** remediate npm advisories and align node 24 runtime environments ([194fbdd](https://github.com/akina-se/rebecca-ai/commit/194fbdd1d2d7a37c67dcc0554fc05241b41f110d))
+* **security:** remediate npm advisories and align node 24 runtime environments ([92f1c63](https://github.com/akina-se/rebecca-ai/commit/92f1c639a304b108c9daa865f171e5e3989ff227))
+
+## [1.34.1](https://github.com/akina-se/rebecca-ai/compare/v1.34.0...v1.34.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **dashboard-backend:** remove unsupported thinkingBudget in caption generation ([#366](https://github.com/akina-se/rebecca-ai/issues/366)) ([ba5242f](https://github.com/akina-se/rebecca-ai/commit/ba5242f07fee5daa07fa75645aa3f428c43d94c2))
+* **dashboard-backend:** remove unsupported thinkingBudget in caption generation ([#366](https://github.com/akina-se/rebecca-ai/issues/366)) ([a781dfd](https://github.com/akina-se/rebecca-ai/commit/a781dfdcefc39a074a9526369bf1a0f746678347))
+
+## [1.34.0](https://github.com/akina-se/rebecca-ai/compare/v1.33.2...v1.34.0) (2026-10-18)
+
+
+### Features
+
+* **bot-backend:** ground first-turn replies with parent timeline post context ([#362](https://github.com/akina-se/rebecca-ai/issues/362)) ([#363](https://github.com/akina-se/rebecca-ai/issues/363)) ([f0f1876](https://github.com/akina-se/rebecca-ai/commit/f0f18760fd90ab107696438aea5eb129e08601e1))
+
 ## [1.33.2](https://github.com/akina-se/rebecca-ai/compare/v1.33.1...v1.33.2) (2026-10-18)
 
 

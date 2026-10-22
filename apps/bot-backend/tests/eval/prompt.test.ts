@@ -1,4 +1,11 @@
 import 'dotenv/config';
+import { setGlobalDispatcher, Agent } from 'undici';
+
+try {
+    setGlobalDispatcher(new Agent());
+} catch {
+    // Ignore if already set or not applicable
+}
 import { GoogleGenAI, Type } from '@google/genai';
 import { GeminiService } from '../../src/services/gemini';
 import { buildSystemPrompt } from '../../src/core/contextInjector';
