@@ -62,7 +62,7 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     expect(drawerText).not.toContain('VIP');
 
     // 3. Verify core transaction fields exist
-    await expect(rightDrawer.locator('.detail-row', { hasText: /Stripe/i })).toBeVisible();
+    await expect(rightDrawer.locator('.detail-row', { hasText: /Stripe/i }).first()).toBeVisible();
     await expect(rightDrawer.locator('.tier-badge-large')).toBeVisible();
 
     // 4. Close drawer
