@@ -16,10 +16,10 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     await expect(kpiCards.first()).toBeVisible({ timeout: 10000 });
     expect(await kpiCards.count()).toBeGreaterThanOrEqual(4);
 
-    // 2. Verify Table structure with 4 columns: 日時, サポーター名, 金額/ランク, クレジット掲載
+    // 2. Verify Table structure with 4 columns + chevron column
     const tableHeaders = page.locator('.data-table thead th');
     await expect(tableHeaders.first()).toBeVisible({ timeout: 10000 });
-    expect(await tableHeaders.count()).toBe(4);
+    expect(await tableHeaders.count()).toBe(5);
 
     // 3. Verify Table rows
     const rows = page.locator('.data-table tbody tr.clickable-row');
@@ -28,7 +28,7 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
   });
 
   test('should filter ledger by search query', async ({ page }) => {
-    const searchInput = page.locator('.search-box input.search-input');
+    const searchInput = page.locator('.search-box input');
     await expect(searchInput).toBeVisible({ timeout: 10000 });
 
     // Search by supporter name
@@ -62,8 +62,8 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     expect(drawerText).not.toContain('VIP');
 
     // 3. Verify core transaction fields exist
-    await expect(rightDrawer.locator('.drawer-field', { hasText: /Stripe Session/i })).toBeVisible();
-    await expect(rightDrawer.locator('.drawer-field', { hasText: /Tier|ランク/i })).toBeVisible();
+    await expect(rightDrawer.locator('.detail-row', { hasText: /Stripe/i })).toBeVisible();
+    await expect(rightDrawer.locator('.tier-badge-large')).toBeVisible();
 
     // 4. Close drawer
     const closeBtn = rightDrawer.locator('.close-btn');
@@ -118,12 +118,12 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // 1. Bottom navigation exists on mobile
-    const bottomNav = page.locator('.sidebar-nav');
-    await expect(bottomNav).toBeVisible({ timeout: 10000 });
+    const sidebar = page.locator('.sidebar');
+    await expect(sidebar).toBeVisible({ timeout: 10000 });
 
-    // 2. Mobile scroll affordance indicator exists
-    const affordanceRight = page.locator('.mobile-scroll-affordance.right');
-    await expect(affordanceRight).toBeAttached();
+    // 2. Thead is hidden on mobile and rows are rendered as card layout
+    const thead = page.locator('.supporters-table thead');
+    await expect(thead).toBeHidden();
 
     // 3. Supporter table cards are rendered for mobile
     const rows = page.locator('.data-table tbody tr.clickable-row');
