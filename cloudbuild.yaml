@@ -13,7 +13,7 @@ steps:
   # ----------------------------------------------------------------------------
   # Step 1: Cache & Install Dependencies + Build Shared Packages
   # ----------------------------------------------------------------------------
-  - name: 'node:22-alpine'
+  - name: 'node:24-alpine'
     id: 'Install and Build Workspaces'
     entrypoint: 'sh'
     args:
@@ -101,7 +101,7 @@ steps:
   # ----------------------------------------------------------------------------
   # Step 6: Deploy Firebase Hosting (Angular SPA), Functions, and Firestore (Rules + Indexes)
   # ----------------------------------------------------------------------------
-  - name: 'node:22-alpine'
+  - name: 'node:24-alpine'
     id: 'Deploy Firebase Hosting, Functions, and Firestore'
     entrypoint: 'sh'
     args:
