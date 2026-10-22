@@ -19,8 +19,8 @@ export class SupportersController {
       const query = {
         limit: limit ? parseInt(String(limit), 10) : 50,
         cursor: cursor ? String(cursor) : undefined,
-        status: status as any,
-        tier: tier as any,
+        status: status ? (String(status) as SupporterLedgerQuery['status']) : undefined,
+        tier: tier ? (String(tier) as SupporterLedgerQuery['tier']) : undefined,
         search: search ? String(search) : undefined,
       };
 
@@ -60,10 +60,10 @@ export class SupportersController {
       const id = String(req.params.id);
       const result = await this.useCase.updateTransaction(id, req.body);
       res.status(200).json(result);
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] update failed', error, { id: req.params.id });
-      res.status(status).json({ error: error.message || 'Failed to update transaction' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to update transaction' });
     }
   }
 
@@ -76,10 +76,10 @@ export class SupportersController {
       const id = String(req.params.id);
       const result = await this.useCase.retryTransaction(id);
       res.status(200).json(result);
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] retry failed', error, { id: req.params.id });
-      res.status(status).json({ error: error.message || 'Failed to retry transaction' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to retry transaction' });
     }
   }
 
@@ -92,10 +92,10 @@ export class SupportersController {
       const id = String(req.params.id);
       const result = await this.useCase.manualResolve(id, req.body);
       res.status(200).json(result);
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] manualResolve failed', error, { id: req.params.id });
-      res.status(status).json({ error: error.message || 'Failed to manually resolve transaction' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to manually resolve transaction' });
     }
   }
 
@@ -107,10 +107,10 @@ export class SupportersController {
     try {
       const result = await this.useCase.manualEntry(req.body);
       res.status(201).json(result);
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] manualEntry failed', error);
-      res.status(status).json({ error: error.message || 'Failed to create manual entry' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to create manual entry' });
     }
   }
 
@@ -141,10 +141,10 @@ export class SupportersController {
       const title = req.body?.title || 'サポーター特典イラスト';
       const result = await this.useCase.uploadReward(req.file, title);
       res.status(201).json(result);
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] uploadReward failed', error);
-      res.status(status).json({ error: error.message || 'Failed to upload reward' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to upload reward' });
     }
   }
 
@@ -178,10 +178,10 @@ export class SupportersController {
       const id = String(req.params.id);
       const result = await this.useCase.updateReward(id, req.body);
       res.status(200).json(result);
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] updateReward failed', error, { id: req.params.id });
-      res.status(status).json({ error: error.message || 'Failed to update reward' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to update reward' });
     }
   }
 
@@ -194,10 +194,10 @@ export class SupportersController {
       const id = String(req.params.id);
       await this.useCase.deleteReward(id);
       res.status(200).json({ success: true });
-    } catch (error: any) {
-      const status = error.statusCode || 500;
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] deleteReward failed', error, { id: req.params.id });
-      res.status(status).json({ error: error.message || 'Failed to delete reward' });
+      res.status(status).json({ error: (error as Error).message || 'Failed to delete reward' });
     }
   }
 }

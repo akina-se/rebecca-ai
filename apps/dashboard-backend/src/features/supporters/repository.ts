@@ -43,7 +43,7 @@ export class SupportersRepository {
 
       const snapshot = await q.get();
       let allDocs: SupportTransactionDoc[] = snapshot.docs.map((doc) => {
-        const data = doc.data() as any;
+        const data = doc.data() as Record<string, unknown>;
         return {
           id: doc.id,
           stripeSessionId: data.stripeSessionId || '',
@@ -124,7 +124,7 @@ export class SupportersRepository {
     try {
       const doc = await this.collections.supportTransactions.doc(id).get();
       if (!doc.exists) return null;
-      const data = doc.data() as any;
+      const data = doc.data() as Record<string, unknown>;
       return {
         id: doc.id,
         stripeSessionId: data.stripeSessionId || '',
@@ -161,7 +161,7 @@ export class SupportersRepository {
    */
   async updateTransaction(id: string, data: Partial<SupportTransactionDoc>): Promise<void> {
     try {
-      await this.collections.supportTransactions.doc(id).set(data as any, { merge: true });
+      await this.collections.supportTransactions.doc(id).set(data, { merge: true });
     } catch (error) {
       logger.error('[SupportersRepository] Failed to update transaction', error, { id });
       throw error;
@@ -182,7 +182,7 @@ export class SupportersRepository {
         id: ref.id,
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      } as any);
+      });
       return ref.id;
     } catch (error) {
       logger.error('[SupportersRepository] Failed to create transaction', error);
@@ -199,7 +199,7 @@ export class SupportersRepository {
     try {
       const snapshot = await this.collections.rewardImages.orderBy('createdAt', 'desc').get();
       return snapshot.docs.map((doc) => {
-        const data = doc.data() as any;
+        const data = doc.data() as Record<string, unknown>;
         return {
           id: doc.id,
           title: data.title || '',
@@ -226,7 +226,7 @@ export class SupportersRepository {
     try {
       const doc = await this.collections.rewardImages.doc(id).get();
       if (!doc.exists) return null;
-      const data = doc.data() as any;
+      const data = doc.data() as Record<string, unknown>;
       return {
         id: doc.id,
         title: data.title || '',
@@ -257,7 +257,7 @@ export class SupportersRepository {
         id: ref.id,
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      } as any);
+      });
       return ref.id;
     } catch (error) {
       logger.error('[SupportersRepository] Failed to create reward image', error);
@@ -277,8 +277,7 @@ export class SupportersRepository {
         {
           ...data,
           updatedAt: new Date().toISOString(),
-        } as any,
-        { merge: true }
+        }, { merge: true }
       );
     } catch (error) {
       logger.error('[SupportersRepository] Failed to update reward image', error, { id });

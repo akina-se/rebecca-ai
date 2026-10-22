@@ -31,7 +31,7 @@ export class SidebarComponent implements AfterViewInit {
     this.checkScroll();
   }
 
-  onNavScroll(event: Event): void {
+  onNavScroll(_event?: Event): void {
     this.checkScroll();
   }
 

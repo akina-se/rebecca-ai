@@ -5,6 +5,7 @@ import {
   SupportTransactionDoc,
   RewardImageDoc,
   SupportTier,
+  SupportTransactionStatus,
   CreditVisibility,
 } from '@rebecca/types';
 import { SUPPORTERS_REPOSITORY } from '../../../core/ports/supporters.repository';
@@ -41,8 +42,8 @@ export class SupportersPageComponent implements OnInit {
   readonly retryingId = signal<string | null>(null);
 
   // Filters
-  selectedStatus = 'all';
-  selectedTier = 'all';
+  selectedStatus: SupportTransactionStatus | 'all' = 'all';
+  selectedTier: SupportTier | 'all' = 'all';
   searchQuery = '';
 
   // Detail Right Drawer State
@@ -93,8 +94,8 @@ export class SupportersPageComponent implements OnInit {
     this.isLoading.set(true);
     this.repo
       .getLedger({
-        status: this.selectedStatus as any,
-        tier: this.selectedTier as any,
+        status: this.selectedStatus,
+        tier: this.selectedTier,
         search: this.searchQuery,
         limit: 100,
       })
@@ -105,8 +106,9 @@ export class SupportersPageComponent implements OnInit {
           this.isLoading.set(false);
 
           // Sync drawer if currently open
-          if (this.selectedTx()) {
-            const fresh = res.transactions.find((t) => t.id === this.selectedTx()!.id);
+          const currentTx = this.selectedTx();
+          if (currentTx) {
+            const fresh = res.transactions.find((t) => t.id === currentTx.id);
             if (fresh) {
               this.selectedTx.set(fresh);
             }
@@ -208,7 +210,7 @@ export class SupportersPageComponent implements OnInit {
         this.toast.show('クリップボードにコピーしました', 'info');
         setTimeout(() => this.copiedKey.set(null), 2000);
       });
-    } catch (_e) {
+    } catch {
       this.toast.show(text, 'info');
     }
   }

@@ -87,7 +87,7 @@ export function createApp(
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
   const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(firestore, storage);
-  const { supportersRouter, publicRewardsRouter } = initializeSupportersModule(firestore as any, storage);
+  const { supportersRouter, publicRewardsRouter } = initializeSupportersModule(firestore, storage);
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);

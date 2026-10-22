@@ -1,3 +1,10 @@
+export class HttpError extends Error {
+  constructor(message: string, public readonly statusCode: number) {
+    super(message);
+    this.name = 'HttpError';
+  }
+}
+
 import { Storage } from '@google-cloud/storage';
 import path from 'path';
 import {
@@ -44,9 +51,7 @@ export class SupportersUseCase {
   async updateTransaction(id: string, dto: UpdateSupportTransactionDto): Promise<SupportTransactionDoc> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      const err = new Error(`Transaction with ID "${id}" not found`);
-      (err as any).statusCode = 404;
-      throw err;
+      throw new HttpError(`Transaction with ID "${id}" not found`, 404);
     }
 
     const updates: Partial<SupportTransactionDoc> = {
@@ -78,15 +83,11 @@ export class SupportersUseCase {
   async retryTransaction(id: string): Promise<{ success: boolean; message: string; transaction: SupportTransactionDoc }> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      const err = new Error(`Transaction with ID "${id}" not found`);
-      (err as any).statusCode = 404;
-      throw err;
+      throw new HttpError(`Transaction with ID "${id}" not found`, 404);
     }
 
     if (existing.status === 'completed') {
-      const err = new Error('Cannot retry a completed transaction');
-      (err as any).statusCode = 400;
-      throw err;
+      throw new HttpError('Cannot retry a completed transaction', 400);
     }
 
     // Reset status to pending and clear error
@@ -146,9 +147,7 @@ export class SupportersUseCase {
   async manualResolve(id: string, dto: ManualResolveSupportDto): Promise<SupportTransactionDoc> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      const err = new Error(`Transaction with ID "${id}" not found`);
-      (err as any).statusCode = 404;
-      throw err;
+      throw new HttpError(`Transaction with ID "${id}" not found`, 404);
     }
 
     await this.repo.updateTransaction(id, {
@@ -168,9 +167,7 @@ export class SupportersUseCase {
    */
   async manualEntry(dto: ManualEntrySupportDto): Promise<SupportTransactionDoc> {
     if (!dto.stripeSessionId || !dto.rawName || !dto.amount || dto.amount <= 0) {
-      const err = new Error('stripeSessionId, rawName, and positive amount are required');
-      (err as any).statusCode = 400;
-      throw err;
+      throw new HttpError('stripeSessionId, rawName, and positive amount are required', 400);
     }
 
     const { tier, itemLabel } = resolveSupportTierFromAmount(dto.amount);
@@ -213,9 +210,7 @@ export class SupportersUseCase {
    */
   async uploadReward(file: Express.Multer.File, title: string): Promise<RewardImageDoc> {
     if (!file || !file.buffer) {
-      const err = new Error('Image file is required');
-      (err as any).statusCode = 400;
-      throw err;
+      throw new HttpError('Image file is required', 400);
     }
 
     const cleanTitle = (title || 'サポーター特典イラスト').trim();
@@ -277,9 +272,7 @@ export class SupportersUseCase {
   async updateReward(id: string, data: { title?: string; isActive?: boolean }): Promise<RewardImageDoc> {
     const existing = await this.repo.getRewardImageById(id);
     if (!existing) {
-      const err = new Error(`Reward asset with ID "${id}" not found`);
-      (err as any).statusCode = 404;
-      throw err;
+      throw new HttpError(`Reward asset with ID "${id}" not found`, 404);
     }
 
     await this.repo.updateRewardImage(id, data);
@@ -293,9 +286,7 @@ export class SupportersUseCase {
   async deleteReward(id: string): Promise<void> {
     const existing = await this.repo.getRewardImageById(id);
     if (!existing) {
-      const err = new Error(`Reward asset with ID "${id}" not found`);
-      (err as any).statusCode = 404;
-      throw err;
+      throw new HttpError(`Reward asset with ID "${id}" not found`, 404);
     }
 
     if (existing.storagePath) {
