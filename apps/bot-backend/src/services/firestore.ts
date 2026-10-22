@@ -1132,7 +1132,7 @@ async function getSupportTransactionById(
  */
 async function createSupportTransaction(doc: SupportTransactionDoc): Promise<void> {
   const docRef = db.supportTransactions.doc(doc.id);
-  await docRef.set(doc as any);
+  await docRef.set(doc);
 }
 
 /**
@@ -1183,7 +1183,7 @@ async function incrementRewardImageDistributedCount(rewardImageId: string): Prom
     {
       distributedCount: FieldValue.increment(1),
       updatedAt: new Date().toISOString(),
-    } as any,
+    },
     { merge: true }
   );
 }

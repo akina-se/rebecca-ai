@@ -71,4 +71,28 @@ describe('storage.ts', () => {
                 .rejects.toThrow('download failed');
         });
     });
+
+    describe('generateSignedUrl', () => {
+        it('should generate signed url with normalized path from gsUri', async () => {
+            const storageService = getStorageModule();
+            mockFile.getSignedUrl = jest.fn().mockResolvedValue(['https://signed.url/image.png']);
+            const url = await storageService.generateSignedUrl('gs://rebecca-ai-gal-images/rewards/card.png', 15);
+            expect(url).toBe('https://signed.url/image.png');
+            expect(mockBucket.file).toHaveBeenCalledWith('rewards/card.png');
+            expect(mockFile.getSignedUrl).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    version: 'v4',
+                    action: 'read',
+                })
+            );
+        });
+
+        it('should generate signed url with plain relative path', async () => {
+            const storageService = getStorageModule();
+            mockFile.getSignedUrl = jest.fn().mockResolvedValue(['https://signed.url/image.png']);
+            const url = await storageService.generateSignedUrl('/rewards/card.png');
+            expect(url).toBe('https://signed.url/image.png');
+            expect(mockBucket.file).toHaveBeenCalledWith('rewards/card.png');
+        });
+    });
 });

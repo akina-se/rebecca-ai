@@ -3,7 +3,7 @@
  * Handles the asynchronous enqueueing of reply tasks to manage system load and processing times.
  */
 
-import { CloudTasksClient  } from '@google-cloud/tasks';
+import { CloudTasksClient, protos } from '@google-cloud/tasks';
 import config from '../config';
 import { logger } from '../utils/logger';
 
@@ -11,7 +11,7 @@ import { logger } from '../utils/logger';
  * Cloud Tasks client instance.
  * Initialized lazily to prevent errors in environments without credentials.
  */
-let client = null;
+let client: CloudTasksClient | null = null;
 
 /**
  * Retrieves the Cloud Tasks client instance.
@@ -62,7 +62,7 @@ const enqueueReplyTask = async (payload, delaySeconds = 0) => {
 
     const task = {
         httpRequest: {
-            httpMethod: 'POST',
+            httpMethod: 'POST' as const,
             url,
             headers: {
                 'Content-Type': 'application/json',
@@ -116,9 +116,9 @@ const enqueueSupportTask = async (payload: { transactionId: string }, delaySecon
 
     const parent = cTasksClient.queuePath(project, location, queue);
 
-    const task: any = {
+    const task: protos.google.cloud.tasks.v2.ITask = {
         httpRequest: {
-            httpMethod: 'POST',
+            httpMethod: 'POST' as const,
             url,
             headers: {
                 'Content-Type': 'application/json',

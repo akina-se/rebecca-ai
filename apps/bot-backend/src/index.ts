@@ -54,8 +54,8 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
   app.set('trust proxy', 1); // Trust the first proxy (e.g. Google Cloud Run) to fix express-rate-limit errors
   app.use(
     express.json({
-      verify: (req: any, _res, buf) => {
-        req.rawBody = buf;
+      verify: (req, _res, buf) => {
+        (req as unknown as { rawBody?: Buffer }).rawBody = buf;
       },
     }),
   );

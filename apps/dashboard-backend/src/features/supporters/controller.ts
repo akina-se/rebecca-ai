@@ -1,3 +1,4 @@
+import { SupporterLedgerQuery } from '@rebecca/types';
 import { Request, Response } from 'express';
 import { SupportersUseCase } from './usecase';
 import { logger } from '../../utils/logger';

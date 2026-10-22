@@ -781,5 +781,106 @@ describe('Firestore Service Unit Tests', () => {
         { merge: true },
       );
     });
+
+    it('createSupportTransaction should set document', async () => {
+      const dummyTx = { id: 'tx_new', amount: 500 } as any;
+      await firestoreService.createSupportTransaction(dummyTx);
+      expect(mockDocSet).toHaveBeenCalledWith(dummyTx);
+    });
+
+    it('getSupportTransactionBySessionId should return doc if found, null if empty', async () => {
+      mockQueryWhere.mockReturnValueOnce({
+        limit: jest.fn().mockReturnValueOnce({
+          get: jest.fn().mockResolvedValueOnce({
+            empty: false,
+            docs: [{ id: 'tx_sess', data: () => ({ stripeSessionId: 'cs_123', amount: 500 }) }],
+          }),
+        }),
+      });
+      const found = await firestoreService.getSupportTransactionBySessionId('cs_123');
+      expect(found).toEqual({ id: 'tx_sess', stripeSessionId: 'cs_123', amount: 500 });
+
+      mockQueryWhere.mockReturnValueOnce({
+        limit: jest.fn().mockReturnValueOnce({
+          get: jest.fn().mockResolvedValueOnce({
+            empty: true,
+            docs: [],
+          }),
+        }),
+      });
+      const notFound = await firestoreService.getSupportTransactionBySessionId('cs_missing');
+      expect(notFound).toBeNull();
+    });
+
+    it('getActiveRewardImage should return active reward image or null', async () => {
+      mockQueryWhere.mockReturnValueOnce({
+        limit: jest.fn().mockReturnValueOnce({
+          get: jest.fn().mockResolvedValueOnce({
+            empty: false,
+            docs: [{ id: 'rew_active', data: () => ({ title: 'Special Reward', isActive: true }) }],
+          }),
+        }),
+      });
+      const active = await firestoreService.getActiveRewardImage();
+      expect(active).toEqual({ id: 'rew_active', title: 'Special Reward', isActive: true });
+
+      mockQueryWhere.mockReturnValueOnce({
+        limit: jest.fn().mockReturnValueOnce({
+          get: jest.fn().mockResolvedValueOnce({
+            empty: true,
+            docs: [],
+          }),
+        }),
+      });
+      const none = await firestoreService.getActiveRewardImage();
+      expect(none).toBeNull();
+    });
+
+    it('incrementRewardImageDistributedCount should increment counter and set updatedAt', async () => {
+      await firestoreService.incrementRewardImageDistributedCount('rew_1');
+      expect(mockDocSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          distributedCount: expect.any(Object),
+          updatedAt: expect.any(String),
+        }),
+        { merge: true },
+      );
+    });
+
+    it('getPublicSupporters should query, map and sort supporters by tier and createdAt', async () => {
+      const mockQueryChain = {
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValueOnce({
+          docs: [
+            {
+              id: 'tx_bronze',
+              data: () => ({ safeName: 'BronzeUser', tier: 'bronze', itemLabel: '¥300', createdAt: '2026-10-01T00:00:00Z' }),
+            },
+            {
+              id: 'tx_gold_old',
+              data: () => ({ safeName: 'GoldOld', tier: 'gold', itemLabel: '¥3,000', createdAt: '2026-09-01T00:00:00Z' }),
+            },
+            {
+              id: 'tx_gold_new',
+              data: () => ({ safeName: 'GoldNew', tier: 'gold', itemLabel: '¥3,000', createdAt: '2026-10-02T00:00:00Z' }),
+            },
+            {
+              id: 'tx_vip',
+              data: () => ({ safeName: 'VIPUser', tier: 'vip', itemLabel: '¥10,000', createdAt: '2026-08-01T00:00:00Z' }),
+            },
+          ],
+        }),
+      };
+
+      mockQueryWhere.mockReturnValueOnce(mockQueryChain);
+
+      const list = await firestoreService.getPublicSupporters(10);
+      expect(list).toHaveLength(4);
+      expect(list[0].id).toBe('tx_vip');
+      expect(list[1].id).toBe('tx_gold_new');
+      expect(list[2].id).toBe('tx_gold_old');
+      expect(list[3].id).toBe('tx_bronze');
+    });
   });
 });

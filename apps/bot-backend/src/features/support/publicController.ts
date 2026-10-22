@@ -34,9 +34,7 @@ export class PublicSupportController {
   ) {
     this.stripeClient =
       stripeClient ||
-      new Stripe(this.config.stripeSecretKey || 'sk_test_unconfigured_placeholder', {
-        apiVersion: '2026-03-24' as any,
-      });
+      new Stripe(this.config.stripeSecretKey || 'sk_test_unconfigured_placeholder');
   }
 
   /**
@@ -249,12 +247,12 @@ export class PublicSupportController {
         // Extract custom fields safely
         const customFields = session.custom_fields || [];
         const rawNameField = customFields.find(
-          (f: any) => f.key === 'supporter_name',
+          (f) => f.key === 'supporter_name',
         );
         const rawName = rawNameField?.text?.value?.trim() || '';
 
         const visibilityField = customFields.find(
-          (f: any) => f.key === 'credit_visibility',
+          (f) => f.key === 'credit_visibility',
         );
         const creditVisibility = visibilityField?.dropdown?.value === 'hide' ? 'hide' : 'show';
 

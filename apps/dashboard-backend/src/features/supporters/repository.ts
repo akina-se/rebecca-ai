@@ -1,21 +1,21 @@
-import { Firestore } from '@google-cloud/firestore';
-import { getCollections, SupportTransactionDoc, RewardImageDoc } from '@rebecca/db';
-import { SupporterLedgerQuery, SupporterLedgerResponse } from './types';
+import { Firestore, QueryDocumentSnapshot } from '@google-cloud/firestore';
+import { getCollections, DbCollections } from '@rebecca/db';
+import {
+  SupportTransactionDoc,
+  RewardImageDoc,
+  SupporterLedgerQuery,
+  SupporterLedgerResponse,
+} from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
 /**
- * Repository responsible for data access operations related to support transactions
- * and reward assets in Firestore.
+ * Repository class providing Firestore data access for supporter transactions
+ * and digital reward image catalogs.
  */
 export class SupportersRepository {
-  private collections;
   private firestore: Firestore;
+  private collections: DbCollections;
 
-  /**
-   * Creates an instance of SupportersRepository.
-   *
-   * @param firestore - The Firestore instance.
-   */
   constructor(firestore: Firestore) {
     this.firestore = firestore;
     this.collections = getCollections(firestore);
@@ -29,7 +29,7 @@ export class SupportersRepository {
    */
   async getTransactions(query: SupporterLedgerQuery): Promise<SupporterLedgerResponse> {
     try {
-      let q: FirebaseFirestore.Query = this.collections.supportTransactions;
+      let q: FirebaseFirestore.Query<SupportTransactionDoc> = this.collections.supportTransactions;
 
       if (query.status && query.status !== 'all') {
         q = q.where('status', '==', query.status);
@@ -42,56 +42,40 @@ export class SupportersRepository {
       q = q.orderBy('createdAt', 'desc');
 
       const snapshot = await q.get();
-      let allDocs: SupportTransactionDoc[] = snapshot.docs.map((doc) => {
-        const data = doc.data() as Record<string, unknown>;
-        return {
-          id: doc.id,
-          stripeSessionId: data.stripeSessionId || '',
-          stripePaymentIntentId: data.stripePaymentIntentId || undefined,
-          rawName: data.rawName || '',
-          safeName: data.safeName || data.rawName || '名無しのマスター',
-          isNameSanitized: Boolean(data.isNameSanitized),
-          creditVisibility: data.creditVisibility || 'show',
-          amount: Number(data.amount || 0),
-          currency: 'jpy',
-          tier: data.tier || 'bronze',
-          itemLabel: data.itemLabel || '',
-          rewardImageId: data.rewardImageId || 'default',
-          status: data.status || 'pending',
-          isBanned: Boolean(data.isBanned),
-          tweetId: data.tweetId || undefined,
-          tweetText: data.tweetText || undefined,
-          errorMessage: data.errorMessage || undefined,
-          createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : String(data.createdAt || ''),
-          processedAt: typeof data.processedAt?.toDate === 'function' ? data.processedAt.toDate().toISOString() : data.processedAt ? String(data.processedAt) : undefined,
-          updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate().toISOString() : data.updatedAt ? String(data.updatedAt) : undefined,
-        };
-      });
+      let allDocs: SupportTransactionDoc[] = snapshot.docs.map((doc: QueryDocumentSnapshot<SupportTransactionDoc>) => ({ ...doc.data(), id: doc.id }));
 
-      // Calculate summary metrics across the matched set (or all)
-      const summary = {
-        totalCount: allDocs.length,
-        failedCount: allDocs.filter((d) => d.status === 'failed').length,
-        pendingCount: allDocs.filter((d) => d.status === 'pending').length,
-        completedCount: allDocs.filter((d) => d.status === 'completed' || d.status === 'manual').length,
-        totalAmount: allDocs.reduce((acc, curr) => acc + (curr.amount || 0), 0),
-      };
-
-      // In-memory filter for search keywords (rawName, safeName, stripeSessionId, stripePaymentIntentId, id)
+      // In-memory filter for search (Stripe ID, safeName, rawName)
       if (query.search && query.search.trim()) {
-        const s = query.search.trim().toLowerCase();
+        const term = query.search.trim().toLowerCase();
         allDocs = allDocs.filter(
           (d) =>
-            d.rawName.toLowerCase().includes(s) ||
-            d.safeName.toLowerCase().includes(s) ||
-            d.stripeSessionId.toLowerCase().includes(s) ||
-            (d.stripePaymentIntentId && d.stripePaymentIntentId.toLowerCase().includes(s)) ||
-            d.id.toLowerCase().includes(s)
+            Boolean(d.id && d.id.toLowerCase().includes(term)) ||
+            Boolean(d.safeName && d.safeName.toLowerCase().includes(term)) ||
+            Boolean(d.rawName && d.rawName.toLowerCase().includes(term)) ||
+            Boolean(d.stripeSessionId && d.stripeSessionId.toLowerCase().includes(term)) ||
+            Boolean(d.stripePaymentIntentId && d.stripePaymentIntentId.toLowerCase().includes(term))
         );
       }
 
+      // Compute aggregates across all transactions in database
+      const fullSnapshot = await this.collections.supportTransactions.get();
+      let totalCount = 0;
+      let failedCount = 0;
+      let pendingCount = 0;
+      let completedCount = 0;
+      let totalAmount = 0;
+
+      for (const d of fullSnapshot.docs) {
+        const item = d.data();
+        totalCount++;
+        totalAmount += Number(item.amount || 0);
+        if (item.status === 'failed') failedCount++;
+        else if (item.status === 'pending') pendingCount++;
+        else if (item.status === 'completed' || item.status === 'manual') completedCount++;
+      }
+
       // Pagination
-      const limit = query.limit && query.limit > 0 ? Math.min(query.limit, 100) : 50;
+      const limit = query.limit || 50;
       let startIndex = 0;
       if (query.cursor) {
         const found = allDocs.findIndex((d) => d.id === query.cursor);
@@ -100,22 +84,31 @@ export class SupportersRepository {
         }
       }
 
-      const paginated = allDocs.slice(startIndex, startIndex + limit);
-      const nextCursor = startIndex + limit < allDocs.length ? paginated[paginated.length - 1]?.id : undefined;
+      const paged = allDocs.slice(startIndex, startIndex + limit);
+      const nextCursor =
+        startIndex + limit < allDocs.length && paged.length > 0
+          ? paged[paged.length - 1].id
+          : undefined;
 
       return {
-        transactions: paginated,
-        summary,
+        transactions: paged,
+        summary: {
+          totalCount,
+          failedCount,
+          pendingCount,
+          completedCount,
+          totalAmount,
+        },
         nextCursor,
       };
     } catch (error) {
-      logger.error('[SupportersRepository] Failed to get transactions', error);
+      logger.error('[SupportersRepository] Failed to retrieve transactions', error);
       throw error;
     }
   }
 
   /**
-   * Retrieves a single support transaction by its unique identifier.
+   * Retrieves a single support transaction document by its ID.
    *
    * @param id - Document ID in support_transactions collection.
    * @returns A promise resolving to the transaction document, or null if not found.
@@ -124,29 +117,7 @@ export class SupportersRepository {
     try {
       const doc = await this.collections.supportTransactions.doc(id).get();
       if (!doc.exists) return null;
-      const data = doc.data() as Record<string, unknown>;
-      return {
-        id: doc.id,
-        stripeSessionId: data.stripeSessionId || '',
-        stripePaymentIntentId: data.stripePaymentIntentId || undefined,
-        rawName: data.rawName || '',
-        safeName: data.safeName || data.rawName || '名無しのマスター',
-        isNameSanitized: Boolean(data.isNameSanitized),
-        creditVisibility: data.creditVisibility || 'show',
-        amount: Number(data.amount || 0),
-        currency: 'jpy',
-        tier: data.tier || 'bronze',
-        itemLabel: data.itemLabel || '',
-        rewardImageId: data.rewardImageId || 'default',
-        status: data.status || 'pending',
-        isBanned: Boolean(data.isBanned),
-        tweetId: data.tweetId || undefined,
-        tweetText: data.tweetText || undefined,
-        errorMessage: data.errorMessage || undefined,
-        createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : String(data.createdAt || ''),
-        processedAt: typeof data.processedAt?.toDate === 'function' ? data.processedAt.toDate().toISOString() : data.processedAt ? String(data.processedAt) : undefined,
-        updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate().toISOString() : data.updatedAt ? String(data.updatedAt) : undefined,
-      };
+      return { id: doc.id, ...doc.data() } as SupportTransactionDoc;
     } catch (error) {
       logger.error('[SupportersRepository] Failed to get transaction by ID', error, { id });
       throw error;
@@ -161,7 +132,7 @@ export class SupportersRepository {
    */
   async updateTransaction(id: string, data: Partial<SupportTransactionDoc>): Promise<void> {
     try {
-      await this.collections.supportTransactions.doc(id).set(data, { merge: true });
+      await this.collections.supportTransactions.doc(id).set(data as FirebaseFirestore.PartialWithFieldValue<SupportTransactionDoc>, { merge: true });
     } catch (error) {
       logger.error('[SupportersRepository] Failed to update transaction', error, { id });
       throw error;
@@ -171,18 +142,19 @@ export class SupportersRepository {
   /**
    * Creates a new support transaction document.
    *
-   * @param data - Support transaction data without document ID.
+   * @param data - Transaction document fields without ID.
    * @returns The generated document ID.
    */
   async createTransaction(data: Omit<SupportTransactionDoc, 'id'>): Promise<string> {
     try {
       const ref = this.collections.supportTransactions.doc();
-      await ref.set({
+      const newDoc: SupportTransactionDoc = {
         ...data,
         id: ref.id,
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      };
+      await ref.set(newDoc);
       return ref.id;
     } catch (error) {
       logger.error('[SupportersRepository] Failed to create transaction', error);
@@ -198,19 +170,7 @@ export class SupportersRepository {
   async getRewardImages(): Promise<RewardImageDoc[]> {
     try {
       const snapshot = await this.collections.rewardImages.orderBy('createdAt', 'desc').get();
-      return snapshot.docs.map((doc) => {
-        const data = doc.data() as Record<string, unknown>;
-        return {
-          id: doc.id,
-          title: data.title || '',
-          imageUrl: data.imageUrl || '',
-          storagePath: data.storagePath || '',
-          isActive: Boolean(data.isActive),
-          distributedCount: Number(data.distributedCount || 0),
-          createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : String(data.createdAt || ''),
-          updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate().toISOString() : String(data.updatedAt || ''),
-        };
-      });
+      return snapshot.docs.map((doc: QueryDocumentSnapshot<RewardImageDoc>) => ({ ...doc.data(), id: doc.id }));
     } catch (error) {
       logger.error('[SupportersRepository] Failed to get reward images', error);
       throw error;
@@ -226,17 +186,7 @@ export class SupportersRepository {
     try {
       const doc = await this.collections.rewardImages.doc(id).get();
       if (!doc.exists) return null;
-      const data = doc.data() as Record<string, unknown>;
-      return {
-        id: doc.id,
-        title: data.title || '',
-        imageUrl: data.imageUrl || '',
-        storagePath: data.storagePath || '',
-        isActive: Boolean(data.isActive),
-        distributedCount: Number(data.distributedCount || 0),
-        createdAt: typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : String(data.createdAt || ''),
-        updatedAt: typeof data.updatedAt?.toDate === 'function' ? data.updatedAt.toDate().toISOString() : String(data.updatedAt || ''),
-      };
+      return { ...doc.data(), id: doc.id } as RewardImageDoc;
     } catch (error) {
       logger.error('[SupportersRepository] Failed to get reward image by ID', error, { id });
       throw error;
@@ -252,12 +202,13 @@ export class SupportersRepository {
   async createRewardImage(data: Omit<RewardImageDoc, 'id'>): Promise<string> {
     try {
       const ref = this.collections.rewardImages.doc();
-      await ref.set({
+      const newDoc: RewardImageDoc = {
         ...data,
         id: ref.id,
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      };
+      await ref.set(newDoc);
       return ref.id;
     } catch (error) {
       logger.error('[SupportersRepository] Failed to create reward image', error);
@@ -277,7 +228,8 @@ export class SupportersRepository {
         {
           ...data,
           updatedAt: new Date().toISOString(),
-        }, { merge: true }
+        } as FirebaseFirestore.PartialWithFieldValue<RewardImageDoc>,
+        { merge: true }
       );
     } catch (error) {
       logger.error('[SupportersRepository] Failed to update reward image', error, { id });
@@ -286,7 +238,7 @@ export class SupportersRepository {
   }
 
   /**
-   * Deletes a reward image document by ID.
+   * Deletes a reward image document by its ID.
    *
    * @param id - Document ID.
    */

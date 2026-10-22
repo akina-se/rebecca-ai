@@ -64,7 +64,7 @@ const generateSignedUrl = async (
     storagePathOrGsUri: string,
     expiresInMinutes = 30
 ): Promise<string> => {
-    const normalizedPath = storagePathOrGsUri.replace(/^gs:\/\/[^\/]+\//, '').replace(/^\//, '');
+    const normalizedPath = storagePathOrGsUri.replace(/^gs:\/\/[^/]+\//, '').replace(/^\//, '');
     const file = bucket.file(normalizedPath);
     const [url] = await file.getSignedUrl({
         version: 'v4',
