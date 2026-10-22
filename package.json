@@ -34,20 +34,20 @@
   "devDependencies": {
     "@secretlint/secretlint-rule-preset-recommend": "^13.0.7",
     "@types/jest": "^30.0.0",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "jest": "^30.5.2",
     "license-checker": "^25.0.1",
     "secretlint": "^13.0.7",
-    "ts-jest": "^29.4.14",
+    "ts-jest": "^29.4.15",
     "turbo": "latest",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.0"
+    "typescript-eslint": "^8.71.2"
   },
   "overrides": {
     "@google-cloud/firestore": "^9.0.0",
     "cross-spawn": "^7.0.6",
     "micromatch": "^4.0.8",
-    "brace-expansion": "^2.0.2",
+    "brace-expansion": "^2.1.7",
     "tmp": "^0.2.6",
     "tar": "^7.5.3",
     "rollup": "^4.59.0",
@@ -61,11 +61,29 @@
     "webpack-dev-server": "^5.2.0",
     "ts-deepmerge": "^8.0.0",
     "picomatch": "^4.0.2",
-    "fast-uri": "^3.1.6",
+    "fast-uri": "^3.1.9",
     "browserslist": "^4.28.7",
     "qs": "^6.16.0",
     "hono": "^4.13.9",
     "@firebase/app": "0.16.3",
-    "@firebase/app-compat": "0.5.19"
+    "@firebase/app-compat": "0.5.19",
+    "@fastify/busboy": "^3.2.4",
+    "@grpc/grpc-js": "^1.14.6",
+    "handlebars": "^4.7.10",
+    "ip-address": "^10.7.4",
+    "proxy-addr": "^2.0.8",
+    "vite": "^8.3.5",
+    "@angular/build": {
+      "vite": "^8.3.5"
+    },
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "^1.14.6"
+    },
+    "firebase-admin": {
+      "@fastify/busboy": "^3.2.4"
+    },
+    "express-rate-limit": {
+      "ip-address": "^10.7.4"
+    }
   }
 }
