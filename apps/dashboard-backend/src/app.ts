@@ -20,6 +20,7 @@ import { initializeAssetsModule } from './features/assets';
 import { initializeSettingsModule } from './features/settings';
 import { initializeConfigModule } from './features/config';
 import { initializeCampaignsModule } from './features/campaign';
+import { initializeSupportersModule } from './features/supporters';
 
 /**
  * Creates and configures the Express application instance with dependency injection.
@@ -86,6 +87,7 @@ export function createApp(
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
   const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(firestore, storage);
+  const { supportersRouter, publicRewardsRouter } = initializeSupportersModule(firestore, storage);
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);
@@ -95,6 +97,7 @@ export function createApp(
   app.use('/api/v1/images', publicImagesRouter);
   app.use('/api/v1/campaigns', publicCampaignImagesRouter);
   app.use('/api/campaigns', publicCampaignImagesRouter);
+  app.use('/api/v1/supporters/rewards', publicRewardsRouter);
 
   // Healthcheck endpoint
   app.get('/health', (req, res) => {
@@ -113,6 +116,7 @@ export function createApp(
   app.use('/api/v1/settings', verifyAuth, settingsRouter);
   app.use('/api/v1/campaigns', verifyAuth, campaignsRouter);
   app.use('/api/campaigns', verifyAuth, campaignsRouter);
+  app.use('/api/v1/supporters', verifyAuth, supportersRouter);
 
   return app;
 }

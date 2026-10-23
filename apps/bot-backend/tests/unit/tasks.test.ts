@@ -1,4 +1,4 @@
-import { enqueueReplyTask } from '../../src/services/tasks';
+import { enqueueReplyTask, enqueueSupportTask } from '../../src/services/tasks';
 import config from '../../src/config';
 
 // Mock CloudTasksClient
@@ -62,5 +62,36 @@ describe('Cloud Tasks Service', () => {
     it('should throw an error if createTask fails', async () => {
         mockCreateTask.mockRejectedValue(new Error('Task Error'));
         await expect(enqueueReplyTask({ test: 'payload' })).rejects.toThrow('Task Error');
+    });
+
+    describe('enqueueSupportTask', () => {
+        it('should throw Error if config is missing', async () => {
+            config.gcp.projectId = '';
+            await expect(enqueueSupportTask({ transactionId: 'tx_123' })).rejects.toThrow('Cloud Tasks configuration missing');
+        });
+
+        it('should create support task without delay', async () => {
+            mockCreateTask.mockResolvedValue([{ name: 'support_task_id' }]);
+            const result = await enqueueSupportTask({ transactionId: 'tx_123' });
+            expect(result).toEqual({ name: 'support_task_id' });
+            expect(mockCreateTask).toHaveBeenCalled();
+            const callArgs = mockCreateTask.mock.calls[0][0];
+            expect(callArgs.task.scheduleTime).toBeUndefined();
+            expect(callArgs.task.httpRequest.url).toContain('/worker/support-post');
+        });
+
+        it('should create support task with delay', async () => {
+            mockCreateTask.mockResolvedValue([{ name: 'support_delayed_id' }]);
+            const result = await enqueueSupportTask({ transactionId: 'tx_123' }, 30);
+            expect(result).toEqual({ name: 'support_delayed_id' });
+            expect(mockCreateTask).toHaveBeenCalled();
+            const callArgs = mockCreateTask.mock.calls[0][0];
+            expect(callArgs.task.scheduleTime).toBeDefined();
+        });
+
+        it('should throw an error if createTask fails for support task', async () => {
+            mockCreateTask.mockRejectedValue(new Error('Cloud Tasks Failed'));
+            await expect(enqueueSupportTask({ transactionId: 'tx_123' })).rejects.toThrow('Cloud Tasks Failed');
+        });
     });
 });
