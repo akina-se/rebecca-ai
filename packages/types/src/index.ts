@@ -169,6 +169,7 @@ export interface TimelinePost {
   mediaUrls?: string[];
   tweetId?: string;
   assetId?: string;
+  mediaCaption?: string;
   authorId?: string;
   authorName?: string;
   authorHandle?: string;

@@ -342,5 +342,203 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             '@rebecca_ai_gal こんばんは'
         );
     });
-});
 
+    it('should inject parent post image caption directly when mediaCaption is already cached on timeline doc (Tier 1)', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'テストマスター',
+            username: 'test_master_01',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getTimelinePostByTweetId.mockResolvedValue({
+            id: 'doc_101',
+            tweetId: 'parent_tweet_101',
+            text: '今日のおやつはパンケーキ♡',
+            mediaCaption: 'カフェのテーブルに置かれたベリーのパンケーキとアイスティー',
+            postType: 'soliloquy'
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue('パンケーキ');
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '美味しそうなパンケーキへの言及',
+            reply: 'すごくふわふわで美味しかったよ〜！'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        const result = await usecase.execute({
+            tweetId: 'mention_tweet_201',
+            text: '@rebecca_ai_gal 写真のパンケーキめっちゃ美味しそう！',
+            authorId: 'user_101',
+            inReplyToTweetId: 'parent_tweet_101'
+        });
+
+        expect(result.status).toBe('success');
+        expect(deps.firestore.getImageByHash).not.toHaveBeenCalled();
+        expect(downloadImage).not.toHaveBeenCalled();
+        expect(deps.gemini.analyzeImageCaption).not.toHaveBeenCalled();
+        expect(deps.firestore.updateTimelinePost).not.toHaveBeenCalled();
+
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('カフェのテーブルに置かれたベリーのパンケーキとアイスティー'),
+            expect.any(Array),
+            expect.stringContaining('【添付画像の内容】\nカフェのテーブルに置かれたベリーのパンケーキとアイスティー')
+        );
+    });
+
+    it('should lookup caption from image asset and backfill to timeline_history when parent post has assetId (Tier 2)', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'テストマスター',
+            username: 'test_master_01',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getTimelinePostByTweetId.mockResolvedValue({
+            id: 'doc_102',
+            tweetId: 'parent_tweet_102',
+            text: '新しいネイルにしたよ💅',
+            assetId: 'asset_hash_nail_01',
+            postType: 'soliloquy'
+        });
+        deps.firestore.getImageByHash.mockResolvedValue({
+            id: 'asset_hash_nail_01',
+            caption: '華やかなピンクとシルバーのグラデーションネイルのアップ',
+            url: 'https://storage.googleapis.com/test-bucket/nail.jpg'
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue('ネイル');
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: 'ネイルを褒めてくれた',
+            reply: 'ありがと♡お気に入りなの！'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        const result = await usecase.execute({
+            tweetId: 'mention_tweet_202',
+            text: '@rebecca_ai_gal そのネイルの色すごく綺麗！',
+            authorId: 'user_102',
+            inReplyToTweetId: 'parent_tweet_102'
+        });
+
+        expect(result.status).toBe('success');
+        expect(deps.firestore.getImageByHash).toHaveBeenCalledWith('asset_hash_nail_01');
+        expect(downloadImage).not.toHaveBeenCalled();
+        expect(deps.firestore.updateTimelinePost).toHaveBeenCalledWith('doc_102', {
+            mediaCaption: '華やかなピンクとシルバーのグラデーションネイルのアップ'
+        });
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('華やかなピンクとシルバーのグラデーションネイルのアップ'),
+            expect.any(Array),
+            expect.stringContaining('【添付画像の内容】\n華やかなピンクとシルバーのグラデーションネイルのアップ')
+        );
+    });
+
+    it('should lazily download, analyze image caption with objective prompt, and backfill to timeline_history when parent post has mediaUrls without caption (Tier 3)', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'テストマスター',
+            username: 'test_master_01',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getTimelinePostByTweetId.mockResolvedValue({
+            id: 'doc_103',
+            tweetId: 'parent_tweet_103',
+            text: '夕焼けが綺麗だったから撮ってみた！',
+            mediaUrls: ['https://pbs.twimg.com/media/sunset.jpg'],
+            postType: 'soliloquy'
+        });
+        (downloadImage as jest.Mock).mockResolvedValue({
+            buffer: Buffer.from('sunset_image_bytes'),
+            mimeType: 'image/jpeg'
+        });
+        deps.gemini.analyzeImageCaption.mockResolvedValue('海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。');
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue('夕焼け');
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '夕焼けの写真に感動してくれた',
+            reply: '綺麗だったよね〜！思わず見惚れちゃった。'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        const result = await usecase.execute({
+            tweetId: 'mention_tweet_203',
+            text: '@rebecca_ai_gal この夕日めっちゃエモいね',
+            authorId: 'user_103',
+            inReplyToTweetId: 'parent_tweet_103'
+        });
+
+        expect(result.status).toBe('success');
+        expect(downloadImage).toHaveBeenCalledWith('https://pbs.twimg.com/media/sunset.jpg');
+        expect(deps.gemini.analyzeImageCaption).toHaveBeenCalledWith(
+            expect.any(Buffer),
+            'image/jpeg',
+            expect.stringContaining('客観的かつ詳細に言語化してください')
+        );
+        expect(deps.firestore.updateTimelinePost).toHaveBeenCalledWith('doc_103', {
+            mediaCaption: '海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。'
+        });
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。'),
+            expect.any(Array),
+            expect.stringContaining('【添付画像の内容】\n海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。')
+        );
+    });
+
+    it('should append follow-back and DM deflection guidelines in reply system prompt for ja and en', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            name: 'フォロワー',
+            username: 'follower_user',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: 'フォロバを頼まれたが気まぐれとしていなす',
+            reply: 'ふふ、フォローは私の気まぐれよ♡もっと私を楽しませてくれたら考えちゃうかもね？'
+        });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        // 1. Japanese request
+        await usecase.execute({
+            tweetId: 'mention_tweet_follow',
+            text: '@rebecca_ai_gal フォローバックして！あとDMもしよ！',
+            authorId: 'user_follow_01'
+        });
+
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('【SNS機能制約：フォローバックおよびダイレクトメッセージ（DM）への対応指針】'),
+            expect.any(Array),
+            expect.any(String)
+        );
+
+        // 2. English request
+        deps.gemini.detectLanguage.mockResolvedValue('en');
+        await usecase.execute({
+            tweetId: 'mention_tweet_follow_en',
+            text: '@rebecca_ai_gal Please follow me back and DM me!',
+            authorId: 'user_follow_02'
+        });
+
+        expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
+            expect.stringContaining('[SNS Platform Constraints: Follow-backs and Direct Messages (DMs)]'),
+            expect.any(Array),
+            expect.any(String)
+        );
+    });
+});

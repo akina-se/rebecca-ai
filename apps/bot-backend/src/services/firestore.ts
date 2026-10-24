@@ -438,6 +438,7 @@ export interface SaveTimelinePostParams {
   thought?: string;
   mediaUrls?: string[];
   assetId?: string;
+  mediaCaption?: string;
   tweetId?: string;
   postType?: PostType;
   newsTitle?: string;
@@ -468,6 +469,7 @@ const saveTimelinePost = async (params: SaveTimelinePostParams): Promise<void> =
     mediaUrls: mediaList,
     ...(params.thought ? { thought: params.thought } : {}),
     ...(params.assetId ? { assetId: params.assetId } : {}),
+    ...(params.mediaCaption ? { mediaCaption: params.mediaCaption } : {}),
     ...(params.tweetId ? { tweetId: params.tweetId } : {}),
     ...(params.postType ? { postType: params.postType } : {}),
     ...(params.newsTitle ? { newsTitle: params.newsTitle } : {}),
@@ -542,7 +544,7 @@ const getRecentTimelinePosts = async (
  * @param tweetId - The tweet ID on X.
  * @returns The matching TimelinePost document, or null if not found.
  */
-const getTimelinePostByTweetId = async (tweetId: string): Promise<TimelinePost | null> => {
+const getTimelinePostByTweetId = async (tweetId: string): Promise<(TimelinePost & { id: string }) | null> => {
   if (!tweetId) {
     return null;
   }
@@ -554,7 +556,8 @@ const getTimelinePostByTweetId = async (tweetId: string): Promise<TimelinePost |
   if (snapshot.empty) {
     return null;
   }
-  return snapshot.docs[0].data();
+  const doc = snapshot.docs[0];
+  return { id: doc.id, ...doc.data() };
 };
 
 /**
