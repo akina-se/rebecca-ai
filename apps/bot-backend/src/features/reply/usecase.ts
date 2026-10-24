@@ -159,19 +159,28 @@ ${desc}
         const personaName = deps.persona.metadata.displayName;
         let parentPostContext: string | undefined;
         if (parentPostText || parentPostMediaCaption) {
-            const parts: string[] = [];
+            const contextParts: string[] = [];
             if (parentPostText) {
-                parts.push(parentPostText);
+                contextParts.push(parentPostText);
             }
             if (parentPostMediaCaption) {
-                parts.push(`【返信元の投稿の添付画像】\n${parentPostMediaCaption}`);
+                contextParts.push(`【添付画像】\n${parentPostMediaCaption}`);
             }
-            parentPostContext = parts.join('\n');
+            parentPostContext = contextParts.join('\n');
         }
 
-        let processedText = parentPostContext
-            ? `【返信元の${personaName}の投稿】\n${parentPostContext}\n\n【対話相手の発言】\n${text}`
-            : text;
+        const sections: string[] = [];
+        if (parentPostText) {
+            sections.push(`【返信元の${personaName}の投稿】\n${parentPostText}`);
+        }
+        if (parentPostMediaCaption) {
+            sections.push(`【返信元の投稿の添付画像】\n${parentPostMediaCaption}`);
+        }
+        if (sections.length > 0) {
+            sections.push(`【対話相手の発言】\n${text}`);
+        }
+
+        let processedText = sections.length > 0 ? sections.join('\n\n') : text;
 
         if (mediaUrls && mediaUrls.length > 0) {
             try {
