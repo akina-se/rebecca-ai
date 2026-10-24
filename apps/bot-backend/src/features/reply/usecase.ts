@@ -177,7 +177,7 @@ ${desc}
             sections.push(`【返信元の投稿の添付画像】\n${parentPostMediaCaption}`);
         }
         if (sections.length > 0) {
-            sections.push(`【対話相手の発言】\n${text}`);
+            sections.push(`【対話相手（ユーザー）の発言】\n${text}`);
         }
 
         let processedText = sections.length > 0 ? sections.join('\n\n') : text;
@@ -189,7 +189,7 @@ ${desc}
                     const imageCaption = await deps.gemini.analyzeImageCaption(buffer, mimeType, OBJECTIVE_IMAGE_CAPTION_PROMPT);
                     
                     if (imageCaption) {
-                        processedText += `\n\n【ユーザーが添付した画像の内容】\n${imageCaption}`;
+                        processedText += `\n\n【対話相手（ユーザー）が添付した画像の内容】\n${imageCaption}`;
                     }
                 }
             } catch (e) {
@@ -205,10 +205,10 @@ ${desc}
         const searchContext = workingMemory.length > 0
             ? workingMemory.map(m => `${m.role}: ${m.content}`).join('\n')
             : (parentPostText ? `${personaName}: ${parentPostText}` : '');
-        const searchPrompt = `あなたは検索クエリ生成AIです。以下の直近の会話文脈とユーザーの最新の発言を踏まえて、ユーザーの意図を汲み取った「検索用クエリ（短い一文または単語の羅列）」を生成してください。
+        const searchPrompt = `あなたは検索クエリ生成AIです。以下の直近の会話文脈と対話相手（ユーザー）の最新の発言を踏まえて、対話相手（ユーザー）の意図を汲み取った「検索用クエリ（短い一文または単語の羅列）」を生成してください。
 【直前の会話文脈】
 ${searchContext}
-【ユーザーの最新の発言】
+【対話相手（ユーザー）の最新の発言】
 ${processedText}
 出力は検索クエリのみとし、不要な解説は含めないでください。`;
         const query = await deps.gemini.generateSearchQuery(searchPrompt);

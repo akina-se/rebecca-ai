@@ -284,7 +284,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(result.status).toBe('success');
         expect(deps.firestore.getTimelinePostByTweetId).toHaveBeenCalledWith('parent_tweet_100');
 
-        const expectedProcessedText = `【返信元の${deps.persona.metadata.displayName}の投稿】\n最近急に寒くなってきたね〜。みんな風邪ひいてない？\n\n【対話相手の発言】\n@rebecca_ai_gal こっちはまだ半袖で過ごせるくらい暑いよ！`;
+        const expectedProcessedText = `【返信元の${deps.persona.metadata.displayName}の投稿】\n最近急に寒くなってきたね〜。みんな風邪ひいてない？\n\n【対話相手（ユーザー）の発言】\n@rebecca_ai_gal こっちはまだ半袖で過ごせるくらい暑いよ！`;
 
         // 1. Search query generator receives parent post context in Turn 1
         expect(deps.gemini.generateSearchQuery).toHaveBeenCalledWith(
