@@ -46,6 +46,7 @@ export const createMockDeps = (): AppDependencies => {
             updateCampaign: jest.fn().mockResolvedValue(undefined),
             getLatestPendingPoll: jest.fn().mockResolvedValue(null),
             updateTimelinePost: jest.fn().mockResolvedValue(undefined),
+            getImageByHash: jest.fn().mockResolvedValue(null),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),
