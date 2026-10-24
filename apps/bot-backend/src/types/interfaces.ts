@@ -66,6 +66,7 @@ export interface IFirestoreService {
     thought?: string;
     mediaUrls?: string[];
     assetId?: string;
+    mediaCaption?: string;
     tweetId?: string;
     postType?: PostType;
     newsTitle?: string;
@@ -76,7 +77,7 @@ export interface IFirestoreService {
     pollResultTweetId?: string;
   }): Promise<void>;
   getRecentTimelinePosts(options?: GetRecentTimelinePostsOptions): Promise<TimelinePost[]>;
-  getTimelinePostByTweetId(tweetId: string): Promise<TimelinePost | null>;
+  getTimelinePostByTweetId(tweetId: string): Promise<(TimelinePost & { id: string }) | null>;
   getLatestPendingPoll(): Promise<(TimelinePost & { id: string }) | null>;
   updateTimelinePost(docId: string, data: Partial<TimelinePost>): Promise<void>;
   getRecentNewsEmbeddings(days?: number): Promise<Array<{ title?: string; embedding: number[] }>>;
