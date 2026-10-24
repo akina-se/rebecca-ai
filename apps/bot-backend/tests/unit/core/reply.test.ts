@@ -385,7 +385,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
             expect.stringContaining('カフェのテーブルに置かれたベリーのパンケーキとアイスティー'),
             expect.any(Array),
-            expect.stringContaining('【添付画像の内容】\nカフェのテーブルに置かれたベリーのパンケーキとアイスティー')
+            expect.stringContaining('【返信元の投稿の添付画像】\nカフェのテーブルに置かれたベリーのパンケーキとアイスティー')
         );
     });
 
@@ -436,7 +436,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
             expect.stringContaining('華やかなピンクとシルバーのグラデーションネイルのアップ'),
             expect.any(Array),
-            expect.stringContaining('【添付画像の内容】\n華やかなピンクとシルバーのグラデーションネイルのアップ')
+            expect.stringContaining('【返信元の投稿の添付画像】\n華やかなピンクとシルバーのグラデーションネイルのアップ')
         );
     });
 
@@ -491,7 +491,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.gemini.generateStructuredReply).toHaveBeenCalledWith(
             expect.stringContaining('海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。'),
             expect.any(Array),
-            expect.stringContaining('【添付画像の内容】\n海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。')
+            expect.stringContaining('【返信元の投稿の添付画像】\n海辺に沈む鮮やかなオレンジ色の夕日と夕焼け空。')
         );
     });
 

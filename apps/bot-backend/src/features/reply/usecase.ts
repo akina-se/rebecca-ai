@@ -164,7 +164,7 @@ ${desc}
                 parts.push(parentPostText);
             }
             if (parentPostMediaCaption) {
-                parts.push(`【添付画像の内容】\n${parentPostMediaCaption}`);
+                parts.push(`【返信元の投稿の添付画像】\n${parentPostMediaCaption}`);
             }
             parentPostContext = parts.join('\n');
         }
