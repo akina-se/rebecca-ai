@@ -438,6 +438,7 @@ export interface SaveTimelinePostParams {
   thought?: string;
   mediaUrls?: string[];
   assetId?: string;
+  /** Objective textual caption describing the attached image. */
   mediaCaption?: string;
   tweetId?: string;
   postType?: PostType;
@@ -540,9 +541,11 @@ const getRecentTimelinePosts = async (
 
 /**
  * Retrieves a timeline post by its unique X tweet ID.
+ * Returns the TimelinePost merged with its Firestore document ID (id: string) to allow
+ * downstream point updates and metadata backfills without additional queries.
  *
  * @param tweetId - The tweet ID on X.
- * @returns The matching TimelinePost document, or null if not found.
+ * @returns The matching TimelinePost document with document ID, or null if not found.
  */
 const getTimelinePostByTweetId = async (tweetId: string): Promise<(TimelinePost & { id: string }) | null> => {
   if (!tweetId) {

@@ -169,6 +169,10 @@ export interface TimelinePost {
   mediaUrls?: string[];
   tweetId?: string;
   assetId?: string;
+  /**
+   * Objective visual caption describing the attached image.
+   * Cached to provide conversational visual context during subsequent user replies without redundant vision API calls.
+   */
   mediaCaption?: string;
   authorId?: string;
   authorName?: string;

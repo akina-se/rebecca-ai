@@ -169,6 +169,9 @@ ${desc}
             parentPostContext = contextParts.join('\n');
         }
 
+        // Assemble conversation context in strict chronological order:
+        // 1. Root Post Text (Persona) -> 2. Root Post Attached Image -> 3. Interlocutor (User) Text -> 4. Interlocutor Attached Image
+        // A flat, chronological progression aligns directly with causal attention in generative LLMs, avoiding confusing nested headers.
         const sections: string[] = [];
         if (parentPostText) {
             sections.push(`【返信元の${personaName}の投稿】\n${parentPostText}`);
@@ -306,14 +309,16 @@ ${processedText}
     }
     /**
      * Resolves the visual caption for an image attached to the parent timeline post.
-     * Implements a 2-tier Write-Through + Lazy Read-Through cache pattern:
-     * 1. Cached caption directly on the timeline post (0 external calls).
-     * 2. Lookup caption from the registered image asset in Firestore by assetId.
-     * 3. Lazy fallback for external posts: download the first mediaUrl, analyze it via Gemini,
-     *    and write-back the caption to Firestore so future replies hit tier 1.
+     * Implements a resilient 3-tier resolution strategy combining Write-Through caching and Lazy Read-Through backfill:
+     * - Tier 1 (Hot Cache): Directly reads `TimelinePost.mediaCaption` (0 network calls, 0 latency overhead).
+     * - Tier 2 (Asset Lookup): Looks up the pre-registered asset metadata by `assetId` in Firestore.
+     *   On hit, asynchronously backfills `mediaCaption` to `timeline_history` to promote future replies to Tier 1.
+     * - Tier 3 (On-Demand Multimodal Inference): As a fallback for external or uncaptioned posts with `mediaUrls`,
+     *   downloads the primary image buffer, analyzes it via Gemini multimodal vision, and writes the resulting
+     *   caption back to `timeline_history` to ensure subsequent replies to this root post hit Tier 1.
      *
      * @param parentPost The parent timeline post retrieved from Firestore.
-     * @returns A promise resolving to the media caption string if available, or undefined.
+     * @returns A promise resolving to the objective media caption string if available, or undefined.
      */
     private async resolveParentPostMediaCaption(parentPost: TimelinePost & { id?: string }): Promise<string | undefined> {
         // Tier 1: Direct caption cached on the timeline document
