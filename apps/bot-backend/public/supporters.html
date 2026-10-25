@@ -288,12 +288,25 @@
       margin-top: 4px;
     }
 
-    /* Tiers Grid */
+    /* Tiers Grid & Carousel */
+    .tiers-carousel-wrapper {
+      position: relative;
+      width: 100%;
+      margin-bottom: 64px;
+    }
+
     .tiers-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 24px;
-      margin-bottom: 64px;
+    }
+
+    .tiers-scroll-edge {
+      display: none;
+    }
+
+    .tiers-carousel-dots {
+      display: none;
     }
 
     .tier-card {
@@ -1365,9 +1378,124 @@
     }
 
     @media (max-width: 900px) {
-      .tiers-grid {
-        grid-template-columns: 1fr;
+      .tiers-carousel-wrapper {
+        margin: 0 -24px 44px;
+        position: relative;
       }
+
+      .tiers-grid {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 16px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        padding: 12px 24px 20px;
+        scrollbar-width: none;
+      }
+
+      .tiers-grid::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tier-card {
+        flex: 0 0 82%;
+        max-width: 320px;
+        min-width: 270px;
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+      }
+
+      /* Swipe Edge with Glowing Purple Line */
+      .tiers-scroll-edge {
+        display: block;
+        position: absolute;
+        top: 0;
+        bottom: 34px;
+        width: 38px;
+        pointer-events: none;
+        z-index: 20;
+        opacity: 0;
+        transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .tiers-scroll-edge.active {
+        opacity: 1;
+      }
+
+      .tiers-scroll-edge.left {
+        left: 0;
+        background: linear-gradient(to right, rgba(7, 8, 12, 0.95) 0%, rgba(7, 8, 12, 0.4) 60%, transparent 100%);
+      }
+
+      .tiers-scroll-edge.right {
+        right: 0;
+        background: linear-gradient(to left, rgba(7, 8, 12, 0.95) 0%, rgba(7, 8, 12, 0.4) 60%, transparent 100%);
+      }
+
+      .tiers-scroll-edge.left .tiers-glow-line {
+        position: absolute;
+        left: 0;
+        top: 10%;
+        bottom: 10%;
+        width: 3.5px;
+        border-radius: 9999px;
+        background: linear-gradient(180deg, transparent 0%, rgba(167, 139, 250, 0.4) 15%, #c4b5fd 40%, #a78bfa 60%, #8b5cf6 85%, transparent 100%);
+        box-shadow: 0 0 10px #c4b5fd, 0 0 20px rgba(139, 92, 246, 0.9), 0 0 32px rgba(168, 85, 247, 0.7);
+        animation: pulse-purple-edge 2.2s infinite ease-in-out;
+      }
+
+      .tiers-scroll-edge.right .tiers-glow-line {
+        position: absolute;
+        right: 0;
+        top: 10%;
+        bottom: 10%;
+        width: 3.5px;
+        border-radius: 9999px;
+        background: linear-gradient(180deg, transparent 0%, rgba(167, 139, 250, 0.4) 15%, #c4b5fd 40%, #a78bfa 60%, #8b5cf6 85%, transparent 100%);
+        box-shadow: 0 0 10px #c4b5fd, 0 0 20px rgba(139, 92, 246, 0.9), 0 0 32px rgba(168, 85, 247, 0.7);
+        animation: pulse-purple-edge 2.2s infinite ease-in-out;
+      }
+
+      @keyframes pulse-purple-edge {
+        0%, 100% {
+          opacity: 0.85;
+          filter: drop-shadow(0 0 6px #a78bfa);
+        }
+        50% {
+          opacity: 1;
+          filter: drop-shadow(0 0 14px #c084fc);
+        }
+      }
+
+      .tiers-carousel-dots {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .carousel-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.18);
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .carousel-dot.active {
+        width: 22px;
+        background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+      }
+
       .footer-grid {
         grid-template-columns: 1fr;
         gap: 32px;
@@ -1475,7 +1603,15 @@
         </div>
       </div>
 
-      <div class="tiers-grid">
+      <div class="tiers-carousel-wrapper" id="tiers-carousel-wrapper">
+        <div class="tiers-scroll-edge left" id="tiers-edge-left" aria-hidden="true">
+          <div class="tiers-glow-line"></div>
+        </div>
+        <div class="tiers-scroll-edge right active" id="tiers-edge-right" aria-hidden="true">
+          <div class="tiers-glow-line"></div>
+        </div>
+
+        <div class="tiers-grid" id="tiers-grid">
 
         <!-- Bronze Tier -->
         <div class="tier-card">
@@ -1596,6 +1732,13 @@
         </div>
 
       </div>
+
+      <div class="tiers-carousel-dots" id="tiers-carousel-dots" aria-hidden="true">
+        <button type="button" class="carousel-dot active" data-index="0" aria-label="Bronze Plan"></button>
+        <button type="button" class="carousel-dot" data-index="1" aria-label="Silver Plan"></button>
+        <button type="button" class="carousel-dot" data-index="2" aria-label="Gold Plan"></button>
+      </div>
+    </div>
     </section>
 
     <!-- Section 2: Hall of Fame / Supporter Roster -->
@@ -2059,9 +2202,78 @@
         .replace(/'/g, '&#39;');
     }
 
+    function initTiersCarousel() {
+      const grid = document.getElementById('tiers-grid');
+      const edgeLeft = document.getElementById('tiers-edge-left');
+      const edgeRight = document.getElementById('tiers-edge-right');
+      const dots = document.querySelectorAll('#tiers-carousel-dots .carousel-dot');
+      if (!grid) return;
+
+      const cards = grid.querySelectorAll('.tier-card');
+
+      function updateEdgesAndDots() {
+        if (window.innerWidth > 900) return;
+        const scrollLeft = grid.scrollLeft;
+        const maxScroll = grid.scrollWidth - grid.clientWidth;
+
+        if (edgeLeft) {
+          if (scrollLeft > 15) {
+            edgeLeft.classList.add('active');
+          } else {
+            edgeLeft.classList.remove('active');
+          }
+        }
+
+        if (edgeRight) {
+          if (scrollLeft < maxScroll - 15) {
+            edgeRight.classList.add('active');
+          } else {
+            edgeRight.classList.remove('active');
+          }
+        }
+
+        if (cards.length > 0 && dots.length > 0) {
+          let closestIdx = 0;
+          let minDiff = Infinity;
+          const containerCenter = scrollLeft + grid.clientWidth / 2;
+
+          cards.forEach(function(card, idx) {
+            const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+            const diff = Math.abs(containerCenter - cardCenter);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestIdx = idx;
+            }
+          });
+
+          dots.forEach(function(dot, idx) {
+            if (idx === closestIdx) {
+              dot.classList.add('active');
+            } else {
+              dot.classList.remove('active');
+            }
+          });
+        }
+      }
+
+      dots.forEach(function(dot) {
+        dot.addEventListener('click', function() {
+          const idx = parseInt(dot.getAttribute('data-index') || '0', 10);
+          if (cards[idx]) {
+            cards[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        });
+      });
+
+      grid.addEventListener('scroll', updateEdgesAndDots, { passive: true });
+      window.addEventListener('resize', updateEdgesAndDots, { passive: true });
+      setTimeout(updateEdgesAndDots, 100);
+    }
+
     window.addEventListener('DOMContentLoaded', function() {
       loadSupportPlans();
       loadSupporterCredits();
+      initTiersCarousel();
     });
   </script>
 </body>
