@@ -604,7 +604,7 @@
             <span class="t-ja">デジタルイラストを高画質ダウンロード</span>
             <span class="t-en">Download High-Res Illustration</span>
           </a>
-          <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;">有効期限: 約30分間</div>
+          <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;"><span class="t-ja">有効期限: 約30分間</span><span class="t-en">Valid for: Approx. 30 minutes</span></div>
         </div>
       </div>
 
@@ -773,7 +773,8 @@
           guidanceCard.style.display = 'none';
           rewardPanel.style.display = 'block';
 
-          const nameDisplay = data.safeName || 'マスター';
+          const isJa = document.body.getAttribute('data-lang') !== 'en';
+        const nameDisplay = data.safeName || (isJa ? 'マスター' : 'Master');
           document.getElementById('supporter-name-display').textContent = nameDisplay;
           document.getElementById('supporter-name-display-en').textContent = nameDisplay;
 
@@ -781,7 +782,7 @@
           badgePill.className = 'tier-badge-pill tier-badge-' + (data.tier || 'bronze');
           badgePill.textContent = (data.tier || 'bronze').toUpperCase() + ' TIER';
 
-          document.getElementById('item-label-display').textContent = data.itemLabel || '差し入れ';
+          document.getElementById('item-label-display').textContent = data.itemLabel || (isJa ? '差し入れ' : 'Contribution');
 
           // Reward illustration (Thumbnail for responsive preview, high-res download for button)
           if (data.reward) {
@@ -804,7 +805,7 @@
           }
         } else {
           guidanceCard.style.display = 'block';
-          guidanceCard.innerHTML = '<div style="padding: 24px; color: #f87171; text-align: center;"><h3>セッション検証エラー</h3><p style="margin-top: 8px;">セッションの検証に失敗したか、お支払いが完了していません。<br><a href="/supporters" class="btn btn-purple" style="margin-top: 16px;">サポーターページへ</a></p></div>';
+          guidanceCard.innerHTML = '<div style="padding: 24px; color: #f87171; text-align: center;"><h3><span class="t-ja">セッション検証エラー</span><span class="t-en">Session Verification Error</span></h3><p style="margin-top: 8px;"><span class="t-ja">セッションの検証に失敗したか、お支払いが完了していません。</span><span class="t-en">Session verification failed or payment is incomplete.</span><br><a href="/supporters" class="btn btn-purple" style="margin-top: 16px;"><span class="t-ja">サポーターページへ</span><span class="t-en">Back to Supporters Page</span></a></p></div>';
         }
       } catch (err) {
         console.error('Session verify error:', err);

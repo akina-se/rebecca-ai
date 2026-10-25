@@ -1505,7 +1505,7 @@
               <span class="t-en">Energy Drink</span>
             </div>
             <div class="tier-item-label bronze">BRONZE SPONSOR</div>
-            <div class="tier-price">¥300 <span>/ 一口</span></div>
+            <div class="tier-price">¥300 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1547,7 +1547,7 @@
               <span class="t-en">Compute Server Resource</span>
             </div>
             <div class="tier-item-label silver">SILVER SPONSOR</div>
-            <div class="tier-price">¥1,000 <span>/ 一口</span></div>
+            <div class="tier-price">¥1,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1585,7 +1585,7 @@
               <span class="t-en">Development Support</span>
             </div>
             <div class="tier-item-label gold">GOLD SPONSOR</div>
-            <div class="tier-price">¥3,000 <span>/ 一口</span></div>
+            <div class="tier-price">¥3,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1810,6 +1810,16 @@
       return 'font-len-vlong';
     }
 
+    function formatDateYMD(dateInput) {
+      if (!dateInput) return '2026/10/25';
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return '2026/10/25';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return y + '/' + m + '/' + day;
+    }
+
     async function loadSupporterCredits(page = 1) {
       currentRosterPage = page;
       const grid = document.getElementById('roster-grid');
@@ -1844,8 +1854,7 @@
               ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
               : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
           
-          const dateObj = (item.createdAt || item.lastSupportedAt) ? new Date(item.createdAt || item.lastSupportedAt) : null;
-          const dateFormatted = dateObj ? ((dateObj.getMonth() + 1) + '/' + dateObj.getDate()) : '';
+          const dateFormatted = formatDateYMD(item.createdAt || item.lastSupportedAt);
           const displayName = item.safeName || item.name || 'Anonymous';
           const fontClass = getNameFontClass(displayName);
 
@@ -1876,7 +1885,7 @@
         renderPagination(page, totalPages, total);
       } catch (err) {
         console.error('Failed to load credits:', err);
-        grid.innerHTML = '<div class="roster-empty-state">名簿の取得に失敗しました</div>';
+        grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">名簿の取得に失敗しました</span><span class="t-en">Failed to load supporter roster</span></div>';
         if (pagination) pagination.innerHTML = '';
       }
     }
@@ -1916,8 +1925,7 @@
       if (!modal) return;
       const tier = item.tier || 'bronze';
       const displayName = item.safeName || item.name || 'Anonymous';
-      const dateObj = (item.createdAt || item.lastSupportedAt) ? new Date(item.createdAt || item.lastSupportedAt) : null;
-      const dateStr = dateObj ? dateObj.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }) : '2026年';
+      const dateStr = formatDateYMD(item.createdAt || item.lastSupportedAt);
 
       const tierBadge = document.getElementById('modal-tier-badge');
       tierBadge.className = 'modal-tier-badge tier-' + tier;
@@ -1933,9 +1941,10 @@
       document.getElementById('modal-supporter-name').textContent = displayName;
 
       const planNameJa = tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥300）');
-      const planNameEn = tier === 'gold' ? 'Development Support ($3,000)' : (tier === 'silver' ? 'Compute Resource ($1,000)' : 'Energy Drink ($300)');
-      const isJa = document.body.getAttribute('data-lang') !== 'en';
-      document.getElementById('modal-plan-title').textContent = isJa ? planNameJa : planNameEn;
+      const planNameEn = tier === 'gold' ? 'Development Support (¥3,000)' : (tier === 'silver' ? 'Compute Resource (¥1,000)' : 'Energy Drink (¥300)');
+      document.getElementById('modal-plan-title').innerHTML =
+        '<span class="t-ja">' + escapeHtml(planNameJa) + '</span>' +
+        '<span class="t-en">' + escapeHtml(planNameEn) + '</span>';
       document.getElementById('modal-tier-val').textContent = tier.toUpperCase();
       document.getElementById('modal-date-val').textContent = dateStr;
 
@@ -1968,7 +1977,7 @@
       const container = document.getElementById('roster-pagination');
       if (!container) return;
       if (totalPages <= 1) {
-        container.innerHTML = totalCount > 0 ? '<div class="pagination-summary">' + totalCount + ' 名のマスターを全件表示中</div>' : '';
+        container.innerHTML = totalCount > 0 ? '<div class="pagination-summary"><span class="t-ja">全 ' + totalCount + ' 名のマスターを表示中</span><span class="t-en">Showing all ' + totalCount + ' masters</span></div>' : '';
         return;
       }
 
@@ -2013,7 +2022,7 @@
 
       const startIdx = (currentPage - 1) * ROSTER_LIMIT + 1;
       const endIdx = Math.min(currentPage * ROSTER_LIMIT, totalCount);
-      html += '<div class="pagination-summary">' + totalCount + ' 名中 ' + startIdx + ' - ' + endIdx + ' 名を表示（ページ ' + currentPage + ' / ' + totalPages + '）</div>';
+      html += '<div class="pagination-summary"><span class="t-ja">' + totalCount + ' 名中 ' + startIdx + ' - ' + endIdx + ' 名を表示（ページ ' + currentPage + ' / ' + totalPages + '）</span><span class="t-en">Showing ' + startIdx + ' - ' + endIdx + ' of ' + totalCount + ' masters (Page ' + currentPage + ' of ' + totalPages + ')</span></div>';
 
       container.innerHTML = html;
     }
