@@ -8,6 +8,7 @@ import {
   UpdateSupportTransactionDto,
   ManualResolveSupportDto,
   ManualEntrySupportDto,
+  SupportPlanItem,
 } from '@rebecca/types';
 
 /**
@@ -32,6 +33,9 @@ export interface SupportersRepository {
 
   /** Ingests a missing transaction manually from Stripe dashboard records */
   manualEntry(dto: ManualEntrySupportDto): Observable<SupportTransactionDoc>;
+
+  /** Retrieves supporter tier plans and pricing */
+  getPlans(): Observable<{ plans: SupportPlanItem[] }>;
 
   /** Retrieves all digital reward image assets */
   getRewards(): Observable<{ rewards: RewardImageDoc[] }>;

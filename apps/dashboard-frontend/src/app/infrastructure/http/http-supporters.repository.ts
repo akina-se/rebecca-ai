@@ -10,6 +10,7 @@ import {
   UpdateSupportTransactionDto,
   ManualResolveSupportDto,
   ManualEntrySupportDto,
+  SupportPlanItem,
 } from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
@@ -69,6 +70,10 @@ export class HttpSupportersRepository implements SupportersRepository {
 
   manualEntry(dto: ManualEntrySupportDto): Observable<SupportTransactionDoc> {
     return this.http.post<SupportTransactionDoc>(`${this.baseUrl}/manual-entry`, dto);
+  }
+
+  getPlans(): Observable<{ plans: SupportPlanItem[] }> {
+    return this.http.get<{ plans: SupportPlanItem[] }>(`${this.baseUrl}/plans`);
   }
 
   getRewards(): Observable<{ rewards: RewardImageDoc[] }> {

@@ -2304,7 +2304,7 @@
       }
     })();
 
-    // Dynamically bind tier box links directly to Stripe payment links
+    // Dynamically bind tier box links and prices from SSOT API
     async function initSupportPlanLinks() {
       try {
         const res = await fetch('/api/v1/support/plans');
@@ -2318,6 +2318,18 @@
               el.href = plan.paymentUrl;
               el.target = '_blank';
               el.rel = 'noopener noreferrer';
+            }
+            if (plan.amount) {
+              const formattedPrice = '¥' + plan.amount.toLocaleString();
+              el.title = el.title.replace(/¥[\d,]+/, formattedPrice);
+              const jaTitle = el.querySelector('.tier-title .t-ja');
+              if (jaTitle) {
+                jaTitle.textContent = jaTitle.textContent.replace(/¥[\d,]+/, formattedPrice);
+              }
+              const enTitle = el.querySelector('.tier-title .t-en');
+              if (enTitle) {
+                enTitle.textContent = enTitle.textContent.replace(/¥[\d,]+/, formattedPrice);
+              }
             }
           });
         }

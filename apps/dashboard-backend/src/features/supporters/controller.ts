@@ -1,4 +1,4 @@
-import { SupporterLedgerQuery } from '@rebecca/types';
+import { SupporterLedgerQuery, SUPPORT_TIER_CONFIG, SupportPlanItem } from '@rebecca/types';
 import { Request, Response } from 'express';
 import { SupportersUseCase } from './usecase';
 import { logger } from '../../utils/logger';
@@ -14,6 +14,37 @@ export class SupportersController {
    * GET /api/v1/supporters
    * Retrieves paginated transaction records with KPI summary.
    */
+  /**
+   * GET /api/v1/supporters/plans
+   * Retrieves active support tier plans and pricing configuration.
+   */
+  getPlans(_req: Request, res: Response): void {
+    const plans: SupportPlanItem[] = [
+      {
+        tier: SUPPORT_TIER_CONFIG.bronze.tier,
+        amount: SUPPORT_TIER_CONFIG.bronze.amount,
+        currency: 'jpy',
+        itemLabel: SUPPORT_TIER_CONFIG.bronze.itemLabel,
+        displayName: SUPPORT_TIER_CONFIG.bronze.displayName,
+      },
+      {
+        tier: SUPPORT_TIER_CONFIG.silver.tier,
+        amount: SUPPORT_TIER_CONFIG.silver.amount,
+        currency: 'jpy',
+        itemLabel: SUPPORT_TIER_CONFIG.silver.itemLabel,
+        displayName: SUPPORT_TIER_CONFIG.silver.displayName,
+      },
+      {
+        tier: SUPPORT_TIER_CONFIG.gold.tier,
+        amount: SUPPORT_TIER_CONFIG.gold.amount,
+        currency: 'jpy',
+        itemLabel: SUPPORT_TIER_CONFIG.gold.itemLabel,
+        displayName: SUPPORT_TIER_CONFIG.gold.displayName,
+      },
+    ];
+    res.status(200).json({ plans });
+  }
+
   async getLedger(req: Request, res: Response): Promise<void> {
     try {
       const { page, limit, cursor, status, tier, search } = req.query;

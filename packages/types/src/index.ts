@@ -656,6 +656,17 @@ export interface CampaignAssetUploadResult {
 export type SupportTier = 'bronze' | 'silver' | 'gold' | 'vip';
 
 /** Official in-universe item definitions and tier mapping */
+/** Support plan item detailing tier pricing, labels, and links */
+export interface SupportPlanItem {
+  tier: SupportTier;
+  amount: number;
+  currency: string;
+  itemLabel: string;
+  displayName: string;
+  paymentUrl?: string | null;
+  available?: boolean;
+}
+
 export const SUPPORT_TIER_CONFIG = {
   bronze: {
     amount: 500,

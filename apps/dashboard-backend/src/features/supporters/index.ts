@@ -36,6 +36,8 @@ export function initializeSupportersModule(
   publicRewardsRouter.get('/:id/image', controller.getRewardImage.bind(controller));
 
   // Protected endpoints
+  // Support tier plans endpoint
+  supportersRouter.get('/plans', controller.getPlans.bind(controller));
   supportersRouter.get('/', controller.getLedger.bind(controller));
   supportersRouter.post('/manual-entry', controller.manualEntry.bind(controller));
 

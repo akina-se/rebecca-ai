@@ -137,6 +137,20 @@ describe('HttpSupportersRepository', () => {
     req.flush(mockTransaction);
   });
 
+  it('getPlans should request supporter plans from backend', () => {
+    const mockPlans = [
+      { tier: 'bronze', amount: 500, currency: 'jpy', itemLabel: 'Energy Drink', displayName: 'Bronze Supporter' },
+    ];
+    repo.getPlans().subscribe((res) => {
+      expect(res.plans).toHaveLength(1);
+      expect(res.plans[0].tier).toBe('bronze');
+    });
+
+    const req = httpMock.expectOne(`${environment.apiUrl}/supporters/plans`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ plans: mockPlans });
+  });
+
   it('reward endpoints send appropriate HTTP requests including uploadReward', () => {
     repo.getRewards().subscribe((res) => {
       expect(res.rewards).toHaveLength(1);

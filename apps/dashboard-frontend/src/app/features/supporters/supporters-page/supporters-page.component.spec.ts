@@ -78,6 +78,11 @@ describe('SupportersPageComponent', () => {
       uploadReward: jest.fn().mockReturnValue(of(mockReward)),
       updateReward: jest.fn().mockReturnValue(of({ ...mockReward, isActive: false })),
       deleteReward: jest.fn().mockReturnValue(of({ success: true })),
+      getPlans: jest.fn().mockReturnValue(of({ plans: [
+        { tier: 'bronze', amount: 500, currency: 'jpy', itemLabel: 'Energy Drink', displayName: 'Bronze Supporter' },
+        { tier: 'silver', amount: 1000, currency: 'jpy', itemLabel: 'Server Resource', displayName: 'Silver Supporter' },
+        { tier: 'gold', amount: 3000, currency: 'jpy', itemLabel: 'Dev Support', displayName: 'Gold Sponsor' },
+      ] })),
     };
 
     mockToast = {

@@ -1999,8 +1999,9 @@
       document.getElementById('modal-tier-text').textContent = tier.toUpperCase() + ' SPONSOR';
       document.getElementById('modal-supporter-name').textContent = displayName;
 
-      const planNameJa = tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥500）');
-      const planNameEn = tier === 'gold' ? 'Development Support (¥3,000)' : (tier === 'silver' ? 'Compute Resource (¥1,000)' : 'Energy Drink (¥500)');
+      const plan = supportPlansMap[tier];
+      const planNameJa = plan ? (plan.itemLabel + '（¥' + plan.amount.toLocaleString() + '）') : (tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥500）'));
+      const planNameEn = plan ? (plan.displayName + ' (¥' + plan.amount.toLocaleString() + ')') : (tier === 'gold' ? 'Development Support (¥3,000)' : (tier === 'silver' ? 'Compute Resource (¥1,000)' : 'Energy Drink (¥500)'));
       document.getElementById('modal-plan-title').innerHTML =
         '<span class="t-ja">' + escapeHtml(planNameJa) + '</span>' +
         '<span class="t-en">' + escapeHtml(planNameEn) + '</span>';
@@ -2094,6 +2095,9 @@
       }
     }
 
+    // Support Plans Cache
+    let supportPlansMap = {};
+
     // Load Dynamic Support Plans from Config API
     async function loadSupportPlans() {
       try {
@@ -2101,9 +2105,28 @@
         const data = await res.json();
         if (data.plans && Array.isArray(data.plans)) {
           data.plans.forEach(function(plan) {
+            supportPlansMap[plan.tier] = plan;
             const btn = document.getElementById('btn-plan-' + plan.tier);
             if (!btn) return;
             const card = btn.closest('.tier-card');
+            if (card && plan.amount) {
+              const priceEl = card.querySelector('.tier-price');
+              if (priceEl) {
+                const slotSpan = priceEl.querySelector('span');
+                const slotHtml = slotSpan ? slotSpan.outerHTML : '<span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span>';
+                priceEl.innerHTML = '¥' + plan.amount.toLocaleString() + ' ' + slotHtml;
+              }
+            }
+            if (plan.amount) {
+              const jaBtn = btn.querySelector('.t-ja');
+              if (jaBtn) {
+                jaBtn.textContent = jaBtn.textContent.replace(/¥[\d,]+/, '¥' + plan.amount.toLocaleString());
+              }
+              const enBtn = btn.querySelector('.t-en');
+              if (enBtn) {
+                enBtn.textContent = enBtn.textContent.replace(/¥[\d,]+/, '¥' + plan.amount.toLocaleString());
+              }
+            }
             if (plan.available && plan.paymentUrl) {
               btn.href = plan.paymentUrl;
               btn.classList.remove('btn-disabled');

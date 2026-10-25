@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -7,6 +7,7 @@ import {
   SupportTier,
   SupportTransactionStatus,
   CreditVisibility,
+  SupportPlanItem,
 } from '@rebecca/types';
 import { SUPPORTERS_REPOSITORY } from '../../../core/ports/supporters.repository';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -41,6 +42,9 @@ export class SupportersPageComponent implements OnInit {
   });
   readonly isLoading = signal<boolean>(false);
   readonly rewards = signal<RewardImageDoc[]>([]);
+  readonly supportPlans = signal<SupportPlanItem[]>([]);
+  readonly reversedPlans = computed(() => [...this.supportPlans()].reverse());
+
   readonly retryingId = signal<string | null>(null);
 
   // Pagination State
@@ -98,8 +102,33 @@ export class SupportersPageComponent implements OnInit {
   readonly lightboxImageUrl = signal<string>('');
 
   ngOnInit(): void {
+    this.loadPlans();
     this.loadLedger();
     this.loadRewards();
+  }
+
+  loadPlans(): void {
+    this.repo.getPlans().subscribe({
+      next: (res) => {
+        if (res?.plans) {
+          this.supportPlans.set(res.plans);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load support plans', err);
+      },
+    });
+  }
+
+  minPlanAmount(): number {
+    const plans = this.supportPlans();
+    if (!plans || plans.length === 0) return 500;
+    return Math.min(...plans.map((p) => p.amount));
+  }
+
+  formatTierFilterLabel(plan: SupportPlanItem): string {
+    const name = plan.tier.charAt(0).toUpperCase() + plan.tier.slice(1);
+    return `${name} (¥${plan.amount.toLocaleString()})`;
   }
 
   loadLedger(page = 1): void {
