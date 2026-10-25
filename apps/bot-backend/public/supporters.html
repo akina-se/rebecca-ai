@@ -558,30 +558,192 @@
       height: 14px;
     }
 
-    /* Supporter Roster */
+    /* Recent Supporters Highlights */
+    .recent-supporters-section {
+      background: rgba(139, 92, 246, 0.05);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 48px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .recent-supporters-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .recent-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+    }
+
+    .status-dot-purple {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gemitec-purple-light);
+      box-shadow: 0 0 10px var(--gemitec-purple);
+      display: inline-block;
+      animation: pulse-purple 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-purple {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .recent-note {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .recent-supporters-list {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-purple) transparent;
+    }
+
+    .recent-supporters-list::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .recent-supporters-list::-webkit-scrollbar-thumb {
+      background: var(--border-purple);
+      border-radius: 4px;
+    }
+
+    .recent-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: var(--transition);
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .recent-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .recent-chip.tier-gold {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.06);
+    }
+
+    .recent-chip.tier-silver {
+      border-color: rgba(148, 163, 184, 0.4);
+      background: rgba(148, 163, 184, 0.06);
+    }
+
+    .recent-chip.tier-bronze {
+      border-color: rgba(180, 83, 9, 0.35);
+      background: rgba(180, 83, 9, 0.05);
+    }
+
+    .recent-chip-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    .recent-chip-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-chip-badge {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+    }
+
+    .recent-chip.tier-gold .recent-chip-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    .recent-chip.tier-silver .recent-chip-badge {
+      background: rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+    }
+
+    .recent-chip.tier-bronze .recent-chip-badge {
+      background: rgba(180, 83, 9, 0.2);
+      color: #d97706;
+    }
+
+    .recent-loading-placeholder {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 6px 0;
+    }
+
+    /* Supporter Roster (High-density 6-column PC / 4-column Tablet / 3-column Mobile) */
     .roster-container {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 32px;
+      padding: 28px 24px;
       margin-bottom: 80px;
       backdrop-filter: blur(8px);
     }
 
+    .roster-meta-badge {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--gemitec-purple-light);
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid var(--border-purple);
+      padding: 5px 14px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+    }
+
     .roster-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
     }
 
     .roster-card {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
+      padding: 10px 12px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      min-width: 0;
       transition: var(--transition);
     }
 
@@ -606,8 +768,8 @@
     }
 
     .roster-rank-icon {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: var(--radius-full);
       display: flex;
       align-items: center;
@@ -633,24 +795,28 @@
     .roster-info {
       overflow: hidden;
       flex: 1;
+      min-width: 0;
     }
 
     .roster-name {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: var(--text-main);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.3;
     }
 
     .roster-sub {
       display: flex;
-      gap: 8px;
-      font-size: 11px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 10px;
       font-family: var(--font-mono);
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .roster-empty-state {
@@ -659,6 +825,122 @@
       text-align: center;
       color: var(--text-muted);
       font-size: 14px;
+    }
+
+    /* Standard Numbered Pagination */
+    .roster-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 28px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+      min-width: 36px;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .pagination-btn:hover:not(:disabled):not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pagination-btn.active {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+      border-color: var(--gemitec-purple-light);
+      font-weight: 700;
+      box-shadow: 0 2px 10px var(--gemitec-purple-glow);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .pagination-ellipsis {
+      color: var(--text-muted);
+      padding: 0 6px;
+      font-family: var(--font-mono);
+      user-select: none;
+    }
+
+    .pagination-summary {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      font-family: var(--font-mono);
+    }
+
+    @media (max-width: 1200px) {
+      .roster-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .recent-supporters-section {
+        padding: 16px 18px;
+        margin-bottom: 36px;
+      }
+      .roster-container {
+        padding: 16px 12px;
+        margin-bottom: 60px;
+      }
+      .roster-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .roster-card {
+        padding: 8px 6px;
+        gap: 6px;
+        border-radius: 8px;
+      }
+      .roster-rank-icon {
+        width: 22px;
+        height: 22px;
+      }
+      .roster-rank-icon svg {
+        width: 12px;
+        height: 12px;
+      }
+      .roster-name {
+        font-size: 11px;
+      }
+      .roster-sub {
+        font-size: 9px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+      }
+      .pagination-btn {
+        min-width: 32px;
+        height: 32px;
+        font-size: 12px;
+        padding: 0 6px;
+      }
     }
 
     /* Footer (100% Identical to Official Portal index.html) */
@@ -819,6 +1101,29 @@
       </p>
     </section>
 
+    <!-- Recent Supporters Highlights -->
+    <section id="recent-supporters" class="recent-supporters-section">
+      <div class="recent-supporters-header">
+        <div class="recent-title-group">
+          <span class="status-dot-purple"></span>
+          <span class="recent-title">
+            <span class="t-ja">直近のご支援（Recent Backers）</span>
+            <span class="t-en">Recent Supporters</span>
+          </span>
+        </div>
+        <div class="recent-note">
+          <span class="t-ja">レベッカを応援してくれた最新のマスターたち</span>
+          <span class="t-en">Latest supporters powering Rebecca</span>
+        </div>
+      </div>
+      <div id="recent-supporters-list" class="recent-supporters-list">
+        <div class="recent-loading-placeholder">
+          <span class="t-ja">最新のサポーターを読み込み中...</span>
+          <span class="t-en">Loading latest supporters...</span>
+        </div>
+      </div>
+    </section>
+
     <!-- Section 1: Plans / Tiers -->
     <section id="plans">
       <div class="section-header">
@@ -976,6 +1281,10 @@
             <span class="t-en">Honoring the esteemed masters who power Rebecca's evolution.</span>
           </p>
         </div>
+        <div id="roster-meta-badge" class="roster-meta-badge">
+          <span class="t-ja">名簿同期中</span>
+          <span class="t-en">Syncing...</span>
+        </div>
       </div>
 
       <div class="roster-container">
@@ -985,6 +1294,7 @@
             <span class="t-en">Loading supporter roster...</span>
           </div>
         </div>
+        <nav id="roster-pagination" class="roster-pagination" aria-label="Supporter Roster Pagination"></nav>
       </div>
     </section>
 
@@ -1094,16 +1404,32 @@
       }
     })();
 
-    // Load Public Supporter Credits
-    async function loadSupporterCredits() {
+    // Supporter Roster State & Pagination
+    let currentRosterPage = 1;
+    const ROSTER_LIMIT = 120;
+
+    async function loadSupporterCredits(page = 1) {
+      currentRosterPage = page;
       const grid = document.getElementById('roster-grid');
+      const metaBadge = document.getElementById('roster-meta-badge');
+      const pagination = document.getElementById('roster-pagination');
+
+      grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">サポーター名簿を同期中...</span><span class="t-en">Loading supporter roster...</span></div>';
+
       try {
-        const res = await fetch('/api/v1/support/credits');
+        const res = await fetch('/api/v1/support/credits?page=' + page + '&limit=' + ROSTER_LIMIT);
         const data = await res.json();
         const credits = data.credits || [];
+        const total = typeof data.total === 'number' ? data.total : credits.length;
+        const totalPages = typeof data.totalPages === 'number' ? data.totalPages : (total > 0 ? Math.ceil(total / ROSTER_LIMIT) : 1);
+
+        if (metaBadge) {
+          metaBadge.textContent = total + ' BACKERS' + (totalPages > 1 ? ' · P.' + page + '/' + totalPages : '');
+        }
 
         if (credits.length === 0) {
           grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">まだサポーターが登録されていません。最初のマスターになりませんか？</span><span class="t-en">No supporters recorded yet. Be the first backer!</span></div>';
+          if (pagination) pagination.innerHTML = '';
           return;
         }
 
@@ -1111,29 +1437,122 @@
         credits.forEach(function(item) {
           const tier = item.tier || 'bronze';
           const icon = tier === 'gold' 
-            ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
             : (tier === 'silver'
-              ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
-              : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
-          const dateStr = item.lastSupportedAt ? new Date(item.lastSupportedAt).toLocaleDateString('ja-JP') : '';
+              ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+              : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+          const dateStr = (item.createdAt || item.lastSupportedAt) ? new Date(item.createdAt || item.lastSupportedAt).toLocaleDateString('ja-JP') : '';
+          const displayName = item.safeName || item.name || 'Anonymous';
 
           const card = document.createElement('div');
           card.className = 'roster-card tier-' + tier;
           card.innerHTML = 
             '<div class="roster-rank-icon">' + icon + '</div>' +
             '<div class="roster-info">' +
-              '<div class="roster-name">' + escapeHtml(item.name) + '</div>' +
+              '<div class="roster-name" title="' + escapeHtml(displayName) + '">' + escapeHtml(displayName) + '</div>' +
               '<div class="roster-sub">' +
                 '<span>' + tier.toUpperCase() + '</span>' +
-                (item.count > 1 ? '<span>×' + item.count + '</span>' : '') +
                 '<span>' + dateStr + '</span>' +
               '</div>' +
             '</div>';
           grid.appendChild(card);
         });
+
+        // Render Recent Supporters banner on page 1
+        if (page === 1) {
+          renderRecentSupporters(credits.slice(0, 8));
+        }
+
+        // Render Numbered Pagination
+        renderPagination(page, totalPages, total);
       } catch (err) {
         console.error('Failed to load credits:', err);
         grid.innerHTML = '<div class="roster-empty-state">名簿の取得に失敗しました</div>';
+        if (pagination) pagination.innerHTML = '';
+      }
+    }
+
+    function renderRecentSupporters(recentItems) {
+      const container = document.getElementById('recent-supporters-list');
+      if (!container) return;
+      if (!recentItems || recentItems.length === 0) {
+        container.innerHTML = '<div class="recent-loading-placeholder"><span class="t-ja">まだサポーターがいません。最初の支援者になりませんか？</span><span class="t-en">Be the first supporter!</span></div>';
+        return;
+      }
+      container.innerHTML = '';
+      recentItems.forEach(function(item) {
+        const tier = item.tier || 'bronze';
+        const displayName = item.safeName || item.name || 'Anonymous';
+        const chip = document.createElement('a');
+        chip.href = '#roster';
+        chip.className = 'recent-chip tier-' + tier;
+        chip.innerHTML = 
+          '<span class="recent-chip-icon">' + (tier === 'gold' ? '👑' : (tier === 'silver' ? '⭐' : '⚡')) + '</span>' +
+          '<span class="recent-chip-name">' + escapeHtml(displayName) + '</span>' +
+          '<span class="recent-chip-badge">' + tier.toUpperCase() + '</span>';
+        container.appendChild(chip);
+      });
+    }
+
+    function renderPagination(currentPage, totalPages, totalCount) {
+      const container = document.getElementById('roster-pagination');
+      if (!container) return;
+      if (totalPages <= 1) {
+        container.innerHTML = totalCount > 0 ? '<div class="pagination-summary">' + totalCount + ' 名のマスターを全件表示中</div>' : '';
+        return;
+      }
+
+      let html = '';
+
+      // Prev button
+      const prevDisabled = currentPage <= 1 ? ' disabled' : '';
+      html += '<button type="button" class="pagination-btn"' + prevDisabled + ' onclick="goToPage(' + (currentPage - 1) + ')">&lt; <span class="t-ja">前へ</span><span class="t-en">Prev</span></button>';
+
+      // Generate page number items with ellipsis
+      const delta = 1;
+      const range = [];
+
+      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+        range.push(i);
+      }
+
+      if (currentPage - delta > 2) {
+        range.unshift('...');
+      }
+      if (currentPage + delta < totalPages - 1) {
+        range.push('...');
+      }
+
+      range.unshift(1);
+      if (totalPages > 1 && !range.includes(totalPages)) {
+        range.push(totalPages);
+      }
+
+      range.forEach(function(p) {
+        if (p === '...') {
+          html += '<span class="pagination-ellipsis">...</span>';
+        } else {
+          const activeClass = p === currentPage ? ' active' : '';
+          html += '<button type="button" class="pagination-btn' + activeClass + '" onclick="goToPage(' + p + ')">' + p + '</button>';
+        }
+      });
+
+      // Next button
+      const nextDisabled = currentPage >= totalPages ? ' disabled' : '';
+      html += '<button type="button" class="pagination-btn"' + nextDisabled + ' onclick="goToPage(' + (currentPage + 1) + ')"><span class="t-ja">次へ</span><span class="t-en">Next</span> &gt;</button>';
+
+      const startIdx = (currentPage - 1) * ROSTER_LIMIT + 1;
+      const endIdx = Math.min(currentPage * ROSTER_LIMIT, totalCount);
+      html += '<div class="pagination-summary">' + totalCount + ' 名中 ' + startIdx + ' - ' + endIdx + ' 名を表示（ページ ' + currentPage + ' / ' + totalPages + '）</div>';
+
+      container.innerHTML = html;
+    }
+
+    function goToPage(page) {
+      loadSupporterCredits(page);
+      const rosterSec = document.getElementById('roster');
+      if (rosterSec) {
+        rosterSec.scrollIntoView({ behavior: 'smooth' });
       }
     }
 

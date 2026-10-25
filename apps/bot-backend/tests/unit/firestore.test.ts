@@ -847,10 +847,13 @@ describe('Firestore Service Unit Tests', () => {
       );
     });
 
-    it('getPublicSupporters should query, map and sort supporters by tier and createdAt', async () => {
+    it('getPublicSupporters should query, map and sort supporters by tier and createdAt with pagination', async () => {
       const mockQueryChain = {
         where: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValueOnce({ data: () => ({ count: 4 }) }),
+        }),
         get: jest.fn().mockResolvedValueOnce({
           docs: [
             {
@@ -875,12 +878,16 @@ describe('Firestore Service Unit Tests', () => {
 
       mockQueryWhere.mockReturnValueOnce(mockQueryChain);
 
-      const list = await firestoreService.getPublicSupporters(10);
-      expect(list).toHaveLength(4);
-      expect(list[0].id).toBe('tx_vip');
-      expect(list[1].id).toBe('tx_gold_new');
-      expect(list[2].id).toBe('tx_gold_old');
-      expect(list[3].id).toBe('tx_bronze');
+      const result = await firestoreService.getPublicSupporters(1, 120);
+      expect(result.credits).toHaveLength(4);
+      expect(result.total).toBe(4);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(120);
+      expect(result.totalPages).toBe(1);
+      expect(result.credits[0].id).toBe('tx_vip');
+      expect(result.credits[1].id).toBe('tx_gold_new');
+      expect(result.credits[2].id).toBe('tx_gold_old');
+      expect(result.credits[3].id).toBe('tx_bronze');
     });
   });
 });

@@ -140,8 +140,10 @@ export class PublicSupportController {
    */
   getCredits = async (req: Request, res: Response): Promise<void> => {
     try {
-      const credits = await this.deps.firestore.getPublicSupporters(100);
-      res.status(200).json({ credits });
+      const page = parseInt(String(req.query.page || '1'), 10) || 1;
+      const limit = parseInt(String(req.query.limit || '120'), 10) || 120;
+      const result = await this.deps.firestore.getPublicSupporters(page, limit);
+      res.status(200).json(result);
     } catch (error) {
       logger.error('[PublicSupportController] Error retrieving public credits', error);
       res.status(500).json({ error: 'Internal Server Error' });

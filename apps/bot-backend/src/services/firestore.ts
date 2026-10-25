@@ -37,6 +37,8 @@ import type {
   CampaignDoc,
   SupportTransactionDoc,
   RewardImageDoc,
+  PublicSupporterCredit,
+  PublicSupporterCreditsResponse,
   SupportTier,
 } from '../types';
 import { PostStatus } from '../types';
@@ -1194,30 +1196,42 @@ async function incrementRewardImageDistributedCount(rewardImageId: string): Prom
   );
 }
 
-export interface PublicSupporterCredit {
-  id: string;
-  safeName: string;
-  tier: SupportTier;
-  itemLabel: string;
-  createdAt: string;
-  tweetId?: string;
-}
-
 /**
- * Retrieves the public list of supporters opted-in to the Special Thanks ledger.
+ * Retrieves public credits for supporters who granted visibility permission with server-side pagination.
+ * Results are sorted strictly by prestige tier weight descending, then by creation date descending.
  *
- * @param limitCount - Maximum number of supporter entries to return (default: 100).
- * @returns Array of PublicSupporterCredit ordered by prestige (VIP > Gold > Silver > Bronze) then newest first.
+ * @param page - Current 1-based page number (default 1).
+ * @param limitCount - Maximum number of items per page (default 120).
+ * @returns Paginated PublicSupporterCreditsResponse with total, page, limit, totalPages and sorted items.
  */
-async function getPublicSupporters(limitCount = 100): Promise<PublicSupporterCredit[]> {
-  const snap = await db.supportTransactions
+async function getPublicSupporters(
+  page = 1,
+  limitCount = 120
+): Promise<PublicSupporterCreditsResponse> {
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.max(1, Math.min(200, limitCount));
+
+  const baseQuery = db.supportTransactions
     .where('creditVisibility', '==', 'show')
     .where('isBanned', '==', false)
-    .where('status', 'in', ['completed', 'manual'])
-    .limit(limitCount)
-    .get();
+    .where('status', 'in', ['completed', 'manual']);
 
-  const supporters: PublicSupporterCredit[] = snap.docs.map((d) => {
+  const countSnap = await baseQuery.count().get();
+  const total = countSnap.data().count;
+  const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+
+  if (total === 0 || safePage > totalPages) {
+    return {
+      credits: [],
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages,
+    };
+  }
+
+  const snap = await baseQuery.get();
+  const allSupporters: PublicSupporterCredit[] = snap.docs.map((d) => {
     const data = d.data();
     return {
       id: d.id,
@@ -1236,11 +1250,22 @@ async function getPublicSupporters(limitCount = 100): Promise<PublicSupporterCre
     bronze: 1,
   };
 
-  return supporters.sort((a, b) => {
+  allSupporters.sort((a, b) => {
     const diff = (tierWeight[b.tier] || 0) - (tierWeight[a.tier] || 0);
     if (diff !== 0) return diff;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  const startIndex = (safePage - 1) * safeLimit;
+  const paginatedCredits = allSupporters.slice(startIndex, startIndex + safeLimit);
+
+  return {
+    credits: paginatedCredits,
+    total,
+    page: safePage,
+    limit: safeLimit,
+    totalPages,
+  };
 }
 
 async function updateSupportTransaction(

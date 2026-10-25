@@ -776,3 +776,28 @@ export interface ManualEntrySupportDto {
   amount: number;
   creditVisibility?: CreditVisibility;
 }
+
+/** Public supporter credit display item */
+export interface PublicSupporterCredit {
+  id: string;
+  safeName: string;
+  tier: SupportTier;
+  itemLabel: string;
+  createdAt: string;
+  tweetId?: string;
+}
+
+/** Query parameters for public supporter credits pagination */
+export interface PublicSupporterCreditsQuery {
+  page?: number;
+  limit?: number;
+}
+
+/** Paginated response for public supporter credits */
+export interface PublicSupporterCreditsResponse {
+  credits: PublicSupporterCredit[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

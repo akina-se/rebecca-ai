@@ -26,6 +26,7 @@ import type {
   CampaignDoc,
   SupportTransactionDoc,
   RewardImageDoc,
+  PublicSupporterCreditsResponse,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 import type { StructuredNewsPostResponse } from '../features/news/types';
@@ -119,7 +120,7 @@ export interface IFirestoreService {
   getSupportTransactionBySessionId(stripeSessionId: string): Promise<SupportTransactionDoc | null>;
   getActiveRewardImage(): Promise<RewardImageDoc | null>;
   incrementRewardImageDistributedCount(rewardImageId: string): Promise<void>;
-  getPublicSupporters(limitCount?: number): Promise<Array<Pick<SupportTransactionDoc, 'id' | 'safeName' | 'tier' | 'itemLabel' | 'createdAt' | 'tweetId'>>>;
+  getPublicSupporters(page?: number, limitCount?: number): Promise<PublicSupporterCreditsResponse>;
 }
 
 // ---------------------------------------------------------------------------

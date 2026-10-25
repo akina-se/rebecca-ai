@@ -218,18 +218,42 @@ describe('PublicSupportController Unit Tests', () => {
   });
 
   describe('getCredits', () => {
-    it('returns 200 with list of public supporters', async () => {
-      const mockCredits = [
-        { name: 'マスターA', tier: 'gold', count: 3, lastSupportedAt: '2026-10-21T01:00:00Z' },
-        { name: 'マスターB', tier: 'silver', count: 1, lastSupportedAt: '2026-10-20T12:00:00Z' },
-      ];
-      deps.firestore.getPublicSupporters.mockResolvedValue(mockCredits);
+    it('returns 200 with paginated list of public supporters', async () => {
+      const mockResult = {
+        credits: [
+          { id: 'tx_1', safeName: 'マスターA', tier: 'gold', itemLabel: '¥3,000', createdAt: '2026-10-21T01:00:00Z' },
+          { id: 'tx_2', safeName: 'マスターB', tier: 'silver', itemLabel: '¥1,000', createdAt: '2026-10-20T12:00:00Z' },
+        ],
+        total: 2,
+        page: 1,
+        limit: 120,
+        totalPages: 1,
+      };
+      deps.firestore.getPublicSupporters.mockResolvedValue(mockResult as any);
 
       await controller.getCredits(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(200);
-      expect(deps.firestore.getPublicSupporters).toHaveBeenCalledWith(100);
-      expect(jsonMock).toHaveBeenCalledWith({ credits: mockCredits });
+      expect(deps.firestore.getPublicSupporters).toHaveBeenCalledWith(1, 120);
+      expect(jsonMock).toHaveBeenCalledWith(mockResult);
+    });
+
+    it('respects page and limit query parameters', async () => {
+      req.query = { page: '2', limit: '50' };
+      const mockResult = {
+        credits: [],
+        total: 100,
+        page: 2,
+        limit: 50,
+        totalPages: 2,
+      };
+      deps.firestore.getPublicSupporters.mockResolvedValue(mockResult as any);
+
+      await controller.getCredits(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(deps.firestore.getPublicSupporters).toHaveBeenCalledWith(2, 50);
+      expect(jsonMock).toHaveBeenCalledWith(mockResult);
     });
 
     it('returns 500 when getPublicSupporters throws an error', async () => {
