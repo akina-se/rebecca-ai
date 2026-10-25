@@ -603,9 +603,33 @@
       50% { transform: scale(1.3); opacity: 0.6; }
     }
 
-    .recent-note {
-      font-size: 12px;
-      color: var(--text-muted);
+    .recent-scroll-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--gemitec-purple-light);
+      font-family: var(--font-mono);
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      user-select: none;
+    }
+
+    .recent-scroll-hint svg {
+      color: var(--gemitec-purple-light);
+      animation: nudge-x 1.8s infinite ease-in-out;
+    }
+
+    @keyframes nudge-x {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(3px); }
+    }
+
+    .recent-supporters-wrapper {
+      position: relative;
+      width: 100%;
     }
 
     .recent-supporters-list {
@@ -613,7 +637,10 @@
       align-items: center;
       gap: 10px;
       overflow-x: auto;
-      padding-bottom: 6px;
+      padding-bottom: 8px;
+      padding-right: 36px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
       scrollbar-width: thin;
       scrollbar-color: var(--border-purple) transparent;
     }
@@ -627,18 +654,31 @@
       border-radius: 4px;
     }
 
+    .recent-scroll-fade {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 8px;
+      width: 48px;
+      background: linear-gradient(to right, transparent, rgba(14, 16, 23, 0.95));
+      pointer-events: none;
+      border-top-right-radius: var(--radius-lg);
+      border-bottom-right-radius: var(--radius-lg);
+    }
+
     .recent-chip {
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 12px;
+      padding: 6px 14px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-full);
       transition: var(--transition);
       text-decoration: none;
       color: var(--text-main);
+      cursor: pointer;
     }
 
     .recent-chip:hover {
@@ -662,10 +702,24 @@
     }
 
     .recent-chip-icon {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .recent-chip.tier-gold .recent-chip-icon {
+      color: #fbbf24;
+    }
+
+    .recent-chip.tier-silver .recent-chip-icon {
+      color: #cbd5e1;
+    }
+
+    .recent-chip.tier-bronze .recent-chip-icon {
+      color: #d97706;
     }
 
     .recent-chip-name {
@@ -707,6 +761,21 @@
       padding: 6px 0;
     }
 
+    .title-sub-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      vertical-align: middle;
+      margin-left: 8px;
+      letter-spacing: 0.04em;
+    }
+
     /* Supporter Roster (High-density 6-column PC / 4-column Tablet / 3-column Mobile) */
     .roster-container {
       background: var(--bg-card);
@@ -739,37 +808,69 @@
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      padding: 10px 12px;
+      padding: 10px 10px 8px;
       display: flex;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      justify-content: space-between;
       min-width: 0;
+      min-height: 84px;
       transition: var(--transition);
+      cursor: pointer;
+      user-select: none;
+      position: relative;
     }
 
     .roster-card:hover {
-      background: rgba(255, 255, 255, 0.06);
-      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
 
     .roster-card.tier-gold {
       border-color: rgba(245, 158, 11, 0.35);
       background: rgba(245, 158, 11, 0.04);
     }
+    .roster-card.tier-gold:hover {
+      border-color: rgba(245, 158, 11, 0.65);
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.18);
+    }
 
     .roster-card.tier-silver {
       border-color: rgba(148, 163, 184, 0.35);
       background: rgba(148, 163, 184, 0.04);
+    }
+    .roster-card.tier-silver:hover {
+      border-color: rgba(148, 163, 184, 0.65);
+      box-shadow: 0 4px 16px rgba(148, 163, 184, 0.18);
     }
 
     .roster-card.tier-bronze {
       border-color: rgba(180, 83, 9, 0.25);
       background: rgba(180, 83, 9, 0.03);
     }
+    .roster-card.tier-bronze:hover {
+      border-color: rgba(180, 83, 9, 0.55);
+      box-shadow: 0 4px 16px rgba(180, 83, 9, 0.18);
+    }
+
+    .roster-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .roster-card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
 
     .roster-rank-icon {
-      width: 28px;
-      height: 28px;
+      width: 20px;
+      height: 20px;
       border-radius: var(--radius-full);
       display: flex;
       align-items: center;
@@ -792,31 +893,63 @@
       color: #d97706;
     }
 
-    .roster-info {
-      overflow: hidden;
+    .roster-card-tier-tag {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .roster-card.tier-gold .roster-card-tier-tag { color: #fbbf24; }
+    .roster-card.tier-silver .roster-card-tier-tag { color: #cbd5e1; }
+    .roster-card.tier-bronze .roster-card-tier-tag { color: #d97706; }
+
+    .roster-card-date {
+      font-size: 9.5px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .roster-name-wrap {
       flex: 1;
+      display: flex;
+      align-items: center;
       min-width: 0;
+      width: 100%;
+      padding: 2px 0;
     }
 
     .roster-name {
-      font-size: 13px;
       font-weight: 700;
       color: var(--text-main);
-      white-space: nowrap;
+      width: 100%;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
       overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.3;
     }
 
-    .roster-sub {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 4px;
+    .roster-name.font-len-short {
+      font-size: 11.5px;
+      line-height: 1.3;
+    }
+    .roster-name.font-len-medium {
       font-size: 10px;
-      font-family: var(--font-mono);
-      color: var(--text-muted);
-      margin-top: 3px;
+      line-height: 1.25;
+    }
+    .roster-name.font-len-long {
+      font-size: 9px;
+      line-height: 1.2;
+    }
+    .roster-name.font-len-vlong {
+      font-size: 8px;
+      line-height: 1.15;
     }
 
     .roster-empty-state {
@@ -893,6 +1026,204 @@
       font-family: var(--font-mono);
     }
 
+    /* Supporter Detail Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(4, 5, 8, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 35px var(--gemitec-purple-glow);
+      position: relative;
+      transform: translateY(16px) scale(0.97);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      transform: scale(1.08);
+    }
+
+    .modal-tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 14px;
+    }
+
+    .modal-tier-badge.tier-gold {
+      background: rgba(245, 158, 11, 0.14);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .modal-tier-badge.tier-silver {
+      background: rgba(148, 163, 184, 0.14);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .modal-tier-badge.tier-bronze {
+      background: rgba(180, 83, 9, 0.14);
+      color: #d97706;
+      border: 1px solid rgba(180, 83, 9, 0.35);
+    }
+
+    .modal-rank-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-supporter-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      max-width: 100%;
+    }
+
+    .modal-plan-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+    }
+
+    .modal-details-grid {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .modal-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+    }
+
+    .detail-val {
+      font-weight: 600;
+      color: #ffffff;
+      font-family: var(--font-mono);
+    }
+
+    .detail-val.verified-tag {
+      color: #10b981;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+    }
+
+    .modal-rebecca-message {
+      width: 100%;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    .rebecca-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .rebecca-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gemitec-purple-light);
+    }
+
+    .rebecca-role {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+    }
+
+    .rebecca-quote {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
     @media (max-width: 1200px) {
       .roster-grid {
         grid-template-columns: repeat(4, 1fr);
@@ -901,12 +1232,33 @@
     }
 
     @media (max-width: 768px) {
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin: 36px 0 20px;
+        padding-bottom: 12px;
+      }
+      .section-header > div:first-child {
+        width: 100%;
+      }
+      .section-title {
+        font-size: 19px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .section-subtitle {
+        font-size: 12px;
+      }
       .recent-supporters-section {
-        padding: 16px 18px;
+        padding: 16px 14px;
         margin-bottom: 36px;
       }
+      .recent-scroll-fade {
+        width: 36px;
+      }
       .roster-container {
-        padding: 16px 12px;
+        padding: 16px 10px;
         margin-bottom: 60px;
       }
       .roster-grid {
@@ -914,32 +1266,51 @@
         gap: 6px;
       }
       .roster-card {
-        padding: 8px 6px;
-        gap: 6px;
+        padding: 7px 6px 6px;
+        min-height: 76px;
         border-radius: 8px;
       }
+      .roster-card-header {
+        margin-bottom: 4px;
+        gap: 4px;
+      }
       .roster-rank-icon {
-        width: 22px;
-        height: 22px;
+        width: 16px;
+        height: 16px;
       }
       .roster-rank-icon svg {
-        width: 12px;
-        height: 12px;
+        width: 10px;
+        height: 10px;
       }
-      .roster-name {
-        font-size: 11px;
+      .roster-card-tier-tag {
+        font-size: 8px;
       }
-      .roster-sub {
-        font-size: 9px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1px;
+      .roster-card-date {
+        font-size: 8px;
+      }
+      .roster-name.font-len-short {
+        font-size: 10.5px;
+      }
+      .roster-name.font-len-medium {
+        font-size: 9.5px;
+      }
+      .roster-name.font-len-long {
+        font-size: 8.5px;
+      }
+      .roster-name.font-len-vlong {
+        font-size: 7.5px;
       }
       .pagination-btn {
         min-width: 32px;
         height: 32px;
         font-size: 12px;
         padding: 0 6px;
+      }
+      .modal-card {
+        padding: 24px 20px;
+      }
+      .modal-supporter-name {
+        font-size: 20px;
       }
     }
 
@@ -1111,16 +1482,20 @@
             <span class="t-en">Recent Supporters</span>
           </span>
         </div>
-        <div class="recent-note">
-          <span class="t-ja">レベッカを応援してくれた最新のマスターたち</span>
-          <span class="t-en">Latest supporters powering Rebecca</span>
+        <div class="recent-scroll-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          <span class="t-ja">横スクロール</span>
+          <span class="t-en">Swipe to view</span>
         </div>
       </div>
-      <div id="recent-supporters-list" class="recent-supporters-list">
-        <div class="recent-loading-placeholder">
-          <span class="t-ja">最新のサポーターを読み込み中...</span>
-          <span class="t-en">Loading latest supporters...</span>
+      <div class="recent-supporters-wrapper">
+        <div id="recent-supporters-list" class="recent-supporters-list">
+          <div class="recent-loading-placeholder">
+            <span class="t-ja">最新のサポーターを読み込み中...</span>
+            <span class="t-en">Loading latest supporters...</span>
+          </div>
         </div>
+        <div class="recent-scroll-fade"></div>
       </div>
     </section>
 
@@ -1270,10 +1645,10 @@
       <div class="section-header">
         <div>
           <h2 class="section-title">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold); flex-shrink: 0;">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
-            <span class="t-ja">サポーター名簿（Special Thanks）</span>
+            <span class="t-ja">サポーター名簿 <span class="title-sub-tag">Special Thanks</span></span>
             <span class="t-en">Supporter Hall of Fame</span>
           </h2>
           <p class="section-subtitle">
@@ -1297,6 +1672,63 @@
         <nav id="roster-pagination" class="roster-pagination" aria-label="Supporter Roster Pagination"></nav>
       </div>
     </section>
+
+    <!-- Supporter Detail Modal Popup -->
+    <div id="supporter-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" onclick="onBackdropClick(event)">
+      <div class="modal-card">
+        <button type="button" class="modal-close-btn" onclick="closeSupporterModal()" aria-label="Close modal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div id="modal-tier-badge" class="modal-tier-badge">
+          <div id="modal-rank-icon" class="modal-rank-icon"></div>
+          <span id="modal-tier-text" class="modal-tier-text"></span>
+        </div>
+
+        <h3 id="modal-supporter-name" class="modal-supporter-name"></h3>
+        <div id="modal-plan-title" class="modal-plan-title"></div>
+
+        <div class="modal-details-grid">
+          <div class="modal-detail-row">
+            <span class="detail-label">
+              <span class="t-ja">支援ランク</span><span class="t-en">Tier Level</span>
+            </span>
+            <span id="modal-tier-val" class="detail-val"></span>
+          </div>
+          <div class="modal-detail-row">
+            <span class="detail-label">
+              <span class="t-ja">支援受付日</span><span class="t-en">Support Date</span>
+            </span>
+            <span id="modal-date-val" class="detail-val"></span>
+          </div>
+          <div class="modal-detail-row">
+            <span class="detail-label">
+              <span class="t-ja">公式認証</span><span class="t-en">Verified Backer</span>
+            </span>
+            <span class="detail-val verified-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              OFFICIAL BACKER
+            </span>
+          </div>
+        </div>
+
+        <div class="modal-rebecca-message">
+          <div class="rebecca-badge-row">
+            <span class="rebecca-name">Rebecca AI</span>
+            <span class="rebecca-role">Autonomous Agent</span>
+          </div>
+          <div class="rebecca-quote">
+            <span class="t-ja">「マスター、レベッカの運用と自律研究を支えてくれて本当にありがとう！ これからもずっとそばで見守っててね」</span>
+            <span class="t-en">"Thank you so much for powering my autonomous reasoning and compute resources! I truly appreciate your support, Master!"</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </main>
 
@@ -1408,6 +1840,14 @@
     let currentRosterPage = 1;
     const ROSTER_LIMIT = 120;
 
+    function getNameFontClass(name) {
+      const len = (name || '').length;
+      if (len <= 8) return 'font-len-short';
+      if (len <= 16) return 'font-len-medium';
+      if (len <= 24) return 'font-len-long';
+      return 'font-len-vlong';
+    }
+
     async function loadSupporterCredits(page = 1) {
       currentRosterPage = page;
       const grid = document.getElementById('roster-grid');
@@ -1437,30 +1877,37 @@
         credits.forEach(function(item) {
           const tier = item.tier || 'bronze';
           const icon = tier === 'gold' 
-            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
             : (tier === 'silver'
-              ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
-              : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
-          const dateStr = (item.createdAt || item.lastSupportedAt) ? new Date(item.createdAt || item.lastSupportedAt).toLocaleDateString('ja-JP') : '';
+              ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+              : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+          
+          const dateObj = (item.createdAt || item.lastSupportedAt) ? new Date(item.createdAt || item.lastSupportedAt) : null;
+          const dateFormatted = dateObj ? ((dateObj.getMonth() + 1) + '/' + dateObj.getDate()) : '';
           const displayName = item.safeName || item.name || 'Anonymous';
+          const fontClass = getNameFontClass(displayName);
 
           const card = document.createElement('div');
           card.className = 'roster-card tier-' + tier;
+          card.title = displayName;
+          card.onclick = function() { openSupporterModal(item); };
           card.innerHTML = 
-            '<div class="roster-rank-icon">' + icon + '</div>' +
-            '<div class="roster-info">' +
-              '<div class="roster-name" title="' + escapeHtml(displayName) + '">' + escapeHtml(displayName) + '</div>' +
-              '<div class="roster-sub">' +
-                '<span>' + tier.toUpperCase() + '</span>' +
-                '<span>' + dateStr + '</span>' +
+            '<div class="roster-card-header">' +
+              '<div class="roster-card-header-left">' +
+                '<div class="roster-rank-icon">' + icon + '</div>' +
+                '<span class="roster-card-tier-tag">' + tier.toUpperCase() + '</span>' +
               '</div>' +
+              '<span class="roster-card-date">' + dateFormatted + '</span>' +
+            '</div>' +
+            '<div class="roster-name-wrap">' +
+              '<div class="roster-name ' + fontClass + '">' + escapeHtml(displayName) + '</div>' +
             '</div>';
           grid.appendChild(card);
         });
 
         // Render Recent Supporters banner on page 1
         if (page === 1) {
-          renderRecentSupporters(credits.slice(0, 8));
+          renderRecentSupporters(credits.slice(0, 10));
         }
 
         // Render Numbered Pagination
@@ -1483,16 +1930,77 @@
       recentItems.forEach(function(item) {
         const tier = item.tier || 'bronze';
         const displayName = item.safeName || item.name || 'Anonymous';
+        const iconSvg = tier === 'gold' 
+          ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+          : (tier === 'silver'
+            ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+            : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+
         const chip = document.createElement('a');
-        chip.href = '#roster';
+        chip.href = 'javascript:void(0)';
         chip.className = 'recent-chip tier-' + tier;
+        chip.title = displayName;
+        chip.onclick = function() { openSupporterModal(item); };
         chip.innerHTML = 
-          '<span class="recent-chip-icon">' + (tier === 'gold' ? '👑' : (tier === 'silver' ? '⭐' : '⚡')) + '</span>' +
+          '<span class="recent-chip-icon">' + iconSvg + '</span>' +
           '<span class="recent-chip-name">' + escapeHtml(displayName) + '</span>' +
           '<span class="recent-chip-badge">' + tier.toUpperCase() + '</span>';
         container.appendChild(chip);
       });
     }
+
+    function openSupporterModal(item) {
+      const modal = document.getElementById('supporter-modal');
+      if (!modal) return;
+      const tier = item.tier || 'bronze';
+      const displayName = item.safeName || item.name || 'Anonymous';
+      const dateObj = (item.createdAt || item.lastSupportedAt) ? new Date(item.createdAt || item.lastSupportedAt) : null;
+      const dateStr = dateObj ? dateObj.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }) : '2026年';
+
+      const tierBadge = document.getElementById('modal-tier-badge');
+      tierBadge.className = 'modal-tier-badge tier-' + tier;
+
+      const iconSvg = tier === 'gold' 
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+        : (tier === 'silver'
+          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+
+      document.getElementById('modal-rank-icon').innerHTML = iconSvg;
+      document.getElementById('modal-tier-text').textContent = tier.toUpperCase() + ' SPONSOR';
+      document.getElementById('modal-supporter-name').textContent = displayName;
+
+      const planNameJa = tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥300）');
+      const planNameEn = tier === 'gold' ? 'Development Support ($3,000)' : (tier === 'silver' ? 'Compute Resource ($1,000)' : 'Energy Drink ($300)');
+      const isJa = document.body.getAttribute('data-lang') !== 'en';
+      document.getElementById('modal-plan-title').textContent = isJa ? planNameJa : planNameEn;
+      document.getElementById('modal-tier-val').textContent = tier.toUpperCase();
+      document.getElementById('modal-date-val').textContent = dateStr;
+
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSupporterModal() {
+      const modal = document.getElementById('supporter-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function onBackdropClick(event) {
+      if (event.target && event.target.id === 'supporter-modal') {
+        closeSupporterModal();
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeSupporterModal();
+      }
+    });
 
     function renderPagination(currentPage, totalPages, totalCount) {
       const container = document.getElementById('roster-pagination');

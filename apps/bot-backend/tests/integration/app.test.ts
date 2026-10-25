@@ -610,7 +610,8 @@ describe('Integration Tests', () => {
             expect(response.status).toBe(200);
             expect(response.text).toContain('公式サポータープログラム');
             expect(response.text).toContain('Official Supporter Program');
-            expect(response.text).toContain('サポーター名簿（Special Thanks）');
+            expect(response.text).toContain('サポーター名簿');
+            expect(response.text).toContain('Special Thanks');
             expect(response.text).toContain('COMMUNITY SPONSORSHIP PROGRAM');
         });
 
