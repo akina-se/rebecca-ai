@@ -36,6 +36,7 @@ export class TopNavComponent {
     if (url.includes('/memory')) return this.translationService.t('nav.memory');
     if (url.includes('/assets')) return this.translationService.t('nav.assets');
     if (url.includes('/users')) return this.translationService.t('nav.users');
+    if (url.includes('/supporters')) return this.translationService.t('nav.supporters');
     if (url.includes('/settings')) return this.translationService.t('nav.settings');
     return this.translationService.t('nav.dashboard');
   }
