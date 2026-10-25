@@ -53,6 +53,14 @@ describe('SupportersPageComponent', () => {
             completedCount: 1,
             totalAmount: 3000,
           },
+          pagination: {
+            totalItems: 1,
+            totalPages: 1,
+            currentPage: 1,
+            limit: 30,
+            itemCount: 1,
+            itemsPerPage: 30,
+          },
         }),
       ),
       getTransactionById: jest.fn().mockReturnValue(of(mockTransaction)),
@@ -108,18 +116,26 @@ describe('SupportersPageComponent', () => {
     expect(component.rewards()).toHaveLength(1); // Unchanged
   });
 
-  it('should handle filter and search changes', () => {
+  it('should handle filter and search changes and reset to page 1', () => {
     component.selectedStatus = 'completed';
     component.onFilterChange();
-    expect(mockRepo.getLedger).toHaveBeenCalled();
+    expect(mockRepo.getLedger).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
 
     component.searchQuery = 'Alice';
     component.onSearch();
-    expect(mockRepo.getLedger).toHaveBeenCalled();
+    expect(mockRepo.getLedger).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
 
     component.filterByFailed();
     expect(component.selectedStatus).toBe('failed');
-    expect(mockRepo.getLedger).toHaveBeenCalled();
+    expect(mockRepo.getLedger).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
+  });
+
+  it('should handle pagination page changes', () => {
+    component.onPageChange(2);
+    expect(component.currentPage).toBe(2);
+    expect(mockRepo.getLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 2, limit: 30 }),
+    );
   });
 
   it('should open and close transaction detail drawer', () => {

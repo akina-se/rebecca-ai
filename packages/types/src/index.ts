@@ -736,6 +736,7 @@ export interface SupportTransactionDoc {
 
 /** Query parameters for supporter ledger pagination and filtering */
 export interface SupporterLedgerQuery {
+  page?: number;
   limit?: number;
   cursor?: string;
   status?: SupportTransactionStatus | 'all';
@@ -753,6 +754,8 @@ export interface SupporterLedgerResponse {
     completedCount: number;
     totalAmount: number;
   };
+  pagination?: PaginationMeta;
+  meta?: PaginationMeta;
   nextCursor?: string;
 }
 

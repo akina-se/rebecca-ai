@@ -5,6 +5,7 @@ import {
   RewardImageDoc,
   SupporterLedgerQuery,
   SupporterLedgerResponse,
+  PaginationMeta,
 } from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
@@ -75,9 +76,13 @@ export class SupportersRepository {
       }
 
       // Pagination
-      const limit = query.limit || 50;
-      let startIndex = 0;
-      if (query.cursor) {
+      const totalFiltered = allDocs.length;
+      const limit = query.limit && query.limit > 0 ? query.limit : 30;
+      const page = query.page && query.page > 0 ? query.page : 1;
+      const totalPages = Math.ceil(totalFiltered / limit) || 1;
+
+      let startIndex = (page - 1) * limit;
+      if (query.cursor && !query.page) {
         const found = allDocs.findIndex((d) => d.id === query.cursor);
         if (found !== -1) {
           startIndex = found + 1;
@@ -90,6 +95,15 @@ export class SupportersRepository {
           ? paged[paged.length - 1].id
           : undefined;
 
+      const paginationMeta: PaginationMeta = {
+        totalItems: totalFiltered,
+        totalPages,
+        currentPage: page,
+        limit,
+        itemCount: paged.length,
+        itemsPerPage: limit,
+      };
+
       return {
         transactions: paged,
         summary: {
@@ -99,6 +113,8 @@ export class SupportersRepository {
           completedCount,
           totalAmount,
         },
+        pagination: paginationMeta,
+        meta: paginationMeta,
         nextCursor,
       };
     } catch (error) {

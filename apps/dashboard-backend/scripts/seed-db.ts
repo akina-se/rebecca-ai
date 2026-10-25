@@ -1,3 +1,4 @@
+import { SupportTransactionDoc } from '@rebecca/types';
 import { Firestore } from '@google-cloud/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -419,7 +420,7 @@ async function seedFirestore() {
     'DataDiver', 'BitRunner', 'Solaris', 'CircuitBreaker', 'CodeWitch',
   ];
 
-  const supportTransactions: any[] = [
+  const supportTransactions: Array<SupportTransactionDoc & { id: string }> = [
     {
       id: 'tx_failed_01',
       stripeSessionId: 'cs_test_fail_004_session',

@@ -230,6 +230,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'pagination.users': '名のユーザー',
     'pagination.assets': '件のアセット',
     'pagination.campaigns': '件のキャンペーン',
+    'pagination.supporters': '件の支援履歴',
 
     // Campaign Narrative Management
     'campaign.title': 'キャンペーン管理',
@@ -530,6 +531,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'pagination.users': 'users',
     'pagination.assets': 'assets',
     'pagination.campaigns': 'campaigns',
+    'pagination.supporters': 'supporters',
 
     // Campaign Narrative Management
     'campaign.title': 'Campaign Narrative Engine',

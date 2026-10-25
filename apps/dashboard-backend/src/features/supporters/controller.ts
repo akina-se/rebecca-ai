@@ -16,9 +16,10 @@ export class SupportersController {
    */
   async getLedger(req: Request, res: Response): Promise<void> {
     try {
-      const { limit, cursor, status, tier, search } = req.query;
-      const query = {
-        limit: limit ? parseInt(String(limit), 10) : 50,
+      const { page, limit, cursor, status, tier, search } = req.query;
+      const query: SupporterLedgerQuery = {
+        page: page ? parseInt(String(page), 10) : 1,
+        limit: limit ? parseInt(String(limit), 10) : 30,
         cursor: cursor ? String(cursor) : undefined,
         status: status ? (String(status) as SupporterLedgerQuery['status']) : undefined,
         tier: tier ? (String(tier) as SupporterLedgerQuery['tier']) : undefined,

@@ -216,6 +216,21 @@
           }
         </tbody>
       </table>
+
+      <!-- Shared Pagination Component -->
+      @if (totalPages() > 1 || totalItems() > 0) {
+        <div class="supporters-pagination-wrapper">
+          <app-pagination
+            [currentPage]="currentPage"
+            [totalPages]="totalPages()"
+            [totalItems]="totalItems()"
+            [itemsLabel]="'pagination.supporters' | translate"
+            [isLoading]="isLoading()"
+            (pageChange)="onPageChange($event)"
+          >
+          </app-pagination>
+        </div>
+      }
     }
   </div>
 

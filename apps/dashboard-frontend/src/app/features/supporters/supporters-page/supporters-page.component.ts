@@ -14,12 +14,13 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
+import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { CopilotContextService } from '../../../core/services/copilot-context.service';
 
 @Component({
   selector: 'app-supporters-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, TzDatePipe, RightDrawerComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, TzDatePipe, RightDrawerComponent, PaginationComponent],
   templateUrl: './supporters-page.component.html',
   styleUrls: ['./supporters-page.component.css'],
 })
@@ -40,6 +41,12 @@ export class SupportersPageComponent implements OnInit {
   readonly isLoading = signal<boolean>(false);
   readonly rewards = signal<RewardImageDoc[]>([]);
   readonly retryingId = signal<string | null>(null);
+
+  // Pagination State
+  currentPage = 1;
+  pageSize = 30;
+  readonly totalPages = signal<number>(1);
+  readonly totalItems = signal<number>(0);
 
   // Filters
   selectedStatus: SupportTransactionStatus | 'all' = 'all';
@@ -90,19 +97,25 @@ export class SupportersPageComponent implements OnInit {
     this.loadRewards();
   }
 
-  loadLedger(): void {
+  loadLedger(page = 1): void {
+    this.currentPage = page;
     this.isLoading.set(true);
     this.repo
       .getLedger({
+        page: this.currentPage,
+        limit: this.pageSize,
         status: this.selectedStatus,
         tier: this.selectedTier,
         search: this.searchQuery,
-        limit: 100,
       })
       .subscribe({
         next: (res) => {
           this.transactions.set(res.transactions);
           this.summary.set(res.summary);
+          const meta = res.pagination || res.meta;
+          const count = meta?.totalItems ?? res.summary?.totalCount ?? res.transactions.length;
+          this.totalItems.set(count);
+          this.totalPages.set(meta?.totalPages ?? Math.ceil(count / this.pageSize) ?? 1);
           this.isLoading.set(false);
 
           // Sync drawer if currently open
@@ -121,6 +134,10 @@ export class SupportersPageComponent implements OnInit {
       });
   }
 
+  onPageChange(page: number): void {
+    this.loadLedger(page);
+  }
+
   loadRewards(): void {
     this.repo.getRewards().subscribe({
       next: (res) => {
@@ -133,16 +150,16 @@ export class SupportersPageComponent implements OnInit {
   }
 
   onFilterChange(): void {
-    this.loadLedger();
+    this.loadLedger(1);
   }
 
   onSearch(): void {
-    this.loadLedger();
+    this.loadLedger(1);
   }
 
   filterByFailed(): void {
     this.selectedStatus = 'failed';
-    this.loadLedger();
+    this.loadLedger(1);
   }
 
   // Detail Drawer Actions
@@ -193,7 +210,7 @@ export class SupportersPageComponent implements OnInit {
           this.toast.show('サポーター設定を保存しました', 'success');
           this.isSavingDrawer.set(false);
           this.selectedTx.set(updated);
-          this.loadLedger();
+          this.loadLedger(this.currentPage);
         },
         error: () => {
           this.toast.show('設定の保存に失敗しました', 'error');
@@ -238,7 +255,7 @@ export class SupportersPageComponent implements OnInit {
       next: () => {
         this.toast.show(`再試行タスクをスケジュールしました (${tx.safeName})`, 'success');
         this.retryingId.set(null);
-        this.loadLedger();
+        this.loadLedger(this.currentPage);
       },
       error: (err) => {
         this.toast.show(`再試行に失敗しました: ${err?.error?.error || err.message}`, 'error');
@@ -280,7 +297,7 @@ export class SupportersPageComponent implements OnInit {
           this.toast.show('サポーター情報を更新しました', 'success');
           this.isSavingEdit.set(false);
           this.closeEditModal();
-          this.loadLedger();
+          this.loadLedger(this.currentPage);
         },
         error: () => {
           this.toast.show('更新に失敗しました', 'error');
@@ -316,7 +333,7 @@ export class SupportersPageComponent implements OnInit {
           this.toast.show('手動ポストとして解決しました', 'success');
           this.isResolvingManual.set(false);
           this.closeManualResolveModal();
-          this.loadLedger();
+          this.loadLedger(this.currentPage);
         },
         error: () => {
           this.toast.show('手動解決の登録に失敗しました', 'error');
@@ -334,7 +351,7 @@ export class SupportersPageComponent implements OnInit {
       .subscribe({
         next: () => {
           this.toast.show(nextState ? '公開を停止しました' : '公開を再開しました', 'info');
-          this.loadLedger();
+          this.loadLedger(this.currentPage);
         },
         error: () => {
           this.toast.show('変更に失敗しました', 'error');

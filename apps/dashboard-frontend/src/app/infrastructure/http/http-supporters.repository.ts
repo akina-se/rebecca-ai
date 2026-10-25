@@ -26,6 +26,9 @@ export class HttpSupportersRepository implements SupportersRepository {
   getLedger(query?: SupporterLedgerQuery): Observable<SupporterLedgerResponse> {
     let params = new HttpParams();
     if (query) {
+      if (query.page !== undefined) {
+        params = params.set('page', query.page.toString());
+      }
       if (query.limit !== undefined) {
         params = params.set('limit', query.limit.toString());
       }
