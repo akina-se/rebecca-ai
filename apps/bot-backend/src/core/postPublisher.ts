@@ -41,6 +41,8 @@ export interface PublishPostResult {
   mediaUrls: string[];
   /** Firestore asset ID if a database image asset was matched. */
   assetId?: string;
+  /** Visual caption describing the attached image if available. */
+  mediaCaption?: string;
 }
 
 /**
@@ -162,6 +164,7 @@ ${text}
   const attachedMedia = mediaIds.length > 0;
   const mediaUrls = attachedMedia && bestImage?.url ? [bestImage.url] : [];
   const assetId = attachedMedia ? bestImage?.id : undefined;
+  const mediaCaption = attachedMedia && bestImage?.caption ? bestImage.caption : undefined;
 
   return {
     tweetId,
@@ -169,5 +172,6 @@ ${text}
     attachedMedia,
     mediaUrls,
     assetId,
+    mediaCaption,
   };
 };

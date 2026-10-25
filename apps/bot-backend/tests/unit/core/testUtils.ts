@@ -53,6 +53,7 @@ export const createMockDeps = (): AppDependencies => {
             getActiveRewardImage: jest.fn().mockResolvedValue(null),
             incrementRewardImageDistributedCount: jest.fn().mockResolvedValue(undefined),
             getPublicSupporters: jest.fn().mockResolvedValue([]),
+            getImageByHash: jest.fn().mockResolvedValue(null),
         } as any,
         gemini: {
             analyzeUserProfile: jest.fn(),

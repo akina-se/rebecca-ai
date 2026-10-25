@@ -70,6 +70,7 @@ export const executePostPipeline = async (
     tweetId: publishResult.tweetId,
     mediaUrls: publishResult.mediaUrls,
     assetId: publishResult.assetId,
+    mediaCaption: publishResult.mediaCaption,
     postType,
     ...(metadata?.newsTitle ? { newsTitle: metadata.newsTitle } : {}),
     ...(metadata?.newsEmbedding && metadata.newsEmbedding.length > 0
