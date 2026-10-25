@@ -350,7 +350,7 @@
             <div class="tweet-success-box">
               <div class="tweet-meta">
                 <span class="material-icons text-success">task_alt</span>
-                <span>お礼ポスト配信済み</span>
+                <span>{{ 'supporters.post_sent' | translate }}</span>
               </div>
               @if (tx.tweetUrl || tx.tweetId) {
                 <a [href]="tx.tweetUrl || ('https://x.com/i/status/' + tx.tweetId)" target="_blank" rel="noopener noreferrer" class="btn btn-x-link">
@@ -363,13 +363,13 @@
             <div class="tweet-success-box manual">
               <div class="tweet-meta">
                 <span class="material-icons text-warning">build</span>
-                <span>プロデューサーにより手動解決済み</span>
+                <span>{{ 'supporters.resolved_by_admin' | translate }}</span>
               </div>
             </div>
           } @else {
             <div class="tweet-pending-box">
               <span class="material-icons">hourglass_top</span>
-              <span>Workerによるお礼ポスト処理待機中...</span>
+              <span>{{ 'supporters.post_pending' | translate }}</span>
             </div>
           }
         </div>
@@ -384,14 +384,14 @@
           <div class="form-group">
             <label>{{ 'supporters.modal_safe_name' | translate }}</label>
             <input type="text" [(ngModel)]="drawerSafeName" class="form-control" />
-            <span class="form-hint">決済時入力名: {{ tx.rawName }}</span>
+            <span class="form-hint">{{ 'supporters.raw_name_hint' | translate }}: {{ tx.rawName }}</span>
           </div>
 
           <div class="toggle-group">
             <div class="toggle-item">
               <div class="toggle-text">
                 <span class="toggle-title">{{ 'supporters.visibility_toggle' | translate }}</span>
-                <span class="toggle-desc">公式Webサポーター名簿（Special Thanks）へのお名前掲載</span>
+                <span class="toggle-desc">{{ 'supporters.visibility_desc' | translate }}</span>
               </div>
               <label class="switch">
                 <input
@@ -406,7 +406,7 @@
             <div class="toggle-item danger">
               <div class="toggle-text">
                 <span class="toggle-title text-danger">{{ 'supporters.ban_status' | translate }}</span>
-                <span class="toggle-desc">公序良俗に反するアカウントの公式名簿からの完全非表示</span>
+                <span class="toggle-desc">{{ 'supporters.ban_desc' | translate }}</span>
               </div>
               <label class="switch">
                 <input
@@ -507,7 +507,7 @@
               class="form-textarea"
               rows="4"
               maxlength="140"
-              placeholder="プロデューサー、差し入れありがと！大切に使うからね！ #RebeccaAI"
+              [placeholder]="'supporters.modal_manual_placeholder' | translate"
             ></textarea>
             <span class="form-hint">{{ manualTweetText.length }}/140 文字</span>
           </div>

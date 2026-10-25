@@ -77,6 +77,13 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'supporters.vip_status': 'VIP特別昇格',
     'supporters.ban_status': '不適切アカウントBAN（公開停止）',
     'supporters.view_tweet': 'Xでお礼ポストを確認',
+    'supporters.visibility_desc': '公式Webサポーター名簿へのお名前掲載',
+    'supporters.ban_desc': '公序良俗に反するアカウントの公式名簿からの完全非表示',
+    'supporters.resolved_by_admin': '管理者により手動解決済み',
+    'supporters.post_sent': 'お礼ポスト配信済み',
+    'supporters.post_pending': 'Workerによるお礼ポスト処理待機中...',
+    'supporters.raw_name_hint': '決済時入力名',
+    'supporters.modal_manual_placeholder': 'マスター、差し入れありがと！大切に使うからね！ #RebeccaAI',
     'supporters.search_input_placeholder': 'サポーター名・Xアカウント・Stripe ID（cs_... / pi_...）で検索',
 
 
@@ -444,6 +451,13 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'supporters.vip_status': 'VIP Promotion',
     'supporters.ban_status': 'Account Ban (Hide from roster)',
     'supporters.view_tweet': 'View Tweet on X',
+    'supporters.visibility_desc': 'List name on the official Web Supporters roster',
+    'supporters.ban_desc': 'Hide offensive accounts completely from the official roster',
+    'supporters.resolved_by_admin': 'Manually resolved by administrator',
+    'supporters.post_sent': 'Appreciation post published',
+    'supporters.post_pending': 'Waiting for worker appreciation post processing...',
+    'supporters.raw_name_hint': 'Name at checkout',
+    'supporters.modal_manual_placeholder': 'Master, thank you for the energy support! #RebeccaAI',
     'supporters.search_input_placeholder': 'Search supporter name, X handle, Stripe ID (cs_... / pi_...)',
 
     // TopBar
