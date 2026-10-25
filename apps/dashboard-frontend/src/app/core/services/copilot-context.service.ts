@@ -133,8 +133,8 @@ export class CopilotContextService {
     const route = this.currentRoute();
         if (route.includes('/supporters')) {
       return isEn 
-        ? ['Supporter revenue overview', 'Check failed appreciation posts', 'Manage reward illustrations']
-        : ['サポーター支援の概要は？', '失敗したお礼ポストを確認', '今月の特典イラスト管理'];
+        ? ['Supporter revenue overview', 'Check failed appreciation posts', 'Manage reward illustration pool']
+        : ['サポーター支援の概要は？', '失敗したお礼ポストを確認', '特典イラストプール管理'];
     }
     if (route.includes('/campaigns')) {
       return isEn 

@@ -507,7 +507,7 @@ Documents are indexed at the root collection level and serialized via `@rebecca/
 
 ### 4.15 Collection: `reward_images`
 
-Manages monthly limited digital reward wallpapers distributed to sponsors upon successful tipping checkout.
+Manages digital reward illustration assets randomly distributed to sponsors upon successful tipping checkout.
 Documents are indexed at the root collection level and serialized via `@rebecca/db` (`rewardImagesConverter`).
 
 - **Document ID**: Auto-generated UID (or slug, e.g. `reward_202610_halloween`).

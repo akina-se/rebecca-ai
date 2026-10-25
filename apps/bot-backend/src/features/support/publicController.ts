@@ -11,7 +11,7 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { AppDependencies } from '../../types';
 import { SupportConfig } from './types';
-import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc } from '@rebecca/types';
+import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
 /**
@@ -130,8 +130,15 @@ export class PublicSupportController {
         }
       }
 
-      // Step 4: Fetch active supporter reward illustration asset
-      const activeReward = await this.deps.firestore.getActiveRewardImage();
+      // Step 4: Fetch supporter reward illustration asset:
+      // If transaction already has an assigned rewardImageId, fetch it; otherwise pick a random active reward from the pool!
+      let activeReward: RewardImageDoc | null = null;
+      if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
+        activeReward = await this.deps.firestore.getRewardImageById(transaction.rewardImageId);
+      }
+      if (!activeReward) {
+        activeReward = await this.deps.firestore.getActiveRewardImage();
+      }
 
       let rewardPayload = null;
       if (activeReward) {

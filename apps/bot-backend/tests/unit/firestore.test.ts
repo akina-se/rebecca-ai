@@ -813,27 +813,46 @@ describe('Firestore Service Unit Tests', () => {
     });
 
     it('getActiveRewardImage should return active reward image or null', async () => {
+      const getFnSuccess = jest.fn().mockResolvedValueOnce({
+        empty: false,
+        docs: [{ id: 'rew_active', data: () => ({ title: 'Special Reward', isActive: true }) }],
+      });
       mockQueryWhere.mockReturnValueOnce({
-        limit: jest.fn().mockReturnValueOnce({
-          get: jest.fn().mockResolvedValueOnce({
-            empty: false,
-            docs: [{ id: 'rew_active', data: () => ({ title: 'Special Reward', isActive: true }) }],
-          }),
-        }),
+        get: getFnSuccess,
+        limit: jest.fn().mockReturnValueOnce({ get: getFnSuccess }),
       });
       const active = await firestoreService.getActiveRewardImage();
       expect(active).toEqual({ id: 'rew_active', title: 'Special Reward', isActive: true });
 
+      const getFnEmpty = jest.fn().mockResolvedValueOnce({
+        empty: true,
+        docs: [],
+      });
       mockQueryWhere.mockReturnValueOnce({
-        limit: jest.fn().mockReturnValueOnce({
-          get: jest.fn().mockResolvedValueOnce({
-            empty: true,
-            docs: [],
-          }),
-        }),
+        get: getFnEmpty,
+        limit: jest.fn().mockReturnValueOnce({ get: getFnEmpty }),
       });
       const none = await firestoreService.getActiveRewardImage();
       expect(none).toBeNull();
+    });
+
+    it('getRewardImageById should return reward doc or null', async () => {
+      expect(await firestoreService.getRewardImageById('')).toBeNull();
+      expect(await firestoreService.getRewardImageById('none')).toBeNull();
+
+      mockDocGet.mockResolvedValueOnce({
+        exists: true,
+        id: 'rew_found',
+        data: () => ({ title: 'Found Reward', isActive: true }),
+      });
+      const found = await firestoreService.getRewardImageById('rew_found');
+      expect(found).toEqual({ id: 'rew_found', title: 'Found Reward', isActive: true });
+
+      mockDocGet.mockResolvedValueOnce({
+        exists: false,
+      });
+      const notFound = await firestoreService.getRewardImageById('rew_missing');
+      expect(notFound).toBeNull();
     });
 
     it('incrementRewardImageDistributedCount should increment counter and set updatedAt', async () => {

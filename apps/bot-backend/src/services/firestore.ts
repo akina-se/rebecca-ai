@@ -1168,15 +1168,37 @@ async function getSupportTransactionBySessionId(
  *
  * @returns The active RewardImageDoc or null if none active.
  */
+/**
+ * Retrieves a randomly selected active reward image from the distribution pool.
+ *
+ * @returns A randomly chosen active RewardImageDoc or null if none active.
+ */
 async function getActiveRewardImage(): Promise<RewardImageDoc | null> {
   const snap = await db.rewardImages
     .where('isActive', '==', true)
-    .limit(1)
     .get();
   if (snap.empty) {
     return null;
   }
-  const doc = snap.docs[0];
+  const randomIndex = Math.floor(Math.random() * snap.docs.length);
+  const doc = snap.docs[randomIndex];
+  return { id: doc.id, ...doc.data() } as RewardImageDoc;
+}
+
+/**
+ * Retrieves a specific reward image by its ID.
+ *
+ * @param rewardImageId - The target reward image document ID.
+ * @returns The RewardImageDoc or null if not found.
+ */
+async function getRewardImageById(rewardImageId: string): Promise<RewardImageDoc | null> {
+  if (!rewardImageId || rewardImageId === 'none') {
+    return null;
+  }
+  const doc = await db.rewardImages.doc(rewardImageId).get();
+  if (!doc.exists) {
+    return null;
+  }
   return { id: doc.id, ...doc.data() } as RewardImageDoc;
 }
 
@@ -1340,7 +1362,8 @@ export {
   updateSupportTransaction,
   createSupportTransaction,
   getSupportTransactionBySessionId,
-  getActiveRewardImage,
+  getActiveRewardImage,
+  getRewardImageById,
   incrementRewardImageDistributedCount,
   getPublicSupporters,
 };

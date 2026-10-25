@@ -51,6 +51,7 @@ export const createMockDeps = (): AppDependencies => {
             createSupportTransaction: jest.fn().mockResolvedValue(undefined),
             getSupportTransactionBySessionId: jest.fn().mockResolvedValue(null),
             getActiveRewardImage: jest.fn().mockResolvedValue(null),
+            getRewardImageById: jest.fn().mockResolvedValue(null),
             incrementRewardImageDistributedCount: jest.fn().mockResolvedValue(undefined),
             getPublicSupporters: jest.fn().mockResolvedValue([]),
             getImageByHash: jest.fn().mockResolvedValue(null),

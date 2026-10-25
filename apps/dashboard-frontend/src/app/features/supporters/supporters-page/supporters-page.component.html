@@ -595,7 +595,7 @@
                 type="text"
                 [(ngModel)]="newRewardTitle"
                 class="form-control flex-1"
-                placeholder="タイトル（空欄で自動連番採番）"
+                [placeholder]="'supporters.reward_title_placeholder' | translate"
               />
               <input type="file" accept="image/*" (change)="onRewardFileSelected($event)" class="form-control" />
               <button
@@ -615,12 +615,12 @@
                 <div class="reward-preview">
                   <img [src]="'/api/v1/supporters/rewards/' + reward.id + '/image?type=thumbnail'" [alt]="reward.title" />
                   <span class="reward-badge" [class.active]="reward.isActive">
-                    {{ reward.isActive ? '現在配布中' : 'アーカイブ' }}
+                    {{ reward.isActive ? ('supporters.reward_pool_badge_active' | translate) : ('supporters.reward_pool_badge_inactive' | translate) }}
                   </span>
                 </div>
                 <div class="reward-meta">
                   <div class="reward-title" [title]="reward.title">{{ reward.title }}</div>
-                  <div class="reward-stats">配布回数: {{ reward.distributedCount }}回</div>
+                  <div class="reward-stats">{{ 'supporters.reward_distributed_count' | translate }}{{ reward.distributedCount }}{{ 'supporters.reward_distributed_times' | translate }}</div>
                   <div class="reward-actions">
                     <button
                       class="btn btn-sm"
@@ -628,7 +628,7 @@
                       [class.btn-secondary]="reward.isActive"
                       (click)="toggleRewardActive(reward)"
                     >
-                      {{ reward.isActive ? '配布を停止' : '今月の報酬に設定' }}
+                      {{ reward.isActive ? ('supporters.reward_pool_btn_deactivate' | translate) : ('supporters.reward_pool_btn_activate' | translate) }}
                     </button>
                     <button class="btn btn-sm btn-danger" (click)="deleteReward(reward)">
                       <span class="material-icons">delete</span>

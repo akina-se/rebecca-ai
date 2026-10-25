@@ -119,6 +119,7 @@ export interface IFirestoreService {
   createSupportTransaction(doc: SupportTransactionDoc): Promise<void>;
   getSupportTransactionBySessionId(stripeSessionId: string): Promise<SupportTransactionDoc | null>;
   getActiveRewardImage(): Promise<RewardImageDoc | null>;
+  getRewardImageById(rewardImageId: string): Promise<RewardImageDoc | null>;
   incrementRewardImageDistributedCount(rewardImageId: string): Promise<void>;
   getPublicSupporters(page?: number, limitCount?: number): Promise<PublicSupporterCreditsResponse>;
 }

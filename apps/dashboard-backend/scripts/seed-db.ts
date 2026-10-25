@@ -385,7 +385,7 @@ async function seedFirestore() {
   const rewardImages = [
     {
       id: 'reward_202610_halloween',
-      title: '2026年10月限定 ハロウィン特別壁紙',
+      title: 'ハロウィン特別壁紙',
       imageUrl: 'gs://rebecca-ai-gal-local-images/rewards/rebecca_halloween_2026.png',
       storagePath: 'rewards/rebecca_halloween_2026.png',
       isActive: true,
@@ -395,10 +395,10 @@ async function seedFirestore() {
     },
     {
       id: 'reward_202609_autumn',
-      title: '2026年9月限定 紅葉とレベッカ',
+      title: '紅葉とレベッカ',
       imageUrl: 'gs://rebecca-ai-gal-local-images/rewards/rebecca_autumn_2026.png',
       storagePath: 'rewards/rebecca_autumn_2026.png',
-      isActive: false,
+      isActive: true,
       distributedCount: 128,
       createdAt: new Date(Date.now() - 50 * 24 * 3600000).toISOString(),
       updatedAt: new Date(Date.now() - 21 * 24 * 3600000).toISOString(),
