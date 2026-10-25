@@ -10,6 +10,12 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
   });
 
   test('should render Supporters page with KPI metrics and 4-column ledger table', async ({ page }) => {
+    // 0. Verify Topbar Breadcrumb displays Supporters title (not Dashboard)
+    const breadcrumb = page.locator('.breadcrumb-current');
+    await expect(breadcrumb).toBeVisible({ timeout: 15000 });
+    await expect(breadcrumb).toHaveText(/Supporters|サポーター管理/);
+    await expect(breadcrumb).not.toHaveText(/Dashboard|ダッシュボード/);
+
     // 1. Verify Header and KPI cards
     await expect(page.locator('.page-header h1').first()).toBeVisible({ timeout: 15000 });
     const kpiCards = page.locator('.kpi-card');
@@ -128,5 +134,126 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     // 3. Supporter table cards are rendered for mobile
     const rows = page.locator('.data-table tbody tr.clickable-row');
     await expect(rows.first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should verify mobile responsive layout without horizontal overflow and stacked action buttons', async ({ page }) => {
+    // 1. Set mobile viewport (iPhone 14/15 size: 390x844)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/supporters');
+    await page.waitForLoadState('domcontentloaded');
+
+    // 2. Topbar breadcrumb displays Supporters, not Dashboard
+    const breadcrumb = page.locator('.breadcrumb-current');
+    await expect(breadcrumb).toBeVisible({ timeout: 10000 });
+    await expect(breadcrumb).toHaveText(/Supporters|サポーター管理/);
+
+    // 3. Header action buttons are full-width stacked on mobile
+    const headerActions = page.locator('.header-actions .btn');
+    const actionCount = await headerActions.count();
+    expect(actionCount).toBeGreaterThanOrEqual(1);
+    const firstActionBox = await headerActions.first().boundingBox();
+    expect(firstActionBox?.width).toBeGreaterThan(280);
+
+    // 4. KPI cards are laid out in a 2-column grid
+    const kpiGrid = page.locator('.kpi-grid');
+    await expect(kpiGrid).toBeVisible();
+    const kpiColumns = await kpiGrid.evaluate((el) => {
+      const template = window.getComputedStyle(el).gridTemplateColumns;
+      return template ? template.trim().split(/\s+/).length : 0;
+    });
+    expect(kpiColumns).toBe(2);
+
+    // 5. Filter pills container has overflow-x auto / scroll enabled
+    const filterPills = page.locator('.filter-pills');
+    await expect(filterPills).toBeVisible();
+    const overflowX = await filterPills.evaluate((el) => window.getComputedStyle(el).overflowX);
+    expect(['auto', 'scroll']).toContain(overflowX);
+
+    // 6. Supporter cards do not overflow screen width
+    const firstCard = page.locator('.supporters-table tr.clickable-row').first();
+    await expect(firstCard).toBeVisible();
+    const cardBox = await firstCard.boundingBox();
+    expect(cardBox?.width).toBeLessThanOrEqual(390);
+
+    // 7. Verify no horizontal window overflow blowout
+    const hasHorizontalScroll = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    });
+    expect(hasHorizontalScroll).toBe(false);
+  });
+
+  test('should display Manual Resolution Modal with high z-index on top of Transaction Details drawer', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/supporters');
+    await page.waitForLoadState('domcontentloaded');
+
+    // 1. Wait for ledger rows to load and search for the seeded failed backer (RetroGamer88)
+    const searchInput = page.locator('.search-box input');
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+    await searchInput.fill('RetroGamer88');
+    await page.waitForTimeout(600);
+
+    // 2. Open the failed transaction row
+    const failedRow = page.locator('.data-table tbody tr.clickable-row').first();
+    await expect(failedRow).toBeVisible({ timeout: 10000 });
+    await expect(failedRow).toContainText('RetroGamer88');
+    await failedRow.click();
+
+    // 3. Transaction Details drawer opens
+    const rightDrawer = page.locator('app-right-drawer .right-drawer');
+    await expect(rightDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    // 4. Click Resolve Manually button inside the drawer
+    const resolveBtn = rightDrawer.locator('button', { hasText: /Resolve Manually|手動解決/i });
+    await expect(resolveBtn).toBeVisible({ timeout: 5000 });
+    await resolveBtn.click();
+
+    // 5. Verify modal backdrop is visible with z-index >= 2000 (above drawer z-index 1050)
+    const modalBackdrop = page.locator('.modal-backdrop');
+    await expect(modalBackdrop).toBeVisible({ timeout: 5000 });
+    const backdropZIndex = await modalBackdrop.evaluate((el) => window.getComputedStyle(el).zIndex);
+    expect(parseInt(backdropZIndex, 10)).toBeGreaterThanOrEqual(2000);
+
+    // 6. Verify modal content is rendered and visible on top
+    const modalContent = modalBackdrop.locator('.modal-content');
+    await expect(modalContent).toBeVisible();
+    await expect(modalContent.locator('.modal-header h2')).toHaveText(/Manual Post Resolution|手動ポスト解決/i);
+    await expect(modalContent.locator('textarea')).toBeVisible();
+
+    // 7. Cancel modal and verify smooth return to open drawer
+    const cancelBtn = modalContent.locator('.modal-footer .btn-secondary');
+    await cancelBtn.click();
+    await expect(modalBackdrop).toBeHidden();
+    await expect(rightDrawer).toHaveClass(/open/);
+
+    // 8. Clean up: close drawer
+    await rightDrawer.locator('.close-btn').click();
+    await expect(rightDrawer).not.toHaveClass(/open/);
+  });
+
+  test('should not display raw untranslated i18n keys or broken labels', async ({ page }) => {
+    await page.goto('/supporters');
+    await page.waitForLoadState('domcontentloaded');
+
+    // 1. Verify container does not have untranslated template keys
+    const pageText = await page.locator('.supporters-container').innerText();
+    expect(pageText).not.toMatch(/supporters\.[a-z0-9_]+/i);
+    expect(pageText).not.toMatch(/common\.[a-z0-9_]+/i);
+
+    // 2. Open a transaction detail drawer and verify label translation
+    const firstRow = page.locator('.data-table tbody tr.clickable-row').first();
+    await expect(firstRow).toBeVisible({ timeout: 10000 });
+    await firstRow.click();
+
+    const rightDrawer = page.locator('app-right-drawer .right-drawer');
+    await expect(rightDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    const drawerText = await rightDrawer.innerText();
+    expect(drawerText).not.toMatch(/supporters\.[a-z0-9_]+/i);
+    expect(drawerText).not.toMatch(/common\.[a-z0-9_]+/i);
+
+    // Close drawer
+    await rightDrawer.locator('.close-btn').click();
+    await expect(rightDrawer).not.toHaveClass(/open/);
   });
 });
