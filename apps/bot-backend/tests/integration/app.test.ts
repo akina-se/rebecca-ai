@@ -603,6 +603,10 @@ describe('Integration Tests', () => {
             expect(response.text).toContain('"name": "全肯定AIレベッカ (Rebecca AI)"');
             expect(response.text).toContain('"alternateName": [');
             expect(response.text).toContain('isSearchCrawler');
+            expect(response.text).toContain('id="lp-tier-bronze"');
+            expect(response.text).toContain('id="lp-tier-silver"');
+            expect(response.text).toContain('id="lp-tier-gold"');
+            expect(response.text).toContain('initSupportPlanLinks');
         });
 
         it('should serve /supporters with 200 OK and supporter portal elements', async () => {

@@ -1052,6 +1052,60 @@
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .tier-box:hover {
+      background: rgba(255, 255, 255, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .tier-box.bronze-tier:hover {
+      border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+    }
+
+    .tier-box.silver-tier:hover {
+      border-color: rgba(148, 163, 184, 0.55);
+      box-shadow: 0 4px 16px rgba(148, 163, 184, 0.16);
+    }
+
+    .tier-box.gold-tier:hover {
+      border-color: rgba(245, 158, 11, 0.55);
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+    }
+
+    .tier-box:active {
+      transform: translateY(0);
+    }
+
+    .tier-box:focus-visible {
+      outline: 2px solid var(--gemitec-purple);
+      outline-offset: 2px;
+    }
+
+    .tier-action-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .tier-arrow-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .tier-box:hover .tier-arrow-icon {
+      color: #ffffff;
+      transform: translateX(3px);
     }
 
     .tier-info {
@@ -2032,7 +2086,7 @@
             </p>
 
             <div class="tiers-list">
-              <div class="tier-box">
+              <a href="/supporters#plans" id="lp-tier-bronze" class="tier-box bronze-tier" title="エナドリ1本差し入れ（¥500 / 口）">
                 <div class="tier-info">
                   <div class="tier-title">
                     <span class="tier-icon-pill bronze"><svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span><span class="t-ja">エナドリ1本差し入れ（¥500 / 口）</span>
@@ -2043,12 +2097,17 @@
                     <span class="t-en">Digital art download, appreciation tweet &amp; roster credit</span>
                   </div>
                 </div>
-                <span class="tier-badge bronze">
-                  <span class="t-ja">BRONZE</span>
-                  <span class="t-en">BRONZE</span>
-                </span>
-              </div>
-              <div class="tier-box">
+                <div class="tier-action-wrap">
+                  <span class="tier-badge bronze">
+                    <span class="t-ja">BRONZE</span>
+                    <span class="t-en">BRONZE</span>
+                  </span>
+                  <span class="tier-arrow-icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </span>
+                </div>
+              </a>
+              <a href="/supporters#plans" id="lp-tier-silver" class="tier-box silver-tier" title="サーバーリソース差し入れ（¥1,000 / 口）">
                 <div class="tier-info">
                   <div class="tier-title">
                     <span class="tier-icon-pill silver"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span><span class="t-ja">サーバーリソース差し入れ（¥1,000 / 口）</span>
@@ -2059,12 +2118,17 @@
                     <span class="t-en">Digital art download, appreciation tweet &amp; Silver badge credit</span>
                   </div>
                 </div>
-                <span class="tier-badge silver">
-                  <span class="t-ja">SILVER</span>
-                  <span class="t-en">SILVER</span>
-                </span>
-              </div>
-              <div class="tier-box">
+                <div class="tier-action-wrap">
+                  <span class="tier-badge silver">
+                    <span class="t-ja">SILVER</span>
+                    <span class="t-en">SILVER</span>
+                  </span>
+                  <span class="tier-arrow-icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </span>
+                </div>
+              </a>
+              <a href="/supporters#plans" id="lp-tier-gold" class="tier-box gold-tier" title="開発サポート（¥3,000 / 口）">
                 <div class="tier-info">
                   <div class="tier-title">
                     <span class="tier-icon-pill gold"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span><span class="t-ja">開発サポート（¥3,000 / 口）</span>
@@ -2075,11 +2139,16 @@
                     <span class="t-en">Digital art download, appreciation tweet &amp; Top Gold badge credit</span>
                   </div>
                 </div>
-                <span class="tier-badge gold">
-                  <span class="t-ja">GOLD</span>
-                  <span class="t-en">GOLD</span>
-                </span>
-              </div>
+                <div class="tier-action-wrap">
+                  <span class="tier-badge gold">
+                    <span class="t-ja">GOLD</span>
+                    <span class="t-en">GOLD</span>
+                  </span>
+                  <span class="tier-arrow-icon" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </span>
+                </div>
+              </a>
             </div>
           </div>
           <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -2234,6 +2303,33 @@
         setLanguage('ja');
       }
     })();
+
+    // Dynamically bind tier box links directly to Stripe payment links
+    async function initSupportPlanLinks() {
+      try {
+        const res = await fetch('/api/v1/support/plans');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.plans && Array.isArray(data.plans)) {
+          data.plans.forEach(function(plan) {
+            const el = document.getElementById('lp-tier-' + plan.tier);
+            if (!el) return;
+            if (plan.available && plan.paymentUrl) {
+              el.href = plan.paymentUrl;
+              el.target = '_blank';
+              el.rel = 'noopener noreferrer';
+            }
+          });
+        }
+      } catch (e) {
+        // Fallback gracefully to /supporters#plans
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSupportPlanLinks);
+    } else {
+      initSupportPlanLinks();
+    }
   </script>
 
 </body>
