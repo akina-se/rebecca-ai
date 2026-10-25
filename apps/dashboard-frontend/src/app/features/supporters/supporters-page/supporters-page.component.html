@@ -380,7 +380,20 @@
           <div class="form-group">
             <label>{{ 'supporters.modal_safe_name' | translate }}</label>
             <input type="text" [(ngModel)]="drawerSafeName" class="form-control" />
-            <span class="form-hint">{{ 'supporters.raw_name_hint' | translate }}: {{ tx.rawName }}</span>
+            <div class="raw-name-row">
+              <span class="form-hint">{{ 'supporters.raw_name_hint' | translate }}: {{ tx.rawName }}</span>
+              @if (drawerSafeName !== tx.rawName && tx.rawName) {
+                <button
+                  type="button"
+                  class="btn-restore-raw"
+                  (click)="drawerSafeName = tx.rawName"
+                  [title]="'supporters.restore_raw_name' | translate"
+                >
+                  <span class="material-icons">restore</span>
+                  {{ 'supporters.restore_raw_name' | translate }}
+                </button>
+              }
+            </div>
           </div>
 
           <div class="toggle-group">
