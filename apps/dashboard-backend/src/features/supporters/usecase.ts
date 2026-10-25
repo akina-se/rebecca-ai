@@ -6,7 +6,6 @@ export class HttpError extends Error {
 }
 
 import { Storage } from '@google-cloud/storage';
-import path from 'path';
 import {
   SupportTransactionDoc,
   RewardImageDoc,
@@ -20,6 +19,7 @@ import { SupportersRepository } from './repository';
 import { resolveSupportTierFromAmount } from '@rebecca/types';
 import { config } from '../../config';
 import { logger } from '../../utils/logger';
+import { generateWebpThumbnail, stripImageMetadata } from '../../utils/image';
 
 /**
  * UseCase coordinating business logic for supporter transactions,
@@ -208,28 +208,66 @@ export class SupportersUseCase {
   /**
    * Uploads and registers a new digital reward asset.
    */
-  async uploadReward(file: Express.Multer.File, title: string): Promise<RewardImageDoc> {
+  async uploadReward(file: Express.Multer.File, title?: string): Promise<RewardImageDoc> {
     if (!file || !file.buffer) {
       throw new HttpError('Image file is required', 400);
     }
 
-    const cleanTitle = (title || 'サポーター特典イラスト').trim();
-    const safeExt = path.extname(file.originalname).toLowerCase() || '.png';
-    const filename = `rewards/${Date.now()}_${path.basename(file.originalname, safeExt).replace(/[^a-zA-Z0-9_-]/g, '_')}${safeExt}`;
+    // 1. Calculate sequential number and ensure privacy-safe title
+    const existingRewards = await this.repo.getRewardImages();
+    const sequenceNumber = existingRewards.length + 1;
+    const sequenceStr = String(sequenceNumber).padStart(2, '0');
+
+    let cleanTitle = (title || '').trim();
+    if (
+      !cleanTitle ||
+      cleanTitle === 'サポーター特典イラスト' ||
+      /\.(png|jpe?g|webp|gif)$/i.test(cleanTitle)
+    ) {
+      cleanTitle = `サポーター特典 #${sequenceStr}`;
+    }
+
+    // 2. Security & Privacy: Strip EXIF, GPS, camera model, and creator metadata from master image
+    const mimeType = file.mimetype || 'image/png';
+    const cleanMasterBuffer = await stripImageMetadata(file.buffer, mimeType);
+
+    // 3. Performance: Generate responsive WebP thumbnail (max-width 800px)
+    const thumbBuffer = await generateWebpThumbnail(cleanMasterBuffer, 800);
+
+    // 4. Secure storage paths (completely ignoring file.originalname to prevent any PII or client metadata leak)
+    const timestamp = Date.now();
+    const safeExt = mimeType === 'image/jpeg' || mimeType === 'image/jpg' ? '.jpg' : '.png';
+    const masterFilename = `rewards/reward_${sequenceStr}_${timestamp}_master${safeExt}`;
+    const thumbFilename = `rewards/reward_${sequenceStr}_${timestamp}_thumb.webp`;
+
     const bucket = this.storage.bucket(config.gcp.imageBucketName);
 
-    const fileRef = bucket.file(filename);
-    await fileRef.save(file.buffer, {
-      contentType: file.mimetype || 'image/png',
+    // Save cleaned master image
+    const masterFileRef = bucket.file(masterFilename);
+    await masterFileRef.save(cleanMasterBuffer, {
+      contentType: mimeType,
+      metadata: {
+        cacheControl: 'private, max-age=31536000',
+      },
+    });
+
+    // Save WebP thumbnail
+    const thumbFileRef = bucket.file(thumbFilename);
+    await thumbFileRef.save(thumbBuffer, {
+      contentType: 'image/webp',
       metadata: {
         cacheControl: 'public, max-age=31536000',
       },
     });
 
+    // 5. Register in Firestore
     const docId = await this.repo.createRewardImage({
       title: cleanTitle,
-      storagePath: filename,
-      imageUrl: `/api/v1/supporters/rewards/temp/image`, // Will update with generated docId
+      storagePath: masterFilename,
+      thumbnailStoragePath: thumbFilename,
+      sequenceNumber,
+      imageUrl: `/api/v1/supporters/rewards/temp/image`,
+      thumbnailUrl: `/api/v1/supporters/rewards/temp/image?type=thumbnail`,
       isActive: true,
       distributedCount: 0,
       createdAt: new Date().toISOString(),
@@ -237,23 +275,40 @@ export class SupportersUseCase {
     });
 
     const finalImageUrl = `/api/v1/supporters/rewards/${docId}/image`;
-    await this.repo.updateRewardImage(docId, { imageUrl: finalImageUrl });
+    const finalThumbnailUrl = `/api/v1/supporters/rewards/${docId}/image?type=thumbnail`;
+
+    await this.repo.updateRewardImage(docId, {
+      imageUrl: finalImageUrl,
+      thumbnailUrl: finalThumbnailUrl,
+    });
 
     const created = await this.repo.getRewardImageById(docId);
     return created!;
   }
 
   /**
-   * Retrieves binary image stream for a reward.
+   * Retrieves binary image stream for a reward (master high-res or thumbnail preview).
    */
-  async getRewardBinary(id: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+  async getRewardBinary(
+    id: string,
+    type: 'master' | 'thumbnail' = 'master'
+  ): Promise<{ buffer: Buffer; contentType: string } | null> {
     const reward = await this.repo.getRewardImageById(id);
-    if (!reward || !reward.storagePath) {
+    if (!reward) {
+      return null;
+    }
+
+    const targetPath =
+      type === 'thumbnail' && reward.thumbnailStoragePath
+        ? reward.thumbnailStoragePath
+        : reward.storagePath;
+
+    if (!targetPath) {
       return null;
     }
 
     const bucket = this.storage.bucket(config.gcp.imageBucketName);
-    const file = bucket.file(reward.storagePath);
+    const file = bucket.file(targetPath);
     const [exists] = await file.exists();
     if (!exists) {
       return null;
@@ -261,7 +316,10 @@ export class SupportersUseCase {
 
     const [buffer] = await file.download();
     const [metadata] = await file.getMetadata();
-    const contentType = metadata.contentType || 'image/png';
+    const contentType =
+      type === 'thumbnail' || targetPath.endsWith('.webp')
+        ? 'image/webp'
+        : metadata.contentType || 'image/png';
 
     return { buffer, contentType };
   }

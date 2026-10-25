@@ -580,12 +580,12 @@
                 type="text"
                 [(ngModel)]="newRewardTitle"
                 class="form-control flex-1"
-                placeholder="2026年11月限定：サイバースタジオ描き下ろし壁紙"
+                placeholder="タイトル（空欄で自動連番採番）"
               />
               <input type="file" accept="image/*" (change)="onRewardFileSelected($event)" class="form-control" />
               <button
                 class="btn btn-primary"
-                [disabled]="isUploadingReward() || !newRewardTitle.trim() || !selectedRewardFile"
+                [disabled]="isUploadingReward() || !selectedRewardFile"
                 (click)="uploadReward()"
               >
                 {{ isUploadingReward() ? ('common.uploading' | translate) : ('common.upload' | translate) }}
@@ -598,7 +598,7 @@
             @for (reward of rewards(); track reward.id) {
               <div class="reward-card glass-panel" [class.active-reward]="reward.isActive">
                 <div class="reward-preview">
-                  <img [src]="'/api/v1/supporters/rewards/' + reward.id + '/image'" [alt]="reward.title" />
+                  <img [src]="'/api/v1/supporters/rewards/' + reward.id + '/image?type=thumbnail'" [alt]="reward.title" />
                   <span class="reward-badge" [class.active]="reward.isActive">
                     {{ reward.isActive ? '現在配布中' : 'アーカイブ' }}
                   </span>

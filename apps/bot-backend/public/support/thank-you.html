@@ -783,15 +783,24 @@
 
           document.getElementById('item-label-display').textContent = data.itemLabel || '差し入れ';
 
-          // Reward illustration
-          if (data.reward && data.reward.imageUrl) {
-            const assetContainer = document.getElementById('reward-asset-container');
-            const img = document.getElementById('reward-image');
-            const dlBtn = document.getElementById('download-reward-btn');
+          // Reward illustration (Thumbnail for responsive preview, high-res download for button)
+          if (data.reward) {
+            const previewUrl = data.reward.thumbnailUrl || data.reward.imageUrl;
+            const downloadUrl = data.reward.downloadUrl || data.reward.imageUrl;
 
-            img.src = data.reward.imageUrl;
-            dlBtn.href = data.reward.imageUrl;
-            assetContainer.style.display = 'flex';
+            if (previewUrl || downloadUrl) {
+              const assetContainer = document.getElementById('reward-asset-container');
+              const img = document.getElementById('reward-image');
+              const dlBtn = document.getElementById('download-reward-btn');
+
+              if (previewUrl) {
+                img.src = previewUrl;
+              }
+              if (downloadUrl) {
+                dlBtn.href = downloadUrl;
+              }
+              assetContainer.style.display = 'flex';
+            }
           }
         } else {
           guidanceCard.style.display = 'block';

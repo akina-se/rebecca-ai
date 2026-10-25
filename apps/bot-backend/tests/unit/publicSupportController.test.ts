@@ -129,6 +129,50 @@ describe('PublicSupportController Unit Tests', () => {
           reward: expect.objectContaining({
             title: 'サポーター特典イラスト',
             imageUrl: 'https://storage.googleapis.com/signed-url',
+            thumbnailUrl: 'https://storage.googleapis.com/signed-url',
+            downloadUrl: 'https://storage.googleapis.com/signed-url',
+          }),
+        }),
+      );
+    });
+
+    it('generates distinct signed URLs for download and thumbnail when thumbnailStoragePath is set', async () => {
+      req.query = { session_id: 'cs_paid_with_thumb' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_paid_with_thumb',
+        payment_status: 'paid',
+        amount_total: 1000,
+      });
+
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        tier: 'silver',
+        itemLabel: 'サーバーリソース差し入れ',
+        safeName: 'アリス',
+      });
+
+      deps.firestore.getActiveRewardImage.mockResolvedValue({
+        id: 'reward_2026_10',
+        title: 'サポーター特典イラスト',
+        storagePath: 'rewards/reward_01_master.png',
+        thumbnailStoragePath: 'rewards/reward_01_thumb.webp',
+      });
+
+      deps.storage.generateSignedUrl
+        .mockResolvedValueOnce('https://storage.googleapis.com/master-signed-url')
+        .mockResolvedValueOnce('https://storage.googleapis.com/thumb-signed-url');
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(deps.storage.generateSignedUrl).toHaveBeenCalledWith('rewards/reward_01_master.png', 30);
+      expect(deps.storage.generateSignedUrl).toHaveBeenCalledWith('rewards/reward_01_thumb.webp', 30);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reward: expect.objectContaining({
+            title: 'サポーター特典イラスト',
+            downloadUrl: 'https://storage.googleapis.com/master-signed-url',
+            thumbnailUrl: 'https://storage.googleapis.com/thumb-signed-url',
+            imageUrl: 'https://storage.googleapis.com/thumb-signed-url',
           }),
         }),
       );

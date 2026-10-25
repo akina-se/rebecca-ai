@@ -399,9 +399,6 @@ export class SupportersPageComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedRewardFile = input.files[0];
-      if (!this.newRewardTitle) {
-        this.newRewardTitle = this.selectedRewardFile.name.replace(/\.[^/.]+$/, '');
-      }
     }
   }
 
@@ -413,7 +410,7 @@ export class SupportersPageComponent implements OnInit {
 
     this.isUploadingReward.set(true);
     this.repo
-      .uploadReward(this.selectedRewardFile, this.newRewardTitle || 'サポーター特典イラスト')
+      .uploadReward(this.selectedRewardFile, this.newRewardTitle.trim())
       .subscribe({
         next: () => {
           this.toast.show('デジタル特典画像をアップロードしました', 'success');

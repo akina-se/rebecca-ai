@@ -91,17 +91,27 @@ export class PublicSupportController {
       let rewardPayload = null;
       if (activeReward) {
         const expiresInMinutes = 30;
-        const signedUrl = await this.deps.storage.generateSignedUrl(
+        const downloadUrl = await this.deps.storage.generateSignedUrl(
           activeReward.storagePath,
           expiresInMinutes,
         );
+
+        let thumbnailUrl = downloadUrl;
+        if (activeReward.thumbnailStoragePath) {
+          thumbnailUrl = await this.deps.storage.generateSignedUrl(
+            activeReward.thumbnailStoragePath,
+            expiresInMinutes,
+          );
+        }
 
         // Record distribution telemetry
         await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
 
         rewardPayload = {
           title: activeReward.title,
-          imageUrl: signedUrl,
+          imageUrl: thumbnailUrl,
+          thumbnailUrl,
+          downloadUrl,
           expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
         };
       }

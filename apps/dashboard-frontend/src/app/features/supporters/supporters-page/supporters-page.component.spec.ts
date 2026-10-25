@@ -328,6 +328,7 @@ describe('SupportersPageComponent', () => {
     const fakeEvent = {
       target: { files: [file] },
     } as unknown as Event;
+    component.newRewardTitle = 'special_art';
     component.onRewardFileSelected(fakeEvent);
     expect(component.selectedRewardFile).toBe(file);
     expect(component.newRewardTitle).toBe('special_art');

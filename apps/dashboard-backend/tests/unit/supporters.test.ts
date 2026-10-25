@@ -1,3 +1,7 @@
+jest.mock('../../src/utils/image', () => ({
+  generateWebpThumbnail: jest.fn().mockResolvedValue(Buffer.from('mock_webp_thumbnail')),
+  stripImageMetadata: jest.fn().mockResolvedValue(Buffer.from('mock_stripped_master')),
+}));
 import { SupportersRepository } from '../../src/features/supporters/repository';
 import { SupportersUseCase } from '../../src/features/supporters/usecase';
 import { SupportersController } from '../../src/features/supporters/controller';
@@ -489,13 +493,19 @@ describe('Supporters Feature Unit Tests', () => {
       expect(res.id).toBe('tx_new_manual');
     });
 
-    it('uploadReward saves file to storage and creates reward doc', async () => {
+    it('uploadReward strips metadata, generates WebP thumb, and saves file with sequence number', async () => {
+      repo.getRewardImages.mockResolvedValue([
+        { id: 'r_1', sequenceNumber: 1 } as any,
+      ]);
       repo.createRewardImage.mockResolvedValue('r_new');
       repo.getRewardImageById.mockResolvedValue({
         id: 'r_new',
         title: 'Halloween Art',
         imageUrl: '/api/v1/supporters/rewards/r_new/image',
-        storagePath: 'rewards/halloween.png',
+        thumbnailUrl: '/api/v1/supporters/rewards/r_new/image?type=thumbnail',
+        storagePath: 'rewards/reward_02_12345_master.png',
+        thumbnailStoragePath: 'rewards/reward_02_12345_thumb.webp',
+        sequenceNumber: 2,
         isActive: true,
         distributedCount: 0,
         createdAt: '2026-10-20T00:00:00Z',
@@ -503,15 +513,47 @@ describe('Supporters Feature Unit Tests', () => {
       });
 
       const mockMulterFile: any = {
-        originalname: 'halloween.png',
+        originalname: 'personal_leak_name.png',
         buffer: Buffer.from('image_bytes'),
         mimetype: 'image/png',
       };
 
       const reward = await useCase.uploadReward(mockMulterFile, 'Halloween Art');
-      expect(mockFile.save).toHaveBeenCalled();
-      expect(repo.createRewardImage).toHaveBeenCalled();
+      expect(mockFile.save).toHaveBeenCalledTimes(2); // Master + Thumb
+      expect(repo.createRewardImage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sequenceNumber: 2,
+          storagePath: expect.stringContaining('reward_02_'),
+          thumbnailStoragePath: expect.stringContaining('reward_02_'),
+        })
+      );
+      // originalname is never leaked into storagePath
+      const createCall = repo.createRewardImage.mock.calls[0][0];
+      expect(createCall.storagePath).not.toContain('personal_leak_name');
       expect(reward.title).toBe('Halloween Art');
+    });
+
+    it('uploadReward auto-assigns sequential title when title is empty or filename-like', async () => {
+      repo.getRewardImages.mockResolvedValue([]);
+      repo.createRewardImage.mockResolvedValue('r_new');
+      repo.getRewardImageById.mockResolvedValue({
+        id: 'r_new',
+        title: 'サポーター特典 #01',
+      } as any);
+
+      const mockMulterFile: any = {
+        originalname: 'my_draft.jpg',
+        buffer: Buffer.from('image_bytes'),
+        mimetype: 'image/jpeg',
+      };
+
+      await useCase.uploadReward(mockMulterFile, 'my_draft.jpg');
+      expect(repo.createRewardImage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'サポーター特典 #01',
+          sequenceNumber: 1,
+        })
+      );
     });
 
     it('updateReward and deleteReward operate on repository and cloud storage', async () => {
@@ -533,11 +575,21 @@ describe('Supporters Feature Unit Tests', () => {
       repo.getRewardImageById.mockResolvedValueOnce({
         id: 'r_1',
         storagePath: 'rewards/art.png',
+        thumbnailStoragePath: 'rewards/art_thumb.webp',
       } as any);
 
-      const binary = await useCase.getRewardBinary('r_1');
+      const binary = await useCase.getRewardBinary('r_1', 'master');
       expect(binary).not.toBeNull();
       expect(binary?.contentType).toBe('image/png');
+
+      repo.getRewardImageById.mockResolvedValueOnce({
+        id: 'r_1',
+        storagePath: 'rewards/art.png',
+        thumbnailStoragePath: 'rewards/art_thumb.webp',
+      } as any);
+      const thumbBinary = await useCase.getRewardBinary('r_1', 'thumbnail');
+      expect(thumbBinary).not.toBeNull();
+      expect(thumbBinary?.contentType).toBe('image/webp');
     });
   });
 

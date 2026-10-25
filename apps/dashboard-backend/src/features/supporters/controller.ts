@@ -156,13 +156,14 @@ export class SupportersController {
   async getRewardImage(req: Request, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
-      const result = await this.useCase.getRewardBinary(id);
+      const type = req.query.type === 'thumbnail' ? 'thumbnail' : 'master';
+      const result = await this.useCase.getRewardBinary(id, type);
       if (!result) {
         res.status(404).send('Image not found');
         return;
       }
       res.setHeader('Content-Type', result.contentType);
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Cache-Control', type === 'thumbnail' ? 'public, max-age=86400' : 'private, max-age=3600');
       res.send(result.buffer);
     } catch (error) {
       logger.error('[SupportersController] getRewardImage failed', error, { id: req.params.id });

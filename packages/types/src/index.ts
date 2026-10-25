@@ -700,6 +700,9 @@ export interface RewardImageDoc {
   title: string;
   imageUrl: string;
   storagePath: string;
+  thumbnailUrl?: string;
+  thumbnailStoragePath?: string;
+  sequenceNumber?: number;
   isActive: boolean;
   distributedCount: number;
   createdAt: string;
