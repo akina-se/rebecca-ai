@@ -70,10 +70,12 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
 
   // Mount public views
   app.get('/supporters', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(publicDir, 'supporters.html'));
   });
 
   app.get('/support/thank-you', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(publicDir, 'support', 'thank-you.html'));
   });
 
