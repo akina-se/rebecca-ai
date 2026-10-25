@@ -301,10 +301,6 @@
       gap: 24px;
     }
 
-    .tiers-scroll-edge {
-      display: none;
-    }
-
     .tiers-carousel-dots {
       display: none;
     }
@@ -1409,67 +1405,7 @@
         scroll-snap-stop: always;
       }
 
-      /* Swipe Edge with Glowing Purple Line */
-      .tiers-scroll-edge {
-        display: block;
-        position: absolute;
-        top: 0;
-        bottom: 34px;
-        width: 38px;
-        pointer-events: none;
-        z-index: 20;
-        opacity: 0;
-        transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .tiers-scroll-edge.active {
-        opacity: 1;
-      }
-
-      .tiers-scroll-edge.left {
-        left: 0;
-        background: linear-gradient(to right, rgba(7, 8, 12, 0.95) 0%, rgba(7, 8, 12, 0.4) 60%, transparent 100%);
-      }
-
-      .tiers-scroll-edge.right {
-        right: 0;
-        background: linear-gradient(to left, rgba(7, 8, 12, 0.95) 0%, rgba(7, 8, 12, 0.4) 60%, transparent 100%);
-      }
-
-      .tiers-scroll-edge.left .tiers-glow-line {
-        position: absolute;
-        left: 0;
-        top: 10%;
-        bottom: 10%;
-        width: 3.5px;
-        border-radius: 9999px;
-        background: linear-gradient(180deg, transparent 0%, rgba(167, 139, 250, 0.4) 15%, #c4b5fd 40%, #a78bfa 60%, #8b5cf6 85%, transparent 100%);
-        box-shadow: 0 0 10px #c4b5fd, 0 0 20px rgba(139, 92, 246, 0.9), 0 0 32px rgba(168, 85, 247, 0.7);
-        animation: pulse-purple-edge 2.2s infinite ease-in-out;
-      }
-
-      .tiers-scroll-edge.right .tiers-glow-line {
-        position: absolute;
-        right: 0;
-        top: 10%;
-        bottom: 10%;
-        width: 3.5px;
-        border-radius: 9999px;
-        background: linear-gradient(180deg, transparent 0%, rgba(167, 139, 250, 0.4) 15%, #c4b5fd 40%, #a78bfa 60%, #8b5cf6 85%, transparent 100%);
-        box-shadow: 0 0 10px #c4b5fd, 0 0 20px rgba(139, 92, 246, 0.9), 0 0 32px rgba(168, 85, 247, 0.7);
-        animation: pulse-purple-edge 2.2s infinite ease-in-out;
-      }
-
-      @keyframes pulse-purple-edge {
-        0%, 100% {
-          opacity: 0.85;
-          filter: drop-shadow(0 0 6px #a78bfa);
-        }
-        50% {
-          opacity: 1;
-          filter: drop-shadow(0 0 14px #c084fc);
-        }
-      }
+      
 
       .tiers-carousel-dots {
         display: flex;
@@ -1604,12 +1540,7 @@
       </div>
 
       <div class="tiers-carousel-wrapper" id="tiers-carousel-wrapper">
-        <div class="tiers-scroll-edge left" id="tiers-edge-left" aria-hidden="true">
-          <div class="tiers-glow-line"></div>
-        </div>
-        <div class="tiers-scroll-edge right active" id="tiers-edge-right" aria-hidden="true">
-          <div class="tiers-glow-line"></div>
-        </div>
+        
 
         <div class="tiers-grid" id="tiers-grid">
 
