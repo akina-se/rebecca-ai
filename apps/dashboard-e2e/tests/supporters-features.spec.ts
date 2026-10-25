@@ -294,4 +294,36 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
       localStorage.setItem('rebecca_lang', 'ja');
     });
   });
+
+  test('should open rewards catalog and open full-size image in Lightbox on click', async ({ page }) => {
+    // 1. Open Rewards Catalog Modal
+    const rewardsBtn = page.locator('.header-actions .btn-secondary');
+    await expect(rewardsBtn).toBeVisible({ timeout: 10000 });
+    await rewardsBtn.click();
+
+    const rewardsModal = page.locator('.modal-content.modal-lg');
+    await expect(rewardsModal).toBeVisible({ timeout: 5000 });
+
+    // 2. Click the zoom button on the first reward card
+    const zoomBtn = page.locator('.reward-card .btn-icon-only').first();
+    if (await zoomBtn.isVisible()) {
+      await zoomBtn.click();
+
+      // 3. Verify Lightbox opens on top with master image URL
+      const lightbox = page.locator('app-lightbox .lightbox-overlay.open');
+      await expect(lightbox).toBeVisible({ timeout: 5000 });
+      const img = page.locator('app-lightbox .image-container img');
+      await expect(img).toBeVisible();
+      await expect(img).toHaveAttribute('src', /type=master/);
+
+      // 4. Close Lightbox via close button
+      await page.locator('app-lightbox .close-btn').click();
+      await expect(lightbox).toBeHidden();
+      await expect(rewardsModal).toBeVisible();
+    }
+
+    // 5. Close rewards modal
+    await rewardsModal.locator('.modal-footer .btn-secondary').click();
+    await expect(rewardsModal).toBeHidden();
+  });
 });

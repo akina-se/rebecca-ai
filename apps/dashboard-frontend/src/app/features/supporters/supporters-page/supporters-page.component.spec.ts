@@ -391,4 +391,17 @@ describe('SupportersPageComponent', () => {
     component.closeRewardsModal();
     expect(component.isRewardsModalOpen()).toBe(false);
   });
+
+  it('should open and close reward illustration lightbox with master image URL', () => {
+    expect(component.isLightboxOpen()).toBe(false);
+    expect(component.lightboxImageUrl()).toBe('');
+
+    component.openRewardLightbox(mockReward);
+    expect(component.isLightboxOpen()).toBe(true);
+    expect(component.lightboxImageUrl()).toBe('/api/v1/supporters/rewards/r_1/image?type=master');
+
+    component.closeRewardLightbox();
+    expect(component.isLightboxOpen()).toBe(false);
+    expect(component.lightboxImageUrl()).toBe('');
+  });
 });

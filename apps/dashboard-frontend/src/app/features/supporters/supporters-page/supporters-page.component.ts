@@ -16,11 +16,12 @@ import { TranslationService } from '../../../core/services/translation.service';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { CopilotContextService } from '../../../core/services/copilot-context.service';
+import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 
 @Component({
   selector: 'app-supporters-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, TzDatePipe, RightDrawerComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, TzDatePipe, RightDrawerComponent, PaginationComponent, LightboxComponent],
   templateUrl: './supporters-page.component.html',
   styleUrls: ['./supporters-page.component.css'],
 })
@@ -91,6 +92,10 @@ export class SupportersPageComponent implements OnInit {
   newRewardTitle = '';
   selectedRewardFile: File | null = null;
   readonly isUploadingReward = signal<boolean>(false);
+
+  // Fullscreen Illustration Lightbox State
+  readonly isLightboxOpen = signal<boolean>(false);
+  readonly lightboxImageUrl = signal<string>('');
 
   ngOnInit(): void {
     this.loadLedger();
@@ -451,7 +456,7 @@ export class SupportersPageComponent implements OnInit {
         this.loadRewards();
       },
       error: () => {
-        this.toast.show('更新に失敗しました', 'error');
+        this.toast.show(this.translationService.t('supporters.toast_update_error'), 'error');
       },
     });
   }
@@ -469,5 +474,15 @@ export class SupportersPageComponent implements OnInit {
         this.toast.show(this.translationService.t('supporters.toast_delete_error'), 'error');
       },
     });
+  }
+
+  openRewardLightbox(reward: RewardImageDoc): void {
+    this.lightboxImageUrl.set(`/api/v1/supporters/rewards/${reward.id}/image?type=master`);
+    this.isLightboxOpen.set(true);
+  }
+
+  closeRewardLightbox(): void {
+    this.isLightboxOpen.set(false);
+    this.lightboxImageUrl.set('');
   }
 }

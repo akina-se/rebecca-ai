@@ -612,16 +612,26 @@
           <div class="rewards-grid">
             @for (reward of rewards(); track reward.id) {
               <div class="reward-card glass-panel" [class.active-reward]="reward.isActive">
-                <div class="reward-preview">
+                <div class="reward-preview" (click)="openRewardLightbox(reward)" [title]="'supporters.view_full_image' | translate">
                   <img [src]="'/api/v1/supporters/rewards/' + reward.id + '/image?type=thumbnail'" [alt]="reward.title" />
                   <span class="reward-badge" [class.active]="reward.isActive">
                     {{ reward.isActive ? ('supporters.reward_pool_badge_active' | translate) : ('supporters.reward_pool_badge_inactive' | translate) }}
+                  </span>
+                  <span class="reward-preview-zoom-hint" [title]="'supporters.view_full_image' | translate">
+                    <span class="material-icons">zoom_in</span>
                   </span>
                 </div>
                 <div class="reward-meta">
                   <div class="reward-title" [title]="reward.title">{{ reward.title }}</div>
                   <div class="reward-stats">{{ 'supporters.reward_distributed_count' | translate }}{{ reward.distributedCount }}{{ 'supporters.reward_distributed_times' | translate }}</div>
                   <div class="reward-actions">
+                    <button
+                      class="btn btn-sm btn-secondary btn-icon-only"
+                      (click)="openRewardLightbox(reward)"
+                      [title]="'supporters.view_full_image' | translate"
+                    >
+                      <span class="material-icons">zoom_in</span>
+                    </button>
                     <button
                       class="btn btn-sm"
                       [class.btn-primary]="!reward.isActive"
@@ -646,5 +656,12 @@
       </div>
     </div>
   }
+
+  <!-- Fullscreen Illustration Lightbox -->
+  <app-lightbox
+    [isOpen]="isLightboxOpen()"
+    [imageUrl]="lightboxImageUrl()"
+    (lightboxClose)="closeRewardLightbox()"
+  ></app-lightbox>
 
 </div>
