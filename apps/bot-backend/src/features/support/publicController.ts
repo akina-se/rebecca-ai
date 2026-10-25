@@ -13,7 +13,6 @@ import { AppDependencies } from '../../types';
 import { SupportConfig } from './types';
 import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
 import { logger } from '../../utils/logger';
-import { SupportTaskUseCase } from './usecase';
 
 /**
  * Controller managing public-facing support endpoints.
@@ -50,25 +49,13 @@ export class PublicSupportController {
    * @param res - Express Response.
    */
   /**
-   * Enqueues the appreciation post task via Cloud Tasks, falling back to direct
-   * background execution when Cloud Tasks is not available (e.g. in local development).
+   * Enqueues the appreciation post task via Cloud Tasks.
    */
   private triggerAppreciationPost(transactionId: string): void {
     this.deps.tasks.enqueueSupportTask({ transactionId }).catch((taskErr) => {
-      logger.warn('[PublicSupportController] Cloud Tasks enqueue failed, falling back to direct background execution', {
+      logger.error('[PublicSupportController] Cloud Tasks enqueue failed for support transaction', taskErr, {
         transactionId,
-        taskErr: taskErr instanceof Error ? taskErr.message : String(taskErr),
       });
-      try {
-        const supportUseCase = new SupportTaskUseCase(this.deps, this.config);
-        setImmediate(() => {
-          supportUseCase.execute({ transactionId }).catch((directErr) => {
-            logger.error('[PublicSupportController] Direct appreciation post execution failed', directErr, { transactionId });
-          });
-        });
-      } catch (initErr) {
-        logger.warn('[PublicSupportController] Could not initialize SupportTaskUseCase for direct execution', { initErr });
-      }
     });
   }
 
@@ -381,7 +368,7 @@ export class PublicSupportController {
         await this.deps.firestore.createSupportTransaction(transactionDoc);
         logger.info('[PublicSupportController] Created support transaction', { transactionId });
 
-        // Enqueue autonomous appreciation post task via Cloud Tasks (with local fallback)
+        // Enqueue autonomous appreciation post task via Cloud Tasks
         this.triggerAppreciationPost(transactionId);
 
         res.status(200).json({ received: true, transactionId });
