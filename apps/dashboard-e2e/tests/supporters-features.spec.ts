@@ -285,11 +285,30 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     await expect(rightDrawer.locator('.section-heading', { hasText: 'Stripe Payment Info' })).toBeVisible();
     await expect(rightDrawer.locator('.detail-label', { hasText: 'Transaction ID' })).toBeVisible();
 
+    // Verify no leaked Japanese text in drawer
+    const drawerText = await rightDrawer.innerText();
+    expect(drawerText).not.toContain('公開停止');
+    expect(drawerText).not.toContain('サポーター名');
+    expect(drawerText).not.toContain('決済情報');
+
     // Close drawer
     await rightDrawer.locator('.close-btn').click();
     await expect(rightDrawer).not.toHaveClass(/open/);
 
-    // 5. Restore default ja for other tests
+    // 5. Open Manual Entry Modal and verify English labels without Japanese leakage
+    const manualEntryBtn = page.locator('.header-actions .btn-primary');
+    await manualEntryBtn.click();
+    const modalContent = page.locator('.modal-backdrop .modal-content');
+    await expect(modalContent).toBeVisible();
+    const modalText = await modalContent.innerText();
+    expect(modalText).toContain('Import Stripe Checkout Manually');
+    expect(modalText).not.toContain('Stripe決済の手動取り込み');
+    expect(modalText).not.toContain('(必須)');
+    expect(modalText).not.toContain('名無しマスター');
+    await modalContent.locator('.modal-footer .btn-secondary').click();
+    await expect(page.locator('.modal-backdrop')).toBeHidden();
+
+    // 6. Restore default ja for other tests
     await page.evaluate(() => {
       localStorage.setItem('rebecca_lang', 'ja');
     });
@@ -323,6 +342,149 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     }
 
     // 5. Close rewards modal
+    await rewardsModal.locator('.modal-footer .btn-secondary').click();
+    await expect(rewardsModal).toBeHidden();
+  });
+  test('should verify streamlined UI with no redundant subtitle or alert description and filter by alert button', async ({ page }) => {
+    // 1. Verify header does not contain redundant subtitle
+    await expect(page.locator('.page-header .page-title')).toBeVisible({ timeout: 10000 });
+    const subtitle = page.locator('.page-header .page-subtitle');
+    expect(await subtitle.count()).toBe(0);
+
+    // 2. Verify failure alert banner does not contain verbose alert description
+    const alertBanner = page.locator('.alert-banner.failure');
+    if (await alertBanner.isVisible()) {
+      const alertDesc = alertBanner.locator('.alert-desc');
+      expect(await alertDesc.count()).toBe(0);
+
+      // Verify title is visible and cleanly aligned
+      const alertTitle = alertBanner.locator('.alert-title');
+      await expect(alertTitle).toBeVisible();
+
+      // 3. Click alert action button to filter by failed
+      const alertActionBtn = alertBanner.locator('.alert-action-btn');
+      await expect(alertActionBtn).toBeVisible();
+      await alertActionBtn.click();
+
+      // 4. Verify failed filter pill is now active
+      const failedPill = page.locator('.filter-pills button', { hasText: /Failed Only|失敗のみ/i });
+      await expect(failedPill).toHaveClass(/active/);
+
+      // 5. Reset back to All filter (first pill)
+      const allPill = page.locator('.filter-pills button').first();
+      await allPill.click();
+      await expect(allPill).toHaveClass(/active/);
+    }
+  });
+
+  test('should open Manual Stripe Checkout Import Modal and test validations, input handling, and cancellation', async ({ page }) => {
+    // 1. Click Manual Entry button in header
+    const manualEntryBtn = page.locator('.header-actions .btn-primary');
+    await expect(manualEntryBtn).toBeVisible({ timeout: 10000 });
+    await manualEntryBtn.click();
+
+    // 2. Verify modal opens
+    const modalBackdrop = page.locator('.modal-backdrop');
+    await expect(modalBackdrop).toBeVisible({ timeout: 5000 });
+    const modalContent = modalBackdrop.locator('.modal-content');
+    await expect(modalContent.locator('.modal-header h2')).toHaveText(/Import Stripe Checkout|Stripe決済の手動取り込み/i);
+
+    // 3. Verify session ID input is auto-generated with cs_manual_ prefix
+    const sessionInput = modalContent.locator('input[placeholder="cs_live_..."]');
+    await expect(sessionInput).toBeVisible();
+    const sessionIdVal = await sessionInput.inputValue();
+    expect(sessionIdVal).toMatch(/^cs_manual_\d+$/);
+
+    // 4. Verify submit button is enabled initially
+    const submitBtn = modalContent.locator('.modal-footer .btn-primary');
+    await expect(submitBtn).toBeEnabled();
+
+    // 5. Clear session ID -> submit button should become disabled
+    await sessionInput.fill('');
+    await expect(submitBtn).toBeDisabled();
+
+    // 6. Restore session ID -> submit button should become enabled again
+    await sessionInput.fill(sessionIdVal);
+    await expect(submitBtn).toBeEnabled();
+
+    // 7. Verify supporter name input
+    const nameInput = modalContent.locator('.form-group input').nth(1);
+    await expect(nameInput).toBeVisible();
+
+    // 8. Close modal via Cancel button
+    const cancelBtn = modalContent.locator('.modal-footer .btn-secondary');
+    await cancelBtn.click();
+    await expect(modalBackdrop).toBeHidden();
+  });
+
+  test('should filter ledger by plan tier (All Tiers, Gold, Silver, Bronze)', async ({ page }) => {
+    const tierSelect = page.locator('.toolbar select.form-select');
+    await expect(tierSelect).toBeVisible({ timeout: 10000 });
+
+    // 1. Select Silver tier
+    await tierSelect.selectOption('silver');
+    await page.waitForTimeout(500);
+    const rows = page.locator('.data-table tbody tr.clickable-row');
+    const rowCount = await rows.count();
+    if (rowCount > 0) {
+      for (let i = 0; i < Math.min(rowCount, 3); i++) {
+        const rowText = await rows.nth(i).innerText();
+        expect(rowText.toUpperCase()).toMatch(/SILVER|シルバー|1,000|1,500/);
+      }
+    }
+
+    // 2. Select Bronze tier
+    await tierSelect.selectOption('bronze');
+    await page.waitForTimeout(500);
+    const bronzeCount = await rows.count();
+    if (bronzeCount > 0) {
+      for (let i = 0; i < Math.min(bronzeCount, 3); i++) {
+        const rowText = await rows.nth(i).innerText();
+        expect(rowText.toUpperCase()).toMatch(/BRONZE|ブロンズ|500|300/);
+      }
+    }
+
+    // 3. Reset back to all tiers
+    await tierSelect.selectOption('all');
+    await page.waitForTimeout(500);
+  });
+
+  test('should verify Lightbox modal dismiss via Escape key and backdrop click', async ({ page }) => {
+    // 1. Open rewards modal
+    const rewardsBtn = page.locator('.header-actions .btn-secondary');
+    await expect(rewardsBtn).toBeVisible({ timeout: 10000 });
+    await rewardsBtn.click();
+
+    const rewardsModal = page.locator('.modal-content.modal-lg');
+    await expect(rewardsModal).toBeVisible({ timeout: 5000 });
+
+    // 2. Click thumbnail directly on first reward card
+    const rewardThumbnail = page.locator('.reward-card .reward-preview').first();
+    if (await rewardThumbnail.isVisible()) {
+      await rewardThumbnail.click();
+
+      // Verify Lightbox opens
+      const lightbox = page.locator('app-lightbox .lightbox-overlay.open');
+      await expect(lightbox).toBeVisible({ timeout: 5000 });
+
+      // Dismiss with Escape key
+      await page.keyboard.press('Escape');
+      await expect(lightbox).toBeHidden();
+      await expect(rewardsModal).toBeVisible();
+
+      // Open again via zoom button
+      const zoomBtn = page.locator('.reward-card .btn-icon-only').first();
+      await expect(zoomBtn).toBeVisible({ timeout: 5000 });
+      await zoomBtn.click();
+      await expect(lightbox).toBeVisible({ timeout: 5000 });
+
+      // Dismiss with backdrop click (clicking upper left padding of lightbox)
+      await lightbox.click({ position: { x: 10, y: 10 } });
+      await expect(lightbox).toBeHidden();
+      await expect(rewardsModal).toBeVisible();
+    }
+
+    // Close rewards modal
     await rewardsModal.locator('.modal-footer .btn-secondary').click();
     await expect(rewardsModal).toBeHidden();
   });
