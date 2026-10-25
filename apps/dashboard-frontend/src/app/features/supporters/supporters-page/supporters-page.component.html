@@ -4,7 +4,6 @@
   <div class="page-header">
     <div>
       <h1 class="page-title">{{ 'supporters.title' | translate }}</h1>
-      <p class="page-subtitle">{{ 'supporters.subtitle' | translate }}</p>
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="openRewardsModal()">
@@ -23,10 +22,7 @@
     <div class="alert-banner failure">
       <div class="alert-content">
         <span class="material-icons alert-icon">error_outline</span>
-        <div>
-          <span class="alert-title">{{ summary().failedCount }} {{ 'supporters.alert_failed' | translate }}</span>
-          <span class="alert-desc">{{ 'supporters.alert_failed_desc' | translate }}</span>
-        </div>
+        <span class="alert-title">{{ summary().failedCount }} {{ 'supporters.alert_failed' | translate }}</span>
       </div>
       <button class="alert-action-btn" (click)="filterByFailed()">
         {{ 'supporters.filter_failed' | translate }}
