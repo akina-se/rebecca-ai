@@ -658,7 +658,7 @@ export type SupportTier = 'bronze' | 'silver' | 'gold' | 'vip';
 /** Official in-universe item definitions and tier mapping */
 export const SUPPORT_TIER_CONFIG = {
   bronze: {
-    amount: 300,
+    amount: 500,
     itemLabel: 'エナドリ1本差し入れ',
     tier: 'bronze' as SupportTier,
     displayName: 'Bronze Supporter',

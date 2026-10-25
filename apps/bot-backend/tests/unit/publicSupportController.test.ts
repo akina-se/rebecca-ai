@@ -479,7 +479,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(data.plans[0]).toEqual(
         expect.objectContaining({
           tier: 'bronze',
-          amount: 300,
+          amount: 500,
           currency: 'jpy',
           itemLabel: 'エナドリ1本差し入れ',
           available: true,

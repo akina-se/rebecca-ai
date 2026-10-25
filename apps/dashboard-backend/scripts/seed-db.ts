@@ -432,7 +432,7 @@ async function seedFirestore() {
       amount: 1000,
       currency: 'jpy',
       tier: 'bronze',
-      itemLabel: 'エナドリ1本差し入れ (¥300)',
+      itemLabel: 'エナドリ1本差し入れ (¥500)',
       rewardImageId: 'reward_202610_halloween',
       status: 'failed',
       isBanned: false,
@@ -469,10 +469,10 @@ async function seedFirestore() {
       safeName: 'NekoMaster',
       isNameSanitized: true,
       creditVisibility: 'show',
-      amount: 300,
+      amount: 500,
       currency: 'jpy',
       tier: 'bronze',
-      itemLabel: 'エナドリ1本差し入れ (¥300)',
+      itemLabel: 'エナドリ1本差し入れ (¥500)',
       rewardImageId: 'reward_202610_halloween',
       status: 'completed',
       isBanned: false,
@@ -491,10 +491,10 @@ async function seedFirestore() {
       safeName: '[BANNED]',
       isNameSanitized: true,
       creditVisibility: 'hide',
-      amount: 300,
+      amount: 500,
       currency: 'jpy',
       tier: 'bronze',
-      itemLabel: 'エナドリ1本差し入れ (¥300)',
+      itemLabel: 'エナドリ1本差し入れ (¥500)',
       rewardImageId: 'reward_202610_halloween',
       status: 'completed',
       isBanned: true,
@@ -509,10 +509,10 @@ async function seedFirestore() {
     const isGold = i <= 20;
     const isSilver = !isGold && i <= 70;
     const tier = isGold ? 'gold' : (isSilver ? 'silver' : 'bronze');
-    const amount = isGold ? 3000 : (isSilver ? 1000 : 300);
+    const amount = isGold ? 3000 : (isSilver ? 1000 : 500);
     const itemLabel = isGold
       ? '開発サポート (¥3,000)'
-      : (isSilver ? 'サーバーリソース差し入れ (¥1,000)' : 'エナドリ1本差し入れ (¥300)');
+      : (isSilver ? 'サーバーリソース差し入れ (¥1,000)' : 'エナドリ1本差し入れ (¥500)');
 
     const baseName = backerBaseNames[(i - 1) % backerBaseNames.length];
     const cycle = Math.floor((i - 1) / backerBaseNames.length);

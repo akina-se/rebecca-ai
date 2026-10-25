@@ -1557,7 +1557,7 @@
               <span class="t-en">Energy Drink</span>
             </div>
             <div class="tier-item-label bronze">BRONZE SPONSOR</div>
-            <div class="tier-price">¥300 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <div class="tier-price">¥500 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1571,14 +1571,14 @@
               </li>
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span class="t-ja">公式Webスペシャルサンクス欄へのお名前掲載</span>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載</span>
                 <span class="t-en">Name listed on official supporters roster</span>
               </li>
             </ul>
           </div>
           <a id="btn-plan-bronze" href="#" target="_blank" rel="noopener noreferrer" class="btn-support secondary">
-            <span class="t-ja">エナドリを差し入れ（¥300）</span>
-            <span class="t-en">Send Energy Drink (¥300)</span>
+            <span class="t-ja">エナドリを差し入れ（¥500）</span>
+            <span class="t-en">Send Energy Drink (¥500)</span>
           </a>
         </div>
 
@@ -1613,7 +1613,7 @@
               </li>
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span class="t-ja">公式Webスペシャルサンクス欄へのお名前掲載（SILVERバッジ）</span>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載（SILVERバッジ）</span>
                 <span class="t-en">Name listed with SILVER badge on official supporters roster</span>
               </li>
             </ul>
@@ -1651,7 +1651,7 @@
               </li>
               <li class="tier-perk-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span class="t-ja">公式Webスペシャルサンクス欄へのお名前掲載（最上位GOLDバッジ）</span>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載（最上位GOLDバッジ）</span>
                 <span class="t-en">Name listed with top-tier GOLD badge on official supporters roster</span>
               </li>
             </ul>
@@ -1665,8 +1665,8 @@
       </div>
 
       <div class="tiers-carousel-dots" id="tiers-carousel-dots" aria-hidden="true">
-        <button type="button" class="carousel-dot active" data-index="0" aria-label="Bronze Plan"></button>
-        <button type="button" class="carousel-dot" data-index="1" aria-label="Silver Plan"></button>
+        <button type="button" class="carousel-dot" data-index="0" aria-label="Bronze Plan"></button>
+        <button type="button" class="carousel-dot active" data-index="1" aria-label="Silver Plan"></button>
         <button type="button" class="carousel-dot" data-index="2" aria-label="Gold Plan"></button>
       </div>
     </div>
@@ -1999,8 +1999,8 @@
       document.getElementById('modal-tier-text').textContent = tier.toUpperCase() + ' SPONSOR';
       document.getElementById('modal-supporter-name').textContent = displayName;
 
-      const planNameJa = tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥300）');
-      const planNameEn = tier === 'gold' ? 'Development Support (¥3,000)' : (tier === 'silver' ? 'Compute Resource (¥1,000)' : 'Energy Drink (¥300)');
+      const planNameJa = tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥500）');
+      const planNameEn = tier === 'gold' ? 'Development Support (¥3,000)' : (tier === 'silver' ? 'Compute Resource (¥1,000)' : 'Energy Drink (¥500)');
       document.getElementById('modal-plan-title').innerHTML =
         '<span class="t-ja">' + escapeHtml(planNameJa) + '</span>' +
         '<span class="t-en">' + escapeHtml(planNameEn) + '</span>';
@@ -2198,6 +2198,10 @@
 
       grid.addEventListener('scroll', updateEdgesAndDots, { passive: true });
       window.addEventListener('resize', updateEdgesAndDots, { passive: true });
+      if (window.innerWidth <= 900 && cards[1]) {
+        const targetScroll = cards[1].offsetLeft - (grid.clientWidth - cards[1].offsetWidth) / 2;
+        grid.scrollLeft = Math.max(0, targetScroll);
+      }
       setTimeout(updateEdgesAndDots, 100);
     }
 
