@@ -128,7 +128,7 @@ export class SupportersPageComponent implements OnInit {
           }
         },
         error: () => {
-          this.toast.show('サポーター台帳の取得に失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_fetch_error'), 'error');
           this.isLoading.set(false);
         },
       });
@@ -207,13 +207,13 @@ export class SupportersPageComponent implements OnInit {
       })
       .subscribe({
         next: (updated) => {
-          this.toast.show('サポーター設定を保存しました', 'success');
+          this.toast.show(this.translationService.t('supporters.toast_save_success'), 'success');
           this.isSavingDrawer.set(false);
           this.selectedTx.set(updated);
           this.loadLedger(this.currentPage);
         },
         error: () => {
-          this.toast.show('設定の保存に失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_save_error'), 'error');
           this.isSavingDrawer.set(false);
         },
       });
@@ -224,7 +224,7 @@ export class SupportersPageComponent implements OnInit {
     try {
       navigator.clipboard.writeText(text).then(() => {
         this.copiedKey.set(key);
-        this.toast.show('クリップボードにコピーしました', 'info');
+        this.toast.show(this.translationService.t('supporters.toast_copy_success'), 'info');
         setTimeout(() => this.copiedKey.set(null), 2000);
       });
     } catch {
@@ -253,12 +253,12 @@ export class SupportersPageComponent implements OnInit {
 
     this.repo.retryTransaction(tx.id).subscribe({
       next: () => {
-        this.toast.show(`再試行タスクをスケジュールしました (${tx.safeName})`, 'success');
+        this.toast.show(`${this.translationService.t('supporters.toast_retry_scheduled')} (${tx.safeName})`, 'success');
         this.retryingId.set(null);
         this.loadLedger(this.currentPage);
       },
       error: (err) => {
-        this.toast.show(`再試行に失敗しました: ${err?.error?.error || err.message}`, 'error');
+        this.toast.show(`${this.translationService.t('supporters.toast_retry_failed')}: ${err?.error?.error || err.message}`, 'error');
         this.retryingId.set(null);
       },
     });
@@ -294,13 +294,13 @@ export class SupportersPageComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('サポーター情報を更新しました', 'success');
+          this.toast.show(this.translationService.t('supporters.toast_update_success'), 'success');
           this.isSavingEdit.set(false);
           this.closeEditModal();
           this.loadLedger(this.currentPage);
         },
         error: () => {
-          this.toast.show('更新に失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_update_error'), 'error');
           this.isSavingEdit.set(false);
         },
       });
@@ -330,13 +330,13 @@ export class SupportersPageComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('手動ポストとして解決しました', 'success');
+          this.toast.show(this.translationService.t('supporters.toast_manual_post_success'), 'success');
           this.isResolvingManual.set(false);
           this.closeManualResolveModal();
           this.loadLedger(this.currentPage);
         },
         error: () => {
-          this.toast.show('手動解決の登録に失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_manual_post_error'), 'error');
           this.isResolvingManual.set(false);
         },
       });
@@ -350,11 +350,11 @@ export class SupportersPageComponent implements OnInit {
       .updateTransaction(tx.id, { isBanned: nextState })
       .subscribe({
         next: () => {
-          this.toast.show(nextState ? '公開を停止しました' : '公開を再開しました', 'info');
+          this.toast.show(nextState ? this.translationService.t('supporters.toast_paused') : this.translationService.t('supporters.toast_resumed'), 'info');
           this.loadLedger(this.currentPage);
         },
         error: () => {
-          this.toast.show('変更に失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_change_error'), 'error');
         },
       });
   }
@@ -374,7 +374,7 @@ export class SupportersPageComponent implements OnInit {
 
   submitManualEntry(): void {
     if (!this.entrySessionId.trim() || !this.entryRawName.trim() || !this.entryAmount) {
-      this.toast.show('すべての必須項目を入力してください', 'error');
+      this.toast.show(this.translationService.t('supporters.toast_required_fields'), 'error');
       return;
     }
 
@@ -388,13 +388,13 @@ export class SupportersPageComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.toast.show('手動トランザクションを登録しました', 'success');
+          this.toast.show(this.translationService.t('supporters.toast_entry_success'), 'success');
           this.isSubmittingEntry.set(false);
           this.closeManualEntryModal();
           this.loadLedger();
         },
         error: () => {
-          this.toast.show('登録に失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_entry_error'), 'error');
           this.isSubmittingEntry.set(false);
         },
       });
@@ -421,7 +421,7 @@ export class SupportersPageComponent implements OnInit {
 
   uploadReward(): void {
     if (!this.selectedRewardFile) {
-      this.toast.show('画像ファイルを選択してください', 'error');
+      this.toast.show(this.translationService.t('supporters.toast_select_image'), 'error');
       return;
     }
 
@@ -430,14 +430,14 @@ export class SupportersPageComponent implements OnInit {
       .uploadReward(this.selectedRewardFile, this.newRewardTitle.trim())
       .subscribe({
         next: () => {
-          this.toast.show('デジタル特典画像をアップロードしました', 'success');
+          this.toast.show(this.translationService.t('supporters.toast_reward_upload_success'), 'success');
           this.isUploadingReward.set(false);
           this.selectedRewardFile = null;
           this.newRewardTitle = '';
           this.loadRewards();
         },
         error: () => {
-          this.toast.show('アップロードに失敗しました', 'error');
+          this.toast.show(this.translationService.t('supporters.toast_upload_error'), 'error');
           this.isUploadingReward.set(false);
         },
       });
@@ -447,7 +447,7 @@ export class SupportersPageComponent implements OnInit {
     const nextState = !reward.isActive;
     this.repo.updateReward(reward.id, { isActive: nextState }).subscribe({
       next: () => {
-        this.toast.show(nextState ? '特典をアクティブ化しました' : '特典を非アクティブにしました', 'info');
+        this.toast.show(nextState ? this.translationService.t('supporters.toast_activated') : this.translationService.t('supporters.toast_deactivated'), 'info');
         this.loadRewards();
       },
       error: () => {
@@ -457,15 +457,16 @@ export class SupportersPageComponent implements OnInit {
   }
 
   deleteReward(reward: RewardImageDoc): void {
-    if (!confirm(`特典「${reward.title}」を削除してもよろしいですか？`)) return;
+    const confirmMsg = this.translationService.t('supporters.confirm_delete_reward').replace('{title}', reward.title);
+    if (!confirm(confirmMsg)) return;
 
     this.repo.deleteReward(reward.id).subscribe({
       next: () => {
-        this.toast.show('特典を削除しました', 'success');
+        this.toast.show(this.translationService.t('supporters.toast_delete_success'), 'success');
         this.loadRewards();
       },
       error: () => {
-        this.toast.show('削除に失敗しました', 'error');
+        this.toast.show(this.translationService.t('supporters.toast_delete_error'), 'error');
       },
     });
   }

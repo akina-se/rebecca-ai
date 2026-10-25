@@ -256,4 +256,42 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
     await rightDrawer.locator('.close-btn').click();
     await expect(rightDrawer).not.toHaveClass(/open/);
   });
+
+  test('should display English labels and tags when English language is selected', async ({ page }) => {
+    // 1. Switch language to English via localStorage
+    await page.evaluate(() => {
+      localStorage.setItem('rebecca_lang', 'en');
+    });
+    await page.goto('/supporters');
+    await page.waitForLoadState('domcontentloaded');
+
+    // 2. Header and KPIs in English
+    await expect(page.locator('.page-title')).toHaveText('Supporters & Tipping Management');
+    await expect(page.locator('.filter-pills button').first()).toHaveText('All');
+
+    // 3. Status chips in English
+    const completedChip = page.locator('.data-table .status-chip.completed').first();
+    if (await completedChip.isVisible()) {
+      await expect(completedChip).toContainText('Completed');
+    }
+
+    // 4. Open drawer and check English labels
+    const firstRow = page.locator('.data-table tbody tr.clickable-row').first();
+    await expect(firstRow).toBeVisible({ timeout: 10000 });
+    await firstRow.click();
+
+    const rightDrawer = page.locator('app-right-drawer .right-drawer');
+    await expect(rightDrawer).toHaveClass(/open/, { timeout: 5000 });
+    await expect(rightDrawer.locator('.section-heading', { hasText: 'Stripe Payment Info' })).toBeVisible();
+    await expect(rightDrawer.locator('.detail-label', { hasText: 'Transaction ID' })).toBeVisible();
+
+    // Close drawer
+    await rightDrawer.locator('.close-btn').click();
+    await expect(rightDrawer).not.toHaveClass(/open/);
+
+    // 5. Restore default ja for other tests
+    await page.evaluate(() => {
+      localStorage.setItem('rebecca_lang', 'ja');
+    });
+  });
 });
