@@ -410,74 +410,16 @@ async function seedFirestore() {
     console.log(`Seeded reward image: ${id} (${reward.title}) [active=${reward.isActive}]`);
   }
 
-  // 8. Seed support_transactions (Sponsor donations / tipping records)
-  const supportTransactions = [
-    {
-      id: 'tx_gold_01',
-      stripeSessionId: 'cs_test_gold_001_session',
-      stripePaymentIntentId: 'pi_test_gold_001',
-      rawName: 'サイバー財団 代表',
-      safeName: 'サイバー財団 代表',
-      isNameSanitized: false,
-      creditVisibility: 'show',
-      amount: 10000,
-      currency: 'jpy',
-      tier: 'gold',
-      itemLabel: 'ゴールドサポーター（殿堂入り）',
-      rewardImageId: 'reward_202610_halloween',
-      status: 'completed',
-      isBanned: false,
-      tweetId: '1848000000000000001',
-      tweetUrl: 'https://x.com/rebecca_ai_gal/status/1848000000000000001',
-      tweetText: 'サイバー財団 代表様、ゴールドサポーターへのご支援ありがとうございます！これからも最高の相棒として頑張るね✨',
-      createdAt: new Date(Date.now() - 2 * 3600000).toISOString(),
-      processedAt: new Date(Date.now() - 2 * 3600000 + 45000).toISOString(),
-      updatedAt: new Date(Date.now() - 2 * 3600000 + 45000).toISOString(),
-    },
-    {
-      id: 'tx_silver_01',
-      stripeSessionId: 'cs_test_silver_002_session',
-      stripePaymentIntentId: 'pi_test_silver_002',
-      rawName: 'TechGeek_Tokyo',
-      safeName: 'TechGeek_Tokyo',
-      isNameSanitized: false,
-      creditVisibility: 'show',
-      amount: 3000,
-      currency: 'jpy',
-      tier: 'silver',
-      itemLabel: 'シルバーサポーター',
-      rewardImageId: 'reward_202610_halloween',
-      status: 'completed',
-      isBanned: false,
-      tweetId: '1848000000000000002',
-      tweetUrl: 'https://x.com/rebecca_ai_gal/status/1848000000000000002',
-      tweetText: 'TechGeek_Tokyo様、シルバーサポーター支援大感謝です！特典壁紙大切にしてね！',
-      createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
-      processedAt: new Date(Date.now() - 5 * 3600000 + 30000).toISOString(),
-      updatedAt: new Date(Date.now() - 5 * 3600000 + 30000).toISOString(),
-    },
-    {
-      id: 'tx_bronze_01',
-      stripeSessionId: 'cs_test_bronze_003_session',
-      stripePaymentIntentId: 'pi_test_bronze_003',
-      rawName: '名無しのファン',
-      safeName: '名無しのファン',
-      isNameSanitized: false,
-      creditVisibility: 'hide',
-      amount: 1000,
-      currency: 'jpy',
-      tier: 'bronze',
-      itemLabel: 'ブロンズサポーター',
-      rewardImageId: 'reward_202610_halloween',
-      status: 'completed',
-      isBanned: false,
-      tweetId: '1848000000000000003',
-      tweetUrl: 'https://x.com/rebecca_ai_gal/status/1848000000000000003',
-      tweetText: '温かい応援ありがとうございますっ！エネルギー満タンで今日もポストしていくよ！',
-      createdAt: new Date(Date.now() - 12 * 3600000).toISOString(),
-      processedAt: new Date(Date.now() - 12 * 3600000 + 20000).toISOString(),
-      updatedAt: new Date(Date.now() - 12 * 3600000 + 20000).toISOString(),
-    },
+  // 8. Seed support_transactions (Sponsor donations / tipping records - 200+ mock backers)
+  const backerBaseNames = [
+    'サイバー財団 代表', 'TechGeek_Tokyo', 'AkibaHacker', 'CyberPilot', 'NeonMaster',
+    'MochiGal', 'Alice_L', 'Bob_AI', 'GalDev_Zero', 'KiraKira_Oshi',
+    'PixelKnight', 'Shibuya_Gal', 'Rei_Quantum', 'SoundCrafter', 'GamerX',
+    'GalMatrix', 'Stella_P', 'HyperDrive', 'VaporMaster', 'GalProtocol',
+    'DataDiver', 'BitRunner', 'Solaris', 'CircuitBreaker', 'CodeWitch',
+  ];
+
+  const supportTransactions: any[] = [
     {
       id: 'tx_failed_01',
       stripeSessionId: 'cs_test_fail_004_session',
@@ -489,7 +431,7 @@ async function seedFirestore() {
       amount: 1000,
       currency: 'jpy',
       tier: 'bronze',
-      itemLabel: 'ブロンズサポーター',
+      itemLabel: 'エナドリ1本差し入れ (¥300)',
       rewardImageId: 'reward_202610_halloween',
       status: 'failed',
       isBanned: false,
@@ -509,7 +451,7 @@ async function seedFirestore() {
       amount: 3000,
       currency: 'jpy',
       tier: 'silver',
-      itemLabel: 'シルバーサポーター',
+      itemLabel: 'サーバーリソース差し入れ (¥1,000)',
       rewardImageId: 'reward_202610_halloween',
       status: 'manual',
       isBanned: false,
@@ -526,10 +468,10 @@ async function seedFirestore() {
       safeName: 'NekoMaster',
       isNameSanitized: true,
       creditVisibility: 'show',
-      amount: 1000,
+      amount: 300,
       currency: 'jpy',
       tier: 'bronze',
-      itemLabel: 'ブロンズサポーター',
+      itemLabel: 'エナドリ1本差し入れ (¥300)',
       rewardImageId: 'reward_202610_halloween',
       status: 'completed',
       isBanned: false,
@@ -548,10 +490,10 @@ async function seedFirestore() {
       safeName: '[BANNED]',
       isNameSanitized: true,
       creditVisibility: 'hide',
-      amount: 1000,
+      amount: 300,
       currency: 'jpy',
       tier: 'bronze',
-      itemLabel: 'ブロンズサポーター',
+      itemLabel: 'エナドリ1本差し入れ (¥300)',
       rewardImageId: 'reward_202610_halloween',
       status: 'completed',
       isBanned: true,
@@ -561,11 +503,61 @@ async function seedFirestore() {
     },
   ];
 
-  for (const tx of supportTransactions) {
-    const { id, ...data } = tx;
-    await collections.supportTransactions.doc(id).set(data);
-    console.log(`Seeded support transaction: ${id} (${tx.safeName}, ￥${tx.amount}, ${tx.tier}) [status=${tx.status}]`);
+  // Generate 200 completed, active support transactions for pagination & grid verification
+  for (let i = 1; i <= 200; i++) {
+    const isGold = i <= 20;
+    const isSilver = !isGold && i <= 70;
+    const tier = isGold ? 'gold' : (isSilver ? 'silver' : 'bronze');
+    const amount = isGold ? 3000 : (isSilver ? 1000 : 300);
+    const itemLabel = isGold
+      ? '開発サポート (¥3,000)'
+      : (isSilver ? 'サーバーリソース差し入れ (¥1,000)' : 'エナドリ1本差し入れ (¥300)');
+
+    const baseName = backerBaseNames[(i - 1) % backerBaseNames.length];
+    const cycle = Math.floor((i - 1) / backerBaseNames.length);
+    const safeName = cycle === 0 ? baseName : `${baseName}_#${cycle + 1}`;
+
+    // Spaced out over the last 30 days so ordering is realistic
+    const minutesAgo = (i - 1) * 215; // ~3.5 hours apart
+    const createdAtDate = new Date(Date.now() - minutesAgo * 60000);
+    const createdAt = createdAtDate.toISOString();
+
+    supportTransactions.push({
+      id: `tx_supporter_${String(i).padStart(3, '0')}`,
+      stripeSessionId: `cs_test_session_${String(i).padStart(3, '0')}`,
+      stripePaymentIntentId: `pi_test_intent_${String(i).padStart(3, '0')}`,
+      rawName: safeName,
+      safeName,
+      isNameSanitized: false,
+      creditVisibility: 'show',
+      amount,
+      currency: 'jpy',
+      tier,
+      itemLabel,
+      rewardImageId: 'reward_202610_halloween',
+      status: 'completed',
+      isBanned: false,
+      tweetId: `184800000000000${String(i).padStart(4, '0')}`,
+      tweetUrl: `https://x.com/rebecca_ai_gal/status/184800000000000${String(i).padStart(4, '0')}`,
+      tweetText: `${safeName}様、${itemLabel}のご支援ありがとうございます！✨`,
+      createdAt,
+      processedAt: new Date(createdAtDate.getTime() + 15000).toISOString(),
+      updatedAt: new Date(createdAtDate.getTime() + 15000).toISOString(),
+    });
   }
+
+  // Batch write support transactions (up to 500 per batch)
+  const batchSize = 100;
+  for (let i = 0; i < supportTransactions.length; i += batchSize) {
+    const chunk = supportTransactions.slice(i, i + batchSize);
+    const batch = firestore.batch();
+    for (const tx of chunk) {
+      const { id, ...data } = tx;
+      batch.set(collections.supportTransactions.doc(id), data);
+    }
+    await batch.commit();
+  }
+  console.log(`Successfully seeded ${supportTransactions.length} support transactions into Firestore emulator.`);
 
   console.log('Firestore seeding completed successfully.');
 }
