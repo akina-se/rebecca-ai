@@ -23,6 +23,8 @@ describe('PublicSupportController Unit Tests', () => {
     res = {
       status: statusMock,
       json: jsonMock,
+      setHeader: jest.fn(),
+      send: jest.fn().mockReturnThis(),
     };
     req = {
       query: {},
@@ -92,7 +94,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(deps.storage.generateSignedUrl).not.toHaveBeenCalled();
     });
 
-    it('returns 200 with signed reward URL and transaction details when paid', async () => {
+    it('returns 200 with secure backend download endpoints and transaction details when paid', async () => {
       req.query = { session_id: 'cs_paid_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_paid_123',
@@ -113,12 +115,9 @@ describe('PublicSupportController Unit Tests', () => {
         storagePath: 'rewards/2026-10/halloween.png',
       });
 
-      deps.storage.generateSignedUrl.mockResolvedValue('https://storage.googleapis.com/signed-url');
-
       await controller.verifySession(req as Request, res as Response);
 
       expect(statusMock).toHaveBeenCalledWith(200);
-      expect(deps.storage.generateSignedUrl).toHaveBeenCalledWith('rewards/2026-10/halloween.png', 30);
       expect(deps.firestore.incrementRewardImageDistributedCount).toHaveBeenCalledWith('reward_2026_10');
       expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -128,51 +127,9 @@ describe('PublicSupportController Unit Tests', () => {
           safeName: 'アリス',
           reward: expect.objectContaining({
             title: 'サポーター特典イラスト',
-            imageUrl: 'https://storage.googleapis.com/signed-url',
-            thumbnailUrl: 'https://storage.googleapis.com/signed-url',
-            downloadUrl: 'https://storage.googleapis.com/signed-url',
-          }),
-        }),
-      );
-    });
-
-    it('generates distinct signed URLs for download and thumbnail when thumbnailStoragePath is set', async () => {
-      req.query = { session_id: 'cs_paid_with_thumb' };
-      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
-        id: 'cs_paid_with_thumb',
-        payment_status: 'paid',
-        amount_total: 1000,
-      });
-
-      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
-        tier: 'silver',
-        itemLabel: 'サーバーリソース差し入れ',
-        safeName: 'アリス',
-      });
-
-      deps.firestore.getActiveRewardImage.mockResolvedValue({
-        id: 'reward_2026_10',
-        title: 'サポーター特典イラスト',
-        storagePath: 'rewards/reward_01_master.png',
-        thumbnailStoragePath: 'rewards/reward_01_thumb.webp',
-      });
-
-      deps.storage.generateSignedUrl
-        .mockResolvedValueOnce('https://storage.googleapis.com/master-signed-url')
-        .mockResolvedValueOnce('https://storage.googleapis.com/thumb-signed-url');
-
-      await controller.verifySession(req as Request, res as Response);
-
-      expect(statusMock).toHaveBeenCalledWith(200);
-      expect(deps.storage.generateSignedUrl).toHaveBeenCalledWith('rewards/reward_01_master.png', 30);
-      expect(deps.storage.generateSignedUrl).toHaveBeenCalledWith('rewards/reward_01_thumb.webp', 30);
-      expect(jsonMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          reward: expect.objectContaining({
-            title: 'サポーター特典イラスト',
-            downloadUrl: 'https://storage.googleapis.com/master-signed-url',
-            thumbnailUrl: 'https://storage.googleapis.com/thumb-signed-url',
-            imageUrl: 'https://storage.googleapis.com/thumb-signed-url',
+            imageUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=thumbnail',
+            thumbnailUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=thumbnail',
+            downloadUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=master',
           }),
         }),
       );
@@ -548,6 +505,120 @@ describe('PublicSupportController Unit Tests', () => {
           paymentUrl: null,
         }),
       );
+    });
+  });
+  describe('downloadReward', () => {
+    it('returns 400 when session_id is missing', async () => {
+      req.query = {};
+      await controller.downloadReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Missing or invalid session_id query parameter' });
+    });
+
+    it('returns 403 when session is not paid', async () => {
+      req.query = { session_id: 'cs_unpaid_123' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_unpaid_123',
+        payment_status: 'unpaid',
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(403);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Payment has not been completed or verified.' });
+    });
+
+    it('returns 404 when Stripe session retrieval fails', async () => {
+      req.query = { session_id: 'cs_nonexistent' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockRejectedValue(new Error('Session not found'));
+
+      await controller.downloadReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Checkout session not found' });
+    });
+
+    it('returns 410 Gone when download window (> 30 mins) has expired', async () => {
+      req.query = { session_id: 'cs_expired_123' };
+      const fortyMinutesAgo = new Date(Date.now() - 40 * 60 * 1000).toISOString();
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_expired_123',
+        createdAt: fortyMinutesAgo,
+        rewardImageId: 'reward_1',
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(410);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({ expired: true }),
+      );
+    });
+
+    it('returns 200 and streams binary image within 30-minute window for master download', async () => {
+      req.query = { session_id: 'cs_valid_123', type: 'master' };
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_valid_123',
+        createdAt: tenMinutesAgo,
+        rewardImageId: 'reward_1',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue({
+        id: 'reward_1',
+        title: 'Special Halloween Art',
+        storagePath: 'rewards/art.png',
+      });
+
+      const fakeBuffer = Buffer.from('fake-image-bytes');
+      deps.storage.downloadImage.mockResolvedValue(fakeBuffer);
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(deps.storage.downloadImage).toHaveBeenCalledWith('rewards/art.png');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', expect.stringContaining('attachment'));
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(fakeBuffer);
+    });
+
+    it('streams thumbnail with inline disposition when type=thumbnail', async () => {
+      req.query = { session_id: 'cs_valid_thumb', type: 'thumbnail' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_valid_thumb',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'reward_1',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue({
+        id: 'reward_1',
+        title: 'Special Art',
+        storagePath: 'rewards/art.png',
+        thumbnailStoragePath: 'rewards/thumb.webp',
+      });
+
+      const fakeBuffer = Buffer.from('fake-thumb-bytes');
+      deps.storage.downloadImage.mockResolvedValue(fakeBuffer);
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(deps.storage.downloadImage).toHaveBeenCalledWith('rewards/thumb.webp');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'inline');
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(fakeBuffer);
+    });
+
+    it('returns 404 when reward record does not exist', async () => {
+      req.query = { session_id: 'cs_no_reward' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_no_reward',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'none',
+      });
+      deps.firestore.getActiveRewardImage.mockResolvedValue(null);
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Reward asset not found' });
     });
   });
 });

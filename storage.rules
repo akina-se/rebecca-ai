@@ -1,12 +1,6 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Supporter Digital Rewards: Allow read access for reward preview thumbnails and download files
-    match /rewards/{allPaths=**} {
-      allow read: if true;
-      allow write: if false;
-    }
-
     match /{allPaths=**} {
       // Secure by Default: Direct client access is completely disabled.
       // Media assets must be managed and streamed securely through the Backend-for-Frontend (BFF) using Admin SDK credentials.

@@ -204,7 +204,7 @@ export interface ITasksService {
  * Responsible for downloading and uploading image assets.
  */
 export interface IStorageService {
-  downloadImage(gsUri: string): Promise<Buffer>;
+  downloadImage(storagePathOrGsUri: string): Promise<Buffer>;
   uploadImage(hash: string, buffer: Buffer, mimeType: string): Promise<string>;
   generateSignedUrl(storagePathOrGsUri: string, expiresInMinutes?: number): Promise<string>;
 }

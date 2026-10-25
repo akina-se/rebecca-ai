@@ -30,6 +30,7 @@ export const createPublicRoutes = (
   router.get('/support/verify-session', supportController.verifySession);
   router.get('/support/credits', supportController.getCredits);
   router.get('/support/plans', supportController.getSupportPlans);
+  router.get('/support/rewards/download', supportController.downloadReward);
 
   // Stripe Webhook Endpoint
   router.post('/webhooks/stripe', supportController.handleWebhook);

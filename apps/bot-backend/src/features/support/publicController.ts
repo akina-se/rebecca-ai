@@ -152,33 +152,22 @@ export class PublicSupportController {
       let rewardPayload = null;
       if (activeReward) {
         const expiresInMinutes = 30;
-        try {
-          const downloadUrl = await this.deps.storage.generateSignedUrl(
-            activeReward.storagePath,
-            expiresInMinutes,
-          );
+        const encodedSessionId = encodeURIComponent(sessionId);
+        // Secure by Default: Do not expose raw GCS bucket URLs or direct GCS signed links.
+        // Stream through Bot Backend download API with strict 30-minute expiry verification.
+        const downloadUrl = `/api/v1/support/rewards/download?session_id=${encodedSessionId}&type=master`;
+        const thumbnailUrl = `/api/v1/support/rewards/download?session_id=${encodedSessionId}&type=thumbnail`;
 
-          let thumbnailUrl = downloadUrl;
-          if (activeReward.thumbnailStoragePath) {
-            thumbnailUrl = await this.deps.storage.generateSignedUrl(
-              activeReward.thumbnailStoragePath,
-              expiresInMinutes,
-            );
-          }
+        // Record distribution telemetry
+        await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
 
-          // Record distribution telemetry
-          await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
-
-          rewardPayload = {
-            title: activeReward.title,
-            imageUrl: thumbnailUrl,
-            thumbnailUrl,
-            downloadUrl,
-            expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
-          };
-        } catch (storageErr) {
-          logger.warn('[PublicSupportController] Failed to generate signed URL for reward', { storageErr });
-        }
+        rewardPayload = {
+          title: activeReward.title,
+          imageUrl: thumbnailUrl,
+          thumbnailUrl,
+          downloadUrl,
+          expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
+        };
       }
 
       const amount = session.amount_total ?? 0;
@@ -383,5 +372,121 @@ export class PublicSupportController {
     }
 
     res.status(200).json({ received: true });
+  };
+  /**
+   * Streams the reward image asset securely through the Bot Backend (BFF proxy).
+   *
+   * @remarks
+   * Security Invariants:
+   * 1. Direct GCS bucket access is completely forbidden; all media is streamed via backend ADC credentials.
+   * 2. Strict Payment Guard: Requires verified Stripe session (`payment_status === 'paid'`).
+   * 3. 30-Minute Download Window: Allowed only within 30 minutes from checkout / transaction creation.
+   *    Requests beyond 30 minutes return HTTP 410 Gone.
+   *
+   * @param req - Express Request with `session_id` and optional `type` ('thumbnail' | 'master').
+   * @param res - Express Response streaming the image binary.
+   */
+  downloadReward = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const sessionId = req.query.session_id;
+      if (!sessionId || typeof sessionId !== 'string') {
+        res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
+        return;
+      }
+
+      const type = req.query.type === 'thumbnail' ? 'thumbnail' : 'master';
+
+      // Step 1: Verify payment and retrieve transaction record
+      let transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
+      let sessionCreatedMs: number | null = null;
+
+      if (!transaction) {
+        try {
+          const session = await this.stripeClient.checkout.sessions.retrieve(sessionId);
+          if (session.payment_status !== 'paid') {
+            res.status(403).json({ error: 'Payment has not been completed or verified.' });
+            return;
+          }
+          if (session.created) {
+            sessionCreatedMs = session.created * 1000;
+          }
+        } catch (stripeErr) {
+          logger.warn('[PublicSupportController] Failed to retrieve Stripe session for download', { sessionId, stripeErr });
+          res.status(404).json({ error: 'Checkout session not found' });
+          return;
+        }
+      }
+
+      // Step 2: Enforce strict 30-minute time window
+      const createdAtMs = transaction?.createdAt
+        ? new Date(transaction.createdAt).getTime()
+        : sessionCreatedMs || Date.now();
+      const ageMinutes = (Date.now() - createdAtMs) / (60 * 1000);
+
+      const MAX_WINDOW_MINUTES = 30;
+      if (ageMinutes > MAX_WINDOW_MINUTES) {
+        res.status(410).json({
+          error: 'Reward download link has expired. Downloads are available for 30 minutes after checkout.',
+          expired: true,
+        });
+        return;
+      }
+
+      // Step 3: Resolve reward image record
+      let rewardDoc: RewardImageDoc | null = null;
+      if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
+        rewardDoc = await this.deps.firestore.getRewardImageById(transaction.rewardImageId);
+      }
+      if (!rewardDoc) {
+        rewardDoc = await this.deps.firestore.getActiveRewardImage();
+      }
+
+      if (!rewardDoc) {
+        res.status(404).json({ error: 'Reward asset not found' });
+        return;
+      }
+
+      const targetPath =
+        type === 'thumbnail' && rewardDoc.thumbnailStoragePath
+          ? rewardDoc.thumbnailStoragePath
+          : rewardDoc.storagePath;
+
+      if (!targetPath) {
+        res.status(404).json({ error: 'Reward asset file path not configured' });
+        return;
+      }
+
+      // Step 4: Stream binary buffer via backend ADC
+      const buffer = await this.deps.storage.downloadImage(targetPath);
+
+      const ext = targetPath.toLowerCase().split('.').pop() || 'png';
+      const contentType =
+        ext === 'jpg' || ext === 'jpeg'
+          ? 'image/jpeg'
+          : ext === 'webp'
+            ? 'image/webp'
+            : 'image/png';
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader(
+        'Cache-Control',
+        type === 'thumbnail' ? 'private, max-age=1800' : 'private, no-transform, max-age=1800',
+      );
+
+      if (type === 'master') {
+        const safeTitle = rewardDoc.title.replace(/[^\w\s.-]/gi, '_') || 'rebecca-reward';
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${encodeURIComponent(safeTitle)}.${ext}"`,
+        );
+      } else {
+        res.setHeader('Content-Disposition', 'inline');
+      }
+
+      res.status(200).send(buffer);
+    } catch (error) {
+      logger.error('[PublicSupportController] downloadReward failed', error);
+      res.status(500).json({ error: 'Failed to download reward image' });
+    }
   };
 }
