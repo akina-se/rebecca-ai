@@ -83,7 +83,52 @@ export class PublicSupportController {
       }
 
       // Step 3: Fetch transaction record (if already created by webhook)
-      const transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
+      let transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
+
+      // If webhook has not recorded it yet (e.g. local environment or delayed webhook), auto-sync from verified paid session
+      if (!transaction) {
+        try {
+          const customFields = session.custom_fields || [];
+          const rawNameField = customFields.find((f) => f.key === 'supporter_name');
+          const rawName = rawNameField?.text?.value?.trim() || session.customer_details?.name?.trim() || '';
+          const visibilityField = customFields.find((f) => f.key === 'credit_visibility');
+          const creditVisibility = visibilityField?.dropdown?.value === 'hide' ? 'hide' : 'show';
+          const amount = session.amount_total ?? 0;
+          const { tier, itemLabel } = resolveSupportTierFromAmount(amount);
+          const activeRewardForSync = await this.deps.firestore.getActiveRewardImage();
+
+          const transactionId = `tx_${session.id.replace('cs_', '').replace('test_', '')}`;
+          const transactionDoc: SupportTransactionDoc = {
+            id: transactionId,
+            stripeSessionId: session.id,
+            stripePaymentIntentId:
+              typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
+            rawName,
+            safeName: rawName || this.config.fallbackName,
+            isNameSanitized: false,
+            creditVisibility,
+            amount,
+            currency: 'jpy',
+            tier,
+            itemLabel,
+            rewardImageId: activeRewardForSync?.id ?? 'none',
+            status: 'pending',
+            isBanned: false,
+            createdAt: new Date().toISOString(),
+          };
+          await this.deps.firestore.createSupportTransaction(transactionDoc);
+          transaction = transactionDoc;
+          logger.info('[PublicSupportController] Auto-created support transaction on session verification', { transactionId });
+
+          try {
+            await this.deps.tasks.enqueueSupportTask({ transactionId });
+          } catch (taskErr) {
+            logger.warn('[PublicSupportController] Could not enqueue task on auto-create', { taskErr });
+          }
+        } catch (syncErr) {
+          logger.warn('[PublicSupportController] Failed to auto-sync transaction from session', { syncErr });
+        }
+      }
 
       // Step 4: Fetch active supporter reward illustration asset
       const activeReward = await this.deps.firestore.getActiveRewardImage();
@@ -91,29 +136,33 @@ export class PublicSupportController {
       let rewardPayload = null;
       if (activeReward) {
         const expiresInMinutes = 30;
-        const downloadUrl = await this.deps.storage.generateSignedUrl(
-          activeReward.storagePath,
-          expiresInMinutes,
-        );
-
-        let thumbnailUrl = downloadUrl;
-        if (activeReward.thumbnailStoragePath) {
-          thumbnailUrl = await this.deps.storage.generateSignedUrl(
-            activeReward.thumbnailStoragePath,
+        try {
+          const downloadUrl = await this.deps.storage.generateSignedUrl(
+            activeReward.storagePath,
             expiresInMinutes,
           );
+
+          let thumbnailUrl = downloadUrl;
+          if (activeReward.thumbnailStoragePath) {
+            thumbnailUrl = await this.deps.storage.generateSignedUrl(
+              activeReward.thumbnailStoragePath,
+              expiresInMinutes,
+            );
+          }
+
+          // Record distribution telemetry
+          await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
+
+          rewardPayload = {
+            title: activeReward.title,
+            imageUrl: thumbnailUrl,
+            thumbnailUrl,
+            downloadUrl,
+            expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
+          };
+        } catch (storageErr) {
+          logger.warn('[PublicSupportController] Failed to generate signed URL for reward', { storageErr });
         }
-
-        // Record distribution telemetry
-        await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
-
-        rewardPayload = {
-          title: activeReward.title,
-          imageUrl: thumbnailUrl,
-          thumbnailUrl,
-          downloadUrl,
-          expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
-        };
       }
 
       const amount = session.amount_total ?? 0;

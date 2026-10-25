@@ -65,13 +65,20 @@ const generateSignedUrl = async (
     expiresInMinutes = 30
 ): Promise<string> => {
     const normalizedPath = storagePathOrGsUri.replace(/^gs:\/\/[^/]+\//, '').replace(/^\//, '');
-    const file = bucket.file(normalizedPath);
-    const [url] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'read',
-        expires: Date.now() + expiresInMinutes * 60 * 1000,
-    });
-    return url;
+    if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+        return `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}/v0/b/${bucket.name}/o/${encodeURIComponent(normalizedPath)}?alt=media`;
+    }
+    try {
+        const file = bucket.file(normalizedPath);
+        const [url] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + expiresInMinutes * 60 * 1000,
+        });
+        return url;
+    } catch {
+        return `https://storage.googleapis.com/${bucket.name}/${normalizedPath}`;
+    }
 };
 
 export { uploadImage, downloadImage, generateSignedUrl };

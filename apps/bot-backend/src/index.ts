@@ -74,7 +74,7 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
     res.sendFile(path.join(publicDir, 'supporters.html'));
   });
 
-  app.get('/support/thank-you', (_req, res) => {
+  app.get(['/support/thank-you', '/support/thanks'], (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(publicDir, 'support', 'thank-you.html'));
   });
