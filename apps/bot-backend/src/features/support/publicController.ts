@@ -13,6 +13,7 @@ import { AppDependencies } from '../../types';
 import { SupportConfig } from './types';
 import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
 import { logger } from '../../utils/logger';
+import { SupportTaskUseCase } from './usecase';
 
 /**
  * Controller managing public-facing support endpoints.
@@ -48,6 +49,29 @@ export class PublicSupportController {
    * @param req - Express Request with `session_id` query parameter.
    * @param res - Express Response.
    */
+  /**
+   * Enqueues the appreciation post task via Cloud Tasks, falling back to direct
+   * background execution when Cloud Tasks is not available (e.g. in local development).
+   */
+  private triggerAppreciationPost(transactionId: string): void {
+    this.deps.tasks.enqueueSupportTask({ transactionId }).catch((taskErr) => {
+      logger.warn('[PublicSupportController] Cloud Tasks enqueue failed, falling back to direct background execution', {
+        transactionId,
+        taskErr: taskErr instanceof Error ? taskErr.message : String(taskErr),
+      });
+      try {
+        const supportUseCase = new SupportTaskUseCase(this.deps, this.config);
+        setImmediate(() => {
+          supportUseCase.execute({ transactionId }).catch((directErr) => {
+            logger.error('[PublicSupportController] Direct appreciation post execution failed', directErr, { transactionId });
+          });
+        });
+      } catch (initErr) {
+        logger.warn('[PublicSupportController] Could not initialize SupportTaskUseCase for direct execution', { initErr });
+      }
+    });
+  }
+
   verifySession = async (req: Request, res: Response): Promise<void> => {
     try {
       const sessionId = req.query.session_id;
@@ -120,14 +144,12 @@ export class PublicSupportController {
           transaction = transactionDoc;
           logger.info('[PublicSupportController] Auto-created support transaction on session verification', { transactionId });
 
-          try {
-            await this.deps.tasks.enqueueSupportTask({ transactionId });
-          } catch (taskErr) {
-            logger.warn('[PublicSupportController] Could not enqueue task on auto-create', { taskErr });
-          }
+          this.triggerAppreciationPost(transactionId);
         } catch (syncErr) {
           logger.warn('[PublicSupportController] Failed to auto-sync transaction from session', { syncErr });
         }
+      } else if (transaction && transaction.status === 'pending') {
+        this.triggerAppreciationPost(transaction.id);
       }
 
       // Step 4: Fetch supporter reward illustration asset:
@@ -359,8 +381,8 @@ export class PublicSupportController {
         await this.deps.firestore.createSupportTransaction(transactionDoc);
         logger.info('[PublicSupportController] Created support transaction', { transactionId });
 
-        // Enqueue autonomous appreciation post task via Cloud Tasks
-        await this.deps.tasks.enqueueSupportTask({ transactionId });
+        // Enqueue autonomous appreciation post task via Cloud Tasks (with local fallback)
+        this.triggerAppreciationPost(transactionId);
 
         res.status(200).json({ received: true, transactionId });
         return;
