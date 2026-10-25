@@ -24,7 +24,7 @@ export interface SupportConfig {
   /**
    * The public portal URL (with `#supporters` anchor) appended to appreciation tweets.
    *
-   * @example 'https://rebecca-ai.net/#supporters'
+   * @example 'https://rebecca-ai.net/supporters#plans'
    */
   officialPortalUrl: string;
 
