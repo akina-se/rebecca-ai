@@ -1513,7 +1513,7 @@
       </h1>
       <p class="page-desc">
         <span class="t-ja">レベッカの自律対話ルーチンの研究と、持続的なコンピュートリソース運用を後援するコミュニティプログラムです。ご支援いただいたマスターには、レベッカからの自律的お礼やサポーター特典が提供されます。</span>
-        <span class="t-en">Sustaining Rebecca's autonomous reasoning research and 24/7 compute infrastructure. Backers receive autonomous appreciation on X and exclusive community benefits.</span>
+        <span class="t-en">Sustaining Rebecca's autonomous reasoning research and 24/7 compute infrastructure. Supporters receive autonomous appreciation on X and exclusive community benefits.</span>
       </p>
     </section>
 
@@ -1523,7 +1523,7 @@
         <div class="recent-title-group">
           <span class="status-dot-purple"></span>
           <span class="recent-title">
-            <span class="t-ja">直近のご支援（Recent Backers）</span>
+            <span class="t-ja">直近のご支援</span>
             <span class="t-en">Recent Supporters</span>
           </span>
         </div>
@@ -1946,11 +1946,12 @@
         const totalPages = typeof data.totalPages === 'number' ? data.totalPages : (total > 0 ? Math.ceil(total / ROSTER_LIMIT) : 1);
 
         if (metaBadge) {
-          metaBadge.textContent = total + ' BACKERS' + (totalPages > 1 ? ' · P.' + page + '/' + totalPages : '');
+          const pageInfo = totalPages > 1 ? ' · P.' + page + '/' + totalPages : '';
+          metaBadge.innerHTML = '<span class="t-ja">' + total + '名のサポーター' + pageInfo + '</span><span class="t-en">' + total + ' SUPPORTERS' + pageInfo + '</span>';
         }
 
         if (credits.length === 0) {
-          grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">まだサポーターが登録されていません。最初のマスターになりませんか？</span><span class="t-en">No supporters recorded yet. Be the first backer!</span></div>';
+          grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">まだサポーターが登録されていません。最初のサポーターになりませんか？</span><span class="t-en">No supporters recorded yet. Be the first supporter!</span></div>';
           if (pagination) pagination.innerHTML = '';
           return;
         }
