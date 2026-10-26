@@ -187,7 +187,9 @@
       transition: all 0.2s ease;
     }
 
-    .lang-btn.active {
+    .lang-btn.active,
+    body[data-lang="ja"] #btn-lang-ja,
+    body[data-lang="en"] #btn-lang-en {
       background: var(--gemitec-purple);
       color: #ffffff;
     }
@@ -1502,7 +1504,8 @@
     <section class="page-hero">
       <div class="corp-tagline">
         <span class="status-dot-green"></span>
-        COMMUNITY SPONSORSHIP PROGRAM
+        <span class="t-ja">GEMITEC INC. &bull; 公式サポーター制度</span>
+        <span class="t-en">COMMUNITY SPONSORSHIP PROGRAM</span>
       </div>
       <h1 class="page-title">
         <span class="t-ja">自律型AIレベッカ <span class="gradient-text">公式サポータープログラム</span></span>
@@ -1575,7 +1578,10 @@
               <span class="t-ja">エナドリ1本差し入れ</span>
               <span class="t-en">Energy Drink</span>
             </div>
-            <div class="tier-item-label bronze">BRONZE SPONSOR</div>
+            <div class="tier-item-label bronze">
+              <span class="t-ja">ブロンズプラン</span>
+              <span class="t-en">BRONZE SPONSOR</span>
+            </div>
             <div class="tier-price">¥500 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
@@ -1603,7 +1609,10 @@
 
         <!-- Silver Tier -->
         <div class="tier-card featured">
-          <span class="featured-ribbon">POPULAR</span>
+          <span class="featured-ribbon">
+            <span class="t-ja">人気プラン</span>
+            <span class="t-en">POPULAR</span>
+          </span>
           <div>
             <div class="tier-icon-badge silver">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1617,7 +1626,10 @@
               <span class="t-ja">サーバーリソース差し入れ</span>
               <span class="t-en">Compute Server Resource</span>
             </div>
-            <div class="tier-item-label silver">SILVER SPONSOR</div>
+            <div class="tier-item-label silver">
+              <span class="t-ja">シルバープラン</span>
+              <span class="t-en">SILVER SPONSOR</span>
+            </div>
             <div class="tier-price">¥1,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
@@ -1655,7 +1667,10 @@
               <span class="t-ja">開発サポート</span>
               <span class="t-en">Development Support</span>
             </div>
-            <div class="tier-item-label gold">GOLD SPONSOR</div>
+            <div class="tier-item-label gold">
+              <span class="t-ja">ゴールドプラン</span>
+              <span class="t-en">GOLD SPONSOR</span>
+            </div>
             <div class="tier-price">¥3,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
             <ul class="tier-perks">
               <li class="tier-perk-item">
@@ -1777,8 +1792,12 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <h3>GEMITEC INC.</h3>
-          <p>Autonomous AI Agent Laboratory.<br>Pioneering Unconditional Emotional Intelligence.</p>
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc."
+            style="height: 36px; width: auto; filter: brightness(1.2);" width="928" height="288" loading="lazy" decoding="async">
+          <p>
+            <span class="t-ja">Gemitec Inc.<br>心に寄り添うパーソナルAIをすべての人へ</span>
+            <span class="t-en">Gemitec Inc.<br>Empathetic personal AI for everyone</span>
+          </p>
         </div>
 
         <div class="footer-col">
@@ -1788,16 +1807,16 @@
             <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
             <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
             <li><a href="/#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
-            <li><a href="/#opensource"><span class="t-ja">技術公開</span><span class="t-en">Open Source</span></a></li>
           </ul>
         </div>
 
         <div class="footer-col">
-          <h4>Ecosystem</h4>
+          <h4>Media &amp; OSS</h4>
           <ul>
-            <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Official X (Twitter)</a></li>
+            <li><a href="https://youtube.com/@rebecca-ai" target="_blank" rel="noopener noreferrer">YouTube</a></li>
             <li><a href="https://www.pixiv.net/users/129754550" target="_blank" rel="noopener noreferrer">Pixiv</a></li>
-            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank" rel="noopener noreferrer">Repository (OSS)</a></li>
+            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank"
+                rel="noopener noreferrer">Repository (OSS)</a></li>
             <li><a href="/supporters"><span class="t-ja">サポーター・スポンサー</span><span class="t-en">Supporters &amp; Sponsors</span></a></li>
           </ul>
         </div>
@@ -1842,11 +1861,15 @@
       const btnEn = document.getElementById('btn-lang-en');
       if (btnJa && btnEn) {
         if (lang === 'ja') {
+          btnJa.classList.add('active');
+          btnEn.classList.remove('active');
           btnJa.style.background = 'var(--gemitec-purple)';
           btnJa.style.color = '#ffffff';
           btnEn.style.background = 'transparent';
           btnEn.style.color = 'var(--text-muted)';
         } else {
+          btnEn.classList.add('active');
+          btnJa.classList.remove('active');
           btnEn.style.background = 'var(--gemitec-purple)';
           btnEn.style.color = '#ffffff';
           btnJa.style.background = 'transparent';
@@ -1868,8 +1891,14 @@
         }
       } catch (e) { }
 
+      const isSearchCrawler = Boolean(navigator.webdriver) ||
+        /\b(googlebot|google-inspectiontool|bingbot|baiduspider|duckduckbot)\b/i.test(navigator.userAgent);
+      if (isSearchCrawler) {
+        return;
+      }
+
       const userLang = navigator.language || navigator.userLanguage || '';
-      if (!userLang.toLowerCase().startsWith('ja')) {
+      if (userLang.toLowerCase().startsWith('en')) {
         setLanguage('en');
       } else {
         setLanguage('ja');
