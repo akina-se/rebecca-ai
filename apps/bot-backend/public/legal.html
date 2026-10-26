@@ -793,6 +793,7 @@
         }
       }
       try {
+        localStorage.setItem('gemitec_lang', lang);
         localStorage.setItem('rebecca_preferred_lang', lang);
       } catch (e) {
         // localStorage unavailable in private mode
@@ -824,7 +825,7 @@
     // Initialize Language from preference
     (function initLanguage() {
       try {
-        const savedLang = localStorage.getItem('rebecca_preferred_lang');
+        const savedLang = localStorage.getItem('gemitec_lang') || localStorage.getItem('rebecca_preferred_lang');
         if (savedLang === 'en' || savedLang === 'ja') {
           setLanguage(savedLang);
         }

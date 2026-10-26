@@ -86,41 +86,47 @@
       padding: 0 24px;
     }
 
-    /* Global Header (100% Identical to Official Portal index.html) */
+    /* Header & Navigation (Standardized with index.html & supporters.html) */
     header {
       position: sticky;
       top: 0;
       width: 100%;
-      background: rgba(7, 8, 12, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(7, 8, 12, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border-subtle);
       z-index: 100;
-      height: 72px;
-      display: flex;
-      align-items: center;
     }
 
     .nav-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      height: 70px;
     }
 
     .brand-area {
       display: flex;
       align-items: center;
+      gap: 12px;
       text-decoration: none;
     }
 
     .brand-logo {
-      height: 30px;
+      height: 44px;
       width: auto;
       display: block;
+      filter: brightness(1.25) drop-shadow(0 2px 12px rgba(139, 92, 246, 0.3));
+      transition: transform 0.2s ease;
+    }
+
+    .brand-logo:hover {
+      transform: scale(1.02);
     }
 
     .nav-links {
       display: flex;
+      align-items: center;
       list-style: none;
       gap: 28px;
     }
@@ -128,14 +134,13 @@
     .nav-links a {
       color: var(--text-secondary);
       text-decoration: none;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       transition: color 0.2s ease;
     }
 
-    .nav-links a:hover,
-    .nav-links a.active {
-      color: #ffffff;
+    .nav-links a:hover {
+      color: var(--text-main);
     }
 
     .nav-links a.active {
@@ -145,33 +150,39 @@
     .nav-actions {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
+    /* Language Switcher */
     .lang-switcher {
-      display: flex;
+      display: inline-flex;
+      align-items: center;
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-full);
-      padding: 2px;
+      padding: 2px 4px;
     }
 
     .lang-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
       font-weight: 600;
-      padding: 4px 10px;
+      padding: 4px 8px;
       border-radius: var(--radius-full);
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s ease;
     }
 
-    .lang-btn.active {
+    .lang-btn.active,
+    body[data-lang="ja"] #btn-lang-ja,
+    body[data-lang="en"] #btn-lang-en {
       background: var(--gemitec-purple);
       color: #ffffff;
+      box-shadow: 0 2px 8px var(--gemitec-purple-glow);
     }
 
     .btn {
@@ -179,43 +190,67 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 8px 18px;
-      border-radius: var(--radius-sm);
+      padding: 9px 18px;
       font-size: 13px;
       font-weight: 600;
+      border-radius: var(--radius-full);
       text-decoration: none;
-      cursor: pointer;
-      white-space: nowrap;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
     }
 
     .btn-purple {
-      background: var(--gemitec-purple);
+      background: linear-gradient(135deg, var(--gemitec-purple) 0%, var(--gemitec-purple-dark) 100%);
       color: #ffffff;
-      border: 1px solid transparent;
-      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 4px 18px var(--gemitec-purple-glow);
     }
 
     .btn-purple:hover {
-      background: var(--gemitec-purple-light);
-      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.5);
+      background: linear-gradient(135deg, #9d71f7 0%, #7c3aed 100%);
+      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45);
       transform: translateY(-1px);
     }
 
     .btn-outline {
-      background: transparent;
+      background: rgba(255, 255, 255, 0.03);
       color: var(--text-main);
       border: 1px solid var(--border-subtle);
     }
 
     .btn-outline:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border-purple);
+      transform: translateY(-1px);
+    }
+
+    .breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .breadcrumb a {
+      color: var(--gemitec-purple-light);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+      color: #ffffff;
     }
 
     /* Main Thank You Panel */
     .thank-you-wrapper {
-      padding: 56px 0 80px;
+      padding: 40px 0 80px;
       flex: 1;
     }
 
@@ -226,7 +261,8 @@
       padding: 40px;
       margin-bottom: 32px;
       box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 32px var(--gemitec-purple-glow);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       position: relative;
     }
 
@@ -347,8 +383,8 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(245, 158, 11, 0.08);
       position: relative;
       overflow: hidden;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
     }
 
     .dl-alert-box::before {
@@ -462,7 +498,7 @@
       padding: 14px 32px;
       background: linear-gradient(135deg, var(--gemitec-purple) 0%, var(--gemitec-purple-dark) 100%);
       color: #ffffff;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-full);
       font-size: 15px;
       font-weight: 700;
       text-decoration: none;
@@ -516,11 +552,13 @@
       margin-bottom: 28px;
     }
 
-    /* Footer (100% Identical to Official Portal index.html) */
+    /* Footer (Unified with index.html & supporters.html) */
     footer {
       border-top: 1px solid var(--border-subtle);
-      background: #040508;
-      padding: 64px 0 40px;
+      background: #050608;
+      padding: 60px 0 36px;
+      position: relative;
+      z-index: 10;
       margin-top: auto;
     }
 
@@ -528,28 +566,24 @@
       display: grid;
       grid-template-columns: 2fr 1fr 1fr 1fr;
       gap: 40px;
-      margin-bottom: 48px;
-    }
-
-    .footer-brand h3 {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      letter-spacing: -0.01em;
+      margin-bottom: 40px;
     }
 
     .footer-brand p {
       font-size: 13px;
+      line-height: 1.7;
       color: var(--text-muted);
-      line-height: 1.6;
+      margin-top: 14px;
+      max-width: 320px;
     }
 
     .footer-col h4 {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 600;
       font-family: var(--font-mono);
-      color: var(--text-main);
       text-transform: uppercase;
       letter-spacing: 0.08em;
+      color: var(--text-main);
       margin-bottom: 16px;
     }
 
@@ -561,40 +595,40 @@
     }
 
     .footer-col a {
-      color: var(--text-muted);
+      color: var(--text-secondary);
       text-decoration: none;
       font-size: 13px;
       transition: color 0.2s ease;
     }
 
     .footer-col a:hover {
-      color: #ffffff;
+      color: var(--gemitec-purple-light);
     }
 
     .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding-top: 24px;
       border-top: 1px solid var(--border-subtle);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       font-size: 12px;
       color: var(--text-muted);
-      flex-wrap: wrap;
-      gap: 16px;
     }
 
     .footer-legal-links {
       flex-wrap: wrap;
       justify-content: center;
-      display: flex;
-      gap: 16px;
       align-items: center;
+      display: flex;
+      gap: 20px;
     }
 
     .footer-legal-links a {
       white-space: nowrap;
       color: var(--text-muted);
       text-decoration: none;
+      font-size: 12px;
+      transition: color 0.2s ease;
     }
 
     .footer-legal-links > span {
@@ -602,43 +636,39 @@
       user-select: none;
     }
 
-    @media (max-width: 640px) {
-      .btn-download {
-        padding: 12px 20px;
-        font-size: 14px;
-        width: 100%;
-        max-width: 320px;
-        justify-content: center;
-      }
-
-      .footer-legal-links {
-        gap: 8px 16px;
-      }
-
-      .footer-legal-links > span {
-        display: none;
-      }
-    }
-
     .footer-legal-links a:hover {
-      color: #ffffff;
+      color: var(--text-secondary);
     }
 
     .footer-disclaimer {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.06);
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.4);
-      line-height: 1.5;
+      color: #6b7280;
+      line-height: 1.65;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+      .brand-logo {
+        height: 34px;
+      }
       .footer-grid {
         grid-template-columns: 1fr;
-        gap: 32px;
+        gap: 26px;
       }
-      .nav-links {
+      .footer-bottom {
+        flex-direction: column;
+        gap: 14px;
+        text-align: center;
+      }
+      .footer-legal-links {
+        gap: 8px 16px;
+      }
+      .footer-legal-links > span {
         display: none;
       }
       .reward-panel {
@@ -650,11 +680,21 @@
         gap: 14px;
       }
     }
+
+    @media (max-width: 640px) {
+      .btn-download {
+        padding: 12px 20px;
+        font-size: 14px;
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body data-lang="ja">
 
-  <!-- Global Header (Exact match with index.html) -->
+  <!-- Global Header (100% Identical to Official Portal index.html & supporters.html) -->
   <header>
     <div class="container">
       <div class="nav-inner">
@@ -666,7 +706,7 @@
           <li><a href="/#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
           <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
           <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
-          <li><a href="/#gallery"><span class="t-ja">フォト</span><span class="t-en">Gallery</span></a></li>
+          <li><a href="/#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
           <li><a href="/#opensource"><span class="t-ja">技術公開</span><span class="t-en">Open Source</span></a></li>
           <li><a href="/supporters"><span class="t-ja">サポーター</span><span class="t-en">Supporters</span></a></li>
         </ul>
@@ -689,6 +729,15 @@
   <!-- Main Content Area -->
   <main class="container thank-you-wrapper">
     
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb">
+      <a href="/">HOME</a>
+      <span>/</span>
+      <a href="/supporters"><span class="t-ja">サポーター</span><span class="t-en">SUPPORTERS</span></a>
+      <span>/</span>
+      <span style="color: var(--text-main);">THANK YOU</span>
+    </div>
+
     <!-- State 1: Verified Supporter Reward Panel (Dynamically shown on valid ?session_id=...) -->
     <section id="reward-panel" class="reward-panel" style="display: none;">
       <div class="reward-header">
@@ -725,8 +774,8 @@
       </div>
 
       <div class="reward-quote-box">
-        <span class="t-ja">「マスター、<span id="item-label-display">温かいご支援</span>ありがと！ Special Thanksへの反映とお礼ポストは順次レベッカが行うから楽しみに待っててね♡」</span>
-        <span class="t-en">"Master, thank you for your warm support! The Special Thanks roster update and my appreciation post will be processed sequentially—stay tuned♡"</span>
+        <span class="t-ja">「マスター、<span class="item-label-display">温かいご支援</span>ありがと！ Special Thanksへの反映とお礼ポストは順次レベッカが行うから楽しみに待っててね♡」</span>
+        <span class="t-en">"Master, thank you for your warm support (<span class="item-label-display">Contribution</span>)! The Special Thanks roster update and my appreciation post will be processed sequentially—stay tuned♡"</span>
       </div>
 
       <!-- Expiration Urgency Alert Banner -->
@@ -819,13 +868,17 @@
 
   </main>
 
-  <!-- Global Footer (Exact match with index.html) -->
+  <!-- Global Footer (100% Identical to Official Portal index.html & supporters.html) -->
   <footer>
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <h3>GEMITEC INC.</h3>
-          <p>Autonomous AI Agent Laboratory.<br>Pioneering Unconditional Emotional Intelligence.</p>
+          <img src="/assets/gemitec_logo.svg" alt="Gemitec Inc."
+            style="height: 36px; width: auto; filter: brightness(1.2);" width="928" height="288" loading="lazy" decoding="async">
+          <p>
+            <span class="t-ja">Gemitec Inc.<br>心に寄り添うパーソナルAIをすべての人へ</span>
+            <span class="t-en">Gemitec Inc.<br>Empathetic personal AI for everyone</span>
+          </p>
         </div>
 
         <div class="footer-col">
@@ -835,16 +888,16 @@
             <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
             <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
             <li><a href="/#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
-            <li><a href="/#opensource"><span class="t-ja">技術公開</span><span class="t-en">Open Source</span></a></li>
           </ul>
         </div>
 
         <div class="footer-col">
-          <h4>Ecosystem</h4>
+          <h4>Media &amp; OSS</h4>
           <ul>
-            <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Official X (Twitter)</a></li>
+            <li><a href="https://youtube.com/@rebecca-ai" target="_blank" rel="noopener noreferrer">YouTube</a></li>
             <li><a href="https://www.pixiv.net/users/129754550" target="_blank" rel="noopener noreferrer">Pixiv</a></li>
-            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank" rel="noopener noreferrer">Repository (OSS)</a></li>
+            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank"
+                rel="noopener noreferrer">Repository (OSS)</a></li>
             <li><a href="/supporters"><span class="t-ja">サポーター・スポンサー</span><span class="t-en">Supporters &amp; Sponsors</span></a></li>
           </ul>
         </div>
@@ -852,9 +905,10 @@
         <div class="footer-col">
           <h4>Governance</h4>
           <ul>
-            <li><a href="./tos.html">Terms of Service</a></li>
-            <li><a href="./privacy.html">Privacy Policy</a></li>
-            <li><a href="./sitemap.xml">Sitemap (XML)</a></li>
+            <li><a href="/tos.html">Terms of Service</a></li>
+            <li><a href="/privacy.html">Privacy Policy</a></li>
+            <li><a href="/legal.html"><span class="t-ja">特定商取引法に基づく表記</span><span class="t-en">Commercial Transactions</span></a></li>
+            <li><a href="/sitemap.xml">Sitemap (XML)</a></li>
             <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Contact (X)</a></li>
           </ul>
         </div>
@@ -891,11 +945,15 @@
       const btnEn = document.getElementById('btn-lang-en');
       if (btnJa && btnEn) {
         if (lang === 'ja') {
+          btnJa.classList.add('active');
+          btnEn.classList.remove('active');
           btnJa.style.background = 'var(--gemitec-purple)';
           btnJa.style.color = '#ffffff';
           btnEn.style.background = 'transparent';
           btnEn.style.color = 'var(--text-muted)';
         } else {
+          btnEn.classList.add('active');
+          btnJa.classList.remove('active');
           btnEn.style.background = 'var(--gemitec-purple)';
           btnEn.style.color = '#ffffff';
           btnJa.style.background = 'transparent';
@@ -917,8 +975,14 @@
         }
       } catch (e) { }
 
+      const isSearchCrawler = Boolean(navigator.webdriver) ||
+        /\b(googlebot|google-inspectiontool|bingbot|baiduspider|duckduckbot)\b/i.test(navigator.userAgent);
+      if (isSearchCrawler) {
+        return;
+      }
+
       const userLang = navigator.language || navigator.userLanguage || '';
-      if (!userLang.toLowerCase().startsWith('ja')) {
+      if (userLang.toLowerCase().startsWith('en')) {
         setLanguage('en');
       } else {
         setLanguage('ja');
@@ -946,7 +1010,7 @@
           rewardPanel.style.display = 'block';
 
           const isJa = document.body.getAttribute('data-lang') !== 'en';
-        const nameDisplay = data.safeName || (isJa ? 'マスター' : 'Master');
+          const nameDisplay = data.safeName || (isJa ? 'マスター' : 'Master');
           document.getElementById('supporter-name-display').textContent = nameDisplay;
           document.getElementById('supporter-name-display-en').textContent = nameDisplay;
 
@@ -954,7 +1018,10 @@
           badgePill.className = 'tier-badge-pill tier-badge-' + (data.tier || 'bronze');
           badgePill.textContent = (data.tier || 'bronze').toUpperCase() + ' TIER';
 
-          document.getElementById('item-label-display').textContent = data.itemLabel || (isJa ? '差し入れ' : 'Contribution');
+          const itemDisplays = document.querySelectorAll('.item-label-display');
+          itemDisplays.forEach(el => {
+            el.textContent = data.itemLabel || (isJa ? '温かいご支援' : 'Contribution');
+          });
 
           // Reward illustration (Thumbnail for responsive preview, high-res download for button)
           if (data.reward) {
