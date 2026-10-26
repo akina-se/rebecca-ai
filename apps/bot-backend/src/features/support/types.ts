@@ -61,6 +61,11 @@ export interface SupportConfig {
     silver: string;
     gold: string;
   };
+
+  /**
+   * Public contact email for legal notices (Tokushoho) and user support inquiries.
+   */
+  contactEmail?: string;
 }
 
 /**

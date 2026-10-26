@@ -248,7 +248,8 @@ export class PublicSupportController {
         },
       ];
 
-      res.status(200).json({ plans });
+      const contactEmail = this.config.contactEmail || null;
+      res.status(200).json({ plans, contactEmail });
     } catch (error) {
       logger.error('[PublicSupportController] Error retrieving support plans', {
         error: (error as Error).message,

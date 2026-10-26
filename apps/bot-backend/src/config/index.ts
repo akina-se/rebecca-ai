@@ -174,6 +174,7 @@ export default {
       silver: process.env.STRIPE_PAYMENT_LINK_SILVER || '',
       gold: process.env.STRIPE_PAYMENT_LINK_GOLD || '',
     },
+    contactEmail: (process.env.SUPPORT_CONTACT_EMAIL || '').trim(),
   },
 };
 

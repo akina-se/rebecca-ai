@@ -432,6 +432,7 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(200);
       const data = jsonMock.mock.calls[0][0];
+      expect(data.contactEmail).toBeNull();
       expect(data.plans).toHaveLength(3);
       expect(data.plans[0]).toEqual(
         expect.objectContaining({
@@ -483,6 +484,7 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(200);
       const data = jsonMock.mock.calls[0][0];
+      expect(data.contactEmail).toBeNull();
       expect(data.plans).toHaveLength(3);
       expect(data.plans[0]).toEqual(
         expect.objectContaining({
