@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.35.0](https://github.com/akina-se/rebecca-ai/compare/v1.34.2...v1.35.0) (2026-10-24)
+
+
+### Features
+
+* **reply:** inject parent image caption, tune persona visual/fanless specs, and deflect follow/DM requests ([4ead2db](https://github.com/akina-se/rebecca-ai/commit/4ead2dbdee99c11dac0a63634f62d0d0dc69743c))
+* **reply:** inject parent post image caption, update persona visual & fanless spec, and deflect follow/DM requests ([486963f](https://github.com/akina-se/rebecca-ai/commit/486963f5d667b17240c79ba9830ef5cded0061d1))
+
+
+### Bug Fixes
+
+* **reply:** refine parent image label and streamline persona visual and fanless definitions ([046ac23](https://github.com/akina-se/rebecca-ai/commit/046ac237034e58ebbb08c13ce6187e6898ea16ee))
+* **reply:** unify interlocutor naming to 対話相手（ユーザー） across dialogue and search prompts ([a63a640](https://github.com/akina-se/rebecca-ai/commit/a63a640958ece77e5889b053148b39398fe194f4))
+
 ## [1.34.2](https://github.com/akina-se/rebecca-ai/compare/v1.34.1...v1.34.2) (2026-10-22)
 
 
