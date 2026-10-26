@@ -1045,10 +1045,9 @@
 
     .tier-box {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 12px 14px;
+      flex-direction: column;
+      gap: 8px;
+      padding: 13px 15px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm);
@@ -1059,27 +1058,39 @@
       position: relative;
     }
 
-    .tier-box:hover {
+    .tier-box:hover:not(.tier-disabled) {
       background: rgba(255, 255, 255, 0.06);
       transform: translateY(-2px);
     }
 
-    .tier-box.bronze-tier:hover {
+    .tier-box.bronze-tier:hover:not(.tier-disabled) {
       border-color: rgba(245, 158, 11, 0.45);
       box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
     }
 
-    .tier-box.silver-tier:hover {
+    .tier-box.silver-tier:hover:not(.tier-disabled) {
       border-color: rgba(148, 163, 184, 0.55);
       box-shadow: 0 4px 16px rgba(148, 163, 184, 0.16);
     }
 
-    .tier-box.gold-tier:hover {
+    .tier-box.gold-tier:hover:not(.tier-disabled) {
       border-color: rgba(245, 158, 11, 0.55);
       box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
     }
 
-    .tier-box:active {
+    .tier-box.tier-disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .tier-box.tier-disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .tier-box:active:not(.tier-disabled) {
       transform: translateY(0);
     }
 
@@ -1088,40 +1099,33 @@
       outline-offset: 2px;
     }
 
-    .tier-action-wrap {
+    .tier-box-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
     }
 
-    .tier-arrow-icon {
+    .tier-badge-group {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      transition: transform 0.2s ease, color 0.2s ease;
-    }
-
-    .tier-box:hover .tier-arrow-icon {
-      color: #ffffff;
-      transform: translateX(3px);
-    }
-
-    .tier-info {
-      flex: 1;
-      min-width: 0;
+      gap: 8px;
     }
 
     .tier-icon-pill {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      margin-right: 8px;
-      vertical-align: middle;
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      flex-shrink: 0;
+    }
+
+    .tier-icon-pill svg {
+      width: 12px;
+      height: 12px;
     }
 
     .tier-icon-pill.bronze {
@@ -1142,22 +1146,78 @@
       color: #fbbf24;
     }
 
+    .tier-action-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .tier-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+
+    .tier-status-pill.active {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: rgba(139, 92, 246, 0.4);
+      color: #c4b5fd;
+    }
+
+    .tier-status-pill svg {
+      opacity: 0.75;
+      flex-shrink: 0;
+    }
+
+    .tier-arrow-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .tier-box:hover:not(.tier-disabled) .tier-arrow-icon {
+      color: #ffffff;
+      transform: translateX(3px);
+    }
+
+    .tier-body {
+      width: 100%;
+    }
+
     .tier-title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text-main);
+      line-height: 1.4;
+      margin-bottom: 4px;
+      width: 100%;
+      word-break: break-word;
     }
 
     .tier-sub {
       font-size: 12px;
       color: var(--text-muted);
+      line-height: 1.5;
+      width: 100%;
     }
 
     .tier-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 10px;
+      padding: 4px 8px;
       font-size: 11px;
       font-weight: 700;
       font-family: var(--font-mono);
@@ -2086,10 +2146,29 @@
             </p>
 
             <div class="tiers-list">
-              <a href="/supporters#plans" id="lp-tier-bronze" class="tier-box bronze-tier" title="エナドリ1本差し入れ（¥500 / 口）">
-                <div class="tier-info">
+              <a href="javascript:void(0)" id="lp-tier-bronze" class="tier-box bronze-tier tier-disabled" title="エナドリ1本差し入れ（¥500 / 口）" aria-disabled="true">
+                <div class="tier-box-header">
+                  <div class="tier-badge-group">
+                    <span class="tier-icon-pill bronze"><svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+                    <span class="tier-badge bronze">
+                      <span class="t-ja">BRONZE</span>
+                      <span class="t-en">BRONZE</span>
+                    </span>
+                  </div>
+                  <div class="tier-action-wrap">
+                    <span class="tier-status-pill">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tier-lock-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span class="t-ja">受付準備中</span>
+                      <span class="t-en">Coming Soon</span>
+                    </span>
+                    <span class="tier-arrow-icon" aria-hidden="true" style="display: none;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </span>
+                  </div>
+                </div>
+                <div class="tier-body">
                   <div class="tier-title">
-                    <span class="tier-icon-pill bronze"><svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span><span class="t-ja">エナドリ1本差し入れ（¥500 / 口）</span>
+                    <span class="t-ja">エナドリ1本差し入れ（¥500 / 口）</span>
                     <span class="t-en">Energy Drink (¥500 / tier)</span>
                   </div>
                   <div class="tier-sub">
@@ -2097,20 +2176,30 @@
                     <span class="t-en">Digital art download, appreciation tweet &amp; roster credit</span>
                   </div>
                 </div>
-                <div class="tier-action-wrap">
-                  <span class="tier-badge bronze">
-                    <span class="t-ja">BRONZE</span>
-                    <span class="t-en">BRONZE</span>
-                  </span>
-                  <span class="tier-arrow-icon" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </span>
-                </div>
               </a>
-              <a href="/supporters#plans" id="lp-tier-silver" class="tier-box silver-tier" title="サーバーリソース差し入れ（¥1,000 / 口）">
-                <div class="tier-info">
+              <a href="javascript:void(0)" id="lp-tier-silver" class="tier-box silver-tier tier-disabled" title="サーバーリソース差し入れ（¥1,000 / 口）" aria-disabled="true">
+                <div class="tier-box-header">
+                  <div class="tier-badge-group">
+                    <span class="tier-icon-pill silver"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span>
+                    <span class="tier-badge silver">
+                      <span class="t-ja">SILVER</span>
+                      <span class="t-en">SILVER</span>
+                    </span>
+                  </div>
+                  <div class="tier-action-wrap">
+                    <span class="tier-status-pill">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tier-lock-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span class="t-ja">受付準備中</span>
+                      <span class="t-en">Coming Soon</span>
+                    </span>
+                    <span class="tier-arrow-icon" aria-hidden="true" style="display: none;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </span>
+                  </div>
+                </div>
+                <div class="tier-body">
                   <div class="tier-title">
-                    <span class="tier-icon-pill silver"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span><span class="t-ja">サーバーリソース差し入れ（¥1,000 / 口）</span>
+                    <span class="t-ja">サーバーリソース差し入れ（¥1,000 / 口）</span>
                     <span class="t-en">Server Compute Resource (¥1,000 / tier)</span>
                   </div>
                   <div class="tier-sub">
@@ -2118,35 +2207,36 @@
                     <span class="t-en">Digital art download, appreciation tweet &amp; Silver badge credit</span>
                   </div>
                 </div>
-                <div class="tier-action-wrap">
-                  <span class="tier-badge silver">
-                    <span class="t-ja">SILVER</span>
-                    <span class="t-en">SILVER</span>
-                  </span>
-                  <span class="tier-arrow-icon" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </span>
-                </div>
               </a>
-              <a href="/supporters#plans" id="lp-tier-gold" class="tier-box gold-tier" title="開発サポート（¥3,000 / 口）">
-                <div class="tier-info">
+              <a href="javascript:void(0)" id="lp-tier-gold" class="tier-box gold-tier tier-disabled" title="開発サポート（¥3,000 / 口）" aria-disabled="true">
+                <div class="tier-box-header">
+                  <div class="tier-badge-group">
+                    <span class="tier-icon-pill gold"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
+                    <span class="tier-badge gold">
+                      <span class="t-ja">GOLD</span>
+                      <span class="t-en">GOLD</span>
+                    </span>
+                  </div>
+                  <div class="tier-action-wrap">
+                    <span class="tier-status-pill">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tier-lock-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      <span class="t-ja">受付準備中</span>
+                      <span class="t-en">Coming Soon</span>
+                    </span>
+                    <span class="tier-arrow-icon" aria-hidden="true" style="display: none;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </span>
+                  </div>
+                </div>
+                <div class="tier-body">
                   <div class="tier-title">
-                    <span class="tier-icon-pill gold"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span><span class="t-ja">開発サポート（¥3,000 / 口）</span>
+                    <span class="t-ja">開発サポート（¥3,000 / 口）</span>
                     <span class="t-en">Development Support (¥3,000 / tier)</span>
                   </div>
                   <div class="tier-sub">
                     <span class="t-ja">デジタルイラストDL ＆ 公式Xお礼ポスト ＆ 名簿掲載（最上位GOLDバッジ）</span>
                     <span class="t-en">Digital art download, appreciation tweet &amp; Top Gold badge credit</span>
                   </div>
-                </div>
-                <div class="tier-action-wrap">
-                  <span class="tier-badge gold">
-                    <span class="t-ja">GOLD</span>
-                    <span class="t-en">GOLD</span>
-                  </span>
-                  <span class="tier-arrow-icon" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                  </span>
                 </div>
               </a>
             </div>
@@ -2314,10 +2404,29 @@
           data.plans.forEach(function(plan) {
             const el = document.getElementById('lp-tier-' + plan.tier);
             if (!el) return;
+            const statusPill = el.querySelector('.tier-status-pill');
+            const arrowIcon = el.querySelector('.tier-arrow-icon');
             if (plan.available && plan.paymentUrl) {
               el.href = plan.paymentUrl;
               el.target = '_blank';
               el.rel = 'noopener noreferrer';
+              el.classList.remove('tier-disabled');
+              el.removeAttribute('aria-disabled');
+              if (statusPill) {
+                statusPill.classList.add('active');
+                statusPill.innerHTML = '<span class="t-ja">購入へ ↗</span><span class="t-en">Checkout ↗</span>';
+              }
+              if (arrowIcon) arrowIcon.style.display = 'inline-flex';
+            } else {
+              el.href = 'javascript:void(0)';
+              el.removeAttribute('target');
+              el.classList.add('tier-disabled');
+              el.setAttribute('aria-disabled', 'true');
+              if (statusPill) {
+                statusPill.classList.remove('active');
+                statusPill.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tier-lock-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="t-ja">受付準備中</span><span class="t-en">Coming Soon</span>';
+              }
+              if (arrowIcon) arrowIcon.style.display = 'none';
             }
             if (plan.amount) {
               const formattedPrice = '¥' + plan.amount.toLocaleString();
@@ -2334,7 +2443,7 @@
           });
         }
       } catch (e) {
-        // Fallback gracefully to /supporters#plans
+        // Fallback gracefully
       }
     }
     if (document.readyState === 'loading') {
