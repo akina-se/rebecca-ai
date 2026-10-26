@@ -165,6 +165,7 @@
       padding: 4px 10px;
       border-radius: var(--radius-full);
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.2s ease;
     }
 
@@ -184,6 +185,7 @@
       font-weight: 600;
       text-decoration: none;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
@@ -467,6 +469,7 @@
       box-shadow: 0 4px 18px var(--gemitec-purple-glow);
       transition: var(--transition);
       cursor: pointer;
+      white-space: nowrap;
     }
 
     .btn-download:hover {
@@ -600,6 +603,14 @@
     }
 
     @media (max-width: 640px) {
+      .btn-download {
+        padding: 12px 20px;
+        font-size: 14px;
+        width: 100%;
+        max-width: 320px;
+        justify-content: center;
+      }
+
       .footer-legal-links {
         gap: 8px 16px;
       }
@@ -738,7 +749,7 @@
             <span class="t-ja">
               このダウンロードページの有効期限は<strong>決済完了から30分間</strong>です。<br>
               ブラウザを閉じたり、別のページに移動すると<strong>再アクセス・再発行ができません</strong>。<br>
-              下の「画像を保存する」ボタンから、今すぐ壁紙データを端末に保存（ダウンロード）してください。
+              下の「高画質イラストをダウンロード」ボタンから、今すぐ壁紙データを端末に保存（ダウンロード）してください。
             </span>
             <span class="t-en">
               This download page is valid for <strong>30 minutes after payment completion</strong>.<br>
@@ -760,8 +771,8 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span class="t-ja">画像を保存する（デジタルイラストを高画質ダウンロード）</span>
-            <span class="t-en">Save Image (Download High-Res)</span>
+            <span class="t-ja">高画質イラストをダウンロード</span>
+            <span class="t-en">Download High-Res Illustration</span>
           </a>
           <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;"><span class="t-ja">有効期限: 約30分間</span><span class="t-en">Valid for: Approx. 30 minutes</span></div>
         </div>

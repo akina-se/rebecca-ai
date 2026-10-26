@@ -623,7 +623,7 @@ describe('Integration Tests', () => {
             const response = await request(app).get('/support/thank-you');
             expect(response.status).toBe(200);
             expect(response.text).toContain('サポーター・サンクスページ');
-            expect(response.text).toContain('デジタルイラストを高画質ダウンロード');
+            expect(response.text).toContain('高画質イラストをダウンロード');
         });
 
         it('should return 200 OK and plans with dynamic Stripe payment links from GET /api/v1/support/plans', async () => {
