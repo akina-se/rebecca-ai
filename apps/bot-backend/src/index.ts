@@ -61,8 +61,8 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
   );
 
   // Serve static files such as Terms of Service and Privacy Policy
-  // Apply public rate limiter to static files or any other public entry points
-  app.use(publicRateLimiter);
+
+
   const publicDir = fs.existsSync(path.join(__dirname, '../public'))
     ? path.join(__dirname, '../public')
     : path.join(process.cwd(), 'public');
