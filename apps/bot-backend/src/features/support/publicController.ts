@@ -248,7 +248,8 @@ export class PublicSupportController {
         },
       ];
 
-      const contactEmail = this.config.contactEmail || null;
+      const rawEmail = (this.config.contactEmail || '').trim();
+      const contactEmail = rawEmail ? rawEmail.replace(/@/g, ' [at mark] ') : null;
       res.status(200).json({ plans, contactEmail });
     } catch (error) {
       logger.error('[PublicSupportController] Error retrieving support plans', {

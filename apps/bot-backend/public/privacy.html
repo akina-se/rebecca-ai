@@ -500,13 +500,32 @@
     }
 
     .footer-legal-links {
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
       display: flex;
       gap: 20px;
     }
 
     .footer-legal-links a {
+      white-space: nowrap;
       color: var(--text-muted);
       text-decoration: none;
+    }
+
+    .footer-legal-links > span {
+      color: rgba(255, 255, 255, 0.25);
+      user-select: none;
+    }
+
+    @media (max-width: 640px) {
+      .footer-legal-links {
+        gap: 8px 16px;
+      }
+
+      .footer-legal-links > span {
+        display: none;
+      }
     }
 
     .footer-legal-links a:hover {

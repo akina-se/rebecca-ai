@@ -466,6 +466,23 @@ describe('PublicSupportController Unit Tests', () => {
       );
     });
 
+    it('obfuscates contactEmail by replacing @ with [at mark] to prevent scraping', async () => {
+      const emailController = new PublicSupportController(
+        deps,
+        {
+          ...config.support,
+          contactEmail: 'contact@example.com',
+        },
+        mockStripe,
+      );
+
+      await emailController.getSupportPlans(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      const data = jsonMock.mock.calls[0][0];
+      expect(data.contactEmail).toBe('contact [at mark] example.com');
+    });
+
     it('returns available: false and paymentUrl: null when payment links are unconfigured', async () => {
       const unconfiguredController = new PublicSupportController(
         deps,

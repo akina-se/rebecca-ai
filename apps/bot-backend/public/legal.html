@@ -394,14 +394,32 @@
 
     .footer-legal-links {
       display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       align-items: center;
       gap: 12px;
     }
 
     .footer-legal-links a {
+      white-space: nowrap;
       color: var(--text-muted);
       text-decoration: none;
       transition: color 0.2s ease;
+    }
+
+    .footer-legal-links > span {
+      color: rgba(255, 255, 255, 0.25);
+      user-select: none;
+    }
+
+    @media (max-width: 640px) {
+      .footer-legal-links {
+        gap: 8px 16px;
+      }
+
+      .footer-legal-links > span {
+        display: none;
+      }
     }
 
     .footer-legal-links a:hover {
@@ -573,6 +591,10 @@
             <td>
               <span id="contact-email-wrapper">
                 <span id="contact-email-text" style="display:none; font-family: var(--font-mono); color: #ffffff;"></span>
+                <span id="contact-email-note" style="display:none; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                  <span class="t-ja">※迷惑メール防止のため「@」を「[at mark]」と表記しています。</span>
+                  <span class="t-en">* "@" is replaced with "[at mark]" to prevent spam.</span>
+                </span>
                 <span id="contact-email-fallback">
                   <span class="t-ja">お問い合わせ窓口（公式X @rebecca_ai_gal）</span>
                   <span class="t-en">Contact: Official X (@rebecca_ai_gal)</span>
@@ -587,14 +609,14 @@
               <span class="t-en">Price</span>
             </th>
             <td>
-              <span class="t-ja">各決済画面に表示された金額（税込）<br>
-                ・Bronze Tier: ¥500（税込）<br>
-                ・Silver Tier: ¥1,000（税込）<br>
-                ・Gold Tier: ¥3,000（税込）</span>
-              <span class="t-en">Prices displayed on each checkout screen (tax included)<br>
-                - Bronze Tier: ¥500 (tax included)<br>
-                - Silver Tier: ¥1,000 (tax included)<br>
-                - Gold Tier: ¥3,000 (tax included)</span>
+              <span class="t-ja">各決済画面に表示された金額（税込）</span>
+
+
+
+              <span class="t-en">Prices displayed on each checkout screen (tax included)</span>
+
+
+
             </td>
           </tr>
 
@@ -754,11 +776,14 @@
           const data = await res.json();
           if (data && data.contactEmail) {
             const emailText = document.getElementById('contact-email-text');
+            const emailNote = document.getElementById('contact-email-note');
             const emailFallback = document.getElementById('contact-email-fallback');
             if (emailText) {
-              emailText.textContent = data.contactEmail;
+              const safeEmail = data.contactEmail.replace(/@/g, ' [at mark] ');
+              emailText.textContent = safeEmail;
               emailText.style.display = 'inline';
             }
+            if (emailNote) emailNote.style.display = 'block';
             if (emailFallback) emailFallback.style.display = 'none';
           }
         }
