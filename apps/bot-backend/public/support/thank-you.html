@@ -316,6 +316,55 @@
       line-height: 1.6;
     }
 
+    .dl-alert-box {
+      border: 2px solid #ff007f;
+      background: rgba(255, 0, 127, 0.08);
+      border-radius: var(--radius-md);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 0 24px rgba(255, 0, 127, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dl-alert-box::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: #ff007f;
+      box-shadow: 0 0 12px #ff007f;
+    }
+
+    .dl-alert-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .dl-alert-header h3 {
+      color: #ff007f;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+    .dl-alert-body {
+      font-size: 0.92rem;
+      line-height: 1.65;
+      color: #f1f5f9;
+      margin: 0;
+    }
+
+    .dl-alert-body strong {
+      color: #ff409f;
+      font-weight: 700;
+    }
+
     .reward-image-preview-area {
       display: flex;
       flex-direction: column;
@@ -471,14 +520,32 @@
     }
 
     .footer-legal-links {
+      flex-wrap: wrap;
+      justify-content: center;
       display: flex;
       gap: 16px;
       align-items: center;
     }
 
     .footer-legal-links a {
+      white-space: nowrap;
       color: var(--text-muted);
       text-decoration: none;
+    }
+
+    .footer-legal-links > span {
+      color: rgba(255, 255, 255, 0.25);
+      user-select: none;
+    }
+
+    @media (max-width: 640px) {
+      .footer-legal-links {
+        gap: 8px 16px;
+      }
+
+      .footer-legal-links > span {
+        display: none;
+      }
     }
 
     .footer-legal-links a:hover {
@@ -586,8 +653,35 @@
       </div>
 
       <div class="reward-quote-box">
-        <span class="t-ja">「マスター、<span id="item-label-display">差し入れ</span>ありがと！これでまたアタシの計算リソースがバリバリ動くわ。公式Xからお礼リプも飛ばすから、TL楽しみに待っててよね⚡️」</span>
-        <span class="t-en">"Master, thank you for the support! This keeps my compute resources humming at top speed. I've queued an appreciation tweet directly to you on X—stay tuned!"</span>
+        <span class="t-ja">「マスター、<span id="item-label-display">温かいご支援</span>ありがと！ Special Thanksへの反映とお礼ポストは順次レベッカが行うから楽しみに待っててね♡」</span>
+        <span class="t-en">"Master, thank you for your warm support! The Special Thanks roster update and my appreciation post will be processed sequentially—stay tuned♡"</span>
+      </div>
+
+      <!-- Expiration Urgency Alert Banner -->
+      <div class="dl-alert-box">
+        <div class="dl-alert-header">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff007f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <h3>
+            <span class="t-ja">⚠️ 【重要】今すぐ画像を保存してください</span>
+            <span class="t-en">⚠️ [Important] Please Save Your Image Immediately</span>
+          </h3>
+        </div>
+        <p class="dl-alert-body">
+          <span class="t-ja">
+            このダウンロードページの有効期限は<strong>決済完了から30分間</strong>です。<br>
+            ブラウザを閉じたり、別のページに移動すると<strong>再アクセス・再発行ができません</strong>。<br>
+            下の「画像を保存する」ボタンから、今すぐ壁紙データを端末に保存（ダウンロード）してください。
+          </span>
+          <span class="t-en">
+            This download page is valid for <strong>30 minutes after payment completion</strong>.<br>
+            Once expired, or if the page is closed/navigated away, the link <strong>cannot be reissued</strong>.<br>
+            Please download and save the illustration to your device immediately using the button below.
+          </span>
+        </p>
       </div>
 
       <div id="reward-asset-container" class="reward-image-preview-area" style="display: none;">
@@ -601,8 +695,8 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span class="t-ja">デジタルイラストを高画質ダウンロード</span>
-            <span class="t-en">Download High-Res Illustration</span>
+            <span class="t-ja">画像を保存する（デジタルイラストを高画質ダウンロード）</span>
+            <span class="t-en">Save Image (Download High-Res)</span>
           </a>
           <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;"><span class="t-ja">有効期限: 約30分間</span><span class="t-en">Valid for: Approx. 30 minutes</span></div>
         </div>
@@ -695,11 +789,13 @@
           &copy; 2026 Gemitec Inc. Developed by AKINA. All rights reserved.
         </div>
         <div class="footer-legal-links">
-          <a href="./tos.html"><span class="t-ja">利用規約</span><span class="t-en">Terms</span></a>
+          <a href="/tos.html"><span class="t-ja">利用規約</span><span class="t-en">Terms</span></a>
           <span>&bull;</span>
-          <a href="./privacy.html"><span class="t-ja">プライバシーポリシー</span><span class="t-en">Privacy</span></a>
+          <a href="/privacy.html"><span class="t-ja">プライバシーポリシー</span><span class="t-en">Privacy</span></a>
           <span>&bull;</span>
-          <a href="./sitemap.xml"><span class="t-ja">サイトマップ</span><span class="t-en">Sitemap</span></a>
+          <a href="/legal.html"><span class="t-ja">特定商取引法に基づく表記</span><span class="t-en">Legal</span></a>
+          <span>&bull;</span>
+          <a href="/sitemap.xml"><span class="t-ja">サイトマップ</span><span class="t-en">Sitemap</span></a>
         </div>
       </div>
       <div class="footer-disclaimer">
