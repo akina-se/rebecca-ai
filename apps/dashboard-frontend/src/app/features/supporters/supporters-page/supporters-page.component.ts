@@ -344,7 +344,7 @@ export class SupportersPageComponent implements OnInit {
   openManualResolveModal(tx: SupportTransactionDoc, event?: Event): void {
     if (event) event.stopPropagation();
     this.manualTransaction.set(tx);
-    this.manualTweetText = tx.tweetText || `マスター ${tx.safeName}、${tx.itemLabel}差し入れありがとう！レベッカの演算パワー充填完了だよ♡\n\n👇公式ポータル・スペシャルサンクス\nhttps://rebecca-ai.net/supporters#plans\n#全肯定AIレベッカ`;
+    this.manualTweetText = tx.tweetText || `マスター ${tx.safeName}、${tx.itemLabel}差し入れありがとう！レベッカの演算パワー充填完了だよ♡\n\n── Official Supporters\nhttps://rebecca-ai.net/supporters#plans\n#全肯定AIレベッカ`;
     this.isManualModalOpen.set(true);
   }
 

@@ -46,7 +46,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     });
     (publishPost as jest.Mock).mockResolvedValue({
       tweetId: 'tweet_support_999',
-      text: `たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️\n\n👇公式ポータル・スペシャルサンクス\n${config.support.officialPortalUrl}\n#全肯定AIレベッカ`,
+      text: `たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️\n\n── Official Supporters\n${config.support.officialPortalUrl}\n#全肯定AIレベッカ`,
       attachedMedia: true,
       mediaUrls: ['https://storage.googleapis.com/rebecca-assets/resource_01.png'],
       assetId: 'asset_resource_01',

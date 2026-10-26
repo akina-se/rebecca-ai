@@ -138,7 +138,7 @@ ${personaAnchors ? `【ペルソナ表現・アンカー例】\n${personaAnchors
 
       // Step 4: Final Text Assembly with Injected Official Portal Anchor
       const cleanReplyBody = geminiResponse.replyBody.trim();
-      const finalText = `${cleanReplyBody}\n\n👇公式ポータル・スペシャルサンクス\n${this.config.officialPortalUrl}\n${defaultHashtag}`;
+      const finalText = `${cleanReplyBody}\n\n── Official Supporters\n${this.config.officialPortalUrl}\n${defaultHashtag}`;
 
       // Step 5: Post to X with Automated Multimodal Image Asset Attachment
       const publishResult = await publishPost(this.deps, {
