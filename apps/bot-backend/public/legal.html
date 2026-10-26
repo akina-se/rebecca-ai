@@ -233,6 +233,28 @@
       transform: translateY(-1px);
     }
 
+    .breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .breadcrumb a {
+      color: var(--gemitec-purple-light);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+      color: #ffffff;
+    }
+
     /* Page Hero */
     .page-hero {
       padding: 56px 0 36px;
@@ -521,6 +543,13 @@
   <!-- Main Content -->
   <main class="container">
     <section class="page-hero">
+      <div class="breadcrumb">
+        <a href="/">HOME</a>
+        <span>/</span>
+        <span>GOVERNANCE</span>
+        <span>/</span>
+        <span style="color: var(--text-main);">COMMERCIAL TRANSACTIONS</span>
+      </div>
       <div class="corp-tagline">
         <span class="status-dot-green"></span>
         <span class="t-ja">GEMITEC INC. &bull; 法的通知</span>

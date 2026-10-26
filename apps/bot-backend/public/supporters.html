@@ -232,6 +232,29 @@
       border-color: rgba(255, 255, 255, 0.2);
     }
 
+    .breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .breadcrumb a {
+      color: var(--gemitec-purple-light);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+      color: #ffffff;
+    }
+
     /* Page Hero */
     .page-hero {
       padding: 64px 0 40px;
@@ -1520,6 +1543,13 @@
     
     <!-- Hero -->
     <section class="page-hero">
+      <div class="breadcrumb">
+        <a href="/">HOME</a>
+        <span>/</span>
+        <span>COMMUNITY</span>
+        <span>/</span>
+        <span style="color: var(--text-main);">OFFICIAL SUPPORTERS</span>
+      </div>
       <div class="corp-tagline">
         <span class="status-dot-green"></span>
         <span class="t-ja">GEMITEC INC. &bull; 公式サポーター制度</span>
