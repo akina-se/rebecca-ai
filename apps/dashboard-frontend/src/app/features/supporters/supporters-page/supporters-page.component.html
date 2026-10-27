@@ -1,0 +1,694 @@
+<div class="supporters-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">{{ 'supporters.title' | translate }}</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="openRewardsModal()">
+        <span class="material-icons">photo_library</span>
+        {{ 'supporters.rewards_catalog' | translate }}
+      </button>
+      <button class="btn btn-primary" (click)="openManualEntryModal()">
+        <span class="material-icons">add</span>
+        {{ 'supporters.modal_manual_entry_title' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Failure Alert Banner (Rendered only when tasks require attention) -->
+  @if (summary().failedCount > 0) {
+    <div class="alert-banner failure">
+      <div class="alert-content">
+        <span class="material-icons alert-icon">error_outline</span>
+        <span class="alert-title">{{ summary().failedCount }} {{ 'supporters.alert_failed' | translate }}</span>
+      </div>
+      <button class="alert-action-btn" (click)="filterByFailed()">
+        {{ 'supporters.filter_failed' | translate }}
+      </button>
+    </div>
+  }
+
+  <!-- KPI Metrics Grid (Unified Dark Glassmorphism) -->
+  <div class="kpi-grid">
+    <div class="kpi-card glass-panel">
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.total_revenue' | translate }}</span>
+        <span class="material-icons kpi-icon">payments</span>
+      </div>
+      <div class="kpi-value">¥{{ summary().totalAmount | number }}</div>
+    </div>
+
+    <div class="kpi-card glass-panel">
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.total_donations' | translate }}</span>
+        <span class="material-icons kpi-icon">volunteer_activism</span>
+      </div>
+      <div class="kpi-value">{{ summary().totalCount }} <span class="unit">{{ 'supporters.items_unit' | translate }}</span></div>
+    </div>
+
+    <div class="kpi-card glass-panel">
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.filter_completed' | translate }}</span>
+        <span class="material-icons kpi-icon">check_circle</span>
+      </div>
+      <div class="kpi-value">{{ summary().completedCount }} <span class="unit">{{ 'supporters.items_unit' | translate }}</span></div>
+    </div>
+
+    <div class="kpi-card glass-panel" [class.kpi-alert]="summary().failedCount > 0">
+      <div class="kpi-header">
+        <span class="kpi-label">{{ 'supporters.failed_tasks' | translate }}</span>
+        <span class="material-icons kpi-icon" [class.text-danger]="summary().failedCount > 0">warning_amber</span>
+      </div>
+      <div class="kpi-value" [class.text-danger]="summary().failedCount > 0">
+        {{ summary().failedCount }} <span class="unit">{{ 'supporters.items_unit' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="toolbar glass-panel">
+    <div class="toolbar-left">
+      <!-- Status Filter Pills -->
+      <div class="filter-pills">
+        <button [class.active]="selectedStatus === 'all'" (click)="selectedStatus = 'all'; onFilterChange()">
+          {{ 'supporters.filter_all' | translate }}
+        </button>
+        <button [class.active]="selectedStatus === 'failed'" (click)="selectedStatus = 'failed'; onFilterChange()">
+          {{ 'supporters.filter_failed' | translate }}
+          @if (summary().failedCount > 0) {
+            <span class="badge-count" [class.badge-danger]="selectedStatus !== 'failed'">{{ summary().failedCount }}</span>
+          }
+        </button>
+        <button [class.active]="selectedStatus === 'pending'" (click)="selectedStatus = 'pending'; onFilterChange()">
+          {{ 'supporters.filter_pending' | translate }}
+        </button>
+        <button [class.active]="selectedStatus === 'completed'" (click)="selectedStatus = 'completed'; onFilterChange()">
+          {{ 'supporters.filter_completed' | translate }}
+        </button>
+        <button [class.active]="selectedStatus === 'manual'" (click)="selectedStatus = 'manual'; onFilterChange()">
+          {{ 'supporters.filter_manual' | translate }}
+        </button>
+      </div>
+
+      <!-- Tier Selector (Bronze, Silver, Gold) -->
+      <select class="form-select" [(ngModel)]="selectedTier" (change)="onFilterChange()">
+        <option value="all">{{ 'supporters.tier_all' | translate }}</option>
+        @if (supportPlans().length > 0) {
+          @for (p of reversedPlans(); track p.tier) {
+            <option [value]="p.tier">{{ formatTierFilterLabel(p) }}</option>
+          }
+        } @else {
+          <option value="gold">Gold (¥3,000)</option>
+          <option value="silver">Silver (¥1,000)</option>
+          <option value="bronze">Bronze (¥500)</option>
+        }
+      </select>
+    </div>
+
+    <div class="toolbar-right">
+      <div class="search-box">
+        <span class="material-icons">search</span>
+        <input
+          type="text"
+          [placeholder]="'supporters.search_input_placeholder' | translate"
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onSearch()"
+          (keyup.enter)="onSearch()"
+        />
+        @if (searchQuery) {
+          <button class="clear-btn" (click)="searchQuery = ''; onSearch()">
+            <span class="material-icons">close</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Transactions Ledger Table (Clean 4 Columns + Chevron) -->
+  <div class="table-container glass-panel">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>{{ 'common.loading' | translate }}</span>
+      </div>
+    } @else if (transactions().length === 0) {
+      <div class="empty-state">
+        <span class="material-icons empty-icon">inbox</span>
+        <p>{{ 'supporters.no_transactions' | translate }}</p>
+      </div>
+    } @else {
+      <table class="data-table supporters-table">
+        <thead>
+          <tr>
+            <th class="th-date">{{ 'supporters.col_date' | translate }}</th>
+            <th class="th-backer">{{ 'supporters.col_backer' | translate }}</th>
+            <th class="th-tier">{{ 'supporters.col_amount_tier' | translate }}</th>
+            <th class="th-credit">{{ 'supporters.col_credit_status' | translate }}</th>
+            <th class="th-chevron"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tx of transactions(); track tx.id) {
+            <tr class="clickable-row" [class.row-failed]="tx.status === 'failed'" (click)="openTransactionDrawer(tx)">
+              
+              <!-- Column 1: Date -->
+              <td class="td-date">
+                <span class="date-text">{{ tx.createdAt | tzDate:'short' }}</span>
+              </td>
+
+              <!-- Column 2: Supporter Name -->
+              <td class="td-backer">
+                <div class="backer-cell">
+                  <div class="name-line">
+                    <span class="supporter-name">{{ tx.safeName || tx.rawName }}</span>
+                    @if (tx.isNameSanitized) {
+                      <span class="sanitized-tag" [title]="'supporters.tag_sanitized_title' | translate">{{ 'supporters.tag_sanitized' | translate }}</span>
+                    }
+                    @if (tx.isBanned) {
+                      <span class="banned-tag">{{ 'supporters.tag_banned' | translate }}</span>
+                    }
+                  </div>
+                </div>
+              </td>
+
+              <!-- Column 3: Amount & Tier -->
+              <td class="td-tier">
+                <div class="tier-cell">
+                  <span class="tier-pill" [class]="tx.tier">
+                    {{ tx.tier.toUpperCase() }}
+                  </span>
+                  <span class="amount-number">¥{{ tx.amount | number }}</span>
+                </div>
+              </td>
+
+              <!-- Column 4: Credit Visibility & Post Status -->
+              <td class="td-credit">
+                <div class="credit-cell">
+                  <span class="credit-pill" [class.hidden]="tx.creditVisibility === 'hide'">
+                    <span class="material-icons">{{ tx.creditVisibility === 'show' ? 'visibility' : 'visibility_off' }}</span>
+                    {{ tx.creditVisibility === 'show' ? ('supporters.credit_shown' | translate) : ('supporters.credit_hidden' | translate) }}
+                  </span>
+
+                  <span class="status-chip" [class]="tx.status">
+                    @switch (tx.status) {
+                      @case ('completed') {
+                        <span class="material-icons icon-done">check_circle</span> {{ 'supporters.status_completed' | translate }}
+                      }
+                      @case ('pending') {
+                        <span class="material-icons icon-pending">hourglass_empty</span> {{ 'supporters.status_pending' | translate }}
+                      }
+                      @case ('failed') {
+                        <span class="material-icons icon-failed">error</span> {{ 'supporters.status_failed' | translate }}
+                      }
+                      @case ('manual') {
+                        <span class="material-icons icon-manual">build</span> {{ 'supporters.status_manual' | translate }}
+                      }
+                    }
+                  </span>
+                </div>
+              </td>
+
+              <!-- Column 5: Chevron -->
+              <td class="td-chevron">
+                <span class="material-icons chevron-icon">chevron_right</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Shared Pagination Component (Outside table card) -->
+  @if (totalPages() > 1 || totalItems() > 0) {
+    <div class="supporters-pagination-wrapper">
+      <app-pagination
+        [currentPage]="currentPage"
+        [totalPages]="totalPages()"
+        [totalItems]="totalItems()"
+        [itemsLabel]="'pagination.supporters' | translate"
+        [isLoading]="isLoading()"
+        (pageChange)="onPageChange($event)"
+      >
+      </app-pagination>
+    </div>
+  }
+
+  <!-- Detail Slide-Over Drawer (UserDetail Style) -->
+  <app-right-drawer
+    [isOpen]="isDrawerOpen()"
+    [title]="'supporters.drawer_title' | translate"
+    icon="volunteer_activism"
+    (closeDrawer)="closeTransactionDrawer()"
+  >
+    @if (selectedTx(); as tx) {
+      <div class="drawer-inner-content">
+
+        <!-- Top Overview Card -->
+        <div class="drawer-header-card glass-panel" [class.border-failed]="tx.status === 'failed'">
+          <div class="header-card-top">
+            <div class="tier-badge-large" [class]="tx.tier">
+              {{ tx.tier.toUpperCase() }}
+            </div>
+            <div class="header-card-amount">
+              ¥{{ tx.amount | number }}
+            </div>
+          </div>
+          <div class="header-card-bottom">
+            <span class="status-chip" [class]="tx.status">
+              @switch (tx.status) {
+                @case ('completed') {
+                  <span class="material-icons icon-done">check_circle</span> {{ 'supporters.drawer_post_completed' | translate }}
+                }
+                @case ('pending') {
+                  <span class="material-icons icon-pending">hourglass_empty</span> {{ 'supporters.drawer_post_pending' | translate }}
+                }
+                @case ('failed') {
+                  <span class="material-icons icon-failed">error</span> {{ 'supporters.drawer_post_failed' | translate }}
+                }
+                @case ('manual') {
+                  <span class="material-icons icon-manual">build</span> {{ 'supporters.drawer_post_manual' | translate }}
+                }
+              }
+            </span>
+            <span class="header-card-date">{{ tx.createdAt | tzDate }}</span>
+          </div>
+        </div>
+
+        <!-- Section 1: Stripe & Payment Identification -->
+        <div class="drawer-section glass-panel">
+          <h3 class="section-heading">
+            <span class="material-icons">credit_card</span>
+            {{ 'supporters.section_payment' | translate }}
+          </h3>
+
+          <div class="detail-row">
+            <span class="detail-label">{{ 'supporters.stripe_session_id' | translate }}</span>
+            <div class="detail-value-copy">
+              <span class="mono-code">{{ tx.stripeSessionId }}</span>
+              <button class="btn-copy" (click)="copyToClipboard(tx.stripeSessionId, 'session')" [title]="'supporters.copy' | translate">
+                <span class="material-icons">{{ copiedKey() === 'session' ? 'check' : 'content_copy' }}</span>
+              </button>
+            </div>
+          </div>
+
+          @if (tx.stripePaymentIntentId) {
+            <div class="detail-row">
+              <span class="detail-label">{{ 'supporters.stripe_payment_intent' | translate }}</span>
+              <div class="detail-value-copy">
+                <span class="mono-code">{{ tx.stripePaymentIntentId }}</span>
+                <button class="btn-copy" (click)="copyToClipboard(tx.stripePaymentIntentId, 'pi')" [title]="'supporters.copy' | translate">
+                  <span class="material-icons">{{ copiedKey() === 'pi' ? 'check' : 'content_copy' }}</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="detail-row">
+            <span class="detail-label">{{ 'supporters.transaction_id' | translate }}</span>
+            <div class="detail-value-copy">
+              <span class="mono-code">{{ tx.id }}</span>
+              <button class="btn-copy" (click)="copyToClipboard(tx.id, 'id')" [title]="'supporters.copy' | translate">
+                <span class="material-icons">{{ copiedKey() === 'id' ? 'check' : 'content_copy' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Automated Appreciation Post Status -->
+        <div class="drawer-section glass-panel">
+          <h3 class="section-heading">
+            <span class="material-icons">send</span>
+            {{ 'supporters.section_post' | translate }}
+          </h3>
+
+          @if (tx.status === 'failed') {
+            <div class="drawer-error-alert">
+              <div class="error-alert-title">
+                <span class="material-icons">error_outline</span>
+                {{ 'supporters.post_failed_title' | translate }}
+              </div>
+              <div class="error-alert-desc">
+                {{ tx.errorMessage || ('supporters.post_failed_default_err' | translate) }}
+              </div>
+              <div class="error-alert-actions">
+                <button
+                  class="btn btn-retry-large"
+                  [disabled]="retryingId() === tx.id"
+                  (click)="retryFromDrawer()"
+                >
+                  <span class="material-icons" [class.spin]="retryingId() === tx.id">refresh</span>
+                  {{ retryingId() === tx.id ? ('supporters.retrying' | translate) : ('supporters.retry' | translate) }}
+                </button>
+                <button class="btn btn-outline-warning" (click)="openManualResolveFromDrawer()">
+                  <span class="material-icons">edit_note</span>
+                  {{ 'supporters.manual_resolve' | translate }}
+                </button>
+              </div>
+            </div>
+          } @else if (tx.status === 'completed' || tx.tweetUrl || tx.tweetId) {
+            <div class="tweet-success-box">
+              <div class="tweet-meta">
+                <span class="material-icons text-success">task_alt</span>
+                <span>{{ 'supporters.post_sent' | translate }}</span>
+              </div>
+              @if (tx.tweetUrl || tx.tweetId) {
+                <a [href]="tx.tweetUrl || ('https://x.com/i/status/' + tx.tweetId)" target="_blank" rel="noopener noreferrer" class="btn btn-x-link">
+                  <span class="material-icons">open_in_new</span>
+                  {{ 'supporters.view_tweet' | translate }}
+                </a>
+              }
+            </div>
+          } @else if (tx.status === 'manual') {
+            <div class="tweet-success-box manual">
+              <div class="tweet-meta">
+                <span class="material-icons text-warning">build</span>
+                <span>{{ 'supporters.resolved_by_admin' | translate }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="tweet-pending-box">
+              <span class="material-icons">hourglass_top</span>
+              <span>{{ 'supporters.post_pending' | translate }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Section 3: Supporter Settings -->
+        <div class="drawer-section glass-panel">
+          <h3 class="section-heading">
+            <span class="material-icons">manage_accounts</span>
+            {{ 'supporters.section_supporter' | translate }}
+          </h3>
+
+          <div class="form-group">
+            <label>{{ 'supporters.modal_safe_name' | translate }}</label>
+            <input type="text" [(ngModel)]="drawerSafeName" class="form-control" />
+            <div class="raw-name-row">
+              <span class="form-hint">{{ 'supporters.raw_name_hint' | translate }}: {{ tx.rawName }}</span>
+              @if (drawerSafeName !== tx.rawName && tx.rawName) {
+                <button
+                  type="button"
+                  class="btn-restore-raw"
+                  (click)="drawerSafeName = tx.rawName"
+                  [title]="'supporters.restore_raw_name' | translate"
+                >
+                  <span class="material-icons">restore</span>
+                  {{ 'supporters.restore_raw_name' | translate }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="toggle-group">
+            <div class="toggle-item">
+              <div class="toggle-text">
+                <span class="toggle-title">{{ 'supporters.visibility_toggle' | translate }}</span>
+                <span class="toggle-desc">{{ 'supporters.visibility_desc' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  [checked]="drawerCreditVisibility === 'show'"
+                  (change)="drawerCreditVisibility = drawerCreditVisibility === 'show' ? 'hide' : 'show'"
+                />
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div class="toggle-item danger">
+              <div class="toggle-text">
+                <span class="toggle-title text-danger">{{ 'supporters.ban_status' | translate }}</span>
+                <span class="toggle-desc">{{ 'supporters.ban_desc' | translate }}</span>
+              </div>
+              <label class="switch">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="drawerIsBanned"
+                />
+                <span class="slider round danger-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="drawer-save-actions">
+            <button
+              class="btn btn-primary btn-save-full"
+              [disabled]="isSavingDrawer() || !drawerSafeName.trim()"
+              (click)="saveDrawerSettings()"
+            >
+              <span class="material-icons" [class.spin]="isSavingDrawer()">{{ isSavingDrawer() ? 'sync' : 'save' }}</span>
+              {{ isSavingDrawer() ? ('common.saving' | translate) : ('common.save_changes' | translate) }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    }
+  </app-right-drawer>
+
+  <!-- Standalone Edit Modal -->
+  @if (isEditModalOpen()) {
+    <div class="modal-backdrop" (click)="closeEditModal()">
+      <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.modal_edit_title' | translate }}</h2>
+          <button class="close-btn" (click)="closeEditModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>{{ 'supporters.modal_safe_name' | translate }}</label>
+            <input type="text" [(ngModel)]="editSafeName" class="form-control" />
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.modal_tier_override' | translate }}</label>
+            <select [(ngModel)]="editTier" class="form-select">
+              @if (supportPlans().length > 0) {
+                @for (p of supportPlans(); track p.tier) {
+                  <option [value]="p.tier">{{ formatTierFilterLabel(p) }}</option>
+                }
+              } @else {
+                <option value="bronze">Bronze (¥500)</option>
+                <option value="silver">Silver (¥1,000)</option>
+                <option value="gold">Gold (¥3,000)</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.col_credit' | translate }}</label>
+            <select [(ngModel)]="editCreditVisibility" class="form-select">
+              <option value="show">{{ 'supporters.opt_credit_show' | translate }}</option>
+              <option value="hide">{{ 'supporters.opt_credit_hide' | translate }}</option>
+            </select>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editIsBanned" />
+              <span>{{ 'supporters.ban_checkbox' | translate }}</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeEditModal()">{{ 'common.cancel' | translate }}</button>
+          <button class="btn btn-primary" [disabled]="isSavingEdit() || !editSafeName.trim()" (click)="saveEdit()">
+            {{ isSavingEdit() ? ('common.saving' | translate) : ('common.save_changes' | translate) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Manual Resolve Modal -->
+  @if (isManualModalOpen()) {
+    <div class="modal-backdrop" (click)="closeManualResolveModal()">
+      <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.modal_manual_title' | translate }}</h2>
+          <button class="close-btn" (click)="closeManualResolveModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">{{ 'supporters.modal_manual_desc' | translate }}</p>
+
+          <div class="form-group">
+            <label>{{ 'supporters.modal_manual_text_label' | translate }}</label>
+            <textarea
+              [(ngModel)]="manualTweetText"
+              class="form-textarea"
+              rows="4"
+              maxlength="140"
+              [placeholder]="'supporters.modal_manual_placeholder' | translate"
+            ></textarea>
+            <span class="form-hint">{{ manualTweetText.length }}/140 {{ 'supporters.char_count_suffix' | translate }}</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeManualResolveModal()">{{ 'common.cancel' | translate }}</button>
+          <button class="btn btn-primary" [disabled]="isResolvingManual() || !manualTweetText.trim()" (click)="saveManualResolve()">
+            {{ isResolvingManual() ? ('common.saving' | translate) : ('supporters.manual_resolve' | translate) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Manual Ingestion Entry Modal -->
+  @if (isManualEntryModalOpen()) {
+    <div class="modal-backdrop" (click)="closeManualEntryModal()">
+      <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.modal_manual_entry_title' | translate }}</h2>
+          <button class="close-btn" (click)="closeManualEntryModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-desc">{{ 'supporters.modal_manual_entry_desc' | translate }}</p>
+
+          <div class="form-group">
+            <label>{{ 'supporters.session_id_required' | translate }}</label>
+            <input type="text" [(ngModel)]="entrySessionId" class="form-control" placeholder="cs_live_..." />
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.supporter_name_label' | translate }}</label>
+            <input type="text" [(ngModel)]="entryRawName" class="form-control" [placeholder]="'supporters.anonymous_placeholder' | translate" />
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.amount_jpy' | translate }}</label>
+            <input type="number" [(ngModel)]="entryAmount" class="form-control" [min]="minPlanAmount()" step="100" />
+          </div>
+
+          <div class="form-group">
+            <label>{{ 'supporters.col_credit' | translate }}</label>
+            <select [(ngModel)]="entryCreditVisibility" class="form-select">
+              <option value="show">{{ 'supporters.opt_credit_show' | translate }}</option>
+              <option value="hide">{{ 'supporters.opt_credit_hide' | translate }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeManualEntryModal()">{{ 'common.cancel' | translate }}</button>
+          <button
+            class="btn btn-primary"
+            [disabled]="isSubmittingEntry() || !entrySessionId.trim() || entryAmount <= 0"
+            (click)="submitManualEntry()"
+          >
+            {{ isSubmittingEntry() ? ('common.saving' | translate) : ('common.save' | translate) }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Rewards Catalog Manager Modal -->
+  @if (isRewardsModalOpen()) {
+    <div class="modal-backdrop" (click)="closeRewardsModal()">
+      <div class="modal-content modal-lg glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>{{ 'supporters.rewards_catalog' | translate }}</h2>
+          <button class="close-btn" (click)="closeRewardsModal()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Reward Upload Box -->
+          <div class="reward-upload-box glass-panel">
+            <h3>{{ 'supporters.reward_upload_new' | translate }}</h3>
+            <div class="upload-inputs">
+              <input
+                type="text"
+                [(ngModel)]="newRewardTitle"
+                class="form-control flex-1"
+                [placeholder]="'supporters.reward_title_placeholder' | translate"
+              />
+              <input type="file" accept="image/*" (change)="onRewardFileSelected($event)" class="form-control" />
+              <button
+                class="btn btn-primary"
+                [disabled]="isUploadingReward() || !selectedRewardFile"
+                (click)="uploadReward()"
+              >
+                {{ isUploadingReward() ? ('common.uploading' | translate) : ('common.upload' | translate) }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Reward List Grid -->
+          <div class="rewards-grid">
+            @for (reward of rewards(); track reward.id) {
+              <div class="reward-card glass-panel" [class.active-reward]="reward.isActive">
+                <div class="reward-preview" (click)="openRewardLightbox(reward)" [title]="'supporters.view_full_image' | translate">
+                  @if (rewardThumbnailUrls()[reward.id]) {
+                    <img [src]="rewardThumbnailUrls()[reward.id]" [alt]="reward.title" />
+                  } @else {
+                    <div class="thumbnail-loading-placeholder">
+                      <span class="material-icons spinner-icon">hourglass_empty</span>
+                    </div>
+                  }
+                  <span class="reward-badge" [class.active]="reward.isActive">
+                    {{ reward.isActive ? ('supporters.reward_pool_badge_active' | translate) : ('supporters.reward_pool_badge_inactive' | translate) }}
+                  </span>
+                  <span class="reward-preview-zoom-hint" [title]="'supporters.view_full_image' | translate">
+                    <span class="material-icons">zoom_in</span>
+                  </span>
+                </div>
+                <div class="reward-meta">
+                  <div class="reward-title" [title]="reward.title">{{ reward.title }}</div>
+                  <div class="reward-stats">{{ 'supporters.reward_distributed_count' | translate }}{{ reward.distributedCount }}{{ 'supporters.reward_distributed_times' | translate }}</div>
+                  <div class="reward-actions">
+                    <button
+                      class="btn btn-sm btn-secondary btn-icon-only"
+                      (click)="openRewardLightbox(reward)"
+                      [title]="'supporters.view_full_image' | translate"
+                    >
+                      <span class="material-icons">zoom_in</span>
+                    </button>
+                    <button
+                      class="btn btn-sm"
+                      [class.btn-primary]="!reward.isActive"
+                      [class.btn-secondary]="reward.isActive"
+                      (click)="toggleRewardActive(reward)"
+                    >
+                      {{ reward.isActive ? ('supporters.reward_pool_btn_deactivate' | translate) : ('supporters.reward_pool_btn_activate' | translate) }}
+                    </button>
+                    <button class="btn btn-sm btn-danger" (click)="deleteReward(reward)">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeRewardsModal()">{{ 'common.close' | translate }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Fullscreen Illustration Lightbox -->
+  <app-lightbox
+    [isOpen]="isLightboxOpen()"
+    [imageUrl]="lightboxImageUrl()"
+    (lightboxClose)="closeRewardLightbox()"
+  ></app-lightbox>
+
+</div>

@@ -30,16 +30,23 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
 
   const originalEnv = process.env.NODE_ENV;
   const originalNoAuth = process.env.NO_AUTH;
+  const originalEmulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NODE_ENV = 'test';
     process.env.NO_AUTH = 'false';
+    delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
   });
 
   afterAll(() => {
     process.env.NODE_ENV = originalEnv;
     process.env.NO_AUTH = originalNoAuth;
+    if (originalEmulatorHost !== undefined) {
+      process.env.FIREBASE_AUTH_EMULATOR_HOST = originalEmulatorHost;
+    } else {
+      delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    }
   });
 
   describe('verifyAuth', () => {
@@ -52,9 +59,24 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       expect(next).toHaveBeenCalledTimes(1);
     });
 
-    it('should bypass auth if NO_AUTH is true and not in production', async () => {
+    it('should NOT bypass auth if NO_AUTH is true but emulator host is NOT set', async () => {
       process.env.NODE_ENV = 'development';
       process.env.NO_AUTH = 'true';
+      delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+
+      const req = { method: 'GET', headers: {} } as unknown as Request;
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
+      const next = jest.fn() as NextFunction;
+
+      await verifyAuth(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should bypass auth if NO_AUTH is true, not in production, and emulator host is set', async () => {
+      process.env.NODE_ENV = 'development';
+      process.env.NO_AUTH = 'true';
+      process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
 
       const req = { method: 'GET' } as unknown as Request;
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;

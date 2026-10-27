@@ -43,6 +43,7 @@ jest.mock('@google-cloud/tasks', () => {
 });
 
 describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Tests', () => {
+  jest.setTimeout(15000);
   let app: any;
   const mockFirestoreGet = mockGet;
 
@@ -119,6 +120,13 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
       // Settings
       { method: 'get', path: '/api/v1/settings' },
       { method: 'patch', path: '/api/v1/settings', body: { language: 'en' } },
+
+      // Supporters & Digital Rewards (Zero-Trust Security Gate)
+      { method: 'get', path: '/api/v1/supporters' },
+      { method: 'get', path: '/api/v1/supporters/plans' },
+      { method: 'get', path: '/api/v1/supporters/rewards' },
+      { method: 'get', path: '/api/v1/supporters/rewards/r_123/image' },
+      { method: 'post', path: '/api/v1/supporters/manual-entry', body: { stripeSessionId: 'cs_123', rawName: 'test', amount: 1000 } },
     ];
 
     protectedEndpoints.forEach(({ method, path, body }) => {

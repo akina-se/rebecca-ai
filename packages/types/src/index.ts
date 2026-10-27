@@ -125,7 +125,7 @@ export interface RawConversationLog {
 }
 
 /** Canonical post types supported on the timeline. */
-export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign' | 'poll' | 'poll_result';
+export type PostType = 'soliloquy' | 'news' | 'anniversary' | 'random_engagement' | 'campaign' | 'poll' | 'poll_result' | 'support';
 
 /** Canonical voting status of an X poll as returned by X API v2. */
 export type PollVotingStatus = 'open' | 'closed';
@@ -647,3 +647,170 @@ export interface CampaignAssetUploadResult {
 }
 
 
+
+// ---------------------------------------------------------------------------
+// Support & Tipping Models
+// ---------------------------------------------------------------------------
+
+/** Sponsor / Tipping Tiers */
+export type SupportTier = 'bronze' | 'silver' | 'gold' | 'vip';
+
+/** Official in-universe item definitions and tier mapping */
+/** Support plan item detailing tier pricing, labels, and links */
+export interface SupportPlanItem {
+  tier: SupportTier;
+  amount: number;
+  currency: string;
+  itemLabel: string;
+  displayName: string;
+  paymentUrl?: string | null;
+  available?: boolean;
+}
+
+export const SUPPORT_TIER_CONFIG = {
+  bronze: {
+    amount: 500,
+    itemLabel: 'エナドリ1本差し入れ',
+    tier: 'bronze' as SupportTier,
+    displayName: 'Bronze Supporter',
+  },
+  silver: {
+    amount: 1000,
+    itemLabel: 'サーバーリソース差し入れ',
+    tier: 'silver' as SupportTier,
+    displayName: 'Silver Supporter',
+  },
+  gold: {
+    amount: 3000,
+    itemLabel: '開発サポート',
+    tier: 'gold' as SupportTier,
+    displayName: 'Gold Sponsor',
+  },
+} as const;
+
+/** Resolves the support tier and in-universe item label from payment amount in JPY */
+export function resolveSupportTierFromAmount(amount: number): { tier: SupportTier; itemLabel: string } {
+  if (amount >= 3000) {
+    return { tier: 'gold', itemLabel: SUPPORT_TIER_CONFIG.gold.itemLabel };
+  }
+  if (amount >= 1000) {
+    return { tier: 'silver', itemLabel: SUPPORT_TIER_CONFIG.silver.itemLabel };
+  }
+  return { tier: 'bronze', itemLabel: SUPPORT_TIER_CONFIG.bronze.itemLabel };
+}
+
+/** Processing lifecycle states for support transactions */
+export type SupportTransactionStatus = 'pending' | 'completed' | 'failed' | 'manual';
+
+/** Credit visibility on official portal */
+export type CreditVisibility = 'show' | 'hide';
+
+/** Digital reward catalog item */
+export interface RewardImageDoc {
+  id: string;
+  title: string;
+  imageUrl: string;
+  storagePath: string;
+  thumbnailUrl?: string;
+  thumbnailStoragePath?: string;
+  sequenceNumber?: number;
+  isActive: boolean;
+  distributedCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Tipping / Support transaction record */
+export interface SupportTransactionDoc {
+  id: string;
+  stripeSessionId: string;
+  stripePaymentIntentId?: string;
+  rawName: string;
+  safeName: string;
+  isNameSanitized: boolean;
+  creditVisibility: CreditVisibility;
+  amount: number;
+  currency: 'jpy';
+  tier: SupportTier;
+  itemLabel: string;
+  rewardImageId: string;
+  status: SupportTransactionStatus;
+  isBanned: boolean;
+  tweetId?: string;
+  tweetUrl?: string;
+  tweetText?: string;
+  errorMessage?: string;
+  createdAt: string;
+  processedAt?: string;
+  updatedAt?: string;
+}
+
+/** Query parameters for supporter ledger pagination and filtering */
+export interface SupporterLedgerQuery {
+  page?: number;
+  limit?: number;
+  cursor?: string;
+  status?: SupportTransactionStatus | 'all';
+  tier?: SupportTier | 'all';
+  search?: string;
+}
+
+/** Summary statistics and list response for supporter ledger */
+export interface SupporterLedgerResponse {
+  transactions: SupportTransactionDoc[];
+  summary: {
+    totalCount: number;
+    failedCount: number;
+    pendingCount: number;
+    completedCount: number;
+    totalAmount: number;
+  };
+  meta?: PaginationMeta;
+  nextCursor?: string;
+}
+
+/** Producer override payload for updating a supporter transaction */
+export interface UpdateSupportTransactionDto {
+  safeName?: string;
+  tier?: SupportTier;
+  isBanned?: boolean;
+  creditVisibility?: CreditVisibility;
+}
+
+/** Manual resolution payload for resolving a failed/manual transaction */
+export interface ManualResolveSupportDto {
+  tweetText: string;
+}
+
+/** Manual transaction ingestion fallback payload */
+export interface ManualEntrySupportDto {
+  stripeSessionId: string;
+  rawName: string;
+  amount: number;
+  creditVisibility?: CreditVisibility;
+}
+
+/** Public supporter credit display item */
+export interface PublicSupporterCredit {
+  id: string;
+  safeName: string;
+  tier: SupportTier;
+  itemLabel: string;
+  createdAt: string;
+  tweetId?: string;
+}
+
+/** Query parameters for public supporter credits pagination */
+export interface PublicSupporterCreditsQuery {
+  page?: number;
+  limit?: number;
+}
+
+/** Paginated response for public supporter credits */
+export interface PublicSupporterCreditsResponse {
+  credits: PublicSupporterCredit[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

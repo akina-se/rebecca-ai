@@ -40,6 +40,8 @@ import {
   type SlotTimePeriod,
   type CampaignSlotStatus,
   type CampaignStatus,
+  type RewardImageDoc,
+  type SupportTransactionDoc,
 } from './schema';
 
 // ---------------------------------------------------------------------------
@@ -561,6 +563,22 @@ export function getCollections(db: Firestore) {
     campaigns: db
       .collection(COLLECTIONS.CAMPAIGNS)
       .withConverter(campaignDocConverter),
+
+    /**
+     * Pass-through reward image documents.
+     * Doc ID = reward image UUID.
+     */
+    rewardImages: db
+      .collection(COLLECTIONS.REWARD_IMAGES)
+      .withConverter(makePassThroughConverter<RewardImageDoc>()),
+
+    /**
+     * Pass-through support transaction documents.
+     * Doc ID = transaction UUID.
+     */
+    supportTransactions: db
+      .collection(COLLECTIONS.SUPPORT_TRANSACTIONS)
+      .withConverter(makePassThroughConverter<SupportTransactionDoc>()),
   } as const;
 }
 

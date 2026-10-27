@@ -41,3 +41,40 @@ export const generateWebpThumbnail = async (
     }
   }
 };
+
+/**
+ * Strips all metadata (EXIF, GPS, camera model, author, editing software history)
+ * from an image buffer by decoding into raw RGBA pixels and re-encoding with Photon WebAssembly.
+ *
+ * Automatically manages WASM memory allocation by calling .free().
+ *
+ * @param buffer - Original raw image buffer (PNG, JPEG, WebP, etc.)
+ * @param mimeType - Optional MIME type or format hint ('image/png', 'image/jpeg', 'image/webp')
+ * @returns Clean image Buffer containing pure pixel data without metadata chunks
+ */
+export const stripImageMetadata = async (
+  buffer: Buffer,
+  mimeType = 'image/png'
+): Promise<Buffer> => {
+  let img: PhotonImage | null = null;
+  try {
+    img = PhotonImage.new_from_byteslice(new Uint8Array(buffer));
+    const normalizedMime = mimeType.toLowerCase();
+
+    if (normalizedMime === 'image/jpeg' || normalizedMime === 'image/jpg') {
+      const bytes = img.get_bytes_jpeg(95);
+      return Buffer.from(bytes);
+    }
+    if (normalizedMime === 'image/webp') {
+      const bytes = img.get_bytes_webp();
+      return Buffer.from(bytes);
+    }
+    // Default to lossless PNG
+    const bytes = img.get_bytes();
+    return Buffer.from(bytes);
+  } finally {
+    if (img) {
+      img.free();
+    }
+  }
+};

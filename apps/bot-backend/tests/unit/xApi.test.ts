@@ -184,12 +184,17 @@ describe('XApiService Unit Tests', () => {
         });
     });
 
-    describe('Missing Credentials Fallback (!client)', () => {
-        it('should return safe empty responses for passive operations when client is not initialized', async () => {
+    describe('Missing Credentials Guard (!client)', () => {
+        it('should throw an error for write operations when client is not initialized', async () => {
             const api = new XApiService({ appKey: '' });
 
-            expect(await api.replyToMention('123', 'Hi')).toEqual({ data: { id: 'mock_tweet_id', text: 'Hi' } });
-            expect(await api.tweet('Test')).toEqual({ data: { id: 'mock_tweet_id', text: 'Test' } });
+            await expect(api.replyToMention('123', 'Hi')).rejects.toThrow('Twitter API client not initialized');
+            await expect(api.tweet('Test')).rejects.toThrow('Twitter API client not initialized');
+        });
+
+        it('should return safe empty responses for passive read operations when client is not initialized', async () => {
+            const api = new XApiService({ appKey: '' });
+
             expect(await api.getTweetDetails('123')).toEqual({});
             expect(await api.getMentions()).toEqual({ data: [], meta: { resultCount: 0 } });
         });

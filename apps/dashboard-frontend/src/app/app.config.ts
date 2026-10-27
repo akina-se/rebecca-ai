@@ -21,6 +21,8 @@ import { HttpCopilotRepository } from './infrastructure/http/http-copilot.reposi
 
 import { CAMPAIGNS_REPOSITORY } from './core/ports/campaigns.repository';
 import { HttpCampaignsRepository } from './infrastructure/http/http-campaigns.repository';
+import { SUPPORTERS_REPOSITORY } from './core/ports/supporters.repository';
+import { HttpSupportersRepository } from './infrastructure/http/http-supporters.repository';
 
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 
@@ -58,6 +60,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: CAMPAIGNS_REPOSITORY,
       useClass: HttpCampaignsRepository
+    },
+    {
+      provide: SUPPORTERS_REPOSITORY,
+      useClass: HttpSupportersRepository
     }
   ]
 };

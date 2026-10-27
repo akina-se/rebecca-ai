@@ -24,10 +24,14 @@ import type {
   PollResultStatus,
   TimelinePost,
   CampaignDoc,
+  SupportTransactionDoc,
+  RewardImageDoc,
+  PublicSupporterCreditsResponse,
 } from '@rebecca/types';
 import type { StructuredPersonaResponse } from '@rebecca/persona';
 import type { StructuredNewsPostResponse } from '../features/news/types';
 import type { StructuredPollPostResponse } from '../features/poll/types';
+import type { StructuredSupportPostResponse } from '../features/support/types';
 
 export interface GetRecentTimelinePostsOptions {
   limit?: number;
@@ -110,6 +114,14 @@ export interface IFirestoreService {
   getScheduledCampaignDueToday(): Promise<CampaignDoc | null>;
   getCampaignById(campaignId: string): Promise<CampaignDoc | null>;
   updateCampaign(campaignId: string, data: Partial<CampaignDoc>): Promise<void>;
+  getSupportTransactionById(transactionId: string): Promise<SupportTransactionDoc | null>;
+  updateSupportTransaction(transactionId: string, data: Partial<SupportTransactionDoc>): Promise<void>;
+  createSupportTransaction(doc: SupportTransactionDoc): Promise<void>;
+  getSupportTransactionBySessionId(stripeSessionId: string): Promise<SupportTransactionDoc | null>;
+  getActiveRewardImage(): Promise<RewardImageDoc | null>;
+  getRewardImageById(rewardImageId: string): Promise<RewardImageDoc | null>;
+  incrementRewardImageDistributedCount(rewardImageId: string): Promise<void>;
+  getPublicSupporters(page?: number, limitCount?: number): Promise<PublicSupporterCreditsResponse>;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +149,7 @@ export interface IGeminiService {
   generateSearchQuery(prompt: string): Promise<string>;
   analyzeImageCaption(imageBuffer: Buffer, mimeType: string, prompt: string): Promise<string>;
   inferImageSearchQuery(prompt: string): Promise<string | null>;
+  generateStructuredSupportPost(systemInstruction: string, prompt: string): Promise<StructuredSupportPostResponse>;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,6 +192,7 @@ export interface IXApiService {
  */
 export interface ITasksService {
   enqueueReplyTask(payload: Record<string, unknown>, delaySeconds?: number): Promise<unknown>;
+  enqueueSupportTask(payload: { transactionId: string }, delaySeconds?: number): Promise<unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,6 +204,7 @@ export interface ITasksService {
  * Responsible for downloading and uploading image assets.
  */
 export interface IStorageService {
-  downloadImage(gsUri: string): Promise<Buffer>;
+  downloadImage(storagePathOrGsUri: string): Promise<Buffer>;
   uploadImage(hash: string, buffer: Buffer, mimeType: string): Promise<string>;
+  generateSignedUrl(storagePathOrGsUri: string, expiresInMinutes?: number): Promise<string>;
 }

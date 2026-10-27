@@ -505,7 +505,66 @@ Documents are indexed at the root collection level and serialized via `@rebecca/
 
 ---
 
-### 4.15 Nested Substructures
+### 4.15 Collection: `reward_images`
+
+Manages digital reward illustration assets randomly distributed to sponsors upon successful tipping checkout.
+Documents are indexed at the root collection level and serialized via `@rebecca/db` (`rewardImagesConverter`).
+
+- **Document ID**: Auto-generated UID (or slug, e.g. `reward_202610_halloween`).
+- **Access Pattern**:
+  - `getActiveReward`: Queries `isActive == true` to find the currently active digital wallpaper to grant upon checkout.
+  - `getAllRewards`: Queries ordered by `createdAt` DESC for dashboard reward management.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `title` | `string` | Display title for the digital reward illustration. |
+| `imageUrl` | `string` | Cloud Storage URL or CDN download URL for the reward asset. |
+| `storagePath` | `string` | Internal GCS storage object path (e.g. `rewards/filename.png`). |
+| `isActive` | `boolean` | Flag indicating whether this reward is currently active for newly completed donations. |
+| `distributedCount` | `number` | Counter tracking total downloads/distributions to supporters. |
+| `createdAt` | `string` (ISO 8601) | Creation timestamp. |
+| `updatedAt` | `string` (ISO 8601) | Last modification timestamp. |
+
+---
+
+### 4.16 Collection: `support_transactions`
+
+Stores financial donation/tipping records initiated through the official sponsor portal and Stripe Checkout.
+Tracks fulfillment lifecycle, automated X gratitude post status, and Hall of Fame credit display settings.
+Documents are indexed at the root collection level and serialized via `@rebecca/db` (`supportTransactionsConverter`).
+
+- **Document ID**: Auto-generated UID or Stripe Checkout Session ID prefix (e.g. `tx_...`).
+- **Access Pattern**:
+  - `getTransactions`: Filterable by `status` and `tier`, ordered by `createdAt` DESC for Dashboard supporter ledger.
+  - `getHallOfFameSupporters`: Queries `status == 'completed'`, `isBanned == false`, and `creditVisibility == 'show'` to populate the public Hall of Fame.
+  - `getByStripeSessionId`: Lookup by unique Stripe Checkout Session ID to guarantee idempotent webhook fulfillment.
+
+| Field Name | Type | Description |
+| :--- | :--- | :--- |
+| `stripeSessionId` | `string` | Stripe Checkout Session ID (`cs_...`) for audit and idempotency. |
+| `stripePaymentIntentId` | `string \| undefined` | Stripe Payment Intent ID (`pi_...`). |
+| `rawName` | `string` | Raw supporter nickname submitted by donor at checkout. |
+| `safeName` | `string` | Sanitized, XSS-safe supporter name for public display. |
+| `isNameSanitized` | `boolean` | Flag indicating whether profanity or HTML characters were filtered. |
+| `creditVisibility` | `'show' \| 'hide'` | Supporter's preference for public Hall of Fame credits. |
+| `amount` | `number` | Donation amount in Japanese Yen (JPY). |
+| `currency` | `'jpy'` | Currency code (strictly JPY). |
+| `tier` | `'bronze' \| 'silver' \| 'gold'` | Supporter badge tier derived from donation amount. |
+| `itemLabel` | `string` | Display name of the purchased tier option. |
+| `rewardImageId` | `string` | Reference ID to granted `reward_images` document. |
+| `status` | `'pending' \| 'completed' \| 'failed' \| 'manual'` | Fulfillment lifecycle state of transaction and X gratitude post. |
+| `isBanned` | `boolean` | Producer moderation flag to suppress display from Hall of Fame. |
+| `tweetId` | `string \| undefined` | Published X status ID of the automated thank-you post. |
+| `tweetUrl` | `string \| undefined` | Public URL of the thank-you post on X. |
+| `tweetText` | `string \| undefined` | Generated text content of the thank-you post. |
+| `errorMessage` | `string \| undefined` | Failure reason if X posting or webhook fulfillment failed. |
+| `createdAt` | `string` (ISO 8601) | Timestamp of transaction initiation. |
+| `processedAt` | `string \| undefined` (ISO 8601) | Timestamp of webhook fulfillment completion. |
+| `updatedAt` | `string \| undefined` (ISO 8601) | Last status or producer override update timestamp. |
+
+---
+
+### 4.17 Nested Substructures
 
 #### `CampaignSlot` (Used in `campaigns.slots`)
 Individual scheduled narrative post slot within a campaign itinerary.
@@ -552,6 +611,8 @@ Synthesized by the Dreaming batch engine (`apps/bot-backend/src/features/dreamin
    - `rag_memories`: `userId` ASC + `timestamp` ASC (enables FIFO memory pruning).
    - `processed_followers`: `listStatus` ASC + `timestamp` ASC (enables self-healing retries).
    - `campaigns`: `status` ASC + `isPaused` ASC (enables efficient active campaign resolution).
+   - `support_transactions`: `status` ASC + `createdAt` DESC (enables filtering transactions by status).
+   - `support_transactions`: `tier` ASC + `createdAt` DESC (enables filtering transactions by reward tier).
 3. **TTL Policies**:
    - `conversation_logs.expireAt`: Enabled (5-year automatic expiration).
    - `timeline_history.expireAt`: Enabled (5-year automatic expiration).

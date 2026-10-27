@@ -430,3 +430,9 @@
     padding: 1rem 1.15rem;
   }
 }
+
+
+.campaign-pagination-wrapper {
+  margin-top: 16px;
+  padding: 0 4px;
+}
