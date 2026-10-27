@@ -48,6 +48,17 @@ export class SupportersUseCase {
   /**
    * Updates a transaction (producer overrides: safeName, VIP tier elevation, ban toggle, credit visibility).
    */
+  /**
+   * Deletes a support transaction document.
+   */
+  async deleteTransaction(id: string): Promise<void> {
+    const existing = await this.repo.getTransactionById(id);
+    if (!existing) {
+      throw new HttpError(`Support transaction with ID "${id}" not found`, 404);
+    }
+    await this.repo.deleteTransaction(id);
+  }
+
   async updateTransaction(id: string, dto: UpdateSupportTransactionDto): Promise<SupportTransactionDoc> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
@@ -344,6 +355,9 @@ export class SupportersUseCase {
    */
   async dispatchSupportWorker(transactionId: string): Promise<void> {
     if (!config.services.botBackendUrl) {
+      logger.warn('[SupportersUseCase] botBackendUrl is not configured; skipping worker dispatch', {
+        transactionId,
+      });
       return;
     }
 

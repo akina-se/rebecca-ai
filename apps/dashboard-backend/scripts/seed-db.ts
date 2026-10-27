@@ -1,3 +1,4 @@
+import { Storage } from '@google-cloud/storage';
 import { SupportTransactionDoc } from '@rebecca/types';
 import { Firestore } from '@google-cloud/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
@@ -409,6 +410,31 @@ async function seedFirestore() {
     const { id, ...data } = reward;
     await collections.rewardImages.doc(id).set(data);
     console.log(`Seeded reward image: ${id} (${reward.title}) [active=${reward.isActive}]`);
+  }
+
+  // Seed storage files for rewardImages in Storage emulator
+  if (process.env.FIREBASE_STORAGE_EMULATOR_HOST || process.env.STORAGE_EMULATOR_HOST) {
+    try {
+      const storageHost = (process.env.FIREBASE_STORAGE_EMULATOR_HOST || process.env.STORAGE_EMULATOR_HOST || '').trim();
+      const apiEndpoint = storageHost.includes('://') ? storageHost : `http://${storageHost}`;
+      const storage = new Storage({ projectId: targetProjectId, apiEndpoint });
+      const bucketName = process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images';
+      const bucket = storage.bucket(bucketName);
+      const [exists] = await bucket.exists();
+      if (!exists) {
+        await bucket.create();
+      }
+      const dummyPng = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'base64'
+      );
+      for (const reward of rewardImages) {
+        await bucket.file(reward.storagePath).save(dummyPng, { contentType: 'image/png', resumable: false });
+        console.log(`Seeded storage file: ${reward.storagePath}`);
+      }
+    } catch (storageErr) {
+      console.warn('Storage seeding skipped or failed:', storageErr);
+    }
   }
 
   // 8. Seed support_transactions (Sponsor donations / tipping records - 200+ mock backers)

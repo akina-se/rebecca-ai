@@ -57,6 +57,10 @@ export class HttpSupportersRepository implements SupportersRepository {
     return this.http.patch<SupportTransactionDoc>(`${this.baseUrl}/${id}`, dto);
   }
 
+  deleteTransaction(id: string): Observable<void> {
+    return this.http.delete<unknown>(`${this.baseUrl}/${id}`) as Observable<void>;
+  }
+
   retryTransaction(id: string): Observable<{ success: boolean; message: string; transaction: SupportTransactionDoc }> {
     return this.http.post<{ success: boolean; message: string; transaction: SupportTransactionDoc }>(
       `${this.baseUrl}/${id}/retry`,

@@ -88,6 +88,22 @@ export class SupportersController {
    * PATCH /api/v1/supporters/:id
    * Updates transaction fields (safeName, tier, isBanned, creditVisibility).
    */
+  /**
+   * DELETE /api/v1/supporters/:id
+   * Deletes a support transaction.
+   */
+  async delete(req: Request, res: Response): Promise<void> {
+    try {
+      const id = String(req.params.id);
+      await this.useCase.deleteTransaction(id);
+      res.status(204).send();
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode || 500;
+      logger.error('[SupportersController] delete failed', error, { id: req.params.id });
+      res.status(status).json({ error: (error as Error).message || 'Failed to delete transaction' });
+    }
+  }
+
   async update(req: Request, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
