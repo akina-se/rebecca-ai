@@ -369,14 +369,42 @@
 
     .tier-card:hover {
       transform: translateY(-4px);
-      border-color: var(--border-purple);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px var(--gemitec-purple-glow);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
     }
 
+    /* Tier: Bronze */
+    .tier-card.tier-bronze {
+      border: 1px solid rgba(217, 119, 6, 0.38);
+      background: linear-gradient(180deg, rgba(32, 22, 16, 0.75) 0%, rgba(18, 20, 29, 0.8) 100%);
+      box-shadow: 0 8px 24px rgba(180, 83, 9, 0.12);
+    }
+    .tier-card.tier-bronze:hover {
+      border-color: rgba(245, 158, 11, 0.75);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 22px rgba(217, 119, 6, 0.35);
+    }
+
+    /* Tier: Silver (Popular) */
+    .tier-card.tier-silver,
     .tier-card.featured {
-      border-color: var(--border-purple);
-      background: linear-gradient(180deg, rgba(26, 29, 43, 0.9) 0%, rgba(18, 20, 29, 0.8) 100%);
-      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+      border: 1px solid var(--border-purple);
+      background: linear-gradient(180deg, rgba(28, 22, 45, 0.85) 0%, rgba(18, 20, 29, 0.85) 100%);
+      box-shadow: 0 8px 26px rgba(139, 92, 246, 0.2);
+    }
+    .tier-card.tier-silver:hover,
+    .tier-card.featured:hover {
+      border-color: var(--gemitec-purple-light);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 24px var(--gemitec-purple-glow);
+    }
+
+    /* Tier: Gold (VIP) */
+    .tier-card.tier-gold {
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      background: linear-gradient(180deg, rgba(42, 28, 12, 0.85) 0%, rgba(20, 18, 26, 0.85) 100%);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, 0.22), 0 0 16px rgba(251, 191, 36, 0.14);
+    }
+    .tier-card.tier-gold:hover {
+      border-color: #fbbf24;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 32px rgba(245, 158, 11, 0.55);
     }
 
     .featured-ribbon {
@@ -391,6 +419,22 @@
       padding: 3px 9px;
       border-radius: var(--radius-full);
       letter-spacing: 0.05em;
+      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
+    }
+
+    .vip-ribbon {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
+      color: #0b0f19;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.45);
     }
 
     .tier-icon-badge {
@@ -512,16 +556,51 @@
       cursor: pointer;
     }
 
-    .btn-support.primary {
-      background: var(--gemitec-purple);
+    /* Bronze Button */
+    .btn-support.btn-bronze {
+      background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
       color: #ffffff;
-      box-shadow: 0 4px 14px var(--gemitec-purple-glow);
-      border: 1px solid transparent;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35);
     }
 
-    .btn-support.primary:hover {
-      background: var(--gemitec-purple-light);
-      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
+    .btn-support.btn-bronze:hover {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      border-color: rgba(251, 191, 36, 0.7);
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.55);
+      transform: translateY(-2px);
+    }
+
+    /* Silver Button (Primary) */
+    .btn-support.primary,
+    .btn-support.btn-silver {
+      background: linear-gradient(135deg, var(--gemitec-purple) 0%, #9333ea 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 16px var(--gemitec-purple-glow);
+      border: 1px solid rgba(192, 132, 252, 0.35);
+    }
+
+    .btn-support.primary:hover,
+    .btn-support.btn-silver:hover {
+      background: linear-gradient(135deg, var(--gemitec-purple-light) 0%, #a855f7 100%);
+      border-color: rgba(192, 132, 252, 0.65);
+      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.55);
+      transform: translateY(-2px);
+    }
+
+    /* Gold Button */
+    .btn-support.btn-gold {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 45%, #fbbf24 100%);
+      color: #0b0f19;
+      font-weight: 800;
+      border: 1px solid rgba(254, 240, 138, 0.6);
+      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45);
+    }
+
+    .btn-support.btn-gold:hover {
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 45%, #fef08a 100%);
+      border-color: #fef08a;
+      box-shadow: 0 6px 24px rgba(245, 158, 11, 0.7);
       transform: translateY(-2px);
     }
 
@@ -553,7 +632,8 @@
       border-color: rgba(255, 255, 255, 0.05) !important;
     }
 
-    .tier-card.tier-disabled .featured-ribbon {
+    .tier-card.tier-disabled .featured-ribbon,
+    .tier-card.tier-disabled .vip-ribbon {
       background: rgba(255, 255, 255, 0.08) !important;
       color: rgba(255, 255, 255, 0.4) !important;
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1620,7 +1700,7 @@
         <div class="tiers-grid" id="tiers-grid">
 
         <!-- Bronze Tier -->
-        <div class="tier-card">
+        <div class="tier-card tier-bronze">
           <div>
             <div class="tier-icon-badge bronze">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1654,14 +1734,14 @@
               </li>
             </ul>
           </div>
-          <a id="btn-plan-bronze" href="#" target="_blank" rel="noopener noreferrer" class="btn-support secondary">
+          <a id="btn-plan-bronze" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-bronze">
             <span class="t-ja">エナドリを差し入れ（¥500）</span>
             <span class="t-en">Send Energy Drink (¥500)</span>
           </a>
         </div>
 
         <!-- Silver Tier -->
-        <div class="tier-card featured">
+        <div class="tier-card tier-silver featured">
           <span class="featured-ribbon">
             <span class="t-ja">人気プラン</span>
             <span class="t-en">POPULAR</span>
@@ -1702,14 +1782,18 @@
               </li>
             </ul>
           </div>
-          <a id="btn-plan-silver" href="#" target="_blank" rel="noopener noreferrer" class="btn-support primary">
+          <a id="btn-plan-silver" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-silver primary">
             <span class="t-ja">サーバーリソースを差し入れ（¥1,000）</span>
             <span class="t-en">Send Compute Resource (¥1,000)</span>
           </a>
         </div>
 
         <!-- Gold Tier -->
-        <div class="tier-card">
+        <div class="tier-card tier-gold">
+          <span class="vip-ribbon">
+            <span class="t-ja">最上位支援</span>
+            <span class="t-en">VIP SPONSOR</span>
+          </span>
           <div>
             <div class="tier-icon-badge gold">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1743,7 +1827,7 @@
               </li>
             </ul>
           </div>
-          <a id="btn-plan-gold" href="#" target="_blank" rel="noopener noreferrer" class="btn-support secondary">
+          <a id="btn-plan-gold" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-gold">
             <span class="t-ja">開発サポートを送る（¥3,000）</span>
             <span class="t-en">Support Development (¥3,000)</span>
           </a>
