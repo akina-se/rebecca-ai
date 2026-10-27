@@ -69,10 +69,10 @@ graph TD
         Types[packages/types]
         DB[packages/db]
         Persona[packages/persona]
-        Grpc[packages/grpc-schemas]
+
     end
     
-    DashBackend <-->|gRPC Protocol| BotBackend
+    DashBackend <-->|Internal Worker HTTP API| BotBackend
     BotBackend -.->|Persist Memory| Firestore[(Cloud Firestore)]
     Firestore -.->|Event Trigger| Functions[apps/functions]
     Functions -.->|Aggregate Read Models| Firestore
@@ -157,7 +157,7 @@ POLL_DURATION_MINUTES=1380
 ### Applications (`apps/`)
 
 - **`apps/bot-backend`**: The core worker service. Handles RAG memory injection, intent analysis, X API integration, and the background "Dreaming" evolution process.
-- **`apps/dashboard-backend`**: Backend-for-Frontend (BFF) server providing administrative REST endpoints to the control panel, secured via Firebase Auth. Communicates with the bot-backend via gRPC.
+- **`apps/dashboard-backend`**: Backend-for-Frontend (BFF) server providing administrative REST endpoints to the control panel, secured via Firebase Auth. Communicates with the bot-backend via internal authenticated HTTP API.
 - **`apps/dashboard-frontend`**: A glassmorphic, Chibi-themed Angular administration control panel for monitoring AI interactions and system health.
 - **`apps/functions`**: Firebase Cloud Functions that asynchronously aggregate raw timeline interactions into read-optimized statistics, ensuring dashboard query performance.
 
@@ -166,7 +166,7 @@ POLL_DURATION_MINUTES=1380
 - **`packages/types`**: Shared TypeScript definitions, interaction schemas, and global configurations.
 - **`packages/db`**: Shared database repository classes and connection pool managers.
 - **`packages/persona`**: The core repository for Rebecca's persona definition prompts and JST-focused system rules.
-- **`packages/grpc-schemas`**: Protocol Buffer schemas defining internal inter-service gRPC APIs.
+- **`packages/grpc-schemas`**: (Deprecated) Legacy Protocol Buffer schemas previously used for gRPC APIs.
 
 ## Global Monorepo Operations
 

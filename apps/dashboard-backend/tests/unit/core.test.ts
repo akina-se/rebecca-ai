@@ -4,32 +4,6 @@ import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
 import { Request, Response } from 'express';
 
-// Mock gRPC Client for core tests
-jest.mock('@grpc/grpc-js', () => {
-  return {
-    loadPackageDefinition: jest.fn().mockReturnValue({
-      tweets: {
-        TweetService: jest.fn().mockImplementation(() => ({
-          deleteTweet: jest.fn().mockImplementation((req: { tweet_id: string }, callback: (err: Error | null, response?: unknown) => void) => {
-            if (req.tweet_id === 'error_grpc') {
-              callback(new Error('gRPC connection error'), null);
-            } else {
-              callback(null, { success: true, message: 'Tweet deleted successfully' });
-            }
-          })
-        }))
-      }
-    }),
-    credentials: {
-      createInsecure: jest.fn().mockReturnValue({})
-    }
-  };
-});
-
-jest.mock('@grpc/proto-loader', () => ({
-  loadSync: jest.fn().mockReturnValue({})
-}));
-
 describe('Dashboard Backend Core & Settings Unit Tests', () => {
   describe('dateUtils - getJstDateRangeInUtc', () => {
     it('should return null for all-time or missing date', () => {

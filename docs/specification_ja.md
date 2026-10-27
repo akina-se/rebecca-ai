@@ -24,8 +24,8 @@
 管理画面（Admin Dashboard）向けには、Botコアロジックを肥大化させないため、専用の **BFF (Backend-For-Frontend)** を採用しています。
 また、将来的な「完全な非同期CQRS基盤」へのシームレスな移行を見据え、**Firestore Triggersを利用した「論理的CQRS」**を構築し、極限までコストを抑えつつアーキテクチャの美しさとスケール性を担保しています。
 
-- **Dashboard BFF**: `apps/dashboard-backend` に配置される独立したマイクロサービス。管理者向けのREST APIを提供し、Bot Coreと gRPC通信を行います。
-- **DIとクリーンアーキテクチャ**: BFF内のコアビジネスロジックは、インフラ（FirestoreやgRPC）に一切依存しないよう厳格な **Dependency Injection (DI)** によって抽象化されています。これにより、将来的にKafkaやElasticsearchを用いた物理的なCQRSへ移行する際も、コアコードの変更ゼロで対応可能です。
+- **Dashboard BFF**: `apps/dashboard-backend` に配置される独立したマイクロサービス。管理者向けのREST APIを提供し、Bot Coreと認証付き内部HTTP通信を行います。
+- **DIとクリーンアーキテクチャ**: BFF内のコアビジネスロジックは、インフラ（Firestoreや内部API）に一切依存しないよう厳格な **Dependency Injection (DI)** によって抽象化されています。これにより、将来的にKafkaやElasticsearchを用いた物理的なCQRSへ移行する際も、コアコードの変更ゼロで対応可能です。
 - **低コストCQRS (Firestore Triggers)**: ダッシュボードのKPI計算用に毎度大量のドキュメントを読み取ることによる「Read課金の爆発」を防ぐため、Bot CoreがデータをWriteした際、Cloud Functionsが起動し、ダッシュボード表示専用の「サマリー（Read Model）」ドキュメントを更新する仕組みを採用しています。
 - **専属コパイロット (Admin Copilot)**: 管理画面専用のAIアシスタント機能。Xリプライのような130文字のプラットフォーム制約を受けず、KPIやアセット、会話傾向などの各種データを多角的に解析してインサイトを提示します。また、破壊的操作に対しては2段階の Human-In-The-Loop (HITL) アクション提案カードを発行します。
 

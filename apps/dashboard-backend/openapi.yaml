@@ -276,7 +276,7 @@ paths:
 
     delete:
       summary: Bulk delete timeline posts
-      description: Triggers deletion of posts from both Firestore and X (Twitter) via Bot gRPC client.
+      description: Triggers deletion of posts from both Firestore and X (Twitter) via Bot Worker HTTP API.
       requestBody:
         required: true
         content:

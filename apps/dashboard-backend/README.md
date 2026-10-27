@@ -1,6 +1,6 @@
 # Rebecca Admin Dashboard BFF (`dashboard-backend`)
 
-The `dashboard-backend` is the Backend-for-Frontend (BFF) server for the Rebecca AI Admin Dashboard. It serves as an API Gateway, coordinates Firestore and Firebase Authentication operations, and handles inter-service communication with `bot-backend` using gRPC.
+The `dashboard-backend` is the Backend-for-Frontend (BFF) server for the Rebecca AI Admin Dashboard. It serves as an API Gateway, coordinates Firestore and Firebase Authentication operations, and handles inter-service communication with `bot-backend` using authenticated internal HTTP APIs.
 
 ---
 
@@ -95,7 +95,7 @@ The complete specification is available in [openapi.yaml](./openapi.yaml).
 | | `PUT` | `/api/v1/users/{id}/memory` | Update a user's memory profile (RAG attributes) |
 | **Posts** | `GET` | `/api/v1/posts` | Paginated timeline posts with JST-aligned range filtering |
 | | `GET` | `/api/v1/posts/{id}` | Get specific timeline post detail |
-| | `DELETE` | `/api/v1/posts` | Bulk delete posts from Firestore & X (gRPC client) |
+| | `DELETE` | `/api/v1/posts` | Bulk delete posts from Firestore & X (via Bot Worker HTTP API) |
 | **Images** | `GET` | `/api/v1/images` | Get paginated library image assets (alias: `/api/v1/assets`) |
 | | `POST` | `/api/v1/images` | Upload image(s) to GCS and generate captions via Gemini |
 | | `GET` | `/api/v1/images/{id}` | Get specific image asset metadata |
