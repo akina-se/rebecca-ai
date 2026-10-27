@@ -430,4 +430,66 @@ describe('SupportersPageComponent', () => {
 
     URL.revokeObjectURL = originalRevokeObjectUrl;
   });
+  it('should calculate minPlanAmount and format tier filter label', () => {
+    expect(component.minPlanAmount()).toBe(500);
+
+    component.supportPlans.set([]);
+    expect(component.minPlanAmount()).toBe(500);
+
+    const label = component.formatTierFilterLabel({
+      tier: 'gold',
+      amount: 3000,
+      currency: 'jpy',
+      itemLabel: 'Dev Support',
+      displayName: 'Gold Sponsor',
+    });
+    expect(label).toBe('Gold (¥3,000)');
+  });
+
+  it('should handle drawer and retry fallback branches', () => {
+    component.selectedTx.set(null);
+    component.retryFromDrawer();
+    component.openManualResolveFromDrawer();
+
+    const txNoSafeName = { ...mockTransaction, safeName: '' };
+    component.openTransactionDrawer(txNoSafeName);
+    expect(component.drawerSafeName).toBe(mockTransaction.rawName);
+
+    component.openEditModal(mockTransaction);
+    component.editSafeName = '   ';
+    component.saveEdit();
+    expect(component.isEditModalOpen()).toBe(true);
+
+    component.openManualResolveModal(mockTransaction);
+    component.manualTweetText = '   ';
+    component.saveManualResolve();
+    expect(component.isManualModalOpen()).toBe(true);
+  });
+
+  it('should revoke existing blob URL and handle error in reward lightbox', () => {
+    const originalCreateObjectUrl = URL.createObjectURL;
+    const originalRevokeObjectUrl = URL.revokeObjectURL;
+    URL.createObjectURL = jest.fn().mockReturnValue('blob:http://localhost/new-blob');
+    URL.revokeObjectURL = jest.fn();
+
+    // Set existing lightboxBlobUrl
+    component.lightboxBlobUrl = 'blob:http://localhost/old-blob';
+    component.openRewardLightbox(mockReward);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/old-blob');
+    expect(component.isLightboxOpen()).toBe(true);
+    expect(component.lightboxImageUrl()).toBe('blob:http://localhost/new-blob');
+
+    // Test error branch
+    mockRepo.getRewardImageBlob.mockReturnValueOnce(throwError(() => new Error('Image fetch error')));
+    component.openRewardLightbox(mockReward);
+    expect(mockToast.show).toHaveBeenCalledWith('サポーター台帳の取得に失敗しました', 'error');
+    expect(component.isLightboxOpen()).toBe(false);
+
+    URL.createObjectURL = originalCreateObjectUrl;
+    URL.revokeObjectURL = originalRevokeObjectUrl;
+
+    const emptyEvent = { target: { files: [] } };
+    component.onRewardFileSelected(emptyEvent);
+    expect(component.selectedRewardFile).toBeNull();
+  });
 });

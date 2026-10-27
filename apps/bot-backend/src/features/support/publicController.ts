@@ -145,7 +145,7 @@ export class PublicSupportController {
       }
 
       // Step 3: Fetch transaction record (if already created by webhook)
-      let transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
+      const transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
 
       // If webhook has not recorded it yet (e.g. local environment or delayed webhook), auto-sync from verified paid session
       if (!transaction) {
@@ -414,7 +414,7 @@ export class PublicSupportController {
       const type = req.query.type === 'thumbnail' ? 'thumbnail' : 'master';
 
       // Step 1: Verify payment and retrieve transaction record
-      let transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
+      const transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
       let sessionCreatedMs: number | null = null;
 
       if (!transaction) {
