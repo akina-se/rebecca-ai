@@ -6,14 +6,63 @@ import { logger } from '../utils/logger';
 const client = new OAuth2Client();
 
 /**
+ * Validates a pre-shared secret using constant-time comparison to prevent timing attacks.
+ */
+export const verifySecret = (secretHeader: string, fallbackSecret: string | undefined): boolean => {
+    if (!fallbackSecret || !secretHeader) {
+        return false;
+    }
+
+    try {
+        const providedBuffer = Buffer.from(secretHeader, 'utf8');
+        const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
+
+        if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
+            return true;
+        }
+    } catch (err) {
+        logger.warn('Error during secret comparison', { err });
+    }
+
+    return false;
+};
+
+/**
+ * Validates a Google OIDC ID token against an expected audience.
+ */
+export const verifyOidcToken = async (authHeader: string, expectedAudience: string | undefined): Promise<boolean> => {
+    if (!expectedAudience || !authHeader) {
+        return false;
+    }
+
+    const token = authHeader.replace(/^bearer\s+/i, '').trim();
+    if (!token) {
+        return false;
+    }
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: expectedAudience,
+        });
+        const payload = ticket.getPayload();
+
+        return !!(payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com'));
+    } catch (e) {
+        logger.warn('OIDC token verification failed', { error: (e as Error).message });
+        return false;
+    }
+};
+
+/**
  * Authenticates server-to-server requests by verifying a Google OIDC token or a fallback shared secret.
  *
  * Authentication scheme is determined by the presented credentials:
- * - **OIDC Scheme**: When an `Authorization` header is present, the request MUST pass Google OIDC
- *   token verification against the configured `expectedAudience`. If verification fails, the request
- *   is strictly rejected without falling back to shared secret (preventing credential-downgrade attacks).
- * - **Shared Secret Scheme**: When no `Authorization` header is present but the custom secret header
- *   is provided, constant-time comparison is performed against `fallbackSecret`.
+ * - **Shared Secret Scheme**: When a valid pre-shared secret is provided in the designated header,
+ *   constant-time comparison validates the request. If an Authorization header was also provided,
+ *   it must also be valid to prevent credential-downgrade attacks.
+ * - **OIDC Scheme**: In all other cases, the request must pass Google OIDC ID token verification
+ *   against `expectedAudience`.
  *
  * @param req - The Express request object containing the authorization headers.
  * @param expectedAudience - The expected audience claim for the OIDC token (typically the service URL).
@@ -27,57 +76,20 @@ export const verifyServerToServerAuth = async (
     fallbackSecret: string | undefined,
     secretHeaderName: string
 ): Promise<boolean> => {
-    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
     const rawSecret = req.headers[secretHeaderName.toLowerCase()];
     const secretHeader = typeof rawSecret === 'string' ? rawSecret.trim() : '';
+    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
 
-    // 1. If an authorization header is present, enforce strict Google OIDC verification
-    if (authHeader) {
-        if (!expectedAudience) {
-            return false;
+    // 1. If a valid shared secret is supplied, authenticate the internal request
+    const isSecretValid = verifySecret(secretHeader, fallbackSecret);
+    if (isSecretValid) {
+        // Credential downgrade prevention: if an Authorization header was also provided, it must be valid
+        if (authHeader) {
+            return await verifyOidcToken(authHeader, expectedAudience);
         }
-
-        const token = authHeader.replace(/^bearer\s+/i, '').trim();
-        if (!token) {
-            return false;
-        }
-
-        try {
-            const ticket = await client.verifyIdToken({
-                idToken: token,
-                audience: expectedAudience,
-            });
-            const payload = ticket.getPayload();
-
-            if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
-                return true;
-            }
-        } catch (e) {
-            logger.warn('OIDC token verification failed', { error: (e as Error).message });
-        }
-
-        return false;
+        return true;
     }
 
-    // 2. Otherwise, if the shared secret header is present, enforce constant-time secret verification
-    if (secretHeader) {
-        if (!fallbackSecret) {
-            return false;
-        }
-
-        try {
-            const providedBuffer = Buffer.from(secretHeader, 'utf8');
-            const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
-
-            if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
-                return true;
-            }
-        } catch (err) {
-            logger.warn('Error during secret comparison', { err });
-        }
-
-        return false;
-    }
-
-    return false;
+    // 2. Otherwise, enforce Google OIDC token verification
+    return await verifyOidcToken(authHeader, expectedAudience);
 };
