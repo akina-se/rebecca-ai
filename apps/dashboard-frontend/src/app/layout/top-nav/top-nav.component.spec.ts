@@ -61,6 +61,9 @@ describe('TopNavComponent', () => {
     Object.defineProperty(mockRouter, 'url', { value: '/users', configurable: true });
     expect(component.pageTitle).toBeDefined();
 
+    Object.defineProperty(mockRouter, 'url', { value: '/supporters', configurable: true });
+    expect(component.pageTitle).toBeDefined();
+
     Object.defineProperty(mockRouter, 'url', { value: '/settings', configurable: true });
     expect(component.pageTitle).toBeDefined();
 

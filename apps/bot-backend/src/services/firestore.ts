@@ -35,6 +35,11 @@ import type {
   PollResultStatus,
   TimelinePost,
   CampaignDoc,
+  SupportTransactionDoc,
+  RewardImageDoc,
+  PublicSupporterCredit,
+  PublicSupporterCreditsResponse,
+  SupportTier,
 } from '../types';
 import { PostStatus } from '../types';
 
@@ -1105,6 +1110,198 @@ const updateCampaign = async (campaignId: string, data: Partial<CampaignDoc>): P
   await db.campaigns.doc(campaignId).set(data as DocumentData, { merge: true });
 };
 
+/**
+ * Retrieves a support transaction document by its unique ID.
+ *
+ * @param transactionId - The unique ID of the support transaction.
+ * @returns The SupportTransactionDoc or null if not found.
+ */
+async function getSupportTransactionById(
+  transactionId: string
+): Promise<SupportTransactionDoc | null> {
+  const docRef = db.supportTransactions.doc(transactionId);
+  const snap = await docRef.get();
+  if (!snap.exists) {
+    return null;
+  }
+  return { id: snap.id, ...snap.data() } as SupportTransactionDoc;
+}
+
+/**
+ * Updates an existing support transaction document.
+ *
+ * @param transactionId - The unique ID of the support transaction to update.
+ * @param data - The partial fields to update.
+ */
+/**
+ * Creates a new support transaction document in Firestore.
+ *
+ * @param doc - The full SupportTransactionDoc document.
+ */
+async function createSupportTransaction(doc: SupportTransactionDoc): Promise<void> {
+  const docRef = db.supportTransactions.doc(doc.id);
+  await docRef.set(doc);
+}
+
+/**
+ * Retrieves a support transaction document by its Stripe Checkout Session ID.
+ *
+ * @param stripeSessionId - The unique Stripe checkout session ID.
+ * @returns The matching SupportTransactionDoc or null if not found.
+ */
+async function getSupportTransactionBySessionId(
+  stripeSessionId: string
+): Promise<SupportTransactionDoc | null> {
+  const snap = await db.supportTransactions
+    .where('stripeSessionId', '==', stripeSessionId)
+    .limit(1)
+    .get();
+  if (snap.empty) {
+    return null;
+  }
+  const doc = snap.docs[0];
+  return { id: doc.id, ...doc.data() } as SupportTransactionDoc;
+}
+
+/**
+ * Retrieves the currently active reward image from Firestore.
+ *
+ * @returns The active RewardImageDoc or null if none active.
+ */
+/**
+ * Retrieves a randomly selected active reward image from the distribution pool.
+ *
+ * @returns A randomly chosen active RewardImageDoc or null if none active.
+ */
+async function getActiveRewardImage(): Promise<RewardImageDoc | null> {
+  const snap = await db.rewardImages
+    .where('isActive', '==', true)
+    .get();
+  if (snap.empty) {
+    return null;
+  }
+  const randomIndex = Math.floor(Math.random() * snap.docs.length);
+  const doc = snap.docs[randomIndex];
+  return { id: doc.id, ...doc.data() } as RewardImageDoc;
+}
+
+/**
+ * Retrieves a specific reward image by its ID.
+ *
+ * @param rewardImageId - The target reward image document ID.
+ * @returns The RewardImageDoc or null if not found.
+ */
+async function getRewardImageById(rewardImageId: string): Promise<RewardImageDoc | null> {
+  if (!rewardImageId || rewardImageId === 'none') {
+    return null;
+  }
+  const doc = await db.rewardImages.doc(rewardImageId).get();
+  if (!doc.exists) {
+    return null;
+  }
+  return { id: doc.id, ...doc.data() } as RewardImageDoc;
+}
+
+/**
+ * Atomically increments the distributed download count for a reward image asset.
+ *
+ * @param rewardImageId - The target reward image document ID.
+ */
+async function incrementRewardImageDistributedCount(rewardImageId: string): Promise<void> {
+  const docRef = db.rewardImages.doc(rewardImageId);
+  await docRef.set(
+    {
+      distributedCount: FieldValue.increment(1),
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
+}
+
+/**
+ * Retrieves public credits for supporters who granted visibility permission with server-side pagination.
+ * Results are sorted strictly by prestige tier weight descending, then by creation date descending.
+ *
+ * @param page - Current 1-based page number (default 1).
+ * @param limitCount - Maximum number of items per page (default 120).
+ * @returns Paginated PublicSupporterCreditsResponse with total, page, limit, totalPages and sorted items.
+ */
+async function getPublicSupporters(
+  page = 1,
+  limitCount = 120
+): Promise<PublicSupporterCreditsResponse> {
+  const safePage = Math.max(1, page);
+  const safeLimit = Math.max(1, Math.min(200, limitCount));
+
+  const baseQuery = db.supportTransactions
+    .where('creditVisibility', '==', 'show')
+    .where('isBanned', '==', false)
+    .where('status', 'in', ['completed', 'manual']);
+
+  const countSnap = await baseQuery.count().get();
+  const total = countSnap.data().count;
+  const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+
+  if (total === 0 || safePage > totalPages) {
+    return {
+      credits: [],
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages,
+    };
+  }
+
+  const snap = await baseQuery.get();
+  const allSupporters: PublicSupporterCredit[] = snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      safeName: data.safeName,
+      tier: data.tier,
+      itemLabel: data.itemLabel,
+      createdAt: data.createdAt,
+      tweetId: data.tweetId,
+    };
+  });
+
+  const tierWeight: Record<SupportTier, number> = {
+    vip: 4,
+    gold: 3,
+    silver: 2,
+    bronze: 1,
+  };
+
+  allSupporters.sort((a, b) => {
+    const diff = (tierWeight[b.tier] || 0) - (tierWeight[a.tier] || 0);
+    if (diff !== 0) return diff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const startIndex = (safePage - 1) * safeLimit;
+  const paginatedCredits = allSupporters.slice(startIndex, startIndex + safeLimit);
+
+  return {
+    credits: paginatedCredits,
+    total,
+    page: safePage,
+    limit: safeLimit,
+    totalPages,
+  };
+}
+
+async function updateSupportTransaction(
+  transactionId: string,
+  data: Partial<SupportTransactionDoc>
+): Promise<void> {
+  const docRef = db.supportTransactions.doc(transactionId);
+  const updateData: Record<string, unknown> = {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  };
+  await docRef.set(updateData, { merge: true });
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -1161,4 +1358,12 @@ export {
   getScheduledCampaignDueToday,
   getCampaignById,
   updateCampaign,
+  getSupportTransactionById,
+  updateSupportTransaction,
+  createSupportTransaction,
+  getSupportTransactionBySessionId,
+  getActiveRewardImage,
+  getRewardImageById,
+  incrementRewardImageDistributedCount,
+  getPublicSupporters,
 };

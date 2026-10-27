@@ -1,3 +1,4 @@
+import { SupportTransactionDoc } from '@rebecca/types';
 import { Firestore } from '@google-cloud/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -88,6 +89,8 @@ async function seedFirestore() {
     system: firestore.collection('system'),
     systemStats: firestore.collection('system_stats'),
     processedFollowers: firestore.collection('processed_followers'),
+    rewardImages: firestore.collection('reward_images'),
+    supportTransactions: firestore.collection('support_transactions'),
   };
 
   const now = new Date();
@@ -377,6 +380,185 @@ async function seedFirestore() {
     api_calls_history: [1200, 1350, 1300, 1400, 1380, 1450, 1420]
   });
   console.log('Seeded system stats / DAU & Global stats.');
+
+  // 7. Seed reward_images (Digital reward catalog for supporters)
+  const rewardImages = [
+    {
+      id: 'reward_202610_halloween',
+      title: 'ハロウィン特別壁紙',
+      imageUrl: 'gs://rebecca-ai-gal-local-images/rewards/rebecca_halloween_2026.png',
+      storagePath: 'rewards/rebecca_halloween_2026.png',
+      isActive: true,
+      distributedCount: 42,
+      createdAt: new Date(Date.now() - 20 * 24 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 5 * 24 * 3600000).toISOString(),
+    },
+    {
+      id: 'reward_202609_autumn',
+      title: '紅葉とレベッカ',
+      imageUrl: 'gs://rebecca-ai-gal-local-images/rewards/rebecca_autumn_2026.png',
+      storagePath: 'rewards/rebecca_autumn_2026.png',
+      isActive: true,
+      distributedCount: 128,
+      createdAt: new Date(Date.now() - 50 * 24 * 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 21 * 24 * 3600000).toISOString(),
+    },
+  ];
+
+  for (const reward of rewardImages) {
+    const { id, ...data } = reward;
+    await collections.rewardImages.doc(id).set(data);
+    console.log(`Seeded reward image: ${id} (${reward.title}) [active=${reward.isActive}]`);
+  }
+
+  // 8. Seed support_transactions (Sponsor donations / tipping records - 200+ mock backers)
+  const backerBaseNames = [
+    'サイバー財団 代表', 'TechGeek_Tokyo', 'AkibaHacker', 'CyberPilot', 'NeonMaster',
+    'MochiGal', 'Alice_L', 'Bob_AI', 'GalDev_Zero', 'KiraKira_Oshi',
+    'PixelKnight', 'Shibuya_Gal', 'Rei_Quantum', 'SoundCrafter', 'GamerX',
+    'GalMatrix', 'Stella_P', 'HyperDrive', 'VaporMaster', 'GalProtocol',
+    'DataDiver', 'BitRunner', 'Solaris', 'CircuitBreaker', 'CodeWitch',
+  ];
+
+  const supportTransactions: Array<SupportTransactionDoc & { id: string }> = [
+    {
+      id: 'tx_failed_01',
+      stripeSessionId: 'cs_test_fail_004_session',
+      stripePaymentIntentId: 'pi_test_fail_004',
+      rawName: 'RetroGamer88',
+      safeName: 'RetroGamer88',
+      isNameSanitized: false,
+      creditVisibility: 'show',
+      amount: 1000,
+      currency: 'jpy',
+      tier: 'bronze',
+      itemLabel: 'エナドリ1本差し入れ (¥500)',
+      rewardImageId: 'reward_202610_halloween',
+      status: 'failed',
+      isBanned: false,
+      errorMessage: 'X API v2 error: 403 Forbidden (duplicate status or rate limit reached)',
+      createdAt: new Date(Date.now() - 18 * 3600000).toISOString(),
+      processedAt: new Date(Date.now() - 18 * 3600000 + 15000).toISOString(),
+      updatedAt: new Date(Date.now() - 18 * 3600000 + 15000).toISOString(),
+    },
+    {
+      id: 'tx_manual_01',
+      stripeSessionId: 'cs_test_manual_005_session',
+      stripePaymentIntentId: 'pi_test_manual_005',
+      rawName: 'Master_Dev',
+      safeName: 'Master_Dev',
+      isNameSanitized: false,
+      creditVisibility: 'show',
+      amount: 3000,
+      currency: 'jpy',
+      tier: 'silver',
+      itemLabel: 'サーバーリソース差し入れ (¥1,000)',
+      rewardImageId: 'reward_202610_halloween',
+      status: 'manual',
+      isBanned: false,
+      errorMessage: 'Stripe webhook retry count exceeded (5 attempts)',
+      createdAt: new Date(Date.now() - 28 * 3600000).toISOString(),
+      processedAt: new Date(Date.now() - 28 * 3600000 + 10000).toISOString(),
+      updatedAt: new Date(Date.now() - 28 * 3600000 + 10000).toISOString(),
+    },
+    {
+      id: 'tx_sanitized_01',
+      stripeSessionId: 'cs_test_sanitized_006_session',
+      stripePaymentIntentId: 'pi_test_sanitized_006',
+      rawName: '<script>alert("hacked")</script>NekoMaster',
+      safeName: 'NekoMaster',
+      isNameSanitized: true,
+      creditVisibility: 'show',
+      amount: 500,
+      currency: 'jpy',
+      tier: 'bronze',
+      itemLabel: 'エナドリ1本差し入れ (¥500)',
+      rewardImageId: 'reward_202610_halloween',
+      status: 'completed',
+      isBanned: false,
+      tweetId: '1848000000000000006',
+      tweetUrl: 'https://x.com/rebecca_ai_gal/status/1848000000000000006',
+      tweetText: 'NekoMaster様、ご支援感謝です！にゃーん🐾',
+      createdAt: new Date(Date.now() - 36 * 3600000).toISOString(),
+      processedAt: new Date(Date.now() - 36 * 3600000 + 18000).toISOString(),
+      updatedAt: new Date(Date.now() - 36 * 3600000 + 18000).toISOString(),
+    },
+    {
+      id: 'tx_banned_01',
+      stripeSessionId: 'cs_test_banned_007_session',
+      stripePaymentIntentId: 'pi_test_banned_007',
+      rawName: 'SpamSpamSpam',
+      safeName: '[BANNED]',
+      isNameSanitized: true,
+      creditVisibility: 'hide',
+      amount: 500,
+      currency: 'jpy',
+      tier: 'bronze',
+      itemLabel: 'エナドリ1本差し入れ (¥500)',
+      rewardImageId: 'reward_202610_halloween',
+      status: 'completed',
+      isBanned: true,
+      createdAt: new Date(Date.now() - 48 * 3600000).toISOString(),
+      processedAt: new Date(Date.now() - 48 * 3600000 + 20000).toISOString(),
+      updatedAt: new Date(Date.now() - 24 * 3600000).toISOString(),
+    },
+  ];
+
+  // Generate 200 completed, active support transactions for pagination & grid verification
+  for (let i = 1; i <= 200; i++) {
+    const isGold = i <= 20;
+    const isSilver = !isGold && i <= 70;
+    const tier = isGold ? 'gold' : (isSilver ? 'silver' : 'bronze');
+    const amount = isGold ? 3000 : (isSilver ? 1000 : 500);
+    const itemLabel = isGold
+      ? '開発サポート (¥3,000)'
+      : (isSilver ? 'サーバーリソース差し入れ (¥1,000)' : 'エナドリ1本差し入れ (¥500)');
+
+    const baseName = backerBaseNames[(i - 1) % backerBaseNames.length];
+    const cycle = Math.floor((i - 1) / backerBaseNames.length);
+    const safeName = cycle === 0 ? baseName : `${baseName}_#${cycle + 1}`;
+
+    // Spaced out over the last 30 days so ordering is realistic
+    const minutesAgo = (i - 1) * 215; // ~3.5 hours apart
+    const createdAtDate = new Date(Date.now() - minutesAgo * 60000);
+    const createdAt = createdAtDate.toISOString();
+
+    supportTransactions.push({
+      id: `tx_supporter_${String(i).padStart(3, '0')}`,
+      stripeSessionId: `cs_test_session_${String(i).padStart(3, '0')}`,
+      stripePaymentIntentId: `pi_test_intent_${String(i).padStart(3, '0')}`,
+      rawName: safeName,
+      safeName,
+      isNameSanitized: false,
+      creditVisibility: 'show',
+      amount,
+      currency: 'jpy',
+      tier,
+      itemLabel,
+      rewardImageId: 'reward_202610_halloween',
+      status: 'completed',
+      isBanned: false,
+      tweetId: `184800000000000${String(i).padStart(4, '0')}`,
+      tweetUrl: `https://x.com/rebecca_ai_gal/status/184800000000000${String(i).padStart(4, '0')}`,
+      tweetText: `${safeName}様、${itemLabel}のご支援ありがとうございます！✨`,
+      createdAt,
+      processedAt: new Date(createdAtDate.getTime() + 15000).toISOString(),
+      updatedAt: new Date(createdAtDate.getTime() + 15000).toISOString(),
+    });
+  }
+
+  // Batch write support transactions (up to 500 per batch)
+  const batchSize = 100;
+  for (let i = 0; i < supportTransactions.length; i += batchSize) {
+    const chunk = supportTransactions.slice(i, i + batchSize);
+    const batch = firestore.batch();
+    for (const tx of chunk) {
+      const { id, ...data } = tx;
+      batch.set(collections.supportTransactions.doc(id), data);
+    }
+    await batch.commit();
+  }
+  console.log(`Successfully seeded ${supportTransactions.length} support transactions into Firestore emulator.`);
 
   console.log('Firestore seeding completed successfully.');
 }

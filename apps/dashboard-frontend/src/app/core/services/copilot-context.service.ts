@@ -4,7 +4,7 @@ import { filter } from 'rxjs/operators';
 import { TranslationService } from './translation.service';
 
 export interface FocusedEntity {
-  type: 'post' | 'user' | 'asset' | 'memory' | 'general';
+  type: 'post' | 'user' | 'asset' | 'memory' | 'general' | 'supporter';
   id: string;
   label: string;
   details?: Record<string, unknown>;
@@ -67,10 +67,12 @@ export class CopilotContextService {
       if (focused.type === 'post') return `Post #${focused.id.slice(0, 8)}`;
       if (focused.type === 'user') return `User ${focused.label}`;
       if (focused.type === 'asset') return `Asset ${focused.label}`;
+      if (focused.type === 'supporter') return `Supporter ${focused.label}`;
       return `${focused.type}: ${focused.label}`;
     }
 
     const route = this.currentRoute();
+    if (route.includes('/supporters')) return this.translationService.t('nav.supporters');
     if (route.includes('/campaigns')) return this.translationService.t('nav.campaigns');
     if (route.includes('/assets')) return this.translationService.t('nav.assets');
     if (route.includes('/users')) return this.translationService.t('nav.users');
@@ -89,6 +91,7 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/supporters')) return 'Page: Supporters & Tipping (Managing sponsor donations, Hall of Fame credits, digital reward distribution, and appreciation posts)';
     if (route.includes('/campaigns')) return 'Page: Campaign Narrative (Managing multi-day event campaigns, itinerary slots, AI storytelling prompts, and scheduled posts)';
     if (route.includes('/assets')) return 'Page: Assets Library (Managing image assets, caption embeddings, and bulk retries)';
     if (route.includes('/users')) return 'Page: User Relations (Managing followers, interaction metrics, RAG memory status, and blocklist)';
@@ -115,6 +118,11 @@ export class CopilotContextService {
           ? ['Past interactions with user', 'Should we block them?', 'Check RAG memories']
           : ['このユーザーの過去の対話は？', 'ブロックすべき？', '重要記憶（RAG）を確認'];
       }
+            if (focused.type === 'supporter') {
+        return isEn 
+          ? ['Check donation details', 'Why did appreciation post fail?', 'Review credit visibility']
+          : ['支援詳細を確認', 'お礼ポスト失敗の原因は？', 'クレジット掲載設定を確認'];
+      }
       if (focused.type === 'asset') {
         return isEn 
           ? ['Evaluate caption quality', 'Regenerate caption', 'Check image usage']
@@ -123,6 +131,11 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+        if (route.includes('/supporters')) {
+      return isEn 
+        ? ['Supporter revenue overview', 'Check failed appreciation posts', 'Manage reward illustration pool']
+        : ['サポーター支援の概要は？', '失敗したお礼ポストを確認', '特典イラストプール管理'];
+    }
     if (route.includes('/campaigns')) {
       return isEn 
         ? ['Active campaign status', 'How to schedule narrative slots?', 'Advice for campaign prompts']

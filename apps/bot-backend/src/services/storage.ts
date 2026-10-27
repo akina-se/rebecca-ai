@@ -53,4 +53,32 @@ const downloadImage = async (gsUri: string): Promise<Buffer> => {
     return buffer;
 };
 
-export { uploadImage, downloadImage };
+/**
+ * Generates a time-limited signed URL for secure, direct client downloads from private Cloud Storage.
+ *
+ * @param storagePathOrGsUri - Cloud Storage object path (e.g., 'rewards/illustration.png' or 'gs://bucket/...').
+ * @param expiresInMinutes - Duration in minutes for which the signed URL remains valid (defaults to 30).
+ * @returns A promise resolving to the HTTPS signed URL.
+ */
+const generateSignedUrl = async (
+    storagePathOrGsUri: string,
+    expiresInMinutes = 30
+): Promise<string> => {
+    const normalizedPath = storagePathOrGsUri.replace(/^gs:\/\/[^/]+\//, '').replace(/^\//, '');
+    if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+        return `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}/v0/b/${bucket.name}/o/${encodeURIComponent(normalizedPath)}?alt=media`;
+    }
+    try {
+        const file = bucket.file(normalizedPath);
+        const [url] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + expiresInMinutes * 60 * 1000,
+        });
+        return url;
+    } catch {
+        return `https://storage.googleapis.com/${bucket.name}/${normalizedPath}`;
+    }
+};
+
+export { uploadImage, downloadImage, generateSignedUrl };

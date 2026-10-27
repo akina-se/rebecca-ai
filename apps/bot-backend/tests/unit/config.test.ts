@@ -35,7 +35,7 @@ describe('Config', () => {
         expect(Number(config.rag.maxMemories)).toBe(100);
         expect(Number(config.limits.globalDailyLimit)).toBe(500);
         expect(Number(config.limits.spamMinuteLimit)).toBe(3);
-        expect(Number(config.limits.publicIpRateLimit)).toBe(100);
+        expect(Number(config.limits.publicIpRateLimit)).toBe(1500);
         expect(Number(config.evolution.lookbackDays)).toBe(7);
         expect(Number(config.xApi.followersPageSize)).toBe(10);
         expect(Number(config.xApi.followersMaxResults)).toBe(30);

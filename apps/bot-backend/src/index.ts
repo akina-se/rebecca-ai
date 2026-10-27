@@ -6,6 +6,7 @@
  */
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import config from './config';
 import * as firestoreService from './services/firestore';
 import { GeminiService } from './services/gemini';
@@ -17,6 +18,7 @@ import { AppDependencies } from './types';
 
 import { createBatchRoutes } from './routes/batchRoutes';
 import { createWorkerRoutes } from './routes/workerRoutes';
+import { createPublicRoutes } from './routes/publicRoutes';
 import { publicRateLimiter, batchRateLimiter, workerRateLimiter } from './middleware/apiRateLimiter';
 import { logger } from './utils/logger';
 import { startGrpcServer } from './services/grpcServer';
@@ -50,14 +52,35 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
 
   const app = express();
   app.set('trust proxy', 1); // Trust the first proxy (e.g. Google Cloud Run) to fix express-rate-limit errors
-  app.use(express.json());
+  app.use(
+    express.json({
+      verify: (req, _res, buf) => {
+        (req as unknown as { rawBody?: Buffer }).rawBody = buf;
+      },
+    }),
+  );
 
   // Serve static files such as Terms of Service and Privacy Policy
-  // Apply public rate limiter to static files or any other public entry points
-  app.use(publicRateLimiter);
-  app.use(express.static(path.join(process.cwd(), 'public')));
 
-  // Mount routes with specific rate limiters
+
+  const publicDir = fs.existsSync(path.join(__dirname, '../public'))
+    ? path.join(__dirname, '../public')
+    : path.join(process.cwd(), 'public');
+  app.use(express.static(publicDir));
+
+  // Mount public views with rate limiting to protect file system access from DoS (CWE-400 / CWE-770)
+  app.get('/supporters', publicRateLimiter, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(publicDir, 'supporters.html'));
+  });
+
+  app.get(['/support/thank-you', '/support/thanks'], publicRateLimiter, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(publicDir, 'support', 'thank-you.html'));
+  });
+
+  // Mount public API routes (REST v1 standard aligned with dashboard-backend)
+  app.use('/api/v1', publicRateLimiter, createPublicRoutes(deps));
   app.use('/batch', batchRateLimiter, createBatchRoutes(deps));
   app.use('/worker', workerRateLimiter, createWorkerRoutes(deps));
 

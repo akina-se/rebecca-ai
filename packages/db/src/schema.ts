@@ -80,6 +80,18 @@ export const COLLECTIONS = {
    * Doc ID = `camp_<timestamp>_<uuid>`.
    */
   CAMPAIGNS: 'campaigns',
+
+  /**
+   * Digital reward illustration catalog for tipping/sponsorships.
+   * Doc ID = reward image UUID.
+   */
+  REWARD_IMAGES: 'reward_images',
+
+  /**
+   * Sponsor/Tipping transaction records and public credit source.
+   * Doc ID = transaction UUID.
+   */
+  SUPPORT_TRANSACTIONS: 'support_transactions',
 } as const;
 
 // Derive a union type for all collection name values.
@@ -109,6 +121,11 @@ import type {
   CampaignSlot,
   CampaignDoc,
   CampaignDocWithId,
+  RewardImageDoc,
+  SupportTransactionDoc,
+  SupportTier,
+  SupportTransactionStatus,
+  CreditVisibility,
 } from '@rebecca/types';
 
 export type {
@@ -129,6 +146,11 @@ export type {
   CampaignSlot,
   CampaignDoc,
   CampaignDocWithId,
+  RewardImageDoc,
+  SupportTransactionDoc,
+  SupportTier,
+  SupportTransactionStatus,
+  CreditVisibility,
 };
 
 /** Rate-limit tracking document for a user within a time window. */

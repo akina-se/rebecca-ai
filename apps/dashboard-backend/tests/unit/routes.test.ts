@@ -6,6 +6,7 @@ import { initializeSystemMemoryModule } from '../../src/features/system-memory/i
 import { initializeCopilotModule } from '../../src/features/copilot/index';
 import { initializeAuthModule } from '../../src/features/auth/index';
 import { initializeSettingsModule } from '../../src/features/settings/index';
+import { initializeSupportersModule } from '../../src/features/supporters/index';
 import { createMockFirestore } from './testUtils';
 
 describe('Dashboard Backend Module Initializers Unit Tests', () => {
@@ -51,5 +52,8 @@ describe('Dashboard Backend Module Initializers Unit Tests', () => {
 
     const settingsRouter = initializeSettingsModule(mockFirestore);
     expect(settingsRouter).toBeDefined();
+
+    const supportersRouter = initializeSupportersModule(mockFirestore, mockStorage);
+    expect(supportersRouter.supportersRouter).toBeDefined();
   });
 });

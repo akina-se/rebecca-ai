@@ -603,6 +603,38 @@ describe('Integration Tests', () => {
             expect(response.text).toContain('"name": "全肯定AIレベッカ (Rebecca AI)"');
             expect(response.text).toContain('"alternateName": [');
             expect(response.text).toContain('isSearchCrawler');
+            expect(response.text).toContain('id="lp-tier-bronze"');
+            expect(response.text).toContain('id="lp-tier-silver"');
+            expect(response.text).toContain('id="lp-tier-gold"');
+            expect(response.text).toContain('initSupportPlanLinks');
+        });
+
+        it('should serve /supporters with 200 OK and supporter portal elements', async () => {
+            const response = await request(app).get('/supporters');
+            expect(response.status).toBe(200);
+            expect(response.text).toContain('公式サポータープログラム');
+            expect(response.text).toContain('Official Supporter Program');
+            expect(response.text).toContain('サポーター名簿');
+            expect(response.text).toContain('roster-grid');
+            expect(response.text).toContain('COMMUNITY SPONSORSHIP PROGRAM');
+        });
+
+        it('should serve /support/thank-you with 200 OK and thank you redemption elements', async () => {
+            const response = await request(app).get('/support/thank-you');
+            expect(response.status).toBe(200);
+            expect(response.text).toContain('サポーター・サンクスページ');
+            expect(response.text).toContain('高画質イラストをダウンロード');
+        });
+
+        it('should return 200 OK and plans with dynamic Stripe payment links from GET /api/v1/support/plans', async () => {
+            const response = await request(app).get('/api/v1/support/plans');
+            expect(response.status).toBe(200);
+            expect(response.body.plans).toBeInstanceOf(Array);
+            expect(response.body.plans).toHaveLength(3);
+            expect(response.body.plans[0].tier).toBe('bronze');
+            expect(response.body.plans[0].paymentUrl).toBeDefined();
+            expect(response.body.plans[1].tier).toBe('silver');
+            expect(response.body.plans[2].tier).toBe('gold');
         });
     });
 });

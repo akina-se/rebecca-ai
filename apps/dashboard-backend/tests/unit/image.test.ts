@@ -1,4 +1,4 @@
-import { generateWebpThumbnail } from '../../src/utils/image';
+import { generateWebpThumbnail, stripImageMetadata } from '../../src/utils/image';
 import { PhotonImage } from '@silvia-odwyer/photon-node';
 
 describe('Image Utility (Photon WebAssembly)', () => {
@@ -52,5 +52,45 @@ describe('Image Utility (Photon WebAssembly)', () => {
     const corruptBuffer = Buffer.from('corrupt-non-image-binary-data');
 
     await expect(generateWebpThumbnail(corruptBuffer, 400)).rejects.toThrow();
+  });
+
+  describe('stripImageMetadata', () => {
+    it('strips metadata and returns valid clean PNG buffer by default', async () => {
+      const cleanPng = await stripImageMetadata(validPngBuffer);
+      expect(cleanPng).toBeInstanceOf(Buffer);
+      expect(cleanPng.length).toBeGreaterThan(0);
+
+      const decoded = PhotonImage.new_from_byteslice(new Uint8Array(cleanPng));
+      expect(decoded.get_width()).toBe(1);
+      expect(decoded.get_height()).toBe(1);
+      decoded.free();
+    });
+
+    it('strips metadata and re-encodes to clean JPEG when requested', async () => {
+      const cleanJpeg = await stripImageMetadata(validPngBuffer, 'image/jpeg');
+      expect(cleanJpeg).toBeInstanceOf(Buffer);
+      expect(cleanJpeg.length).toBeGreaterThan(0);
+
+      const decoded = PhotonImage.new_from_byteslice(new Uint8Array(cleanJpeg));
+      expect(decoded.get_width()).toBe(1);
+      expect(decoded.get_height()).toBe(1);
+      decoded.free();
+    });
+
+    it('strips metadata and re-encodes to clean WebP when requested', async () => {
+      const cleanWebp = await stripImageMetadata(validPngBuffer, 'image/webp');
+      expect(cleanWebp).toBeInstanceOf(Buffer);
+      expect(cleanWebp.length).toBeGreaterThan(0);
+
+      const decoded = PhotonImage.new_from_byteslice(new Uint8Array(cleanWebp));
+      expect(decoded.get_width()).toBe(1);
+      expect(decoded.get_height()).toBe(1);
+      decoded.free();
+    });
+
+    it('throws error when stripping metadata on invalid image buffer', async () => {
+      const corrupt = Buffer.from('not-an-image');
+      await expect(stripImageMetadata(corrupt)).rejects.toThrow();
+    });
   });
 });

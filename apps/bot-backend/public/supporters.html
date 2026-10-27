@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supporters &amp; Sponsorship | Rebecca AI - Gemitec Inc.</title>
+  <meta name="description" content="自律型AI「レベッカ」の公式サポータープログラム。自律研究と持続的な計算リソース運用を後援するコミュニティ支援プランとサポーター名簿のご案内。">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rebecca-ai.net/supporters">
+  <meta property="og:title" content="全肯定AIレベッカ 公式サポータープログラム | Rebecca AI - Gemitec Inc.">
+  <meta property="og:description" content="自律型AI「レベッカ」の公式サポータープログラム。自律研究と持続的な計算リソース運用を後援するコミュニティ支援プランとサポーター名簿のご案内。">
+  <meta property="og:image" content="https://rebecca-ai.net/assets/ogp_supporters.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Rebecca AI Official Supporter Program - Gemitec Inc.">
+
+  <!-- Twitter / X Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@rebecca_ai_gal">
+  <meta name="twitter:creator" content="@rebecca_ai_gal">
+  <meta name="twitter:url" content="https://rebecca-ai.net/supporters">
+  <meta name="twitter:title" content="全肯定AIレベッカ 公式サポータープログラム | Rebecca AI - Gemitec Inc.">
+  <meta name="twitter:description" content="自律型AI「レベッカ」の公式サポータープログラム。自律研究と持続的な計算リソース運用を後援するコミュニティ支援プランとサポーター名簿のご案内。">
+  <meta name="twitter:image" content="https://rebecca-ai.net/assets/ogp_supporters.jpg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-base: #07080c;
+      --bg-surface: #0e1017;
+      --bg-surface-elevated: #151822;
+      --bg-card: rgba(18, 20, 29, 0.75);
+      --bg-card-hover: rgba(26, 29, 43, 0.88);
+
+      --gemitec-purple: #8b5cf6;
+      --gemitec-purple-light: #a78bfa;
+      --gemitec-purple-dark: #6d28d9;
+      --gemitec-purple-glow: rgba(139, 92, 246, 0.28);
+
+      --accent-gold: #f59e0b;
+      --accent-silver: #94a3b8;
+      --accent-bronze: #b45309;
+
+      --text-main: #ffffff;
+      --text-secondary: #d1d5db;
+      --text-muted: #9ca3af;
+
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-purple: rgba(139, 92, 246, 0.3);
+      --border-purple-hover: rgba(167, 139, 250, 0.6);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --max-width: 1140px;
+      --font-mono: 'JetBrains Mono', monospace;
+      --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Bilingual Switching Rules */
+    body[data-lang="ja"] .t-en,
+    body[data-lang="ja"] .block-en {
+      display: none !important;
+    }
+
+    body[data-lang="en"] .t-ja,
+    body[data-lang="en"] .block-ja {
+      display: none !important;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.16) 0%, transparent 60%),
+        radial-gradient(circle at 10% 40%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 90% 70%, rgba(109, 40, 217, 0.1) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header (100% Identical to Official Portal index.html) */
+    header {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      background: rgba(7, 8, 12, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 100;
+      height: 72px;
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      height: 30px;
+      width: auto;
+      display: block;
+    }
+
+    .nav-links {
+      display: flex;
+      list-style: none;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #ffffff;
+    }
+
+    .nav-links a.active {
+      color: var(--gemitec-purple-light);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .lang-switcher {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      padding: 2px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active,
+    body[data-lang="ja"] #btn-lang-ja,
+    body[data-lang="en"] #btn-lang-en {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-purple {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+      border: 1px solid transparent;
+      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-purple:hover {
+      background: var(--gemitec-purple-light);
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .breadcrumb a {
+      color: var(--gemitec-purple-light);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+      color: #ffffff;
+    }
+
+    /* Page Hero */
+    .page-hero {
+      padding: 64px 0 40px;
+      text-align: center;
+    }
+
+    .corp-tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--gemitec-purple-light);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-full);
+      margin-bottom: 20px;
+    }
+
+    .status-dot-green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      display: inline-block;
+    }
+
+    .page-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+
+    .title-chunk {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 40%, var(--gemitec-purple-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* Section Headers */
+    .section-header {
+      margin: 48px 0 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Tiers Grid & Carousel */
+    .tiers-carousel-wrapper {
+      position: relative;
+      width: 100%;
+      margin-bottom: 64px;
+    }
+
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .tiers-carousel-dots {
+      display: none;
+    }
+
+    .tier-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: var(--transition);
+      backdrop-filter: blur(8px);
+    }
+
+    .tier-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Tier: Bronze */
+    .tier-card.tier-bronze {
+      border: 1px solid rgba(217, 119, 6, 0.38);
+      background: linear-gradient(180deg, rgba(32, 22, 16, 0.75) 0%, rgba(18, 20, 29, 0.8) 100%);
+      box-shadow: 0 8px 24px rgba(180, 83, 9, 0.12);
+    }
+    .tier-card.tier-bronze:hover {
+      border-color: rgba(245, 158, 11, 0.75);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 22px rgba(217, 119, 6, 0.35);
+    }
+
+    /* Tier: Silver (Popular) */
+    .tier-card.tier-silver,
+    .tier-card.featured {
+      border: 1px solid var(--border-purple);
+      background: linear-gradient(180deg, rgba(28, 22, 45, 0.85) 0%, rgba(18, 20, 29, 0.85) 100%);
+      box-shadow: 0 8px 26px rgba(139, 92, 246, 0.2);
+    }
+    .tier-card.tier-silver:hover,
+    .tier-card.featured:hover {
+      border-color: var(--gemitec-purple-light);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 24px var(--gemitec-purple-glow);
+    }
+
+    /* Tier: Gold (VIP) */
+    .tier-card.tier-gold {
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      background: linear-gradient(180deg, rgba(42, 28, 12, 0.85) 0%, rgba(20, 18, 26, 0.85) 100%);
+      box-shadow: 0 8px 28px rgba(245, 158, 11, 0.22), 0 0 16px rgba(251, 191, 36, 0.14);
+    }
+    .tier-card.tier-gold:hover {
+      border-color: #fbbf24;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 32px rgba(245, 158, 11, 0.55);
+    }
+
+    .featured-ribbon {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: var(--gemitec-purple);
+      color: #ffffff;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 10px rgba(139, 92, 246, 0.4);
+    }
+
+    .vip-ribbon {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%);
+      color: #0b0f19;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.05em;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.45);
+    }
+
+    .tier-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    .tier-icon-badge.bronze {
+      background: rgba(180, 83, 9, 0.16);
+      color: #d97706;
+      border: 1px solid rgba(180, 83, 9, 0.35);
+    }
+
+    .tier-icon-badge.silver {
+      background: rgba(148, 163, 184, 0.16);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .tier-icon-badge.gold {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    .tier-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .tier-item-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 16px;
+    }
+
+    .tier-item-label.bronze {
+      color: #d97706;
+      font-weight: 600;
+    }
+
+    .tier-item-label.silver {
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .tier-item-label.gold {
+      color: #fbbf24;
+      font-weight: 600;
+    }
+
+    .tier-price {
+      font-size: 28px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #ffffff;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .tier-price span {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .tier-perks {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 20px;
+    }
+
+    .tier-perk-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .tier-perk-item svg {
+      width: 16px;
+      height: 16px;
+      color: #10b981;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .btn-support {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    /* Bronze Button */
+    .btn-support.btn-bronze {
+      background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+      color: #ffffff;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35);
+    }
+
+    .btn-support.btn-bronze:hover {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      border-color: rgba(251, 191, 36, 0.7);
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.55);
+      transform: translateY(-2px);
+    }
+
+    /* Silver Button (Primary) */
+    .btn-support.primary,
+    .btn-support.btn-silver {
+      background: linear-gradient(135deg, var(--gemitec-purple) 0%, #9333ea 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 16px var(--gemitec-purple-glow);
+      border: 1px solid rgba(192, 132, 252, 0.35);
+    }
+
+    .btn-support.primary:hover,
+    .btn-support.btn-silver:hover {
+      background: linear-gradient(135deg, var(--gemitec-purple-light) 0%, #a855f7 100%);
+      border-color: rgba(192, 132, 252, 0.65);
+      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.55);
+      transform: translateY(-2px);
+    }
+
+    /* Gold Button */
+    .btn-support.btn-gold {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 45%, #fbbf24 100%);
+      color: #0b0f19;
+      font-weight: 800;
+      border: 1px solid rgba(254, 240, 138, 0.6);
+      box-shadow: 0 4px 18px rgba(245, 158, 11, 0.45);
+    }
+
+    .btn-support.btn-gold:hover {
+      background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 45%, #fef08a 100%);
+      border-color: #fef08a;
+      box-shadow: 0 6px 24px rgba(245, 158, 11, 0.7);
+      transform: translateY(-2px);
+    }
+
+    .btn-support.secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-support.secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* Disabled Tier Card & Button State */
+    .tier-card.tier-disabled {
+      opacity: 0.55;
+      filter: grayscale(60%);
+      background: rgba(14, 16, 23, 0.5) !important;
+      border-color: rgba(255, 255, 255, 0.05) !important;
+      box-shadow: none !important;
+      transition: var(--transition);
+    }
+
+    .tier-card.tier-disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+      border-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .tier-card.tier-disabled .featured-ribbon,
+    .tier-card.tier-disabled .vip-ribbon {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: rgba(255, 255, 255, 0.4) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: none !important;
+    }
+
+    .tier-card.tier-disabled .tier-icon-badge {
+      opacity: 0.5;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #94a3b8 !important;
+    }
+
+    .tier-card.tier-disabled .tier-name {
+      color: #94a3b8 !important;
+    }
+
+    .tier-card.tier-disabled .tier-item-label {
+      color: #64748b !important;
+      opacity: 0.8;
+    }
+
+    .tier-card.tier-disabled .tier-price {
+      color: #64748b !important;
+    }
+
+    .tier-card.tier-disabled .tier-price span {
+      color: #475569 !important;
+    }
+
+    .tier-card.tier-disabled .tier-perks {
+      border-top-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .tier-card.tier-disabled .tier-perk-item {
+      color: #64748b !important;
+    }
+
+    .tier-card.tier-disabled .tier-perk-item svg {
+      color: #475569 !important;
+      opacity: 0.5;
+    }
+
+    .btn-support.btn-disabled {
+      cursor: not-allowed;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.02) !important;
+      border: 1px dashed rgba(255, 255, 255, 0.14) !important;
+      color: #64748b !important;
+      box-shadow: none !important;
+      transform: none !important;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-support.btn-disabled svg {
+      opacity: 0.6;
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Recent Supporters Highlights */
+    .recent-supporters-section {
+      background: rgba(139, 92, 246, 0.05);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 48px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .recent-supporters-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .recent-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+    }
+
+    .status-dot-purple {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gemitec-purple-light);
+      box-shadow: 0 0 10px var(--gemitec-purple);
+      display: inline-block;
+      animation: pulse-purple 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-purple {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .recent-note {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .recent-supporters-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .recent-supporters-list {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 6px 36px 8px 4px;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-purple) transparent;
+    }
+
+    .recent-supporters-list::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .recent-supporters-list::-webkit-scrollbar-thumb {
+      background: var(--border-purple);
+      border-radius: 4px;
+    }
+
+    .recent-scroll-fade {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 8px;
+      width: 48px;
+      background: linear-gradient(to right, transparent, rgba(14, 16, 23, 0.95));
+      pointer-events: none;
+      border-top-right-radius: var(--radius-lg);
+      border-bottom-right-radius: var(--radius-lg);
+    }
+
+    .recent-chip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: var(--transition);
+      text-decoration: none;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .recent-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .recent-chip.tier-gold {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.06);
+    }
+
+    .recent-chip.tier-silver {
+      border-color: rgba(148, 163, 184, 0.4);
+      background: rgba(148, 163, 184, 0.06);
+    }
+
+    .recent-chip.tier-bronze {
+      border-color: rgba(180, 83, 9, 0.35);
+      background: rgba(180, 83, 9, 0.05);
+    }
+
+    .recent-chip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .recent-chip.tier-gold .recent-chip-icon {
+      color: #fbbf24;
+    }
+
+    .recent-chip.tier-silver .recent-chip-icon {
+      color: #cbd5e1;
+    }
+
+    .recent-chip.tier-bronze .recent-chip-icon {
+      color: #d97706;
+    }
+
+    .recent-chip-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      max-width: 140px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-chip-badge {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+    }
+
+    .recent-chip.tier-gold .recent-chip-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    .recent-chip.tier-silver .recent-chip-badge {
+      background: rgba(148, 163, 184, 0.2);
+      color: #cbd5e1;
+    }
+
+    .recent-chip.tier-bronze .recent-chip-badge {
+      background: rgba(180, 83, 9, 0.2);
+      color: #d97706;
+    }
+
+    .recent-loading-placeholder {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 6px 0;
+    }
+
+    /* Supporter Roster (High-density 6-column PC / 4-column Tablet / 3-column Mobile) */
+    .roster-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      margin-bottom: 80px;
+      backdrop-filter: blur(8px);
+    }
+
+    .roster-meta-badge {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--gemitec-purple-light);
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid var(--border-purple);
+      padding: 5px 14px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+    }
+
+    .roster-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+
+    .roster-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 0;
+      min-height: 84px;
+      transition: var(--transition);
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+
+    .roster-card:hover {
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .roster-card.tier-gold {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.04);
+    }
+    .roster-card.tier-gold:hover {
+      border-color: rgba(245, 158, 11, 0.65);
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.18);
+    }
+
+    .roster-card.tier-silver {
+      border-color: rgba(148, 163, 184, 0.35);
+      background: rgba(148, 163, 184, 0.04);
+    }
+    .roster-card.tier-silver:hover {
+      border-color: rgba(148, 163, 184, 0.65);
+      box-shadow: 0 4px 16px rgba(148, 163, 184, 0.18);
+    }
+
+    .roster-card.tier-bronze {
+      border-color: rgba(180, 83, 9, 0.25);
+      background: rgba(180, 83, 9, 0.03);
+    }
+    .roster-card.tier-bronze:hover {
+      border-color: rgba(180, 83, 9, 0.55);
+      box-shadow: 0 4px 16px rgba(180, 83, 9, 0.18);
+    }
+
+    .roster-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .roster-card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .roster-rank-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .roster-card.tier-gold .roster-rank-icon {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+
+    .roster-card.tier-silver .roster-rank-icon {
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+    }
+
+    .roster-card.tier-bronze .roster-rank-icon {
+      background: rgba(180, 83, 9, 0.15);
+      color: #d97706;
+    }
+
+    .roster-card-tier-tag {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .roster-card.tier-gold .roster-card-tier-tag { color: #fbbf24; }
+    .roster-card.tier-silver .roster-card-tier-tag { color: #cbd5e1; }
+    .roster-card.tier-bronze .roster-card-tier-tag { color: #d97706; }
+
+    .roster-card-date {
+      font-size: 9.5px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .roster-name-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      width: 100%;
+      padding: 2px 0;
+    }
+
+    .roster-name {
+      font-weight: 700;
+      color: var(--text-main);
+      width: 100%;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow: hidden;
+    }
+
+    .roster-name.font-len-short {
+      font-size: 11.5px;
+      line-height: 1.3;
+    }
+    .roster-name.font-len-medium {
+      font-size: 10px;
+      line-height: 1.25;
+    }
+    .roster-name.font-len-long {
+      font-size: 9px;
+      line-height: 1.2;
+    }
+    .roster-name.font-len-vlong {
+      font-size: 8px;
+      line-height: 1.15;
+    }
+
+    .roster-empty-state {
+      grid-column: 1 / -1;
+      padding: 48px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Standard Numbered Pagination */
+    .roster-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 28px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+    }
+
+    .pagination-btn {
+      min-width: 36px;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .pagination-btn:hover:not(:disabled):not(.active) {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pagination-btn.active {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+      border-color: var(--gemitec-purple-light);
+      font-weight: 700;
+      box-shadow: 0 2px 10px var(--gemitec-purple-glow);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .pagination-ellipsis {
+      color: var(--text-muted);
+      padding: 0 6px;
+      font-family: var(--font-mono);
+      user-select: none;
+    }
+
+    .pagination-summary {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      font-family: var(--font-mono);
+    }
+
+    /* Supporter Detail Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(4, 5, 8, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 35px var(--gemitec-purple-glow);
+      position: relative;
+      transform: translateY(16px) scale(0.97);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      transform: scale(1.08);
+    }
+
+    .modal-tier-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 14px;
+    }
+
+    .modal-tier-badge.tier-gold {
+      background: rgba(245, 158, 11, 0.14);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .modal-tier-badge.tier-silver {
+      background: rgba(148, 163, 184, 0.14);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .modal-tier-badge.tier-bronze {
+      background: rgba(180, 83, 9, 0.14);
+      color: #d97706;
+      border: 1px solid rgba(180, 83, 9, 0.35);
+    }
+
+    .modal-rank-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-supporter-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+      max-width: 100%;
+    }
+
+    .modal-plan-title {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 22px;
+    }
+
+    .modal-details-grid {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .modal-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+    }
+
+    .detail-val {
+      font-weight: 600;
+      color: #ffffff;
+      font-family: var(--font-mono);
+    }
+
+
+    .modal-rebecca-message {
+      width: 100%;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid var(--border-purple);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    .rebecca-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .rebecca-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gemitec-purple-light);
+    }
+
+    .rebecca-role {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+    }
+
+    .rebecca-quote {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1200px) {
+      .roster-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin: 36px 0 20px;
+        padding-bottom: 12px;
+      }
+      .section-header > div:first-child {
+        width: 100%;
+      }
+      .section-title {
+        font-size: 19px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .section-subtitle {
+        font-size: 12px;
+      }
+      .recent-supporters-section {
+        padding: 16px 14px;
+        margin-bottom: 36px;
+      }
+      .recent-scroll-fade {
+        width: 36px;
+      }
+      .roster-container {
+        padding: 16px 10px;
+        margin-bottom: 60px;
+      }
+      .roster-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .roster-card {
+        padding: 7px 6px 6px;
+        min-height: 76px;
+        border-radius: 8px;
+      }
+      .roster-card-header {
+        margin-bottom: 4px;
+        gap: 4px;
+      }
+      .roster-rank-icon {
+        width: 16px;
+        height: 16px;
+      }
+      .roster-rank-icon svg {
+        width: 10px;
+        height: 10px;
+      }
+      .roster-card-tier-tag {
+        font-size: 8px;
+      }
+      .roster-card-date {
+        font-size: 8px;
+      }
+      .roster-name.font-len-short {
+        font-size: 10.5px;
+      }
+      .roster-name.font-len-medium {
+        font-size: 9.5px;
+      }
+      .roster-name.font-len-long {
+        font-size: 8.5px;
+      }
+      .roster-name.font-len-vlong {
+        font-size: 7.5px;
+      }
+      .pagination-btn {
+        min-width: 32px;
+        height: 32px;
+        font-size: 12px;
+        padding: 0 6px;
+      }
+      .modal-card {
+        padding: 24px 20px;
+      }
+      .modal-supporter-name {
+        font-size: 20px;
+      }
+    }
+
+    /* Footer (100% Identical to Official Portal index.html) */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #040508;
+      padding: 64px 0 40px;
+      margin-top: auto;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 48px;
+    }
+
+    .footer-brand h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .footer-brand p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .footer-col h4 {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-col a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s ease;
+    }
+
+    .footer-col a:hover {
+      color: #ffffff;
+    }
+
+    .footer-bottom {
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-legal-links {
+      flex-wrap: wrap;
+      justify-content: center;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .footer-legal-links a {
+      white-space: nowrap;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .footer-legal-links > span {
+      color: rgba(255, 255, 255, 0.25);
+      user-select: none;
+    }
+
+    @media (max-width: 640px) {
+      .footer-legal-links {
+        gap: 8px 16px;
+      }
+
+      .footer-legal-links > span {
+        display: none;
+      }
+    }
+
+    .footer-legal-links a:hover {
+      color: #ffffff;
+    }
+
+    .footer-disclaimer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .tiers-carousel-wrapper {
+        margin: 0 -24px 44px;
+        position: relative;
+      }
+
+      .tiers-grid {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        gap: 16px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+        padding: 12px 24px 20px;
+        scrollbar-width: none;
+      }
+
+      .tiers-grid::-webkit-scrollbar {
+        display: none;
+      }
+
+      .tier-card {
+        flex: 0 0 82%;
+        max-width: 320px;
+        min-width: 270px;
+        scroll-snap-align: center;
+        scroll-snap-stop: always;
+      }
+
+      
+
+      .tiers-carousel-dots {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .carousel-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.18);
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .carousel-dot.active {
+        width: 22px;
+        background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+        box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body data-lang="ja">
+
+  <!-- Global Header (Exact match with index.html) -->
+  <header>
+    <div class="container">
+      <div class="nav-inner">
+        <a href="/" class="brand-area">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc." class="brand-logo" width="928" height="288">
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="/#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
+          <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
+          <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
+          <li><a href="/#gallery"><span class="t-ja">フォト</span><span class="t-en">Gallery</span></a></li>
+          <li><a href="/#opensource"><span class="t-ja">技術公開</span><span class="t-en">Open Source</span></a></li>
+          <li><a href="/supporters" class="active"><span class="t-ja">サポーター</span><span class="t-en">Supporters</span></a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <div class="lang-switcher">
+            <button class="lang-btn active" id="btn-lang-ja" onclick="setLanguage('ja')">JA</button>
+            <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">EN</button>
+          </div>
+
+          <a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer" class="btn btn-purple">
+            <span class="t-ja">Xで話しかける</span>
+            <span class="t-en">Talk on X</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    
+    <!-- Hero -->
+    <section class="page-hero">
+      <div class="breadcrumb">
+        <a href="/">HOME</a>
+        <span>/</span>
+        <span>COMMUNITY</span>
+        <span>/</span>
+        <span style="color: var(--text-main);">OFFICIAL SUPPORTERS</span>
+      </div>
+      <div class="corp-tagline">
+        <span class="status-dot-green"></span>
+        <span class="t-ja">GEMITEC INC. &bull; 公式サポーター制度</span>
+        <span class="t-en">COMMUNITY SPONSORSHIP PROGRAM</span>
+      </div>
+      <h1 class="page-title">
+        <span class="t-ja"><span class="title-chunk">自律型AIレベッカ</span> <span class="title-chunk gradient-text">公式サポータープログラム</span></span>
+        <span class="t-en"><span class="title-chunk">Rebecca AI</span> <span class="title-chunk gradient-text">Official Supporter Program</span></span>
+      </h1>
+      <p class="page-desc">
+        <span class="t-ja">レベッカの自律対話ルーチンの研究と、持続的なコンピュートリソース運用を後援するコミュニティプログラムです。ご支援いただいたマスターには、レベッカからの自律的お礼やサポーター特典が提供されます。</span>
+        <span class="t-en">Sustaining Rebecca's autonomous reasoning research and 24/7 compute infrastructure. Supporters receive autonomous appreciation on X and exclusive community benefits.</span>
+      </p>
+    </section>
+
+    <!-- Recent Supporters Highlights -->
+    <section id="recent-supporters" class="recent-supporters-section">
+      <div class="recent-supporters-header">
+        <div class="recent-title-group">
+          <span class="status-dot-purple"></span>
+          <span class="recent-title">
+            <span class="t-ja">直近のご支援</span>
+            <span class="t-en">Recent Supporters</span>
+          </span>
+        </div>
+        <div class="recent-note">
+          <span class="t-ja">レベッカを応援してくれた最新のマスターたち</span>
+          <span class="t-en">Latest supporters powering Rebecca</span>
+        </div>
+      </div>
+      <div class="recent-supporters-wrapper">
+        <div id="recent-supporters-list" class="recent-supporters-list">
+          <div class="recent-loading-placeholder">
+            <span class="t-ja">最新のサポーターを読み込み中...</span>
+            <span class="t-en">Loading latest supporters...</span>
+          </div>
+        </div>
+        <div class="recent-scroll-fade"></div>
+      </div>
+    </section>
+
+    <!-- Section 1: Plans / Tiers -->
+    <section id="plans">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--gemitec-purple-light);">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+            <span class="t-ja">支援プランを選択する</span>
+            <span class="t-en">Select a Sponsorship Plan</span>
+          </h2>
+          <p class="section-subtitle">
+            <span class="t-ja">Stripe公式の安全な決済（クレジットカード / Apple Pay / Google Pay）にて即座に完了します。</span>
+            <span class="t-en">Securely processed via Stripe Checkout (supports Apple Pay, Google Pay, and credit cards).</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="tiers-carousel-wrapper" id="tiers-carousel-wrapper">
+        
+
+        <div class="tiers-grid" id="tiers-grid">
+
+        <!-- Bronze Tier -->
+        <div class="tier-card tier-bronze">
+          <div>
+            <div class="tier-icon-badge bronze">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div class="tier-name">
+              <span class="t-ja">エナドリ1本差し入れ</span>
+              <span class="t-en">Energy Drink</span>
+            </div>
+            <div class="tier-item-label bronze">
+              <span class="t-ja">ブロンズプラン</span>
+              <span class="t-en">BRONZE SPONSOR</span>
+            </div>
+            <div class="tier-price">¥500 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <ul class="tier-perks">
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">デジタルイラスト（高画質ダウンロード）</span>
+                <span class="t-en">Digital illustration download</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Xからレベッカが直接お礼ポスト（BRONZE）</span>
+                <span class="t-en">Personalized appreciation tweet from Rebecca (BRONZE)</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載</span>
+                <span class="t-en">Name listed on official supporters roster</span>
+              </li>
+            </ul>
+          </div>
+          <a id="btn-plan-bronze" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-bronze">
+            <span class="t-ja">エナドリを差し入れ（¥500）</span>
+            <span class="t-en">Send Energy Drink (¥500)</span>
+          </a>
+        </div>
+
+        <!-- Silver Tier -->
+        <div class="tier-card tier-silver featured">
+          <span class="featured-ribbon">
+            <span class="t-ja">人気プラン</span>
+            <span class="t-en">POPULAR</span>
+          </span>
+          <div>
+            <div class="tier-icon-badge silver">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <div class="tier-name">
+              <span class="t-ja">サーバーリソース差し入れ</span>
+              <span class="t-en">Compute Server Resource</span>
+            </div>
+            <div class="tier-item-label silver">
+              <span class="t-ja">シルバープラン</span>
+              <span class="t-en">SILVER SPONSOR</span>
+            </div>
+            <div class="tier-price">¥1,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <ul class="tier-perks">
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">デジタルイラスト（高画質ダウンロード）</span>
+                <span class="t-en">Digital illustration download</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Xからレベッカが直接お礼ポスト（SILVER）</span>
+                <span class="t-en">Personalized appreciation tweet from Rebecca (SILVER)</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載（SILVERバッジ）</span>
+                <span class="t-en">Name listed with SILVER badge on official supporters roster</span>
+              </li>
+            </ul>
+          </div>
+          <a id="btn-plan-silver" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-silver primary">
+            <span class="t-ja">サーバーリソースを差し入れ（¥1,000）</span>
+            <span class="t-en">Send Compute Resource (¥1,000)</span>
+          </a>
+        </div>
+
+        <!-- Gold Tier -->
+        <div class="tier-card tier-gold">
+          <span class="vip-ribbon">
+            <span class="t-ja">最上位支援</span>
+            <span class="t-en">VIP SPONSOR</span>
+          </span>
+          <div>
+            <div class="tier-icon-badge gold">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
+            <div class="tier-name">
+              <span class="t-ja">開発サポート</span>
+              <span class="t-en">Development Support</span>
+            </div>
+            <div class="tier-item-label gold">
+              <span class="t-ja">ゴールドプラン</span>
+              <span class="t-en">GOLD SPONSOR</span>
+            </div>
+            <div class="tier-price">¥3,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <ul class="tier-perks">
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">デジタルイラスト（高画質ダウンロード）</span>
+                <span class="t-en">Digital illustration download</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Xからレベッカが直接お礼ポスト（GOLD）</span>
+                <span class="t-en">Personalized appreciation tweet from Rebecca (GOLD)</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載（最上位GOLDバッジ）</span>
+                <span class="t-en">Name listed with top-tier GOLD badge on official supporters roster</span>
+              </li>
+            </ul>
+          </div>
+          <a id="btn-plan-gold" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-gold">
+            <span class="t-ja">開発サポートを送る（¥3,000）</span>
+            <span class="t-en">Support Development (¥3,000)</span>
+          </a>
+        </div>
+
+      </div>
+
+      <div class="tiers-carousel-dots" id="tiers-carousel-dots" aria-hidden="true">
+        <button type="button" class="carousel-dot" data-index="0" aria-label="Bronze Plan"></button>
+        <button type="button" class="carousel-dot active" data-index="1" aria-label="Silver Plan"></button>
+        <button type="button" class="carousel-dot" data-index="2" aria-label="Gold Plan"></button>
+      </div>
+    </div>
+    </section>
+
+    <!-- Section 2: Hall of Fame / Supporter Roster -->
+    <section id="roster">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold); flex-shrink: 0;">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span class="t-ja">サポーター名簿</span>
+            <span class="t-en">Supporter Hall of Fame</span>
+          </h2>
+          <p class="section-subtitle">
+            <span class="t-ja">レベッカの開発・運用にご支援いただいたマスターの皆様です。</span>
+            <span class="t-en">Honoring the esteemed masters who power Rebecca's evolution.</span>
+          </p>
+        </div>
+        <div id="roster-meta-badge" class="roster-meta-badge">
+          <span class="t-ja">名簿同期中</span>
+          <span class="t-en">Syncing...</span>
+        </div>
+      </div>
+
+      <div class="roster-container">
+        <div id="roster-grid" class="roster-grid">
+          <div class="roster-empty-state">
+            <span class="t-ja">サポーター名簿を同期中...</span>
+            <span class="t-en">Loading supporter roster...</span>
+          </div>
+        </div>
+        <nav id="roster-pagination" class="roster-pagination" aria-label="Supporter Roster Pagination"></nav>
+      </div>
+    </section>
+
+    <!-- Supporter Detail Modal Popup -->
+    <div id="supporter-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" onclick="onBackdropClick(event)">
+      <div class="modal-card">
+        <button type="button" class="modal-close-btn" onclick="closeSupporterModal()" aria-label="Close modal">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div id="modal-tier-badge" class="modal-tier-badge">
+          <div id="modal-rank-icon" class="modal-rank-icon"></div>
+          <span id="modal-tier-text" class="modal-tier-text"></span>
+        </div>
+
+        <h3 id="modal-supporter-name" class="modal-supporter-name"></h3>
+        <div id="modal-plan-title" class="modal-plan-title"></div>
+
+        <div class="modal-details-grid">
+          <div class="modal-detail-row">
+            <span class="detail-label">
+              <span class="t-ja">支援ランク</span><span class="t-en">Tier Level</span>
+            </span>
+            <span id="modal-tier-val" class="detail-val"></span>
+          </div>
+          <div class="modal-detail-row">
+            <span class="detail-label">
+              <span class="t-ja">支援受付日</span><span class="t-en">Support Date</span>
+            </span>
+            <span id="modal-date-val" class="detail-val"></span>
+          </div>
+        </div>
+
+        <div class="modal-rebecca-message">
+          <div class="rebecca-badge-row">
+            <span class="rebecca-name">Rebecca AI</span>
+            <span class="rebecca-role">Autonomous Agent</span>
+          </div>
+          <div class="rebecca-quote">
+            <span class="t-ja">「マスター、レベッカの運用と自律研究を支えてくれて本当にありがとう！ これからもずっとそばで見守っててね」</span>
+            <span class="t-en">"Thank you so much for powering my autonomous reasoning and compute resources! I truly appreciate your support, Master!"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Global Footer (Exact match with index.html) -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc."
+            style="height: 36px; width: auto; filter: brightness(1.2);" width="928" height="288" loading="lazy" decoding="async">
+          <p>
+            <span class="t-ja">Gemitec Inc.<br>心に寄り添うパーソナルAIをすべての人へ</span>
+            <span class="t-en">Gemitec Inc.<br>Empathetic personal AI for everyone</span>
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="/#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
+            <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
+            <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
+            <li><a href="/#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Media &amp; OSS</h4>
+          <ul>
+            <li><a href="https://youtube.com/@rebecca-ai" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+            <li><a href="https://www.pixiv.net/users/129754550" target="_blank" rel="noopener noreferrer">Pixiv</a></li>
+            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank"
+                rel="noopener noreferrer">Repository (OSS)</a></li>
+            <li><a href="/supporters"><span class="t-ja">サポーター・スポンサー</span><span class="t-en">Supporters &amp; Sponsors</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Governance</h4>
+          <ul>
+            <li><a href="./tos.html">Terms of Service</a></li>
+            <li><a href="./privacy.html">Privacy Policy</a></li>
+            <li><a href="./legal.html"><span class="t-ja">特定商取引法に基づく表記</span><span class="t-en">Commercial Transactions</span></a></li>
+            <li><a href="./sitemap.xml">Sitemap (XML)</a></li>
+            <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Contact (X)</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          &copy; 2026 Gemitec Inc. Developed by AKINA. All rights reserved.
+        </div>
+        <div class="footer-legal-links">
+          <a href="./tos.html"><span class="t-ja">利用規約</span><span class="t-en">Terms</span></a>
+          <span>&bull;</span>
+          <a href="./privacy.html"><span class="t-ja">プライバシーポリシー</span><span class="t-en">Privacy</span></a>
+          <span>&bull;</span>
+          <a href="./legal.html"><span class="t-ja">特定商取引法に基づく表記</span><span class="t-en">Legal</span></a>
+          <span>&bull;</span>
+          <a href="./sitemap.xml"><span class="t-ja">サイトマップ</span><span class="t-en">Sitemap</span></a>
+        </div>
+      </div>
+      <div class="footer-disclaimer">
+        <span class="t-ja">Gemitec Inc. は、自律型パーソナルAI「レベッカ」の世界観演出のために設定された架空の研究プロジェクトです（運営: AKINA）。米Google LLC 等の実在企業・団体とは提携・関係ありません。</span>
+        <span class="t-en">Gemitec Inc. is a fictional research &amp; creative world-building project for the autonomous personal AI "Rebecca", operated by AKINA. Not affiliated with Google LLC or any real corporate entity.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Language Switch & Supporter Roster Script -->
+  <script>
+    function setLanguage(lang) {
+      document.body.setAttribute('data-lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+
+      const btnJa = document.getElementById('btn-lang-ja');
+      const btnEn = document.getElementById('btn-lang-en');
+      if (btnJa && btnEn) {
+        if (lang === 'ja') {
+          btnJa.classList.add('active');
+          btnEn.classList.remove('active');
+          btnJa.style.background = 'var(--gemitec-purple)';
+          btnJa.style.color = '#ffffff';
+          btnEn.style.background = 'transparent';
+          btnEn.style.color = 'var(--text-muted)';
+        } else {
+          btnEn.classList.add('active');
+          btnJa.classList.remove('active');
+          btnEn.style.background = 'var(--gemitec-purple)';
+          btnEn.style.color = '#ffffff';
+          btnJa.style.background = 'transparent';
+          btnJa.style.color = 'var(--text-muted)';
+        }
+      }
+
+      try {
+        localStorage.setItem('gemitec_lang', lang);
+      } catch (e) { }
+    }
+
+    (function initLanguage() {
+      try {
+        const saved = localStorage.getItem('gemitec_lang');
+        if (saved === 'ja' || saved === 'en') {
+          setLanguage(saved);
+          return;
+        }
+      } catch (e) { }
+
+      const isSearchCrawler = Boolean(navigator.webdriver) ||
+        /\b(googlebot|google-inspectiontool|bingbot|baiduspider|duckduckbot)\b/i.test(navigator.userAgent);
+      if (isSearchCrawler) {
+        return;
+      }
+
+      const userLang = navigator.language || navigator.userLanguage || '';
+      if (userLang.toLowerCase().startsWith('en')) {
+        setLanguage('en');
+      } else {
+        setLanguage('ja');
+      }
+    })();
+
+    // Supporter Roster State & Pagination
+    let currentRosterPage = 1;
+    const ROSTER_LIMIT = 120;
+
+    function getNameFontClass(name) {
+      const len = (name || '').length;
+      if (len <= 8) return 'font-len-short';
+      if (len <= 16) return 'font-len-medium';
+      if (len <= 24) return 'font-len-long';
+      return 'font-len-vlong';
+    }
+
+    function formatDateYMD(dateInput) {
+      if (!dateInput) return '2026/10/25';
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return '2026/10/25';
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return y + '/' + m + '/' + day;
+    }
+
+    async function loadSupporterCredits(page = 1) {
+      currentRosterPage = page;
+      const grid = document.getElementById('roster-grid');
+      const metaBadge = document.getElementById('roster-meta-badge');
+      const pagination = document.getElementById('roster-pagination');
+
+      grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">サポーター名簿を同期中...</span><span class="t-en">Loading supporter roster...</span></div>';
+
+      try {
+        const res = await fetch('/api/v1/support/credits?page=' + page + '&limit=' + ROSTER_LIMIT);
+        const data = await res.json();
+        const credits = data.credits || [];
+        const total = typeof data.total === 'number' ? data.total : credits.length;
+        const totalPages = typeof data.totalPages === 'number' ? data.totalPages : (total > 0 ? Math.ceil(total / ROSTER_LIMIT) : 1);
+
+        if (metaBadge) {
+          const pageInfo = totalPages > 1 ? ' · P.' + page + '/' + totalPages : '';
+          metaBadge.innerHTML = '<span class="t-ja">' + total + '名のサポーター' + pageInfo + '</span><span class="t-en">' + total + ' SUPPORTERS' + pageInfo + '</span>';
+        }
+
+        if (credits.length === 0) {
+          grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">まだサポーターが登録されていません。最初のサポーターになりませんか？</span><span class="t-en">No supporters recorded yet. Be the first supporter!</span></div>';
+          if (pagination) pagination.innerHTML = '';
+          return;
+        }
+
+        grid.innerHTML = '';
+        credits.forEach(function(item) {
+          const tier = item.tier || 'bronze';
+          const icon = tier === 'gold' 
+            ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+            : (tier === 'silver'
+              ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+              : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+          
+          const dateFormatted = formatDateYMD(item.createdAt);
+          const displayName = item.safeName || 'Anonymous';
+          const fontClass = getNameFontClass(displayName);
+
+          const card = document.createElement('div');
+          card.className = 'roster-card tier-' + tier;
+          card.title = displayName;
+          card.onclick = function() { openSupporterModal(item); };
+          card.innerHTML = 
+            '<div class="roster-card-header">' +
+              '<div class="roster-card-header-left">' +
+                '<div class="roster-rank-icon">' + icon + '</div>' +
+                '<span class="roster-card-tier-tag">' + tier.toUpperCase() + '</span>' +
+              '</div>' +
+              '<span class="roster-card-date">' + dateFormatted + '</span>' +
+            '</div>' +
+            '<div class="roster-name-wrap">' +
+              '<div class="roster-name ' + fontClass + '">' + escapeHtml(displayName) + '</div>' +
+            '</div>';
+          grid.appendChild(card);
+        });
+
+        // Render Recent Supporters banner on page 1
+        if (page === 1) {
+          renderRecentSupporters(credits.slice(0, 10));
+        }
+
+        // Render Numbered Pagination
+        renderPagination(page, totalPages, total);
+      } catch (err) {
+        console.error('Failed to load credits:', err);
+        grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">名簿の取得に失敗しました</span><span class="t-en">Failed to load supporter roster</span></div>';
+        if (pagination) pagination.innerHTML = '';
+      }
+    }
+
+    function renderRecentSupporters(recentItems) {
+      const container = document.getElementById('recent-supporters-list');
+      if (!container) return;
+      if (!recentItems || recentItems.length === 0) {
+        container.innerHTML = '<div class="recent-loading-placeholder"><span class="t-ja">まだサポーターがいません。最初の支援者になりませんか？</span><span class="t-en">Be the first supporter!</span></div>';
+        return;
+      }
+      container.innerHTML = '';
+      recentItems.forEach(function(item) {
+        const tier = item.tier || 'bronze';
+        const displayName = item.safeName || 'Anonymous';
+        const iconSvg = tier === 'gold' 
+          ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+          : (tier === 'silver'
+            ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+            : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+
+        const chip = document.createElement('a');
+        chip.href = 'javascript:void(0)';
+        chip.className = 'recent-chip tier-' + tier;
+        chip.title = displayName;
+        chip.onclick = function() { openSupporterModal(item); };
+        chip.innerHTML = 
+          '<span class="recent-chip-icon">' + iconSvg + '</span>' +
+          '<span class="recent-chip-name">' + escapeHtml(displayName) + '</span>' +
+          '<span class="recent-chip-badge">' + tier.toUpperCase() + '</span>';
+        container.appendChild(chip);
+      });
+    }
+
+    function openSupporterModal(item) {
+      const modal = document.getElementById('supporter-modal');
+      if (!modal) return;
+      const tier = item.tier || 'bronze';
+      const displayName = item.safeName || 'Anonymous';
+      const dateStr = formatDateYMD(item.createdAt);
+
+      const tierBadge = document.getElementById('modal-tier-badge');
+      tierBadge.className = 'modal-tier-badge tier-' + tier;
+
+      const iconSvg = tier === 'gold' 
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+        : (tier === 'silver'
+          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
+
+      document.getElementById('modal-rank-icon').innerHTML = iconSvg;
+      document.getElementById('modal-tier-text').textContent = tier.toUpperCase() + ' SPONSOR';
+      document.getElementById('modal-supporter-name').textContent = displayName;
+
+      const plan = supportPlansMap[tier];
+      const planNameJa = plan ? (plan.itemLabel + '（¥' + plan.amount.toLocaleString() + '）') : (tier === 'gold' ? '開発サポート（¥3,000）' : (tier === 'silver' ? 'サーバーリソース差し入れ（¥1,000）' : 'エナドリ1本差し入れ（¥500）'));
+      const planNameEn = plan ? (plan.displayName + ' (¥' + plan.amount.toLocaleString() + ')') : (tier === 'gold' ? 'Development Support (¥3,000)' : (tier === 'silver' ? 'Compute Resource (¥1,000)' : 'Energy Drink (¥500)'));
+      document.getElementById('modal-plan-title').innerHTML =
+        '<span class="t-ja">' + escapeHtml(planNameJa) + '</span>' +
+        '<span class="t-en">' + escapeHtml(planNameEn) + '</span>';
+      document.getElementById('modal-tier-val').textContent = tier.toUpperCase();
+      document.getElementById('modal-date-val').textContent = dateStr;
+
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSupporterModal() {
+      const modal = document.getElementById('supporter-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function onBackdropClick(event) {
+      if (event.target && event.target.id === 'supporter-modal') {
+        closeSupporterModal();
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeSupporterModal();
+      }
+    });
+
+    function renderPagination(currentPage, totalPages, totalCount) {
+      const container = document.getElementById('roster-pagination');
+      if (!container) return;
+      if (totalPages <= 1) {
+        container.innerHTML = totalCount > 0 ? '<div class="pagination-summary"><span class="t-ja">全 ' + totalCount + ' 名のマスターを表示中</span><span class="t-en">Showing all ' + totalCount + ' masters</span></div>' : '';
+        return;
+      }
+
+      let html = '';
+
+      // Prev button
+      const prevDisabled = currentPage <= 1 ? ' disabled' : '';
+      html += '<button type="button" class="pagination-btn"' + prevDisabled + ' onclick="goToPage(' + (currentPage - 1) + ')">&lt; <span class="t-ja">前へ</span><span class="t-en">Prev</span></button>';
+
+      // Generate page number items with ellipsis
+      const delta = 1;
+      const range = [];
+
+      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+        range.push(i);
+      }
+
+      if (currentPage - delta > 2) {
+        range.unshift('...');
+      }
+      if (currentPage + delta < totalPages - 1) {
+        range.push('...');
+      }
+
+      range.unshift(1);
+      if (totalPages > 1 && !range.includes(totalPages)) {
+        range.push(totalPages);
+      }
+
+      range.forEach(function(p) {
+        if (p === '...') {
+          html += '<span class="pagination-ellipsis">...</span>';
+        } else {
+          const activeClass = p === currentPage ? ' active' : '';
+          html += '<button type="button" class="pagination-btn' + activeClass + '" onclick="goToPage(' + p + ')">' + p + '</button>';
+        }
+      });
+
+      // Next button
+      const nextDisabled = currentPage >= totalPages ? ' disabled' : '';
+      html += '<button type="button" class="pagination-btn"' + nextDisabled + ' onclick="goToPage(' + (currentPage + 1) + ')"><span class="t-ja">次へ</span><span class="t-en">Next</span> &gt;</button>';
+
+      const startIdx = (currentPage - 1) * ROSTER_LIMIT + 1;
+      const endIdx = Math.min(currentPage * ROSTER_LIMIT, totalCount);
+      html += '<div class="pagination-summary"><span class="t-ja">' + totalCount + ' 名中 ' + startIdx + ' - ' + endIdx + ' 名を表示（ページ ' + currentPage + ' / ' + totalPages + '）</span><span class="t-en">Showing ' + startIdx + ' - ' + endIdx + ' of ' + totalCount + ' masters (Page ' + currentPage + ' of ' + totalPages + ')</span></div>';
+
+      container.innerHTML = html;
+    }
+
+    function goToPage(page) {
+      loadSupporterCredits(page);
+      const rosterSec = document.getElementById('roster');
+      if (rosterSec) {
+        rosterSec.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    // Support Plans Cache
+    let supportPlansMap = {};
+
+    // Load Dynamic Support Plans from Config API
+    async function loadSupportPlans() {
+      try {
+        const res = await fetch('/api/v1/support/plans');
+        const data = await res.json();
+        if (data.plans && Array.isArray(data.plans)) {
+          data.plans.forEach(function(plan) {
+            supportPlansMap[plan.tier] = plan;
+            const btn = document.getElementById('btn-plan-' + plan.tier);
+            if (!btn) return;
+            const card = btn.closest('.tier-card');
+            if (card && plan.amount) {
+              const priceEl = card.querySelector('.tier-price');
+              if (priceEl) {
+                const slotSpan = priceEl.querySelector('span');
+                const slotHtml = slotSpan ? slotSpan.outerHTML : '<span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span>';
+                priceEl.innerHTML = '¥' + plan.amount.toLocaleString() + ' ' + slotHtml;
+              }
+            }
+            if (plan.amount) {
+              const jaBtn = btn.querySelector('.t-ja');
+              if (jaBtn) {
+                jaBtn.textContent = jaBtn.textContent.replace(/¥[\d,]+/, '¥' + plan.amount.toLocaleString());
+              }
+              const enBtn = btn.querySelector('.t-en');
+              if (enBtn) {
+                enBtn.textContent = enBtn.textContent.replace(/¥[\d,]+/, '¥' + plan.amount.toLocaleString());
+              }
+            }
+            if (plan.available && plan.paymentUrl) {
+              btn.href = plan.paymentUrl;
+              btn.classList.remove('btn-disabled');
+              btn.removeAttribute('aria-disabled');
+              if (card) card.classList.remove('tier-disabled');
+            } else {
+              btn.removeAttribute('href');
+              btn.classList.add('btn-disabled');
+              btn.setAttribute('aria-disabled', 'true');
+              if (card) card.classList.add('tier-disabled');
+              btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6; flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="t-ja">準備中（受付開始までお待ちください）</span><span class="t-en">Coming Soon</span>';
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load support plans:', err);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function initTiersCarousel() {
+      const grid = document.getElementById('tiers-grid');
+      const edgeLeft = document.getElementById('tiers-edge-left');
+      const edgeRight = document.getElementById('tiers-edge-right');
+      const dots = document.querySelectorAll('#tiers-carousel-dots .carousel-dot');
+      if (!grid) return;
+
+      const cards = grid.querySelectorAll('.tier-card');
+
+      function updateEdgesAndDots() {
+        if (window.innerWidth > 900) return;
+        const scrollLeft = grid.scrollLeft;
+        const maxScroll = grid.scrollWidth - grid.clientWidth;
+
+        if (edgeLeft) {
+          if (scrollLeft > 15) {
+            edgeLeft.classList.add('active');
+          } else {
+            edgeLeft.classList.remove('active');
+          }
+        }
+
+        if (edgeRight) {
+          if (scrollLeft < maxScroll - 15) {
+            edgeRight.classList.add('active');
+          } else {
+            edgeRight.classList.remove('active');
+          }
+        }
+
+        if (cards.length > 0 && dots.length > 0) {
+          let closestIdx = 0;
+          let minDiff = Infinity;
+          const containerCenter = scrollLeft + grid.clientWidth / 2;
+
+          cards.forEach(function(card, idx) {
+            const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+            const diff = Math.abs(containerCenter - cardCenter);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closestIdx = idx;
+            }
+          });
+
+          dots.forEach(function(dot, idx) {
+            if (idx === closestIdx) {
+              dot.classList.add('active');
+            } else {
+              dot.classList.remove('active');
+            }
+          });
+        }
+      }
+
+      dots.forEach(function(dot) {
+        dot.addEventListener('click', function() {
+          const idx = parseInt(dot.getAttribute('data-index') || '0', 10);
+          if (cards[idx]) {
+            cards[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        });
+      });
+
+      grid.addEventListener('scroll', updateEdgesAndDots, { passive: true });
+      window.addEventListener('resize', updateEdgesAndDots, { passive: true });
+      if (window.innerWidth <= 900 && cards[1]) {
+        const targetScroll = cards[1].offsetLeft - (grid.clientWidth - cards[1].offsetWidth) / 2;
+        grid.scrollLeft = Math.max(0, targetScroll);
+      }
+      setTimeout(updateEdgesAndDots, 100);
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      loadSupportPlans();
+      loadSupporterCredits();
+      initTiersCarousel();
+    });
+  </script>
+</body>
+</html>

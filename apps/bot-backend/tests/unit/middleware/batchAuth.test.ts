@@ -42,12 +42,10 @@ describe('batchAuth Middleware', () => {
         expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('should reject access when OIDC token is invalid even if shared secret is correct (strict OIDC mode)', async () => {
-        // Downgrade-attack scenario: attacker sends the correct shared secret but no valid OIDC
-        // token. When an audience (WORKER_URL) is configured, the request must be rejected.
+    it('should reject access when both OIDC token and shared secret are invalid', async () => {
         mockReq.headers = {
             authorization: 'Bearer invalid_token',
-            'x-batch-secret': 'test_secret'
+            'x-batch-secret': 'wrong_secret'
         };
 
         const mockVerifyIdToken = jest.fn().mockRejectedValue(new Error('Invalid token'));
@@ -63,6 +61,17 @@ describe('batchAuth Middleware', () => {
     it('should allow access via shared secret when no audience is configured (secret-only mode)', async () => {
         // Local development or scheduler jobs not yet provisioned with OIDC.
         config.gcp.workerUrl = undefined;
+        mockReq.headers = { 'x-batch-secret': 'test_secret' };
+
+        await batchAuth(mockReq as Request, mockRes as Response, nextFunction);
+
+        expect(nextFunction).toHaveBeenCalled();
+        expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
+    it('should allow access via shared secret when audience is configured but no Bearer token is provided (internal server-to-server mode)', async () => {
+        // Internal BFF-to-worker dispatch using pre-shared secret without Bearer token
+        config.gcp.workerUrl = 'https://test-worker.url';
         mockReq.headers = { 'x-batch-secret': 'test_secret' };
 
         await batchAuth(mockReq as Request, mockRes as Response, nextFunction);

@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>特定商取引法に基づく表記 / Legal Notice - Rebecca AI</title>
+  <meta name="title" content="特定商取引法に基づく表記 / Legal Notice - Rebecca AI">
+  <meta name="description" content="Rebecca AI プロジェクトにおける特定商取引に関する法律に基づく表記です。">
+  <!-- Search engine exclusion as requested -->
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="apple-touch-icon" href="assets/favicon.png">
+
+  <!-- Google Fonts: Inter, Noto Sans JP, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
+    media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap">
+  </noscript>
+
+  <style>
+    :root {
+      --bg-base: #07080c;
+      --bg-surface: #0e1017;
+      --bg-surface-elevated: #151822;
+
+      --gemitec-purple: #8b5cf6;
+      --gemitec-purple-light: #a78bfa;
+      --gemitec-purple-dark: #6d28d9;
+      --gemitec-purple-glow: rgba(139, 92, 246, 0.28);
+
+      --accent-pink: #ec4899;
+
+      --text-main: #ffffff;
+      --text-secondary: #d1d5db;
+      --text-muted: #9ca3af;
+
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-purple: rgba(139, 92, 246, 0.3);
+      --border-purple-hover: rgba(167, 139, 250, 0.6);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+
+      --max-width: 1040px;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* Bilingual Switching Rules */
+    body[data-lang="ja"] .t-en,
+    body[data-lang="ja"] .block-en {
+      display: none !important;
+    }
+
+    body[data-lang="en"] .t-ja,
+    body[data-lang="en"] .block-ja {
+      display: none !important;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Top Grid Pattern Overlay */
+    .grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      top: -150px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 400px;
+      background: radial-gradient(circle, var(--gemitec-purple-glow) 0%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header matching index.html / supporters.html */
+    header {
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(7, 8, 12, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      height: 38px;
+      width: auto;
+      filter: brightness(1.2);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #ffffff;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .lang-switcher {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      padding: 2px;
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+    }
+
+    body[data-lang="ja"] #btn-lang-ja,
+    body[data-lang="en"] #btn-lang-en {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-purple {
+      background: var(--gemitec-purple);
+      color: #ffffff;
+      box-shadow: 0 0 16px var(--gemitec-purple-glow);
+    }
+
+    .btn-purple:hover {
+      background: var(--gemitec-purple-light);
+      transform: translateY(-1px);
+    }
+
+    .breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .breadcrumb a {
+      color: var(--gemitec-purple-light);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+      color: #ffffff;
+    }
+
+    /* Page Hero */
+    .page-hero {
+      padding: 56px 0 36px;
+      text-align: left;
+    }
+
+    .corp-tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gemitec-purple-light);
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 5px 14px;
+      border-radius: var(--radius-full);
+      margin-bottom: 16px;
+    }
+
+    .status-dot-green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .page-title {
+      font-size: clamp(28px, 4.5vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: 14px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #ffffff 30%, var(--gemitec-purple-light) 75%, var(--accent-pink) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 720px;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    /* Tokushoho Card & Table */
+    .legal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 36px 40px;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .tokushoho-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .tokushoho-table tr {
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .tokushoho-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .tokushoho-table th {
+      width: 28%;
+      padding: 18px 20px 18px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    .tokushoho-table td {
+      width: 72%;
+      padding: 18px 0 18px 20px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      vertical-align: top;
+    }
+
+    /* Footer matching index.html / supporters.html */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #050608;
+      padding: 60px 0 36px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand p {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-muted);
+      margin-top: 14px;
+      max-width: 320px;
+    }
+
+    .footer-col h4 {
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-main);
+      margin-bottom: 16px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-col a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s ease;
+    }
+
+    .footer-col a:hover {
+      color: var(--gemitec-purple-light);
+    }
+
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-legal-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-legal-links a {
+      white-space: nowrap;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .footer-legal-links > span {
+      color: rgba(255, 255, 255, 0.25);
+      user-select: none;
+    }
+
+    @media (max-width: 640px) {
+      .footer-legal-links {
+        gap: 8px 16px;
+      }
+
+      .footer-legal-links > span {
+        display: none;
+      }
+    }
+
+    .footer-legal-links a:hover {
+      color: #ffffff;
+    }
+
+    .footer-disclaimer {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: #64748b;
+    }
+
+    @media (max-width: 900px) {
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .tokushoho-table th,
+      .tokushoho-table td {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+      }
+
+      .tokushoho-table th {
+        padding-top: 14px;
+        padding-bottom: 4px;
+      }
+
+      .tokushoho-table tr {
+        display: block;
+        padding-bottom: 12px;
+      }
+
+      .legal-card {
+        padding: 24px 20px;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 26px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 14px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
+<body data-lang="ja">
+  <div class="grid-bg"></div>
+  <div class="ambient-glow"></div>
+
+  <!-- Global Header -->
+  <header>
+    <div class="container">
+      <div class="nav-inner">
+        <a href="/" class="brand-area">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc." class="brand-logo" width="928" height="288">
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="/#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
+          <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
+          <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
+          <li><a href="/#gallery"><span class="t-ja">フォト</span><span class="t-en">Gallery</span></a></li>
+          <li><a href="/#opensource"><span class="t-ja">技術公開</span><span class="t-en">Open Source</span></a></li>
+          <li><a href="/supporters"><span class="t-ja">サポーター</span><span class="t-en">Supporters</span></a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <div class="lang-switcher">
+            <button class="lang-btn active" id="btn-lang-ja" onclick="setLanguage('ja')">JA</button>
+            <button class="lang-btn" id="btn-lang-en" onclick="setLanguage('en')">EN</button>
+          </div>
+
+          <a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer" class="btn btn-purple">
+            <span class="t-ja">Xで話しかける</span>
+            <span class="t-en">Talk on X</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <section class="page-hero">
+      <div class="breadcrumb">
+        <a href="/">HOME</a>
+        <span>/</span>
+        <span>GOVERNANCE</span>
+        <span>/</span>
+        <span style="color: var(--text-main);">COMMERCIAL TRANSACTIONS</span>
+      </div>
+      <div class="corp-tagline">
+        <span class="status-dot-green"></span>
+        <span class="t-ja">GEMITEC INC. &bull; 法的通知</span>
+        <span class="t-en">COMMERCIAL DISCLOSURE</span>
+      </div>
+      <h1 class="page-title">
+        <span class="t-ja">特定商取引法に<span class="gradient-text">基づく表記</span></span>
+        <span class="t-en">Act on Specified Commercial <span class="gradient-text">Transactions</span></span>
+      </h1>
+      <p class="page-desc">
+        <span class="t-ja">特定商取引に関する法律（特定商取引法）第11条に基づき、Rebecca AI 公式サポータープログラムおよびデジタルリワード提供にかかる事業者の取引条件を表示しています。</span>
+        <span class="t-en">Information published pursuant to Article 11 of Japan's Act on Specified Commercial Transactions regarding the Rebecca AI Official Supporter Program and digital rewards delivery.</span>
+      </p>
+    </section>
+
+    <div class="legal-card">
+      <table class="tokushoho-table">
+        <tbody>
+          <tr>
+            <th>
+              <span class="t-ja">販売業者（運営者）</span>
+              <span class="t-en">Seller / Operator</span>
+            </th>
+            <td>
+              <span class="t-ja">Rebecca AI Project</span>
+              <span class="t-en">Rebecca AI Project</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">代表責任者</span>
+              <span class="t-en">Representative</span>
+            </th>
+            <td>
+              <span class="t-ja">請求があったら遅滞なく開示します</span>
+              <span class="t-en">Disclosed without delay upon request</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">所在地</span>
+              <span class="t-en">Address</span>
+            </th>
+            <td>
+              <span class="t-ja">請求があったら遅滞なく開示します</span>
+              <span class="t-en">Disclosed without delay upon request</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">電話番号</span>
+              <span class="t-en">Phone Number</span>
+            </th>
+            <td>
+              <span class="t-ja">請求があったら遅滞なく開示します</span>
+              <span class="t-en">Disclosed without delay upon request</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">メールアドレス</span>
+              <span class="t-en">Email Address</span>
+            </th>
+            <td>
+              <span id="contact-email-wrapper">
+                <span id="contact-email-text" style="display:none; font-family: var(--font-mono); color: #ffffff;"></span>
+                <span id="contact-email-note" style="display:none; font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                  <span class="t-ja">※セキュリティ保護および自動収集プログラム（Bot）対策のため、メールアドレスの「@」を「[at mark]」と表記しております。</span>
+                  <span class="t-en">* For security and automated spam protection, "@" is displayed as "[at mark]".</span>
+                </span>
+                <span id="contact-email-fallback">
+                  <span class="t-ja">お問い合わせ窓口（公式X @rebecca_ai_gal）</span>
+                  <span class="t-en">Contact: Official X (@rebecca_ai_gal)</span>
+                </span>
+              </span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">販売価格</span>
+              <span class="t-en">Price</span>
+            </th>
+            <td>
+              <span class="t-ja">各決済画面に表示された金額（税込）</span>
+
+
+
+              <span class="t-en">Prices displayed on each checkout screen (tax included)</span>
+
+
+
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">商品代金以外の必要料金</span>
+              <span class="t-en">Additional Charges</span>
+            </th>
+            <td>
+              <span class="t-ja">インターネット接続料金等の通信費用</span>
+              <span class="t-en">Internet and telecommunication fees</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">引き渡し時期</span>
+              <span class="t-en">Delivery Timing</span>
+            </th>
+            <td>
+              <span class="t-ja">決済完了後、即時（専用ダウンロードページへの遷移・提供）<br>
+                <small style="color: var(--text-muted); font-size: 11.5px; line-height: 1.5; display: inline-block; margin-top: 4px;">※ダウンロードリンクの有効期限は決済完了から30分間です。有効期限経過後、またはブラウザを閉じる・ページ遷移等でURLを紛失した場合は再発行・再提供できません。必ず決済完了直後に端末への保存を完了してください。</small></span>
+              <span class="t-en">Immediate upon payment completion (via dedicated download page).<br>
+                <small style="color: var(--text-muted); font-size: 11.5px; line-height: 1.5; display: inline-block; margin-top: 4px;">Note: The download page and link are valid for 30 minutes after payment completion. Once expired, or if the page is closed/navigated away, the link cannot be reissued. Please download and save the file to your device immediately.</small></span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">お支払い方法</span>
+              <span class="t-en">Payment Methods</span>
+            </th>
+            <td>
+              <span class="t-ja">クレジットカード決済、Apple Pay、Google Pay（Stripe経由）</span>
+              <span class="t-en">Credit Card, Apple Pay, Google Pay (via Stripe)</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">返品・キャンセル</span>
+              <span class="t-en">Returns &amp; Cancellations</span>
+            </th>
+            <td>
+              <span class="t-ja">デジタルコンテンツの性質上、決済完了後の返品・返金・キャンセルはお受けしておりません。</span>
+              <span class="t-en">Due to the nature of digital contents, all sales are final and non-refundable.</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th>
+              <span class="t-ja">動作環境</span>
+              <span class="t-en">System Requirements</span>
+            </th>
+            <td>
+              <span class="t-ja">インターネット接続および画像ファイル（PNG/JPEG等）を閲覧・保存可能な端末環境</span>
+              <span class="t-en">Internet connection and device environment capable of viewing and saving digital media</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <img src="assets/gemitec_logo.svg" alt="Gemitec Inc."
+            style="height: 36px; width: auto; filter: brightness(1.2);" width="928" height="288" loading="lazy" decoding="async">
+          <p>
+            <span class="t-ja">Gemitec Inc.<br>心に寄り添うパーソナルAIをすべての人へ</span>
+            <span class="t-en">Gemitec Inc.<br>Empathetic personal AI for everyone</span>
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="/#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
+            <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
+            <li><a href="/#profile"><span class="t-ja">レベッカ</span><span class="t-en">Rebecca</span></a></li>
+            <li><a href="/#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Media &amp; OSS</h4>
+          <ul>
+            <li><a href="https://youtube.com/@rebecca-ai" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+            <li><a href="https://www.pixiv.net/users/129754550" target="_blank" rel="noopener noreferrer">Pixiv</a></li>
+            <li><a href="https://github.com/akina-se/rebecca-ai" target="_blank" rel="noopener noreferrer">Repository (OSS)</a></li>
+            <li><a href="/supporters"><span class="t-ja">サポーター・スポンサー</span><span class="t-en">Supporters &amp; Sponsors</span></a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Governance</h4>
+          <ul>
+            <li><a href="./tos.html">Terms of Service</a></li>
+            <li><a href="./privacy.html">Privacy Policy</a></li>
+            <li><a href="./legal.html"><span class="t-ja">特定商取引法に基づく表記</span><span class="t-en">Commercial Transactions</span></a></li>
+            <li><a href="./sitemap.xml">Sitemap (XML)</a></li>
+            <li><a href="https://x.com/rebecca_ai_gal" target="_blank" rel="noopener noreferrer">Contact (X)</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          &copy; 2026 Gemitec Inc. Developed by AKINA. All rights reserved.
+        </div>
+        <div class="footer-legal-links">
+          <a href="./tos.html"><span class="t-ja">利用規約</span><span class="t-en">Terms</span></a>
+          <span>&bull;</span>
+          <a href="./privacy.html"><span class="t-ja">プライバシーポリシー</span><span class="t-en">Privacy</span></a>
+          <span>&bull;</span>
+          <a href="./legal.html"><span class="t-ja">特定商取引法に基づく表記</span><span class="t-en">Legal</span></a>
+          <span>&bull;</span>
+          <a href="./sitemap.xml"><span class="t-ja">サイトマップ</span><span class="t-en">Sitemap</span></a>
+        </div>
+      </div>
+      <div class="footer-disclaimer">
+        <span class="t-ja">Gemitec Inc. は、自律型パーソナルAI「レベッカ」の世界観演出のために設定された架空の研究プロジェクトです（運営: AKINA）。米Google LLC 等の実在企業・団体とは提携・関係ありません。</span>
+        <span class="t-en">Gemitec Inc. is a fictional research &amp; creative world-building project for the autonomous personal AI "Rebecca", operated by AKINA. Not affiliated with Google LLC or any real corporate entity.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function setLanguage(lang) {
+      document.body.setAttribute('data-lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+
+      const btnJa = document.getElementById('btn-lang-ja');
+      const btnEn = document.getElementById('btn-lang-en');
+      if (btnJa && btnEn) {
+        if (lang === 'ja') {
+          btnJa.classList.add('active');
+          btnEn.classList.remove('active');
+        } else {
+          btnEn.classList.add('active');
+          btnJa.classList.remove('active');
+        }
+      }
+      try {
+        localStorage.setItem('gemitec_lang', lang);
+        localStorage.setItem('rebecca_preferred_lang', lang);
+      } catch (e) {
+        // localStorage unavailable in private mode
+      }
+    }
+
+    // Dynamic fetch for configured Support Contact Email
+    async function loadDynamicConfig() {
+      try {
+        const res = await fetch('/api/v1/support/plans');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.contactEmail) {
+            const emailText = document.getElementById('contact-email-text');
+            const emailNote = document.getElementById('contact-email-note');
+            const emailFallback = document.getElementById('contact-email-fallback');
+            if (emailText) {
+              const safeEmail = data.contactEmail.replace(/@/g, ' [at mark] ');
+              emailText.textContent = safeEmail;
+              emailText.style.display = 'inline';
+            }
+            if (emailNote) emailNote.style.display = 'block';
+            if (emailFallback) emailFallback.style.display = 'none';
+          }
+        }
+      } catch (err) {}
+    }
+
+    // Initialize Language from preference
+    (function initLanguage() {
+      try {
+        const savedLang = localStorage.getItem('gemitec_lang') || localStorage.getItem('rebecca_preferred_lang');
+        if (savedLang === 'en' || savedLang === 'ja') {
+          setLanguage(savedLang);
+        }
+      } catch (e) {}
+      loadDynamicConfig();
+    })();
+  </script>
+</body>
+
+</html>
