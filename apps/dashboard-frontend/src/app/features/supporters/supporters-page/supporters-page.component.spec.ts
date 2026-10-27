@@ -78,6 +78,7 @@ describe('SupportersPageComponent', () => {
       uploadReward: jest.fn().mockReturnValue(of(mockReward)),
       updateReward: jest.fn().mockReturnValue(of({ ...mockReward, isActive: false })),
       deleteReward: jest.fn().mockReturnValue(of({ success: true })),
+      deleteTransaction: jest.fn().mockReturnValue(of(undefined)),
       getRewardImageBlob: jest.fn().mockReturnValue(of(new Blob(['mock-data'], { type: 'image/png' }))),
       getPlans: jest.fn().mockReturnValue(of({ plans: [
         { tier: 'bronze', amount: 500, currency: 'jpy', itemLabel: 'Energy Drink', displayName: 'Bronze Supporter' },
@@ -398,17 +399,74 @@ describe('SupportersPageComponent', () => {
     expect(component.isRewardsModalOpen()).toBe(false);
   });
 
-  it('should open and close reward illustration lightbox with master image URL', () => {
+  it('should open and close reward illustration lightbox with blob URL and retain on error', () => {
+    const originalCreateObjectURL = URL.createObjectURL;
+    const originalRevokeObjectURL = URL.revokeObjectURL;
+    URL.createObjectURL = jest.fn().mockReturnValue('blob:mock-reward-url');
+    URL.revokeObjectURL = jest.fn();
+
     expect(component.isLightboxOpen()).toBe(false);
     expect(component.lightboxImageUrl()).toBe('');
 
+    // Open lightbox - loads master blob
     component.openRewardLightbox(mockReward);
     expect(component.isLightboxOpen()).toBe(true);
-    expect(component.lightboxImageUrl()).toBe('/api/v1/supporters/rewards/r_1/image?type=master');
+    expect(mockRepo.getRewardImageBlob).toHaveBeenCalledWith('r_1', 'master');
+    expect(component.lightboxImageUrl()).toBe('blob:mock-reward-url');
 
+    // Close lightbox
     component.closeRewardLightbox();
     expect(component.isLightboxOpen()).toBe(false);
     expect(component.lightboxImageUrl()).toBe('');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock-reward-url');
+
+    // Error case: should NOT close modal, keeps open
+    mockRepo.getRewardImageBlob.mockReturnValueOnce(throwError(() => new Error('Image fetch fail')));
+    component.openRewardLightbox(mockReward);
+    expect(component.isLightboxOpen()).toBe(true);
+
+    URL.createObjectURL = originalCreateObjectURL;
+    URL.revokeObjectURL = originalRevokeObjectURL;
+  });
+
+  it('should handle transaction deletion dialog flow and confirmation input validation', () => {
+    // Open dialog via selectedTx
+    component.selectedTx.set(mockTransaction);
+    component.openDeleteDialog();
+    expect(component.isDeleteDialogOpen()).toBe(true);
+    expect(component.transactionToDelete()).toEqual(mockTransaction);
+    expect(component.deleteConfirmInput()).toBe('');
+
+    // Input change
+    component.onDeleteInputChange({ target: { value: 'del' } } as any);
+    expect(component.deleteConfirmInput()).toBe('del');
+
+    // Attempt confirm with incorrect word -> no-op
+    component.confirmDeleteTransaction();
+    expect(mockRepo.deleteTransaction).not.toHaveBeenCalled();
+
+    // Input correct 'delete' word
+    component.onDeleteInputChange({ target: { value: 'delete' } } as any);
+    expect(component.deleteConfirmInput()).toBe('delete');
+
+    // Confirm delete success
+    component.confirmDeleteTransaction();
+    expect(mockRepo.deleteTransaction).toHaveBeenCalledWith(mockTransaction.id);
+    expect(mockToast.show).toHaveBeenCalledWith('トランザクションを削除しました', 'success');
+    expect(component.isDeleteDialogOpen()).toBe(false);
+    expect(component.selectedTx()).toBeNull();
+
+    // Confirm delete error
+    mockRepo.deleteTransaction.mockReturnValueOnce(throwError(() => new Error('Delete error')));
+    component.openDeleteDialog(mockTransaction);
+    component.onDeleteInputChange({ target: { value: 'DELETE' } } as any);
+    component.confirmDeleteTransaction();
+    expect(mockToast.show).toHaveBeenCalledWith('トランザクションの削除に失敗しました', 'error');
+
+    // Close dialog
+    component.closeDeleteDialog();
+    expect(component.isDeleteDialogOpen()).toBe(false);
+    expect(component.transactionToDelete()).toBeNull();
   });
 
   it('should clean up object URLs on ngOnDestroy', () => {

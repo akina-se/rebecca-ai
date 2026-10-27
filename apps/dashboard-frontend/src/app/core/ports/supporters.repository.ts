@@ -25,6 +25,9 @@ export interface SupportersRepository {
   /** Updates transaction fields (producer overrides: safeName, VIP tier, isBanned, creditVisibility) */
   updateTransaction(id: string, dto: UpdateSupportTransactionDto): Observable<SupportTransactionDoc>;
 
+  /** Deletes a support transaction document */
+  deleteTransaction(id: string): Observable<void>;
+
   /** Retries appreciation post generation for a failed transaction */
   retryTransaction(id: string): Observable<{ success: boolean; message: string; transaction: SupportTransactionDoc }>;
 

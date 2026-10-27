@@ -98,10 +98,18 @@ export class SupportersPageComponent implements OnInit, OnDestroy {
   readonly isUploadingReward = signal<boolean>(false);
 
   // Fullscreen Illustration Lightbox State
+  // Fullscreen Illustration Lightbox State
   readonly isLightboxOpen = signal<boolean>(false);
   readonly lightboxImageUrl = signal<string>('');
   readonly rewardThumbnailUrls = signal<Record<string, string>>({});
   private thumbnailUrlsToRevoke: string[] = [];
+  private lightboxBlobUrl: string | null = null;
+
+  // Transaction Deletion Dialog State
+  readonly isDeleteDialogOpen = signal<boolean>(false);
+  readonly transactionToDelete = signal<SupportTransactionDoc | null>(null);
+  readonly deleteConfirmInput = signal<string>('');
+  readonly isDeletingTransaction = signal<boolean>(false);
 
   ngOnInit(): void {
     this.loadPlans();
@@ -116,6 +124,10 @@ export class SupportersPageComponent implements OnInit, OnDestroy {
   private revokeAllObjectUrls(): void {
     this.thumbnailUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
     this.thumbnailUrlsToRevoke = [];
+    if (this.lightboxBlobUrl) {
+      URL.revokeObjectURL(this.lightboxBlobUrl);
+      this.lightboxBlobUrl = null;
+    }
   }
 
   loadPlans(): void {
@@ -538,12 +550,80 @@ export class SupportersPageComponent implements OnInit, OnDestroy {
   }
 
   openRewardLightbox(reward: RewardImageDoc): void {
-    this.lightboxImageUrl.set(`/api/v1/supporters/rewards/${reward.id}/image?type=master`);
+    if (this.lightboxBlobUrl) {
+      URL.revokeObjectURL(this.lightboxBlobUrl);
+      this.lightboxBlobUrl = null;
+    }
+
+    // Set immediate thumbnail preview if available
+    const thumbnailPreview = this.rewardThumbnailUrls()[reward.id] || '';
+    this.lightboxImageUrl.set(thumbnailPreview);
     this.isLightboxOpen.set(true);
+
+    this.repo.getRewardImageBlob(reward.id, 'master').subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        this.lightboxBlobUrl = url;
+        this.lightboxImageUrl.set(url);
+      },
+      error: (err) => {
+        console.warn('Failed to load master reward image, retaining preview/placeholder:', err);
+        // Do NOT close the modal on error! Keep open and let Lightbox display placeholder/thumbnail
+        if (!this.lightboxImageUrl()) {
+          this.toast.show(this.translationService.t('supporters.toast_fetch_error'), 'error');
+        }
+      },
+    });
   }
 
   closeRewardLightbox(): void {
     this.isLightboxOpen.set(false);
     this.lightboxImageUrl.set('');
+    if (this.lightboxBlobUrl) {
+      URL.revokeObjectURL(this.lightboxBlobUrl);
+      this.lightboxBlobUrl = null;
+    }
+  }
+
+  openDeleteDialog(tx?: SupportTransactionDoc): void {
+    const target = tx || this.selectedTx();
+    if (!target) return;
+    this.transactionToDelete.set(target);
+    this.deleteConfirmInput.set('');
+    this.isDeleteDialogOpen.set(true);
+  }
+
+  closeDeleteDialog(): void {
+    this.isDeleteDialogOpen.set(false);
+    this.transactionToDelete.set(null);
+    this.deleteConfirmInput.set('');
+  }
+
+  onDeleteInputChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value || '';
+    this.deleteConfirmInput.set(value);
+  }
+
+  confirmDeleteTransaction(): void {
+    const tx = this.transactionToDelete();
+    if (!tx || this.deleteConfirmInput().trim().toLowerCase() !== 'delete') {
+      return;
+    }
+
+    this.isDeletingTransaction.set(true);
+    this.repo.deleteTransaction(tx.id).subscribe({
+      next: () => {
+        this.isDeletingTransaction.set(false);
+        this.closeDeleteDialog();
+        this.closeTransactionDrawer();
+        this.toast.show(this.translationService.t('supporters.toast_tx_delete_success'), 'success');
+        this.loadLedger();
+      },
+      error: (err) => {
+        this.isDeletingTransaction.set(false);
+        console.error('Failed to delete transaction:', err);
+        this.toast.show(this.translationService.t('supporters.toast_tx_delete_error'), 'error');
+      },
+    });
   }
 }

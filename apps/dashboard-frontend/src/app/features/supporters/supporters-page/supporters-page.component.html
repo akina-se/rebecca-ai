@@ -443,6 +443,17 @@
               {{ isSavingDrawer() ? ('common.saving' | translate) : ('common.save_changes' | translate) }}
             </button>
           </div>
+
+          <div class="drawer-danger-actions" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(239, 68, 68, 0.2);">
+            <button
+              class="btn btn-danger btn-delete-tx-full"
+              (click)="openDeleteDialog(tx)"
+              style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all 0.2s;"
+            >
+              <span class="material-icons" style="font-size: 18px;">delete_outline</span>
+              {{ 'supporters.btn_delete_transaction' | translate }}
+            </button>
+          </div>
         </div>
 
       </div>
@@ -679,6 +690,78 @@
 
         <div class="modal-footer">
           <button class="btn btn-secondary" (click)="closeRewardsModal()">{{ 'common.close' | translate }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Transaction Delete Safety Confirmation Modal -->
+  @if (isDeleteDialogOpen() && transactionToDelete(); as txToDelete) {
+    <div class="modal-backdrop" (click)="closeDeleteDialog()">
+      <div class="modal-content glass-panel modal-delete-tx" (click)="$event.stopPropagation()" style="max-width: 480px; width: 90%; border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 24px rgba(239, 68, 68, 0.2);">
+        <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 10px; color: #f87171;">
+            <span class="material-icons">delete_forever</span>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700;">{{ 'supporters.modal_delete_tx_title' | translate }}</h3>
+          </div>
+          <button class="btn-icon-close" (click)="closeDeleteDialog()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="delete-warning-banner" style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 14px 16px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+            <p style="margin: 0; font-size: 13px; color: #fca5a5; line-height: 1.6;">
+              {{ 'supporters.modal_delete_tx_warning' | translate }}
+            </p>
+          </div>
+
+          <div class="delete-tx-info" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: var(--text-muted);">Supporter:</span>
+              <strong style="color: var(--text-main);">{{ txToDelete.safeName }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: var(--text-muted);">Amount:</span>
+              <strong style="color: var(--text-main);">¥{{ txToDelete.amount | number }} ({{ txToDelete.tier | uppercase }})</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">ID:</span>
+              <code style="color: var(--color-primary); font-size: 12px;">{{ txToDelete.id }}</code>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+              {{ 'supporters.modal_delete_tx_instruction' | translate }}
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="delete"
+              [value]="deleteConfirmInput()"
+              (input)="onDeleteInputChange($event)"
+              style="width: 100%; border-color: rgba(239, 68, 68, 0.4); text-align: center; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.05em;"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+          <button class="btn btn-secondary" (click)="closeDeleteDialog()">
+            {{ 'common.cancel' | translate }}
+          </button>
+          <button
+            class="btn btn-danger"
+            [disabled]="deleteConfirmInput().trim().toLowerCase() !== 'delete' || isDeletingTransaction()"
+            (click)="confirmDeleteTransaction()"
+            style="background: #ef4444; color: #ffffff; border: none; padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer;"
+          >
+            <span class="material-icons" [class.spin]="isDeletingTransaction()" style="font-size: 16px; margin-right: 6px;">
+              {{ isDeletingTransaction() ? 'sync' : 'delete' }}
+            </span>
+            {{ isDeletingTransaction() ? ('common.saving' | translate) : ('supporters.modal_delete_tx_btn_confirm' | translate) }}
+          </button>
         </div>
       </div>
     </div>

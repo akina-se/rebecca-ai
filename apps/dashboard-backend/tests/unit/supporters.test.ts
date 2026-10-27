@@ -3,7 +3,7 @@ jest.mock('../../src/utils/image', () => ({
   stripImageMetadata: jest.fn().mockResolvedValue(Buffer.from('mock_stripped_master')),
 }));
 import { SupportersRepository } from '../../src/features/supporters/repository';
-import { SupportersUseCase } from '../../src/features/supporters/usecase';
+import { SupportersUseCase, HttpError } from '../../src/features/supporters/usecase';
 import { SupportersController } from '../../src/features/supporters/controller';
 import { Request, Response } from 'express';
 
@@ -244,6 +244,7 @@ describe('Supporters Feature Unit Tests', () => {
         createRewardImage: jest.fn(),
         updateRewardImage: jest.fn(),
         deleteRewardImage: jest.fn(),
+        deleteTransaction: jest.fn(),
       } as any;
 
       useCase = new SupportersUseCase(repo, mockStorage);
@@ -374,6 +375,15 @@ describe('Supporters Feature Unit Tests', () => {
     it('deleteReward throws 404 when missing', async () => {
       repo.getRewardImageById.mockResolvedValue(null);
       await expect(useCase.deleteReward('missing')).rejects.toThrow('not found');
+    });
+
+    it('deleteTransaction deletes transaction or throws 404', async () => {
+      repo.getTransactionById.mockResolvedValueOnce(null);
+      await expect(useCase.deleteTransaction('missing')).rejects.toThrow('not found');
+
+      repo.getTransactionById.mockResolvedValueOnce({ id: 'tx_1' } as any);
+      await useCase.deleteTransaction('tx_1');
+      expect(repo.deleteTransaction).toHaveBeenCalledWith('tx_1');
     });
 
     it('getRewardBinary handles missing image or missing file in bucket', async () => {
@@ -614,6 +624,7 @@ describe('Supporters Feature Unit Tests', () => {
         getRewardBinary: jest.fn(),
         updateReward: jest.fn(),
         deleteReward: jest.fn(),
+        deleteTransaction: jest.fn(),
       } as any;
 
       controller = new SupportersController(useCase);
@@ -738,6 +749,29 @@ describe('Supporters Feature Unit Tests', () => {
       useCase.getRewardBinary.mockResolvedValueOnce(null);
       await controller.getRewardImage(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(404);
+    });
+
+    it('delete returns 204 or error', async () => {
+      req.params = { id: 'tx_1' };
+      await controller.delete(req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(204);
+      expect(res.send).toHaveBeenCalled();
+
+      // HttpError
+      useCase.deleteTransaction.mockRejectedValueOnce(new HttpError('Not found', 404));
+      await controller.delete(req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(404);
+
+      // Unexpected error
+      useCase.deleteTransaction.mockRejectedValueOnce(new Error('DB error'));
+      await controller.delete(req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(500);
+
+      // Error with statusCode but no message
+      useCase.deleteTransaction.mockRejectedValueOnce({ statusCode: 400 });
+      await controller.delete(req as Request, res as Response);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to delete transaction' });
     });
 
     it('updateReward and deleteReward return 200', async () => {

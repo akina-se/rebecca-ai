@@ -200,6 +200,35 @@ describe('PublicSupportController Unit Tests', () => {
       );
     });
 
+    it('returns isExpired: true and null reward when session was created more than 30 minutes ago', async () => {
+      req.query = { session_id: 'cs_expired_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_expired_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        created: Math.floor((Date.now() - 40 * 60 * 1000) / 1000),
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_expired_123',
+        safeName: 'Test2',
+        tier: 'gold',
+        itemLabel: '開発サポート',
+        createdAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          valid: true,
+          safeName: 'Test2',
+          reward: null,
+          isExpired: true,
+        }),
+      );
+    });
+
     it('returns 500 if unexpected error occurs during verification', async () => {
       req.query = { session_id: 'cs_error' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({

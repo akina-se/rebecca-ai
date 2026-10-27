@@ -138,6 +138,13 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'supporters.confirm_delete_reward': '特典「{title}」を削除してもよろしいですか？',
     'supporters.toast_delete_success': '特典を削除しました',
     'supporters.toast_delete_error': '削除に失敗しました',
+    'supporters.btn_delete_transaction': 'トランザクションを削除',
+    'supporters.modal_delete_tx_title': 'トランザクションの削除',
+    'supporters.modal_delete_tx_warning': 'この操作は取り消せません。データベースからこの取引履歴が完全に削除されます。',
+    'supporters.modal_delete_tx_instruction': '削除を実行するには、確認のため以下に「delete」と入力してください。',
+    'supporters.modal_delete_tx_btn_confirm': '削除を実行',
+    'supporters.toast_tx_delete_success': 'トランザクションを削除しました',
+    'supporters.toast_tx_delete_error': 'トランザクションの削除に失敗しました',
 
 
     // TopBar
@@ -565,6 +572,13 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'supporters.confirm_delete_reward': 'Are you sure you want to delete reward "{title}"?',
     'supporters.toast_delete_success': 'Reward deleted successfully',
     'supporters.toast_delete_error': 'Failed to delete reward',
+    'supporters.btn_delete_transaction': 'Delete Transaction',
+    'supporters.modal_delete_tx_title': 'Delete Transaction',
+    'supporters.modal_delete_tx_warning': 'This action cannot be undone. This transaction will be permanently deleted from the database.',
+    'supporters.modal_delete_tx_instruction': 'To confirm deletion, please type "delete" below.',
+    'supporters.modal_delete_tx_btn_confirm': 'Permanently Delete',
+    'supporters.toast_tx_delete_success': 'Transaction deleted successfully',
+    'supporters.toast_tx_delete_error': 'Failed to delete transaction',
 
     // TopBar
     'topbar.admin': 'Admin',
