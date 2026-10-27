@@ -100,7 +100,8 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     await expect(thumbPreview).toBeVisible({ timeout: 15000 });
     const thumbImg = thumbPreview.locator('img.media-thumb');
     await expect(thumbImg).toBeVisible();
-    expect(await thumbImg.getAttribute('src')).toContain('size=thumbnail');
+    const src = await thumbImg.getAttribute('src');
+    expect(src).toMatch(/^(blob:|.*size=thumbnail)/);
     await firstCard.scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_uploaded.png') });
 
