@@ -99,40 +99,8 @@ export class SupportersUseCase {
 
     const updated = await this.repo.getTransactionById(id);
 
-    // Trigger worker endpoint if bot-backend URL is configured
-    if (config.services.botBackendUrl) {
-      try {
-        const workerUrl = `${config.services.botBackendUrl.replace(/\/+$/, '')}/worker/support-post`;
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        if (config.services.batchSecret) {
-          headers['x-worker-secret'] = config.services.batchSecret;
-        }
-
-        logger.info('[SupportersUseCase] Dispatching support post retry to bot-backend', {
-          transactionId: id,
-          workerUrl,
-        });
-
-        // Fire-and-forget or await with short timeout
-        fetch(workerUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ transactionId: id }),
-        }).catch((fetchErr) => {
-          logger.warn('[SupportersUseCase] Failed to dispatch retry directly to worker (task will remain pending for worker pick-up)', {
-            transactionId: id,
-            error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
-          });
-        });
-      } catch (dispatchErr) {
-        logger.warn('[SupportersUseCase] Worker dispatch error during retry', {
-          transactionId: id,
-          error: dispatchErr instanceof Error ? dispatchErr.message : String(dispatchErr),
-        });
-      }
-    }
+    // Trigger worker endpoint to process retry immediately
+    await this.dispatchSupportWorker(id);
 
     return {
       success: true,
@@ -195,6 +163,10 @@ export class SupportersUseCase {
     });
 
     const created = await this.repo.getTransactionById(newId);
+
+    // Trigger worker endpoint to process the manual transaction immediately
+    await this.dispatchSupportWorker(newId);
+
     return created!;
   }
 
@@ -367,4 +339,45 @@ export class SupportersUseCase {
 
     await this.repo.deleteRewardImage(id);
   }
+  /**
+   * Dispatches an asynchronous support post processing task to bot-backend worker.
+   */
+  async dispatchSupportWorker(transactionId: string): Promise<void> {
+    if (!config.services.botBackendUrl) {
+      return;
+    }
+
+    try {
+      const workerUrl = `${config.services.botBackendUrl.replace(/\/+$/, '')}/worker/support-post`;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (config.services.batchSecret) {
+        headers['x-worker-secret'] = config.services.batchSecret;
+      }
+
+      logger.info('[SupportersUseCase] Dispatching support post to bot-backend worker', {
+        transactionId,
+        workerUrl,
+      });
+
+      // Fire-and-forget or await with short timeout
+      fetch(workerUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ transactionId }),
+      }).catch((fetchErr) => {
+        logger.warn('[SupportersUseCase] Failed to dispatch directly to worker (task will remain pending for worker pick-up)', {
+          transactionId,
+          error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
+        });
+      });
+    } catch (dispatchErr) {
+      logger.warn('[SupportersUseCase] Worker dispatch error', {
+        transactionId,
+        error: dispatchErr instanceof Error ? dispatchErr.message : String(dispatchErr),
+      });
+    }
+  }
+
 }

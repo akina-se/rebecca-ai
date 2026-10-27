@@ -1038,9 +1038,7 @@
               }
               if (downloadUrl) {
                 dlBtn.href = downloadUrl;
-                const numMatch = (data.reward && data.reward.title) ? data.reward.title.match(/\d+/) : null;
-                const volSuffix = numMatch ? '-vol' + numMatch[0].padStart(2, '0') : '';
-                dlBtn.setAttribute('download', 'rebecca-exclusive-supporter-artwork' + volSuffix + '.jpg');
+                dlBtn.setAttribute('download', 'rebecca-exclusive-supporter-artwork.jpg');
               }
               assetContainer.style.display = 'flex';
             }

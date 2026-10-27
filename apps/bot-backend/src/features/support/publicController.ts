@@ -503,13 +503,7 @@ export class PublicSupportController {
       );
 
       if (type === 'master') {
-        const numMatch = rewardDoc.title.match(/\d+/);
-        const volSuffix = rewardDoc.sequenceNumber
-          ? `-vol${String(rewardDoc.sequenceNumber).padStart(2, '0')}`
-          : numMatch
-            ? `-vol${numMatch[0].padStart(2, '0')}`
-            : '';
-        const downloadFilename = `rebecca-exclusive-supporter-artwork${volSuffix}.${ext}`;
+        const downloadFilename = `rebecca-exclusive-supporter-artwork.${ext}`;
         res.setHeader(
           'Content-Disposition',
           `attachment; filename="${downloadFilename}"`,

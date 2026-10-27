@@ -71,6 +71,17 @@ describe('batchAuth Middleware', () => {
         expect(mockRes.status).not.toHaveBeenCalled();
     });
 
+    it('should allow access via shared secret when audience is configured but no Bearer token is provided (internal server-to-server mode)', async () => {
+        // Internal BFF-to-worker dispatch using pre-shared secret without Bearer token
+        config.gcp.workerUrl = 'https://test-worker.url';
+        mockReq.headers = { 'x-batch-secret': 'test_secret' };
+
+        await batchAuth(mockReq as Request, mockRes as Response, nextFunction);
+
+        expect(nextFunction).toHaveBeenCalled();
+        expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
     it('should block access if both OIDC token and shared secret are missing/invalid', async () => {
         mockReq.headers = {
             'x-batch-secret': 'wrong_secret'
