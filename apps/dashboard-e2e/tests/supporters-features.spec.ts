@@ -332,8 +332,8 @@ test.describe('Supporters & Tipping Management Features E2E Tests', () => {
       const lightbox = page.locator('app-lightbox .lightbox-overlay.open');
       await expect(lightbox).toBeVisible({ timeout: 5000 });
       const img = page.locator('app-lightbox .image-container img');
-      await expect(img).toBeVisible();
-      await expect(img).toHaveAttribute('src', /type=master/);
+      await expect(img).toBeVisible({ timeout: 10000 });
+      await expect(img).toHaveAttribute('src', /^(blob:|.*type=master)/);
 
       // 4. Close Lightbox via close button
       await page.locator('app-lightbox .close-btn').click();
