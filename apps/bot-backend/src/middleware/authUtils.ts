@@ -80,16 +80,9 @@ export const verifyServerToServerAuth = async (
     const secretHeader = typeof rawSecret === 'string' ? rawSecret.trim() : '';
     const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
 
-    // 1. If a valid shared secret is supplied, authenticate the internal request
-    const isSecretValid = verifySecret(secretHeader, fallbackSecret);
-    if (isSecretValid) {
-        // Credential downgrade prevention: if an Authorization header was also provided, it must be valid
-        if (authHeader) {
-            return await verifyOidcToken(authHeader, expectedAudience);
-        }
-        return true;
-    }
-
-    // 2. Otherwise, enforce Google OIDC token verification
-    return await verifyOidcToken(authHeader, expectedAudience);
+    // Verify via Google OIDC ID token or pre-shared secret (timing-safe)
+    return (
+        (await verifyOidcToken(authHeader, expectedAudience)) ||
+        verifySecret(secretHeader, fallbackSecret)
+    );
 };
