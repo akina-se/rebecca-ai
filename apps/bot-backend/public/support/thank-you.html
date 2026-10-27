@@ -778,6 +778,24 @@
         <span class="t-en">"Master, thank you for your warm support (<span class="item-label-display">Contribution</span>)! The Special Thanks roster update and my appreciation post will be processed sequentially—stay tuned♡"</span>
       </div>
 
+      <div id="reward-asset-container" class="reward-image-preview-area" style="display: none;">
+        <div class="reward-image-frame">
+          <img id="reward-image" src="" alt="Supporter Reward Illustration">
+        </div>
+        <div class="reward-image-actions">
+          <a id="download-reward-btn" href="#" target="_blank" download="rebecca-exclusive-supporter-artwork.jpg" class="btn-download">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span class="t-ja">高画質イラストをダウンロード</span>
+            <span class="t-en">Download High-Res Illustration</span>
+          </a>
+          <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;"><span class="t-ja">有効期限: 約30分間</span><span class="t-en">Valid for: Approx. 30 minutes</span></div>
+        </div>
+      </div>
+
       <!-- Expiration Urgency Alert Banner -->
       <div class="dl-alert-box">
         <div class="dl-alert-icon-wrap" aria-hidden="true">
@@ -798,32 +816,14 @@
             <span class="t-ja">
               このダウンロードページの有効期限は<strong>決済完了から30分間</strong>です。<br>
               ブラウザを閉じたり、別のページに移動すると<strong>再アクセス・再発行ができません</strong>。<br>
-              下の「高画質イラストをダウンロード」ボタンから、今すぐ壁紙データを端末に保存（ダウンロード）してください。
+              上の「高画質イラストをダウンロード」ボタンから、今すぐ壁紙データを端末に保存（ダウンロード）してください。
             </span>
             <span class="t-en">
               This download page is valid for <strong>30 minutes after payment completion</strong>.<br>
               Once expired, or if the page is closed/navigated away, the link <strong>cannot be reissued</strong>.<br>
-              Please download and save the illustration to your device immediately using the button below.
+              Please download and save the illustration to your device immediately using the button above.
             </span>
           </p>
-        </div>
-      </div>
-
-      <div id="reward-asset-container" class="reward-image-preview-area" style="display: none;">
-        <div class="reward-image-frame">
-          <img id="reward-image" src="" alt="Supporter Reward Illustration">
-        </div>
-        <div class="reward-image-actions">
-          <a id="download-reward-btn" href="#" target="_blank" download="rebecca_supporter_art.png" class="btn-download">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span class="t-ja">高画質イラストをダウンロード</span>
-            <span class="t-en">Download High-Res Illustration</span>
-          </a>
-          <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;"><span class="t-ja">有効期限: 約30分間</span><span class="t-en">Valid for: Approx. 30 minutes</span></div>
         </div>
       </div>
 
@@ -1038,6 +1038,9 @@
               }
               if (downloadUrl) {
                 dlBtn.href = downloadUrl;
+                const numMatch = (data.reward && data.reward.title) ? data.reward.title.match(/\d+/) : null;
+                const volSuffix = numMatch ? '-vol' + numMatch[0].padStart(2, '0') : '';
+                dlBtn.setAttribute('download', 'rebecca-exclusive-supporter-artwork' + volSuffix + '.jpg');
               }
               assetContainer.style.display = 'flex';
             }

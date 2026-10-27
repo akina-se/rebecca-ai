@@ -503,10 +503,16 @@ export class PublicSupportController {
       );
 
       if (type === 'master') {
-        const safeTitle = rewardDoc.title.replace(/[^\w\s.-]/gi, '_') || 'rebecca-reward';
+        const numMatch = rewardDoc.title.match(/\d+/);
+        const volSuffix = rewardDoc.sequenceNumber
+          ? `-vol${String(rewardDoc.sequenceNumber).padStart(2, '0')}`
+          : numMatch
+            ? `-vol${numMatch[0].padStart(2, '0')}`
+            : '';
+        const downloadFilename = `rebecca-exclusive-supporter-artwork${volSuffix}.${ext}`;
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="${encodeURIComponent(safeTitle)}.${ext}"`,
+          `attachment; filename="${downloadFilename}"`,
         );
       } else {
         res.setHeader('Content-Disposition', 'inline');
