@@ -19,23 +19,19 @@ const upload = multer({
  *
  * @param firestore - Firestore instance.
  * @param storage - Cloud Storage instance.
- * @returns Routers for protected supporter endpoints and public image streaming.
+ * @returns Routers for protected supporter endpoints.
  */
 export function initializeSupportersModule(
   firestore: Firestore,
   storage: Storage,
-): { supportersRouter: Router; publicRewardsRouter: Router } {
+): { supportersRouter: Router } {
   const supportersRouter = Router();
-  const publicRewardsRouter = Router();
 
   const repo = new SupportersRepository(firestore);
   const useCase = new SupportersUseCase(repo, storage);
   const controller = new SupportersController(useCase);
 
-  // Public reward image streaming (for dashboard frontend <img> tags without authorization headers)
-  publicRewardsRouter.get('/:id/image', controller.getRewardImage.bind(controller));
-
-  // Protected endpoints
+  // Protected endpoints (All endpoints require verifyAuth when mounted)
   // Support tier plans endpoint
   supportersRouter.get('/plans', controller.getPlans.bind(controller));
   supportersRouter.get('/', controller.getLedger.bind(controller));
@@ -54,5 +50,5 @@ export function initializeSupportersModule(
   supportersRouter.post('/:id/retry', controller.retry.bind(controller));
   supportersRouter.post('/:id/manual-resolve', controller.manualResolve.bind(controller));
 
-  return { supportersRouter, publicRewardsRouter };
+  return { supportersRouter };
 }

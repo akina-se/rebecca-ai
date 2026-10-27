@@ -634,7 +634,13 @@
             @for (reward of rewards(); track reward.id) {
               <div class="reward-card glass-panel" [class.active-reward]="reward.isActive">
                 <div class="reward-preview" (click)="openRewardLightbox(reward)" [title]="'supporters.view_full_image' | translate">
-                  <img [src]="'/api/v1/supporters/rewards/' + reward.id + '/image?type=thumbnail'" [alt]="reward.title" />
+                  @if (rewardThumbnailUrls()[reward.id]) {
+                    <img [src]="rewardThumbnailUrls()[reward.id]" [alt]="reward.title" />
+                  } @else {
+                    <div class="thumbnail-loading-placeholder">
+                      <span class="material-icons spinner-icon">hourglass_empty</span>
+                    </div>
+                  }
                   <span class="reward-badge" [class.active]="reward.isActive">
                     {{ reward.isActive ? ('supporters.reward_pool_badge_active' | translate) : ('supporters.reward_pool_badge_inactive' | translate) }}
                   </span>

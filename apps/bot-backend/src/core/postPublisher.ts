@@ -119,7 +119,7 @@ ${text}
             else if (bestImage.url.endsWith('.gif')) mimeType = 'image/gif';
 
             const mediaId = await deps.xApi.uploadMedia(buffer, mimeType);
-            if (mediaId && mediaId !== 'mock_media_id') {
+            if (mediaId) {
               mediaIds.push(mediaId);
               await deps.firestore.updateImageLastUsed(bestImage.id);
               logger.info('[PostPublisher] Attached media ID', { mediaId });

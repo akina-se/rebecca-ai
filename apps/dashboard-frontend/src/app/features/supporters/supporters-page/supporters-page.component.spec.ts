@@ -78,6 +78,7 @@ describe('SupportersPageComponent', () => {
       uploadReward: jest.fn().mockReturnValue(of(mockReward)),
       updateReward: jest.fn().mockReturnValue(of({ ...mockReward, isActive: false })),
       deleteReward: jest.fn().mockReturnValue(of({ success: true })),
+      getRewardImageBlob: jest.fn().mockReturnValue(of(new Blob(['mock-data'], { type: 'image/png' }))),
       getPlans: jest.fn().mockReturnValue(of({ plans: [
         { tier: 'bronze', amount: 500, currency: 'jpy', itemLabel: 'Energy Drink', displayName: 'Bronze Supporter' },
         { tier: 'silver', amount: 1000, currency: 'jpy', itemLabel: 'Server Resource', displayName: 'Silver Supporter' },
@@ -397,16 +398,36 @@ describe('SupportersPageComponent', () => {
     expect(component.isRewardsModalOpen()).toBe(false);
   });
 
-  it('should open and close reward illustration lightbox with master image URL', () => {
+  it('should open and close reward illustration lightbox with authenticated blob URL', () => {
+    const originalCreateObjectUrl = URL.createObjectURL;
+    const originalRevokeObjectUrl = URL.revokeObjectURL;
+    URL.createObjectURL = jest.fn().mockReturnValue('blob:http://localhost/mock-blob-url');
+    URL.revokeObjectURL = jest.fn();
+
     expect(component.isLightboxOpen()).toBe(false);
     expect(component.lightboxImageUrl()).toBe('');
 
     component.openRewardLightbox(mockReward);
+    expect(mockRepo.getRewardImageBlob).toHaveBeenCalledWith('r_1', 'master');
     expect(component.isLightboxOpen()).toBe(true);
-    expect(component.lightboxImageUrl()).toBe('/api/v1/supporters/rewards/r_1/image?type=master');
+    expect(component.lightboxImageUrl()).toBe('blob:http://localhost/mock-blob-url');
 
     component.closeRewardLightbox();
     expect(component.isLightboxOpen()).toBe(false);
     expect(component.lightboxImageUrl()).toBe('');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-blob-url');
+
+    URL.createObjectURL = originalCreateObjectUrl;
+    URL.revokeObjectURL = originalRevokeObjectUrl;
+  });
+
+  it('should clean up object URLs on ngOnDestroy', () => {
+    const originalRevokeObjectUrl = URL.revokeObjectURL;
+    URL.revokeObjectURL = jest.fn();
+
+    component.ngOnDestroy();
+    expect(component).toBeTruthy();
+
+    URL.revokeObjectURL = originalRevokeObjectUrl;
   });
 });

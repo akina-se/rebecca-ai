@@ -63,8 +63,12 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
     return;
   }
 
-  // Bypass auth for local development if running in emulator and NO_AUTH=true is set
-  if (process.env.NODE_ENV !== 'production' && process.env.NO_AUTH === 'true') {
+  // Bypass auth for local development ONLY if running against local emulator AND NO_AUTH=true is explicitly set
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NO_AUTH === 'true' &&
+    Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST)
+  ) {
     req.user = { uid: 'local-dev-admin', role: 'SUPER_ADMIN' };
     next();
     return;
@@ -110,4 +114,3 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
     res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
-

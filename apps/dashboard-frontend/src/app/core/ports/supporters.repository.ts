@@ -48,6 +48,9 @@ export interface SupportersRepository {
 
   /** Deletes a reward image asset */
   deleteReward(id: string): Observable<{ success: boolean }>;
+
+  /** Retrieves binary blob for reward image (thumbnail or master) using authenticated session */
+  getRewardImageBlob(id: string, type: 'thumbnail' | 'master'): Observable<Blob>;
 }
 
 export const SUPPORTERS_REPOSITORY = new InjectionToken<SupportersRepository>('SUPPORTERS_REPOSITORY');

@@ -55,6 +55,20 @@ describe('PublicSupportController Unit Tests', () => {
   });
 
   describe('verifySession', () => {
+    it('returns 500 fail-closed if stripe is not configured', async () => {
+      const unconfiguredController = new PublicSupportController(
+        deps,
+        {
+          ...config.support,
+          stripeSecretKey: '',
+        },
+      );
+      req.query = { session_id: 'cs_test_123' };
+      await unconfiguredController.verifySession(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Payment gateway configuration error' });
+    });
+
     it('returns 400 if session_id is missing or not a string', async () => {
       req.query = {};
       await controller.verifySession(req as Request, res as Response);

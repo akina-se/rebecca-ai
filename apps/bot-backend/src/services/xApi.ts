@@ -68,8 +68,8 @@ export class XApiService implements IXApiService {
     options?: { mediaIds?: string[] }
   ): Promise<XApiCreateResponse> {
     if (!this.client) {
-      logger.warn('Twitter API client not initialized, skipping actual API call');
-      return { data: { id: 'mock_tweet_id', text } };
+      logger.error('Twitter API client not initialized');
+      throw new Error('Twitter API client not initialized');
     }
     try {
       const payload: Record<string, unknown> = {
@@ -163,8 +163,8 @@ export class XApiService implements IXApiService {
     },
   ): Promise<XApiCreateResponse> {
     if (!this.client) {
-      logger.warn('Twitter API client not initialized, skipping actual API call');
-      return { data: { id: 'mock_tweet_id', text } };
+      logger.error('Twitter API client not initialized');
+      throw new Error('Twitter API client not initialized');
     }
     try {
       const payload: Record<string, unknown> = { text };

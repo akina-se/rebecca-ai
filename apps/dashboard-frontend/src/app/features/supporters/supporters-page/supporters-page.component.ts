@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -26,7 +26,7 @@ import { LightboxComponent } from '../../../shared/components/organisms/lightbox
   templateUrl: './supporters-page.component.html',
   styleUrls: ['./supporters-page.component.css'],
 })
-export class SupportersPageComponent implements OnInit {
+export class SupportersPageComponent implements OnInit, OnDestroy {
   private readonly repo = inject(SUPPORTERS_REPOSITORY);
   private readonly toast = inject(ToastService);
   readonly translationService = inject(TranslationService);
@@ -100,11 +100,27 @@ export class SupportersPageComponent implements OnInit {
   // Fullscreen Illustration Lightbox State
   readonly isLightboxOpen = signal<boolean>(false);
   readonly lightboxImageUrl = signal<string>('');
+  readonly rewardThumbnailUrls = signal<Record<string, string>>({});
+  private thumbnailUrlsToRevoke: string[] = [];
+  private lightboxBlobUrl: string | null = null;
 
   ngOnInit(): void {
     this.loadPlans();
     this.loadLedger();
     this.loadRewards();
+  }
+
+  ngOnDestroy(): void {
+    this.revokeAllObjectUrls();
+  }
+
+  private revokeAllObjectUrls(): void {
+    this.thumbnailUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
+    this.thumbnailUrlsToRevoke = [];
+    if (this.lightboxBlobUrl) {
+      URL.revokeObjectURL(this.lightboxBlobUrl);
+      this.lightboxBlobUrl = null;
+    }
   }
 
   loadPlans(): void {
@@ -176,12 +192,32 @@ export class SupportersPageComponent implements OnInit {
     this.repo.getRewards().subscribe({
       next: (res) => {
         this.rewards.set(res.rewards);
+        this.fetchThumbnails(res.rewards);
       },
       error: (err) => {
         console.error('[SupportersPage] Failed to load rewards catalog:', err);
         this.toast.show(this.translationService.t('supporters.toast_fetch_error'), 'error');
       },
     });
+  }
+
+  private fetchThumbnails(rewardsList: RewardImageDoc[]): void {
+    // Revoke previous thumbnail Object URLs to avoid memory leaks
+    this.thumbnailUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
+    this.thumbnailUrlsToRevoke = [];
+
+    for (const reward of rewardsList) {
+      this.repo.getRewardImageBlob(reward.id, 'thumbnail').subscribe({
+        next: (blob) => {
+          const objectUrl = URL.createObjectURL(blob);
+          this.thumbnailUrlsToRevoke.push(objectUrl);
+          this.rewardThumbnailUrls.update((prev) => ({ ...prev, [reward.id]: objectUrl }));
+        },
+        error: (err) => {
+          console.error(`Failed to load thumbnail for reward ${reward.id}:`, err);
+        },
+      });
+    }
   }
 
   onFilterChange(): void {
@@ -507,12 +543,33 @@ export class SupportersPageComponent implements OnInit {
   }
 
   openRewardLightbox(reward: RewardImageDoc): void {
-    this.lightboxImageUrl.set(`/api/v1/supporters/rewards/${reward.id}/image?type=master`);
+    if (this.lightboxBlobUrl) {
+      URL.revokeObjectURL(this.lightboxBlobUrl);
+      this.lightboxBlobUrl = null;
+    }
+    this.lightboxImageUrl.set('');
     this.isLightboxOpen.set(true);
+
+    this.repo.getRewardImageBlob(reward.id, 'master').subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        this.lightboxBlobUrl = url;
+        this.lightboxImageUrl.set(url);
+      },
+      error: (err) => {
+        console.error('Failed to load master reward image:', err);
+        this.toast.show(this.translationService.t('supporters.toast_fetch_error'), 'error');
+        this.closeRewardLightbox();
+      },
+    });
   }
 
   closeRewardLightbox(): void {
     this.isLightboxOpen.set(false);
     this.lightboxImageUrl.set('');
+    if (this.lightboxBlobUrl) {
+      URL.revokeObjectURL(this.lightboxBlobUrl);
+      this.lightboxBlobUrl = null;
+    }
   }
 }

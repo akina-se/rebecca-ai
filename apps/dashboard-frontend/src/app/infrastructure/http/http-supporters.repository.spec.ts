@@ -181,5 +181,12 @@ describe('HttpSupportersRepository', () => {
     const reqDelete = httpMock.expectOne(`${environment.apiUrl}/supporters/rewards/r_1`);
     expect(reqDelete.request.method).toBe('DELETE');
     reqDelete.flush({ success: true });
+
+    repo.getRewardImageBlob('r_1', 'thumbnail').subscribe((blob) => {
+      expect(blob).toBeDefined();
+    });
+    const reqBlob = httpMock.expectOne(`${environment.apiUrl}/supporters/rewards/r_1/image?type=thumbnail`);
+    expect(reqBlob.request.method).toBe('GET');
+    reqBlob.flush(new Blob(['test-binary'], { type: 'image/webp' }));
   });
 });

@@ -55,6 +55,5 @@ describe('Dashboard Backend Module Initializers Unit Tests', () => {
 
     const supportersRouter = initializeSupportersModule(mockFirestore, mockStorage);
     expect(supportersRouter.supportersRouter).toBeDefined();
-    expect(supportersRouter.publicRewardsRouter).toBeDefined();
   });
 });

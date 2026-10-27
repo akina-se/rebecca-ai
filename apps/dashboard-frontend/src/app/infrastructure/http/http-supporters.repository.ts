@@ -94,4 +94,12 @@ export class HttpSupportersRepository implements SupportersRepository {
   deleteReward(id: string): Observable<{ success: boolean }> {
     return this.http.delete<{ success: boolean }>(`${this.baseUrl}/rewards/${id}`);
   }
+
+  getRewardImageBlob(id: string, type: 'thumbnail' | 'master'): Observable<Blob> {
+    const params = new HttpParams().set('type', type);
+    return this.http.get(`${this.baseUrl}/rewards/${id}/image`, {
+      params,
+      responseType: 'blob',
+    });
+  }
 }

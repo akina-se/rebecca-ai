@@ -18,7 +18,7 @@ import { logger } from '../../utils/logger';
  * Controller managing public-facing support endpoints.
  */
 export class PublicSupportController {
-  private readonly stripeClient: Stripe;
+  private readonly stripeClient: Stripe | null;
 
   /**
    * Initializes PublicSupportController.
@@ -32,9 +32,13 @@ export class PublicSupportController {
     private readonly config: SupportConfig,
     stripeClient?: Stripe,
   ) {
-    this.stripeClient =
-      stripeClient ||
-      new Stripe(this.config.stripeSecretKey || 'sk_test_unconfigured_placeholder');
+    if (stripeClient) {
+      this.stripeClient = stripeClient;
+    } else if (this.config.stripeSecretKey) {
+      this.stripeClient = new Stripe(this.config.stripeSecretKey);
+    } else {
+      this.stripeClient = null;
+    }
   }
 
   /**
@@ -105,6 +109,12 @@ export class PublicSupportController {
       const sessionId = req.query.session_id;
       if (!sessionId || typeof sessionId !== 'string') {
         res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
+        return;
+      }
+
+      if (!this.stripeClient) {
+        logger.error('[PublicSupportController] Stripe is not configured (missing stripeSecretKey)');
+        res.status(500).json({ error: 'Payment gateway configuration error' });
         return;
       }
 
@@ -316,7 +326,8 @@ export class PublicSupportController {
 
     let event: Stripe.Event;
     try {
-      event = this.stripeClient.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      const webhookClient = this.stripeClient || Stripe;
+      event = webhookClient.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       logger.warn('[PublicSupportController] Stripe webhook signature verification failed', {
@@ -407,6 +418,11 @@ export class PublicSupportController {
       let sessionCreatedMs: number | null = null;
 
       if (!transaction) {
+        if (!this.stripeClient) {
+          logger.error('[PublicSupportController] Stripe is not configured (missing stripeSecretKey)');
+          res.status(500).json({ error: 'Payment gateway configuration error' });
+          return;
+        }
         try {
           const session = await this.stripeClient.checkout.sessions.retrieve(sessionId);
           if (session.payment_status !== 'paid') {
