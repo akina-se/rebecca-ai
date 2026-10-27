@@ -83,20 +83,15 @@ export function createApp(
   const { dashboardRouter: timelineRouter, postsRouter } = initializeTimelineModule(firestore);
   const usersRouter = initializeUsersModule(firestore);
   const systemMemoryRouter = initializeSystemMemoryModule(firestore);
-  const { assetsRouter, publicImagesRouter } = initializeAssetsModule(firestore, storage);
+  const { assetsRouter } = initializeAssetsModule(firestore, storage);
   const settingsRouter = initializeSettingsModule(firestore);
   const configRouter = initializeConfigModule();
-  const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(firestore, storage);
+  const { campaignsRouter } = initializeCampaignsModule(firestore, storage);
   const { supportersRouter } = initializeSupportersModule(firestore, storage);
 
   // Mount Public Routes
   app.use('/api/v1/config', configRouter);
 
-  // Mount Public Image Streaming (unauthenticated streaming for browser <img> & CSS assets)
-  app.use('/api/v1/assets', publicImagesRouter);
-  app.use('/api/v1/images', publicImagesRouter);
-  app.use('/api/v1/campaigns', publicCampaignImagesRouter);
-  app.use('/api/campaigns', publicCampaignImagesRouter);
 
   // Healthcheck endpoint
   app.get('/health', (req, res) => {

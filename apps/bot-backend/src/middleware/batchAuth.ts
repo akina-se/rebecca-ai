@@ -21,7 +21,8 @@ export const batchAuth = async (req: Request, res: Response, next: NextFunction)
             req,
             config.gcp.workerUrl || undefined,
             config.batchSecret,
-            'x-batch-secret'
+            'x-batch-secret',
+            config.gcp.serviceAccountEmail || undefined
         );
 
         if (isAuthenticated) {

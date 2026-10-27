@@ -50,6 +50,27 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
   });
 
   describe('verifyAuth', () => {
+    it('should authenticate via query token when Authorization header is absent', async () => {
+      mockVerifyIdToken.mockResolvedValueOnce({
+        uid: 'user_admin_query',
+        role: 'ADMIN',
+      });
+
+      const req = {
+        method: 'GET',
+        headers: {},
+        query: { token: 'valid_query_jwt' },
+      } as unknown as Request;
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
+      const next = jest.fn() as NextFunction;
+
+      await verifyAuth(req, res, next);
+
+      expect(mockVerifyIdToken).toHaveBeenCalledWith('valid_query_jwt');
+      expect((req as any).user).toEqual(expect.objectContaining({ uid: 'user_admin_query', role: 'ADMIN' }));
+      expect(next).toHaveBeenCalledTimes(1);
+    });
+
     it('should bypass on OPTIONS requests', async () => {
       const req = { method: 'OPTIONS' } as unknown as Request;
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;

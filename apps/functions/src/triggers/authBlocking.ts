@@ -43,7 +43,7 @@ export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
   return {
     customClaims: {
       role,
-      admin: true,
+      admin: role === 'ADMIN' || role === 'SUPER_ADMIN',
     },
   };
 });

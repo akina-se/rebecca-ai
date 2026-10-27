@@ -2,7 +2,7 @@
   <div class="drawer-content">
     <!-- Image Preview -->
     <div class="asset-preview glass-panel">
-      <img [src]="assetData()!.url" alt="Asset Preview" class="preview-img">
+      <img [src]="assetData()!.url | authUrl" alt="Asset Preview" class="preview-img">
     </div>
     <!-- Asset Details -->
     <div class="glass-panel stat-box">

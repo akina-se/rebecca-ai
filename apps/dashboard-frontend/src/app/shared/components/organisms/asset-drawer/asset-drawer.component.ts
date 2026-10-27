@@ -9,6 +9,7 @@ import { TranslationService } from '../../../../core/services/translation.servic
 import { Asset } from '@rebecca/types';
 import { TzDatePipe } from '../../../pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
+import { AuthUrlPipe } from '../../../pipes/auth-url.pipe';
 
 export interface AssetDrawerData {
   id: string;
@@ -22,7 +23,7 @@ export interface AssetDrawerData {
 @Component({
   selector: 'app-asset-drawer',
   standalone: true,
-  imports: [FormsModule, TzDatePipe, TranslatePipe],
+  imports: [FormsModule, TzDatePipe, TranslatePipe, AuthUrlPipe],
   templateUrl: './asset-drawer.component.html',
   styleUrls: ['./asset-drawer.component.css'],
 })

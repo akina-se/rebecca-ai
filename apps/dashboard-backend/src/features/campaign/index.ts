@@ -33,16 +33,13 @@ export function initializeCampaignsModule(
     imageBucketName: config.gcp.imageBucketName,
     timezone: config.appTimezone,
   },
-): { campaignsRouter: Router; publicCampaignImagesRouter: Router } {
+): { campaignsRouter: Router } {
   const campaignsRouter = Router();
-  const publicCampaignImagesRouter = Router();
 
   const repo = new CampaignsRepository(firestore);
   const useCase = new CampaignsUseCase(repo, storage, campaignConfig);
   const controller = new CampaignsController(useCase);
 
-  // Public image streaming endpoint (no auth required for browser <img> & lightbox)
-  publicCampaignImagesRouter.get('/:id/assets/:filename', controller.getAssetImage);
 
   // Listing & Creation
   campaignsRouter.get('/', controller.list);
@@ -65,5 +62,5 @@ export function initializeCampaignsModule(
   campaignsRouter.put('/:id', controller.update);
   campaignsRouter.delete('/:id', controller.delete);
 
-  return { campaignsRouter, publicCampaignImagesRouter };
+  return { campaignsRouter };
 }

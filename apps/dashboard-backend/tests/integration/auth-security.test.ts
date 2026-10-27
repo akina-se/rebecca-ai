@@ -113,6 +113,8 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
       // Assets
       { method: 'get', path: '/api/v1/images' },
       { method: 'get', path: '/api/v1/images/img_123' },
+      { method: 'get', path: '/api/v1/assets/img_123/image' },
+      { method: 'get', path: '/api/v1/campaigns/c1/assets/pic.jpg' },
       { method: 'post', path: '/api/v1/images/regenerate-captions' },
       { method: 'put', path: '/api/v1/images/img_123', body: { caption: 'new caption' } },
       { method: 'delete', path: '/api/v1/images', body: { ids: ['img_123'] } },

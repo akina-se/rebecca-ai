@@ -59,13 +59,31 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
   });
 
   describe('grpcClient - deleteTweetViaGrpc', () => {
-    it('should resolve on successful gRPC call', async () => {
-      const result = await deleteTweetViaGrpc('123456');
-      expect(result).toEqual({ success: true, message: 'Tweet deleted successfully' });
+    const originalFetch = global.fetch;
+
+    afterEach(() => {
+      global.fetch = originalFetch;
     });
 
-    it('should reject on gRPC error', async () => {
-      await expect(deleteTweetViaGrpc('error_grpc')).rejects.toThrow('gRPC connection error');
+    it('should resolve on successful call', async () => {
+      const origUrl = config.services.botBackendUrl;
+      (config.services as any).botBackendUrl = 'http://localhost:8080';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, message: 'Tweet deleted successfully' }),
+      } as any);
+      const result = await deleteTweetViaGrpc('123456');
+      expect(result).toEqual({ success: true, message: 'Tweet deleted successfully' });
+      (config.services as any).botBackendUrl = origUrl;
+    });
+
+    it('should return error object on network failure', async () => {
+      const origUrl = config.services.botBackendUrl;
+      (config.services as any).botBackendUrl = 'http://localhost:8080';
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      const result = await deleteTweetViaGrpc('error_id');
+      expect(result).toEqual({ success: false, message: 'Network error' });
+      (config.services as any).botBackendUrl = origUrl;
     });
   });
 

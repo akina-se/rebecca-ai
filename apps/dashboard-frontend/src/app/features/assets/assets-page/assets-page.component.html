@@ -82,7 +82,7 @@
             <span class="checkmark" style="margin: 0;"></span>
           </label>
         </div>
-        <div class="asset-thumb" [style.background-image]="(asset.thumbnailUrl || asset.url) ? 'url(' + (asset.thumbnailUrl || asset.url) + ')' : 'none'" [style.background-size]="'cover'">
+        <div class="asset-thumb" [style.background-image]="(asset.thumbnailUrl || asset.url) ? 'url(' + ((asset.thumbnailUrl || asset.url) | authUrl) + ')' : 'none'" [style.background-size]="'cover'">
           @if (!asset.url && !asset.thumbnailUrl) {
             <span class="material-icons" style="font-size: 3rem; opacity: 0.5;">image</span>
           }
