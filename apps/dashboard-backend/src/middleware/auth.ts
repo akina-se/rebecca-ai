@@ -77,9 +77,7 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
   let token: string | undefined;
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split('Bearer ')[1];
-  } else if (typeof req.query?.token === 'string' && (req.query.token as string).trim()) {
-    token = req.query.token.trim();
+    token = authHeader.split('Bearer ')[1]?.trim();
   }
 
   if (!token) {

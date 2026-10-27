@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
 import { ConfigService } from '../../../../core/services/config.service';
-import { AuthService } from '../../../../core/services/auth.service';
+import { AuthUrlPipe } from '../../../pipes/auth-url.pipe';
 
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
@@ -15,14 +15,13 @@ import { AuthService } from '../../../../core/services/auth.service';
 @Component({
   selector: 'app-itinerary-slot-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, AuthUrlPipe],
   templateUrl: './itinerary-slot-card.component.html',
   styleUrls: ['./itinerary-slot-card.component.css'],
 })
 export class ItinerarySlotCardComponent implements OnChanges {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly configService = inject(ConfigService);
-  private readonly authService = inject(AuthService, { optional: true });
 
   /** The slot data model. */
   @Input({ required: true }) slot!: CampaignSlot;
@@ -113,7 +112,7 @@ export class ItinerarySlotCardComponent implements OnChanges {
   getThumbnailUrl(): string {
     if (!this.slot.mediaUrl) return '';
     const separator = this.slot.mediaUrl.includes('?') ? '&' : '?';
-    const base = `${this.slot.mediaUrl}${separator}size=thumbnail`; const token = this.authService?.getSyncToken(); return token ? `${base}&token=${encodeURIComponent(token)}` : base;
+    return `${this.slot.mediaUrl}${separator}size=thumbnail`;
   }
 
   /**
@@ -122,7 +121,7 @@ export class ItinerarySlotCardComponent implements OnChanges {
   getFullImageUrl(): string {
     if (!this.slot.mediaUrl) return '';
     const separator = this.slot.mediaUrl.includes('?') ? '&' : '?';
-    const base = `${this.slot.mediaUrl}${separator}size=full`; const token = this.authService?.getSyncToken(); return token ? `${base}&token=${encodeURIComponent(token)}` : base;
+    return `${this.slot.mediaUrl}${separator}size=full`;
   }
 
   /**

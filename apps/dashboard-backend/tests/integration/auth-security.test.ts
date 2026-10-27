@@ -26,10 +26,9 @@ jest.mock('firebase-admin/firestore', () => ({
   }),
 }));
 
-// Mock gRPC client to prevent network calls in integration tests
-jest.mock('../../src/core/grpcClient', () => ({
-  deleteTweetViaGrpc: jest.fn().mockResolvedValue({ success: true, message: 'Deleted' }),
-  triggerDreamingViaGrpc: jest.fn().mockResolvedValue({ success: true, message: 'Dreaming triggered' }),
+// Mock bot service client to prevent network calls in integration tests
+jest.mock('../../src/core/botServiceClient', () => ({
+  deleteTweetViaBotService: jest.fn().mockResolvedValue({ success: true, message: 'Deleted' }),
 }));
 
 // Mock Google Cloud Tasks to prevent network calls

@@ -166,7 +166,7 @@ POLL_DURATION_MINUTES=1380
 - **`packages/types`**: Shared TypeScript definitions, interaction schemas, and global configurations.
 - **`packages/db`**: Shared database repository classes and connection pool managers.
 - **`packages/persona`**: The core repository for Rebecca's persona definition prompts and JST-focused system rules.
-- **`packages/grpc-schemas`**: (Deprecated) Legacy Protocol Buffer schemas previously used for gRPC APIs.
+
 
 ## Global Monorepo Operations
 

@@ -50,12 +50,7 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
   });
 
   describe('verifyAuth', () => {
-    it('should authenticate via query token when Authorization header is absent', async () => {
-      mockVerifyIdToken.mockResolvedValueOnce({
-        uid: 'user_admin_query',
-        role: 'ADMIN',
-      });
-
+    it('should reject request with 401 when Authorization header is absent even if query token is present', async () => {
       const req = {
         method: 'GET',
         headers: {},
@@ -66,9 +61,10 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
 
       await verifyAuth(req, res, next);
 
-      expect(mockVerifyIdToken).toHaveBeenCalledWith('valid_query_jwt');
-      expect((req as any).user).toEqual(expect.objectContaining({ uid: 'user_admin_query', role: 'ADMIN' }));
-      expect(next).toHaveBeenCalledTimes(1);
+      expect(mockVerifyIdToken).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: Missing or invalid Authorization header' });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should bypass on OPTIONS requests', async () => {

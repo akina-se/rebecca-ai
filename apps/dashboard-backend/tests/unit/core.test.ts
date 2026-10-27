@@ -1,5 +1,5 @@
 import { getJstDateRangeInUtc } from '../../src/core/dateUtils';
-import { deleteTweetViaGrpc } from '../../src/core/grpcClient';
+import { deleteTweetViaBotService } from '../../src/core/botServiceClient';
 import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
 import { Request, Response } from 'express';
@@ -32,7 +32,7 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
     });
   });
 
-  describe('grpcClient - deleteTweetViaGrpc', () => {
+  describe('botServiceClient - deleteTweetViaBotService', () => {
     const originalFetch = global.fetch;
 
     afterEach(() => {
@@ -46,7 +46,7 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
         ok: true,
         json: async () => ({ success: true, message: 'Tweet deleted successfully' }),
       } as any);
-      const result = await deleteTweetViaGrpc('123456');
+      const result = await deleteTweetViaBotService('123456');
       expect(result).toEqual({ success: true, message: 'Tweet deleted successfully' });
       (config.services as any).botBackendUrl = origUrl;
     });
@@ -55,7 +55,7 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       const origUrl = config.services.botBackendUrl;
       (config.services as any).botBackendUrl = 'http://localhost:8080';
       global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
-      const result = await deleteTweetViaGrpc('error_id');
+      const result = await deleteTweetViaBotService('error_id');
       expect(result).toEqual({ success: false, message: 'Network error' });
       (config.services as any).botBackendUrl = origUrl;
     });

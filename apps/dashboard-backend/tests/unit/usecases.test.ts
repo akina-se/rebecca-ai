@@ -10,10 +10,10 @@ import { CopilotUseCase } from '../../src/features/copilot/usecase';
 import { UserStatus, AssetStatus, PostLeaderboard, PostDetail, SystemAlert, KpiMetrics, Asset, MemoryLayer, MemoryContent, UserDetail } from '@rebecca/types';
 import { config } from '../../src/config';
 
-// Mock gRPC Client
-jest.mock('../../src/core/grpcClient', () => ({
-  deleteTweetViaGrpc: jest.fn().mockImplementation(async (id: string) => {
-    if (id === 'error_post') throw new Error('gRPC connection timeout');
+// Mock Bot Service Client
+jest.mock('../../src/core/botServiceClient', () => ({
+  deleteTweetViaBotService: jest.fn().mockImplementation(async (id: string) => {
+    if (id === 'error_post') throw new Error('Bot service HTTP connection timeout');
     return { success: true, message: 'Deleted' };
   })
 }));
