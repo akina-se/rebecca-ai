@@ -102,7 +102,6 @@ export class SupportersPageComponent implements OnInit, OnDestroy {
   readonly lightboxImageUrl = signal<string>('');
   readonly rewardThumbnailUrls = signal<Record<string, string>>({});
   private thumbnailUrlsToRevoke: string[] = [];
-  private lightboxBlobUrl: string | null = null;
 
   ngOnInit(): void {
     this.loadPlans();
@@ -117,10 +116,6 @@ export class SupportersPageComponent implements OnInit, OnDestroy {
   private revokeAllObjectUrls(): void {
     this.thumbnailUrlsToRevoke.forEach((url) => URL.revokeObjectURL(url));
     this.thumbnailUrlsToRevoke = [];
-    if (this.lightboxBlobUrl) {
-      URL.revokeObjectURL(this.lightboxBlobUrl);
-      this.lightboxBlobUrl = null;
-    }
   }
 
   loadPlans(): void {
@@ -543,33 +538,12 @@ export class SupportersPageComponent implements OnInit, OnDestroy {
   }
 
   openRewardLightbox(reward: RewardImageDoc): void {
-    if (this.lightboxBlobUrl) {
-      URL.revokeObjectURL(this.lightboxBlobUrl);
-      this.lightboxBlobUrl = null;
-    }
-    this.lightboxImageUrl.set('');
+    this.lightboxImageUrl.set(`/api/v1/supporters/rewards/${reward.id}/image?type=master`);
     this.isLightboxOpen.set(true);
-
-    this.repo.getRewardImageBlob(reward.id, 'master').subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        this.lightboxBlobUrl = url;
-        this.lightboxImageUrl.set(url);
-      },
-      error: (err) => {
-        console.error('Failed to load master reward image:', err);
-        this.toast.show(this.translationService.t('supporters.toast_fetch_error'), 'error');
-        this.closeRewardLightbox();
-      },
-    });
   }
 
   closeRewardLightbox(): void {
     this.isLightboxOpen.set(false);
     this.lightboxImageUrl.set('');
-    if (this.lightboxBlobUrl) {
-      URL.revokeObjectURL(this.lightboxBlobUrl);
-      this.lightboxBlobUrl = null;
-    }
   }
 }

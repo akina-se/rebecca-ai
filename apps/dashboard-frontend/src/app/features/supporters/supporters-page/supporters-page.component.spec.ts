@@ -398,27 +398,17 @@ describe('SupportersPageComponent', () => {
     expect(component.isRewardsModalOpen()).toBe(false);
   });
 
-  it('should open and close reward illustration lightbox with authenticated blob URL', () => {
-    const originalCreateObjectUrl = URL.createObjectURL;
-    const originalRevokeObjectUrl = URL.revokeObjectURL;
-    URL.createObjectURL = jest.fn().mockReturnValue('blob:http://localhost/mock-blob-url');
-    URL.revokeObjectURL = jest.fn();
-
+  it('should open and close reward illustration lightbox with master image URL', () => {
     expect(component.isLightboxOpen()).toBe(false);
     expect(component.lightboxImageUrl()).toBe('');
 
     component.openRewardLightbox(mockReward);
-    expect(mockRepo.getRewardImageBlob).toHaveBeenCalledWith('r_1', 'master');
     expect(component.isLightboxOpen()).toBe(true);
-    expect(component.lightboxImageUrl()).toBe('blob:http://localhost/mock-blob-url');
+    expect(component.lightboxImageUrl()).toBe('/api/v1/supporters/rewards/r_1/image?type=master');
 
     component.closeRewardLightbox();
     expect(component.isLightboxOpen()).toBe(false);
     expect(component.lightboxImageUrl()).toBe('');
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-blob-url');
-
-    URL.createObjectURL = originalCreateObjectUrl;
-    URL.revokeObjectURL = originalRevokeObjectUrl;
   });
 
   it('should clean up object URLs on ngOnDestroy', () => {
@@ -466,28 +456,7 @@ describe('SupportersPageComponent', () => {
     expect(component.isManualModalOpen()).toBe(true);
   });
 
-  it('should revoke existing blob URL and handle error in reward lightbox', () => {
-    const originalCreateObjectUrl = URL.createObjectURL;
-    const originalRevokeObjectUrl = URL.revokeObjectURL;
-    URL.createObjectURL = jest.fn().mockReturnValue('blob:http://localhost/new-blob');
-    URL.revokeObjectURL = jest.fn();
-
-    // Set existing lightboxBlobUrl
-    component.lightboxBlobUrl = 'blob:http://localhost/old-blob';
-    component.openRewardLightbox(mockReward);
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/old-blob');
-    expect(component.isLightboxOpen()).toBe(true);
-    expect(component.lightboxImageUrl()).toBe('blob:http://localhost/new-blob');
-
-    // Test error branch
-    mockRepo.getRewardImageBlob.mockReturnValueOnce(throwError(() => new Error('Image fetch error')));
-    component.openRewardLightbox(mockReward);
-    expect(mockToast.show).toHaveBeenCalledWith('サポーター台帳の取得に失敗しました', 'error');
-    expect(component.isLightboxOpen()).toBe(false);
-
-    URL.createObjectURL = originalCreateObjectUrl;
-    URL.revokeObjectURL = originalRevokeObjectUrl;
-
+  it('should reset selectedRewardFile when empty file list is selected', () => {
     const emptyEvent = { target: { files: [] } };
     component.onRewardFileSelected(emptyEvent);
     expect(component.selectedRewardFile).toBeNull();
