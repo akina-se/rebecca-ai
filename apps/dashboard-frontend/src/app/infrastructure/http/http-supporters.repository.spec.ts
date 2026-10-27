@@ -182,6 +182,11 @@ describe('HttpSupportersRepository', () => {
     expect(reqDelete.request.method).toBe('DELETE');
     reqDelete.flush({ success: true });
 
+    repo.deleteTransaction('tx_1').subscribe();
+    const reqDeleteTx = httpMock.expectOne(`${environment.apiUrl}/supporters/tx_1`);
+    expect(reqDeleteTx.request.method).toBe('DELETE');
+    reqDeleteTx.flush(null);
+
     repo.getRewardImageBlob('r_1', 'thumbnail').subscribe((blob) => {
       expect(blob).toBeDefined();
     });

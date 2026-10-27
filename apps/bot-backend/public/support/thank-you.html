@@ -520,6 +520,56 @@
       color: var(--text-muted);
     }
 
+    .reward-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      text-align: center;
+      background: rgba(15, 17, 24, 0.85);
+      min-height: 280px;
+      width: 100%;
+    }
+
+    .reward-placeholder .placeholder-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.9;
+    }
+
+    .reward-placeholder.expired .placeholder-icon {
+      color: #f59e0b;
+    }
+
+    .reward-placeholder.error .placeholder-icon {
+      color: #ef4444;
+    }
+
+    .reward-placeholder .placeholder-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .reward-placeholder .placeholder-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 360px;
+    }
+
+    .btn-download.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      box-shadow: none;
+      color: var(--text-muted);
+    }
+
     .action-links {
       display: flex;
       gap: 14px;
@@ -779,8 +829,30 @@
       </div>
 
       <div id="reward-asset-container" class="reward-image-preview-area" style="display: none;">
-        <div class="reward-image-frame">
+        <div class="reward-image-frame" id="reward-image-frame">
           <img id="reward-image" src="" alt="Supporter Reward Illustration">
+          <div id="reward-placeholder-expired" class="reward-placeholder expired" style="display: none;">
+            <span class="material-icons placeholder-icon" aria-hidden="true">schedule</span>
+            <div class="placeholder-title">
+              <span class="t-ja">ダウンロード有効期限が終了しました</span>
+              <span class="t-en">Download Window Expired</span>
+            </div>
+            <div class="placeholder-desc">
+              <span class="t-ja">決済完了から30分が経過したため、限定イラストのダウンロード期間は終了しました。</span>
+              <span class="t-en">The 30-minute download window following checkout completion has ended.</span>
+            </div>
+          </div>
+          <div id="reward-placeholder-error" class="reward-placeholder error" style="display: none;">
+            <span class="material-icons placeholder-icon" aria-hidden="true">error_outline</span>
+            <div class="placeholder-title">
+              <span class="t-ja">画像の読み込みに失敗しました</span>
+              <span class="t-en">Failed to Load Image</span>
+            </div>
+            <div class="placeholder-desc">
+              <span class="t-ja">通信環境をご確認の上、ページを再読み込みしてください。</span>
+              <span class="t-en">Please check your network connection and reload the page.</span>
+            </div>
+          </div>
         </div>
         <div class="reward-image-actions">
           <a id="download-reward-btn" href="#" target="_blank" download="rebecca-exclusive-supporter-artwork.jpg" class="btn-download">
@@ -1023,24 +1095,62 @@
             el.textContent = data.itemLabel || (isJa ? '温かいご支援' : 'Contribution');
           });
 
-          // Reward illustration (Thumbnail for responsive preview, high-res download for button)
-          if (data.reward) {
+          // Reward illustration and expiration handling
+          const assetContainer = document.getElementById('reward-asset-container');
+          const img = document.getElementById('reward-image');
+          const dlBtn = document.getElementById('download-reward-btn');
+          const expiredPlaceholder = document.getElementById('reward-placeholder-expired');
+          const errorPlaceholder = document.getElementById('reward-placeholder-error');
+          const alertBox = document.querySelector('.dl-alert-box');
+          const timerDisplay = document.getElementById('reward-expiry-timer');
+
+          const showExpiredState = () => {
+            if (img) img.style.display = 'none';
+            if (errorPlaceholder) errorPlaceholder.style.display = 'none';
+            if (expiredPlaceholder) expiredPlaceholder.style.display = 'flex';
+            if (dlBtn) {
+              dlBtn.classList.add('disabled');
+              dlBtn.removeAttribute('href');
+              dlBtn.removeAttribute('download');
+              const jaSpan = dlBtn.querySelector('.t-ja');
+              const enSpan = dlBtn.querySelector('.t-en');
+              if (jaSpan) jaSpan.textContent = 'ダウンロード期限終了';
+              if (enSpan) enSpan.textContent = 'Download Window Closed';
+            }
+            if (timerDisplay) {
+              timerDisplay.style.display = 'none';
+            }
+            if (alertBox) {
+              alertBox.style.display = 'none';
+            }
+            if (assetContainer) assetContainer.style.display = 'flex';
+          };
+
+          const showErrorState = () => {
+            if (img) img.style.display = 'none';
+            if (expiredPlaceholder) expiredPlaceholder.style.display = 'none';
+            if (errorPlaceholder) errorPlaceholder.style.display = 'flex';
+            if (assetContainer) assetContainer.style.display = 'flex';
+          };
+
+          if (data.isExpired || !data.reward) {
+            showExpiredState();
+          } else {
             const previewUrl = data.reward.thumbnailUrl || data.reward.imageUrl;
             const downloadUrl = data.reward.downloadUrl || data.reward.imageUrl;
 
             if (previewUrl || downloadUrl) {
-              const assetContainer = document.getElementById('reward-asset-container');
-              const img = document.getElementById('reward-image');
-              const dlBtn = document.getElementById('download-reward-btn');
-
               if (previewUrl) {
+                img.onerror = () => {
+                  showExpiredState();
+                };
                 img.src = previewUrl;
               }
               if (downloadUrl) {
                 dlBtn.href = downloadUrl;
                 dlBtn.setAttribute('download', 'rebecca-exclusive-supporter-artwork.jpg');
               }
-              assetContainer.style.display = 'flex';
+              if (assetContainer) assetContainer.style.display = 'flex';
             }
           }
         } else {

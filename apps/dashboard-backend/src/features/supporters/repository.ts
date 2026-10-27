@@ -265,4 +265,18 @@ export class SupportersRepository {
       throw error;
     }
   }
+
+  /**
+   * Deletes a support transaction document by its ID.
+   *
+   * @param id - Document ID.
+   */
+  async deleteTransaction(id: string): Promise<void> {
+    try {
+      await this.collections.supportTransactions.doc(id).delete();
+    } catch (error) {
+      logger.error('[SupportersRepository] Failed to delete transaction', error, { id });
+      throw error;
+    }
+  }
 }

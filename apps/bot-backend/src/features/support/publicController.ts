@@ -167,19 +167,29 @@ export class PublicSupportController {
         this.triggerAppreciationPost(transaction.id);
       }
 
-      // Step 4: Fetch supporter reward illustration asset:
-      // If transaction already has an assigned rewardImageId, fetch it; otherwise pick a random active reward from the pool!
+      // Enforce 30-minute reward download window
+      const sessionCreatedMs = session.created ? session.created * 1000 : null;
+      const createdAtMs = transaction?.createdAt
+        ? new Date(transaction.createdAt).getTime()
+        : sessionCreatedMs;
+
+      const MAX_WINDOW_MINUTES = 30;
+      const ageMinutes = createdAtMs ? (Date.now() - createdAtMs) / (60 * 1000) : 0;
+      const isExpired = ageMinutes > MAX_WINDOW_MINUTES;
+
+      // Step 4: Fetch supporter reward illustration asset (only if within 30-minute window)
       let activeReward: RewardImageDoc | null = null;
-      if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
-        activeReward = await this.deps.firestore.getRewardImageById(transaction.rewardImageId);
-      }
-      if (!activeReward) {
-        activeReward = await this.deps.firestore.getActiveRewardImage();
+      if (!isExpired) {
+        if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
+          activeReward = await this.deps.firestore.getRewardImageById(transaction.rewardImageId);
+        }
+        if (!activeReward) {
+          activeReward = await this.deps.firestore.getActiveRewardImage();
+        }
       }
 
       let rewardPayload = null;
-      if (activeReward) {
-        const expiresInMinutes = 30;
+      if (activeReward && !isExpired) {
         const encodedSessionId = encodeURIComponent(sessionId);
         // Secure by Default: Do not expose raw GCS bucket URLs or direct GCS signed links.
         // Stream through Bot Backend download API with strict 30-minute expiry verification.
@@ -189,12 +199,13 @@ export class PublicSupportController {
         // Record distribution telemetry
         await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
 
+        const expiresAtMs = (createdAtMs || Date.now()) + MAX_WINDOW_MINUTES * 60 * 1000;
         rewardPayload = {
           title: activeReward.title,
           imageUrl: thumbnailUrl,
           thumbnailUrl,
           downloadUrl,
-          expiresAt: new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString(),
+          expiresAt: new Date(expiresAtMs).toISOString(),
         };
       }
 
@@ -213,6 +224,7 @@ export class PublicSupportController {
         itemLabel: transaction?.itemLabel ?? tierInfo.itemLabel,
         safeName: safeNameForResponse,
         reward: rewardPayload,
+        isExpired,
       });
     } catch (error) {
       logger.error('[PublicSupportController] Error verifying support session', error);

@@ -47,6 +47,7 @@ export function initializeSupportersModule(
   // Transaction specific endpoints
   supportersRouter.get('/:id', controller.getById.bind(controller));
   supportersRouter.patch('/:id', controller.update.bind(controller));
+  supportersRouter.delete('/:id', controller.delete.bind(controller));
   supportersRouter.post('/:id/retry', controller.retry.bind(controller));
   supportersRouter.post('/:id/manual-resolve', controller.manualResolve.bind(controller));
 
