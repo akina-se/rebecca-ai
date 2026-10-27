@@ -159,6 +159,33 @@ describe('PublicSupportController Unit Tests', () => {
       );
     });
 
+    it('redacts safeName (returns null) when creditVisibility is hide to protect privacy', async () => {
+      req.query = { session_id: 'cs_hidden_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_hidden_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_hidden_123',
+        safeName: '秘密のマスター',
+        creditVisibility: 'hide',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース',
+        createdAt: new Date().toISOString(),
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          valid: true,
+          safeName: null,
+        }),
+      );
+    });
+
     it('returns 500 if unexpected error occurs during verification', async () => {
       req.query = { session_id: 'cs_error' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
@@ -224,6 +251,38 @@ describe('PublicSupportController Unit Tests', () => {
   });
 
   describe('handleWebhook', () => {
+    it('returns 500 when stripeWebhookSecret is not configured (Fail-Closed)', async () => {
+      const unconfiguredController = new PublicSupportController(
+        deps,
+        {
+          ...config.support,
+          stripeWebhookSecret: '',
+        },
+        mockStripe as unknown as Stripe,
+      );
+      req.headers = { 'stripe-signature': 'sig_123' };
+      (req as any).rawBody = Buffer.from('{}');
+
+      await unconfiguredController.handleWebhook(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(jsonMock).toHaveBeenCalledWith({
+        error: 'Webhook Error: Server webhook secret is not configured',
+      });
+    });
+
+    it('returns 400 when stripe-signature header is missing (Fail-Closed)', async () => {
+      req.headers = {};
+      (req as any).rawBody = Buffer.from('{}');
+
+      await controller.handleWebhook(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({
+        error: 'Webhook Error: Missing stripe-signature header',
+      });
+    });
+
     it('returns 400 when rawBody is missing on webhook signature check', async () => {
       req.headers = { 'stripe-signature': 'valid_sig' };
       await controller.handleWebhook(req as Request, res as Response);

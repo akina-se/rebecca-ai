@@ -191,11 +191,17 @@ export class PublicSupportController {
       const amount = session.amount_total ?? 0;
       const tierInfo = resolveSupportTierFromAmount(amount);
 
+      // Privacy Guard: If supporter opted to hide credit visibility ('hide'),
+      // do not expose safeName in the public verify-session response to prevent
+      // disclosure if sessionId is leaked or intercepted via browser history/referrer.
+      const isCreditHidden = transaction?.creditVisibility === 'hide';
+      const safeNameForResponse = isCreditHidden ? null : (transaction?.safeName || null);
+
       res.status(200).json({
         valid: true,
         tier: transaction?.tier ?? tierInfo.tier,
         itemLabel: transaction?.itemLabel ?? tierInfo.itemLabel,
-        safeName: transaction?.safeName,
+        safeName: safeNameForResponse,
         reward: rewardPayload,
       });
     } catch (error) {
@@ -287,21 +293,30 @@ export class PublicSupportController {
     const signature = req.headers['stripe-signature'];
     const webhookSecret = this.config.stripeWebhookSecret;
 
-    let event: Stripe.Event;
+    // Fail-Closed: Strictly require server webhook secret configuration
+    if (!webhookSecret) {
+      logger.error('[PublicSupportController] Stripe webhook secret is not configured on this server');
+      res.status(500).json({ error: 'Webhook Error: Server webhook secret is not configured' });
+      return;
+    }
 
+    // Fail-Closed: Strictly require Stripe-Signature header
+    if (!signature || typeof signature !== 'string') {
+      logger.warn('[PublicSupportController] Missing or invalid stripe-signature header on webhook request');
+      res.status(400).json({ error: 'Webhook Error: Missing stripe-signature header' });
+      return;
+    }
+
+    const rawBody = (req as { rawBody?: Buffer }).rawBody;
+    if (!rawBody) {
+      logger.warn('[PublicSupportController] Missing rawBody for Stripe webhook signature verification');
+      res.status(400).json({ error: 'Webhook Error: Missing raw request body' });
+      return;
+    }
+
+    let event: Stripe.Event;
     try {
-      if (webhookSecret && signature) {
-        const rawBody = (req as { rawBody?: Buffer }).rawBody;
-        if (!rawBody) {
-          logger.warn('[PublicSupportController] Missing rawBody for Stripe webhook signature verification');
-          res.status(400).json({ error: 'Webhook Error: Missing raw request body' });
-          return;
-        }
-        event = this.stripeClient.webhooks.constructEvent(rawBody, signature, webhookSecret);
-      } else {
-        // Fallback in unconfigured dev environments
-        event = req.body as Stripe.Event;
-      }
+      event = this.stripeClient.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       logger.warn('[PublicSupportController] Stripe webhook signature verification failed', {
