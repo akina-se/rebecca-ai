@@ -429,7 +429,7 @@ async function seedFirestore() {
         'base64'
       );
       for (const reward of rewardImages) {
-        await bucket.file(reward.storagePath).save(dummyPng, { contentType: 'image/png' });
+        await bucket.file(reward.storagePath).save(dummyPng, { contentType: 'image/png', resumable: false });
         console.log(`Seeded storage file: ${reward.storagePath}`);
       }
     } catch (storageErr) {
