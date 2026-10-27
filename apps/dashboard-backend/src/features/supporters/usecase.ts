@@ -347,14 +347,19 @@ export class SupportersUseCase {
       throw new HttpError(`Reward asset with ID "${id}" not found`, 404);
     }
 
-    if (existing.storagePath) {
+    const pathsToDelete = [existing.storagePath, existing.thumbnailStoragePath].filter(
+      (p): p is string => Boolean(p),
+    );
+    if (pathsToDelete.length > 0) {
       try {
         const bucket = this.storage.bucket(config.gcp.imageBucketName);
-        await bucket.file(existing.storagePath).delete({ ignoreNotFound: true });
+        await Promise.allSettled(
+          pathsToDelete.map((p) => bucket.file(p).delete({ ignoreNotFound: true })),
+        );
       } catch (storageErr) {
-        logger.warn('[SupportersUseCase] Failed to delete file from Cloud Storage', {
+        logger.warn('[SupportersUseCase] Failed to delete file(s) from Cloud Storage', {
           id,
-          storagePath: existing.storagePath,
+          pathsToDelete,
           error: storageErr instanceof Error ? storageErr.message : String(storageErr),
         });
       }

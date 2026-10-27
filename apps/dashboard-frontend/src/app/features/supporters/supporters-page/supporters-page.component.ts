@@ -146,7 +146,7 @@ export class SupportersPageComponent implements OnInit {
         next: (res) => {
           this.transactions.set(res.transactions);
           this.summary.set(res.summary);
-          const meta = res.pagination || res.meta;
+          const meta = res.meta;
           const count = meta?.totalItems ?? res.summary?.totalCount ?? res.transactions.length;
           this.totalItems.set(count);
           this.totalPages.set(meta?.totalPages ?? Math.ceil(count / this.pageSize) ?? 1);
@@ -177,8 +177,9 @@ export class SupportersPageComponent implements OnInit {
       next: (res) => {
         this.rewards.set(res.rewards);
       },
-      error: () => {
-        // Quietly handle
+      error: (err) => {
+        console.error('[SupportersPage] Failed to load rewards catalog:', err);
+        this.toast.show(this.translationService.t('supporters.toast_fetch_error'), 'error');
       },
     });
   }

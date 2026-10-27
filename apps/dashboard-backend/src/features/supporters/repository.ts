@@ -113,7 +113,6 @@ export class SupportersRepository {
           completedCount,
           totalAmount,
         },
-        pagination: paginationMeta,
         meta: paginationMeta,
         nextCursor,
       };

@@ -765,7 +765,6 @@ export interface SupporterLedgerResponse {
     completedCount: number;
     totalAmount: number;
   };
-  pagination?: PaginationMeta;
   meta?: PaginationMeta;
   nextCursor?: string;
 }

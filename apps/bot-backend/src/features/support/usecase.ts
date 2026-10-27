@@ -79,11 +79,10 @@ export class SupportTaskUseCase {
     }
 
     // Step 1: Deterministic Pre-Filtering (Single-responsibility security invariant)
-    const { safeName, isSanitized } = sanitizeSupporterName(transaction.rawName, {
+    const { safeName, isSanitized: isNameSanitized } = sanitizeSupporterName(transaction.rawName, {
       fallbackName: this.config.fallbackName,
       maxNameLength: this.config.maxNameLength,
     });
-    const isNameSanitized = isSanitized;
 
     try {
       // Step 2: Context Gathering (Core prompt & living context)

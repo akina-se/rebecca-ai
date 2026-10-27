@@ -294,6 +294,11 @@
       margin-bottom: 16px;
     }
 
+    .title-chunk {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
     .gradient-text {
       background: linear-gradient(135deg, #ffffff 40%, var(--gemitec-purple-light) 100%);
       -webkit-background-clip: text;
@@ -1556,8 +1561,8 @@
         <span class="t-en">COMMUNITY SPONSORSHIP PROGRAM</span>
       </div>
       <h1 class="page-title">
-        <span class="t-ja">自律型AIレベッカ <span class="gradient-text">公式サポータープログラム</span></span>
-        <span class="t-en">Rebecca AI <span class="gradient-text">Official Supporter Program</span></span>
+        <span class="t-ja"><span class="title-chunk">自律型AIレベッカ</span> <span class="title-chunk gradient-text">公式サポータープログラム</span></span>
+        <span class="t-en"><span class="title-chunk">Rebecca AI</span> <span class="title-chunk gradient-text">Official Supporter Program</span></span>
       </h1>
       <p class="page-desc">
         <span class="t-ja">レベッカの自律対話ルーチンの研究と、持続的なコンピュートリソース運用を後援するコミュニティプログラムです。ご支援いただいたマスターには、レベッカからの自律的お礼やサポーター特典が提供されます。</span>
@@ -2013,8 +2018,8 @@
               ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
               : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
           
-          const dateFormatted = formatDateYMD(item.createdAt || item.lastSupportedAt);
-          const displayName = item.safeName || item.name || 'Anonymous';
+          const dateFormatted = formatDateYMD(item.createdAt);
+          const displayName = item.safeName || 'Anonymous';
           const fontClass = getNameFontClass(displayName);
 
           const card = document.createElement('div');
@@ -2059,7 +2064,7 @@
       container.innerHTML = '';
       recentItems.forEach(function(item) {
         const tier = item.tier || 'bronze';
-        const displayName = item.safeName || item.name || 'Anonymous';
+        const displayName = item.safeName || 'Anonymous';
         const iconSvg = tier === 'gold' 
           ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
           : (tier === 'silver'
@@ -2083,8 +2088,8 @@
       const modal = document.getElementById('supporter-modal');
       if (!modal) return;
       const tier = item.tier || 'bronze';
-      const displayName = item.safeName || item.name || 'Anonymous';
-      const dateStr = formatDateYMD(item.createdAt || item.lastSupportedAt);
+      const displayName = item.safeName || 'Anonymous';
+      const dateStr = formatDateYMD(item.createdAt);
 
       const tierBadge = document.getElementById('modal-tier-badge');
       tierBadge.className = 'modal-tier-badge tier-' + tier;

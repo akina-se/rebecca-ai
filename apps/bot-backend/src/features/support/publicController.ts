@@ -38,17 +38,6 @@ export class PublicSupportController {
   }
 
   /**
-   * Verifies Stripe checkout session completion and generates a time-limited Signed Download URL.
-   *
-   * @remarks
-   * Security Invariant:
-   * Rejects any request where `payment_status !== 'paid'` with HTTP 403 Forbidden.
-   * Only authenticated paying supporters receive high-resolution signed download links.
-   *
-   * @param req - Express Request with `session_id` query parameter.
-   * @param res - Express Response.
-   */
-  /**
    * Enqueues the appreciation post task via Cloud Tasks.
    */
   private triggerAppreciationPost(transactionId: string): void {
@@ -59,6 +48,58 @@ export class PublicSupportController {
     });
   }
 
+  /**
+   * Constructs a canonical SupportTransactionDoc from a verified Stripe Checkout Session.
+   *
+   * @remarks
+   * Privacy / Security:
+   * Only reads supporter nickname from `session.custom_fields` (`supporter_name`).
+   * Never accesses `customer_details` (billing cardholder name) to prevent accidental PII leakage.
+   */
+  private buildTransactionDoc(
+    session: Stripe.Checkout.Session,
+    activeRewardId?: string,
+  ): SupportTransactionDoc {
+    const customFields = session.custom_fields || [];
+    const rawNameField = customFields.find((f) => f.key === 'supporter_name');
+    const rawName = rawNameField?.text?.value?.trim() || '';
+    const visibilityField = customFields.find((f) => f.key === 'credit_visibility');
+    const creditVisibility = visibilityField?.dropdown?.value === 'hide' ? 'hide' : 'show';
+    const amount = session.amount_total ?? 0;
+    const { tier, itemLabel } = resolveSupportTierFromAmount(amount);
+    const transactionId = `tx_${session.id.replace('cs_', '').replace('test_', '')}`;
+
+    return {
+      id: transactionId,
+      stripeSessionId: session.id,
+      stripePaymentIntentId:
+        typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
+      rawName,
+      safeName: rawName || this.config.fallbackName,
+      isNameSanitized: false,
+      creditVisibility,
+      amount,
+      currency: 'jpy',
+      tier,
+      itemLabel,
+      rewardImageId: activeRewardId || 'none',
+      status: 'pending',
+      isBanned: false,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Verifies Stripe checkout session completion and generates a time-limited Signed Download URL.
+   *
+   * @remarks
+   * Security Invariant:
+   * Rejects any request where `payment_status !== 'paid'` with HTTP 403 Forbidden.
+   * Only authenticated paying supporters receive high-resolution signed download links.
+   *
+   * @param req - Express Request with `session_id` query parameter.
+   * @param res - Express Response.
+   */
   verifySession = async (req: Request, res: Response): Promise<void> => {
     try {
       const sessionId = req.query.session_id;
@@ -99,39 +140,16 @@ export class PublicSupportController {
       // If webhook has not recorded it yet (e.g. local environment or delayed webhook), auto-sync from verified paid session
       if (!transaction) {
         try {
-          const customFields = session.custom_fields || [];
-          const rawNameField = customFields.find((f) => f.key === 'supporter_name');
-          const rawName = rawNameField?.text?.value?.trim() || session.customer_details?.name?.trim() || '';
-          const visibilityField = customFields.find((f) => f.key === 'credit_visibility');
-          const creditVisibility = visibilityField?.dropdown?.value === 'hide' ? 'hide' : 'show';
-          const amount = session.amount_total ?? 0;
-          const { tier, itemLabel } = resolveSupportTierFromAmount(amount);
           const activeRewardForSync = await this.deps.firestore.getActiveRewardImage();
+          const transactionDoc = this.buildTransactionDoc(session, activeRewardForSync?.id);
 
-          const transactionId = `tx_${session.id.replace('cs_', '').replace('test_', '')}`;
-          const transactionDoc: SupportTransactionDoc = {
-            id: transactionId,
-            stripeSessionId: session.id,
-            stripePaymentIntentId:
-              typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
-            rawName,
-            safeName: rawName || this.config.fallbackName,
-            isNameSanitized: false,
-            creditVisibility,
-            amount,
-            currency: 'jpy',
-            tier,
-            itemLabel,
-            rewardImageId: activeRewardForSync?.id ?? 'none',
-            status: 'pending',
-            isBanned: false,
-            createdAt: new Date().toISOString(),
-          };
           await this.deps.firestore.createSupportTransaction(transactionDoc);
           transaction = transactionDoc;
-          logger.info('[PublicSupportController] Auto-created support transaction on session verification', { transactionId });
+          logger.info('[PublicSupportController] Auto-created support transaction on session verification', {
+            transactionId: transactionDoc.id,
+          });
 
-          this.triggerAppreciationPost(transactionId);
+          this.triggerAppreciationPost(transactionDoc.id);
         } catch (syncErr) {
           logger.warn('[PublicSupportController] Failed to auto-sync transaction from session', { syncErr });
         }
@@ -312,18 +330,6 @@ export class PublicSupportController {
           return;
         }
 
-        // Extract custom fields safely
-        const customFields = session.custom_fields || [];
-        const rawNameField = customFields.find(
-          (f) => f.key === 'supporter_name',
-        );
-        const rawName = rawNameField?.text?.value?.trim() || '';
-
-        const visibilityField = customFields.find(
-          (f) => f.key === 'credit_visibility',
-        );
-        const creditVisibility = visibilityField?.dropdown?.value === 'hide' ? 'hide' : 'show';
-
         const amount = session.amount_total ?? 0;
         if (amount <= 0) {
           logger.warn('[PublicSupportController] Non-positive amount in checkout session', {
@@ -333,36 +339,19 @@ export class PublicSupportController {
           res.status(400).json({ error: 'Invalid payment amount' });
           return;
         }
-        const { tier, itemLabel } = resolveSupportTierFromAmount(amount);
-        const activeReward = await this.deps.firestore.getActiveRewardImage();
 
-        const transactionId = `tx_${session.id.replace('cs_', '').replace('test_', '')}`;
-        const transactionDoc: SupportTransactionDoc = {
-          id: transactionId,
-          stripeSessionId: session.id,
-          stripePaymentIntentId:
-            typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
-          rawName,
-          safeName: rawName || this.config.fallbackName,
-          isNameSanitized: false,
-          creditVisibility,
-          amount,
-          currency: 'jpy',
-          tier,
-          itemLabel,
-          rewardImageId: activeReward?.id ?? 'none',
-          status: 'pending',
-          isBanned: false,
-          createdAt: new Date().toISOString(),
-        };
+        const activeReward = await this.deps.firestore.getActiveRewardImage();
+        const transactionDoc = this.buildTransactionDoc(session, activeReward?.id);
 
         await this.deps.firestore.createSupportTransaction(transactionDoc);
-        logger.info('[PublicSupportController] Created support transaction', { transactionId });
+        logger.info('[PublicSupportController] Created support transaction', {
+          transactionId: transactionDoc.id,
+        });
 
         // Enqueue autonomous appreciation post task via Cloud Tasks
-        this.triggerAppreciationPost(transactionId);
+        this.triggerAppreciationPost(transactionDoc.id);
 
-        res.status(200).json({ received: true, transactionId });
+        res.status(200).json({ received: true, transactionId: transactionDoc.id });
         return;
       } catch (txError) {
         logger.error('[PublicSupportController] Failed to record support transaction', txError, {
@@ -422,7 +411,14 @@ export class PublicSupportController {
       // Step 2: Enforce strict 30-minute time window
       const createdAtMs = transaction?.createdAt
         ? new Date(transaction.createdAt).getTime()
-        : sessionCreatedMs || Date.now();
+        : sessionCreatedMs;
+
+      if (!createdAtMs || isNaN(createdAtMs)) {
+        logger.warn('[PublicSupportController] Missing valid creation timestamp for download verification', { sessionId });
+        res.status(400).json({ error: 'Unable to determine checkout session timestamp.' });
+        return;
+      }
+
       const ageMinutes = (Date.now() - createdAtMs) / (60 * 1000);
 
       const MAX_WINDOW_MINUTES = 30;
