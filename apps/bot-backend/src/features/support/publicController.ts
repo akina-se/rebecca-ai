@@ -163,7 +163,7 @@ export class PublicSupportController {
         } catch (syncErr) {
           logger.warn('[PublicSupportController] Failed to auto-sync transaction from session', { syncErr });
         }
-      } else if (transaction && transaction.status === 'pending') {
+      } else if (transaction.status === 'pending') {
         this.triggerAppreciationPost(transaction.id);
       }
 

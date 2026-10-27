@@ -8,12 +8,12 @@ const client = new OAuth2Client();
 /**
  * Authenticates server-to-server requests by verifying a Google OIDC token or a fallback shared secret.
  *
- * Authentication mode is determined by the presence of `expectedAudience`:
- * - **OIDC mode** (`expectedAudience` is set and Bearer token is provided): the Bearer token MUST pass
- *   Google OIDC verification. If an invalid Bearer token is provided, the request is rejected immediately
- *   to prevent credential-downgrade attacks.
- * - **Shared secret mode**: checked when no Bearer token is supplied (e.g. internal BFF-to-worker calls)
- *   or when `expectedAudience` is undefined (local development or non-OIDC tasks).
+ * Authentication scheme is determined by the presented credentials:
+ * - **OIDC Scheme**: When an `Authorization` header is present, the request MUST pass Google OIDC
+ *   token verification against the configured `expectedAudience`. If verification fails, the request
+ *   is strictly rejected without falling back to shared secret (preventing credential-downgrade attacks).
+ * - **Shared Secret Scheme**: When no `Authorization` header is present but the custom secret header
+ *   is provided, constant-time comparison is performed against `fallbackSecret`.
  *
  * @param req - The Express request object containing the authorization headers.
  * @param expectedAudience - The expected audience claim for the OIDC token (typically the service URL).
@@ -28,10 +28,20 @@ export const verifyServerToServerAuth = async (
     secretHeaderName: string
 ): Promise<boolean> => {
     const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
-    const token = authHeader.replace(/^bearer\s+/i, '').trim();
+    const rawSecret = req.headers[secretHeaderName.toLowerCase()];
+    const secretHeader = typeof rawSecret === 'string' ? rawSecret.trim() : '';
 
-    // 1. Verify Google OIDC token if Bearer token and expectedAudience are present
-    if (token && expectedAudience) {
+    // 1. If an authorization header is present, enforce strict Google OIDC verification
+    if (authHeader) {
+        if (!expectedAudience) {
+            return false;
+        }
+
+        const token = authHeader.replace(/^bearer\s+/i, '').trim();
+        if (!token) {
+            return false;
+        }
+
         try {
             const ticket = await client.verifyIdToken({
                 idToken: token,
@@ -46,27 +56,27 @@ export const verifyServerToServerAuth = async (
             logger.warn('OIDC token verification failed', { error: (e as Error).message });
         }
 
-        // When a Bearer token is provided with an expected audience, do not fall back to shared secret
-        // to prevent credential-downgrade attacks.
         return false;
     }
 
-    // 2. Verify shared secret (internal server-to-server auth via Secret Manager)
-    if (fallbackSecret) {
+    // 2. Otherwise, if the shared secret header is present, enforce constant-time secret verification
+    if (secretHeader) {
+        if (!fallbackSecret) {
+            return false;
+        }
+
         try {
-            const secretHeader = typeof req.headers[secretHeaderName.toLowerCase()] === 'string' ? req.headers[secretHeaderName.toLowerCase()] as string : '';
+            const providedBuffer = Buffer.from(secretHeader, 'utf8');
+            const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
 
-            if (secretHeader) {
-                const providedBuffer = Buffer.from(secretHeader, 'utf8');
-                const expectedBuffer = Buffer.from(fallbackSecret, 'utf8');
-
-                if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
-                    return true;
-                }
+            if (providedBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
+                return true;
             }
         } catch (err) {
             logger.warn('Error during secret comparison', { err });
         }
+
+        return false;
     }
 
     return false;
