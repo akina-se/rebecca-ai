@@ -1,5 +1,64 @@
 # Changelog
 
+## [1.36.0](https://github.com/akina-se/rebecca-ai/compare/v1.35.0...v1.36.0) (2026-10-27)
+
+
+### Features
+
+* **bot-backend:** make support tiers horizontally swipeable with purple edge line on mobile ([ebde2f3](https://github.com/akina-se/rebecca-ai/commit/ebde2f3e89040a8308c272d76be7722c4b311cc8))
+* **dashboard:** add full-screen lightbox modal for reward illustrations in rewards catalog ([2b43208](https://github.com/akina-se/rebecca-ai/commit/2b432084956499e3cfcb2e03a555a7bf7e4dd3d5))
+* **dashboard:** add one-click rollback to checkout raw name and verify dual-column DB persistence ([ebbfd76](https://github.com/akina-se/rebecca-ai/commit/ebbfd768a44825b711704f8e52ad10daf454928c))
+* **dashboard:** integrate shared pagination component and pagination API for supporter ledger ([14487be](https://github.com/akina-se/rebecca-ai/commit/14487be4d09995d08ad8ea04140a075b415d6be7))
+* **db:** update seed script to generate 200+ mock sponsors for pagination and grid testing ([146ea0d](https://github.com/akina-se/rebecca-ai/commit/146ea0d3087fe0bca708ea0bdd7e79cc9a86fe64))
+* **landing:** make community sponsorship tier boxes direct clickable payment links ([af0799f](https://github.com/akina-se/rebecca-ai/commit/af0799f1217db6ead8de09840117fd120c60c3db))
+* **legal:** add Act on Specified Commercial Transactions notice, dynamic support contact, and supporters sitemap ([ec88523](https://github.com/akina-se/rebecca-ai/commit/ec885232c68baac99f84e6b30a0ad5fd1325ad8e))
+* **legal:** obfuscate contact email with at mark, simplify price disclosure, and optimize mobile footer links ([a11e7c1](https://github.com/akina-se/rebecca-ai/commit/a11e7c166a73bfbb15d32ff834622b2da34397c5))
+* **nav:** add breadcrumb navigation to legal and supporters pages ([8de7b49](https://github.com/akina-se/rebecca-ai/commit/8de7b4960fe4712ced16ad62cfeee6f1307cca70))
+* **seo:** remove legal.html from sitemap.xml and keep 2026-10-27 dates ([d2e71ed](https://github.com/akina-se/rebecca-ai/commit/d2e71ed9a45e686825c81bbafef7b75296380484))
+* **seo:** update sitemap lastmod to 2026-10-27 and add legal.html ([997eac3](https://github.com/akina-se/rebecca-ai/commit/997eac305a80ddbd80a8d2750b720e8b911f6e00))
+* **support:** autonomous sponsor tipping and appreciation system with stripe ([#370](https://github.com/akina-se/rebecca-ai/issues/370)) ([50e3ea4](https://github.com/akina-se/rebecca-ai/commit/50e3ea4c948a578d1c7714d907683d714a07c9b9))
+* **support:** dynamically sync tier pricing and plans from SSOT API across public and admin UIs ([590d049](https://github.com/akina-se/rebecca-ai/commit/590d04987c33d41604b0bd2e75e45433d2b32872))
+* **supporters:** add dedicated OGP image and card meta tags for supporters portal ([0c204ac](https://github.com/akina-se/rebecca-ai/commit/0c204acc43aad0856314e315d148af39cedfa2e1))
+* **supporters:** add thumbnail generation, EXIF stripping, and sequential naming for digital rewards ([9403278](https://github.com/akina-se/rebecca-ai/commit/9403278e8d48b478836e19a4c7c4eb91952ffcde))
+* **supporters:** redesign supporter portal with recent highlights, 6-col PC / 3-col mobile grid, and 120-item pagination ([a4cd737](https://github.com/akina-se/rebecca-ai/commit/a4cd73773b26f70f1b3d2cb9f4b66059046ea64b))
+* **supporters:** unify pricing to 500/1000/3000 JPY and set Silver tier as mobile carousel default ([edf9d9b](https://github.com/akina-se/rebecca-ai/commit/edf9d9b5084f4ca8453d44247384812d89d7dc04))
+* **support:** reorder thank-you layout and format exclusive artwork download filename ([340bf9a](https://github.com/akina-se/rebecca-ai/commit/340bf9a5656c104cf042f158cf94d0e6ac55fb01))
+* **ui:** elevate download urgency banner design to IT enterprise standard ([9b487e8](https://github.com/akina-se/rebecca-ai/commit/9b487e8dbef737d63bb2a9d5fa02d80087542257))
+* **ui:** simplify high-res download button text and prevent mobile wrap ([e1142a9](https://github.com/akina-se/rebecca-ai/commit/e1142a9cf1edfd7dce7a80ff681b2246c82027c5))
+* **ui:** standardize header and footer on thank-you page with unified bilingual switching ([c0fa4c9](https://github.com/akina-se/rebecca-ai/commit/c0fa4c945ba3410964fd6b2f3d52b67e727ae560))
+
+
+### Bug Fixes
+
+* **bot-backend:** add direct appreciation post fallback when Cloud Tasks is unavailable ([14a789f](https://github.com/akina-se/rebecca-ai/commit/14a789f82ea8e98963e3047ae1dc33d2128567cd))
+* **bot-backend:** add no-cache headers for supporter html routes ([73d3e52](https://github.com/akina-se/rebecca-ai/commit/73d3e52250d85318383d49a99a22648ab6554913))
+* **bot-backend:** refine supporters portal UI with SVG icons, dynamic text scaling, and detail modal ([d9ba240](https://github.com/akina-se/rebecca-ai/commit/d9ba240aa43c5e4cc173c86d514d7a79a31feaf1))
+* **bot-backend:** remove redundant official backer row from supporter detail modal ([74f7a90](https://github.com/akina-se/rebecca-ai/commit/74f7a90e662dae65bf3ad671f7415a0dded5dd60))
+* **bot-backend:** remove Special Thanks badge from supporter roster header ([c3879a2](https://github.com/akina-se/rebecca-ai/commit/c3879a2f7e738d084ec86687883c3ef24b1ede64))
+* **bot-backend:** remove tacky horizontal scroll indicator badge from recent supporters header ([21f0571](https://github.com/akina-se/rebecca-ai/commit/21f0571b1b533ba26ffdc25edf673a885c7293d9))
+* **bot-backend:** unify support date format to YYYY/MM/DD and complete bilingual coverage ([88fb2d9](https://github.com/akina-se/rebecca-ai/commit/88fb2d96af4ec72e59e1b5e28b56125d078e0c1e))
+* **dashboard-frontend:** align supporters header title and polish mobile layout ([3f9da9d](https://github.com/akina-se/rebecca-ai/commit/3f9da9d0d3a89c2dddf97df6bfc3695667383906))
+* **dashboard-frontend:** elevate supporters modal z-index above right drawer ([2720b8a](https://github.com/akina-se/rebecca-ai/commit/2720b8a847b9f102114f297608f355c17eb10424))
+* **dashboard:** eliminate mixed Japanese strings and localize all supporter ledger elements in English mode ([e80aaf7](https://github.com/akina-se/rebecca-ai/commit/e80aaf787e5f497953fd44a7643d9d4a9ef1a0c3))
+* **dashboard:** use master reward image endpoint URL in lightbox for robust loading and E2E alignment ([5d914ea](https://github.com/akina-se/rebecca-ai/commit/5d914eab49f43c3c9208b811fd8430534cb6a02e))
+* **landing:** improve mobile tier card layout to full width and disable cards when payment links are unconfigured ([fded3c4](https://github.com/akina-se/rebecca-ai/commit/fded3c4ac6d1f15c2e78b52bbcd835c5443ffeb0))
+* **public:** unify header and footer across tos and privacy, fix recent supporters hover clipping ([d3de068](https://github.com/akina-se/rebecca-ai/commit/d3de068c38aea4b5d0607647fea1060c51ff0c65))
+* **security:** enforce auth on reward images and eliminate dev fallbacks ([833263f](https://github.com/akina-se/rebecca-ai/commit/833263fbcece1f20aed03ecd570065419ebccd8a))
+* **security:** enforce fail-closed webhook signature check and redact hidden supporter names ([a6c9d16](https://github.com/akina-se/rebecca-ai/commit/a6c9d16dfe8fde752d5c79fb6a1ffb22a8e66ff4))
+* **security:** resolve CodeQL alerts on rate limiting, auth bypass, and redundant conditional ([11261c3](https://github.com/akina-se/rebecca-ai/commit/11261c3df076fc93540fd2e022ff85d948fb4eca))
+* **security:** unify server-to-server auth verifiers without conditional bypass ([b435f80](https://github.com/akina-se/rebecca-ai/commit/b435f80cfa0c714a1d00692250bb0ebfa99c1eb7))
+* **server:** remove global rate limiter from static assets and web views ([7587543](https://github.com/akina-se/rebecca-ai/commit/75875438b71ff3f1d335592667b6316352d6c1da))
+* **storage:** allow public read for supporter digital rewards in storage rules ([24f9db8](https://github.com/akina-se/rebecca-ai/commit/24f9db8bf3580aff7d919a0947270271a7e9290b))
+* **support:** enable worker dispatch on manual entry and unify artwork download filename ([8cd396d](https://github.com/akina-se/rebecca-ai/commit/8cd396d9ea7cf516ee1b52467240ec309219960d))
+* **supporters:** include Google Pay in Japanese payment methods description ([7a28b91](https://github.com/akina-se/rebecca-ai/commit/7a28b91fcc278a8a126f4cba1ed5c4fd82578d5e))
+* **supporters:** replace monthly reward model with random distribution pool and complete missing i18n keys ([eaed3c5](https://github.com/akina-se/rebecca-ai/commit/eaed3c57bafec02ac0ecd98fc0bce6b444cb5b16))
+* **supporters:** replace producer with administrator in manual resolution status and clean up remaining Special Thanks strings ([0e77937](https://github.com/akina-se/rebecca-ai/commit/0e77937361ffdd98fb03cefe193c82c7f8638b2a))
+* **supporters:** unify header/footer with landing page and ensure complete Japanese localization ([601d18d](https://github.com/akina-se/rebecca-ai/commit/601d18dc91693e3d063c14de209ad6903f55b401))
+* **support:** keep transaction as let for reassignment in verifySession ([8a745a4](https://github.com/akina-se/rebecca-ai/commit/8a745a46f1f4eac244ab12db46fb4f0fe6f64a4e))
+* **support:** point official portal url to /supporters#plans and quote in env to prevent hash stripping ([40a653c](https://github.com/akina-se/rebecca-ai/commit/40a653c8ea09e4935606d79976b1defee54bc763))
+* **support:** stream rewards through bot backend proxy with 30-min window and revert storage rules to private ([8f6e555](https://github.com/akina-se/rebecca-ai/commit/8f6e555d9cac0a9efac458c57ecd0994b399f19e))
+* **support:** update stripe payment redirect url and add local storage emulator fallback ([e3d9070](https://github.com/akina-se/rebecca-ai/commit/e3d90703c5350bc4eaea5dbf23b988235cf983aa))
+
 ## [1.35.0](https://github.com/akina-se/rebecca-ai/compare/v1.34.2...v1.35.0) (2026-10-24)
 
 
