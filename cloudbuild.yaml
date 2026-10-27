@@ -50,13 +50,13 @@ steps:
     entrypoint: 'gcloud'
     args:
       - 'run'
-      - 'services'
-      - 'update'
+      - 'deploy'
       - 'rebecca-ai-gal'
       - '--platform=managed'
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/bot-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
       - '--memory=1Gi'
+      - '--allow-unauthenticated'
       - '--quiet'
 
   # ----------------------------------------------------------------------------
@@ -87,13 +87,13 @@ steps:
     entrypoint: 'gcloud'
     args:
       - 'run'
-      - 'services'
-      - 'update'
+      - 'deploy'
       - 'rebecca-dashboard-bff'
       - '--platform=managed'
       - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPOSITORY/dashboard-backend:$COMMIT_SHA'
       - '--region=$_DEPLOY_REGION'
       - '--memory=1Gi'
+      - '--allow-unauthenticated'
       - '--quiet'
 
   # ----------------------------------------------------------------------------
