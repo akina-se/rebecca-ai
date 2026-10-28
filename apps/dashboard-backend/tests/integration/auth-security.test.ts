@@ -169,6 +169,7 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
         mockVerifyIdToken.mockResolvedValueOnce({
           uid: 'regular_user_123',
           email: 'regular_user@example.com',
+          email_verified: true,
           role: 'USER', // regular user role
         });
 
@@ -195,12 +196,13 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
       mockVerifyIdToken.mockResolvedValue({
         uid: 'admin_123',
         email: 'admin@rebecca-ai.net',
+        email_verified: true,
         role: 'ADMIN',
         admin: true,
       });
       mockFirestoreGet.mockResolvedValue({
         empty: false,
-        docs: [{ data: () => ({ email: 'admin@rebecca-ai.net', role: 'ADMIN', status: 'ACTIVE' }) }],
+        docs: [{ data: () => ({ uid: 'admin_123', email: 'admin@rebecca-ai.net', role: 'ADMIN', status: 'ACTIVE' }) }],
       });
 
       const res = await request(app)

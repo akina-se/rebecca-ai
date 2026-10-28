@@ -62,6 +62,7 @@ async function seedAuth() {
     });
     await getAuth().setCustomUserClaims(user.uid, { role: 'ADMIN', admin: true });
     await firestore.collection('admin_users').doc(user.uid).set({
+      uid: user.uid,
       email: 'admin@example.com',
       role: 'ADMIN',
       status: 'ACTIVE',

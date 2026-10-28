@@ -20,6 +20,14 @@ export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
     );
   }
 
+  if (user?.emailVerified !== true) {
+    logger.warn('[Security Alert] Blocked sign-in attempt with unverified email', { uid: user?.uid });
+    throw new HttpsError(
+      'permission-denied',
+      'Access Denied: A verified email address is required to access the admin dashboard.'
+    );
+  }
+
   const db = getFirestore();
   const adminSnapshot = await db
     .collection('admin_users')
@@ -37,6 +45,17 @@ export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
   }
 
   const adminDoc = adminSnapshot.docs[0].data();
+  if (!adminDoc.uid || adminDoc.uid !== user?.uid) {
+    logger.warn('[Security Alert] Blocked sign-in attempt with mismatched UID', {
+      uid: user?.uid,
+      expectedUid: adminDoc.uid,
+    });
+    throw new HttpsError(
+      'permission-denied',
+      'Access Denied: Administrator identity mismatch.'
+    );
+  }
+
   if (adminDoc.role !== 'ADMIN') {
     logger.warn('[Security Alert] Blocked sign-in attempt with non-ADMIN role', {
       uid: user?.uid,

@@ -55,13 +55,25 @@ Examples:
 }
 
 /**
- * Synchronizes custom claims and revokes refresh tokens in Firebase Auth when an admin's status changes.
+ * Resolves the existing Firebase Auth user for an email address and synchronizes custom claims / session revocation.
+ * Throws if the user does not exist in Firebase Auth when registering or activating an admin, preventing
+ * pre-registration spoofing where an unverified account is created later for a pre-authorized email.
  */
-async function syncFirebaseAuthState(email: string, role: AdminRole | null, status: AdminStatus | 'DELETED'): Promise<void> {
+async function resolveAndSyncFirebaseAuthUser(
+  email: string,
+  role: AdminRole | null,
+  status: AdminStatus | 'DELETED'
+): Promise<string | null> {
+  const auth = getAuth();
   try {
-    const auth = getAuth();
     const userRecord = await auth.getUserByEmail(email);
     if (status === 'ACTIVE' && role === 'ADMIN') {
+      if (!userRecord.emailVerified) {
+        console.error(
+          `❌ Error: Firebase Auth user "${email}" (UID: ${userRecord.uid}) does not have a verified email address (emailVerified=false).`
+        );
+        process.exit(1);
+      }
       await auth.setCustomUserClaims(userRecord.uid, { role: 'ADMIN', admin: true });
       console.log(`🔐 Synchronized Firebase Auth custom claims (role: ADMIN) for UID: ${userRecord.uid}`);
     } else {
@@ -69,13 +81,20 @@ async function syncFirebaseAuthState(email: string, role: AdminRole | null, stat
       await auth.revokeRefreshTokens(userRecord.uid);
       console.log(`🔒 Cleared custom claims and revoked refresh tokens in Firebase Auth for UID: ${userRecord.uid}`);
     }
+    return userRecord.uid;
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;
     if (code === 'auth/user-not-found') {
-      console.log(`ℹ️  No Firebase Auth user record yet for "${email}" (claims will be applied on first sign-in).`);
-      return;
+      if (status === 'DELETED' || status === 'REVOKED') {
+        console.log(`ℹ️  No Firebase Auth user record found for "${email}".`);
+        return null;
+      }
+      console.error(
+        `❌ Error: No Firebase Auth user found for "${email}". The user must sign up / exist in Firebase Authentication with a verified email before being granted admin privileges.`
+      );
+      process.exit(1);
     }
-    console.warn(`⚠️  Could not synchronize Firebase Auth state for "${email}":`, (err as Error).message || err);
+    throw err;
   }
 }
 
@@ -90,18 +109,19 @@ async function handleList(collectionRef: CollectionReference): Promise<void> {
   }
 
   console.log(`\n📋 Registered Administrators (${snapshot.size} total):`);
-  console.log('--------------------------------------------------------------------------------');
-  console.log(`| ${'Email'.padEnd(35)} | ${'Role'.padEnd(12)} | ${'Status'.padEnd(8)} | ${'ID'.padEnd(20)} |`);
-  console.log('--------------------------------------------------------------------------------');
+  console.log('-------------------------------------------------------------------------------------------------------------');
+  console.log(`| ${'Email'.padEnd(35)} | ${'UID'.padEnd(28)} | ${'Role'.padEnd(8)} | ${'Status'.padEnd(8)} | ${'Doc ID'.padEnd(20)} |`);
+  console.log('-------------------------------------------------------------------------------------------------------------');
   snapshot.forEach((doc) => {
     const data = doc.data();
     const email = (data.email || '').padEnd(35);
-    const role = (data.role || 'ADMIN').padEnd(12);
+    const uid = (data.uid || 'UNBOUND').padEnd(28);
+    const role = (data.role || 'ADMIN').padEnd(8);
     const status = (data.status || 'ACTIVE').padEnd(8);
     const id = doc.id.padEnd(20);
-    console.log(`| ${email} | ${role} | ${status} | ${id} |`);
+    console.log(`| ${email} | ${uid} | ${role} | ${status} | ${id} |`);
   });
-  console.log('--------------------------------------------------------------------------------\n');
+  console.log('-------------------------------------------------------------------------------------------------------------\n');
 }
 
 /**
@@ -114,12 +134,12 @@ async function handleDelete(querySnapshot: QuerySnapshot, email: string): Promis
   }
   const docRef = querySnapshot.docs[0].ref;
   await docRef.delete();
-  await syncFirebaseAuthState(email, null, 'DELETED');
+  await resolveAndSyncFirebaseAuthUser(email, null, 'DELETED');
   console.log(`🗑️  Successfully deleted admin user: ${email} (Doc ID: ${docRef.id})`);
 }
 
 /**
- * Upserts (creates or updates) an administrator record and synchronizes Firebase Auth state.
+ * Upserts (creates or updates) an administrator record with strict UID binding and synchronizes Firebase Auth state.
  */
 async function handleUpsert(
   querySnapshot: QuerySnapshot,
@@ -128,25 +148,34 @@ async function handleUpsert(
   role: AdminRole,
   status: AdminStatus
 ): Promise<void> {
+  const uid = await resolveAndSyncFirebaseAuthUser(email, role, status);
+
   if (!querySnapshot.empty) {
     const docRef = querySnapshot.docs[0].ref;
     await docRef.update({
+      ...(uid ? { uid } : {}),
       role,
       status,
       updatedAt: FieldValue.serverTimestamp(),
     });
-    await syncFirebaseAuthState(email, role, status);
     console.log(`✅ Successfully updated existing admin user:`);
     console.log(`   - Email:  ${email}`);
+    console.log(`   - UID:    ${uid ?? 'N/A'}`);
     console.log(`   - Role:   ${role}`);
     console.log(`   - Status: ${status}`);
     console.log(`   - Doc ID: ${docRef.id}`);
     return;
   }
 
-  const newDocRef = collectionRef.doc();
+  if (!uid) {
+    console.error(`❌ Error: Cannot register new admin without a bound Firebase Auth UID.`);
+    process.exit(1);
+  }
+
+  const newDocRef = collectionRef.doc(uid);
   await newDocRef.set({
     id: newDocRef.id,
+    uid,
     email,
     role,
     status,
@@ -154,9 +183,9 @@ async function handleUpsert(
     updatedAt: FieldValue.serverTimestamp(),
     createdBy: 'CLI_SETUP',
   });
-  await syncFirebaseAuthState(email, role, status);
   console.log(`🎉 Successfully registered new admin user:`);
   console.log(`   - ID:     ${newDocRef.id}`);
+  console.log(`   - UID:    ${uid}`);
   console.log(`   - Email:  ${email}`);
   console.log(`   - Role:   ${role}`);
   console.log(`   - Status: ${status}`);

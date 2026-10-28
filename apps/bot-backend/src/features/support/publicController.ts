@@ -15,6 +15,17 @@ import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDo
 import { logger } from '../../utils/logger';
 
 /**
+ * Redacts a Stripe Checkout Session ID before writing to application logs
+ * so bearer download tokens cannot be reconstructed by log readers.
+ */
+function maskSessionId(sessionId: string): string {
+  if (!sessionId || sessionId.length <= 10) {
+    return '***';
+  }
+  return `${sessionId.slice(0, 6)}...${sessionId.slice(-4)}`;
+}
+
+/**
  * Controller managing public-facing support endpoints.
  */
 export class PublicSupportController {
@@ -124,7 +135,7 @@ export class PublicSupportController {
         session = await this.stripeClient.checkout.sessions.retrieve(sessionId);
       } catch (stripeErr) {
         logger.warn('[PublicSupportController] Failed to retrieve Stripe session', {
-          sessionId,
+          maskedSessionId: maskSessionId(sessionId),
           error: stripeErr instanceof Error ? stripeErr.message : String(stripeErr),
         });
         res.status(404).json({ valid: false, error: 'Checkout session not found' });
@@ -134,7 +145,7 @@ export class PublicSupportController {
       // Step 2: Strict Payment Guard
       if (session.payment_status !== 'paid') {
         logger.warn('[PublicSupportController] Session payment incomplete', {
-          sessionId,
+          maskedSessionId: maskSessionId(sessionId),
           status: session.payment_status,
         });
         res.status(403).json({
@@ -352,7 +363,7 @@ export class PublicSupportController {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       logger.info('[PublicSupportController] Processing checkout.session.completed webhook', {
-        sessionId: session.id,
+        maskedSessionId: maskSessionId(session.id),
         amount: session.amount_total,
       });
 
@@ -361,7 +372,7 @@ export class PublicSupportController {
         const existingTx = await this.deps.firestore.getSupportTransactionBySessionId(session.id);
         if (existingTx) {
           logger.info('[PublicSupportController] Transaction already recorded. Skipping webhook', {
-            sessionId: session.id,
+            maskedSessionId: maskSessionId(session.id),
             transactionId: existingTx.id,
           });
           res.status(200).json({ received: true, status: 'already_processed' });
@@ -371,7 +382,7 @@ export class PublicSupportController {
         const amount = session.amount_total ?? 0;
         if (amount <= 0) {
           logger.warn('[PublicSupportController] Non-positive amount in checkout session', {
-            sessionId: session.id,
+            maskedSessionId: maskSessionId(session.id),
             amount,
           });
           res.status(400).json({ error: 'Invalid payment amount' });
@@ -393,7 +404,7 @@ export class PublicSupportController {
         return;
       } catch (txError) {
         logger.error('[PublicSupportController] Failed to record support transaction', txError, {
-          sessionId: session.id,
+          maskedSessionId: maskSessionId(session.id),
         });
         res.status(500).json({ error: 'Failed to record transaction' });
         return;
@@ -445,7 +456,10 @@ export class PublicSupportController {
             sessionCreatedMs = session.created * 1000;
           }
         } catch (stripeErr) {
-          logger.warn('[PublicSupportController] Failed to retrieve Stripe session for download', { sessionId, stripeErr });
+          logger.warn('[PublicSupportController] Failed to retrieve Stripe session for download', {
+            maskedSessionId: maskSessionId(sessionId),
+            stripeErr,
+          });
           res.status(404).json({ error: 'Checkout session not found' });
           return;
         }
@@ -457,7 +471,9 @@ export class PublicSupportController {
         : sessionCreatedMs;
 
       if (!createdAtMs || isNaN(createdAtMs)) {
-        logger.warn('[PublicSupportController] Missing valid creation timestamp for download verification', { sessionId });
+        logger.warn('[PublicSupportController] Missing valid creation timestamp for download verification', {
+          maskedSessionId: maskSessionId(sessionId),
+        });
         res.status(400).json({ error: 'Unable to determine checkout session timestamp.' });
         return;
       }

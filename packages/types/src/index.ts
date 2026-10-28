@@ -59,6 +59,7 @@ export type AdminUserStatus = 'ACTIVE' | 'REVOKED';
 
 /** Represents an administrator account authorized to access the dashboard. */
 export interface AdminUser {
+  uid?: string;
   email: string;
   role: AdminRole;
   status: AdminUserStatus;

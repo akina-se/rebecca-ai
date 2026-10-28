@@ -9,13 +9,14 @@ export { AuthenticatedRequest, AuthenticatedUser };
 
 /**
  * Resolves the administrator authorization and role directly from the Firestore `admin_users` collection
- * (Single Source of Truth) without in-memory caching to guarantee immediate revocation and role enforcement.
+ * (Single Source of Truth) without in-memory caching to guarantee immediate revocation, UID binding, and role enforcement.
  */
-async function resolveAdminAuthorization(email: string): Promise<{
+async function resolveAdminAuthorization(uid: string, email: string): Promise<{
   authorized: boolean;
   role?: AdminRole;
   revoked?: boolean;
   insufficientRole?: boolean;
+  uidMismatch?: boolean;
 }> {
   const snapshot = await getAdminFirestore()
     .collection(COLLECTIONS.ADMIN_USERS)
@@ -32,6 +33,10 @@ async function resolveAdminAuthorization(email: string): Promise<{
     return { authorized: false, revoked: true };
   }
 
+  if (!data.uid || data.uid !== uid) {
+    return { authorized: false, uidMismatch: true };
+  }
+
   if (data.role !== 'ADMIN') {
     return { authorized: false, insufficientRole: true };
   }
@@ -44,8 +49,10 @@ async function resolveAdminAuthorization(email: string): Promise<{
  *
  * Ensures that dashboard endpoints are protected from unauthorized access by:
  * 1. Validating the Bearer token signature and revocation state (`checkRevoked = true`) with Firebase Admin SDK.
- * 2. Verifying against the `admin_users` Firestore collection (Single Source of Truth) on every request
- *    that the account exists, has `status === 'ACTIVE'`, and holds `role === 'ADMIN'`.
+ * 2. Requiring `email_verified === true` on the decoded token to prevent unverified account spoofing.
+ * 3. Verifying against the `admin_users` Firestore collection (Single Source of Truth) on every request
+ *    that the account exists, matches the immutable Firebase Auth `uid`, has `status === 'ACTIVE'`,
+ *    and holds `role === 'ADMIN'`.
  *
  * @param req - The Express Request object.
  * @param res - The Express Response object.
@@ -65,7 +72,7 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
     process.env.NO_AUTH === 'true' &&
     Boolean(process.env.FIREBASE_AUTH_EMULATOR_HOST)
   ) {
-    req.user = { uid: 'local-dev-admin', role: 'ADMIN' };
+    req.user = { uid: 'local-dev-admin', email: 'admin@example.com', email_verified: true, role: 'ADMIN' };
     next();
     return;
   }
@@ -85,11 +92,25 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
     const decodedToken = await getAdminAuth().verifyIdToken(token, true);
     const email = decodedToken.email?.toLowerCase().trim();
 
-    if (email) {
-      const { authorized, role, revoked, insufficientRole } = await resolveAdminAuthorization(email);
+    if (decodedToken.email_verified !== true) {
+      logger.warn('[Security Alert] Unverified email attempted admin access', { uid: decodedToken.uid });
+      res.status(403).json({ error: 'Forbidden: Verified email address is required.' });
+      return;
+    }
+
+    if (email && decodedToken.uid) {
+      const { authorized, role, revoked, insufficientRole, uidMismatch } = await resolveAdminAuthorization(
+        decodedToken.uid,
+        email
+      );
       if (revoked) {
         logger.warn('[Security Alert] Revoked admin attempted access', { uid: decodedToken.uid });
         res.status(403).json({ error: 'Forbidden: Your admin access has been revoked.' });
+        return;
+      }
+      if (uidMismatch) {
+        logger.warn('[Security Alert] Admin UID mismatch detected', { uid: decodedToken.uid });
+        res.status(403).json({ error: 'Forbidden: Administrator identity mismatch.' });
         return;
       }
       if (insufficientRole) {

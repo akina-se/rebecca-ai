@@ -19,9 +19,20 @@ describe('Supporters Feature Unit Tests', () => {
     jest.clearAllMocks();
 
     mockSupportTransactionsColl = {
-      doc: jest.fn(),
+      doc: jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ exists: false }),
+      }),
       where: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      startAfter: jest.fn().mockReturnThis(),
+      count: jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ data: () => ({ count: 0 }) }),
+      }),
+      aggregate: jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ data: () => ({ totalCount: 0, totalAmount: 0 }) }),
+      }),
       get: jest.fn().mockResolvedValue({ docs: [] }),
       withConverter: jest.fn().mockReturnThis(),
     };
@@ -113,6 +124,16 @@ describe('Supporters Feature Unit Tests', () => {
       ];
 
       mockSupportTransactionsColl.get.mockResolvedValue({ docs: mockDocs });
+      mockSupportTransactionsColl.aggregate.mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          data: () => ({ totalCount: 3, totalAmount: 4300 }),
+        }),
+      });
+      mockSupportTransactionsColl.count
+        .mockReturnValueOnce({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 1 }) }) })
+        .mockReturnValueOnce({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 1 }) }) })
+        .mockReturnValueOnce({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 1 }) }) })
+        .mockReturnValueOnce({ get: jest.fn().mockResolvedValue({ data: () => ({ count: 3 }) }) });
 
       const result = await repo.getTransactions({
         limit: 10,
@@ -126,6 +147,7 @@ describe('Supporters Feature Unit Tests', () => {
       expect(result.summary.failedCount).toBe(1);
       expect(result.summary.pendingCount).toBe(1);
       expect(result.summary.totalAmount).toBe(4300);
+      expect(result.meta?.totalItems).toBe(3);
     });
 
     it('filters transactions by search keyword matching rawName or safeName', async () => {
@@ -965,7 +987,8 @@ describe('Supporters Feature Unit Tests', () => {
       await repo.deleteRewardImage('rew_1');
     });
 
-    it('covers pagination cursor and nextCursor in getTransactions', async () => {
+    it('covers pagination cursor, offset, and nextCursor in getTransactions', async () => {
+      // 1. Non-search path with limit=1 and 2 returned docs (limit + 1 = 2) -> hasMore = true, nextCursor = 'tx_1'
       mockSupportTransactionsColl.get.mockResolvedValueOnce({
         docs: [
           {
@@ -975,10 +998,6 @@ describe('Supporters Feature Unit Tests', () => {
           {
             id: 'tx_2',
             data: () => ({ stripeSessionId: 'cs_2', rawName: 'Two', safeName: 'Two', amount: 300, tier: 'bronze', status: 'completed' }),
-          },
-          {
-            id: 'tx_3',
-            data: () => ({ stripeSessionId: 'cs_3', rawName: 'Three', safeName: 'Three', amount: 300, tier: 'bronze', status: 'completed' }),
           },
         ],
       });
@@ -987,12 +1006,13 @@ describe('Supporters Feature Unit Tests', () => {
       expect(resWithNext.transactions).toHaveLength(1);
       expect(resWithNext.nextCursor).toBe('tx_1');
 
+      // 2. Non-search path with existing cursor doc -> calls startAfter(cursorSnap)
+      const cursorSnap = { exists: true, id: 'tx_1' };
+      mockSupportTransactionsColl.doc.mockReturnValueOnce({
+        get: jest.fn().mockResolvedValueOnce(cursorSnap),
+      });
       mockSupportTransactionsColl.get.mockResolvedValueOnce({
         docs: [
-          {
-            id: 'tx_1',
-            data: () => ({ stripeSessionId: 'cs_1', rawName: 'One', safeName: 'One', amount: 300, tier: 'bronze', status: 'completed' }),
-          },
           {
             id: 'tx_2',
             data: () => ({ stripeSessionId: 'cs_2', rawName: 'Two', safeName: 'Two', amount: 300, tier: 'bronze', status: 'completed' }),
@@ -1001,9 +1021,15 @@ describe('Supporters Feature Unit Tests', () => {
       });
 
       const resWithCursor = await repo.getTransactions({ cursor: 'tx_1', limit: 1 });
+      expect(mockSupportTransactionsColl.startAfter).toHaveBeenCalledWith(cursorSnap);
       expect(resWithCursor.transactions).toHaveLength(1);
       expect(resWithCursor.transactions[0].id).toBe('tx_2');
 
+      // 3. Non-search path with non-existing cursor doc -> does not call startAfter
+      mockSupportTransactionsColl.startAfter.mockClear();
+      mockSupportTransactionsColl.doc.mockReturnValueOnce({
+        get: jest.fn().mockResolvedValueOnce({ exists: false }),
+      });
       mockSupportTransactionsColl.get.mockResolvedValueOnce({
         docs: [
           {
@@ -1014,7 +1040,37 @@ describe('Supporters Feature Unit Tests', () => {
       });
 
       const resUnknownCursor = await repo.getTransactions({ cursor: 'unknown_id', limit: 1 });
+      expect(mockSupportTransactionsColl.startAfter).not.toHaveBeenCalled();
       expect(resUnknownCursor.transactions).toHaveLength(1);
+
+      // 4. Non-search path with page > 1 -> calls offset((page - 1) * limit)
+      mockSupportTransactionsColl.get.mockResolvedValueOnce({
+        docs: [],
+      });
+      await repo.getTransactions({ page: 2, limit: 10 });
+      expect(mockSupportTransactionsColl.offset).toHaveBeenCalledWith(10);
+
+      // 5. Search path with cursor and nextCursor
+      mockSupportTransactionsColl.get.mockResolvedValueOnce({
+        docs: [
+          {
+            id: 'tx_1',
+            data: () => ({ stripeSessionId: 'cs_match_1', rawName: 'One', safeName: 'One', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+          {
+            id: 'tx_2',
+            data: () => ({ stripeSessionId: 'cs_match_2', rawName: 'Two', safeName: 'Two', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+          {
+            id: 'tx_3',
+            data: () => ({ stripeSessionId: 'cs_match_3', rawName: 'Three', safeName: 'Three', amount: 300, tier: 'bronze', status: 'completed' }),
+          },
+        ],
+      });
+      const resSearchCursor = await repo.getTransactions({ search: 'cs_match', cursor: 'tx_1', limit: 1 });
+      expect(resSearchCursor.transactions).toHaveLength(1);
+      expect(resSearchCursor.transactions[0].id).toBe('tx_2');
+      expect(resSearchCursor.nextCursor).toBe('tx_2');
     });
 
     it('handles repository errors with logger and rethrow', async () => {
