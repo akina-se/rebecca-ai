@@ -75,12 +75,12 @@ export const verifyOidcToken = async (
 /**
  * Authenticates server-to-server requests by verifying a Google OIDC token or a fallback shared secret.
  *
- * Authentication scheme is determined by the presented credentials:
- * - **OIDC Scheme**: When an `Authorization` header is present, the request must pass Google OIDC ID token
- *   verification against `expectedAudience` and optional `expectedServiceAccountEmail`. It never falls back
- *   to shared secret when an `Authorization` header is present, preventing credential-downgrade attacks.
- * - **Shared Secret Scheme**: When no `Authorization` header is present and `fallbackSecret` is configured
- *   (e.g., local development), constant-time comparison validates the designated secret header.
+ * Authentication scheme is determined by the server configuration:
+ * - **OIDC Scheme**: Verifies the Google OIDC ID token against `expectedAudience` and optional
+ *   `expectedServiceAccountEmail`.
+ * - **Shared Secret Scheme**: When `fallbackSecret` is configured (e.g., local development),
+ *   constant-time comparison validates the designated secret header. In production (`fallbackSecret` unset),
+ *   `verifySecret` always returns `false`.
  *
  * @param req - The Express request object containing the authorization headers.
  * @param expectedAudience - The expected audience claim for the OIDC token (typically the service URL).
@@ -98,13 +98,11 @@ export const verifyServerToServerAuth = async (
 ): Promise<boolean> => {
     const rawSecret = req.headers[secretHeaderName.toLowerCase()];
     const secretHeader = typeof rawSecret === 'string' ? rawSecret.trim() : '';
-    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization.trim() : '';
+    const authHeader = typeof req.headers.authorization === 'string' ? req.headers.authorization : '';
 
-    // When an Authorization header is presented, strictly verify via Google OIDC ID token
-    // and never fall back to shared secret (prevents credential-downgrade attacks).
-    if (authHeader.length > 0) {
-        return verifyOidcToken(authHeader, expectedAudience, expectedServiceAccountEmail);
-    }
-
-    return verifySecret(secretHeader, fallbackSecret);
+    // Verify via Google OIDC ID token or pre-shared secret (timing-safe)
+    return (
+        (await verifyOidcToken(authHeader, expectedAudience, expectedServiceAccountEmail)) ||
+        verifySecret(secretHeader, fallbackSecret)
+    );
 };
