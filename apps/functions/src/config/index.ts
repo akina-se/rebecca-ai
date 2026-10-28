@@ -43,7 +43,7 @@ export const getConfig = (): FunctionsConfig => {
     : undefined;
 
   return {
-    batchSecretKey: process.env.BATCH_SECRET_KEY,
+    batchSecretKey: process.env.NODE_ENV === 'production' ? undefined : process.env.BATCH_SECRET_KEY,
     functionsUrl: process.env.FUNCTIONS_URL || defaultFunctionsUrl,
     serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL,
     xApi: {

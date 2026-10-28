@@ -53,9 +53,10 @@ export default {
   appTimezone: getValidatedTimezone(process.env.APP_TIMEZONE),
 
   /**
-   * Secret key for batch endpoints when not using OIDC.
+   * Secret key for batch/worker endpoints when not using OIDC (local development only).
+   * Explicitly forced to undefined when NODE_ENV === 'production' to prevent OIDC downgrade.
    */
-  batchSecret: process.env.BATCH_SECRET_KEY,
+  batchSecret: process.env.NODE_ENV === 'production' ? undefined : process.env.BATCH_SECRET_KEY,
 
   /**
    * Google Cloud Platform configuration.
