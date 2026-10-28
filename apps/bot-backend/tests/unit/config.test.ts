@@ -79,5 +79,12 @@ describe('Config', () => {
         expect(Number(config.xApi.followersPageSize)).toBe(25);
         expect(Number(config.xApi.followersMaxResults)).toBe(500);
         expect(Number(config.images.cooldownDays)).toBe(21);
+
+        const origNodeEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'production';
+        jest.resetModules();
+        const prodConfig = require('../../src/config/index').default;
+        expect(prodConfig.batchSecret).toBeUndefined();
+        process.env.NODE_ENV = origNodeEnv;
     });
 });
