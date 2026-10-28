@@ -22,10 +22,10 @@
   "author": "AKINA",
   "license": "MIT",
   "dependencies": {
-    "@google-cloud/firestore": "^9.3.1",
+    "@google-cloud/firestore": "^9.4.0",
     "@google-cloud/storage": "^8.2.0",
-    "@google-cloud/tasks": "^7.2.1",
-    "@google/genai": "^2.30.0",
+    "@google-cloud/tasks": "^7.3.1",
+    "@google/genai": "^2.31.0",
     "@rebecca/db": "*",
     "@rebecca/logger": "*",
     "@rebecca/persona": "*",
@@ -33,14 +33,14 @@
     "@silvia-odwyer/photon-node": "^0.3.4",
     "@xdevplatform/xdk": "^0.6.6",
     "cors": "^2.8.5",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
     "firebase-admin": "^14.5.0",
-    "google-auth-library": "^11.2.0",
+    "google-auth-library": "^11.3.1",
     "helmet": "^8.0.0",
     "luxon": "^3.7.2",
-    "multer": "^2.4.0"
+    "multer": "^2.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
