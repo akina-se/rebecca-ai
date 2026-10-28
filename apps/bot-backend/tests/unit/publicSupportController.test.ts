@@ -135,7 +135,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(deps.firestore.incrementRewardImageDistributedCount).toHaveBeenCalledWith('reward_2026_10');
       expect(res.setHeader).toHaveBeenCalledWith(
         'Set-Cookie',
-        expect.stringContaining('rebecca_reward_ticket='),
+        expect.stringContaining('reward_ticket='),
       );
       expect(res.setHeader).toHaveBeenCalledWith(
         'Set-Cookie',
@@ -804,7 +804,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('rejects tampered or malformed reward ticket cookie when no query/header session_id is present', async () => {
       req.query = { type: 'master' };
-      req.headers = { cookie: 'rebecca_reward_ticket=tampered_payload.invalid_signature' };
+      req.headers = { cookie: 'reward_ticket=tampered_payload.invalid_signature' };
 
       await controller.downloadReward(req as Request, res as Response);
 

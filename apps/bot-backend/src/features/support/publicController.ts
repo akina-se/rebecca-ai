@@ -15,7 +15,7 @@ import { SupportConfig } from './types';
 import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
-const REWARD_TICKET_COOKIE_NAME = 'rebecca_reward_ticket';
+const REWARD_TICKET_COOKIE_NAME = 'reward_ticket';
 const MAX_WINDOW_MINUTES = 30;
 
 /**
@@ -91,7 +91,7 @@ export class PublicSupportController {
     return (
       this.config.stripeWebhookSecret ||
       this.config.stripeSecretKey ||
-      'rebecca-support-reward-ticket-fallback-secret'
+      'support-reward-ticket-fallback-secret'
     );
   }
 
@@ -147,7 +147,7 @@ export class PublicSupportController {
    * Extracts the Stripe Checkout Session ID from the request without requiring it in the URL query string.
    * Priority:
    * 1. `x-stripe-session-id` request header
-   * 2. Signed `HttpOnly` cookie (`rebecca_reward_ticket`)
+   * 2. Signed `HttpOnly` cookie (`reward_ticket`)
    * 3. Legacy `session_id` query parameter (fallback)
    */
   private extractSessionIdFromRequest(req: Request): string | null {
