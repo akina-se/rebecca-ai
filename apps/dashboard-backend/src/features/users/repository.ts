@@ -3,6 +3,12 @@ import { UserDetail, UserStatus, PaginatedResponse, ChatMessage } from '@rebecca
 import { getCollections } from '@rebecca/db';
 import { logger } from '../../utils/logger';
 
+const MAX_USERS_LIMIT = 100;
+const DEFAULT_USERS_LIMIT = 30;
+const MAX_USERS_SCAN_LIMIT = 500;
+const MAX_PERIOD_LOGS_SCAN_LIMIT = 2000;
+const MAX_USER_CHAT_LOGS_LIMIT = 500;
+
 /**
  * Repository responsible for data access operations related to user profiles, interactions, and statuses in Firestore.
  */
@@ -39,12 +45,32 @@ export class UsersRepository {
     return { ragMemoriesCount, ragMemoriesStatus };
   }
 
+  private async countUserConversationLogs(userId: string): Promise<number> {
+    const query = this.collections.conversationLogs.where('userId', '==', userId);
+    if (typeof (query as unknown as { count?: () => { get: () => Promise<{ data: () => { count?: number } }> } }).count === 'function') {
+      const countSnap = await query.count().get();
+      return Number(countSnap.data()?.count || 0);
+    }
+    const snap = await (typeof query.limit === 'function' ? query.limit(MAX_USER_CHAT_LOGS_LIMIT) : query).get();
+    return snap.docs ? snap.docs.length : 0;
+  }
+
   /**
-   * Retrieves users, supporting pagination, custom ordering, search, and returning detailed user objects.
+   * Retrieves users, supporting bounded pagination, custom ordering, search, and returning detailed user objects
+   * without unbounded full-collection scans on `users` or `conversation_logs`.
    * 
-   * @returns A promise that resolves to an array of user details.
+   * @returns A promise that resolves to a paginated response of user details.
    */
   async getAll(params?: { page?: number; limit?: number; search?: string; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<PaginatedResponse<UserDetail>> {
+    const requestedLimit = Number(params?.limit);
+    const limit =
+      Number.isFinite(requestedLimit) && requestedLimit > 0
+        ? Math.min(Math.floor(requestedLimit), MAX_USERS_LIMIT)
+        : DEFAULT_USERS_LIMIT;
+    const requestedPage = Number(params?.page);
+    const page =
+      Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
+
     let startDate = '';
     let endDate = '';
     if (params?.period && params?.date && params.period !== 'all-time') {
@@ -61,15 +87,22 @@ export class UsersRepository {
       }
     }
 
-    const allUsersSnap = await this.collections.users.get();
+    const boundedUsersQuery =
+      typeof this.collections.users.limit === 'function'
+        ? this.collections.users.limit(MAX_USERS_SCAN_LIMIT)
+        : this.collections.users;
+    const allUsersSnap = await boundedUsersQuery.get();
     let usersData = allUsersSnap.docs.map(doc => ({ id: doc.id, data: (doc.data() || {}) as unknown as Record<string, unknown> }));
 
     if (startDate && endDate) {
-      // 1. Query conversation_logs within the date range
-      const logsSnap = await this.collections.conversationLogs
+      // 1. Query conversation_logs within the date range with a safety upper bound
+      let periodLogsQuery = this.collections.conversationLogs
         .where('timestamp', '>=', startDate)
-        .where('timestamp', '<', endDate)
-        .get();
+        .where('timestamp', '<', endDate);
+      if (typeof periodLogsQuery.limit === 'function') {
+        periodLogsQuery = periodLogsQuery.limit(MAX_PERIOD_LOGS_SCAN_LIMIT);
+      }
+      const logsSnap = await periodLogsQuery.get();
 
       // 2. Aggregate interaction counts by userId
       const interactionsMap: Record<string, number> = {};
@@ -86,22 +119,13 @@ export class UsersRepository {
         u.data._dynamicInteractions = interactionsMap[u.id];
       });
     } else {
-      // All-time: Aggregate from all conversation_logs to get true all-time interaction counts
-      const logsSnap = await this.collections.conversationLogs.get();
-      const interactionsMap: Record<string, number> = {};
-      logsSnap.docs.forEach(doc => {
-        const userId = doc.data().userId;
-        if (userId) {
-          interactionsMap[userId] = (interactionsMap[userId] || 0) + 1;
-        }
-      });
-
+      // All-time: Use per-user interactions / dailyReplyCount fields without scanning the 5-year conversation_logs collection.
+      // For the current page (or when sorting by interactions), resolve exact server-side `.count()` per user.
       usersData.forEach(u => {
-        const loggedCount = interactionsMap[u.id] || 0;
         const rawInteractions = Number(u.data.interactions) || 0;
-        const dailyReplyCount = Number(u.data.daily_reply_count) || 0;
-        // Total interactions is max of logged conversations, explicit interactions field, or daily reply count
-        u.data._dynamicInteractions = Math.max(loggedCount, rawInteractions, dailyReplyCount);
+        const dailyReplyCount = Number(u.data.dailyReplyCount ?? u.data.daily_reply_count) || 0;
+        const episodicCount = Array.isArray(u.data.episodicBuffer) ? Math.ceil(u.data.episodicBuffer.length / 2) : 0;
+        u.data._dynamicInteractions = Math.max(rawInteractions, dailyReplyCount, episodicCount);
       });
     }
 
@@ -118,6 +142,17 @@ export class UsersRepository {
 
     const sortBy = params?.sortBy || 'interactions';
     const sortOrder = params?.sortOrder || 'desc';
+
+    // When sorting by interactions in all-time mode and users lack pre-aggregated `interactions` fields,
+    // enrich via server-side per-user `.count()` aggregation (bounded to the candidate set).
+    if (!startDate && (sortBy === 'interactions' || sortBy === 'daily_reply_count')) {
+      await Promise.all(
+        usersData.map(async (u) => {
+          const loggedCount = await this.countUserConversationLogs(u.id);
+          u.data._dynamicInteractions = Math.max(Number(u.data._dynamicInteractions) || 0, loggedCount);
+        })
+      );
+    }
 
     usersData.sort((a, b) => {
       let diff: number;
@@ -151,11 +186,19 @@ export class UsersRepository {
     });
 
     const totalItems = usersData.length;
-    const limit = params?.limit || 30;
     const totalPages = Math.ceil(totalItems / limit) || 1;
-    const page = params?.page || 1;
     
     usersData = usersData.slice((page - 1) * limit, page * limit);
+
+    // If not already enriched during sort, enrich only the current page's users with server-side `.count()`
+    if (!startDate && sortBy !== 'interactions' && sortBy !== 'daily_reply_count') {
+      await Promise.all(
+        usersData.map(async (u) => {
+          const loggedCount = await this.countUserConversationLogs(u.id);
+          u.data._dynamicInteractions = Math.max(Number(u.data._dynamicInteractions) || 0, loggedCount);
+        })
+      );
+    }
 
     const data: UserDetail[] = usersData.map(u => {
       const data = u.data;
@@ -220,10 +263,12 @@ export class UsersRepository {
     const firstSeen = typeof data.firstSeen === 'string' ? data.firstSeen : '';
     const lastSeen = typeof data.lastSeen === 'string' ? data.lastSeen : '';
     
-    // Fetch conversation logs from Firestore and sort in-memory to prevent composite index requirements
-    const chatLogsSnap = await this.collections.conversationLogs
-      .where('userId', '==', resolvedUserId)
-      .get();
+    // Fetch conversation logs from Firestore with a safety upper bound and sort in-memory
+    let userLogsQuery = this.collections.conversationLogs.where('userId', '==', resolvedUserId);
+    if (typeof userLogsQuery.limit === 'function') {
+      userLogsQuery = userLogsQuery.limit(MAX_USER_CHAT_LOGS_LIMIT);
+    }
+    const chatLogsSnap = await userLogsQuery.get();
       
     let sortedDocs = chatLogsSnap.docs.sort((a, b) => {
       const tA = a.data().timestamp || '';
@@ -236,7 +281,8 @@ export class UsersRepository {
     }
 
     if (limit) {
-      sortedDocs = sortedDocs.slice(-limit);
+      const safeLimit = Math.min(Math.max(1, Math.floor(limit)), MAX_USERS_LIMIT);
+      sortedDocs = sortedDocs.slice(-safeLimit);
     }
 
     const chatHistory: ChatMessage[] = [];

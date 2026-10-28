@@ -62,13 +62,14 @@ export const onConversationLogCreated = onDocumentCreated(
       });
     }
 
-    // Update User Stats (dailyReplyCount and lastReplyDate)
+    // Update User Stats (dailyReplyCount, total interactions, and lastReplyDate)
     const userRef = db.collection(COLLECTIONS.USERS).doc(log.userId);
     const nowIso = log.timestamp || new Date().toISOString();
     batch.set(
       userRef,
       {
         dailyReplyCount: FieldValue.increment(1),
+        interactions: FieldValue.increment(1),
         lastReplyDate: nowIso,
         lastSeen: nowIso,
       },

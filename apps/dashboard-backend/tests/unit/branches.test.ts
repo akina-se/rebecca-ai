@@ -134,7 +134,11 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       });
 
       (repo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 1 }) })
+        }),
         where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnThis(),
           get: jest.fn().mockResolvedValueOnce({
             docs: [
               { data: () => ({ userId: 'alice_z' }) },
@@ -188,6 +192,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       ];
 
       (repo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnThis(),
         get: jest.fn().mockResolvedValueOnce({ docs: mockLogs })
       });
 

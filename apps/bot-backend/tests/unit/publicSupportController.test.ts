@@ -108,8 +108,8 @@ describe('PublicSupportController Unit Tests', () => {
       expect(deps.storage.generateSignedUrl).not.toHaveBeenCalled();
     });
 
-    it('returns 200 with secure backend download endpoints and transaction details when paid', async () => {
-      req.query = { session_id: 'cs_paid_123' };
+    it('returns 200 with secure backend download endpoints (no session_id in URL) and sets HttpOnly ticket cookie when paid', async () => {
+      req.headers = { 'x-stripe-session-id': 'cs_paid_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_paid_123',
         payment_status: 'paid',
@@ -133,6 +133,14 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(deps.firestore.incrementRewardImageDistributedCount).toHaveBeenCalledWith('reward_2026_10');
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        expect.stringContaining('rebecca_reward_ticket='),
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        expect.stringContaining('HttpOnly; SameSite=Lax'),
+      );
       expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
           valid: true,
@@ -141,9 +149,9 @@ describe('PublicSupportController Unit Tests', () => {
           safeName: 'アリス',
           reward: expect.objectContaining({
             title: 'サポーター特典イラスト',
-            imageUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=thumbnail',
-            thumbnailUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=thumbnail',
-            downloadUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=master',
+            imageUrl: '/api/v1/support/rewards/download?type=thumbnail',
+            thumbnailUrl: '/api/v1/support/rewards/download?type=thumbnail',
+            downloadUrl: '/api/v1/support/rewards/download?type=master',
           }),
         }),
       );
@@ -740,6 +748,68 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(404);
       expect(jsonMock).toHaveBeenCalledWith({ error: 'Reward asset not found' });
+    });
+
+    it('authenticates downloadReward via signed HttpOnly cookie without session_id in query string', async () => {
+      // First call verifySession to issue the signed Set-Cookie header
+      req.headers = { 'x-stripe-session-id': 'cs_cookie_auth_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_cookie_auth_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_cookie_auth_123',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'reward_1',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue({
+        id: 'reward_1',
+        title: 'Cookie Auth Art',
+        storagePath: 'rewards/art.jpg',
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      const setCookieCall = (res.setHeader as jest.Mock).mock.calls.find(
+        (call) => call[0] === 'Set-Cookie',
+      );
+      expect(setCookieCall).toBeDefined();
+      const cookiePair = (setCookieCall![1] as string).split(';')[0];
+
+      // Now call downloadReward with only the Cookie header and NO session_id in req.query
+      jest.clearAllMocks();
+      req.query = { type: 'master' };
+      req.headers = { cookie: `other_cookie=1; ${cookiePair}` };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_cookie_auth_123',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'reward_1',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue({
+        id: 'reward_1',
+        title: 'Cookie Auth Art',
+        storagePath: 'rewards/art.jpg',
+      });
+      const fakeBuffer = Buffer.from('jpg-bytes');
+      deps.storage.downloadImage.mockResolvedValue(fakeBuffer);
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(deps.firestore.getSupportTransactionBySessionId).toHaveBeenCalledWith('cs_cookie_auth_123');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(fakeBuffer);
+    });
+
+    it('rejects tampered or malformed reward ticket cookie when no query/header session_id is present', async () => {
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'rebecca_reward_ticket=tampered_payload.invalid_signature' };
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Missing or invalid session_id query parameter' });
     });
   });
 });

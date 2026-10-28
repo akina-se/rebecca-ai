@@ -7,12 +7,16 @@
  * - `POST /api/webhooks/stripe`: Stripe checkout.session.completed webhook processing & task queuing.
  */
 
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { AppDependencies } from '../../types';
 import { SupportConfig } from './types';
 import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
 import { logger } from '../../utils/logger';
+
+const REWARD_TICKET_COOKIE_NAME = 'rebecca_reward_ticket';
+const MAX_WINDOW_MINUTES = 30;
 
 /**
  * Redacts a Stripe Checkout Session ID before writing to application logs
@@ -23,6 +27,23 @@ function maskSessionId(sessionId: string): string {
     return '***';
   }
   return `${sessionId.slice(0, 6)}...${sessionId.slice(-4)}`;
+}
+
+/**
+ * Parses a specific cookie value from the HTTP `Cookie` request header.
+ */
+function parseCookieValue(cookieHeader: string | undefined, name: string): string | undefined {
+  if (!cookieHeader) return undefined;
+  const parts = cookieHeader.split(';');
+  for (const part of parts) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = part.slice(0, eqIdx).trim();
+    if (key === name) {
+      return decodeURIComponent(part.slice(eqIdx + 1).trim());
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -61,6 +82,95 @@ export class PublicSupportController {
         transactionId,
       });
     });
+  }
+
+  /**
+   * Derives the HMAC-SHA256 signing secret used to authenticate short-lived reward download cookies.
+   */
+  private getTicketSigningSecret(): string {
+    return (
+      this.config.stripeWebhookSecret ||
+      this.config.stripeSecretKey ||
+      'rebecca-support-reward-ticket-fallback-secret'
+    );
+  }
+
+  /**
+   * Creates an HMAC-SHA256 signed reward download ticket for a verified Stripe session ID.
+   */
+  private createRewardTicket(sessionId: string, expiresAtMs: number): string {
+    const payload = Buffer.from(JSON.stringify({ sid: sessionId, exp: expiresAtMs }), 'utf8').toString('base64url');
+    const signature = crypto
+      .createHmac('sha256', this.getTicketSigningSecret())
+      .update(payload)
+      .digest('base64url');
+    return `${payload}.${signature}`;
+  }
+
+  /**
+   * Verifies an HMAC-SHA256 signed reward download ticket and returns the underlying Stripe session ID,
+   * or `null` if the signature is invalid or the ticket has expired.
+   */
+  private verifyRewardTicket(ticket: string): string | null {
+    const dotIdx = ticket.indexOf('.');
+    if (dotIdx <= 0) return null;
+    const payload = ticket.slice(0, dotIdx);
+    const providedSig = ticket.slice(dotIdx + 1);
+    const expectedSig = crypto
+      .createHmac('sha256', this.getTicketSigningSecret())
+      .update(payload)
+      .digest('base64url');
+
+    const providedBuf = Buffer.from(providedSig, 'utf8');
+    const expectedBuf = Buffer.from(expectedSig, 'utf8');
+    if (
+      providedBuf.length !== expectedBuf.length ||
+      !crypto.timingSafeEqual(providedBuf, expectedBuf)
+    ) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
+        sid?: unknown;
+        exp?: unknown;
+      };
+      if (typeof parsed.sid !== 'string' || !parsed.sid) return null;
+      if (typeof parsed.exp !== 'number' || Date.now() > parsed.exp) return null;
+      return parsed.sid;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Extracts the Stripe Checkout Session ID from the request without requiring it in the URL query string.
+   * Priority:
+   * 1. `x-stripe-session-id` request header
+   * 2. Signed `HttpOnly` cookie (`rebecca_reward_ticket`)
+   * 3. Legacy `session_id` query parameter (fallback)
+   */
+  private extractSessionIdFromRequest(req: Request): string | null {
+    const headerVal = req.headers?.['x-stripe-session-id'];
+    if (typeof headerVal === 'string' && headerVal.trim().length > 0) {
+      return headerVal.trim();
+    }
+
+    const cookieHeader = typeof req.headers?.cookie === 'string' ? req.headers.cookie : undefined;
+    const ticket = parseCookieValue(cookieHeader, REWARD_TICKET_COOKIE_NAME);
+    if (ticket) {
+      const verifiedSid = this.verifyRewardTicket(ticket);
+      if (verifiedSid) {
+        return verifiedSid;
+      }
+    }
+
+    const queryVal = req.query?.session_id;
+    if (typeof queryVal === 'string' && queryVal.trim().length > 0) {
+      return queryVal.trim();
+    }
+
+    return null;
   }
 
   /**
@@ -117,8 +227,8 @@ export class PublicSupportController {
    */
   verifySession = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sessionId = req.query.session_id;
-      if (!sessionId || typeof sessionId !== 'string') {
+      const sessionId = this.extractSessionIdFromRequest(req);
+      if (!sessionId) {
         res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
         return;
       }
@@ -184,7 +294,6 @@ export class PublicSupportController {
         ? new Date(transaction.createdAt).getTime()
         : sessionCreatedMs;
 
-      const MAX_WINDOW_MINUTES = 30;
       const ageMinutes = createdAtMs ? (Date.now() - createdAtMs) / (60 * 1000) : 0;
       const isExpired = ageMinutes > MAX_WINDOW_MINUTES;
 
@@ -201,16 +310,29 @@ export class PublicSupportController {
 
       let rewardPayload = null;
       if (activeReward && !isExpired) {
-        const encodedSessionId = encodeURIComponent(sessionId);
-        // Secure by Default: Do not expose raw GCS bucket URLs or direct GCS signed links.
-        // Stream through Bot Backend download API with strict 30-minute expiry verification.
-        const downloadUrl = `/api/v1/support/rewards/download?session_id=${encodedSessionId}&type=master`;
-        const thumbnailUrl = `/api/v1/support/rewards/download?session_id=${encodedSessionId}&type=thumbnail`;
+        const expiresAtMs = (createdAtMs || Date.now()) + MAX_WINDOW_MINUTES * 60 * 1000;
+        const maxAgeSeconds = Math.max(1, Math.floor((expiresAtMs - Date.now()) / 1000));
+        const signedTicket = this.createRewardTicket(sessionId, expiresAtMs);
+        const cookieAttributes = [
+          `${REWARD_TICKET_COOKIE_NAME}=${encodeURIComponent(signedTicket)}`,
+          'Path=/api/v1/support',
+          `Max-Age=${maxAgeSeconds}`,
+          'HttpOnly',
+          'SameSite=Lax',
+        ];
+        if (process.env.NODE_ENV === 'production') {
+          cookieAttributes.push('Secure');
+        }
+        res.setHeader('Set-Cookie', cookieAttributes.join('; '));
+
+        // Secure by Default: Do not embed session_id or bearer credentials in download URLs
+        // so infrastructure access logs, proxy logs, and browser history never record the identifier.
+        const downloadUrl = '/api/v1/support/rewards/download?type=master';
+        const thumbnailUrl = '/api/v1/support/rewards/download?type=thumbnail';
 
         // Record distribution telemetry
         await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
 
-        const expiresAtMs = (createdAtMs || Date.now()) + MAX_WINDOW_MINUTES * 60 * 1000;
         rewardPayload = {
           title: activeReward.title,
           imageUrl: thumbnailUrl,
@@ -428,8 +550,8 @@ export class PublicSupportController {
    */
   downloadReward = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sessionId = req.query.session_id;
-      if (!sessionId || typeof sessionId !== 'string') {
+      const sessionId = this.extractSessionIdFromRequest(req);
+      if (!sessionId) {
         res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
         return;
       }
