@@ -60,14 +60,14 @@ async function seedAuth() {
       displayName: 'Rebecca Administrator',
       emailVerified: true,
     });
-    await getAuth().setCustomUserClaims(user.uid, { role: 'SUPER_ADMIN', admin: true });
+    await getAuth().setCustomUserClaims(user.uid, { role: 'ADMIN', admin: true });
     await firestore.collection('admin_users').doc(user.uid).set({
       email: 'admin@example.com',
-      role: 'SUPER_ADMIN',
+      role: 'ADMIN',
       status: 'ACTIVE',
       createdAt: new Date().toISOString()
     });
-    console.log(`Successfully created dummy admin user with SUPER_ADMIN privileges: ${user.email}`);
+    console.log(`Successfully created dummy admin user with ADMIN privileges: ${user.email}`);
   } catch (error) {
     console.warn('Auth Emulator seeding skipped (emulator not running):', (error as Error).message || error);
   }

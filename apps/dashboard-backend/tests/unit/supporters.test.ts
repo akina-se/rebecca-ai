@@ -744,6 +744,10 @@ describe('Supporters Feature Unit Tests', () => {
 
       await controller.getRewardImage(req as Request, res as Response);
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+      expect(res.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Security-Policy', "default-src 'none'");
+      expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600');
+      expect(res.setHeader).toHaveBeenCalledWith('Vary', 'Authorization');
       expect(res.send).toHaveBeenCalled();
 
       useCase.getRewardBinary.mockResolvedValueOnce(null);

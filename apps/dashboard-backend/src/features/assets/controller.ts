@@ -75,7 +75,8 @@ export class AssetsController {
       res.setHeader('Content-Type', binary.contentType);
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Content-Security-Policy', "default-src 'none'");
-      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('Vary', 'Authorization');
       res.send(binary.buffer);
     } catch (err) {
       logger.error('Failed to stream image', err, { assetId: req.params.id });

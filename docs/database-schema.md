@@ -172,7 +172,7 @@ erDiagram
     ADMIN_USERS {
         string id PK "Firebase Auth UID"
         string email "Admin email address"
-        string role "SUPER_ADMIN | ADMIN"
+        string role "ADMIN"
         string status "ACTIVE | REVOKED"
         string createdAt "ISO 8601 datetime"
     }
@@ -353,7 +353,7 @@ Authorized administrator accounts for Role-Based Access Control (RBAC) in Dashbo
 | Field Name | Type | Description |
 | :--- | :--- | :--- |
 | `email` | `string` | Administrator email address (case-insensitive lookup). |
-| `role` | `'SUPER_ADMIN' \| 'ADMIN'` | RBAC authorization level. |
+| `role` | `'ADMIN'` | RBAC authorization level. |
 | `status` | `'ACTIVE' \| 'REVOKED'` | Access status. Revoked users are blocked at auth stage. |
 | `createdAt` | `string` (ISO 8601) | Account authorization timestamp. |
 

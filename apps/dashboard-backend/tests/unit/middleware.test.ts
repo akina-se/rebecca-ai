@@ -100,7 +100,7 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       const next = jest.fn() as NextFunction;
 
       await verifyAuth(req, res, next);
-      expect((req as any).user).toEqual({ uid: 'local-dev-admin', role: 'SUPER_ADMIN' });
+      expect((req as any).user).toEqual({ uid: 'local-dev-admin', role: 'ADMIN' });
       expect(next).toHaveBeenCalledTimes(1);
     });
 
@@ -119,58 +119,68 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('should attach user and call next on valid token with custom claim SUPER_ADMIN', async () => {
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_1', email: 'admin@rebecca.ai', role: 'SUPER_ADMIN' });
-
-      const req = { method: 'GET', headers: { authorization: 'Bearer valid_super_token' } } as unknown as Request;
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
-      const next = jest.fn() as NextFunction;
-
-      await verifyAuth(req, res, next);
-      expect((req as any).user).toEqual({ uid: 'admin_1', email: 'admin@rebecca.ai', role: 'SUPER_ADMIN' });
-      expect(next).toHaveBeenCalledTimes(1);
-    });
-
-    it('should attach user and call next on valid token with custom claim ADMIN or admin boolean', async () => {
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_2', email: 'admin2@rebecca.ai', admin: true });
+    it('should call verifyIdToken with checkRevoked = true and verify against Firestore admin_users on every request', async () => {
+      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_1', email: 'admin@rebecca.ai', role: 'ADMIN', admin: true });
+      mockFirestoreGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [{ data: () => ({ role: 'ADMIN', status: 'ACTIVE' }) }]
+      });
 
       const req = { method: 'GET', headers: { authorization: 'Bearer valid_admin_token' } } as unknown as Request;
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
       const next = jest.fn() as NextFunction;
 
       await verifyAuth(req, res, next);
-      expect((req as any).user).toEqual({ uid: 'admin_2', email: 'admin2@rebecca.ai', admin: true, role: 'ADMIN' });
+      expect(mockVerifyIdToken).toHaveBeenCalledWith('valid_admin_token', true);
+      expect(mockFirestoreGet).toHaveBeenCalledTimes(1);
+      expect((req as any).user).toEqual({ uid: 'admin_1', email: 'admin@rebecca.ai', role: 'ADMIN', admin: true });
       expect(next).toHaveBeenCalledTimes(1);
     });
 
-    it('should verify against Firestore admin_users when custom claim is absent', async () => {
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_3', email: 'registered_admin@rebecca.ai' });
+    it('should NOT short-circuit on custom claims and must reject immediately when status in Firestore is REVOKED', async () => {
+      // 1st request: ACTIVE in Firestore
+      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai', role: 'ADMIN', admin: true });
       mockFirestoreGet.mockResolvedValueOnce({
         empty: false,
         docs: [{ data: () => ({ role: 'ADMIN', status: 'ACTIVE' }) }]
       });
+      const req1 = { method: 'GET', headers: { authorization: 'Bearer token1' } } as unknown as Request;
+      const res1 = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
+      const next1 = jest.fn() as NextFunction;
+      await verifyAuth(req1, res1, next1);
+      expect(next1).toHaveBeenCalledTimes(1);
 
-      const req = { method: 'GET', headers: { authorization: 'Bearer valid_firestore_token' } } as unknown as Request;
-      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
-      const next = jest.fn() as NextFunction;
+      // 2nd request immediately after revocation: same token claims, but Firestore doc is now REVOKED
+      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai', role: 'ADMIN', admin: true });
+      mockFirestoreGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [{ data: () => ({ role: 'ADMIN', status: 'REVOKED' }) }]
+      });
+      const req2 = { method: 'GET', headers: { authorization: 'Bearer token1' } } as unknown as Request;
+      const res2 = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
+      const next2 = jest.fn() as NextFunction;
+      await verifyAuth(req2, res2, next2);
 
-      await verifyAuth(req, res, next);
-      expect((req as any).user).toEqual({ uid: 'admin_3', email: 'registered_admin@rebecca.ai', role: 'ADMIN' });
-      expect(next).toHaveBeenCalledTimes(1);
+      expect(res2.status).toHaveBeenCalledWith(403);
+      expect(res2.json).toHaveBeenCalledWith({ error: 'Forbidden: Your admin access has been revoked.' });
+      expect(next2).not.toHaveBeenCalled();
     });
 
-    it('should hit cache on subsequent request for the same email', async () => {
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_3', email: 'registered_admin@rebecca.ai' });
+    it('should return 403 when user in Firestore has a non-ADMIN role (e.g. VIEWER or OPERATOR)', async () => {
+      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'viewer_1', email: 'viewer@rebecca.ai' });
+      mockFirestoreGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [{ data: () => ({ role: 'VIEWER', status: 'ACTIVE' }) }]
+      });
 
-      const req = { method: 'GET', headers: { authorization: 'Bearer valid_cached_token' } } as unknown as Request;
+      const req = { method: 'GET', headers: { authorization: 'Bearer viewer_token' } } as unknown as Request;
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
       const next = jest.fn() as NextFunction;
 
       await verifyAuth(req, res, next);
-      expect((req as any).user.role).toEqual('ADMIN');
-      expect(next).toHaveBeenCalledTimes(1);
-      // Firestore should not have been called again because it was cached
-      expect(mockFirestoreGet).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Forbidden: Insufficient role privileges.' });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 403 when user is not found in Firestore admin_users', async () => {
@@ -189,30 +199,6 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should return 403 when user status in cache is revoked', async () => {
-      // 1. Populate cache with ACTIVE status
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
-      mockFirestoreGet.mockResolvedValueOnce({
-        empty: false,
-        docs: [{ data: () => ({ role: 'ADMIN', status: 'ACTIVE' }) }]
-      });
-      const req1 = { method: 'GET', headers: { authorization: 'Bearer token1' } } as unknown as Request;
-      const res1 = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
-      const next1 = jest.fn() as NextFunction;
-      await verifyAuth(req1, res1, next1);
-      expect(next1).toHaveBeenCalledTimes(1);
-
-      // 2. Mock token for second request and verify revoked condition after cache update
-      mockVerifyIdToken.mockResolvedValueOnce({ uid: 'admin_revoked', email: 'revoked_admin@rebecca.ai' });
-      // Clear cache entry and test Firestore empty
-      mockFirestoreGet.mockResolvedValueOnce({ empty: true, docs: [] });
-      const req2 = { method: 'GET', headers: { authorization: 'Bearer token2' } } as unknown as Request;
-      const res2 = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
-      const next2 = jest.fn() as NextFunction;
-      await verifyAuth(req2, res2, next2);
-      expect(next2).toHaveBeenCalledTimes(1);
-    });
-
     it('should return 403 when token has no email', async () => {
       mockVerifyIdToken.mockResolvedValueOnce({ uid: 'no_email_user' });
 
@@ -225,10 +211,10 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should return 401 when token verification fails', async () => {
-      mockVerifyIdToken.mockRejectedValueOnce(new Error('Token expired'));
+    it('should return 401 when token verification fails or token is revoked in Firebase Auth', async () => {
+      mockVerifyIdToken.mockRejectedValueOnce(new Error('Firebase ID token has been revoked.'));
 
-      const req = { method: 'GET', headers: { authorization: 'Bearer expired_jwt_token' } } as unknown as Request;
+      const req = { method: 'GET', headers: { authorization: 'Bearer revoked_jwt_token' } } as unknown as Request;
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
       const next = jest.fn() as NextFunction;
 

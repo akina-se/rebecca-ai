@@ -52,7 +52,7 @@ export enum AssetStatus {
 }
 
 /** Roles assigned to dashboard administrator accounts. */
-export type AdminRole = 'SUPER_ADMIN' | 'ADMIN';
+export type AdminRole = 'ADMIN';
 
 /** Status of an administrator account. */
 export type AdminUserStatus = 'ACTIVE' | 'REVOKED';

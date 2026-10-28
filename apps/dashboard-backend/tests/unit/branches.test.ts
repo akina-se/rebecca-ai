@@ -1351,6 +1351,10 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       } as any;
       await controller.getImage(req1, res1);
       expect(res1.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
+      expect(res1.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
+      expect(res1.setHeader).toHaveBeenCalledWith('Content-Security-Policy', "default-src 'none'");
+      expect(res1.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600');
+      expect(res1.setHeader).toHaveBeenCalledWith('Vary', 'Authorization');
       expect(res1.send).toHaveBeenCalledWith(Buffer.from('thumb-webp'));
 
       // Branch 2: Binary null -> 404
@@ -1636,6 +1640,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
     });
 
     it('TimelineUseCase deletePosts edge cases', async () => {
+      (config.services as any).botBackendUrl = '';
       const timelineRepo = new TimelineRepository(mock.firestore as any);
       timelineRepo.deletePosts = jest.fn().mockResolvedValue(undefined);
       const timelineUseCase = new TimelineUseCase(timelineRepo);

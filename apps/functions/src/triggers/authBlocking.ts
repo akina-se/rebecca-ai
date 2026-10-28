@@ -4,9 +4,9 @@ import * as logger from 'firebase-functions/logger';
 
 /**
  * Blocking Function that executes before a user is signed in via Firebase Authentication.
- * 
+ *
  * Verifies that the attempting user's email is present in the `admin_users` Firestore collection
- * with status === 'ACTIVE'. If not authorized, it throws an HttpsError to immediately abort
+ * with status === 'ACTIVE' and role === 'ADMIN'. If not authorized, it throws an HttpsError to immediately abort
  * the sign-in process, ensuring zero tokens and zero sessions are established for unauthorized accounts.
  */
 export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
@@ -37,13 +37,22 @@ export const beforeAdminSignIn = beforeUserSignedIn(async (event) => {
   }
 
   const adminDoc = adminSnapshot.docs[0].data();
-  const role = adminDoc.role || 'ADMIN';
+  if (adminDoc.role !== 'ADMIN') {
+    logger.warn('[Security Alert] Blocked sign-in attempt with non-ADMIN role', {
+      uid: user?.uid,
+      role: adminDoc.role,
+    });
+    throw new HttpsError(
+      'permission-denied',
+      'Access Denied: Insufficient role privileges.'
+    );
+  }
 
   // Issue custom claims embedded into the cryptographically signed JWT
   return {
     customClaims: {
-      role,
-      admin: role === 'ADMIN' || role === 'SUPER_ADMIN',
+      role: 'ADMIN',
+      admin: true,
     },
   };
 });
