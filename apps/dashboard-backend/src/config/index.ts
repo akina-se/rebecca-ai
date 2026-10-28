@@ -67,7 +67,7 @@ export const config = {
   /** Services Configuration */
   services: {
     botBackendUrl: process.env.BOT_BACKEND_URL || '',
-    batchSecret: process.env.BATCH_SECRET || '',
+    batchSecret: process.env.NODE_ENV === 'production' ? '' : (process.env.BATCH_SECRET || ''),
   },
   /** Gemini API Configuration */
   gemini: {

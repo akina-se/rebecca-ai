@@ -88,6 +88,9 @@ describe('Functions Config', () => {
 
     const cfg = getConfig();
     expect(cfg.functionsUrl).toBeUndefined();
+    process.env.NODE_ENV = 'production';
+    process.env.BATCH_SECRET_KEY = 'secret_that_must_be_ignored';
+    expect(getConfig().batchSecretKey).toBeUndefined();
     expect(cfg.xApi.apiKey).toBe('');
     expect(cfg.xApi.apiSecret).toBe('');
     expect(cfg.xApi.accessToken).toBe('');
