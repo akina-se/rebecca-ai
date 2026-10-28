@@ -1,5 +1,12 @@
+const mockGetIdTokenClient = jest.fn();
+jest.mock('google-auth-library', () => ({
+  GoogleAuth: jest.fn().mockImplementation(() => ({
+    getIdTokenClient: (...args: any[]) => mockGetIdTokenClient(...args),
+  })),
+}));
+
 import { getJstDateRangeInUtc } from '../../src/core/dateUtils';
-import { deleteTweetViaBotService } from '../../src/core/botServiceClient';
+import { deleteTweetViaBotService, getBotServiceHeaders } from '../../src/core/botServiceClient';
 import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
 import { Request, Response } from 'express';
@@ -58,6 +65,32 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       const result = await deleteTweetViaBotService('error_id');
       expect(result).toEqual({ success: false, message: 'Network error' });
       (config.services as any).botBackendUrl = origUrl;
+    });
+
+    it('getBotServiceHeaders should attach OIDC Authorization header for non-localhost URLs', async () => {
+      mockGetIdTokenClient.mockResolvedValueOnce({
+        getRequestHeaders: async () => ({ Authorization: 'Bearer oidc_token_123' }),
+      });
+
+      const headers = await getBotServiceHeaders('https://bot.example.run.app/');
+      expect(mockGetIdTokenClient).toHaveBeenCalledWith('https://bot.example.run.app');
+      expect(headers).toEqual({
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer oidc_token_123',
+      });
+    });
+
+    it('getBotServiceHeaders should fall back to x-worker-secret when OIDC token acquisition fails', async () => {
+      const origSecret = config.services.batchSecret;
+      (config.services as any).batchSecret = 'fallback_secret';
+      mockGetIdTokenClient.mockRejectedValueOnce(new Error('Metadata server unavailable'));
+
+      const headers = await getBotServiceHeaders('https://bot.example.run.app');
+      expect(headers).toEqual({
+        'Content-Type': 'application/json',
+        'x-worker-secret': 'fallback_secret',
+      });
+      (config.services as any).batchSecret = origSecret;
     });
   });
 

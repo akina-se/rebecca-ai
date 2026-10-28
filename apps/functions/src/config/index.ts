@@ -1,5 +1,4 @@
 export const FUNCTION_SECRET_KEYS = [
-  'BATCH_SECRET_KEY',
   'X_API_KEY',
   'X_API_SECRET',
   'X_ACCESS_TOKEN',
@@ -21,6 +20,8 @@ export interface XApiConfig {
 
 export interface FunctionsConfig {
   batchSecretKey?: string;
+  functionsUrl?: string;
+  serviceAccountEmail?: string;
   xApi: XApiConfig;
 }
 
@@ -34,17 +35,27 @@ const parseMaxResults = (envValue: string | undefined): number => {
 /**
  * Retrieves the strongly-typed application configuration.
  */
-export const getConfig = (): FunctionsConfig => ({
-  batchSecretKey: process.env.BATCH_SECRET_KEY,
-  xApi: {
-    apiKey: process.env.X_API_KEY || '',
-    apiSecret: process.env.X_API_SECRET || '',
-    accessToken: process.env.X_ACCESS_TOKEN || '',
-    accessSecret: process.env.X_ACCESS_SECRET || '',
-    bearerToken: process.env.X_BEARER_TOKEN || '',
-    myUserId: process.env.X_MY_USER_ID || '',
-    syncMaxResults: parseMaxResults(process.env.X_SYNC_MAX_RESULTS),
-  },
-});
+export const getConfig = (): FunctionsConfig => {
+  const projectId = process.env.GCP_PROJECT_ID || process.env.GCLOUD_PROJECT;
+  const region = process.env.GCP_LOCATION || process.env.FUNCTION_REGION || 'asia-northeast1';
+  const defaultFunctionsUrl = projectId
+    ? `https://${region}-${projectId}.cloudfunctions.net/batchTimelineSync`
+    : undefined;
+
+  return {
+    batchSecretKey: process.env.BATCH_SECRET_KEY,
+    functionsUrl: process.env.FUNCTIONS_URL || defaultFunctionsUrl,
+    serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL,
+    xApi: {
+      apiKey: process.env.X_API_KEY || '',
+      apiSecret: process.env.X_API_SECRET || '',
+      accessToken: process.env.X_ACCESS_TOKEN || '',
+      accessSecret: process.env.X_ACCESS_SECRET || '',
+      bearerToken: process.env.X_BEARER_TOKEN || '',
+      myUserId: process.env.X_MY_USER_ID || '',
+      syncMaxResults: parseMaxResults(process.env.X_SYNC_MAX_RESULTS),
+    },
+  };
+};
 
 export const config = getConfig();

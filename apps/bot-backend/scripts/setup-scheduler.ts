@@ -121,6 +121,7 @@ const buildAuthArgs = (headerFlag: '--headers' | '--update-headers'): string[] =
         return [
             '--oidc-service-account-email', serviceAccount,
             '--oidc-token-audience', serviceUrl as string,
+            ...(headerFlag === '--update-headers' ? ['--remove-headers', 'X-Batch-Secret'] : []),
         ];
     }
     if (batchSecret) {
