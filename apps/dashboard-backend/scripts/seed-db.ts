@@ -420,10 +420,6 @@ async function seedFirestore() {
       const storage = new Storage({ projectId: targetProjectId, apiEndpoint });
       const bucketName = process.env.IMAGE_BUCKET_NAME || 'rebecca-ai-gal-images';
       const bucket = storage.bucket(bucketName);
-      const [exists] = await bucket.exists();
-      if (!exists) {
-        await bucket.create();
-      }
       const dummyPng = Buffer.from(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
         'base64'
@@ -432,6 +428,10 @@ async function seedFirestore() {
         await bucket.file(reward.storagePath).save(dummyPng, { contentType: 'image/png', resumable: false });
         console.log(`Seeded storage file: ${reward.storagePath}`);
       }
+      for (const img of images) {
+        await bucket.file(`images/${img.filename}`).save(dummyPng, { contentType: 'image/png', resumable: false });
+      }
+      console.log(`Seeded ${images.length} asset binaries in Storage emulator.`);
     } catch (storageErr) {
       console.warn('Storage seeding skipped or failed:', storageErr);
     }
