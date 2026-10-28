@@ -1,6 +1,6 @@
 {
   "name": "dashboard-backend",
-  "version": "1.36.0",
+  "version": "1.36.1",
   "description": "Backend-for-Frontend (BFF) for the Admin Dashboard",
   "main": "dist/index.js",
   "scripts": {
@@ -26,8 +26,6 @@
     "@google-cloud/storage": "^8.2.0",
     "@google-cloud/tasks": "^7.2.1",
     "@google/genai": "^2.30.0",
-
-
     "@rebecca/db": "*",
     "@rebecca/logger": "*",
     "@rebecca/persona": "*",

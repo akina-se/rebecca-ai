@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.36.1](https://github.com/akina-se/rebecca-ai/compare/v1.36.0...v1.36.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **bot-backend:** avoid branching on request header in verifyServerToServerAuth to satisfy CodeQL ([422461d](https://github.com/akina-se/rebecca-ai/commit/422461d3f3b2b4f0c68528a6025153afd1c8bc53))
+* **e2e:** await blob url resolution and accept authenticated blob stream in e2e specs ([abc1ada](https://github.com/akina-se/rebecca-ai/commit/abc1ada49a4462c29954124619e86f5a90c8b02d))
+* **scheduler:** use --clear-headers instead of --remove-headers for gcloud compatibility ([63d7ba8](https://github.com/akina-se/rebecca-ai/commit/63d7ba872b09f84811adeb19b9481310b1726504))
+* **security:** api auth hardening and access control audit fixes ([1e12704](https://github.com/akina-se/rebecca-ai/commit/1e127041aed424ef6e3e2a7e167cbb6107ea0022))
+* **security:** enforce auth on image streaming, migrate grpc to internal http, and harden oidc/claims ([dadf693](https://github.com/akina-se/rebecca-ai/commit/dadf693202211b4ef8ea1a02a12bf81b7527d872))
+* **seed:** seed asset binaries into storage emulator and avoid unsupported bucket.create() ([54cd96b](https://github.com/akina-se/rebecca-ai/commit/54cd96bbacf0fd84156d45d03b20e1418ab0d52b))
+* **support, e2e:** disable media attachment on support appreciation tweets and align e2e image assertions ([93f6c75](https://github.com/akina-se/rebecca-ai/commit/93f6c75b61ac90f1dad6be34e5e00e75c74c5981))
+* **supporters:** sanitize build config, restore authenticated lightbox blob, add placeholder separation and transaction deletion ([1ed56c8](https://github.com/akina-se/rebecca-ai/commit/1ed56c88998dfa0a74b7b95a17eccbd25ff0fb79))
+* **supporters:** sanitize build config, restore authenticated lightbox blob, add placeholder separation and transaction deletion ([6a69023](https://github.com/akina-se/rebecca-ai/commit/6a69023d88536df56663a46e26cea15d4f45a01c))
+* **thank-you:** use showErrorState on img.onerror to resolve CodeQL unused variable alert ([d86e428](https://github.com/akina-se/rebecca-ai/commit/d86e4288732fcfe2ec29059a9bdacc1e5d3b75d4))
+
 ## [1.36.0](https://github.com/akina-se/rebecca-ai/compare/v1.35.0...v1.36.0) (2026-10-27)
 
 
