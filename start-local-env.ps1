@@ -156,15 +156,15 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "-> Database seeded successfully with mock timeline posts, active/blocked users, and KPI metrics!" -ForegroundColor Green
 }
 
-# 6. Start Bot Backend (gRPC Server on port 50051, HTTP port 8082 to avoid Firestore 8080 conflict)
-Write-Host "[6/7] Starting Bot Backend (gRPC Server)..." -ForegroundColor Yellow
+# 6. Start Bot Backend (HTTP port 8082 to avoid Firestore 8080 conflict)
+Write-Host "[6/7] Starting Bot Backend..." -ForegroundColor Yellow
 $BotCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; `$env:PORT='8082'; npm run dev --workspace=bot-backend"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $BotCommand -WorkingDirectory $PWD
-Write-Host "-> Bot Backend launched (HTTP port 8082, gRPC port 50051)..." -ForegroundColor Gray
+Write-Host "-> Bot Backend launched (HTTP port 8082)..." -ForegroundColor Gray
 
 # 7. Start Dashboard Backend (BFF Server)
 Write-Host "[7/7] Starting Dashboard Backend (BFF Server)..." -ForegroundColor Yellow
-$BffCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; `$env:BOT_GRPC_URL='localhost:50051'; `$env:PORT='8081'; npm run dev --workspace=dashboard-backend"
+$BffCommand = "`$env:FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'; `$env:FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'; `$env:GCP_PROJECT_ID='rebecca-ai-gal-local'; `$env:BOT_BACKEND_URL='http://localhost:8082'; `$env:PORT='8081'; npm run dev --workspace=dashboard-backend"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $BffCommand -WorkingDirectory $PWD
 Write-Host "-> Dashboard BFF launched (HTTP port 8081)..." -ForegroundColor Gray
 
@@ -184,7 +184,7 @@ Write-Host "   - Firebase Emulator UI: http://127.0.0.1:4000/" -ForegroundColor 
 Write-Host "     * Auth Emulator:      http://127.0.0.1:4000/auth" -ForegroundColor Gray
 Write-Host "     * Firestore Emulator: http://127.0.0.1:4000/firestore" -ForegroundColor Gray
 Write-Host "   - BFF Backend Health:   http://localhost:8081/health" -ForegroundColor Cyan
-Write-Host "   - Bot Backend gRPC:     localhost:50051" -ForegroundColor Cyan
+Write-Host "   - Bot Backend:          http://localhost:8082" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "   Sign-in Credentials:" -ForegroundColor White
 Write-Host "   - Email:    admin@example.com" -ForegroundColor Magenta

@@ -87,21 +87,18 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 
 ---
 
-## Internal gRPC API Specification
+## Internal Worker HTTP API Specification
 
-`bot-backend` exposes a gRPC server on port `50051` to allow internal administration tools (like `dashboard-backend` BFF) to trigger administrative commands.
+`bot-backend` exposes authenticated internal worker routes to allow administrative tools (like `dashboard-backend` BFF) and Cloud Tasks to trigger administrative commands.
 
-The Protocol Buffers contract is defined in [`packages/grpc-schemas/tweets.proto`](../../packages/grpc-schemas/tweets.proto).
-
-### `TweetService`
-
-#### `DeleteTweet`
-Request: `DeleteTweetRequest`
-- `tweet_id` (string): The physical tweet ID on X to delete.
-
-Response: `DeleteTweetResponse`
-- `success` (bool): Deletion success status.
-- `message` (string): Feedback message.
+### `DELETE /worker/tweets/:id`
+Deletes a specified tweet on the X (Twitter) platform.
+- **Authentication**: `workerAuth` (Google OIDC ID Token or `x-worker-secret` / `x-batch-secret` header)
+- **Path Parameters**:
+  - `id` (string): The physical tweet ID on X to delete.
+- **Response**:
+  - `200 OK`: `{ "success": true, "message": "Tweet deleted successfully" }`
+  - `400 Bad Request` / `401 Unauthorized` / `502 Bad Gateway` on error.
 
 ---
 

@@ -12,9 +12,8 @@ describe('Functions Config', () => {
     process.env = originalEnv;
   });
 
-  it('should export correct FUNCTION_SECRET_KEYS list', () => {
+  it('should export correct FUNCTION_SECRET_KEYS list (without BATCH_SECRET_KEY in production)', () => {
     expect(FUNCTION_SECRET_KEYS).toEqual([
-      'BATCH_SECRET_KEY',
       'X_API_KEY',
       'X_API_SECRET',
       'X_ACCESS_TOKEN',
@@ -26,6 +25,8 @@ describe('Functions Config', () => {
 
   it('should populate config from environment variables', () => {
     process.env.BATCH_SECRET_KEY = 'test_batch_secret';
+    process.env.FUNCTIONS_URL = 'https://asia-northeast1-test.cloudfunctions.net/batchTimelineSync';
+    process.env.SERVICE_ACCOUNT_EMAIL = 'sa@test.iam.gserviceaccount.com';
     process.env.X_API_KEY = 'test_key';
     process.env.X_API_SECRET = 'test_secret';
     process.env.X_ACCESS_TOKEN = 'test_token';
@@ -35,6 +36,8 @@ describe('Functions Config', () => {
 
     const cfg = getConfig();
     expect(cfg.batchSecretKey).toBe('test_batch_secret');
+    expect(cfg.functionsUrl).toBe('https://asia-northeast1-test.cloudfunctions.net/batchTimelineSync');
+    expect(cfg.serviceAccountEmail).toBe('sa@test.iam.gserviceaccount.com');
     expect(cfg.xApi.apiKey).toBe('test_key');
     expect(cfg.xApi.apiSecret).toBe('test_secret');
     expect(cfg.xApi.accessToken).toBe('test_token');
@@ -42,6 +45,15 @@ describe('Functions Config', () => {
     expect(cfg.xApi.bearerToken).toBe('test_bearer');
     expect(cfg.xApi.myUserId).toBe('test_user_id');
     expect(cfg.xApi.syncMaxResults).toBe(30);
+  });
+
+  it('should derive default functionsUrl from GCLOUD_PROJECT when FUNCTIONS_URL is unset', () => {
+    delete process.env.FUNCTIONS_URL;
+    process.env.GCLOUD_PROJECT = 'demo-project';
+    process.env.GCP_LOCATION = 'asia-northeast1';
+
+    const cfg = getConfig();
+    expect(cfg.functionsUrl).toBe('https://asia-northeast1-demo-project.cloudfunctions.net/batchTimelineSync');
   });
 
   it('should parse X_SYNC_MAX_RESULTS properly when configured', () => {
@@ -70,8 +82,12 @@ describe('Functions Config', () => {
     delete process.env.X_BEARER_TOKEN;
     delete process.env.X_MY_USER_ID;
     delete process.env.X_SYNC_MAX_RESULTS;
+    delete process.env.FUNCTIONS_URL;
+    delete process.env.GCP_PROJECT_ID;
+    delete process.env.GCLOUD_PROJECT;
 
     const cfg = getConfig();
+    expect(cfg.functionsUrl).toBeUndefined();
     expect(cfg.xApi.apiKey).toBe('');
     expect(cfg.xApi.apiSecret).toBe('');
     expect(cfg.xApi.accessToken).toBe('');

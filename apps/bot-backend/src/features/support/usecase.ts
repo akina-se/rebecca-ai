@@ -139,11 +139,11 @@ ${personaAnchors ? `【ペルソナ表現・アンカー例】\n${personaAnchors
       const cleanReplyBody = geminiResponse.replyBody.trim();
       const finalText = `${cleanReplyBody}\n\n── Official Supporters\n${this.config.officialPortalUrl}\n${defaultHashtag}`;
 
-      // Step 5: Post to X with Automated Multimodal Image Asset Attachment
+      // Step 5: Post to X without Media Attachment (Support tweets rely on Official Portal OGP card for visual presentation)
       const publishResult = await publishPost(this.deps, {
         text: finalText,
         context: transaction.itemLabel,
-        attachImage: true,
+        attachImage: false,
       });
 
       // Step 6: Persist in Timeline History

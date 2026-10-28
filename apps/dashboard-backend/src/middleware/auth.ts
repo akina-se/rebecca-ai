@@ -74,13 +74,16 @@ export const verifyAuth = async (req: AuthenticatedRequest, res: Response, next:
     return;
   }
 
+  let token: string | undefined;
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split('Bearer ')[1]?.trim();
+  }
+
+  if (!token) {
     res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header' });
     return;
   }
-
-  const token = authHeader.split('Bearer ')[1];
   try {
     const decodedToken = await getAdminAuth().verifyIdToken(token);
 

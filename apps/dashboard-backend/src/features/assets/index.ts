@@ -25,16 +25,13 @@ const upload = multer({
 export function initializeAssetsModule(
   firestore: Firestore,
   storage: Storage,
-): { assetsRouter: Router; publicImagesRouter: Router } {
+): { assetsRouter: Router } {
   const assetsRouter = Router();
-  const publicImagesRouter = Router();
   
   const repo = new AssetsRepository(firestore);
   const useCase = new AssetsUseCase(repo, storage);
   const controller = new AssetsController(useCase);
 
-  // Public image streaming endpoint (no auth required for browser <img> / css requests)
-  publicImagesRouter.get('/:id/image', controller.getImage.bind(controller));
 
   // 1. List / Query Assets (Paginated with search)
   assetsRouter.get('/', controller.getAll.bind(controller));
@@ -52,5 +49,5 @@ export function initializeAssetsModule(
   assetsRouter.delete('/:id', controller.deleteMany.bind(controller));
   assetsRouter.delete('/', controller.deleteMany.bind(controller));
 
-  return { assetsRouter, publicImagesRouter };
+  return { assetsRouter };
 }

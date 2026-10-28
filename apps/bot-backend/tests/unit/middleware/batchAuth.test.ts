@@ -22,6 +22,7 @@ describe('batchAuth Middleware', () => {
         jest.clearAllMocks();
         config.batchSecret = 'test_secret';
         config.gcp.workerUrl = 'https://test-worker.url';
+        config.gcp.serviceAccountEmail = undefined;
     });
 
     it('should allow access if OIDC token is valid', async () => {
@@ -95,6 +96,29 @@ describe('batchAuth Middleware', () => {
         expect(mockRes.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
     });
 
+        it('should allow access if OIDC token has matching serviceAccountEmail', async () => {
+        config.gcp.serviceAccountEmail = 'sa@example.iam.gserviceaccount.com';
+        mockReq.headers = { authorization: 'Bearer valid_token' };
+        const mockVerifyIdToken = jest.fn().mockResolvedValue({
+            getPayload: () => ({ iss: 'https://accounts.google.com', email: 'sa@example.iam.gserviceaccount.com' })
+        });
+        (OAuth2Client.prototype.verifyIdToken as jest.Mock) = mockVerifyIdToken;
+        await batchAuth(mockReq as Request, mockRes as Response, nextFunction);
+        expect(nextFunction).toHaveBeenCalled();
+        expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
+    it('should reject access if OIDC token serviceAccountEmail does not match', async () => {
+        config.gcp.serviceAccountEmail = 'expected-sa@example.iam.gserviceaccount.com';
+        mockReq.headers = { authorization: 'Bearer valid_token' };
+        const mockVerifyIdToken = jest.fn().mockResolvedValue({
+            getPayload: () => ({ iss: 'https://accounts.google.com', email: 'attacker-sa@example.iam.gserviceaccount.com' })
+        });
+        (OAuth2Client.prototype.verifyIdToken as jest.Mock) = mockVerifyIdToken;
+        await batchAuth(mockReq as Request, mockRes as Response, nextFunction);
+        expect(nextFunction).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+    });
     it('should handle internal errors gracefully', async () => {
         mockReq.headers = { authorization: 'Bearer valid_token' };
 

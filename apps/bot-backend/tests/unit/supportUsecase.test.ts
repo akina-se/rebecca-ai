@@ -47,9 +47,9 @@ describe('SupportTaskUseCase Unit Tests', () => {
     (publishPost as jest.Mock).mockResolvedValue({
       tweetId: 'tweet_support_999',
       text: `たろうマスター、サーバーリソースありがと！これで処理速度爆上がりよ⚡️\n\n── Official Supporters\n${config.support.officialPortalUrl}\n#全肯定AIレベッカ`,
-      attachedMedia: true,
-      mediaUrls: ['https://storage.googleapis.com/rebecca-assets/resource_01.png'],
-      assetId: 'asset_resource_01',
+      attachedMedia: false,
+      mediaUrls: [],
+      assetId: undefined,
     });
   });
 
@@ -99,7 +99,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     expect(result.tweetId).toBe('tweet_support_999');
     expect(result.safeName).toBe('たろう');
     expect(result.isNameSanitized).toBe(false);
-    expect(result.attachedMedia).toBe(true);
+    expect(result.attachedMedia).toBe(false);
 
     // Verify Gemini prompt formation
     expect(deps.gemini.generateStructuredSupportPost).toHaveBeenCalledWith(
@@ -117,7 +117,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
       expect.objectContaining({
         text: expect.stringContaining(config.support.officialPortalUrl),
         context: 'サーバーリソース差し入れ',
-        attachImage: true,
+        attachImage: false,
       }),
     );
 
@@ -128,8 +128,8 @@ describe('SupportTaskUseCase Unit Tests', () => {
         thought: expect.stringContaining('処理負荷が下がった'),
         tweetId: 'tweet_support_999',
         postType: 'support',
-        mediaUrls: ['https://storage.googleapis.com/rebecca-assets/resource_01.png'],
-        assetId: 'asset_resource_01',
+        mediaUrls: [],
+        assetId: undefined,
       }),
     );
 

@@ -21,7 +21,6 @@ import { createWorkerRoutes } from './routes/workerRoutes';
 import { createPublicRoutes } from './routes/publicRoutes';
 import { publicRateLimiter, batchRateLimiter, workerRateLimiter } from './middleware/apiRateLimiter';
 import { logger } from './utils/logger';
-import { startGrpcServer } from './services/grpcServer';
 
 /**
  * Instantiates the default application dependencies using configured settings.
@@ -95,7 +94,6 @@ if (require.main === module) {
   app.listen(PORT, () => {
     logger.info('Rebecca AI Chatbot server started', { port: PORT });
   });
-  startGrpcServer(defaultDeps.xApi);
 }
 
 export default app;

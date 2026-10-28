@@ -26,10 +26,9 @@ jest.mock('firebase-admin/firestore', () => ({
   }),
 }));
 
-// Mock gRPC client to prevent network calls in integration tests
-jest.mock('../../src/core/grpcClient', () => ({
-  deleteTweetViaGrpc: jest.fn().mockResolvedValue({ success: true, message: 'Deleted' }),
-  triggerDreamingViaGrpc: jest.fn().mockResolvedValue({ success: true, message: 'Dreaming triggered' }),
+// Mock bot service client to prevent network calls in integration tests
+jest.mock('../../src/core/botServiceClient', () => ({
+  deleteTweetViaBotService: jest.fn().mockResolvedValue({ success: true, message: 'Deleted' }),
 }));
 
 // Mock Google Cloud Tasks to prevent network calls
@@ -113,6 +112,8 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
       // Assets
       { method: 'get', path: '/api/v1/images' },
       { method: 'get', path: '/api/v1/images/img_123' },
+      { method: 'get', path: '/api/v1/assets/img_123/image' },
+      { method: 'get', path: '/api/v1/campaigns/c1/assets/pic.jpg' },
       { method: 'post', path: '/api/v1/images/regenerate-captions' },
       { method: 'put', path: '/api/v1/images/img_123', body: { caption: 'new caption' } },
       { method: 'delete', path: '/api/v1/images', body: { ids: ['img_123'] } },

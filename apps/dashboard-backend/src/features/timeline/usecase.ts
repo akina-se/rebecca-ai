@@ -1,6 +1,6 @@
 import { TimelineRepository } from './repository';
 import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginationMeta } from '@rebecca/types';
-import { deleteTweetViaGrpc } from '../../core/grpcClient';
+import { deleteTweetViaBotService } from '../../core/botServiceClient';
 import { logger } from '../../utils/logger';
 
 /**
@@ -51,15 +51,15 @@ export class TimelineUseCase {
    * @returns A promise that resolves when the deletion is complete.
    */
   async deletePosts(ids: string[]): Promise<void> {
-    // Call bot-backend via gRPC to delete the tweets on X prior to database removal
+    // Call bot-backend via authenticated internal HTTP API to delete the tweets on X prior to database removal
     await Promise.all(
       ids.map(async (id) => {
         try {
-          logger.info('Triggering gRPC deleteTweet', { tweetId: id });
-          const response = await deleteTweetViaGrpc(id);
-          logger.info('gRPC deleteTweet response received', { tweetId: id, response });
+          logger.info('Triggering deleteTweetViaBotService', { tweetId: id });
+          const response = await deleteTweetViaBotService(id);
+          logger.info('deleteTweetViaBotService response received', { tweetId: id, response });
         } catch (err) {
-          logger.error('Failed to delete tweet via gRPC', err, { tweetId: id });
+          logger.error('Failed to delete tweet via bot service', err, { tweetId: id });
         }
       })
     );

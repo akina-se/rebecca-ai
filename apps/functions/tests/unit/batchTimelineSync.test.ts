@@ -7,6 +7,13 @@ jest.mock('firebase-functions/v2/https', () => ({
   }),
 }));
 
+const mockVerifyIdToken = jest.fn();
+jest.mock('google-auth-library', () => ({
+  OAuth2Client: jest.fn().mockImplementation(() => ({
+    verifyIdToken: (...args: any[]) => mockVerifyIdToken(...args),
+  })),
+}));
+
 const mockExecute = jest.fn();
 jest.mock('../../src/usecases/syncTimelineUseCase', () => ({
   SyncTimelineUseCase: jest.fn().mockImplementation(() => ({
@@ -18,7 +25,7 @@ jest.mock('../../src/services/xApi', () => ({
   XApiService: jest.fn(),
 }));
 
-import { batchTimelineSync, validateAuth } from '../../src/triggers/batchTimelineSync';
+import { batchTimelineSync, validateAuth, verifyOidcToken } from '../../src/triggers/batchTimelineSync';
 
 describe('validateAuth helper', () => {
   it('should return false if no configured secret is present (fail-closed security)', () => {
@@ -51,6 +58,60 @@ describe('validateAuth helper', () => {
   });
 });
 
+describe('verifyOidcToken helper', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return false when expectedAudience or authHeader is missing', async () => {
+    expect(await verifyOidcToken(undefined, 'https://example.com')).toBe(false);
+    expect(await verifyOidcToken('Bearer token', undefined)).toBe(false);
+    expect(await verifyOidcToken('Bearer   ', 'https://example.com')).toBe(false);
+  });
+
+  it('should return true for valid Google OIDC token and matching serviceAccountEmail', async () => {
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({
+        iss: 'https://accounts.google.com',
+        email: 'sa@project.iam.gserviceaccount.com',
+      }),
+    });
+
+    const result = await verifyOidcToken(
+      'Bearer valid_oidc_jwt',
+      'https://asia-northeast1-project.cloudfunctions.net/batchTimelineSync',
+      'sa@project.iam.gserviceaccount.com'
+    );
+    expect(result).toBe(true);
+  });
+
+  it('should return false when serviceAccountEmail does not match', async () => {
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({
+        iss: 'https://accounts.google.com',
+        email: 'wrong@project.iam.gserviceaccount.com',
+      }),
+    });
+
+    const result = await verifyOidcToken(
+      ['Bearer valid_oidc_jwt'],
+      'https://asia-northeast1-project.cloudfunctions.net/batchTimelineSync',
+      'sa@project.iam.gserviceaccount.com'
+    );
+    expect(result).toBe(false);
+  });
+
+  it('should return false when verifyIdToken throws or issuer is invalid', async () => {
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({ iss: 'https://evil.example.com' }),
+    });
+    expect(await verifyOidcToken('Bearer token', 'https://example.com')).toBe(false);
+
+    mockVerifyIdToken.mockRejectedValueOnce(new Error('Token expired'));
+    expect(await verifyOidcToken('Bearer token', 'https://example.com')).toBe(false);
+  });
+});
+
 describe('batchTimelineSync HTTP trigger', () => {
   const originalEnv = process.env;
 
@@ -65,6 +126,7 @@ describe('batchTimelineSync HTTP trigger', () => {
       X_BEARER_TOKEN: 'test_b',
       X_MY_USER_ID: 'user_123',
       BATCH_SECRET_KEY: 'valid_batch_secret',
+      FUNCTIONS_URL: 'https://asia-northeast1-test.cloudfunctions.net/batchTimelineSync',
     };
   });
 
@@ -113,7 +175,7 @@ describe('batchTimelineSync HTTP trigger', () => {
     expect(res.jsonData.error).toBe('Method Not Allowed');
   });
 
-  it('should return 401 Unauthorized if secret is missing or invalid', async () => {
+  it('should return 401 Unauthorized if OIDC and secret are missing or invalid', async () => {
     const { req, res } = createMockReqRes({
       method: 'POST',
       headers: { 'x-batch-secret': 'invalid_secret' },
@@ -127,7 +189,31 @@ describe('batchTimelineSync HTTP trigger', () => {
     expect(mockExecute).not.toHaveBeenCalled();
   });
 
-  it('should execute useCase and return 200 for valid GET request', async () => {
+  it('should execute useCase and return 200 for valid OIDC token even when BATCH_SECRET_KEY is unset', async () => {
+    delete process.env.BATCH_SECRET_KEY;
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({ iss: 'https://accounts.google.com' }),
+    });
+    mockExecute.mockResolvedValueOnce({
+      processed: 8,
+      updated: 4,
+      created: 1,
+      errors: 0,
+    });
+
+    const { req, res } = createMockReqRes({
+      method: 'GET',
+      headers: { authorization: 'Bearer valid_oidc_jwt' },
+    });
+
+    await requestHandler(req, res);
+
+    expect(mockExecute).toHaveBeenCalledWith('user_123', undefined);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.jsonData.success).toBe(true);
+  });
+
+  it('should execute useCase and return 200 for valid GET request with x-batch-secret', async () => {
     mockExecute.mockResolvedValueOnce({
       processed: 10,
       updated: 3,
@@ -154,7 +240,8 @@ describe('batchTimelineSync HTTP trigger', () => {
     });
   });
 
-  it('should execute useCase and return 200 for valid POST request with Bearer auth', async () => {
+  it('should execute useCase and return 200 for valid POST request with Bearer auth fallback', async () => {
+    mockVerifyIdToken.mockRejectedValueOnce(new Error('Not a JWT'));
     mockExecute.mockResolvedValueOnce({
       processed: 5,
       updated: 2,

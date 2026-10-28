@@ -1,10 +1,11 @@
+import { AuthUrlPipe } from '../../../pipes/auth-url.pipe';
 import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 
 
 @Component({
   selector: 'app-lightbox',
   standalone: true,
-  imports: [],
+  imports: [AuthUrlPipe],
   templateUrl: './lightbox.component.html',
   styleUrls: ['./lightbox.component.css']
 })

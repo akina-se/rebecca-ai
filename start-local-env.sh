@@ -163,15 +163,15 @@ else
     echo -e "\033[0;33m[WARNING] Seeding script completed with warnings or errors.\033[0m"
 fi
 
-# 6. Start Bot Backend (gRPC Server)
-echo -e "\033[0;33m[6/7] Starting Bot Backend (gRPC Server)...\033[0m"
+# 6. Start Bot Backend
+echo -e "\033[0;33m[6/7] Starting Bot Backend...\033[0m"
 export GCP_PROJECT_ID="rebecca-ai-gal-local"
 npm run dev --workspace=bot-backend > .logs/bot-backend.log 2>&1 &
-echo -e "\033[0;90m-> Bot Backend launched (gRPC port 50051, logs in .logs/bot-backend.log)...\033[0m"
+echo -e "\033[0;90m-> Bot Backend launched (HTTP port 8082, logs in .logs/bot-backend.log)...\033[0m"
 
 # 7. Start Dashboard Backend (BFF Server)
 echo -e "\033[0;33m[7/7] Starting Dashboard Backend (BFF Server)...\033[0m"
-export BOT_GRPC_URL="localhost:50051"
+export BOT_BACKEND_URL="http://localhost:8082"
 export PORT="8081"
 npm run dev --workspace=dashboard-backend > .logs/dashboard-backend.log 2>&1 &
 echo -e "\033[0;90m-> Dashboard BFF launched (HTTP port 8081, logs in .logs/dashboard-backend.log)...\033[0m"
@@ -190,7 +190,7 @@ echo -e "\033[0;36m   - Firebase Emulator UI: http://127.0.0.1:4000/\033[0m"
 echo -e "\033[0;90m     * Auth Emulator:      http://127.0.0.1:4000/auth\033[0m"
 echo -e "\033[0;90m     * Firestore Emulator: http://127.0.0.1:4000/firestore\033[0m"
 echo -e "\033[0;36m   - BFF Backend Health:   http://localhost:8081/health\033[0m"
-echo -e "\033[0;36m   - Bot Backend gRPC:     localhost:50051\033[0m"
+echo -e "\033[0;36m   - Bot Backend:          http://localhost:8082\033[0m"
 echo -e "\033[0;32m==========================================================\033[0m"
 echo -e "\033[1;37m   Sign-in Credentials:\033[0m"
 echo -e "\033[0;35m   - Email:    admin@example.com\033[0m"

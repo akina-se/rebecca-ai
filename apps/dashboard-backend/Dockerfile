@@ -23,7 +23,7 @@ COPY packages/types/package.json ./packages/types/
 COPY packages/db/package.json ./packages/db/
 COPY packages/persona/package.json ./packages/persona/
 COPY packages/logger/package.json ./packages/logger/
-COPY packages/grpc-schemas ./packages/grpc-schemas
+
 COPY apps/dashboard-backend/package.json ./apps/dashboard-backend/
 
 # Install only production dependencies

@@ -50,6 +50,23 @@ describe('Dashboard Backend Middleware Unit Tests', () => {
   });
 
   describe('verifyAuth', () => {
+    it('should reject request with 401 when Authorization header is absent even if query token is present', async () => {
+      const req = {
+        method: 'GET',
+        headers: {},
+        query: { token: 'valid_query_jwt' },
+      } as unknown as Request;
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;
+      const next = jest.fn() as NextFunction;
+
+      await verifyAuth(req, res, next);
+
+      expect(mockVerifyIdToken).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: Missing or invalid Authorization header' });
+      expect(next).not.toHaveBeenCalled();
+    });
+
     it('should bypass on OPTIONS requests', async () => {
       const req = { method: 'OPTIONS' } as unknown as Request;
       const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() } as unknown as Response;

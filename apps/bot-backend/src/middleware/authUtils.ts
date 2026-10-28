@@ -28,9 +28,13 @@ export const verifySecret = (secretHeader: string, fallbackSecret: string | unde
 };
 
 /**
- * Validates a Google OIDC ID token against an expected audience.
+ * Validates a Google OIDC ID token against an expected audience and optional service account email.
  */
-export const verifyOidcToken = async (authHeader: string, expectedAudience: string | undefined): Promise<boolean> => {
+export const verifyOidcToken = async (
+    authHeader: string,
+    expectedAudience: string | undefined,
+    expectedServiceAccountEmail?: string
+): Promise<boolean> => {
     if (!expectedAudience || !authHeader) {
         return false;
     }
@@ -47,7 +51,21 @@ export const verifyOidcToken = async (authHeader: string, expectedAudience: stri
         });
         const payload = ticket.getPayload();
 
-        return !!(payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com'));
+        if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
+            if (expectedServiceAccountEmail) {
+                const tokenEmail = payload.email?.toLowerCase().trim();
+                const targetEmail = expectedServiceAccountEmail.toLowerCase().trim();
+                if (tokenEmail !== targetEmail) {
+                    logger.warn('[Security Alert] OIDC token service account email mismatch', {
+                        expected: targetEmail,
+                        received: tokenEmail,
+                    });
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     } catch (e) {
         logger.warn('OIDC token verification failed', { error: (e as Error).message });
         return false;
@@ -57,24 +75,26 @@ export const verifyOidcToken = async (authHeader: string, expectedAudience: stri
 /**
  * Authenticates server-to-server requests by verifying a Google OIDC token or a fallback shared secret.
  *
- * Authentication scheme is determined by the presented credentials:
- * - **Shared Secret Scheme**: When a valid pre-shared secret is provided in the designated header,
- *   constant-time comparison validates the request. If an Authorization header was also provided,
- *   it must also be valid to prevent credential-downgrade attacks.
- * - **OIDC Scheme**: In all other cases, the request must pass Google OIDC ID token verification
- *   against `expectedAudience`.
+ * Authentication scheme is determined by the server configuration:
+ * - **OIDC Scheme**: Verifies the Google OIDC ID token against `expectedAudience` and optional
+ *   `expectedServiceAccountEmail`.
+ * - **Shared Secret Scheme**: When `fallbackSecret` is configured (e.g., local development),
+ *   constant-time comparison validates the designated secret header. In production (`fallbackSecret` unset),
+ *   `verifySecret` always returns `false`.
  *
  * @param req - The Express request object containing the authorization headers.
  * @param expectedAudience - The expected audience claim for the OIDC token (typically the service URL).
  * @param fallbackSecret - The pre-shared secret key used for shared-secret authentication.
  * @param secretHeaderName - The name of the custom HTTP header that carries the fallback secret.
+ * @param expectedServiceAccountEmail - Optional expected service account email to prevent impersonation.
  * @returns A promise that resolves to `true` if the request is successfully authenticated; otherwise `false`.
  */
 export const verifyServerToServerAuth = async (
     req: Request,
     expectedAudience: string | undefined,
     fallbackSecret: string | undefined,
-    secretHeaderName: string
+    secretHeaderName: string,
+    expectedServiceAccountEmail?: string
 ): Promise<boolean> => {
     const rawSecret = req.headers[secretHeaderName.toLowerCase()];
     const secretHeader = typeof rawSecret === 'string' ? rawSecret.trim() : '';
@@ -82,7 +102,7 @@ export const verifyServerToServerAuth = async (
 
     // Verify via Google OIDC ID token or pre-shared secret (timing-safe)
     return (
-        (await verifyOidcToken(authHeader, expectedAudience)) ||
+        (await verifyOidcToken(authHeader, expectedAudience, expectedServiceAccountEmail)) ||
         verifySecret(secretHeader, fallbackSecret)
     );
 };

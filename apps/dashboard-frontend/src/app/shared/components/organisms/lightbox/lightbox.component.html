@@ -13,7 +13,7 @@
           </div>
         }
         @if (imageUrl) {
-          <img [src]="imageUrl" alt="Media content">
+          <img [src]="imageUrl | authUrl" alt="Media content">
         }
       </div>
     </div>

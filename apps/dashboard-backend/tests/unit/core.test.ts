@@ -1,34 +1,15 @@
+const mockGetIdTokenClient = jest.fn();
+jest.mock('google-auth-library', () => ({
+  GoogleAuth: jest.fn().mockImplementation(() => ({
+    getIdTokenClient: (...args: any[]) => mockGetIdTokenClient(...args),
+  })),
+}));
+
 import { getJstDateRangeInUtc } from '../../src/core/dateUtils';
-import { deleteTweetViaGrpc } from '../../src/core/grpcClient';
+import { deleteTweetViaBotService, getBotServiceHeaders } from '../../src/core/botServiceClient';
 import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
 import { Request, Response } from 'express';
-
-// Mock gRPC Client for core tests
-jest.mock('@grpc/grpc-js', () => {
-  return {
-    loadPackageDefinition: jest.fn().mockReturnValue({
-      tweets: {
-        TweetService: jest.fn().mockImplementation(() => ({
-          deleteTweet: jest.fn().mockImplementation((req: { tweet_id: string }, callback: (err: Error | null, response?: unknown) => void) => {
-            if (req.tweet_id === 'error_grpc') {
-              callback(new Error('gRPC connection error'), null);
-            } else {
-              callback(null, { success: true, message: 'Tweet deleted successfully' });
-            }
-          })
-        }))
-      }
-    }),
-    credentials: {
-      createInsecure: jest.fn().mockReturnValue({})
-    }
-  };
-});
-
-jest.mock('@grpc/proto-loader', () => ({
-  loadSync: jest.fn().mockReturnValue({})
-}));
 
 describe('Dashboard Backend Core & Settings Unit Tests', () => {
   describe('dateUtils - getJstDateRangeInUtc', () => {
@@ -58,14 +39,58 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
     });
   });
 
-  describe('grpcClient - deleteTweetViaGrpc', () => {
-    it('should resolve on successful gRPC call', async () => {
-      const result = await deleteTweetViaGrpc('123456');
-      expect(result).toEqual({ success: true, message: 'Tweet deleted successfully' });
+  describe('botServiceClient - deleteTweetViaBotService', () => {
+    const originalFetch = global.fetch;
+
+    afterEach(() => {
+      global.fetch = originalFetch;
     });
 
-    it('should reject on gRPC error', async () => {
-      await expect(deleteTweetViaGrpc('error_grpc')).rejects.toThrow('gRPC connection error');
+    it('should resolve on successful call', async () => {
+      const origUrl = config.services.botBackendUrl;
+      (config.services as any).botBackendUrl = 'http://localhost:8080';
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, message: 'Tweet deleted successfully' }),
+      } as any);
+      const result = await deleteTweetViaBotService('123456');
+      expect(result).toEqual({ success: true, message: 'Tweet deleted successfully' });
+      (config.services as any).botBackendUrl = origUrl;
+    });
+
+    it('should return error object on network failure', async () => {
+      const origUrl = config.services.botBackendUrl;
+      (config.services as any).botBackendUrl = 'http://localhost:8080';
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      const result = await deleteTweetViaBotService('error_id');
+      expect(result).toEqual({ success: false, message: 'Network error' });
+      (config.services as any).botBackendUrl = origUrl;
+    });
+
+    it('getBotServiceHeaders should attach OIDC Authorization header for non-localhost URLs', async () => {
+      mockGetIdTokenClient.mockResolvedValueOnce({
+        getRequestHeaders: async () => ({ Authorization: 'Bearer oidc_token_123' }),
+      });
+
+      const headers = await getBotServiceHeaders('https://bot.example.run.app/');
+      expect(mockGetIdTokenClient).toHaveBeenCalledWith('https://bot.example.run.app');
+      expect(headers).toEqual({
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer oidc_token_123',
+      });
+    });
+
+    it('getBotServiceHeaders should fall back to x-worker-secret when OIDC token acquisition fails', async () => {
+      const origSecret = config.services.batchSecret;
+      (config.services as any).batchSecret = 'fallback_secret';
+      mockGetIdTokenClient.mockRejectedValueOnce(new Error('Metadata server unavailable'));
+
+      const headers = await getBotServiceHeaders('https://bot.example.run.app');
+      expect(headers).toEqual({
+        'Content-Type': 'application/json',
+        'x-worker-secret': 'fallback_secret',
+      });
+      (config.services as any).batchSecret = origSecret;
     });
   });
 
