@@ -63,7 +63,7 @@ const createJob = (jobConfig: { name: string; schedule: string; url: string }) =
 
             if (serviceAccount) {
                 updateArgs.push('--oidc-service-account-email', serviceAccount);
-                updateArgs.push('--oidc-token-audience', functionsUrl);
+                updateArgs.push('--oidc-token-audience', functionsUrl, '--clear-headers');
             } else if (batchSecret) {
                 updateArgs.push('--update-headers', `X-Batch-Secret=${batchSecret}`);
             }

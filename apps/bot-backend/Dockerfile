@@ -23,7 +23,7 @@ COPY packages/types/package.json ./packages/types/
 COPY packages/db/package.json ./packages/db/
 COPY packages/persona/package.json ./packages/persona/
 COPY packages/logger/package.json ./packages/logger/
-COPY packages/grpc-schemas ./packages/grpc-schemas
+
 COPY apps/bot-backend/package.json ./apps/bot-backend/
 
 # Install only production dependencies
@@ -39,6 +39,6 @@ COPY --from=builder /app/apps/bot-backend/public ./apps/bot-backend/public
 
 WORKDIR /app/apps/bot-backend
 ENV PORT=8080
-EXPOSE 8080 50051
+EXPOSE 8080
 
 CMD ["node", "dist/index.js"]

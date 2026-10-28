@@ -18,6 +18,7 @@ import {
 import { SupportersRepository } from './repository';
 import { resolveSupportTierFromAmount } from '@rebecca/types';
 import { config } from '../../config';
+import { getBotServiceHeaders } from '../../core/botServiceClient';
 import { logger } from '../../utils/logger';
 import { generateWebpThumbnail, stripImageMetadata } from '../../utils/image';
 
@@ -362,14 +363,9 @@ export class SupportersUseCase {
     }
 
     try {
-      const workerUrl = `${config.services.botBackendUrl.replace(/\/+$/, '')}/worker/support-post`;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (config.services.batchSecret) {
-        headers['x-worker-secret'] = config.services.batchSecret;
-      }
-
+      const botUrl = config.services.botBackendUrl.replace(/\/+$/, '');
+      const workerUrl = `${botUrl}/worker/support-post`;
+      const headers = await getBotServiceHeaders(botUrl);
       logger.info('[SupportersUseCase] Dispatching support post to bot-backend worker', {
         transactionId,
         workerUrl,

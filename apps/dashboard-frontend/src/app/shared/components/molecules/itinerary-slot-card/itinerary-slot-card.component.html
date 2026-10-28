@@ -141,7 +141,7 @@
             (keydown.enter)="openLightbox()"
             (keydown.space)="openLightbox()"
           >
-            <img [src]="getThumbnailUrl()" alt="Campaign Illustration" class="media-thumb" loading="lazy" />
+            <img [src]="getThumbnailUrl() | authUrl" alt="Campaign Illustration" class="media-thumb" loading="lazy" />
             <div class="media-overlay">
               <span class="material-icons zoom-icon">zoom_in</span>
             </div>

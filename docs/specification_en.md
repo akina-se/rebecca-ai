@@ -22,7 +22,7 @@ This system is built with a highly scalable, fully serverless architecture that 
 
 ### 1.1 Dashboard Architecture
 For the administration control panel, a dedicated **BFF (Backend-For-Frontend)** is implemented to isolate dashboard operations from the bot worker service.
-- **Dashboard BFF**: An independent microservice in `apps/dashboard-backend` providing secure REST APIs to the Angular dashboard, communicating with Bot Core via gRPC.
+- **Dashboard BFF**: An independent microservice in `apps/dashboard-backend` providing secure REST APIs to the Angular dashboard, communicating with Bot Core via authenticated internal HTTP endpoints.
 - **Strict Dependency Injection**: Core domain logic is decoupled from infrastructure services, allowing seamless transitions to event streaming or alternative stores with zero changes to core logic.
 - **Admin Copilot**: A specialized AI assistant on the dashboard. Unconstrained by 130-character limits, it conducts multi-dimensional analytics on KPIs, user trends, and assets, issuing 2-phase Human-In-The-Loop (HITL) action proposals when administrative intervention is needed.
 

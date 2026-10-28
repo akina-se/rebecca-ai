@@ -21,7 +21,8 @@ export const workerAuth = async (req: Request, res: Response, next: NextFunction
             req,
             config.gcp.workerUrl || undefined,
             config.batchSecret, // Shared secret for worker authentication
-            'x-worker-secret'
+            'x-worker-secret',
+            config.gcp.serviceAccountEmail || undefined
         );
 
         if (isAuthenticated) {

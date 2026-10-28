@@ -1159,11 +1159,9 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
   describe('initializeCampaignsModule router factory', () => {
     it('should create express routers with registered campaign routes', () => {
       const mockStorage = { bucket: jest.fn() } as any;
-      const { campaignsRouter, publicCampaignImagesRouter } = initializeCampaignsModule(mock.firestore, mockStorage);
+      const { campaignsRouter } = initializeCampaignsModule(mock.firestore, mockStorage);
       expect(campaignsRouter).toBeDefined();
       expect(campaignsRouter.stack.length).toBeGreaterThan(0);
-      expect(publicCampaignImagesRouter).toBeDefined();
-      expect(publicCampaignImagesRouter.stack.length).toBeGreaterThan(0);
     });
   });
 });

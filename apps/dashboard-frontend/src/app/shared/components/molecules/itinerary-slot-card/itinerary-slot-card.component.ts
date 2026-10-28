@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CampaignSlot, SlotTimePeriod } from '@rebecca/types';
 import { TranslatePipe } from '../../../pipes/translate.pipe';
 import { ConfigService } from '../../../../core/services/config.service';
+import { AuthUrlPipe } from '../../../pipes/auth-url.pipe';
 
 /**
  * ItinerarySlotCardComponent (<app-itinerary-slot-card>)
@@ -14,7 +15,7 @@ import { ConfigService } from '../../../../core/services/config.service';
 @Component({
   selector: 'app-itinerary-slot-card',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, AuthUrlPipe],
   templateUrl: './itinerary-slot-card.component.html',
   styleUrls: ['./itinerary-slot-card.component.css'],
 })

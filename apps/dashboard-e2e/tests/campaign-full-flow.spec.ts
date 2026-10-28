@@ -100,7 +100,8 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     await expect(thumbPreview).toBeVisible({ timeout: 15000 });
     const thumbImg = thumbPreview.locator('img.media-thumb');
     await expect(thumbImg).toBeVisible();
-    expect(await thumbImg.getAttribute('src')).toContain('size=thumbnail');
+    const src = await thumbImg.getAttribute('src');
+    expect(src).toMatch(/^(blob:|.*size=thumbnail)/);
     await firstCard.scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05_campaign_image_uploaded.png') });
 
@@ -123,7 +124,8 @@ test.describe('Campaign Full End-to-End User Flow Verification', () => {
     await expect(lightbox).toBeVisible({ timeout: 10000 });
     const lightboxImg = lightbox.locator('.image-container img');
     await expect(lightboxImg).toBeVisible({ timeout: 10000 });
-    expect(await lightboxImg.getAttribute('src')).toContain('size=full');
+    const lbSrc = await lightboxImg.getAttribute('src');
+    expect(lbSrc).toMatch(/^(blob:|.*size=full)/);
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, 'e2e_05b_campaign_lightbox_open.png') });
 
     // 6c. Close Lightbox

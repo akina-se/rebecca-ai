@@ -242,9 +242,10 @@ test.describe('Assets Features E2E Tests', () => {
     // Verify drawer preview loads full-resolution original image (no size=thumbnail)
     const previewImg = drawer.locator('app-asset-drawer .preview-img');
     await expect(previewImg).toBeVisible();
+    await expect(previewImg).toHaveAttribute('src', /.+/, { timeout: 10000 });
     const imgSrc = (await previewImg.getAttribute('src')) || '';
     expect(imgSrc).not.toContain('storage.googleapis.com');
     expect(imgSrc).not.toContain('size=thumbnail');
-    expect(imgSrc).toMatch(/\/api\/v1\/(assets|images)\//);
+    expect(imgSrc).toMatch(/^(blob:|.*\/api\/v1\/(assets|images)\/)/);
   });
 });
