@@ -4,6 +4,15 @@ import { createMockDeps } from './core/testUtils';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 
+/**
+ * Builds an expanded Stripe PaymentIntent stub whose `created` (epoch seconds) is `minutesAgo` minutes in the past.
+ * `PaymentIntent.created` is the authoritative payment time for the 30-minute reward download window.
+ */
+const paidIntent = (minutesAgo = 0) => ({
+  id: 'pi_test_paid',
+  created: Math.floor((Date.now() - minutesAgo * 60 * 1000) / 1000),
+});
+
 describe('PublicSupportController Unit Tests', () => {
   let deps: any;
   let mockStripe: any;
@@ -35,7 +44,7 @@ describe('PublicSupportController Unit Tests', () => {
     mockStripe = {
       checkout: {
         sessions: {
-          retrieve: jest.fn(),
+          retrieve: jest.fn().mockResolvedValue({ payment_status: 'paid', payment_intent: paidIntent(0) }),
         },
       },
       webhooks: {
@@ -113,6 +122,7 @@ describe('PublicSupportController Unit Tests', () => {
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_paid_123',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 1000,
       });
 
@@ -162,6 +172,7 @@ describe('PublicSupportController Unit Tests', () => {
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_paid_no_img',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 300,
       });
 
@@ -186,6 +197,7 @@ describe('PublicSupportController Unit Tests', () => {
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_hidden_123',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 1000,
       });
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
@@ -214,7 +226,7 @@ describe('PublicSupportController Unit Tests', () => {
         id: 'cs_expired_123',
         payment_status: 'paid',
         amount_total: 1000,
-        created: Math.floor((Date.now() - 40 * 60 * 1000) / 1000),
+        payment_intent: paidIntent(40),
       });
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_expired_123',
@@ -237,11 +249,104 @@ describe('PublicSupportController Unit Tests', () => {
       );
     });
 
+    it('retrieves the Stripe session with payment_intent expanded to resolve the payment time', async () => {
+      req.query = { session_id: 'cs_expand_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_expand_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: paidIntent(1),
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_expand_123',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース差し入れ',
+        safeName: 'アリス',
+      });
+      deps.firestore.getActiveRewardImage.mockResolvedValue(null);
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_expand_123', {
+        expand: ['payment_intent'],
+      });
+    });
+
+    it('returns 502 (fail closed, no local-clock fallback) when the payment time is unavailable', async () => {
+      req.query = { session_id: 'cs_no_pi_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_no_pi_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        created: Math.floor(Date.now() / 1000),
+        payment_intent: 'pi_not_expanded',
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(502);
+      expect(jsonMock).toHaveBeenCalledWith({
+        valid: false,
+        error: 'Unable to determine payment time. Please retry.',
+      });
+      expect(deps.firestore.createSupportTransaction).not.toHaveBeenCalled();
+      expect(deps.tasks.enqueueSupportTask).not.toHaveBeenCalled();
+    });
+
+    it('anchors the 30-minute window to Stripe payment time even if the stored record was re-created just now', async () => {
+      req.query = { session_id: 'cs_recreated_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_recreated_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: paidIntent(24 * 60), // paid yesterday
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_recreated_123',
+        safeName: 'Test3',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース',
+        createdAt: new Date().toISOString(), // stale/re-created record stamped "now"
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({ valid: true, reward: null, isExpired: true }),
+      );
+      expect(res.setHeader).not.toHaveBeenCalledWith('Set-Cookie', expect.anything());
+    });
+
+    it('auto-creates the missing transaction with createdAt set to the Stripe payment time (not Date.now())', async () => {
+      req.query = { session_id: 'cs_autosync_123' };
+      const intent = paidIntent(10);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_autosync_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: intent,
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      deps.firestore.getActiveRewardImage.mockResolvedValue(null);
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(deps.firestore.createSupportTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripeSessionId: 'cs_autosync_123',
+          stripePaymentIntentId: 'pi_test_paid',
+          createdAt: new Date(intent.created * 1000).toISOString(),
+        }),
+      );
+    });
+
     it('returns 500 if unexpected error occurs during verification', async () => {
       req.query = { session_id: 'cs_error' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_error',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
       });
       deps.firestore.getSupportTransactionBySessionId.mockRejectedValue(new Error('Firestore DB failure'));
 
@@ -388,6 +493,12 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('successfully processes checkout.session.completed and enqueues Cloud Task', async () => {
+      const paymentIntent = paidIntent(2);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_test_abc123',
+        payment_status: 'paid',
+        payment_intent: { ...paymentIntent, id: 'pi_test_abc123' },
+      });
       const mockEvent = {
         type: 'checkout.session.completed',
         data: {
@@ -432,13 +543,38 @@ describe('PublicSupportController Unit Tests', () => {
           creditVisibility: 'show',
           rewardImageId: 'reward_gold_oct',
           status: 'pending',
+          createdAt: new Date(paymentIntent.created * 1000).toISOString(),
         }),
       );
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_test_abc123', {
+        expand: ['payment_intent'],
+      });
       expect(deps.tasks.enqueueSupportTask).toHaveBeenCalledWith({ transactionId: 'tx_abc123' });
       expect(jsonMock).toHaveBeenCalledWith({
         received: true,
         transactionId: 'tx_abc123',
       });
+    });
+
+    it('returns 500 so Stripe retries when the payment time cannot be resolved (no local-clock fallback)', async () => {
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_test_nopi',
+        payment_status: 'paid',
+        payment_intent: 'pi_not_expanded',
+      });
+      mockStripe.webhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: { object: { id: 'cs_test_nopi', amount_total: 1000, custom_fields: [] } },
+      });
+      req.headers = { 'stripe-signature': 'valid_sig' };
+      (req as any).rawBody = Buffer.from('{}');
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+
+      await controller.handleWebhook(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(deps.firestore.createSupportTransaction).not.toHaveBeenCalled();
+      expect(deps.tasks.enqueueSupportTask).not.toHaveBeenCalled();
     });
 
     it('applies fallback name and hidden credit visibility when custom fields dictate', async () => {
@@ -667,6 +803,40 @@ describe('PublicSupportController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith({ error: 'Checkout session not found' });
     });
 
+    it('returns 410 Gone when no record exists and Stripe payment time is older than 30 minutes', async () => {
+      req.query = { session_id: 'cs_old_norec' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_old_norec',
+        payment_status: 'paid',
+        payment_intent: paidIntent(24 * 60),
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_old_norec', {
+        expand: ['payment_intent'],
+      });
+      expect(statusMock).toHaveBeenCalledWith(410);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ expired: true }));
+    });
+
+    it('returns 502 when no record exists and the Stripe payment time is unavailable', async () => {
+      req.query = { session_id: 'cs_nopi_norec' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_nopi_norec',
+        payment_status: 'paid',
+        created: Math.floor(Date.now() / 1000),
+        payment_intent: 'pi_not_expanded',
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(502);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Unable to determine payment time. Please retry.' });
+    });
+
     it('returns 410 Gone when download window (> 30 mins) has expired', async () => {
       req.query = { session_id: 'cs_expired_123' };
       const fortyMinutesAgo = new Date(Date.now() - 40 * 60 * 1000).toISOString();
@@ -756,6 +926,7 @@ describe('PublicSupportController Unit Tests', () => {
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_cookie_auth_123',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 1000,
       });
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
