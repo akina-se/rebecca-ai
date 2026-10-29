@@ -16,6 +16,8 @@ import { logger } from '../../utils/logger';
 
 const REWARD_TICKET_COOKIE_NAME = 'reward_ticket';
 const MAX_WINDOW_MINUTES = 30;
+/** Shape of a Stripe Checkout Session ID (e.g. `cs_test_a1b2...` / `cs_live_a1b2...`). */
+const SESSION_ID_PATTERN = /^cs_[A-Za-z0-9_]{1,250}$/;
 /** Stripe `expand` list so the paid session carries `payment_intent.created` (authoritative payment time). */
 const PAYMENT_INTENT_EXPAND: string[] = ['payment_intent'];
 
@@ -41,7 +43,11 @@ function parseCookieValue(cookieHeader: string | undefined, name: string): strin
     if (eqIdx === -1) continue;
     const key = part.slice(0, eqIdx).trim();
     if (key === name) {
-      return decodeURIComponent(part.slice(eqIdx + 1).trim());
+      try {
+        return decodeURIComponent(part.slice(eqIdx + 1).trim());
+      } catch {
+        return undefined;
+      }
     }
   }
   return undefined;
@@ -86,59 +92,40 @@ export class PublicSupportController {
   }
 
   /**
-   * Encodes a reward download ticket (opaque base64url payload) for the `HttpOnly` cookie.
-   * The ticket is only a transport for the Stripe session ID: authorization and payment verification
-   * are always enforced downstream against Firestore and the Stripe API on every request.
+   * Returns the Stripe Checkout Session ID only if it has the expected shape, otherwise `null`.
+   * Rejects malformed values before any Firestore / Stripe lookup is attempted.
    */
-  private createRewardTicket(sessionId: string, expiresAtMs: number): string {
-    return Buffer.from(JSON.stringify({ sid: sessionId, exp: expiresAtMs }), 'utf8').toString('base64url');
+  private normalizeSessionId(value: unknown): string | null {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return SESSION_ID_PATTERN.test(trimmed) ? trimmed : null;
   }
 
   /**
-   * Decodes a base64url-encoded reward ticket cookie value and returns the underlying Stripe session ID.
-   * Note: Actual authorization and payment verification are always enforced downstream against Firestore and Stripe API.
+   * Extracts the Stripe Checkout Session ID from the `HttpOnly` `reward_ticket` cookie.
+   *
+   * @remarks
+   * The cookie value is the Stripe session ID itself. It is not signed on purpose: the ID is already an
+   * unguessable bearer credential, and authorization (payment status and the 30-minute window anchored to
+   * Stripe's payment time) is enforced against Firestore and the Stripe API on every request.
    */
-  private decodeRewardTicket(ticket: string): string | null {
-    if (!ticket || ticket.includes('.')) return null;
-    try {
-      const parsed = JSON.parse(Buffer.from(ticket, 'base64url').toString('utf8')) as {
-        sid?: unknown;
-        exp?: unknown;
-      };
-      if (typeof parsed.sid !== 'string' || !parsed.sid) return null;
-      if (typeof parsed.exp !== 'number' || Date.now() > parsed.exp) return null;
-      return parsed.sid;
-    } catch {
-      return null;
-    }
+  private extractSessionIdFromCookie(req: Request): string | null {
+    const cookieHeader = typeof req.headers?.cookie === 'string' ? req.headers.cookie : undefined;
+    return this.normalizeSessionId(parseCookieValue(cookieHeader, REWARD_TICKET_COOKIE_NAME));
   }
 
   /**
-   * Extracts the Stripe Checkout Session ID from the request without requiring it in the URL query string.
-   * Priority:
-   * 1. `x-stripe-session-id` request header
-   * 2. `HttpOnly` cookie (`reward_ticket`)
-   * 3. Legacy `session_id` query parameter (fallback)
+   * Extracts the Stripe Checkout Session ID for `verify-session`, the only endpoint that may receive it
+   * explicitly. Priority:
+   * 1. `x-stripe-session-id` request header (sent once by the thank-you page right after the Stripe redirect)
+   * 2. `HttpOnly` cookie (`reward_ticket`), used for subsequent reloads
+   *
+   * The session ID is intentionally NOT accepted from the URL query string, so it can never be recorded in
+   * browser history, proxies or infrastructure access logs through API requests.
    */
   private extractSessionIdFromRequest(req: Request): string | null {
     const headerVal = req.headers?.['x-stripe-session-id'];
-    if (typeof headerVal === 'string' && headerVal.trim().length > 0) {
-      return headerVal.trim();
-    }
-
-    const cookieHeader = typeof req.headers?.cookie === 'string' ? req.headers.cookie : undefined;
-    const rawCookie = parseCookieValue(cookieHeader, REWARD_TICKET_COOKIE_NAME) || '';
-    const cookieSid = rawCookie ? this.decodeRewardTicket(rawCookie) : null;
-    if (cookieSid) {
-      return cookieSid;
-    }
-
-    const queryVal = req.query?.session_id;
-    if (typeof queryVal === 'string' && queryVal.trim().length > 0) {
-      return queryVal.trim();
-    }
-
-    return null;
+    return this.normalizeSessionId(headerVal) ?? this.extractSessionIdFromCookie(req);
   }
 
   /**
@@ -216,14 +203,14 @@ export class PublicSupportController {
    * Rejects any request where `payment_status !== 'paid'` with HTTP 403 Forbidden.
    * Only authenticated paying supporters receive high-resolution signed download links.
    *
-   * @param req - Express Request with `session_id` query parameter.
+   * @param req - Express Request carrying the session ID in the `x-stripe-session-id` header or the `reward_ticket` cookie.
    * @param res - Express Response.
    */
   verifySession = async (req: Request, res: Response): Promise<void> => {
     try {
       const sessionId = this.extractSessionIdFromRequest(req);
       if (!sessionId) {
-        res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
+        res.status(400).json({ error: 'Missing or invalid session' });
         return;
       }
 
@@ -316,9 +303,8 @@ export class PublicSupportController {
       if (activeReward && !isExpired) {
         const expiresAtMs = createdAtMs + MAX_WINDOW_MINUTES * 60 * 1000;
         const maxAgeSeconds = Math.max(1, Math.floor((expiresAtMs - Date.now()) / 1000));
-        const signedTicket = this.createRewardTicket(sessionId, expiresAtMs);
         const cookieAttributes = [
-          `${REWARD_TICKET_COOKIE_NAME}=${encodeURIComponent(signedTicket)}`,
+          `${REWARD_TICKET_COOKIE_NAME}=${encodeURIComponent(sessionId)}`,
           'Path=/api/v1/support',
           `Max-Age=${maxAgeSeconds}`,
           'HttpOnly',
@@ -557,17 +543,19 @@ export class PublicSupportController {
    * Security Invariants:
    * 1. Direct GCS bucket access is completely forbidden; all media is streamed via backend ADC credentials.
    * 2. Strict Payment Guard: Requires verified Stripe session (`payment_status === 'paid'`).
-   * 3. 30-Minute Download Window: Allowed only within 30 minutes from checkout / transaction creation.
+   * 3. 30-Minute Download Window: Allowed only within 30 minutes from the Stripe payment time.
    *    Requests beyond 30 minutes return HTTP 410 Gone.
+   * 4. Cookie-only credential: The session ID is accepted solely from the `HttpOnly` `reward_ticket` cookie
+   *    issued by `verifySession`. It is never accepted from the URL query string or request headers here.
    *
-   * @param req - Express Request with `session_id` and optional `type` ('thumbnail' | 'master').
+   * @param req - Express Request with the `reward_ticket` cookie and optional `type` ('thumbnail' | 'master') query.
    * @param res - Express Response streaming the image binary.
    */
   downloadReward = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sessionId = this.extractSessionIdFromRequest(req);
+      const sessionId = this.extractSessionIdFromCookie(req);
       if (!sessionId) {
-        res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
+        res.status(400).json({ error: 'Missing or invalid session' });
         return;
       }
 
