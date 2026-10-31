@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.2](https://github.com/akina-se/rebecca-ai/compare/v1.36.1...v1.36.2) (2026-10-31)
+
+
+### Bug Fixes
+
+* **dashboard-frontend:** format campaign accordion day date using app timezone instead of raw UTC slice ([#399](https://github.com/akina-se/rebecca-ai/issues/399)) ([51fb12b](https://github.com/akina-se/rebecca-ai/commit/51fb12b3db37c71bf65e083855c6840a650b0973))
+
 ## [1.36.1](https://github.com/akina-se/rebecca-ai/compare/v1.36.0...v1.36.1) (2026-10-28)
 
 
