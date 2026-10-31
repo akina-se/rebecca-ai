@@ -22,14 +22,18 @@ describe('batchAuth Middleware', () => {
         jest.clearAllMocks();
         config.batchSecret = 'test_secret';
         config.gcp.workerUrl = 'https://test-worker.url';
-        config.gcp.serviceAccountEmail = undefined;
+        config.gcp.serviceAccountEmail = 'sa@example.iam.gserviceaccount.com';
     });
 
     it('should allow access if OIDC token is valid', async () => {
         mockReq.headers = { authorization: 'Bearer valid_token' };
 
         const mockVerifyIdToken = jest.fn().mockResolvedValue({
-            getPayload: () => ({ iss: 'https://accounts.google.com' })
+            getPayload: () => ({
+                iss: 'https://accounts.google.com',
+                email: 'sa@example.iam.gserviceaccount.com',
+                email_verified: true,
+            })
         });
         (OAuth2Client.prototype.verifyIdToken as jest.Mock) = mockVerifyIdToken;
 
@@ -41,6 +45,27 @@ describe('batchAuth Middleware', () => {
         });
         expect(nextFunction).toHaveBeenCalled();
         expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
+    it('should reject OIDC access when serviceAccountEmail is not configured (fail-closed)', async () => {
+        config.gcp.serviceAccountEmail = undefined;
+        config.batchSecret = undefined;
+        mockReq.headers = { authorization: 'Bearer valid_token' };
+
+        const mockVerifyIdToken = jest.fn().mockResolvedValue({
+            getPayload: () => ({
+                iss: 'https://accounts.google.com',
+                email: 'sa@example.iam.gserviceaccount.com',
+                email_verified: true,
+            })
+        });
+        (OAuth2Client.prototype.verifyIdToken as jest.Mock) = mockVerifyIdToken;
+
+        await batchAuth(mockReq as Request, mockRes as Response, nextFunction);
+
+        expect(nextFunction).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
     });
 
     it('should reject access when both OIDC token and shared secret are invalid', async () => {

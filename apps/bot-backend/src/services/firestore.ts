@@ -331,7 +331,7 @@ const checkAndConsumeRateLimit = async (
 
 /**
  * Persists a raw conversation turn. Documents expire automatically after
- * 5 years via Firestore's TTL policy on the `expireAt` field.
+ * `config.retention.logRetentionDays` (default 1825 days = 5 years) via Firestore's TTL policy on the `expireAt` field.
  *
  * @param userId   - The participant user's ID.
  * @param userText - The user's message text.
@@ -340,8 +340,8 @@ const checkAndConsumeRateLimit = async (
 const saveRawConversationLog = async (userId: string, userText: string, aiText: string, thought?: string): Promise<void> => {
   const logRef = db.conversationLogs.doc();
   const now = new Date();
-  const expireAt = new Date(now);
-  expireAt.setFullYear(expireAt.getFullYear() + 5);
+  const retentionDays = config.retention?.logRetentionDays || 1825;
+  const expireAt = new Date(now.getTime() + retentionDays * 24 * 60 * 60 * 1000);
 
   const log: RawConversationLog = {
     userId,
@@ -457,15 +457,15 @@ export interface SaveTimelinePostParams {
 
 /**
  * Saves a timeline post to history, including media URLs, asset identifiers, and tweet ID.
- * Expires automatically after 5 years (TTL).
+ * Expires automatically after `config.retention.logRetentionDays` (default 1825 days = 5 years, TTL).
  *
  * @param params - Structured timeline post parameters.
  */
 const saveTimelinePost = async (params: SaveTimelinePostParams): Promise<void> => {
   const ref = db.timelineHistory.doc();
   const now = new Date();
-  const expireAt = new Date(now);
-  expireAt.setFullYear(expireAt.getFullYear() + 5);
+  const retentionDays = config.retention?.logRetentionDays || 1825;
+  const expireAt = new Date(now.getTime() + retentionDays * 24 * 60 * 60 * 1000);
 
   const mediaList = params.mediaUrls || [];
   await ref.set({
@@ -1252,7 +1252,21 @@ async function getPublicSupporters(
     };
   }
 
-  const snap = await baseQuery.get();
+  const projQuery =
+    typeof (baseQuery as unknown as { select?: (...fields: string[]) => typeof baseQuery }).select === 'function'
+      ? (baseQuery as unknown as { select: (...fields: string[]) => typeof baseQuery }).select(
+          'safeName',
+          'tier',
+          'itemLabel',
+          'createdAt',
+          'tweetId'
+        )
+      : baseQuery;
+  const boundedQuery =
+    typeof (projQuery as unknown as { limit?: (n: number) => typeof baseQuery }).limit === 'function'
+      ? projQuery.limit(1000)
+      : projQuery;
+  const snap = await boundedQuery.get();
   const allSupporters: PublicSupporterCredit[] = snap.docs.map((d) => {
     const data = d.data();
     return {
@@ -1362,7 +1376,7 @@ export {
   updateSupportTransaction,
   createSupportTransaction,
   getSupportTransactionBySessionId,
-  getActiveRewardImage,
+  getActiveRewardImage,
   getRewardImageById,
   incrementRewardImageDistributedCount,
   getPublicSupporters,

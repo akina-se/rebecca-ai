@@ -14,6 +14,45 @@ import { SupportConfig } from './types';
 import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
+const REWARD_TICKET_COOKIE_NAME = 'reward_ticket';
+const MAX_WINDOW_MINUTES = 30;
+/** Shape of a Stripe Checkout Session ID (e.g. `cs_test_a1b2...` / `cs_live_a1b2...`). */
+const SESSION_ID_PATTERN = /^cs_[A-Za-z0-9_]{1,250}$/;
+/** Stripe `expand` list so the paid session carries `payment_intent.created` (authoritative payment time). */
+const PAYMENT_INTENT_EXPAND: string[] = ['payment_intent'];
+
+/**
+ * Redacts a Stripe Checkout Session ID before writing to application logs
+ * so bearer download tokens cannot be reconstructed by log readers.
+ */
+function maskSessionId(sessionId: string): string {
+  if (!sessionId || sessionId.length <= 10) {
+    return '***';
+  }
+  return `${sessionId.slice(0, 6)}...${sessionId.slice(-4)}`;
+}
+
+/**
+ * Parses a specific cookie value from the HTTP `Cookie` request header.
+ */
+function parseCookieValue(cookieHeader: string | undefined, name: string): string | undefined {
+  if (!cookieHeader) return undefined;
+  const parts = cookieHeader.split(';');
+  for (const part of parts) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = part.slice(0, eqIdx).trim();
+    if (key === name) {
+      try {
+        return decodeURIComponent(part.slice(eqIdx + 1).trim());
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
 /**
  * Controller managing public-facing support endpoints.
  */
@@ -53,15 +92,76 @@ export class PublicSupportController {
   }
 
   /**
+   * Returns the Stripe Checkout Session ID only if it has the expected shape, otherwise `null`.
+   * Rejects malformed values before any Firestore / Stripe lookup is attempted.
+   */
+  private normalizeSessionId(value: unknown): string | null {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return SESSION_ID_PATTERN.test(trimmed) ? trimmed : null;
+  }
+
+  /**
+   * Extracts the Stripe Checkout Session ID from the `HttpOnly` `reward_ticket` cookie.
+   *
+   * @remarks
+   * The cookie value is the Stripe session ID itself. It is not signed on purpose: the ID is already an
+   * unguessable bearer credential, and authorization (payment status and the 30-minute window anchored to
+   * Stripe's payment time) is enforced against Firestore and the Stripe API on every request.
+   */
+  private extractSessionIdFromCookie(req: Request): string | null {
+    const cookieHeader = typeof req.headers?.cookie === 'string' ? req.headers.cookie : undefined;
+    return this.normalizeSessionId(parseCookieValue(cookieHeader, REWARD_TICKET_COOKIE_NAME));
+  }
+
+  /**
+   * Extracts the Stripe Checkout Session ID for `verify-session`, the only endpoint that may receive it
+   * explicitly. Priority:
+   * 1. `x-stripe-session-id` request header (sent once by the thank-you page right after the Stripe redirect)
+   * 2. `HttpOnly` cookie (`reward_ticket`), used for subsequent reloads
+   *
+   * The session ID is intentionally NOT accepted from the URL query string, so it can never be recorded in
+   * browser history, proxies or infrastructure access logs through API requests.
+   */
+  private extractSessionIdFromRequest(req: Request): string | null {
+    const headerVal = req.headers?.['x-stripe-session-id'];
+    return this.normalizeSessionId(headerVal) ?? this.extractSessionIdFromCookie(req);
+  }
+
+  /**
+   * Resolves the authoritative payment time from Stripe (`PaymentIntent.created`, in epoch ms).
+   *
+   * @remarks
+   * This is the single source of truth for the 30-minute reward download window. It is intentionally
+   * independent of when this server first observed or recorded the payment (webhook delay, auto-sync,
+   * re-created records), so the window can never be extended. There is deliberately no fallback to
+   * `session.created` or `Date.now()`: callers must pass a session retrieved with
+   * `expand: ['payment_intent']`, and an unavailable timestamp is surfaced as an error (fail closed).
+   *
+   * @param session - Paid Stripe Checkout Session retrieved with `payment_intent` expanded.
+   * @throws Error when the expanded PaymentIntent or its `created` timestamp is unavailable.
+   */
+  private resolvePaidAtMs(session: Stripe.Checkout.Session): number {
+    const paymentIntent = session.payment_intent;
+    if (!paymentIntent || typeof paymentIntent === 'string' || typeof paymentIntent.created !== 'number') {
+      throw new Error('PaymentIntent.created is unavailable for the paid checkout session');
+    }
+    return paymentIntent.created * 1000;
+  }
+
+  /**
    * Constructs a canonical SupportTransactionDoc from a verified Stripe Checkout Session.
    *
    * @remarks
    * Privacy / Security:
    * Only reads supporter nickname from `session.custom_fields` (`supporter_name`).
    * Never accesses `customer_details` (billing cardholder name) to prevent accidental PII leakage.
+   *
+   * `createdAt` is set from Stripe's payment time (`paidAtMs`), never from the local clock.
    */
   private buildTransactionDoc(
     session: Stripe.Checkout.Session,
+    paidAtMs: number,
     activeRewardId?: string,
   ): SupportTransactionDoc {
     const customFields = session.custom_fields || [];
@@ -72,12 +172,13 @@ export class PublicSupportController {
     const amount = session.amount_total ?? 0;
     const { tier, itemLabel } = resolveSupportTierFromAmount(amount);
     const transactionId = `tx_${session.id.replace('cs_', '').replace('test_', '')}`;
+    const paymentIntentId =
+      typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
 
     return {
       id: transactionId,
       stripeSessionId: session.id,
-      stripePaymentIntentId:
-        typeof session.payment_intent === 'string' ? session.payment_intent : undefined,
+      stripePaymentIntentId: paymentIntentId,
       rawName,
       safeName: rawName || this.config.fallbackName,
       isNameSanitized: false,
@@ -89,9 +190,10 @@ export class PublicSupportController {
       rewardImageId: activeRewardId || 'none',
       status: 'pending',
       isBanned: false,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(paidAtMs).toISOString(),
     };
   }
+
 
   /**
    * Verifies Stripe checkout session completion and generates a time-limited Signed Download URL.
@@ -101,14 +203,14 @@ export class PublicSupportController {
    * Rejects any request where `payment_status !== 'paid'` with HTTP 403 Forbidden.
    * Only authenticated paying supporters receive high-resolution signed download links.
    *
-   * @param req - Express Request with `session_id` query parameter.
+   * @param req - Express Request carrying the session ID in the `x-stripe-session-id` header or the `reward_ticket` cookie.
    * @param res - Express Response.
    */
   verifySession = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sessionId = req.query.session_id;
-      if (!sessionId || typeof sessionId !== 'string') {
-        res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
+      const sessionId = this.extractSessionIdFromRequest(req);
+      if (!sessionId) {
+        res.status(400).json({ error: 'Missing or invalid session' });
         return;
       }
 
@@ -121,10 +223,12 @@ export class PublicSupportController {
       // Step 1: Retrieve session from Stripe API and verify payment completion
       let session: Stripe.Checkout.Session;
       try {
-        session = await this.stripeClient.checkout.sessions.retrieve(sessionId);
+        session = await this.stripeClient.checkout.sessions.retrieve(sessionId, {
+          expand: PAYMENT_INTENT_EXPAND,
+        });
       } catch (stripeErr) {
         logger.warn('[PublicSupportController] Failed to retrieve Stripe session', {
-          sessionId,
+          maskedSessionId: maskSessionId(sessionId),
           error: stripeErr instanceof Error ? stripeErr.message : String(stripeErr),
         });
         res.status(404).json({ valid: false, error: 'Checkout session not found' });
@@ -134,7 +238,7 @@ export class PublicSupportController {
       // Step 2: Strict Payment Guard
       if (session.payment_status !== 'paid') {
         logger.warn('[PublicSupportController] Session payment incomplete', {
-          sessionId,
+          maskedSessionId: maskSessionId(sessionId),
           status: session.payment_status,
         });
         res.status(403).json({
@@ -144,14 +248,26 @@ export class PublicSupportController {
         return;
       }
 
-      // Step 3: Fetch transaction record (if already created by webhook)
+      // Step 3: Resolve the authoritative payment time from Stripe (no local-clock / session.created fallback)
+      let paidAtMs: number;
+      try {
+        paidAtMs = this.resolvePaidAtMs(session);
+      } catch (paidAtErr) {
+        logger.error('[PublicSupportController] Unable to determine payment time for paid session', paidAtErr, {
+          maskedSessionId: maskSessionId(sessionId),
+        });
+        res.status(502).json({ valid: false, error: 'Unable to determine payment time. Please retry.' });
+        return;
+      }
+
+      // Step 4: Fetch transaction record (if already created by webhook)
       let transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
 
       // If webhook has not recorded it yet (e.g. local environment or delayed webhook), auto-sync from verified paid session
       if (!transaction) {
         try {
           const activeRewardForSync = await this.deps.firestore.getActiveRewardImage();
-          const transactionDoc = this.buildTransactionDoc(session, activeRewardForSync?.id);
+          const transactionDoc = this.buildTransactionDoc(session, paidAtMs, activeRewardForSync?.id);
 
           await this.deps.firestore.createSupportTransaction(transactionDoc);
           transaction = transactionDoc;
@@ -167,17 +283,12 @@ export class PublicSupportController {
         this.triggerAppreciationPost(transaction.id);
       }
 
-      // Enforce 30-minute reward download window
-      const sessionCreatedMs = session.created ? session.created * 1000 : null;
-      const createdAtMs = transaction?.createdAt
-        ? new Date(transaction.createdAt).getTime()
-        : sessionCreatedMs;
-
-      const MAX_WINDOW_MINUTES = 30;
-      const ageMinutes = createdAtMs ? (Date.now() - createdAtMs) / (60 * 1000) : 0;
+      // Enforce 30-minute reward download window, anchored to Stripe's payment time
+      const createdAtMs = paidAtMs;
+      const ageMinutes = (Date.now() - createdAtMs) / (60 * 1000);
       const isExpired = ageMinutes > MAX_WINDOW_MINUTES;
 
-      // Step 4: Fetch supporter reward illustration asset (only if within 30-minute window)
+      // Step 5: Fetch supporter reward illustration asset (only if within 30-minute window)
       let activeReward: RewardImageDoc | null = null;
       if (!isExpired) {
         if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
@@ -190,16 +301,28 @@ export class PublicSupportController {
 
       let rewardPayload = null;
       if (activeReward && !isExpired) {
-        const encodedSessionId = encodeURIComponent(sessionId);
-        // Secure by Default: Do not expose raw GCS bucket URLs or direct GCS signed links.
-        // Stream through Bot Backend download API with strict 30-minute expiry verification.
-        const downloadUrl = `/api/v1/support/rewards/download?session_id=${encodedSessionId}&type=master`;
-        const thumbnailUrl = `/api/v1/support/rewards/download?session_id=${encodedSessionId}&type=thumbnail`;
+        const expiresAtMs = createdAtMs + MAX_WINDOW_MINUTES * 60 * 1000;
+        const maxAgeSeconds = Math.max(1, Math.floor((expiresAtMs - Date.now()) / 1000));
+        const cookieAttributes = [
+          `${REWARD_TICKET_COOKIE_NAME}=${encodeURIComponent(sessionId)}`,
+          'Path=/api/v1/support',
+          `Max-Age=${maxAgeSeconds}`,
+          'HttpOnly',
+          'SameSite=Lax',
+        ];
+        if (process.env.NODE_ENV === 'production') {
+          cookieAttributes.push('Secure');
+        }
+        res.setHeader('Set-Cookie', cookieAttributes.join('; '));
+
+        // Secure by Default: Do not embed session_id or bearer credentials in download URLs
+        // so infrastructure access logs, proxy logs, and browser history never record the identifier.
+        const downloadUrl = '/api/v1/support/rewards/download?type=master';
+        const thumbnailUrl = '/api/v1/support/rewards/download?type=thumbnail';
 
         // Record distribution telemetry
         await this.deps.firestore.incrementRewardImageDistributedCount(activeReward.id);
 
-        const expiresAtMs = (createdAtMs || Date.now()) + MAX_WINDOW_MINUTES * 60 * 1000;
         rewardPayload = {
           title: activeReward.title,
           imageUrl: thumbnailUrl,
@@ -352,7 +475,7 @@ export class PublicSupportController {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       logger.info('[PublicSupportController] Processing checkout.session.completed webhook', {
-        sessionId: session.id,
+        maskedSessionId: maskSessionId(session.id),
         amount: session.amount_total,
       });
 
@@ -361,7 +484,7 @@ export class PublicSupportController {
         const existingTx = await this.deps.firestore.getSupportTransactionBySessionId(session.id);
         if (existingTx) {
           logger.info('[PublicSupportController] Transaction already recorded. Skipping webhook', {
-            sessionId: session.id,
+            maskedSessionId: maskSessionId(session.id),
             transactionId: existingTx.id,
           });
           res.status(200).json({ received: true, status: 'already_processed' });
@@ -371,15 +494,26 @@ export class PublicSupportController {
         const amount = session.amount_total ?? 0;
         if (amount <= 0) {
           logger.warn('[PublicSupportController] Non-positive amount in checkout session', {
-            sessionId: session.id,
+            maskedSessionId: maskSessionId(session.id),
             amount,
           });
           res.status(400).json({ error: 'Invalid payment amount' });
           return;
         }
 
+        // Resolve the authoritative payment time from Stripe. The webhook payload only carries the
+        // PaymentIntent ID, so re-retrieve the session with `payment_intent` expanded. On failure the
+        // handler returns 500 and Stripe retries delivery (fail closed, no local-clock fallback).
+        if (!this.stripeClient) {
+          throw new Error('Stripe client is not configured; cannot resolve payment time');
+        }
+        const paidSession = await this.stripeClient.checkout.sessions.retrieve(session.id, {
+          expand: PAYMENT_INTENT_EXPAND,
+        });
+        const paidAtMs = this.resolvePaidAtMs(paidSession);
+
         const activeReward = await this.deps.firestore.getActiveRewardImage();
-        const transactionDoc = this.buildTransactionDoc(session, activeReward?.id);
+        const transactionDoc = this.buildTransactionDoc(session, paidAtMs, activeReward?.id);
 
         await this.deps.firestore.createSupportTransaction(transactionDoc);
         logger.info('[PublicSupportController] Created support transaction', {
@@ -393,7 +527,7 @@ export class PublicSupportController {
         return;
       } catch (txError) {
         logger.error('[PublicSupportController] Failed to record support transaction', txError, {
-          sessionId: session.id,
+          maskedSessionId: maskSessionId(session.id),
         });
         res.status(500).json({ error: 'Failed to record transaction' });
         return;
@@ -409,17 +543,19 @@ export class PublicSupportController {
    * Security Invariants:
    * 1. Direct GCS bucket access is completely forbidden; all media is streamed via backend ADC credentials.
    * 2. Strict Payment Guard: Requires verified Stripe session (`payment_status === 'paid'`).
-   * 3. 30-Minute Download Window: Allowed only within 30 minutes from checkout / transaction creation.
+   * 3. 30-Minute Download Window: Allowed only within 30 minutes from the Stripe payment time.
    *    Requests beyond 30 minutes return HTTP 410 Gone.
+   * 4. Cookie-only credential: The session ID is accepted solely from the `HttpOnly` `reward_ticket` cookie
+   *    issued by `verifySession`. It is never accepted from the URL query string or request headers here.
    *
-   * @param req - Express Request with `session_id` and optional `type` ('thumbnail' | 'master').
+   * @param req - Express Request with the `reward_ticket` cookie and optional `type` ('thumbnail' | 'master') query.
    * @param res - Express Response streaming the image binary.
    */
   downloadReward = async (req: Request, res: Response): Promise<void> => {
     try {
-      const sessionId = req.query.session_id;
-      if (!sessionId || typeof sessionId !== 'string') {
-        res.status(400).json({ error: 'Missing or invalid session_id query parameter' });
+      const sessionId = this.extractSessionIdFromCookie(req);
+      if (!sessionId) {
+        res.status(400).json({ error: 'Missing or invalid session' });
         return;
       }
 
@@ -427,7 +563,7 @@ export class PublicSupportController {
 
       // Step 1: Verify payment and retrieve transaction record
       const transaction = await this.deps.firestore.getSupportTransactionBySessionId(sessionId);
-      let sessionCreatedMs: number | null = null;
+      let sessionPaidAtMs: number | null = null;
 
       if (!transaction) {
         if (!this.stripeClient) {
@@ -435,36 +571,49 @@ export class PublicSupportController {
           res.status(500).json({ error: 'Payment gateway configuration error' });
           return;
         }
+        let paidSession: Stripe.Checkout.Session;
         try {
-          const session = await this.stripeClient.checkout.sessions.retrieve(sessionId);
-          if (session.payment_status !== 'paid') {
-            res.status(403).json({ error: 'Payment has not been completed or verified.' });
-            return;
-          }
-          if (session.created) {
-            sessionCreatedMs = session.created * 1000;
-          }
+          paidSession = await this.stripeClient.checkout.sessions.retrieve(sessionId, {
+            expand: PAYMENT_INTENT_EXPAND,
+          });
         } catch (stripeErr) {
-          logger.warn('[PublicSupportController] Failed to retrieve Stripe session for download', { sessionId, stripeErr });
+          logger.warn('[PublicSupportController] Failed to retrieve Stripe session for download', {
+            maskedSessionId: maskSessionId(sessionId),
+            stripeErr,
+          });
           res.status(404).json({ error: 'Checkout session not found' });
+          return;
+        }
+        if (paidSession.payment_status !== 'paid') {
+          res.status(403).json({ error: 'Payment has not been completed or verified.' });
+          return;
+        }
+        try {
+          sessionPaidAtMs = this.resolvePaidAtMs(paidSession);
+        } catch (paidAtErr) {
+          logger.error('[PublicSupportController] Unable to determine payment time for download', paidAtErr, {
+            maskedSessionId: maskSessionId(sessionId),
+          });
+          res.status(502).json({ error: 'Unable to determine payment time. Please retry.' });
           return;
         }
       }
 
-      // Step 2: Enforce strict 30-minute time window
+      // Step 2: Enforce strict 30-minute time window, anchored to Stripe's payment time
       const createdAtMs = transaction?.createdAt
         ? new Date(transaction.createdAt).getTime()
-        : sessionCreatedMs;
+        : sessionPaidAtMs;
 
       if (!createdAtMs || isNaN(createdAtMs)) {
-        logger.warn('[PublicSupportController] Missing valid creation timestamp for download verification', { sessionId });
+        logger.warn('[PublicSupportController] Missing valid creation timestamp for download verification', {
+          maskedSessionId: maskSessionId(sessionId),
+        });
         res.status(400).json({ error: 'Unable to determine checkout session timestamp.' });
         return;
       }
 
       const ageMinutes = (Date.now() - createdAtMs) / (60 * 1000);
 
-      const MAX_WINDOW_MINUTES = 30;
       if (ageMinutes > MAX_WINDOW_MINUTES) {
         res.status(410).json({
           error: 'Reward download link has expired. Downloads are available for 30 minutes after checkout.',

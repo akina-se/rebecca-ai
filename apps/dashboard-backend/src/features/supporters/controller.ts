@@ -211,7 +211,10 @@ export class SupportersController {
         return;
       }
       res.setHeader('Content-Type', result.contentType);
-      res.setHeader('Cache-Control', type === 'thumbnail' ? 'public, max-age=86400' : 'private, max-age=3600');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'");
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('Vary', 'Authorization');
       res.send(result.buffer);
     } catch (error) {
       logger.error('[SupportersController] getRewardImage failed', error, { id: req.params.id });

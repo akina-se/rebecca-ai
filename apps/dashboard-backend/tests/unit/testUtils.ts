@@ -32,7 +32,7 @@ export function createMockCollection() {
     doc: jest.fn().mockReturnValue(docObj),
     where: jest.fn().mockReturnValue(queryObj),
     orderBy: jest.fn().mockReturnValue(queryObj),
-    limit: jest.fn().mockReturnValue(queryObj),
+    limit: jest.fn().mockReturnThis(),
     withConverter: jest.fn().mockReturnThis()
   };
 

@@ -194,7 +194,7 @@ Authorized dashboard administrator accounts for Role-Based Access Control (RBAC)
 - **Document ID**: Firebase Auth UID
 - **Format** (`AdminUser`):
   - `email` (string): Administrator email
-  - `role` (`'SUPER_ADMIN' | 'ADMIN'`): RBAC level
+  - `role` (`'ADMIN'`): RBAC level
   - `status` (`'ACTIVE' | 'REVOKED'`): Account status
   - `createdAt` (string - ISO 8601): Authorization timestamp
 

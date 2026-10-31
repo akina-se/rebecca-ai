@@ -1093,7 +1093,10 @@ describe('Campaigns Feature Unit Tests (Dashboard Backend)', () => {
 
       await controller.getAssetImage(mockReq as Request, mockRes as Response);
       expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
-      expect(mockRes.setHeader).toHaveBeenCalledWith('Cache-Control', 'public, max-age=31536000, immutable');
+      expect(mockRes.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Security-Policy', "default-src 'none'");
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600');
+      expect(mockRes.setHeader).toHaveBeenCalledWith('Vary', 'Authorization');
       expect(mockRes.send).toHaveBeenCalledWith(Buffer.from('thumb'));
 
       // Missing asset -> 404

@@ -288,7 +288,10 @@ export class CampaignsController {
       }
 
       res.setHeader('Content-Type', binary.contentType);
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'");
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.setHeader('Vary', 'Authorization');
       res.send(binary.buffer);
     } catch (err: unknown) {
       handleControllerError(res, err, 'getAssetImage');

@@ -265,7 +265,7 @@ ${processedText}
 
         logger.info('[ReplyTaskUseCase] Generated AI Reply for tweet', {
             tweetId,
-            reply: aiResponseText,
+            replyLength: aiResponseText.length,
         });
 
         // Fallback: X API limits Japanese text effectively to 140 characters.
@@ -273,7 +273,7 @@ ${processedText}
             aiResponseText = aiResponseText.substring(0, 137) + '…';
             logger.info('[ReplyTaskUseCase] Truncated AI Reply to 138 characters', {
                 tweetId,
-                reply: aiResponseText,
+                replyLength: aiResponseText.length,
             });
         }
 

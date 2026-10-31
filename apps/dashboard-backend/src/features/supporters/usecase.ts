@@ -240,7 +240,7 @@ export class SupportersUseCase {
     await thumbFileRef.save(thumbBuffer, {
       contentType: 'image/webp',
       metadata: {
-        cacheControl: 'public, max-age=31536000',
+        cacheControl: 'private, max-age=31536000',
       },
     });
 

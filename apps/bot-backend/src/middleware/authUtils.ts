@@ -28,14 +28,14 @@ export const verifySecret = (secretHeader: string, fallbackSecret: string | unde
 };
 
 /**
- * Validates a Google OIDC ID token against an expected audience and optional service account email.
+ * Validates a Google OIDC ID token against an expected audience and mandatory service account email.
  */
 export const verifyOidcToken = async (
     authHeader: string,
     expectedAudience: string | undefined,
     expectedServiceAccountEmail?: string
 ): Promise<boolean> => {
-    if (!expectedAudience || !authHeader) {
+    if (!expectedAudience || !expectedServiceAccountEmail || !authHeader) {
         return false;
     }
 
@@ -52,16 +52,14 @@ export const verifyOidcToken = async (
         const payload = ticket.getPayload();
 
         if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
-            if (expectedServiceAccountEmail) {
-                const tokenEmail = payload.email?.toLowerCase().trim();
-                const targetEmail = expectedServiceAccountEmail.toLowerCase().trim();
-                if (tokenEmail !== targetEmail) {
-                    logger.warn('[Security Alert] OIDC token service account email mismatch', {
-                        expected: targetEmail,
-                        received: tokenEmail,
-                    });
-                    return false;
-                }
+            const tokenEmail = payload.email?.toLowerCase().trim();
+            const targetEmail = expectedServiceAccountEmail.toLowerCase().trim();
+            if (!tokenEmail || payload.email_verified === false || tokenEmail !== targetEmail) {
+                logger.warn('[Security Alert] OIDC token service account email mismatch', {
+                    expected: targetEmail,
+                    received: tokenEmail,
+                });
+                return false;
             }
             return true;
         }

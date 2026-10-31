@@ -199,7 +199,7 @@ Xタイムラインへ投稿された自発ポスト・キャンペーンポス�
 - **Document ID**: Firebase Auth UID
 - **Format** (`AdminUser`):
   - `email` (String): 管理者メールアドレス
-  - `role` (`'SUPER_ADMIN' | 'ADMIN'`): 権限ロール
+  - `role` (`'ADMIN'`): 権限ロール
   - `status` (`'ACTIVE' | 'REVOKED'`): アカウント状態
   - `createdAt` (String - ISO 8601): 承認日時
 

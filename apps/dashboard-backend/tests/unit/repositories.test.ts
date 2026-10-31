@@ -129,15 +129,10 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
         docs: mockDocs
       });
 
-      const mockLogs = [
-        { data: () => ({ userId: 'user_b' }) },
-        { data: () => ({ userId: 'user_b' }) },
-        { data: () => ({ userId: 'user_a' }) },
-        { data: () => ({ userId: 'user_a' }) },
-      ];
-      (usersRepo as any).collections.conversationLogs.get = jest.fn().mockResolvedValue({
-        empty: false,
-        docs: mockLogs
+      (usersRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
+        count: jest.fn().mockReturnValue({
+          get: jest.fn().mockResolvedValue({ data: () => ({ count: 2 }) })
+        })
       });
 
       // Sort by interactions with tie-breaker (most recently active user_a comes first)
@@ -194,7 +189,8 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       };
 
       (usersRepo as any).collections.conversationLogs.where = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValueOnce({ docs: [mockLogDoc] })
+        limit: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValueOnce({ docs: [mockLogDoc], size: 1 })
       });
 
       const user = await usersRepo.getById('u1');
