@@ -102,10 +102,17 @@ export default {
   },
 
   /**
-   * Configuration for RAG (Retrieval-Augmented Generation) memory.
+   * Configuration for RAG (Retrieval-Augmented Generation) memory and log retention.
    */
   rag: {
     maxMemories: parseInt(process.env.RAG_MAX_MEMORIES as string) || 100,
+  },
+
+  /**
+   * Configuration for data retention policies (TTL).
+   */
+  retention: {
+    logRetentionDays: Math.max(1, Math.min(3650, parseInt(process.env.LOG_RETENTION_DAYS || '1825', 10) || 1825)),
   },
 
   /**

@@ -169,6 +169,7 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
         mockVerifyIdToken.mockResolvedValueOnce({
           uid: 'regular_user_123',
           email: 'regular_user@example.com',
+          email_verified: true,
           role: 'USER', // regular user role
         });
 
@@ -191,12 +192,17 @@ describe('Dashboard Backend Zero-Trust Auth & API Security Gate Integration Test
   });
 
   describe('Authorized Access (Valid Admin Token)', () => {
-    it('should grant access to protected endpoints when token has admin custom claim', async () => {
+    it('should grant access to protected endpoints when token is valid and user is ACTIVE ADMIN in Firestore', async () => {
       mockVerifyIdToken.mockResolvedValue({
         uid: 'admin_123',
         email: 'admin@rebecca-ai.net',
-        role: 'SUPER_ADMIN',
+        email_verified: true,
+        role: 'ADMIN',
         admin: true,
+      });
+      mockFirestoreGet.mockResolvedValue({
+        empty: false,
+        docs: [{ data: () => ({ uid: 'admin_123', email: 'admin@rebecca-ai.net', role: 'ADMIN', status: 'ACTIVE' }) }],
       });
 
       const res = await request(app)

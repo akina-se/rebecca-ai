@@ -4,6 +4,15 @@ import { createMockDeps } from './core/testUtils';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 
+/**
+ * Builds an expanded Stripe PaymentIntent stub whose `created` (epoch seconds) is `minutesAgo` minutes in the past.
+ * `PaymentIntent.created` is the authoritative payment time for the 30-minute reward download window.
+ */
+const paidIntent = (minutesAgo = 0) => ({
+  id: 'pi_test_paid',
+  created: Math.floor((Date.now() - minutesAgo * 60 * 1000) / 1000),
+});
+
 describe('PublicSupportController Unit Tests', () => {
   let deps: any;
   let mockStripe: any;
@@ -35,7 +44,7 @@ describe('PublicSupportController Unit Tests', () => {
     mockStripe = {
       checkout: {
         sessions: {
-          retrieve: jest.fn(),
+          retrieve: jest.fn().mockResolvedValue({ payment_status: 'paid', payment_intent: paidIntent(0) }),
         },
       },
       webhooks: {
@@ -63,23 +72,60 @@ describe('PublicSupportController Unit Tests', () => {
           stripeSecretKey: '',
         },
       );
-      req.query = { session_id: 'cs_test_123' };
+      req.headers = { 'x-stripe-session-id': 'cs_test_123' };
       await unconfiguredController.verifySession(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(500);
       expect(jsonMock).toHaveBeenCalledWith({ error: 'Payment gateway configuration error' });
     });
 
-    it('returns 400 if session_id is missing or not a string', async () => {
+    it('returns 400 if the session ID is missing from both the header and the cookie', async () => {
       req.query = {};
       await controller.verifySession(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(400);
-      expect(jsonMock).toHaveBeenCalledWith(
-        expect.objectContaining({ error: 'Missing or invalid session_id query parameter' }),
-      );
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ error: 'Missing or invalid session' }));
+    });
+
+    it('ignores the legacy session_id query parameter (never accepted from the URL)', async () => {
+      req.query = { session_id: 'cs_test_from_url' };
+      req.headers = {};
+      await controller.verifySession(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for a malformed session ID in the header without any Stripe lookup', async () => {
+      req.headers = { 'x-stripe-session-id': 'not-a-session; DROP' };
+      await controller.verifySession(req as Request, res as Response);
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
+    });
+
+    it('re-verifies on reload using only the reward_ticket cookie (no header, no query)', async () => {
+      req.headers = { cookie: 'reward_ticket=cs_reload_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_reload_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: paidIntent(1),
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_reload_123',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース差し入れ',
+        safeName: 'アリス',
+      });
+      deps.firestore.getActiveRewardImage.mockResolvedValue(null);
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_reload_123', {
+        expand: ['payment_intent'],
+      });
     });
 
     it('returns 404 if Stripe session cannot be found', async () => {
-      req.query = { session_id: 'cs_unknown' };
+      req.headers = { 'x-stripe-session-id': 'cs_unknown' };
       mockStripe.checkout.sessions.retrieve.mockRejectedValue(new Error('No such checkout session'));
 
       await controller.verifySession(req as Request, res as Response);
@@ -92,7 +138,7 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('returns 403 Forbidden if session payment_status is not paid (Strict Guard)', async () => {
-      req.query = { session_id: 'cs_unpaid_123' };
+      req.headers = { 'x-stripe-session-id': 'cs_unpaid_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_unpaid_123',
         payment_status: 'unpaid',
@@ -108,11 +154,12 @@ describe('PublicSupportController Unit Tests', () => {
       expect(deps.storage.generateSignedUrl).not.toHaveBeenCalled();
     });
 
-    it('returns 200 with secure backend download endpoints and transaction details when paid', async () => {
-      req.query = { session_id: 'cs_paid_123' };
+    it('returns 200 with secure backend download endpoints (no session_id in URL) and sets HttpOnly ticket cookie when paid', async () => {
+      req.headers = { 'x-stripe-session-id': 'cs_paid_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_paid_123',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 1000,
       });
 
@@ -133,6 +180,14 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(deps.firestore.incrementRewardImageDistributedCount).toHaveBeenCalledWith('reward_2026_10');
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        expect.stringContaining('reward_ticket='),
+      );
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        expect.stringContaining('HttpOnly; SameSite=Lax'),
+      );
       expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
           valid: true,
@@ -141,19 +196,20 @@ describe('PublicSupportController Unit Tests', () => {
           safeName: 'アリス',
           reward: expect.objectContaining({
             title: 'サポーター特典イラスト',
-            imageUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=thumbnail',
-            thumbnailUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=thumbnail',
-            downloadUrl: '/api/v1/support/rewards/download?session_id=cs_paid_123&type=master',
+            imageUrl: '/api/v1/support/rewards/download?type=thumbnail',
+            thumbnailUrl: '/api/v1/support/rewards/download?type=thumbnail',
+            downloadUrl: '/api/v1/support/rewards/download?type=master',
           }),
         }),
       );
     });
 
     it('handles paid session gracefully when no active reward image exists', async () => {
-      req.query = { session_id: 'cs_paid_no_img' };
+      req.headers = { 'x-stripe-session-id': 'cs_paid_no_img' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_paid_no_img',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 300,
       });
 
@@ -174,10 +230,11 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('redacts safeName (returns null) when creditVisibility is hide to protect privacy', async () => {
-      req.query = { session_id: 'cs_hidden_123' };
+      req.headers = { 'x-stripe-session-id': 'cs_hidden_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_hidden_123',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
         amount_total: 1000,
       });
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
@@ -201,12 +258,12 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('returns isExpired: true and null reward when session was created more than 30 minutes ago', async () => {
-      req.query = { session_id: 'cs_expired_123' };
+      req.headers = { 'x-stripe-session-id': 'cs_expired_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_expired_123',
         payment_status: 'paid',
         amount_total: 1000,
-        created: Math.floor((Date.now() - 40 * 60 * 1000) / 1000),
+        payment_intent: paidIntent(40),
       });
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_expired_123',
@@ -229,11 +286,104 @@ describe('PublicSupportController Unit Tests', () => {
       );
     });
 
+    it('retrieves the Stripe session with payment_intent expanded to resolve the payment time', async () => {
+      req.headers = { 'x-stripe-session-id': 'cs_expand_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_expand_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: paidIntent(1),
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_expand_123',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース差し入れ',
+        safeName: 'アリス',
+      });
+      deps.firestore.getActiveRewardImage.mockResolvedValue(null);
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_expand_123', {
+        expand: ['payment_intent'],
+      });
+    });
+
+    it('returns 502 (fail closed, no local-clock fallback) when the payment time is unavailable', async () => {
+      req.headers = { 'x-stripe-session-id': 'cs_no_pi_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_no_pi_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        created: Math.floor(Date.now() / 1000),
+        payment_intent: 'pi_not_expanded',
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(502);
+      expect(jsonMock).toHaveBeenCalledWith({
+        valid: false,
+        error: 'Unable to determine payment time. Please retry.',
+      });
+      expect(deps.firestore.createSupportTransaction).not.toHaveBeenCalled();
+      expect(deps.tasks.enqueueSupportTask).not.toHaveBeenCalled();
+    });
+
+    it('anchors the 30-minute window to Stripe payment time even if the stored record was re-created just now', async () => {
+      req.headers = { 'x-stripe-session-id': 'cs_recreated_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_recreated_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: paidIntent(24 * 60), // paid yesterday
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_recreated_123',
+        safeName: 'Test3',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース',
+        createdAt: new Date().toISOString(), // stale/re-created record stamped "now"
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({ valid: true, reward: null, isExpired: true }),
+      );
+      expect(res.setHeader).not.toHaveBeenCalledWith('Set-Cookie', expect.anything());
+    });
+
+    it('auto-creates the missing transaction with createdAt set to the Stripe payment time (not Date.now())', async () => {
+      req.headers = { 'x-stripe-session-id': 'cs_autosync_123' };
+      const intent = paidIntent(10);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_autosync_123',
+        payment_status: 'paid',
+        amount_total: 1000,
+        payment_intent: intent,
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      deps.firestore.getActiveRewardImage.mockResolvedValue(null);
+
+      await controller.verifySession(req as Request, res as Response);
+
+      expect(deps.firestore.createSupportTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stripeSessionId: 'cs_autosync_123',
+          stripePaymentIntentId: 'pi_test_paid',
+          createdAt: new Date(intent.created * 1000).toISOString(),
+        }),
+      );
+    });
+
     it('returns 500 if unexpected error occurs during verification', async () => {
-      req.query = { session_id: 'cs_error' };
+      req.headers = { 'x-stripe-session-id': 'cs_error' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_error',
         payment_status: 'paid',
+        payment_intent: paidIntent(1),
       });
       deps.firestore.getSupportTransactionBySessionId.mockRejectedValue(new Error('Firestore DB failure'));
 
@@ -380,6 +530,12 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('successfully processes checkout.session.completed and enqueues Cloud Task', async () => {
+      const paymentIntent = paidIntent(2);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_test_abc123',
+        payment_status: 'paid',
+        payment_intent: { ...paymentIntent, id: 'pi_test_abc123' },
+      });
       const mockEvent = {
         type: 'checkout.session.completed',
         data: {
@@ -424,13 +580,38 @@ describe('PublicSupportController Unit Tests', () => {
           creditVisibility: 'show',
           rewardImageId: 'reward_gold_oct',
           status: 'pending',
+          createdAt: new Date(paymentIntent.created * 1000).toISOString(),
         }),
       );
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_test_abc123', {
+        expand: ['payment_intent'],
+      });
       expect(deps.tasks.enqueueSupportTask).toHaveBeenCalledWith({ transactionId: 'tx_abc123' });
       expect(jsonMock).toHaveBeenCalledWith({
         received: true,
         transactionId: 'tx_abc123',
       });
+    });
+
+    it('returns 500 so Stripe retries when the payment time cannot be resolved (no local-clock fallback)', async () => {
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_test_nopi',
+        payment_status: 'paid',
+        payment_intent: 'pi_not_expanded',
+      });
+      mockStripe.webhooks.constructEvent.mockReturnValue({
+        type: 'checkout.session.completed',
+        data: { object: { id: 'cs_test_nopi', amount_total: 1000, custom_fields: [] } },
+      });
+      req.headers = { 'stripe-signature': 'valid_sig' };
+      (req as any).rawBody = Buffer.from('{}');
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+
+      await controller.handleWebhook(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(500);
+      expect(deps.firestore.createSupportTransaction).not.toHaveBeenCalled();
+      expect(deps.tasks.enqueueSupportTask).not.toHaveBeenCalled();
     });
 
     it('applies fallback name and hidden credit visibility when custom fields dictate', async () => {
@@ -629,15 +810,38 @@ describe('PublicSupportController Unit Tests', () => {
     });
   });
   describe('downloadReward', () => {
-    it('returns 400 when session_id is missing', async () => {
+    it('returns 400 when the reward_ticket cookie is missing', async () => {
       req.query = {};
       await controller.downloadReward(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(400);
-      expect(jsonMock).toHaveBeenCalledWith({ error: 'Missing or invalid session_id query parameter' });
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Missing or invalid session' });
+    });
+
+    it('does not accept the session ID from the URL query string (cookie only)', async () => {
+      req.query = { session_id: 'cs_test_from_url', type: 'master' };
+      req.headers = {};
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(deps.firestore.getSupportTransactionBySessionId).not.toHaveBeenCalled();
+      expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
+    });
+
+    it('does not accept the session ID from the x-stripe-session-id header (cookie only)', async () => {
+      req.query = { type: 'master' };
+      req.headers = { 'x-stripe-session-id': 'cs_test_from_header' };
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(deps.firestore.getSupportTransactionBySessionId).not.toHaveBeenCalled();
+      expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
     });
 
     it('returns 403 when session is not paid', async () => {
-      req.query = { session_id: 'cs_unpaid_123' };
+      req.query = {};
+      req.headers = { cookie: 'reward_ticket=cs_unpaid_123' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_unpaid_123',
@@ -650,7 +854,8 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('returns 404 when Stripe session retrieval fails', async () => {
-      req.query = { session_id: 'cs_nonexistent' };
+      req.query = {};
+      req.headers = { cookie: 'reward_ticket=cs_nonexistent' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockRejectedValue(new Error('Session not found'));
 
@@ -659,8 +864,45 @@ describe('PublicSupportController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith({ error: 'Checkout session not found' });
     });
 
+    it('returns 410 Gone when no record exists and Stripe payment time is older than 30 minutes', async () => {
+      req.query = {};
+      req.headers = { cookie: 'reward_ticket=cs_old_norec' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_old_norec',
+        payment_status: 'paid',
+        payment_intent: paidIntent(24 * 60),
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(mockStripe.checkout.sessions.retrieve).toHaveBeenCalledWith('cs_old_norec', {
+        expand: ['payment_intent'],
+      });
+      expect(statusMock).toHaveBeenCalledWith(410);
+      expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({ expired: true }));
+    });
+
+    it('returns 502 when no record exists and the Stripe payment time is unavailable', async () => {
+      req.query = {};
+      req.headers = { cookie: 'reward_ticket=cs_nopi_norec' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_nopi_norec',
+        payment_status: 'paid',
+        created: Math.floor(Date.now() / 1000),
+        payment_intent: 'pi_not_expanded',
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(502);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Unable to determine payment time. Please retry.' });
+    });
+
     it('returns 410 Gone when download window (> 30 mins) has expired', async () => {
-      req.query = { session_id: 'cs_expired_123' };
+      req.query = {};
+      req.headers = { cookie: 'reward_ticket=cs_expired_123' };
       const fortyMinutesAgo = new Date(Date.now() - 40 * 60 * 1000).toISOString();
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_expired_123',
@@ -676,7 +918,8 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('returns 200 and streams binary image within 30-minute window for master download', async () => {
-      req.query = { session_id: 'cs_valid_123', type: 'master' };
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'reward_ticket=cs_valid_123' };
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_valid_123',
@@ -702,7 +945,8 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('streams thumbnail with inline disposition when type=thumbnail', async () => {
-      req.query = { session_id: 'cs_valid_thumb', type: 'thumbnail' };
+      req.query = { type: 'thumbnail' };
+      req.headers = { cookie: 'reward_ticket=cs_valid_thumb' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_valid_thumb',
         createdAt: new Date().toISOString(),
@@ -728,7 +972,8 @@ describe('PublicSupportController Unit Tests', () => {
     });
 
     it('returns 404 when reward record does not exist', async () => {
-      req.query = { session_id: 'cs_no_reward' };
+      req.query = {};
+      req.headers = { cookie: 'reward_ticket=cs_no_reward' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_no_reward',
         createdAt: new Date().toISOString(),
@@ -740,6 +985,95 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(404);
       expect(jsonMock).toHaveBeenCalledWith({ error: 'Reward asset not found' });
+    });
+
+    it('authenticates downloadReward via HttpOnly cookie without session_id in query string', async () => {
+      // First call verifySession to issue the Set-Cookie header
+      req.headers = { 'x-stripe-session-id': 'cs_cookie_auth_123' };
+      mockStripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_cookie_auth_123',
+        payment_status: 'paid',
+        payment_intent: paidIntent(1),
+        amount_total: 1000,
+      });
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_cookie_auth_123',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'reward_1',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue({
+        id: 'reward_1',
+        title: 'Cookie Auth Art',
+        storagePath: 'rewards/art.jpg',
+      });
+
+      await controller.verifySession(req as Request, res as Response);
+
+      const setCookieCall = (res.setHeader as jest.Mock).mock.calls.find(
+        (call) => call[0] === 'Set-Cookie',
+      );
+      expect(setCookieCall).toBeDefined();
+      const cookiePair = (setCookieCall![1] as string).split(';')[0];
+      // The cookie carries only the opaque session ID: no embedded expiry/payload that the server would have to trust
+      expect(cookiePair).toBe('reward_ticket=cs_cookie_auth_123');
+
+      // Now call downloadReward with only the Cookie header and NO session_id in req.query
+      jest.clearAllMocks();
+      req.query = { type: 'master' };
+      req.headers = { cookie: `other_cookie=1; ${cookiePair}` };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_cookie_auth_123',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'reward_1',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue({
+        id: 'reward_1',
+        title: 'Cookie Auth Art',
+        storagePath: 'rewards/art.jpg',
+      });
+      const fakeBuffer = Buffer.from('jpg-bytes');
+      deps.storage.downloadImage.mockResolvedValue(fakeBuffer);
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(deps.firestore.getSupportTransactionBySessionId).toHaveBeenCalledWith('cs_cookie_auth_123');
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
+      expect(statusMock).toHaveBeenCalledWith(200);
+      expect(res.send).toHaveBeenCalledWith(fakeBuffer);
+    });
+
+    it('rejects a malformed reward_ticket cookie value without any Firestore or Stripe lookup', async () => {
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'reward_ticket=tampered_payload.invalid_signature' };
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Missing or invalid session' });
+      expect(deps.firestore.getSupportTransactionBySessionId).not.toHaveBeenCalled();
+      expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 (not 500) for a reward_ticket cookie with invalid percent-encoding', async () => {
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'reward_ticket=%E0%A4%A' };
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith({ error: 'Missing or invalid session' });
+    });
+
+    it('rejects a forged cookie for a session that does not exist in Stripe', async () => {
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'reward_ticket=cs_forged_by_attacker' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
+      mockStripe.checkout.sessions.retrieve.mockRejectedValue(new Error('No such checkout session'));
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(statusMock).toHaveBeenCalledWith(404);
+      expect(deps.storage.downloadImage).not.toHaveBeenCalled();
     });
   });
 });

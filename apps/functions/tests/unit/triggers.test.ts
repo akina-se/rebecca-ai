@@ -83,9 +83,22 @@ describe('Firebase Cloud Functions Unit Tests', () => {
       expect(thrown.message).toContain('An authenticated email address is required');
     });
 
+    it('should throw permission-denied when emailVerified is not true', async () => {
+      const event = { data: { uid: 'uid_unverified', email: 'admin@rebecca-ai.net', emailVerified: false } };
+      let thrown: any = null;
+      try {
+        await authBlockingHandler(event);
+      } catch (e) {
+        thrown = e;
+      }
+      expect(thrown).toBeDefined();
+      expect(thrown.code).toBe('permission-denied');
+      expect(thrown.message).toContain('verified email address is required');
+    });
+
     it('should throw permission-denied when user is not found in admin_users or not ACTIVE', async () => {
       mockGet.mockResolvedValueOnce({ empty: true, docs: [] });
-      const event = { data: { email: 'unauthorized@example.com' } };
+      const event = { data: { uid: 'uid_unauth', email: 'unauthorized@example.com', emailVerified: true } };
 
       let thrown: any = null;
       try {
@@ -101,38 +114,39 @@ describe('Firebase Cloud Functions Unit Tests', () => {
       expect(mockWhere).toHaveBeenCalledWith('status', '==', 'ACTIVE');
     });
 
-    it('should return customClaims for authorized active administrator with role from doc', async () => {
+    it('should throw permission-denied when admin_users doc has missing or mismatched uid', async () => {
       mockGet.mockResolvedValueOnce({
         empty: false,
         docs: [
           {
-            data: () => ({ role: 'SUPER_ADMIN', status: 'ACTIVE' }),
+            data: () => ({ uid: 'uid_real_admin', role: 'ADMIN', status: 'ACTIVE' }),
           },
         ],
       });
 
-      const event = { data: { email: 'admin@rebecca-ai.net' } };
-      const result = await authBlockingHandler(event);
-
-      expect(result).toEqual({
-        customClaims: {
-          role: 'SUPER_ADMIN',
-          admin: true,
-        },
-      });
+      const event = { data: { uid: 'uid_spoofed', email: 'admin@rebecca-ai.net', emailVerified: true } };
+      let thrown: any = null;
+      try {
+        await authBlockingHandler(event);
+      } catch (e) {
+        thrown = e;
+      }
+      expect(thrown).toBeDefined();
+      expect(thrown.code).toBe('permission-denied');
+      expect(thrown.message).toContain('Administrator identity mismatch');
     });
 
-    it('should return customClaims with ADMIN fallback if role is undefined in doc', async () => {
+    it('should return customClaims for authorized active administrator with matching uid and ADMIN role in doc', async () => {
       mockGet.mockResolvedValueOnce({
         empty: false,
         docs: [
           {
-            data: () => ({ status: 'ACTIVE' }),
+            data: () => ({ uid: 'uid_admin_1', role: 'ADMIN', status: 'ACTIVE' }),
           },
         ],
       });
 
-      const event = { data: { email: 'admin2@rebecca-ai.net' } };
+      const event = { data: { uid: 'uid_admin_1', email: 'admin@rebecca-ai.net', emailVerified: true } };
       const result = await authBlockingHandler(event);
 
       expect(result).toEqual({
@@ -141,6 +155,28 @@ describe('Firebase Cloud Functions Unit Tests', () => {
           admin: true,
         },
       });
+    });
+
+    it('should throw permission-denied if role in doc is not ADMIN (e.g., VIEWER or undefined)', async () => {
+      mockGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [
+          {
+            data: () => ({ uid: 'uid_viewer_1', role: 'VIEWER', status: 'ACTIVE' }),
+          },
+        ],
+      });
+
+      const event = { data: { uid: 'uid_viewer_1', email: 'viewer@rebecca-ai.net', emailVerified: true } };
+      let thrown: any = null;
+      try {
+        await authBlockingHandler(event);
+      } catch (e) {
+        thrown = e;
+      }
+      expect(thrown).toBeDefined();
+      expect(thrown.code).toBe('permission-denied');
+      expect(thrown.message).toContain('Insufficient role privileges');
     });
   });
 

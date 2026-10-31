@@ -1,4 +1,4 @@
-﻿import type { DecodedIdToken } from 'firebase-admin/auth';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import type { Request } from 'express';
 
 /**
@@ -6,7 +6,7 @@ import type { Request } from 'express';
  */
 export interface AuthenticatedUser extends Partial<DecodedIdToken> {
   uid: string;
-  role?: 'SUPER_ADMIN' | 'ADMIN' | string;
+  role?: 'ADMIN';
   email?: string;
   admin?: boolean;
 }

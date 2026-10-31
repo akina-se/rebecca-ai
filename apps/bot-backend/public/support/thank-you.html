@@ -1065,16 +1065,32 @@
     async function checkSessionVerification() {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get('session_id');
-      if (!sessionId) {
-        // Keep guidance card visible
-        return;
+
+      // Scrub session_id from browser address bar and history immediately so it does not persist in local history
+      if (sessionId && window.history && typeof window.history.replaceState === 'function') {
+        urlParams.delete('session_id');
+        const remainingQuery = urlParams.toString();
+        const cleanUrl = window.location.pathname + (remainingQuery ? '?' + remainingQuery : '') + window.location.hash;
+        window.history.replaceState(null, '', cleanUrl);
       }
 
       const rewardPanel = document.getElementById('reward-panel');
       const guidanceCard = document.getElementById('guidance-card');
 
       try {
-        const res = await fetch('/api/v1/support/verify-session?session_id=' + encodeURIComponent(sessionId));
+        const headers = {};
+        if (sessionId) {
+          headers['x-stripe-session-id'] = sessionId;
+        }
+        const res = await fetch('/api/v1/support/verify-session', {
+          method: 'GET',
+          headers,
+          credentials: 'same-origin',
+        });
+        if (!sessionId && !res.ok) {
+          // Keep guidance card visible when visiting without an active session or cookie
+          return;
+        }
         const data = await res.json();
 
         if (res.ok && data.valid) {

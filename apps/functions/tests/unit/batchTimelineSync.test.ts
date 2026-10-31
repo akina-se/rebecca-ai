@@ -63,10 +63,11 @@ describe('verifyOidcToken helper', () => {
     jest.clearAllMocks();
   });
 
-  it('should return false when expectedAudience or authHeader is missing', async () => {
-    expect(await verifyOidcToken(undefined, 'https://example.com')).toBe(false);
-    expect(await verifyOidcToken('Bearer token', undefined)).toBe(false);
-    expect(await verifyOidcToken('Bearer   ', 'https://example.com')).toBe(false);
+  it('should return false when expectedAudience, expectedServiceAccountEmail, or authHeader is missing', async () => {
+    expect(await verifyOidcToken(undefined, 'https://example.com', 'sa@project.iam.gserviceaccount.com')).toBe(false);
+    expect(await verifyOidcToken('Bearer token', undefined, 'sa@project.iam.gserviceaccount.com')).toBe(false);
+    expect(await verifyOidcToken('Bearer token', 'https://example.com', undefined)).toBe(false);
+    expect(await verifyOidcToken('Bearer   ', 'https://example.com', 'sa@project.iam.gserviceaccount.com')).toBe(false);
   });
 
   it('should return true for valid Google OIDC token and matching serviceAccountEmail', async () => {
@@ -74,6 +75,7 @@ describe('verifyOidcToken helper', () => {
       getPayload: () => ({
         iss: 'https://accounts.google.com',
         email: 'sa@project.iam.gserviceaccount.com',
+        email_verified: true,
       }),
     });
 
@@ -85,11 +87,12 @@ describe('verifyOidcToken helper', () => {
     expect(result).toBe(true);
   });
 
-  it('should return false when serviceAccountEmail does not match', async () => {
+  it('should return false when serviceAccountEmail does not match or email_verified is false', async () => {
     mockVerifyIdToken.mockResolvedValueOnce({
       getPayload: () => ({
         iss: 'https://accounts.google.com',
         email: 'wrong@project.iam.gserviceaccount.com',
+        email_verified: true,
       }),
     });
 
@@ -99,16 +102,35 @@ describe('verifyOidcToken helper', () => {
       'sa@project.iam.gserviceaccount.com'
     );
     expect(result).toBe(false);
+
+    mockVerifyIdToken.mockResolvedValueOnce({
+      getPayload: () => ({
+        iss: 'https://accounts.google.com',
+        email: 'sa@project.iam.gserviceaccount.com',
+        email_verified: false,
+      }),
+    });
+
+    const unverifiedResult = await verifyOidcToken(
+      'Bearer valid_oidc_jwt',
+      'https://asia-northeast1-project.cloudfunctions.net/batchTimelineSync',
+      'sa@project.iam.gserviceaccount.com'
+    );
+    expect(unverifiedResult).toBe(false);
   });
 
   it('should return false when verifyIdToken throws or issuer is invalid', async () => {
     mockVerifyIdToken.mockResolvedValueOnce({
       getPayload: () => ({ iss: 'https://evil.example.com' }),
     });
-    expect(await verifyOidcToken('Bearer token', 'https://example.com')).toBe(false);
+    expect(
+      await verifyOidcToken('Bearer token', 'https://example.com', 'sa@project.iam.gserviceaccount.com')
+    ).toBe(false);
 
     mockVerifyIdToken.mockRejectedValueOnce(new Error('Token expired'));
-    expect(await verifyOidcToken('Bearer token', 'https://example.com')).toBe(false);
+    expect(
+      await verifyOidcToken('Bearer token', 'https://example.com', 'sa@project.iam.gserviceaccount.com')
+    ).toBe(false);
   });
 });
 
@@ -127,6 +149,7 @@ describe('batchTimelineSync HTTP trigger', () => {
       X_MY_USER_ID: 'user_123',
       BATCH_SECRET_KEY: 'valid_batch_secret',
       FUNCTIONS_URL: 'https://asia-northeast1-test.cloudfunctions.net/batchTimelineSync',
+      SERVICE_ACCOUNT_EMAIL: 'sa@project.iam.gserviceaccount.com',
     };
   });
 
@@ -192,7 +215,11 @@ describe('batchTimelineSync HTTP trigger', () => {
   it('should execute useCase and return 200 for valid OIDC token even when BATCH_SECRET_KEY is unset', async () => {
     delete process.env.BATCH_SECRET_KEY;
     mockVerifyIdToken.mockResolvedValueOnce({
-      getPayload: () => ({ iss: 'https://accounts.google.com' }),
+      getPayload: () => ({
+        iss: 'https://accounts.google.com',
+        email: 'sa@project.iam.gserviceaccount.com',
+        email_verified: true,
+      }),
     });
     mockExecute.mockResolvedValueOnce({
       processed: 8,

@@ -1,4 +1,4 @@
-import { Firestore, QueryDocumentSnapshot } from '@google-cloud/firestore';
+import { AggregateField, Firestore, QueryDocumentSnapshot } from '@google-cloud/firestore';
 import { getCollections, DbCollections } from '@rebecca/db';
 import {
   SupportTransactionDoc,
@@ -8,6 +8,10 @@ import {
   PaginationMeta,
 } from '@rebecca/types';
 import { logger } from '../../utils/logger';
+
+const MAX_LEDGER_LIMIT = 100;
+const DEFAULT_LEDGER_LIMIT = 30;
+const MAX_SEARCH_SCAN_LIMIT = 500;
 
 /**
  * Repository class providing Firestore data access for supporter transactions
@@ -23,13 +27,55 @@ export class SupportersRepository {
   }
 
   /**
+   * Computes system-wide summary metrics (`totalCount`, `totalAmount`, and status counts)
+   * using Firestore Server-Side Aggregation (`AggregateField.count()`, `AggregateField.sum('amount')`)
+   * so full documents are never loaded into memory.
+   */
+  private async computeLedgerSummary(): Promise<SupporterLedgerResponse['summary']> {
+    const baseColl = this.collections.supportTransactions;
+
+    const [totalAgg, failedAgg, pendingAgg, completedAgg] = await Promise.all([
+      baseColl
+        .aggregate({
+          totalCount: AggregateField.count(),
+          totalAmount: AggregateField.sum('amount'),
+        })
+        .get(),
+      baseColl.where('status', '==', 'failed').count().get(),
+      baseColl.where('status', '==', 'pending').count().get(),
+      baseColl.where('status', 'in', ['completed', 'manual']).count().get(),
+    ]);
+
+    const totalData = totalAgg.data();
+    return {
+      totalCount: Number(totalData.totalCount || 0),
+      totalAmount: Number(totalData.totalAmount || 0),
+      failedCount: Number(failedAgg.data().count || 0),
+      pendingCount: Number(pendingAgg.data().count || 0),
+      completedCount: Number(completedAgg.data().count || 0),
+    };
+  }
+
+  /**
    * Retrieves a paginated list of support transactions along with system-wide summary metrics.
+   *
+   * Uses server-side Firestore aggregation and query-level pagination (`offset`/`limit` or `startAfter`)
+   * to prevent unbounded full-collection scans and cap `limit` at `MAX_LEDGER_LIMIT` (100).
    *
    * @param query - Query filters including status, tier, search term, and limit.
    * @returns A promise resolving to the ledger response containing transactions, summary, and next cursor.
    */
   async getTransactions(query: SupporterLedgerQuery): Promise<SupporterLedgerResponse> {
     try {
+      const requestedLimit = Number(query.limit);
+      const limit =
+        Number.isFinite(requestedLimit) && requestedLimit > 0
+          ? Math.min(Math.floor(requestedLimit), MAX_LEDGER_LIMIT)
+          : DEFAULT_LEDGER_LIMIT;
+      const requestedPage = Number(query.page);
+      const page =
+        Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
+
       let q: FirebaseFirestore.Query<SupportTransactionDoc> = this.collections.supportTransactions;
 
       if (query.status && query.status !== 'all') {
@@ -42,58 +88,100 @@ export class SupportersRepository {
 
       q = q.orderBy('createdAt', 'desc');
 
-      const snapshot = await q.get();
-      let allDocs: SupportTransactionDoc[] = snapshot.docs.map((doc: QueryDocumentSnapshot<SupportTransactionDoc>) => ({ ...doc.data(), id: doc.id }));
+      const summaryPromise = this.computeLedgerSummary();
+      const trimmedSearch = query.search?.trim().toLowerCase() || '';
 
-      // In-memory filter for search (Stripe ID, safeName, rawName)
-      if (query.search && query.search.trim()) {
-        const term = query.search.trim().toLowerCase();
-        allDocs = allDocs.filter(
-          (d) =>
-            Boolean(d.id && d.id.toLowerCase().includes(term)) ||
-            Boolean(d.safeName && d.safeName.toLowerCase().includes(term)) ||
-            Boolean(d.rawName && d.rawName.toLowerCase().includes(term)) ||
-            Boolean(d.stripeSessionId && d.stripeSessionId.toLowerCase().includes(term)) ||
-            Boolean(d.stripePaymentIntentId && d.stripePaymentIntentId.toLowerCase().includes(term))
-        );
+      if (trimmedSearch) {
+        // Bounded scan for in-memory substring search across safeName, rawName, and Stripe IDs
+        const [searchSnapshot, summary] = await Promise.all([
+          q.limit(MAX_SEARCH_SCAN_LIMIT).get(),
+          summaryPromise,
+        ]);
+
+        const allDocs: SupportTransactionDoc[] = searchSnapshot.docs
+          .map((doc: QueryDocumentSnapshot<SupportTransactionDoc>) => ({
+            ...doc.data(),
+            id: doc.id,
+          }))
+          .filter(
+            (d) =>
+              Boolean(d.id && d.id.toLowerCase().includes(trimmedSearch)) ||
+              Boolean(d.safeName && d.safeName.toLowerCase().includes(trimmedSearch)) ||
+              Boolean(d.rawName && d.rawName.toLowerCase().includes(trimmedSearch)) ||
+              Boolean(d.stripeSessionId && d.stripeSessionId.toLowerCase().includes(trimmedSearch)) ||
+              Boolean(
+                d.stripePaymentIntentId &&
+                  d.stripePaymentIntentId.toLowerCase().includes(trimmedSearch)
+              )
+          );
+
+        const totalFiltered = allDocs.length;
+        const totalPages = Math.ceil(totalFiltered / limit) || 1;
+        let startIndex = (page - 1) * limit;
+        if (query.cursor && !query.page) {
+          const found = allDocs.findIndex((d) => d.id === query.cursor);
+          if (found !== -1) {
+            startIndex = found + 1;
+          }
+        }
+
+        const paged = allDocs.slice(startIndex, startIndex + limit);
+        const nextCursor =
+          startIndex + limit < allDocs.length && paged.length > 0
+            ? paged[paged.length - 1].id
+            : undefined;
+
+        return {
+          transactions: paged,
+          summary,
+          meta: {
+            totalItems: totalFiltered,
+            totalPages,
+            currentPage: page,
+            limit,
+            itemCount: paged.length,
+            itemsPerPage: limit,
+          },
+          nextCursor,
+        };
       }
 
-      // Compute aggregates across all transactions in database
-      const fullSnapshot = await this.collections.supportTransactions.get();
-      let totalCount = 0;
-      let failedCount = 0;
-      let pendingCount = 0;
-      let completedCount = 0;
-      let totalAmount = 0;
+      // Server-side pagination path (no substring search):
+      // Fetch filtered count and summary in parallel, and only read `limit + 1` docs for the current page
+      const filteredCountPromise = q.count().get();
+      let pagedQuery = q;
 
-      for (const d of fullSnapshot.docs) {
-        const item = d.data();
-        totalCount++;
-        totalAmount += Number(item.amount || 0);
-        if (item.status === 'failed') failedCount++;
-        else if (item.status === 'pending') pendingCount++;
-        else if (item.status === 'completed' || item.status === 'manual') completedCount++;
-      }
-
-      // Pagination
-      const totalFiltered = allDocs.length;
-      const limit = query.limit && query.limit > 0 ? query.limit : 30;
-      const page = query.page && query.page > 0 ? query.page : 1;
-      const totalPages = Math.ceil(totalFiltered / limit) || 1;
-
-      let startIndex = (page - 1) * limit;
       if (query.cursor && !query.page) {
-        const found = allDocs.findIndex((d) => d.id === query.cursor);
-        if (found !== -1) {
-          startIndex = found + 1;
+        const cursorSnap = await this.collections.supportTransactions.doc(query.cursor).get();
+        if (cursorSnap.exists) {
+          pagedQuery = pagedQuery.startAfter(cursorSnap);
+        }
+      } else {
+        const startIndex = (page - 1) * limit;
+        if (startIndex > 0) {
+          pagedQuery = pagedQuery.offset(startIndex);
         }
       }
 
-      const paged = allDocs.slice(startIndex, startIndex + limit);
-      const nextCursor =
-        startIndex + limit < allDocs.length && paged.length > 0
-          ? paged[paged.length - 1].id
-          : undefined;
+      const [pageSnapshot, filteredCountSnap, summary] = await Promise.all([
+        pagedQuery.limit(limit + 1).get(),
+        filteredCountPromise,
+        summaryPromise,
+      ]);
+
+      const fetchedDocs: SupportTransactionDoc[] = pageSnapshot.docs.map(
+        (doc: QueryDocumentSnapshot<SupportTransactionDoc>) => ({
+          ...doc.data(),
+          id: doc.id,
+        })
+      );
+
+      const hasMore = fetchedDocs.length > limit;
+      const paged = hasMore ? fetchedDocs.slice(0, limit) : fetchedDocs;
+      const nextCursor = hasMore && paged.length > 0 ? paged[paged.length - 1].id : undefined;
+
+      const totalFiltered = Number(filteredCountSnap.data().count || 0);
+      const totalPages = Math.ceil(totalFiltered / limit) || 1;
 
       const paginationMeta: PaginationMeta = {
         totalItems: totalFiltered,
@@ -106,13 +194,7 @@ export class SupportersRepository {
 
       return {
         transactions: paged,
-        summary: {
-          totalCount,
-          failedCount,
-          pendingCount,
-          completedCount,
-          totalAmount,
-        },
+        summary,
         meta: paginationMeta,
         nextCursor,
       };
