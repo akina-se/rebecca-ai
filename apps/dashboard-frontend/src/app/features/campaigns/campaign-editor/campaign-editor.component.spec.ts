@@ -200,6 +200,66 @@ describe('CampaignEditorComponent', () => {
     expect(component.isDayOpen(3)).toBe(true);
   });
 
+  it('should format accordion group dateStr in configured timezone instead of raw UTC date slice', () => {
+    // In Asia/Tokyo (UTC+9), 2026-11-20T23:00:00Z corresponds to 2026-11-21 08:00:00
+    // A raw UTC .slice(0, 10) produces '2026-11-20' (1-day backward shift), whereas
+    // timezone-aware formatting correctly resolves to '2026-11-21'.
+    component.slots = [
+      {
+        slotId: 'slot-1-0800',
+        dayNumber: 1,
+        timePeriod: 'morning',
+        scheduledTime: '2026-11-20T23:00:00.000Z',
+        theme: 'Day 1 Morning',
+        status: 'pending',
+        isFixedText: false,
+      },
+      {
+        slotId: 'slot-2-0800',
+        dayNumber: 2,
+        timePeriod: 'morning',
+        scheduledTime: '2026-11-21T23:00:00.000Z',
+        theme: 'Day 2 Morning',
+        status: 'pending',
+        isFixedText: false,
+      },
+    ];
+
+    const groups = component.groupedSlots;
+    expect(groups).toHaveLength(2);
+    expect(groups[0].dayNumber).toBe(1);
+    expect(groups[0].dateStr).toBe('2026-11-21');
+    expect(groups[1].dayNumber).toBe(2);
+    expect(groups[1].dateStr).toBe('2026-11-22');
+  });
+
+  it('should fallback gracefully when slot scheduledTime is empty or invalid', () => {
+    component.slots = [
+      {
+        slotId: 'slot-1-empty',
+        dayNumber: 1,
+        timePeriod: 'morning',
+        scheduledTime: '',
+        theme: 'Day 1 Empty',
+        status: 'pending',
+        isFixedText: false,
+      },
+      {
+        slotId: 'slot-2-invalid',
+        dayNumber: 2,
+        timePeriod: 'morning',
+        scheduledTime: 'not-an-iso-date',
+        theme: 'Day 2 Invalid',
+        status: 'pending',
+        isFixedText: false,
+      },
+    ];
+
+    const groups = component.groupedSlots;
+    expect(groups[0].dateStr).toBe('');
+    expect(groups[1].dateStr).toBe('not-an-iso');
+  });
+
   it('should update slot on onSlotChange', () => {
     const updated = { ...component.slots[0], theme: 'New Theme' };
     component.onSlotChange(updated);
