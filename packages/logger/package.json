@@ -1,6 +1,6 @@
 {
   "name": "@rebecca/logger",
-  "version": "1.36.2",
+  "version": "1.36.3",
   "description": "Shared structured logger for Google Cloud Logging and Cloud Error Reporting",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

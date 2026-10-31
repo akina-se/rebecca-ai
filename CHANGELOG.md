@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.3](https://github.com/akina-se/rebecca-ai/compare/v1.36.2...v1.36.3) (2026-10-31)
+
+
+### Bug Fixes
+
+* **dashboard-frontend:** add bottom safe-area padding to supporters page on mobile ([#402](https://github.com/akina-se/rebecca-ai/issues/402)) ([5b4c811](https://github.com/akina-se/rebecca-ai/commit/5b4c811ef88ea5fa663f36c87435410e68637007))
+
 ## [1.36.2](https://github.com/akina-se/rebecca-ai/compare/v1.36.1...v1.36.2) (2026-10-31)
 
 
