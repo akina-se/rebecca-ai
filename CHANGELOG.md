@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.36.4](https://github.com/akina-se/rebecca-ai/compare/v1.36.3...v1.36.4) (2026-10-31)
+
+
+### Bug Fixes
+
+* **dashboard:** enable authenticated streaming for timeline images and thumbnail optimization ([f9cf74c](https://github.com/akina-se/rebecca-ai/commit/f9cf74cf38b714ec5d69c7bb1882abed261b9e4c))
+* **dashboard:** enable authenticated streaming for timeline images and thumbnail optimization ([7f29460](https://github.com/akina-se/rebecca-ai/commit/7f29460d92ecab13d50252041296dda01943ade3))
+* **dashboard:** simplify backend media URLs, harden image APIs, and add OpenAPI specs ([226843a](https://github.com/akina-se/rebecca-ai/commit/226843a6812786d8bc16caa41c8536702d65d1d8))
+
 ## [1.36.3](https://github.com/akina-se/rebecca-ai/compare/v1.36.2...v1.36.3) (2026-10-31)
 
 
