@@ -710,7 +710,9 @@ export class CampaignsUseCase {
       !campaignId ||
       !filename ||
       !/^[a-zA-Z0-9_.-]+$/.test(campaignId) ||
-      !/^[a-zA-Z0-9_.-]+$/.test(filename)
+      !/^[a-zA-Z0-9_.-]+$/.test(filename) ||
+      campaignId.includes('..') ||
+      filename.includes('..')
     ) {
       return null;
     }

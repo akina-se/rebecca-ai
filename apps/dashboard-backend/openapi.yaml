@@ -831,8 +831,9 @@ paths:
           type: string
     get:
       summary: Stream campaign illustration image with on-demand WebP thumbnail generation
-      description: Public streaming endpoint returning image binary. Supports query parameter size=thumbnail (400px WebP) or size=full (original image).
-      security: []
+      description: Protected streaming endpoint returning image binary. Requires Bearer Authentication. Supports query parameter size=thumbnail (400px WebP) or size=full (original image).
+      security:
+        - BearerAuth: []
       parameters:
         - name: size
           in: query

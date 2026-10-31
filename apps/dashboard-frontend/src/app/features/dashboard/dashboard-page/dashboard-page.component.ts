@@ -17,12 +17,13 @@ import { PaginationComponent } from '../../../shared/components/molecules/pagina
 import { KpiCardComponent } from '../../../shared/components/molecules/kpi-card/kpi-card.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { AuthUrlPipe } from '../../../shared/pipes/auth-url.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, KpiCardComponent, TzDatePipe, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, KpiCardComponent, TzDatePipe, TranslatePipe, AuthUrlPipe],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })
@@ -233,6 +234,15 @@ export class DashboardPageComponent implements OnInit {
     if (!history || history.length === 0) return `0,${height} ${width},${height}`;
     const polyline = this.getSparklinePoints(history, height, width);
     return `0,${height} ${polyline} ${width},${height}`;
+  }
+
+  getThumbnailUrl(url: string | undefined): string {
+    if (!url) return '';
+    if (url.startsWith('/api/v1/')) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}size=thumbnail`;
+    }
+    return url;
   }
 
   openLightbox(imageUrl = '') {

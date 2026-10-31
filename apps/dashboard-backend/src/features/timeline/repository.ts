@@ -330,7 +330,7 @@ export class TimelineRepository {
           const objectPath = extractGcsObjectPath(url);
           if (objectPath) {
             const filename = objectPath.split('/').pop() || '';
-            return `/api/v1/assets/${filename}/image?size=thumbnail`;
+            return `/api/v1/assets/${filename}/image`;
           }
         }
         return typeof url === 'string' ? url : '';
