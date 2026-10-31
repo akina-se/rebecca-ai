@@ -1195,7 +1195,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
 
       const postsByTime = await timelineRepo.getPosts({ sortBy: 'created_at', sortOrder: 'asc', period: 'monthly', date: '2026-08' });
       expect(postsByTime.data[0]?.id).toBe('p_1');
-      expect(postsByTime.data[0]?.mediaUrls?.[0]).toContain('?size=thumbnail');
+      expect(postsByTime.data[0]?.mediaUrls?.[0]).toBe('/api/v1/assets/p1.jpg/image');
       expect(postsByTime.data[1]?.mediaUrls?.[0]).toBe('https://cdn.example.com/external.png');
 
       const postsByImpDesc = await timelineRepo.getPosts({ sortBy: 'impressions', sortOrder: 'desc', period: 'yearly', date: '2026' });

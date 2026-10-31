@@ -109,7 +109,6 @@ export function createApp(
   app.use('/api/v1/images', verifyAuth, assetsRouter);
   app.use('/api/v1/settings', verifyAuth, settingsRouter);
   app.use('/api/v1/campaigns', verifyAuth, campaignsRouter);
-  app.use('/api/campaigns', verifyAuth, campaignsRouter);
   app.use('/api/v1/supporters', verifyAuth, supportersRouter);
 
   return app;
