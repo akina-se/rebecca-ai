@@ -256,9 +256,15 @@ export class CampaignEditorComponent implements OnInit {
       map.set(slot.dayNumber, list);
     }
 
+    const timezone = this.configService.appTimezone();
     const result: DaySlotGroup[] = [];
     for (const [dayNumber, daySlots] of map.entries()) {
-      const dateStr = daySlots[0]?.scheduledTime ? daySlots[0].scheduledTime.slice(0, 10) : '';
+      let dateStr = '';
+      const rawScheduledTime = daySlots[0]?.scheduledTime;
+      if (rawScheduledTime) {
+        const dt = DateTime.fromISO(rawScheduledTime, { setZone: true }).setZone(timezone);
+        dateStr = dt.isValid ? (dt.toISODate() || '') : rawScheduledTime.slice(0, 10);
+      }
       result.push({
         dayNumber,
         dateStr,
