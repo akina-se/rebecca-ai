@@ -1063,11 +1063,17 @@ input:checked + .slider:before { transform: translateX(18px); }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
 /* ==========================================================================
-   Responsive: Mobile Polish (max-width: 768px)
+   Responsive: Mobile & Tablet Polish (max-width: 1024px / 768px)
    ========================================================================== */
+@media (max-width: 1024px) {
+  :host {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 @media (max-width: 768px) {
   :host {
-    padding: 12px;
+    padding: 12px 12px calc(88px + env(safe-area-inset-bottom, 0px)) 12px;
     max-width: 100vw;
     overflow-x: hidden;
     box-sizing: border-box;
