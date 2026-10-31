@@ -236,6 +236,15 @@ export class DashboardPageComponent implements OnInit {
     return `0,${height} ${polyline} ${width},${height}`;
   }
 
+  getThumbnailUrl(url: string | undefined): string {
+    if (!url) return '';
+    if (url.startsWith('/api/v1/')) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}size=thumbnail`;
+    }
+    return url;
+  }
+
   openLightbox(imageUrl = '') {
     // If imageUrl is a thumbnail URL (e.g. contains size=thumbnail), strip size parameter to load full-resolution image
     const fullUrl = imageUrl ? imageUrl.replace(/([?&])size=thumbnail(&|$)/, '$1').replace(/[?&]$/, '') : '';

@@ -106,7 +106,7 @@ export class AssetsUseCase {
    */
   async getAssetBinary(id: string, size: 'full' | 'thumbnail' = 'full'): Promise<{ buffer: Buffer; contentType: string } | null> {
     // 0. Strict ID validation to prevent path traversal
-    if (!id || !/^[a-zA-Z0-9_.-]+$/.test(id)) {
+    if (!id || !/^[a-zA-Z0-9_.-]+$/.test(id) || id.includes('..')) {
       return null;
     }
 
