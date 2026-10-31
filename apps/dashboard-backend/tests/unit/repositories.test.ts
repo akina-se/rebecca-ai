@@ -436,6 +436,41 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(res.data[0].impressions).toBe(300);
     });
 
+    it('getPosts should append ?size=thumbnail to campaign asset URLs and GCS URLs', async () => {
+      const mockDocs = [
+        {
+          id: 'post_campaign',
+          data: () => ({
+            text: 'Campaign Post',
+            timestamp: '2026-10-31T12:00:00Z',
+            impressions: 500,
+            mediaUrls: [
+              '/api/v1/campaigns/c1/assets/photo.jpg',
+              '/api/campaigns/c2/assets/thumb.jpg?existing=1',
+              '/api/v1/campaigns/c3/assets/already.jpg?size=full',
+              'gs://rebecca-ai-gal-images/media_assets/banner.png'
+            ]
+          })
+        }
+      ];
+
+      (timelineRepo as any).collections.timelineHistory = {
+        get: jest.fn().mockResolvedValueOnce({
+          empty: false,
+          docs: mockDocs
+        })
+      };
+
+      const res = await timelineRepo.getPosts({ page: 1, limit: 10 });
+      expect(res.data).toHaveLength(1);
+      expect(res.data[0].mediaUrls).toEqual([
+        '/api/v1/campaigns/c1/assets/photo.jpg?size=thumbnail',
+        '/api/campaigns/c2/assets/thumb.jpg?existing=1&size=thumbnail',
+        '/api/v1/campaigns/c3/assets/already.jpg?size=full',
+        '/api/v1/assets/banner.png/image?size=thumbnail'
+      ]);
+    });
+
     it('getPostById should resolve streaming API URLs for gs:// images and forward poll data when present', async () => {
       (timelineRepo as any).collections.timelineHistory = {
         doc: jest.fn().mockReturnValue({
