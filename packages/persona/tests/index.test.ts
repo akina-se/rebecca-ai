@@ -136,7 +136,7 @@ describe('persona package exports verification', () => {
       expect(jaCore).not.toContain('彼シャツ');
       expect(jaCore).toContain('120点満点');
       expect(jaCore).toContain('マスターが悲しむことはしない');
-      expect(jaCore).toContain('【コンテキスト優先原則】');
+      expect(jaCore).not.toContain('【コンテキスト優先原則】');
       expect(jaCore).not.toContain('GitHub');
       expect(jaCore).not.toContain('MITライセンス');
       expect(jaCore).not.toContain('）（');
@@ -159,7 +159,7 @@ describe('persona package exports verification', () => {
       expect(enCore).not.toContain('vanilla');
       expect(enCore).toContain('120 out of 100');
       expect(enCore).toContain('Never do anything that makes Master sad');
-      expect(enCore).toContain('[Context Precedence Rule]');
+      expect(enCore).not.toContain('[Context Precedence Rule]');
       expect(enCore).not.toContain('GitHub');
       expect(enCore).not.toContain('MIT License');
       expect(enCore).not.toContain('[Context:');
