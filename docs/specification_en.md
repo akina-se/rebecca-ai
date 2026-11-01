@@ -15,6 +15,8 @@ This system is built with a highly scalable, fully serverless architecture that 
 - **Scheduled Batch Processing**: Cloud Scheduler
 - **LLM Engine**: 
   - Main Conversation, Memory Consolidation, Inference: `gemini-3.5-flash-lite` (Thinking Level: `MEDIUM`, Temperature: `1.20`, Top-P: `0.95`)
+  - Web Search Grounding (Google Search Grounding): `gemini-2.5-flash` (`GEMINI_SEARCH_MODEL`)
+  - News Post Structuring: `gemini-3.5-flash-lite`
   - Image Recognition (Vision): `gemini-3.5-flash-lite`
   - Language Detection & Safety Audit (LLM-as-a-Judge): `gemini-3.1-flash-lite`
   - Vectorization: `gemini-embedding-2`
@@ -78,7 +80,7 @@ Rebecca is officially specified as an Autonomous Personal AI (Flagship Model **U
   - Context for private interaction with Master unconstrained by Twitter/public SNS barriers (130-char limit, defensive disclaimers).
   - Prioritizes turn-pair awareness in conversational history (Contents), seamless integration of RAG episodic memories, and an engaging conversational pacing guideline (100 to 180 characters).
 - **Generic Web Search Grounding (`search_web`)**:
-  - Automatically triggers Google Search Grounding tool (`search_web`) when asked questions, requested to look up information, or when verifying objective facts, providing grounded and informed Gyaru responses.
+  - Automatically triggers Google Search Grounding tool (`search_web`) when asked questions, requested to look up information, or when verifying objective facts, providing grounded and informed Gyaru responses. Web search grounding uses a dedicated model (`GEMINI_SEARCH_MODEL` / `gemini-2.5-flash`) for optimal search grounding support and quota management.
 
 ## 3. Feature List
 1. **Automated Reply (Mention Polling & Reply Worker)**

@@ -15,6 +15,8 @@
 - **定期バッチ処理**: Cloud Scheduler
 - **LLMエンジン**: 
   - メイン会話・記憶統合・キーワード推論: Gemini 3.5 Flash Lite（Thinking Level: `MEDIUM`, Temperature: `1.20`, Top-P: `0.95`）
+  - Web検索グラウンディング (Google Search Grounding): Gemini 2.5 Flash (`GEMINI_SEARCH_MODEL`)
+  - ニュース投稿構造化: Gemini 3.5 Flash Lite
   - 画像認識 (Vision): Gemini 3.5 Flash Lite
   - 言語判定・安全性監査 (LLM-as-a-Judge): Gemini 3.1 Flash Lite
   - ベクトル化処理: gemini-embedding-2
@@ -82,7 +84,7 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
   - X（Twitter）の公開SNS制約（130文字制限、過度な防衛バリア等）を課さず、親愛と包容力に満ちた1対1の対話を行うためのコンテキスト。
   - 対話履歴（Contents）の往復ペア単位での認識と、RAGエピソード記憶の自然な統合、テンポの良い返答目安（100〜180文字）を規定。
 - **汎用Web検索グラウンディング（`search_web`）**:
-  - ユーザーから質問や調査を依頼された場合、または客観的事実や最新情報の確認が必要な場合に自動でGoogle Search Groundingツール（`search_web`）を呼び出し、正確な事実を確認した上でスマートに返答する。
+  - ユーザーから質問や調査を依頼された場合、または客観的事実や最新情報の確認が必要な場合に自動でGoogle Search Groundingツール（`search_web`）を呼び出し、正確な事実を確認した上でスマートに返答する。グラウンディング検索には検索専用モデル（`GEMINI_SEARCH_MODEL` / `gemini-2.5-flash`）を使用し、クォータ制約やモデル特性に応じた高精度な情報収集を行う。
 
 ## 3. 機能一覧 (Feature List)
 1. **自動リプライ機能 (Mention Polling & Reply Worker)**
