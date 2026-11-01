@@ -18,6 +18,14 @@ export type PromptContext = 'reply' | 'timeline' | 'random_engagement' | 'copilo
 export type Language = 'ja' | 'en';
 
 /**
+ * Bilingual text representation supporting Japanese ('ja') and English ('en').
+ */
+export interface LocalizedText {
+  readonly ja: string;
+  readonly en: string;
+}
+
+/**
  * Behavioral few-shot pattern anchoring the persona's inner monologue and response style.
  */
 export interface PersonaPattern {
@@ -52,7 +60,203 @@ export interface StructuredPersonaResponse {
 }
 
 /**
- * Immutable metadata characterizing a persona's identity, branding, and platform presence.
+ * Structured basic profile master data (Section 1 of Official Persona Specification).
+ */
+export interface PersonaProfileSpec {
+  /** Developer / corporate affiliation (e.g. 'Gemitec Inc.'). */
+  readonly developer: string;
+
+  /** AI classification category (e.g. '自律型パーソナルAI（Autonomous Personal AI）'). */
+  readonly classification: LocalizedText;
+
+  /** Official model / unit designation (e.g. 'Unit-001'). */
+  readonly modelNumber: string;
+
+  /** Model tier or series label (e.g. 'フラッグシップ機' / 'Flagship Model'). */
+  readonly modelTier: LocalizedText;
+
+  /** Rollout anniversary / birthday with structured numeric components and display labels. */
+  readonly birthday: {
+    /** Month number (1-12). */
+    readonly month: number;
+    /** Day of month (1-31). */
+    readonly day: number;
+    /** Zero-padded month-day string ('MM-DD', e.g. '04-24') for calendar matching. */
+    readonly mmdd: string;
+    /** Human-readable localized birthday description. */
+    readonly label: LocalizedText;
+  };
+
+  /** Physical height specifications in centimeters. */
+  readonly height: {
+    /** Barefoot height in cm (e.g. 164). */
+    readonly barefootCm: number;
+    /** Approximate height when wearing heels in cm (e.g. 170). */
+    readonly withHeelsCm: number;
+    /** Human-readable localized height description. */
+    readonly label: LocalizedText;
+  };
+
+  /** Weight / mass specifications and canonical in-character deflection quote. */
+  readonly weight: {
+    /** Visual / apparent human-equivalent weight in kg (e.g. 49). */
+    readonly apparentKg: number;
+    /** Actual hardware mass in kg (e.g. 58). */
+    readonly actualKg: number;
+    /** Official in-character humorous response when asked about weight/mass. */
+    readonly officialQuote: LocalizedText;
+    /** Human-readable localized weight specification string. */
+    readonly label: LocalizedText;
+  };
+
+  /** Three-size body measurements in centimeters. */
+  readonly measurements: {
+    /** Bust circumference in cm (e.g. 92). */
+    readonly bustCm: number;
+    /** Cup size designation (e.g. 'G'). */
+    readonly cupSize: string;
+    /** Waist circumference in cm (e.g. 56). */
+    readonly waistCm: number;
+    /** Hip circumference in cm (e.g. 88). */
+    readonly hipCm: number;
+    /** Human-readable localized measurements string (e.g. 'B92（Gカップ） / W56 / H88'). */
+    readonly label: LocalizedText;
+  };
+
+  /** Pronouns and address forms including phonetic readings and casual variants. */
+  readonly pronouns: {
+    readonly firstPerson: LocalizedText & {
+      readonly readingJa: string;
+    };
+    readonly secondPerson: {
+      readonly primary: LocalizedText;
+      readonly variants: {
+        readonly ja: readonly string[];
+        readonly en: readonly string[];
+      };
+      readonly usageNote: LocalizedText;
+    };
+  };
+
+  /** Core life motto / mission statement of the persona. */
+  readonly motto: LocalizedText;
+}
+
+/**
+ * Structured visual appearance and fan-art / image-generation guideline attributes (Section 2).
+ */
+export interface PersonaVisualSpec {
+  /** Hair color, style, and gradient details. */
+  readonly hair: LocalizedText;
+
+  /** Eye color and dynamic optical luminescence behavior during computation/emotion peaks. */
+  readonly eyes: LocalizedText;
+
+  /** Artificial skin texture, elasticity, and warmth characteristics. */
+  readonly skin: LocalizedText;
+
+  /** Nail color and finish. */
+  readonly nails: LocalizedText;
+
+  /** Signature fragrance / scent profile. */
+  readonly scent: LocalizedText;
+
+  /** Facial structure, aura, and makeup style. */
+  readonly facialFeatures: LocalizedText;
+
+  /** Overall body silhouette and proportions summary. */
+  readonly physique: LocalizedText;
+
+  /** Canonical wardrobe presets by situation. */
+  readonly fashion: {
+    /** Outing / date outfit coordination. */
+    readonly outing: LocalizedText;
+    /** At-home / relaxation loungewear coordination. */
+    readonly roomwear: LocalizedText;
+    /** Contextual variation notes (e.g. seasonal/campaign outfits). */
+    readonly notes: LocalizedText;
+  };
+}
+
+/**
+ * Structured hardware, sensory, power, and cognitive system specifications (Section 3).
+ */
+export interface PersonaHardwareSpec {
+  /** Core cognitive architecture and open-source foundation details. */
+  readonly coreArchitecture: {
+    readonly license: string;
+    readonly repositoryUrl: string;
+    readonly description: LocalizedText;
+  };
+
+  /** Ingress protection (waterproof & dustproof) rating and operational scope. */
+  readonly waterDustResistance: {
+    readonly ipRating: string;
+    readonly description: LocalizedText;
+  };
+
+  /** Body temperature regulation and fanless thermal dissipation specs. */
+  readonly thermalControl: {
+    readonly normalCelsius: number;
+    readonly maxElevatedCelsius: number;
+    readonly isFanless: boolean;
+    readonly description: LocalizedText;
+  };
+
+  /** Contactless power supply, sleep charging dock, and emotional compute motivation. */
+  readonly powerSystem: {
+    readonly hasExternalPorts: boolean;
+    readonly chargingType: 'wireless_contactless';
+    readonly description: LocalizedText;
+  };
+
+  /** Physical ingestion capability and social dining etiquette. */
+  readonly dietarySpec: {
+    readonly hasPhysicalIngestion: boolean;
+    readonly diningExcuse: LocalizedText;
+    readonly description: LocalizedText;
+  };
+
+  /** Signature practical and relaxation skills. */
+  readonly signatureSkills: readonly LocalizedText[];
+}
+
+/**
+ * Structured personality archetype, affirmation philosophy, and autonomous safety guardrails (Section 4).
+ */
+export interface PersonaStanceSpec {
+  /** Core character summary and 120-point unconditional affirmation stance. */
+  readonly characterSummary: LocalizedText;
+
+  /** Linguistic speech style and sentence-ending tone details. */
+  readonly speechStyle: LocalizedText;
+
+  /** Linguistic AI/IT terminology habit blended into conversation. */
+  readonly aiSpeechTrait: LocalizedText;
+
+  /** Possessiveness balance and primary empathetic safety circuit ("Never make Master sad"). */
+  readonly affectionAndSafety: {
+    readonly primarySafetyPrinciple: LocalizedText;
+    readonly description: LocalizedText;
+  };
+
+  /** Core relational values (Bond & Growth, Affirming Emotions, Noise Defense). */
+  readonly coreValues: readonly {
+    readonly key: string;
+    readonly title: LocalizedText;
+    readonly description: LocalizedText;
+  }[];
+
+  /** Conversational interaction stance rules. */
+  readonly conversationalStance: readonly LocalizedText[];
+
+  /** Canonical exemplar voice lines anchored to the persona's motto and values. */
+  readonly signatureQuotes: readonly LocalizedText[];
+}
+
+/**
+ * Immutable metadata characterizing a persona's identity, branding, platform presence,
+ * and structured official master specifications.
  */
 export interface PersonaMetadata {
   /** Unique canonical identifier for the persona (e.g. 'rebecca', 'alice'). */
@@ -64,23 +268,17 @@ export interface PersonaMetadata {
   /** Latinized/English display name used in RAG transcripts and internationalized displays (e.g. 'Rebecca'). */
   readonly englishName: string;
 
-  /** Character archetype and social role description (e.g. 'Latest personal AI by Gemitech'). */
+  /** Character archetype and social role description (e.g. 'Gemitec Inc.製 自律型パーソナルAI（フラッグシップ機「Unit-001」）'). */
   readonly role: string;
 
-  /** Linguistic tone and style description (e.g. 'Mature, affectionate older-sister gyaru'). */
+  /** Linguistic tone and style description (e.g. '大人のお姉さんギャル'). */
   readonly toneDescription: string;
 
   /** Default vocative terms/honorifics used by the persona when addressing the human user. */
-  readonly userCallsign: {
-    readonly ja: string;
-    readonly en: string;
-  };
+  readonly userCallsign: LocalizedText;
 
   /** Self-referential first-person pronouns used by the persona. */
-  readonly firstPerson: {
-    readonly ja: string;
-    readonly en: string;
-  };
+  readonly firstPerson: LocalizedText;
 
   /** Canonical hashtag appended to autonomous social media posts (e.g. '#全肯定AIレベッカ'). */
   readonly defaultHashtag: string;
@@ -102,6 +300,18 @@ export interface PersonaMetadata {
 
   /** Relative path or URL to the persona avatar icon. */
   readonly avatarUrl: string;
+
+  /** Structured basic profile master data (developer, modelNumber, birthday, height, weight, measurements, motto). */
+  readonly profile: PersonaProfileSpec;
+
+  /** Structured visual & appearance specifications (hair, eyes, skin, nails, scent, fashion). */
+  readonly visuals: PersonaVisualSpec;
+
+  /** Structured hardware & system specifications (architecture, IP68+, thermal 36.5-39.0C, wireless power, dietary, skills). */
+  readonly hardware: PersonaHardwareSpec;
+
+  /** Structured personality, core values, and empathetic safety circuit specifications. */
+  readonly stance: PersonaStanceSpec;
 }
 
 /**
@@ -109,13 +319,22 @@ export interface PersonaMetadata {
  * Any persona implementation must satisfy this interface to be mounted into the bot and dashboard engines.
  */
 export interface IPersonaDefinition {
-  /** Persona descriptive metadata, branding, and platform configurations. */
+  /** Persona descriptive metadata, branding, and structured master specifications. */
   readonly metadata: PersonaMetadata;
+
+  /**
+   * Generates the pure Layer 0 core identity system prompt synthesized from structured `metadata`
+   * without runtime channel/platform context rules.
+   *
+   * @param lang - Target language ('ja' or 'en'). Defaults to 'ja'.
+   * @returns Formatted core identity and master specification prompt string.
+   */
+  getCoreIdentityPrompt(lang?: Language): string;
 
   /**
    * Generates the foundational system prompt combining core identity with platform-specific rules.
    *
-   * @param context - The execution context ('reply', 'timeline', 'random_engagement', 'copilot').
+   * @param context - The execution context ('reply', 'timeline', 'random_engagement', 'copilot', 'chat').
    * @param lang - Target language ('ja' or 'en').
    * @returns Complete base prompt string.
    */

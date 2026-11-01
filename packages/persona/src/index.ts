@@ -50,6 +50,13 @@ export const getFormattedPersonaPatternsText = (): string => {
 };
 
 /**
+ * Generates the pure Layer 0 core identity prompt by delegating to rebeccaPersona.
+ */
+export const getCoreIdentityPrompt = (lang: Language = 'ja'): string => {
+  return rebeccaPersona.getCoreIdentityPrompt(lang);
+};
+
+/**
  * Constructs base prompt by delegating to rebeccaPersona.
  */
 export const getBasePrompt = (context: PromptContext, lang: Language): string => {
@@ -172,11 +179,12 @@ export const parsePersonaResponse = (raw: string): StructuredPersonaResponse => 
 };
 
 /**
- * Persona configuration object exposed for dashboard rendering or inspection.
+ * Persona configuration object exposed for dashboard rendering, structured metadata lookup, or inspection.
  */
 export const persona = {
+  metadata: rebeccaPersona.metadata,
   core: {
-    identity: rebeccaPersona.getBasePrompt('timeline', 'ja').split('【コンテキスト')[0].trim(),
+    identity: rebeccaPersona.getCoreIdentityPrompt('ja'),
     role: rebeccaPersona.metadata.role,
     tone: rebeccaPersona.metadata.toneDescription,
     patternsText: rebeccaPersona.getFormattedPatternsText(),

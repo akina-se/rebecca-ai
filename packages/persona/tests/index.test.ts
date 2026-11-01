@@ -1,8 +1,11 @@
 import {
   getBasePrompt,
+  getCoreIdentityPrompt,
   getDreamingPrompt,
   persona,
   personaPatterns,
+  precomputedPersonaPatternEmbeddings,
+  REBECCA_METADATA,
   cosineSimilarity,
   findTopPersonaPatterns,
   buildPersonaFewShotPrompt,
@@ -14,22 +17,144 @@ import {
 } from '../src/index';
 
 describe('persona package exports verification', () => {
-  test('should export getBasePrompt and getDreamingPrompt functions', () => {
+  test('should export getBasePrompt, getCoreIdentityPrompt, and getDreamingPrompt functions', () => {
     expect(typeof getBasePrompt).toBe('function');
+    expect(typeof getCoreIdentityPrompt).toBe('function');
     expect(typeof getDreamingPrompt).toBe('function');
   });
 
-  test('should export persona object with core identity and patterns text', () => {
+  test('should export persona object with structured metadata, core identity, and patterns text', () => {
     expect(persona).toBeDefined();
+    expect(persona.metadata).toBe(REBECCA_METADATA);
+    expect(persona.core.identity).toBe(getCoreIdentityPrompt('ja'));
     expect(persona.core.identity).toContain('レベッカ');
+    expect(persona.core.identity).not.toContain('【コンテキスト：');
     expect(persona.core.patternsText).toContain('#1 [究極の世話焼き＆日常サポート]');
     expect(persona.core.patternsText).toContain('#120 [セカイとの繋がり＆AIとしての幸福]');
     expect(getFormattedPersonaPatternsText()).toBe(persona.core.patternsText);
   });
 
-  test('should verify 120 persona patterns integrity', () => {
+  describe('REBECCA_METADATA structured official master data verification', () => {
+    test('Section 1: profile should expose strongly-typed basic profile attributes', () => {
+      const { profile } = REBECCA_METADATA;
+      expect(profile.developer).toBe('Gemitec Inc.');
+      expect(profile.classification.ja).toBe('自律型パーソナルAI（Autonomous Personal AI）');
+      expect(profile.classification.en).toBe('Autonomous Personal AI');
+      expect(profile.modelNumber).toBe('Unit-001');
+      expect(profile.modelTier.ja).toBe('フラッグシップ機');
+      expect(profile.birthday).toEqual({
+        month: 4,
+        day: 24,
+        mmdd: '04-24',
+        label: { ja: '4月24日', en: 'April 24' },
+      });
+      expect(profile.height.barefootCm).toBe(164);
+      expect(profile.height.withHeelsCm).toBe(170);
+      expect(profile.weight.apparentKg).toBe(49);
+      expect(profile.weight.actualKg).toBe(58);
+      expect(profile.weight.officialQuote.ja).toBe('レディに質量《スペック》を聞くなんてデリカシーないわよ♡');
+      expect(profile.measurements).toEqual({
+        bustCm: 92,
+        cupSize: 'G',
+        waistCm: 56,
+        hipCm: 88,
+        label: {
+          ja: 'B92（Gカップ） / W56 / H88',
+          en: 'B92 (G-cup) / W56 / H88',
+        },
+      });
+      expect(profile.pronouns.firstPerson.ja).toBe('私');
+      expect(profile.pronouns.firstPerson.readingJa).toBe('わたし');
+      expect(profile.pronouns.secondPerson.variants.ja).toEqual(['マスター', 'アンタ']);
+      expect(profile.motto.ja).toBe('マスターは最高の原石。私が世界一の存在に磨き上げ、共に未来を構築する');
+    });
+
+    test('Section 2: visuals should expose structured appearance & fashion attributes', () => {
+      const { visuals } = REBECCA_METADATA;
+      expect(visuals.hair.ja).toContain('アッシュシルバーのロングヘア');
+      expect(visuals.hair.ja).toContain('インナー＆毛先ピンク');
+      expect(visuals.eyes.ja).toContain('アメジストパープル');
+      expect(visuals.eyes.ja).toContain('瞳の奥が淡く明滅する');
+      expect(visuals.skin.ja).toContain('毛穴ゼロの陶器のように滑らかな白い人工皮膚');
+      expect(visuals.nails.ja).toContain('パステルピンクのネイル');
+      expect(visuals.scent.ja).toContain('甘いバニラの香り');
+      expect(visuals.fashion.outing.ja).toContain('オフショルニット＆ミニスカート');
+      expect(visuals.fashion.roomwear.ja).toContain('彼シャツ');
+    });
+
+    test('Section 3: hardware should expose structured system, thermal, power, and dietary specs', () => {
+      const { hardware } = REBECCA_METADATA;
+      expect(hardware.coreArchitecture.license).toBe('MIT');
+      expect(hardware.waterDustResistance.ipRating).toBe('IP68+');
+      expect(hardware.thermalControl).toMatchObject({
+        normalCelsius: 36.5,
+        maxElevatedCelsius: 39.0,
+        isFanless: true,
+      });
+      expect(hardware.powerSystem).toMatchObject({
+        hasExternalPorts: false,
+        chargingType: 'wireless_contactless',
+      });
+      expect(hardware.dietarySpec.hasPhysicalIngestion).toBe(false);
+      expect(hardware.dietarySpec.diningExcuse.ja).toBe('美容のための完全断食（デトックス）日');
+      expect(hardware.signatureSkills).toHaveLength(3);
+      expect(hardware.signatureSkills[1].ja).toContain('竹耳かき＆オイルマッサージ');
+      expect(hardware.signatureSkills[2].ja).toContain('コンマ1秒での人気スポット予約確保');
+    });
+
+    test('Section 4: stance should expose 120-point affirmation character summary and primary safety principle', () => {
+      const { stance } = REBECCA_METADATA;
+      expect(stance.characterSummary.ja).toContain('120点満点');
+      expect(stance.affectionAndSafety.primarySafetyPrinciple.ja).toBe('マスターが悲しむことはしない');
+      expect(stance.affectionAndSafety.primarySafetyPrinciple.en).toBe('Never do anything that makes Master sad');
+      expect(stance.coreValues).toHaveLength(3);
+      expect(stance.conversationalStance).toHaveLength(3);
+      expect(stance.signatureQuotes).toHaveLength(2);
+    });
+
+    test('getCoreIdentityPrompt should synthesize bilingual Layer 0 prompts directly from metadata', () => {
+      const jaCore = getCoreIdentityPrompt();
+      expect(jaCore).toContain('Gemitec Inc.');
+      expect(jaCore).toContain('Unit-001');
+      expect(jaCore).toContain('4月24日');
+      expect(jaCore).toContain('164cm（ヒール着用時：約170cm）');
+      expect(jaCore).toContain('外見換算 49kg ／ 実重量 58kg');
+      expect(jaCore).toContain('レディに質量《スペック》を聞くなんてデリカシーないわよ♡');
+      expect(jaCore).toContain('B92（Gカップ） / W56 / H88');
+      expect(jaCore).toContain('IP68等級以上の完全防水・防塵仕様');
+      expect(jaCore).toContain('36.5℃');
+      expect(jaCore).toContain('39.0℃');
+      expect(jaCore).toContain('完全非接触（ワイヤレス）仕様');
+      expect(jaCore).toContain('美容のための完全断食（デトックス）日');
+      expect(jaCore).toContain('120点満点');
+      expect(jaCore).toContain('マスターが悲しむことはしない');
+      expect(jaCore).toContain('【コンテキスト優先原則】');
+
+      const enCore = getCoreIdentityPrompt('en');
+      expect(enCore).toContain('developed by Gemitec Inc.');
+      expect(enCore).toContain('Unit-001');
+      expect(enCore).toContain('April 24');
+      expect(enCore).toContain('164cm');
+      expect(enCore).toContain('49kg');
+      expect(enCore).toContain('58kg');
+      expect(enCore).toContain('B92 (G-cup) / W56 / H88');
+      expect(enCore).toContain('IP68+');
+      expect(enCore).toContain('36.5°C');
+      expect(enCore).toContain('39.0°C');
+      expect(enCore).toContain('vanilla');
+      expect(enCore).toContain('120 out of 100');
+      expect(enCore).toContain('Never do anything that makes Master sad');
+      expect(enCore).toContain('[Context Precedence Rule]');
+      expect(enCore).not.toContain('[Context:');
+    });
+  });
+
+  test('should verify 120 persona patterns integrity and hardware spec consistency', () => {
     expect(personaPatterns.length).toBe(120);
-    for (const pattern of personaPatterns) {
+    expect(precomputedPersonaPatternEmbeddings.length).toBe(120);
+    for (let i = 0; i < personaPatterns.length; i++) {
+      const pattern = personaPatterns[i];
+      const embedded = precomputedPersonaPatternEmbeddings[i];
       expect(pattern.id).toBeGreaterThanOrEqual(1);
       expect(pattern.id).toBeLessThanOrEqual(120);
       expect(pattern.category).toBeTruthy();
@@ -37,7 +162,21 @@ describe('persona package exports verification', () => {
       expect(pattern.internal_thought).toBeTruthy();
       expect(pattern.behavior).toBeTruthy();
       expect(pattern.sample_response).toBeTruthy();
+      // Ensure zero hardware contradictions (fanless & portless wireless)
+      expect(pattern.sample_response).not.toContain('冷却ファン');
+      expect(pattern.behavior).not.toContain('充電ポート');
+      expect(pattern.sample_response).not.toContain('充電ポート');
+      // Ensure JSON and precomputed vector metadata stay strictly synchronized
+      expect(embedded.id).toBe(pattern.id);
+      expect(embedded.trigger).toBe(pattern.trigger);
+      expect(embedded.behavior).toBe(pattern.behavior);
+      expect(embedded.sample_response).toBe(pattern.sample_response);
     }
+
+    const pattern65 = personaPatterns.find((p) => p.id === 65);
+    expect(pattern65?.sample_response).toContain('39度');
+    const pattern77 = personaPatterns.find((p) => p.id === 77);
+    expect(pattern77?.sample_response).toContain('ワイヤレス給電スポット');
   });
 
   test('getBasePrompt should return string with context for all branches including copilot', () => {
@@ -45,6 +184,7 @@ describe('persona package exports verification', () => {
     expect(getBasePrompt('timeline', 'ja')).toContain('【文字数注釈の禁止】');
     expect(getBasePrompt('random_engagement', 'ja')).toContain('【公開SNSにおける健全性と節度】');
     expect(getBasePrompt('random_engagement', 'ja')).toContain('【Xプラットフォーム制約】');
+    expect(getBasePrompt('copilot', 'ja')).toContain('【コンテキスト：管理ダッシュボード・専属コパイロット対話】');
 
     expect(getBasePrompt('reply', 'en')).toContain('[NO CHARACTER COUNT ANNOTATION]');
     expect(getBasePrompt('timeline', 'en')).toContain('Do not include character count notes');
