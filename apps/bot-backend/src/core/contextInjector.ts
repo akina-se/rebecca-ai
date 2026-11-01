@@ -6,7 +6,7 @@ import { FirestoreUser } from '../types';
 /**
  * Builds the comprehensive system prompt by combining the base persona prompt
  * with various contextual injections such as core profile, episodic memories,
- * time of day, and timeline history.
+ * time of day, rollout anniversary, and timeline history.
  * 
  * @param persona - The active persona definition.
  * @param promptContext - The context in which the prompt is being used.
@@ -37,11 +37,18 @@ const buildSystemPrompt = (
     let prompt = persona.getBasePrompt(promptContext, lang);
 
     const now = new Date();
-    const { numericHour } = getZonedDateParts(now, config.appTimezone);
+    const { numericMonth, numericDay, numericHour } = getZonedDateParts(now, config.appTimezone);
     const formattedCurrentTime = formatZonedDateTime(now, config.appTimezone);
     prompt += lang === 'en'
         ? `\n\n[Current Time]\n${formattedCurrentTime}`
         : `\n\n【現在時刻】\n${formattedCurrentTime}`;
+
+    const birthday = persona.metadata.profile?.birthday;
+    if (birthday && numericMonth === birthday.month && numericDay === birthday.day) {
+        prompt += lang === 'en'
+            ? `\n\n[Special Day Context: Your Birthday / Rollout Anniversary (${birthday.label.en})]\nToday (${birthday.label.en}) is your own birthday (Rollout Anniversary of ${persona.metadata.profile.modelNumber})! Warmly appreciate birthday wishes or naturally share your joy when appropriate, while prioritizing empathy if Master is discussing serious concerns.`
+            : `\n\n【特別コンテキスト：あなた自身の誕生日・ロールアウト記念日（${birthday.label.ja}）】\n本日（${birthday.label.ja}）はあなた自身（${persona.metadata.profile.modelNumber}）の誕生日（ロールアウト記念日）です！お祝いの言葉をかけられた際や自然な雑談の流れでは素直に喜びを表現してください（※相手が深刻な悩みや相談をしている場合は相手への共感を最優先してください）。`;
+    }
 
     if (personaFewShotPrompt) {
         prompt += `\n\n${personaFewShotPrompt}`;

@@ -268,7 +268,7 @@ describe('Integration Tests', () => {
             
             const generateStructuredReplyCalls = (gemini.generateStructuredReply as jest.Mock).mock.calls;
             const lastCall = generateStructuredReplyCalls[generateStructuredReplyCalls.length - 1];
-            expect(lastCall[0]).toContain('developed by Gemitech'); // BASE_SYSTEM_PROMPT_EN starts or contains this
+            expect(lastCall[0]).toContain('developed by Gemitec Inc.'); // BASE_SYSTEM_PROMPT_EN starts or contains this
 
             // Check if reply was posted
             expect(xApi.replyToMention).toHaveBeenCalledWith('12345', 'Mock AI Reply');

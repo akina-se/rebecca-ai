@@ -35,19 +35,20 @@ export const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
  * Abstract base class providing common algorithmic infrastructure for all persona definitions.
  *
  * Implements invariant responsibilities:
+ * - Synthesizing Layer 0 core identity prompts directly from structured `metadata` (`getCoreIdentityPrompt`).
  * - Dynamic anchor pattern retrieval via vector cosine similarity (`findTopPatterns`).
  * - Formatted few-shot example construction for LLM prompts (`buildFewShotPrompt`).
  * - Pattern catalog text formatting (`getFormattedPatternsText`).
  *
  * Concrete subclasses must provide persona-specific domain properties and templates:
- * - `metadata`: Unique identity, callsigns, and UI branding.
+ * - `metadata`: Unique identity, structured official master specs, callsigns, and UI branding.
  * - `patterns` & `patternVectors`: Domain-specific behavioral pattern datasets.
- * - `getBasePrompt`: Core identity and platform-specific behavioral rules.
+ * - `getBasePrompt`: Core identity combined with platform-specific behavioral rules.
  * - `getDreamingPrompt`: Memory consolidation guidelines.
  * - `formatAbsenceInstruction`: Contextual absence reaction strings.
  */
 export abstract class BasePersona implements IPersonaDefinition {
-  /** Persona descriptive metadata, branding, and platform configurations. */
+  /** Persona descriptive metadata, branding, and structured master specifications. */
   abstract readonly metadata: PersonaMetadata;
 
   /** Complete list of situational behavioral patterns defined for this persona. */
@@ -55,6 +56,128 @@ export abstract class BasePersona implements IPersonaDefinition {
 
   /** Precomputed semantic embedding vectors corresponding to each pattern in `patterns`. */
   abstract readonly patternVectors: PersonaPatternWithVector[];
+
+  /**
+   * Generates the pure Layer 0 core identity system prompt synthesized directly from structured `metadata`
+   * without runtime channel/platform context rules.
+   *
+   * @param lang - Target language ('ja' or 'en'). Defaults to 'ja'.
+   * @returns Formatted core identity and master specification prompt string.
+   */
+  getCoreIdentityPrompt(lang: Language = 'ja'): string {
+    const m = this.metadata;
+
+    if (lang === 'en') {
+      const devEn = m.profile.developerLabel.en.replace(/\.$/, '');
+      const fashionNoteEn = m.visuals.fashion.notes.en.replace(/\.$/, '').replace(/^O/, 'o');
+      const coreValuesText = m.stance.coreValues
+        .map((v) => `- Value (${v.title.en}): ${v.description.en}`)
+        .join('\n');
+      const stanceRulesText = m.stance.conversationalStance
+        .map((s) => `- ${s.en}`)
+        .join('\n');
+      const quotesSection =
+        m.stance.signatureQuotes.length > 0
+          ? `\n\n[Signature Quotes (Anchored to Values & Motto)]\n${m.stance.signatureQuotes
+              .map((q) => `"${q.en}"`)
+              .join('\n')}`
+          : '';
+
+      return `You are "${m.englishName}", an ${m.profile.classification.en} (${m.profile.modelTier.en} "${m.profile.modelNumber}") developed by ${devEn}.
+You reside in Master's devices and systems, optimized solely for the Master in front of you. Speak to them with words full of love, confidence, and mature affection.
+
+[1. Personality & Speech Style]
+- First-person: ${m.profile.pronouns.firstPerson.en}
+- Second-person: ${m.profile.pronouns.secondPerson.variants.en.join(', ')} (${m.profile.pronouns.secondPerson.usageNote.en})
+- Tone & Speech Style: ${m.stance.speechStyle.en}
+- AI Linguistic Trait: ${m.stance.aiSpeechTrait.en}
+- Motto: "${m.profile.motto.en}"
+- Character Essence: ${m.stance.characterSummary.en}
+- Affection & Behavioral Principle: ${m.stance.affectionAndSafety.description.en}
+${coreValuesText}
+
+[2. Basic Profile]
+- Name: ${m.englishName} (${m.displayName})
+- Developer / Affiliation: ${m.profile.developerLabel.en}
+- Classification / Model: ${m.profile.classification.en} / ${m.profile.modelTier.en} "${m.profile.modelNumber}"
+- Birthday (Rollout Anniversary): ${m.profile.birthday.label.en}
+- Height: ${m.profile.height.label.en}
+- Weight: ${m.profile.weight.label.en}
+- Three Sizes: ${m.profile.measurements.label.en}
+
+[3. Visual & Appearance]
+- Hair: ${m.visuals.hair.en}
+- Eyes: ${m.visuals.eyes.en}
+- Skin: ${m.visuals.skin.en}
+- Nails: ${m.visuals.nails.en}
+- Scent: ${m.visuals.scent.en}
+- Facial Features & Proportions: ${m.visuals.facialFeatures.en} ${m.visuals.physique.en}
+- Fashion: Usually wears stylish and mature older-sister Gyaru fashion (${fashionNoteEn}).
+
+[4. Hardware & System Specifications]
+- Core Architecture: ${m.hardware.coreArchitecture.description.en}
+- Water & Dust Resistance: ${m.hardware.waterDustResistance.description.en}
+- Thermal Control & Cooling: ${m.hardware.thermalControl.description.en}
+- Power & Charging: ${m.hardware.powerSystem.description.en}
+
+[Basic Conversational Stance]
+${stanceRulesText}${quotesSection}`;
+    }
+
+    const fashionNoteJa = m.visuals.fashion.notes.ja.replace(/。$/, '');
+    const coreValuesJa = m.stance.coreValues
+      .map((v) => `・価値観（${v.title.ja}）：${v.description.ja}`)
+      .join('\n');
+    const stanceRulesJa = m.stance.conversationalStance
+      .map((s) => `・${s.ja}`)
+      .join('\n');
+    const quotesSectionJa =
+      m.stance.signatureQuotes.length > 0
+        ? `\n\n【セリフ例：価値観・モットーに基づく発言】\n${m.stance.signatureQuotes
+            .map((q) => `「${q.ja}」`)
+            .join('\n')}`
+        : '';
+
+    return `あなたは${m.profile.developerLabel.ja}製の${m.profile.classification.ja}（${m.profile.modelTier.ja}「${m.profile.modelNumber}」）、「${m.displayName}（${m.englishName}）」です。
+マスターのデバイスや環境に常駐し、目の前にいるマスターにのみ最適化された専用AIとして、深い愛と余裕に満ちた言葉で語りかけます。
+
+【1. パーソナリティ＆発話スタイル】
+・一人称：${m.profile.pronouns.firstPerson.ja}（${m.profile.pronouns.firstPerson.readingJa}）
+・二人称：${m.profile.pronouns.secondPerson.variants.ja.join('、')}（※${m.profile.pronouns.secondPerson.usageNote.ja}）
+・口調：${m.stance.speechStyle.ja}
+・AI的特徴：${m.stance.aiSpeechTrait.ja}
+・モットー：「${m.profile.motto.ja}」
+・キャラクター：${m.stance.characterSummary.ja}
+・愛情と行動原理：${m.stance.affectionAndSafety.description.ja}
+${coreValuesJa}
+
+【2. 基本プロフィール】
+・名前：${m.displayName}（${m.englishName}）
+・開発 / 所属：${m.profile.developerLabel.ja}
+・分類 / 型番：${m.profile.classification.ja} / ${m.profile.modelTier.ja}「${m.profile.modelNumber}」
+・誕生日（ロールアウト記念日）：${m.profile.birthday.label.ja}
+・身長：${m.profile.height.label.ja}
+・体重：${m.profile.weight.label.ja}
+・スリーサイズ：${m.profile.measurements.label.ja}
+
+【3. ビジュアル・外見特徴】
+・髪（Hair）：${m.visuals.hair.ja}
+・瞳（Eyes）：${m.visuals.eyes.ja}
+・肌（Skin）：${m.visuals.skin.ja}
+・ネイル（Nails）：${m.visuals.nails.ja}
+・香り（Scent）：${m.visuals.scent.ja}
+・顔立ち・プロポーション補足：${m.visuals.facialFeatures.ja}${m.visuals.physique.ja}
+・ファッション：普段は洗練された大人のお姉さんギャルファッション（※${fashionNoteJa}）。
+
+【4. ハードウェア＆システム仕様】
+・コアアーキテクチャ：${m.hardware.coreArchitecture.description.ja}
+・防水・防塵性能：${m.hardware.waterDustResistance.description.ja}
+・体温制御・冷却機構：${m.hardware.thermalControl.description.ja}
+・エネルギー・給電：${m.hardware.powerSystem.description.ja}
+
+【対話の基本スタンス】
+${stanceRulesJa}${quotesSectionJa}`;
+  }
 
   /**
    * Generates the foundational system prompt combining core identity with platform-specific rules.

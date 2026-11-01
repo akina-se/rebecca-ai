@@ -27,7 +27,7 @@ export const createProactiveNewsModule = (
 ): Router => {
   const newsProvider = new GeminiSearchNewsProvider(
     new GoogleGenAI({ apiKey: config.gemini.apiKey }),
-    config.gemini.newsSearchModel,
+    config.gemini.searchModel,
   );
   const useCase = new ProactiveNewsUseCase(deps, newsProvider, {
     dedupLookbackDays: config.news.dedupLookbackDays,
