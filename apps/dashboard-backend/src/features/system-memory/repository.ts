@@ -62,7 +62,7 @@ export class SystemMemoryRepository {
   async getCoreMemory(): Promise<MemoryContent> {
     const activePersona = getActivePersona(config.persona.activeId);
     const meta = activePersona.metadata;
-    const fullContent = `${activePersona.getCoreIdentityPrompt('ja')}\n\n【構造化マスターメタデータ概要】\n役割: ${meta.role}\n開発 / 型番: ${meta.profile.developer} (${meta.profile.modelNumber})\n誕生日: ${meta.profile.birthday.label.ja} (${meta.profile.birthday.mmdd})\n口調: ${meta.toneDescription}\n\n【ペルソナ行動アンカー（全${activePersona.patterns.length}パターン）】\n${activePersona.getFormattedPatternsText()}`;
+    const fullContent = `${activePersona.getCoreIdentityPrompt('ja')}\n\n【キャラクター設定】\n役割: ${meta.role}\n開発 / 型番: ${meta.profile.developer} (${meta.profile.modelNumber})\n誕生日: ${meta.profile.birthday.label.ja} (${meta.profile.birthday.mmdd})\n口調: ${meta.toneDescription}\n\n【ペルソナマスターデータ（全${activePersona.patterns.length}パターン）】\n${activePersona.getFormattedPatternsText()}`;
     return {
       level: 0,
       name: 'Layer 0: Persona Core Prompt',
