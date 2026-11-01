@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.37.0](https://github.com/akina-se/rebecca-ai/compare/v1.36.4...v1.37.0) (2026-11-01)
+
+
+### Features
+
+* **persona:** integrate structured official master data and synthesize core prompt ([f15c97c](https://github.com/akina-se/rebecca-ai/commit/f15c97c298f7b192906e82735072b0bf0e22ff27))
+* **persona:** integrate structured official master data and synthesize core prompt ([8b85cd0](https://github.com/akina-se/rebecca-ai/commit/8b85cd0464d8ad213fd541447060b5d52b1634f3))
+
+
+### Bug Fixes
+
+* **dashboard-backend:** preserve Layer 0 pattern header label for E2E drawer check ([35eb0ac](https://github.com/akina-se/rebecca-ai/commit/35eb0acfd5c9d6298e855fb912b9c75882859099))
+* **persona:** apply review refinements to core prompt, reply rules, and pattern [#77](https://github.com/akina-se/rebecca-ai/issues/77) ([b675483](https://github.com/akina-se/rebecca-ai/commit/b675483c77fde4167961a80b4aa2383eee589574))
+
 ## [1.36.4](https://github.com/akina-se/rebecca-ai/compare/v1.36.3...v1.36.4) (2026-10-31)
 
 
