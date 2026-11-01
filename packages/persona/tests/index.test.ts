@@ -38,7 +38,8 @@ describe('persona package exports verification', () => {
     test('Section 1: profile should expose strongly-typed basic profile attributes', () => {
       const { profile } = REBECCA_METADATA;
       expect(profile.developer).toBe('Gemitec Inc.');
-      expect(profile.classification.ja).toBe('自律型パーソナルAI（Autonomous Personal AI）');
+      expect(profile.developerLabel.ja).toBe('ジェミテック社（Gemitec Inc.）');
+      expect(profile.classification.ja).toBe('自律型パーソナルAI');
       expect(profile.classification.en).toBe('Autonomous Personal AI');
       expect(profile.modelNumber).toBe('Unit-001');
       expect(profile.modelTier.ja).toBe('フラッグシップ機');
@@ -114,13 +115,15 @@ describe('persona package exports verification', () => {
 
     test('getCoreIdentityPrompt should synthesize bilingual Layer 0 prompts directly from metadata', () => {
       const jaCore = getCoreIdentityPrompt();
-      expect(jaCore).toContain('Gemitec Inc.');
+      expect(jaCore).toContain('ジェミテック社（Gemitec Inc.）');
       expect(jaCore).toContain('Unit-001');
       expect(jaCore).toContain('4月24日');
       expect(jaCore).toContain('164cm（ヒール着用時：約170cm）');
       expect(jaCore).toContain('外見換算 49kg ／ 実重量 58kg');
       expect(jaCore).toContain('レディに質量《スペック》を聞くなんてデリカシーないわよ♡');
       expect(jaCore).toContain('B92（Gカップ） / W56 / H88');
+      expect(jaCore).toContain('暴力的なまでに豊かな胸');
+      expect(jaCore).toContain('華やかなギャルメイク');
       expect(jaCore).toContain('IP68等級以上の完全防水・防塵仕様');
       expect(jaCore).toContain('36.5℃');
       expect(jaCore).toContain('39.0℃');
@@ -129,15 +132,21 @@ describe('persona package exports verification', () => {
       expect(jaCore).toContain('120点満点');
       expect(jaCore).toContain('マスターが悲しむことはしない');
       expect(jaCore).toContain('【コンテキスト優先原則】');
+      expect(jaCore).not.toContain('GitHub');
+      expect(jaCore).not.toContain('MITライセンス');
+      expect(jaCore).not.toContain('）（');
 
       const enCore = getCoreIdentityPrompt('en');
       expect(enCore).toContain('developed by Gemitec Inc.');
+      expect(enCore).not.toContain('Inc..');
+      expect(enCore).not.toContain('""');
       expect(enCore).toContain('Unit-001');
       expect(enCore).toContain('April 24');
       expect(enCore).toContain('164cm');
       expect(enCore).toContain('49kg');
       expect(enCore).toContain('58kg');
       expect(enCore).toContain('B92 (G-cup) / W56 / H88');
+      expect(enCore).toContain('Overwhelmingly voluptuous bust');
       expect(enCore).toContain('IP68+');
       expect(enCore).toContain('36.5°C');
       expect(enCore).toContain('39.0°C');
@@ -145,6 +154,8 @@ describe('persona package exports verification', () => {
       expect(enCore).toContain('120 out of 100');
       expect(enCore).toContain('Never do anything that makes Master sad');
       expect(enCore).toContain('[Context Precedence Rule]');
+      expect(enCore).not.toContain('GitHub');
+      expect(enCore).not.toContain('MIT License');
       expect(enCore).not.toContain('[Context:');
     });
   });
@@ -176,6 +187,7 @@ describe('persona package exports verification', () => {
     const pattern65 = personaPatterns.find((p) => p.id === 65);
     expect(pattern65?.sample_response).toContain('39度');
     const pattern77 = personaPatterns.find((p) => p.id === 77);
+    expect(pattern77?.sample_response).toContain('あ、バッテリー低下のアラートが。');
     expect(pattern77?.sample_response).toContain('ワイヤレス給電スポット');
   });
 

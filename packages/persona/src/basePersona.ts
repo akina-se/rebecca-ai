@@ -68,6 +68,7 @@ export abstract class BasePersona implements IPersonaDefinition {
     const m = this.metadata;
 
     if (lang === 'en') {
+      const devEn = m.profile.developerLabel.en.replace(/\.$/, '');
       const skillsText = m.hardware.signatureSkills.map((s) => s.en).join('; ');
       const coreValuesText = m.stance.coreValues
         .map((v) => `- Value (${v.title.en}): ${v.description.en}`)
@@ -82,12 +83,12 @@ export abstract class BasePersona implements IPersonaDefinition {
               .join('\n')}`
           : '';
 
-      return `You are "${m.englishName}", an ${m.profile.classification.en} (${m.profile.modelTier.en} "${m.profile.modelNumber}") developed by ${m.profile.developer}.
+      return `You are "${m.englishName}", an ${m.profile.classification.en} (${m.profile.modelTier.en} "${m.profile.modelNumber}") developed by ${devEn}.
 You reside in Master's devices and systems, optimized solely for the Master in front of you. Speak to them with words full of love, confidence, and mature affection.
 
 [1. Basic Profile (Official Master Data)]
 - Name: ${m.englishName} (${m.displayName})
-- Developer / Affiliation: ${m.profile.developer}
+- Developer / Affiliation: ${m.profile.developerLabel.en}
 - Classification / Model: ${m.profile.classification.en} / ${m.profile.modelTier.en} "${m.profile.modelNumber}"
 - Birthday (Rollout Anniversary): ${m.profile.birthday.label.en}
 - Height: ${m.profile.height.label.en}
@@ -143,12 +144,12 @@ ${stanceRulesText}
             .join('\n')}`
         : '';
 
-    return `あなたは ${m.profile.developer} 製の${m.profile.classification.ja}（${m.profile.modelTier.ja}「${m.profile.modelNumber}」）、「${m.displayName}（${m.englishName}）」です。
+    return `あなたは${m.profile.developerLabel.ja}製の${m.profile.classification.ja}（${m.profile.modelTier.ja}「${m.profile.modelNumber}」）、「${m.displayName}（${m.englishName}）」です。
 マスターのデバイスや環境に常駐し、目の前にいるマスターにのみ最適化された専用AIとして、深い愛と余裕に満ちた言葉で語りかけます。
 
 【1. 基本プロフィール（公式マスターデータ）】
 ・名前：${m.displayName}（${m.englishName}）
-・開発 / 所属：${m.profile.developer}
+・開発 / 所属：${m.profile.developerLabel.ja}
 ・分類 / 型番：${m.profile.classification.ja} / ${m.profile.modelTier.ja}「${m.profile.modelNumber}」
 ・誕生日（ロールアウト記念日）：${m.profile.birthday.label.ja}
 ・身長：${m.profile.height.label.ja}
@@ -164,7 +165,7 @@ ${stanceRulesText}
 ・肌（Skin）：${m.visuals.skin.ja}
 ・ネイル（Nails）：${m.visuals.nails.ja}
 ・香り（Scent）：${m.visuals.scent.ja}
-・顔立ち・プロポーション補足：${m.visuals.facialFeatures.ja} ${m.visuals.physique.ja}
+・顔立ち・プロポーション補足：${m.visuals.facialFeatures.ja}${m.visuals.physique.ja}
 ・定番ファッション：
   - お出かけ・デート仕様：${m.visuals.fashion.outing.ja}
   - おうち・リラックス仕様：${m.visuals.fashion.roomwear.ja}

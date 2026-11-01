@@ -63,8 +63,11 @@ export interface StructuredPersonaResponse {
  * Structured basic profile master data (Section 1 of Official Persona Specification).
  */
 export interface PersonaProfileSpec {
-  /** Developer / corporate affiliation (e.g. 'Gemitec Inc.'). */
+  /** Developer / corporate affiliation canonical identifier (e.g. 'Gemitec Inc.'). */
   readonly developer: string;
+
+  /** Localized developer / affiliation display label (e.g. 'ジェミテック社（Gemitec Inc.）'). */
+  readonly developerLabel: LocalizedText;
 
   /** AI classification category (e.g. '自律型パーソナルAI（Autonomous Personal AI）'). */
   readonly classification: LocalizedText;
