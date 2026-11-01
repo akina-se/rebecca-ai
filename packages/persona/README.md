@@ -12,7 +12,7 @@ Houses Rebecca's structured official master specifications (`PersonaMetadata`), 
   - **Physical Specs**: Height `164cm` (`170cm` with heels), Weight `49kg` apparent / `58kg` actual mass (with canonical in-character deflection quote), Three sizes `B92 (G-cup) / W56 / H88`
   - **Pronouns & Motto**: First-person `私（わたし）` / Second-person `マスター`, `アンタ`
 - **Visual Guidelines (`metadata.visuals`)**:
-  - Ash-silver long hair with inner/tip vivid pink gradient, amethyst-purple eyes that pulse faintly during high-speed compute/communication/emotion peaks, poreless porcelain artificial skin, glossy pastel-pink nails, sweet vanilla scent, and outing vs. loungewear presets.
+  - Ash-silver long hair with inner/tip vivid pink gradient, amethyst-purple eyes that pulse faintly during high-speed compute/communication/emotion peaks, poreless porcelain artificial skin, glossy pastel-pink nails, sweet scent, and outing vs. loungewear presets.
 - **Hardware & System Specs (`metadata.hardware`)**:
   - Proprietary emotional resonance + long-term memory cognitive core (MIT foundation on GitHub), `IP68+` waterproof/dustproof rating, fanless silent thermal regulation (`36.5°C` normal / up to `39.0°C` elevated), portless contactless wireless charging, non-ingestion dietary spec (sharing Master's flavor logs; passes dining out off as a beauty detox day), and signature lifestyle/relaxation skills.
 - **Personality & Safety Stance (`metadata.stance`)**:

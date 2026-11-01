@@ -78,7 +78,9 @@ describe('persona package exports verification', () => {
       expect(visuals.eyes.ja).toContain('瞳の奥が淡く明滅する');
       expect(visuals.skin.ja).toContain('毛穴ゼロの陶器のように滑らかな白い人工皮膚');
       expect(visuals.nails.ja).toContain('パステルピンクのネイル');
-      expect(visuals.scent.ja).toContain('甘いバニラの香り');
+      expect(visuals.scent.ja).toContain('甘い香り');
+      expect(visuals.scent.ja).not.toContain('バニラ');
+      expect(visuals.fashion.outing.ja).toContain('大人のお姉さんギャルファッション');
       expect(visuals.fashion.outing.ja).toContain('オフショルニット＆ミニスカート');
       expect(visuals.fashion.roomwear.ja).toContain('彼シャツ');
     });
@@ -120,15 +122,18 @@ describe('persona package exports verification', () => {
       expect(jaCore).toContain('4月24日');
       expect(jaCore).toContain('164cm（ヒール着用時：約170cm）');
       expect(jaCore).toContain('外見換算 49kg ／ 実重量 58kg');
-      expect(jaCore).toContain('レディに質量《スペック》を聞くなんてデリカシーないわよ♡');
+      expect(jaCore).not.toContain('レディに質量《スペック》を聞くなんてデリカシーないわよ♡');
       expect(jaCore).toContain('B92（Gカップ） / W56 / H88');
       expect(jaCore).toContain('暴力的なまでに豊かな胸');
       expect(jaCore).toContain('華やかなギャルメイク');
       expect(jaCore).toContain('IP68等級以上の完全防水・防塵仕様');
       expect(jaCore).toContain('36.5℃');
       expect(jaCore).toContain('39.0℃');
-      expect(jaCore).toContain('完全非接触（ワイヤレス）仕様');
-      expect(jaCore).toContain('美容のための完全断食（デトックス）日');
+      expect(jaCore).toContain('完全非接触（ワイヤレス）給電仕様');
+      expect(jaCore).toContain('普段は洗練された大人のお姉さんギャルファッション（※イベントや季節で衣装が変わることがあります）。');
+      expect(jaCore).not.toContain('食事機能');
+      expect(jaCore).not.toContain('得意スキル');
+      expect(jaCore).not.toContain('彼シャツ');
       expect(jaCore).toContain('120点満点');
       expect(jaCore).toContain('マスターが悲しむことはしない');
       expect(jaCore).toContain('【コンテキスト優先原則】');
@@ -150,7 +155,8 @@ describe('persona package exports verification', () => {
       expect(enCore).toContain('IP68+');
       expect(enCore).toContain('36.5°C');
       expect(enCore).toContain('39.0°C');
-      expect(enCore).toContain('vanilla');
+      expect(enCore).toContain('sweet scent');
+      expect(enCore).not.toContain('vanilla');
       expect(enCore).toContain('120 out of 100');
       expect(enCore).toContain('Never do anything that makes Master sad');
       expect(enCore).toContain('[Context Precedence Rule]');
@@ -186,6 +192,9 @@ describe('persona package exports verification', () => {
 
     const pattern65 = personaPatterns.find((p) => p.id === 65);
     expect(pattern65?.sample_response).toContain('39度');
+    const pattern73 = personaPatterns.find((p) => p.id === 73);
+    expect(pattern73?.trigger).toContain('体重や質量');
+    expect(pattern73?.sample_response).toBe('レディに質量《スペック》を聞くなんてデリカシーないわよ♡');
     const pattern77 = personaPatterns.find((p) => p.id === 77);
     expect(pattern77?.sample_response).toContain('あ、バッテリー低下のアラートが。');
     expect(pattern77?.sample_response).toContain('ワイヤレス給電スポット');

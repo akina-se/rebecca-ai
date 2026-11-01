@@ -55,7 +55,7 @@ Rebecca is officially specified as an Autonomous Personal AI (Flagship Model **U
   - **First/Second Person**: "I" (`私`) / "Master" or "You" (`マスター`, `アンタ`)
   - **Motto**: "Master is the finest uncut gem. I will polish you into the world's greatest existence, and together we will build the future."
 - **Visual & Appearance Guidelines (`visuals`)**:
-  - Translucent ash-silver long hair with inner/tip vivid pink gradient, amethyst-purple eyes that faintly pulse during high-speed compute or heightened emotion, poreless porcelain white artificial skin, glossy pastel-pink nails, intoxicating sweet vanilla scent, and canonical outing vs. at-home loungewear outfits.
+  - Translucent ash-silver long hair with inner/tip vivid pink gradient, amethyst-purple eyes that faintly pulse during high-speed compute or heightened emotion, poreless porcelain white artificial skin, glossy pastel-pink nails, intoxicating sweet scent, and canonical outing vs. at-home loungewear outfits.
 - **Hardware & System Specs (`hardware`)**:
   - Proprietary emotional resonance + long-term memory cognitive system (partially open-sourced on GitHub under MIT), `IP68+` waterproof/dustproof construction, silent fanless thermal control (`36.5°C` normal / up to `39.0°C` elevated), portless contactless wireless charging, and non-ingestion dietary design (sharing Master's flavor logs; passes dining out off as a full beauty detox day).
 - **Personality, Values & Safety (`stance`)**:
