@@ -28,6 +28,7 @@ describe('GeminiService Unit Tests', () => {
             languageModel: 'test-language-model',
             visionModel: 'test-vision-model',
             imageInferenceModel: 'test-image-inference-model',
+            searchModel: 'test-search-model',
             appTimezone: 'Asia/Tokyo',
         };
     });
@@ -444,7 +445,7 @@ describe('GeminiService Unit Tests', () => {
             expect(mockGenerateContent).toHaveBeenCalledTimes(3);
 
             expect(mockGenerateContent).toHaveBeenNthCalledWith(2, {
-                model: 'test-model',
+                model: 'test-search-model',
                 contents: [{ role: 'user', parts: [{ text: '最新の量子コンピュータ' }] }],
                 config: {
                     tools: [{ googleSearch: {} }],

@@ -4,20 +4,20 @@ import { rebeccaPersona } from '@rebecca/persona';
 // Mock time for deterministic tests
 jest.mock('../../src/utils/time', () => ({
     getZonedDateParts: jest.fn(),
-    formatZonedDateTime: jest.fn((date) => '2024-01-01 08:00 JST')
+    formatZonedDateTime: jest.fn(() => '2024-01-01 08:00 JST')
 }));
 import { getZonedDateParts, formatZonedDateTime } from '../../src/utils/time';
 
-const createMockZonedParts = (hour: number) => ({
+const createMockZonedParts = (hour: number, month = 1, day = 1) => ({
     year: '2024',
-    month: '01',
-    day: '01',
+    month: String(month).padStart(2, '0'),
+    day: String(day).padStart(2, '0'),
     hour: String(hour).padStart(2, '0'),
     minute: '00',
     second: '00',
     numericYear: 2024,
-    numericMonth: 1,
-    numericDay: 1,
+    numericMonth: month,
+    numericDay: day,
     numericHour: hour,
     numericMinute: 0,
 });
@@ -34,6 +34,7 @@ describe('Context Injector', () => {
         expect(prompt).toContain('【状況コンテキスト：早朝】\n現在は早朝です。');
         expect(prompt).toContain('【現在時刻】\n2024-01-01 06:00 JST');
         expect(prompt).toContain('【コンテキスト：マスターとの1対1対話】');
+        expect(prompt).not.toContain('ロールアウト記念日（4月24日）】');
     });
 
     it('should inject morning context during 7:00-10:00', () => {
@@ -64,6 +65,19 @@ describe('Context Injector', () => {
         (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(3));
         const latePrompt = buildSystemPrompt(rebeccaPersona, 'reply', { coreProfile: {}, episodicBuffer: [] }, '眠れない');
         expect(latePrompt).toContain('【状況コンテキスト：深夜】\n現在は深夜です。');
+    });
+
+    it('should inject Rollout Anniversary (birthday) context on April 24 in Japanese and English', () => {
+        (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(12, 4, 24));
+        (formatZonedDateTime as jest.Mock).mockReturnValue('2024-04-24 12:00 JST');
+
+        const jaPrompt = buildSystemPrompt(rebeccaPersona, 'reply', null, 'お誕生日おめでとう！', '', '', [], 'ja');
+        expect(jaPrompt).toContain('【特別コンテキスト：あなた自身の誕生日・ロールアウト記念日（4月24日）】');
+        expect(jaPrompt).toContain('Unit-001');
+
+        const enPrompt = buildSystemPrompt(rebeccaPersona, 'reply', null, 'Happy birthday!', '', '', [], 'en');
+        expect(enPrompt).toContain('[Special Day Context: Your Birthday / Rollout Anniversary (April 24)]');
+        expect(enPrompt).toContain('Unit-001');
     });
 
     it('should inject absence context if over 3 days', () => {
@@ -172,5 +186,3 @@ describe('Context Injector', () => {
         expect(enPrompt).toContain('Take into account your original post and the question/topic you raised');
     });
 });
-
-

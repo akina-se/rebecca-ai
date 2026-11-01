@@ -94,7 +94,7 @@ export default {
     languageModel: process.env.GEMINI_LANGUAGE_MODEL || 'gemini-3.1-flash-lite',
     visionModel: process.env.GEMINI_VISION_MODEL || 'gemini-3.5-flash-lite',
     imageInferenceModel: process.env.GEMINI_IMAGE_INFERENCE_MODEL || 'gemini-3.5-flash-lite',
-    newsSearchModel: process.env.GEMINI_NEWS_SEARCH_MODEL || 'gemini-2.5-flash',
+    searchModel: process.env.GEMINI_SEARCH_MODEL || 'gemini-2.5-flash',
     newsPostModel: process.env.GEMINI_NEWS_POST_MODEL || 'gemini-3.5-flash-lite',
     temperature: parseFloat(process.env.GEMINI_TEMPERATURE || '1.20'),
     topP: parseFloat(process.env.GEMINI_TOP_P || '0.95'),

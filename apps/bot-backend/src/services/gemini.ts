@@ -112,7 +112,7 @@ export interface GeminiServiceConfig {
   languageModel?: string;
   visionModel?: string;
   imageInferenceModel?: string;
-  newsSearchModel?: string;
+  searchModel?: string;
   newsPostModel?: string;
   appTimezone?: string;
   temperature?: number;
@@ -769,7 +769,7 @@ ${imageCaption}
     if (!trimmed) return '検索クエリが空です。';
     try {
       const res = await this.ai.models.generateContent({
-        model: this.config.model,
+        model: this.config.searchModel,
         contents: [{ role: 'user', parts: [{ text: trimmed }] }],
         config: {
           tools: [{ googleSearch: {} }],

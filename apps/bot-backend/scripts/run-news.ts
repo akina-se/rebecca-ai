@@ -52,7 +52,7 @@ const run = async () => {
   try {
     const provider = new GeminiSearchNewsProvider(
       new GoogleGenAI({ apiKey: config.gemini.apiKey }),
-      config.gemini.newsSearchModel,
+      config.gemini.searchModel,
     );
     const useCase = new ProactiveNewsUseCase(deps, provider, {
       dedupLookbackDays: config.news.dedupLookbackDays,
