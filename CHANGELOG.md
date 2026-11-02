@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.37.1](https://github.com/akina-se/rebecca-ai/compare/v1.37.0...v1.37.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **deps:** patch Dependabot vulnerabilities via npm overrides in root and functions ([290f4e7](https://github.com/akina-se/rebecca-ai/commit/290f4e777978d372535bfed64dd7eee6c1810760))
+* **deps:** patch Dependabot vulnerabilities via package overrides ([1b2482e](https://github.com/akina-se/rebecca-ai/commit/1b2482e5b4bee013c87f3fe9f57fd0c09f89ff64))
+* **deps:** remove glob and minimatch overrides to preserve license-checker compatibility ([cd24f70](https://github.com/akina-se/rebecca-ai/commit/cd24f70626bf53c9b12d5b8310484840f417a38f))
+
 ## [1.37.0](https://github.com/akina-se/rebecca-ai/compare/v1.36.4...v1.37.0) (2026-11-01)
 
 
