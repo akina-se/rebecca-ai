@@ -18,14 +18,14 @@
     "audit:fix": "npm audit fix"
   },
   "dependencies": {
-    "@angular/animations": "^22.2.3",
-    "@angular/common": "^22.2.3",
+    "@angular/animations": "^22.2.4",
+    "@angular/common": "^22.2.4",
     "@angular/compiler": "^22.2.3",
     "@angular/core": "^22.2.3",
-    "@angular/forms": "^22.2.3",
+    "@angular/forms": "^22.2.4",
     "@angular/platform-browser": "^22.2.3",
-    "@angular/platform-browser-dynamic": "^22.2.3",
-    "@angular/router": "^22.2.3",
+    "@angular/platform-browser-dynamic": "^22.2.4",
+    "@angular/router": "^22.2.4",
     "@rebecca/types": "*",
     "@types/luxon": "^3.7.6",
     "firebase": "^13.1.0",
@@ -36,9 +36,9 @@
   },
   "devDependencies": {
     "@angular-eslint/builder": "^22.5.0",
-    "@angular/build": "^22.2.3",
-    "@angular/cli": "^22.2.3",
-    "@angular/compiler-cli": "^22.2.3",
+    "@angular/build": "^22.2.5",
+    "@angular/cli": "^22.2.5",
+    "@angular/compiler-cli": "^22.2.4",
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
     "angular-eslint": "^22.5.0",
@@ -48,7 +48,7 @@
     "jest-preset-angular": "^17.0.3",
     "ts-jest": "^29.4.15",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.0"
+    "typescript-eslint": "^8.72.1"
   },
   "overrides": {
     "@grpc/grpc-js": "^1.14.6",
