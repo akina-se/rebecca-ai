@@ -63,7 +63,7 @@
     "picomatch": "^4.0.2",
     "fast-uri": "^3.1.9",
     "browserslist": "^4.28.7",
-    "qs": "^6.16.0",
+    "qs": "^6.17.1",
     "hono": "^4.13.9",
     "@firebase/app": "0.16.3",
     "@firebase/app-compat": "0.5.19",
@@ -84,6 +84,11 @@
     },
     "express-rate-limit": {
       "ip-address": "^10.7.4"
-    }
+    },
+    "minimatch": "^11.0.3",
+    "glob": "^14.0.3",
+    "undici": "^8.12.3",
+    "multer": "^2.5.0",
+    "body-parser": "^2.4.0"
   }
 }
