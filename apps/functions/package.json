@@ -50,8 +50,6 @@
     "proxy-addr": "^2.0.8",
     "@fastify/busboy": "^3.2.4",
     "handlebars": "^4.7.10",
-    "minimatch": "^11.0.3",
-    "glob": "^14.0.3",
     "body-parser": "^2.4.0"
   }
 }
