@@ -15,8 +15,9 @@ Scoped architectural and contract rules for the Admin Dashboard Backend-for-Fron
 - **HTTP, Upload & Storage Hardening (`src/app.ts`, `src/utils/image.ts`, `src/utils/gcs.ts`)**:
   - Preserve `app.set('trust proxy', 1)`, `helmet()`, `express-rate-limit`, and explicit `CORS_ALLOWED_ORIGINS` validation (never allow wildcard `*` origins alongside `credentials: true` in production).
   - Enforce strict file-size limits, MIME/magic-byte verification (`@silvia-odwyer/photon-node`), and sanitized GCS object keys (no `..` path traversal) on all `multer` multipart uploads.
-- **Internal Service Delegation (`src/core/botServiceClient.ts`)**:
+- **Internal Service Delegation & Persona Agnosticism (`src/core/botServiceClient.ts`, `src/features/config/`, `src/features/copilot/`)**:
   - Trigger synchronous administrative actions on `bot-backend` (e.g., force dreaming, manual batch triggers) through `botServiceClient.ts` using Google OIDC identity tokens in cloud environments (`BOT_BACKEND_URL` env var). Never hardcode Cloud Run URLs.
+  - Resolve persona display names, `brandName`, `adminTitle`, `avatarUrl`, and copilot prompts dynamically via `getActivePersona()` (`@rebecca/persona`) rather than hardcoding Rebecca-specific lore in BFF controllers or use cases.
 
 ## 2. Mandatory OpenAPI Contract Synchronization
 

@@ -12,6 +12,7 @@ Scoped architectural, state, and UI engineering rules for the Angular 22 Admin D
   - Define domain data-access contracts as abstract ports + `InjectionToken`s in `src/app/core/ports/*.repository.ts`.
   - Implement concrete HTTP adapters in `src/app/infrastructure/http/http-*.repository.ts` and bind them in `src/app/app.config.ts`.
   - Feature/page components (`src/app/features/**`) and UI components (`src/app/shared/**`) **MUST NEVER** inject `HttpClient` directly or construct raw `/api/...` URLs.
+  - Consume persona branding (`brandName`, `adminTitle`, `displayName`, `avatarUrl`) dynamically via `ConfigService` (`/api/config` backed by `@rebecca/persona`) so swapping the active persona requires zero hardcoded character-name edits across UI templates.
   - Align all request/response DTOs with `@rebecca/types` and `apps/dashboard-backend/openapi.yaml`.
 
 ## 2. UI Design System & Atomic Component Rules (`docs/ui-design-guide.md`)

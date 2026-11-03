@@ -42,8 +42,9 @@ Run all verification commands from the repository root before opening or updatin
 1. **Strict Separation of Concerns (Clean / Hexagonal Architecture)**:
    - Keep transport layers (Express routes/controllers, Cloud Function triggers, Angular components) thin and free of domain persistence or raw SDK orchestration.
    - Isolate domain orchestration inside `usecase` / `core` modules and external I/O (Firestore, Cloud Storage, Cloud Tasks, Gemini, social APIs, HTTP) behind typed `repository` / `port` / `service` interfaces.
-2. **Pragmatic DRY & High Cohesion**:
+2. **Pragmatic DRY, High Cohesion & Pluggable Persona Encapsulation**:
    - Centralize shared domain models (`@rebecca/types`), Firestore converters (`@rebecca/db`), structured logging (`@rebecca/logger`), and persona definitions (`@rebecca/persona`).
+   - **Pluggable Persona Boundary (Zero Character Leakage)**: Keep `apps/*` character-agnostic. Consolidate all Rebecca-specific lore, profile specs, speech style, callsigns, hashtags, UI branding, and base/dreaming prompts exclusively inside `packages/persona/src/personas/rebecca.ts` paired with the 120-pattern dataset (`packages/persona/src/data/personaPatterns.json` + `personaPatternVectors.ts`) so swapping those files switches the AI persona without modifying `apps/*`.
    - Apply the **Rule of Three** before extracting behavioral abstractions: eliminate true knowledge duplication without coupling distinct domain workflows via boolean flags.
 3. **Strict Typing — Parse at Boundaries, Never Guess**:
    - Author all code under TypeScript `strict` mode. Never introduce `any`, `@ts-ignore`, or unverified `as SomeType` assertions. Inspect upstream definitions and model exact types (including discriminated unions and readonly properties) before writing implementation code.

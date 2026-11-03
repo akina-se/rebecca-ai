@@ -18,7 +18,11 @@ Scoped architectural and contract rules for shared internal monorepo packages. I
 - **Firestore Security Rules (`packages/db/firestore.rules`)**:
   - Direct client access is denied by default (`allow read, write: if false;`); all database access flows through authenticated backend services.
   - When authoring or modifying `packages/db/firestore.rules`, delegate to the dedicated `firestore-rules-author` subagent (or follow strict Firestore security rules auditing practices if subagents are unavailable) and highlight the rule diff for mandatory human review.
-- **Persona Exemplar Updates**: Keep code/TSDoc in **English** while preserving **Japanese** persona text in `@rebecca/persona`. If exemplar `trigger` texts change in `personaPatterns.json`, regenerate `personaPatternVectors.ts` via `npm run generate:persona-vectors --workspace=bot-backend`.
+- **Pluggable Persona Encapsulation (`@rebecca/persona`)**:
+  - `src/basePersona.ts` (`BasePersona`) and `src/types.ts` (`IPersonaDefinition`) define the character-agnostic engine (Layer 0 prompt synthesis from structured `metadata`, cosine-similarity anchor selection, and few-shot formatting).
+  - `src/personas/rebecca.ts` (`RebeccaPersona` & `REBECCA_METADATA`) is the **Single Source of Truth (SSOT)** for all Rebecca-specific identity, profile specs, tone, `userCallsign`, `firstPerson`, `defaultHashtag`, UI branding (`brandName`, `adminTitle`, `avatarUrl`), `getBasePrompt`, `getDreamingPrompt`, and `formatAbsenceInstruction`, paired with the 120 situational patterns in `src/data/personaPatterns.json` (`personaPatternVectors.ts`).
+  - **Swappability Invariant**: Never scatter character-specific traits into `BasePersona` or `apps/*`. Switching or adding an AI persona must only require swapping/adding a `BasePersona` subclass + 120-pattern dataset, regenerating `personaPatternVectors.ts` via `npm run generate:persona-vectors --workspace=bot-backend`, and registering the ID in `getActivePersona()` (`src/index.ts`).
+  - Keep code/TSDoc in **English** while preserving **Japanese** persona text in `@rebecca/persona`.
 
 ## 3. Maintained Workspace Scripts
 

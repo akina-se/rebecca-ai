@@ -12,6 +12,7 @@ Execute this objective audit across the entire diff (`git diff develop...HEAD`) 
 - [ ] **Layer Purity**: Controllers, Cloud Function triggers, and Angular components contain zero persistence queries or raw external SDK orchestration. Use cases contain zero HTTP (`req`/`res`) or UI framework coupling.
 - [ ] **Unidirectional Workspace Graph**: Zero imports from `apps/*` inside `packages/*`; zero direct cross-app imports between sibling `apps/*` workspaces; `dashboard-frontend` accesses data strictly via `core/ports/*.repository.ts` tokens rather than raw `HttpClient`.
 - [ ] **Pragmatic DRY vs. High Cohesion**: Shared domain schemas, constants, and converters live in `@rebecca/*` or shared `core/` modules rather than copy-pasted across files; conversely, distinct domain behaviors are not prematurely coupled behind boolean-flag helper functions.
+- [ ] **Pluggable Persona Encapsulation**: Zero Rebecca-specific character lore, speech endings, callsigns, birthdays, hashtags, or branding strings are hardcoded inside `apps/*`; all persona traits reside in `packages/persona/src/personas/rebecca.ts` and `personaPatterns.json` (`IPersonaDefinition`).
 
 ## 2. Type Safety, Boundary Validation & Fail-Fast Error Handling
 
