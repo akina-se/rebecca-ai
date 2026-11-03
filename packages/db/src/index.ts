@@ -478,12 +478,12 @@ export function getCollections(db: Firestore) {
       .collection(COLLECTIONS.USERS)
       .withConverter(userConverter),
 
-    /** Typed raw conversation log documents (30-day TTL). */
+    /** Typed raw conversation log documents (5-year TTL). */
     conversationLogs: db
       .collection(COLLECTIONS.CONVERSATION_LOGS)
       .withConverter(conversationLogConverter),
 
-    /** Typed timeline post history documents (30-day TTL). */
+    /** Typed timeline post history documents (5-year TTL). */
     timelineHistory: db
       .collection(COLLECTIONS.TIMELINE_HISTORY)
       .withConverter(timelinePostConverter),
