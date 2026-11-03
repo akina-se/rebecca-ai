@@ -33,7 +33,13 @@ Organize code strictly by responsibility:
   - System prompts, character rules, and exemplar patterns in `@rebecca/persona` are intentionally written in **Japanese**—keep code comments and TSDoc in **English**, and never translate persona strings unless explicitly requested.
 - **Persona Vector Synchronization**: Whenever trigger phrases or exemplars in `@rebecca/persona` (`personaPatterns.json`) are added, edited, or swapped for another persona, regenerate precomputed 768-dim embeddings via `npm run generate:persona-vectors --workspace=bot-backend`.
 - **3-Tier Memory Consistency**: Preserve invariants across Working Memory, Episodic Buffer, and Consolidated Long-Term Memory (`coreProfile` + `rag_memories`). Synchronize any schema or lifecycle change with `@rebecca/types`, `@rebecca/db`, and `docs/database-schema.md`.
-- **Observability**: Log exclusively through `src/utils/logger.ts` (`@rebecca/logger`). Never log raw user PII, private credentials, or unredacted tokens.
+- **Tiered Rate Limiting & Quota Defense**:
+  - Maintain two-tier rate limiting: (1) HTTP transport layer via `src/middleware/apiRateLimiter.ts` (`publicRateLimiter` per IP, `batchRateLimiter` for cron schedules, and `workerRateLimiter` as a circuit breaker), and (2) Domain conversation layer via `src/core/rateLimiter.ts` (`checkAndIncrementRateLimits` consuming `globalDailyLimit`, `userDailyLimit`, and `spamMinuteLimit` via atomic Firestore transactions).
+- **Observability & Log Severity Hygiene**:
+  - Log exclusively through `src/utils/logger.ts` (`@rebecca/logger`).
+  - Emit `INFO` for normal pipeline lifecycle milestones (task enqueued, tweet posted, batch completed).
+  - Emit `WARN` for quota caps, domain rate-limit blocks, supporter name sanitization fallbacks, and retryable transient upstream hiccups.
+  - Reserve `ERROR` strictly for unhandled exceptions, failed task executions after retries are exhausted, or database corruption—preventing Cloud Error Reporting alert fatigue. Never log raw PII, private API keys, or unmasked Stripe Checkout Session IDs.
 
 ## 3. Maintained Workspace Scripts
 

@@ -51,10 +51,22 @@ Run all verification commands from the repository root before opening or updatin
    - **Trust Boundary Validation**: Treat external inputs (HTTP bodies/queries/headers, startup environment variables, raw Firestore/GCS payloads, external API responses, and non-deterministic LLM outputs) as untrusted until explicitly parsed and validated.
    - **Ban Speculative `||` Fallbacks**: Never guess property shapes (`payload.userId || payload.user_id || ''`) or silence missing required data with `value || defaultValue` (which masks upstream defects and corrupts valid falsy values `0`, `false`, `""`). Use nullish coalescing (`??`) **only** where an optional value has an explicit, specification-backed default; otherwise **fail fast** by throwing a descriptive `Error`.
    - **Trust Internal Validated Types**: Once data crosses a validated boundary into typed domain code, rely on static types rather than adding unreachable runtime guards that obscure control flow and degrade C1 branch coverage.
-4. **Explicit Error Propagation & Observability**:
-   - Never swallow exceptions in empty or log-only `catch` blocks unless an explicit fault-isolation contract is documented.
-   - Preserve stack traces when rethrowing across layers using `new Error('Failed to <operation>', { cause: err })`.
-   - Emit structured logs via `@rebecca/logger` in backend workspaces (never raw `console.log`/`console.error` in production paths) and never log PII, raw tokens, or secret payloads.
+4. **Explicit Error Propagation, Structured Logging & Severity Hygiene**:
+   - Never swallow exceptions in empty or log-only `catch` blocks unless an explicit fault-isolation contract is documented. Preserve stack traces when rethrowing across layers using `new Error('Failed to <operation>', { cause: err })`.
+   - **Google Cloud Logging Severity Invariants (`@rebecca/logger`)**:
+     - Cloud Error Reporting automatically groups `ERROR` and `CRITICAL` logs into production incident alerts. **Never emit client errors (4xx), expected business rejections, quota rate limits, or routine retries as `ERROR`**—this causes alert fatigue and obscures genuine outages.
+     - `DEBUG`: Ephemeral diagnostic context during development (suppressed in high-throughput production paths).
+     - `INFO`: Normal operational lifecycle milestones (service startup, task enqueued, batch completion, transaction confirmed).
+     - `WARNING`: Recoverable or operational anomalies (approaching quotas, transient retryable upstream API hiccups, blocked unauthorized access attempts, fallback to default timezone).
+     - `ERROR`: Unhandled exceptions, broken system invariants, corrupted database state, or unrecoverable external dependency outages requiring engineering intervention. Always pass the concrete `Error` instance (`{ name, message, stack }`).
+   - **Zero Log Leakage & CRLF Defense**: Never log PII, raw passwords, auth Bearer tokens, private keys, cookie headers, or unmasked Stripe Checkout Session IDs (`maskSessionId` required). Strip CR/LF characters (`\r`, `\n`) from untrusted inputs before logging to prevent log injection.
+5. **RESTful API Standards, Mandatory Pagination & Layered Authorization**:
+   - **REST Resource Modeling**: Author endpoints with lowercase plural resource nouns and kebab-case sub-paths (`/api/v1/posts`, `/api/v1/users/{id}`). Match HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`) strictly to standard operation semantics.
+   - **Mandatory Pagination (Zero Unbounded Queries)**: List/collection endpoints **MUST NEVER** execute unbounded full-table scans. Enforce bounded limits (e.g., default `limit=20`, hard cap `Math.min(limit, 100)`) paired with deterministic cursor (`startAfterId`, `beforeTimestamp`) or offset (`page`) pagination.
+   - **Defense-in-Depth Layered Authorization & Rate Limiting**:
+     - *Admin Routes (BFF)*: `verifyAuth` enforces valid Firebase ID token signatures, `email_verified === true`, real-time Firestore `admin_users` record verification, `status === 'ACTIVE'`, and `role === 'ADMIN'`.
+     - *Internal Batch/Worker Routes (Bot)*: Strictly require verified Google Cloud OIDC tokens (`batchAuth`, `workerAuth`).
+     - *Public Routes*: Enforce tiered IP rate limiting (`publicRateLimiter`), CORS allowlisting, and deterministic input sanitization.
 
 ## 4. Testing Strategy & Behavioral Verification (Google SWE Standards)
 

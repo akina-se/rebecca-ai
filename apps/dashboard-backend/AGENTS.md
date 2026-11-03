@@ -8,9 +8,13 @@ Scoped architectural and contract rules for the Admin Dashboard Backend-for-Fron
   - `controller.ts`: Validate HTTP parameters, query strings, multipart uploads (`multer`), and JSON bodies at the trust boundary before calling `usecase.ts`. Never pass raw Express `Request`/`Response` objects into use cases or repositories.
   - `usecase.ts`: Coordinate business rules, pagination, date/timezone normalization (`luxon`), and cross-service orchestration.
   - `repository.ts`: Read/write Firestore strictly via `@rebecca/db` typed collection helpers and converters.
-- **Authentication & Authorization (`src/middleware/auth.ts`)**:
+- **RESTful Endpoints & Mandatory Pagination**:
+  - Expose resources under `/api/v1/<plural-resource>` (`/api/v1/posts`, `/api/v1/users`). Use standard status codes (`200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `500 Internal Error`).
+  - **Zero Unbounded Scanning**: All collection endpoints **MUST** implement bounded pagination with query parameters `limit` (default with safe upper cap, e.g. `Math.min(limit, 100)`) and offset (`page`) or cursor (`startAfterId`, `beforeTimestamp`).
+- **Authentication, Authorization & Logging Hygiene (`src/middleware/auth.ts`)**:
   - Every non-public administrative route **MUST** verify Firebase ID tokens and enforce active administrator authorization (`admin_users` collection / custom claims, reinforced by `authBlocking.ts` in `apps/functions`).
   - `NO_AUTH` mode is restricted strictly to local emulator development/E2E (`NODE_ENV !== 'production'`); never permit auth bypass flags in production.
+  - **Severity Discipline**: Log authentication failures, client rejections, and invalid parameters at `logger.warn`; reserve `logger.error` exclusively for unhandled exceptions and infrastructure outages (Cloud Error Reporting targets `ERROR` severity for incident alerts).
   - Never expose stack traces, internal service URLs, or raw upstream exception payloads in HTTP error responses; strip CR/LF characters from untrusted inputs before logging and emit structured diagnostics via `src/utils/logger.ts` (`@rebecca/logger`).
 - **HTTP, Upload & Storage Hardening (`src/app.ts`, `src/utils/image.ts`, `src/utils/gcs.ts`)**:
   - Preserve `app.set('trust proxy', 1)`, `helmet()`, `express-rate-limit`, and explicit `CORS_ALLOWED_ORIGINS` validation (never allow wildcard `*` origins alongside `credentials: true` in production).

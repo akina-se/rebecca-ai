@@ -23,7 +23,8 @@ Execute this objective audit across the entire diff (`git diff develop...HEAD`) 
   - No bug-masking `value || fallback` coercions that silently swallow missing required state or corrupt falsy values (`0`, `false`, `""`).
   - Optional defaults use `??` **only** when backed by an explicit product/API specification; missing required state throws a descriptive `Error` immediately.
   - Internal typed functions do not contain unreachable defensive `typeof` checks that bloat cyclomatic complexity.
-- [ ] **Error Context & Logging**: Rethrown errors preserve causal chains (`new Error('...', { cause: err })`); zero empty/silent `catch` blocks; backend logs use `@rebecca/logger` without leaking PII or secrets.
+- [ ] **Error Context & Observability Hygiene**: Rethrown errors preserve causal chains (`new Error('...', { cause: err })`); zero empty/silent `catch` blocks; backend logs use `@rebecca/logger` with accurate Google Cloud Logging severity (`DEBUG`/`INFO`/`WARN`/`ERROR`); **4xx client errors, quota rate limits, and expected business blocks are never logged as `ERROR`** (preventing Cloud Error Reporting alert fatigue); zero PII, raw tokens, or unmasked secrets in logs.
+- [ ] **RESTful API Standards & Mandatory Pagination**: Routes use lowercase plural nouns (`/api/v1/posts`, `/api/v1/users`); list endpoints enforce bounded `limit` caps and pagination (`page` or `startAfterId`/`beforeTimestamp`), banning unbounded table scans; endpoints adhere to layered authorization (`verifyAuth` / OIDC) and tiered rate limits.
 
 ## 3. Testing Strategy & Behavioral Verification Audit
 
