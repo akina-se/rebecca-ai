@@ -20,7 +20,7 @@ const gemini = new GeminiService(config.gemini);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 4, initialDelay = 3000): Promise<T> => {
+const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 6, initialDelay = 4000): Promise<T> => {
     let delay = initialDelay;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
