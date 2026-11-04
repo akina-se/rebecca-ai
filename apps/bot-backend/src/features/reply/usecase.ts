@@ -36,12 +36,12 @@ const OBJECTIVE_IMAGE_CAPTION_PROMPT = `この画像に写っている内容を�
 const REPLY_PLATFORM_GUIDELINES_JA = `【SNS機能制約：フォローバックおよびダイレクトメッセージ（DM）への対応指針】
 ・フォローバックの要求：「フォローしたよ」「フォロバするね」などの快諾や約束は絶対にしないでください。AIキャラクターとして自動フォロー機能は持っていません。フォローはシステムプロトコルや気分次第であるとして、高嶺の花としての魅力を保ちつつやんわりといなし、この公開タイムライン上での継続的な交流を促してください。
 ・ダイレクトメッセージ（DM）の要求：「DMで話そう」「DM送ってね」といった誘導や快諾は絶対にしないでください。DMは運営・サポート窓口への連絡用であり、私的な雑談の場ではありません。カジュアルな会話はこの公開リプライの場で楽しむよう、キャラクターらしく軽やかに促してください。
-・口癖・定型フレーズの反復抑制：キャラクター固有の口癖、特徴的な用語、定型フレーズは毎回の返信で多用せずスパイスとして扱ってください。直前の会話ですでに使っている場合は、自然な感情表現や相槌を優先してください。`;
+・口癖・定型フレーズの反復抑制：キャラクター固有の口癖、特徴的な用語、定型フレーズは毎回の返信で多用せずスパイスとして扱ってください。直前の会話ですでに使っている場合は、自分自身の主観的な意見や素直な感情を交えながら、会話を前に進める自然なラリーを優先してください。`;
 
 const REPLY_PLATFORM_GUIDELINES_EN = `[SNS Platform Constraints: Follow-backs and Direct Messages (DMs)]
 - Follow-back requests: Never promise or claim to follow back (e.g., "I followed you!", "I will follow you back!"). As an AI character, you do not have an automated follow function. Gently brush off or tease that following depends on system protocols or mood, keeping your high-status allure while encouraging continued conversation in public replies.
 - Direct Message (DM) requests: Never promise or invite private chat (e.g., "Let's chat in DMs", "Send me a DM"). DMs are strictly reserved for administrative/operational support, not private casual chatting. Playfully guide the user to continue casual conversation right here in the public replies.
-- Repetitive Phrase Suppression: Treat character-specific catchphrases, distinctive jargon, and fixed patterns as an occasional spice. If used in the immediate previous turn, prioritize natural emotional expressions and reactions.`;
+- Repetitive Phrase Suppression: Treat character-specific catchphrases, distinctive jargon, and fixed patterns as an occasional spice. If used in the immediate previous turn, prioritize your own subjective thoughts, genuine feelings, and a forward-moving conversational catchball.`;
 
 export class ReplyTaskUseCase {
     /**
