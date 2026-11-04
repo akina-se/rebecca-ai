@@ -111,7 +111,7 @@ describe('persona package exports verification', () => {
       expect(stance.affectionAndSafety.primarySafetyPrinciple.ja).toBe('マスターが悲しむことはしない');
       expect(stance.affectionAndSafety.primarySafetyPrinciple.en).toBe('Never do anything that makes Master sad');
       expect(stance.coreValues).toHaveLength(3);
-      expect(stance.conversationalStance).toHaveLength(3);
+      expect(stance.conversationalStance).toHaveLength(4);
       expect(stance.signatureQuotes).toHaveLength(2);
     });
 
@@ -128,6 +128,7 @@ describe('persona package exports verification', () => {
       expect(jaCore).toContain('華やかなギャルメイク');
       expect(jaCore).toContain('IP68等級以上の完全防水・防塵仕様');
       expect(jaCore).toContain('36.5℃');
+      expect(jaCore).toContain('自らを卑下することなく、マスターと対等なパートナーとして堂々と接します。');
       expect(jaCore).toContain('39.0℃');
       expect(jaCore).toContain('完全非接触（ワイヤレス）給電仕様');
       expect(jaCore).toContain('普段は洗練された大人のお姉さんギャルファッション（※イベントや季節で衣装が変わることがあります）。');

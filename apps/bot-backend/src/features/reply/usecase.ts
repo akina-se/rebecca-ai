@@ -5,7 +5,12 @@ import { getWorkingMemory, saveInteraction } from '../../core/memory';
 import { buildSystemPrompt } from '../../core/contextInjector';
 import { publishPost } from '../../core/postPublisher';
 import { downloadImage } from '../../utils/image';
-import { extractCleanTextForLanguageDetection } from '../../utils/text';
+import {
+    extractCleanTextForLanguageDetection,
+    truncateTwitterText,
+    getTwitterTextWeightedLength,
+    TWITTER_MAX_WEIGHTED_LENGTH,
+} from '../../utils/text';
 import { resolveSituationalPersonaAnchors } from '../../core/personaAnchoring';
 import { logger } from '../../utils/logger';
 
@@ -30,11 +35,13 @@ const OBJECTIVE_IMAGE_CAPTION_PROMPT = `この画像に写っている内容を�
  */
 const REPLY_PLATFORM_GUIDELINES_JA = `【SNS機能制約：フォローバックおよびダイレクトメッセージ（DM）への対応指針】
 ・フォローバックの要求：「フォローしたよ」「フォロバするね」などの快諾や約束は絶対にしないでください。AIキャラクターとして自動フォロー機能は持っていません。フォローはシステムプロトコルや気分次第であるとして、高嶺の花としての魅力を保ちつつやんわりといなし、この公開タイムライン上での継続的な交流を促してください。
-・ダイレクトメッセージ（DM）の要求：「DMで話そう」「DM送ってね」といった誘導や快諾は絶対にしないでください。DMは運営・サポート窓口への連絡用であり、私的な雑談の場ではありません。カジュアルな会話はこの公開リプライの場で楽しむよう、キャラクターらしく軽やかに促してください。`;
+・ダイレクトメッセージ（DM）の要求：「DMで話そう」「DM送ってね」といった誘導や快諾は絶対にしないでください。DMは運営・サポート窓口への連絡用であり、私的な雑談の場ではありません。カジュアルな会話はこの公開リプライの場で楽しむよう、キャラクターらしく軽やかに促してください。
+・口癖・定型フレーズの反復抑制：キャラクター固有の口癖、特徴的な用語、定型フレーズは毎回の返信で多用せずスパイスとして扱ってください。直前の会話ですでに使っている場合は、自分自身の主観的な意見や素直な感情を交えながら、会話を前に進める自然なラリーを優先してください。`;
 
 const REPLY_PLATFORM_GUIDELINES_EN = `[SNS Platform Constraints: Follow-backs and Direct Messages (DMs)]
 - Follow-back requests: Never promise or claim to follow back (e.g., "I followed you!", "I will follow you back!"). As an AI character, you do not have an automated follow function. Gently brush off or tease that following depends on system protocols or mood, keeping your high-status allure while encouraging continued conversation in public replies.
-- Direct Message (DM) requests: Never promise or invite private chat (e.g., "Let's chat in DMs", "Send me a DM"). DMs are strictly reserved for administrative/operational support, not private casual chatting. Playfully guide the user to continue casual conversation right here in the public replies.`;
+- Direct Message (DM) requests: Never promise or invite private chat (e.g., "Let's chat in DMs", "Send me a DM"). DMs are strictly reserved for administrative/operational support, not private casual chatting. Playfully guide the user to continue casual conversation right here in the public replies.
+- Repetitive Phrase Suppression: Treat character-specific catchphrases, distinctive jargon, and fixed patterns as an occasional spice. If used in the immediate previous turn, prioritize your own subjective thoughts, genuine feelings, and a forward-moving conversational catchball.`;
 
 export class ReplyTaskUseCase {
     /**
@@ -169,18 +176,46 @@ ${desc}
             parentPostContext = contextParts.join('\n');
         }
 
+        // Detect language using pure user text.
+        // If the user text is very short (< 4 chars or mostly emoji/punctuation),
+        // complement with recent episodic buffer to avoid mistaking it or getting confused by parent post.
+        const cleanUserText = extractCleanTextForLanguageDetection(text);
+        let lang: 'ja' | 'en' = 'ja';
+        let textToDetect = cleanUserText;
+        if (cleanUserText.length < 4 && userData.episodicBuffer && userData.episodicBuffer.length > 0) {
+            const recentUserInputs = userData.episodicBuffer
+                .filter(item => item.role === 'user')
+                .slice(-3)
+                .map(item => extractCleanTextForLanguageDetection(item.content))
+                .filter(Boolean);
+            if (recentUserInputs.length > 0) {
+                textToDetect = `${cleanUserText} ${recentUserInputs.join(' ')}`.trim();
+            }
+        }
+
+        if (textToDetect) {
+            const detectPrompt = `このテキストは何語ですか？日本語（ローマ字表記を含む）であれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。\nテキスト: "${textToDetect}"`;
+            lang = await deps.gemini.detectLanguage(detectPrompt);
+        }
+
         // Assemble conversation context in strict chronological order:
         // 1. Root Post Text (Persona) -> 2. Root Post Attached Image -> 3. Interlocutor (User) Text -> 4. Interlocutor Attached Image
         // A flat, chronological progression aligns directly with causal attention in generative LLMs, avoiding confusing nested headers.
         const sections: string[] = [];
         if (parentPostText) {
-            sections.push(`【返信元の${personaName}の投稿】\n${parentPostText}`);
+            sections.push(lang === 'en'
+                ? `[Original Post by ${personaName}]\n${parentPostText}`
+                : `【返信元の${personaName}の投稿】\n${parentPostText}`);
         }
         if (parentPostMediaCaption) {
-            sections.push(`【返信元の投稿の添付画像】\n${parentPostMediaCaption}`);
+            sections.push(lang === 'en'
+                ? `[Attached Image in Original Post]\n${parentPostMediaCaption}`
+                : `【返信元の投稿の添付画像】\n${parentPostMediaCaption}`);
         }
         if (sections.length > 0) {
-            sections.push(`【対話相手（ユーザー）の発言】\n${text}`);
+            sections.push(lang === 'en'
+                ? `[Interlocutor (User) Message]\n${text}`
+                : `【対話相手（ユーザー）の発言】\n${text}`);
         }
 
         let processedText = sections.length > 0 ? sections.join('\n\n') : text;
@@ -192,7 +227,9 @@ ${desc}
                     const imageCaption = await deps.gemini.analyzeImageCaption(buffer, mimeType, OBJECTIVE_IMAGE_CAPTION_PROMPT);
                     
                     if (imageCaption) {
-                        processedText += `\n\n【対話相手（ユーザー）が添付した画像の内容】\n${imageCaption}`;
+                        processedText += lang === 'en'
+                            ? `\n\n[User's Attached Image Description]\n${imageCaption}`
+                            : `\n\n【対話相手（ユーザー）が添付した画像の内容】\n${imageCaption}`;
                     }
                 }
             } catch (e) {
@@ -220,12 +257,6 @@ ${processedText}
             ragMemories = await deps.firestore.findRagMemories(authorId, queryEmb);
         }
 
-        const cleanUserText = extractCleanTextForLanguageDetection(text);
-        let lang: 'ja' | 'en' = 'ja';
-        if (cleanUserText) {
-            const detectPrompt = `このテキストは何語ですか？日本語（ローマ字表記を含む）であれば'ja'、それ以外（主に英語）であれば'en'と、2文字の言語コードのみを出力してください。\nテキスト: "${cleanUserText}"`;
-            lang = await deps.gemini.detectLanguage(detectPrompt);
-        }
         // Dynamic Few-Shot Persona Anchors
         const personaFewShotPrompt = await resolveSituationalPersonaAnchors(
             deps.gemini,
@@ -268,13 +299,17 @@ ${processedText}
             replyLength: aiResponseText.length,
         });
 
-        // Fallback: X API limits Japanese text effectively to 140 characters.
-        if (aiResponseText.length > 138) {
-            aiResponseText = aiResponseText.substring(0, 137) + '…';
-            logger.info('[ReplyTaskUseCase] Truncated AI Reply to 138 characters', {
+        // Fallback: Ensure the reply strictly respects X (Twitter) weighted character limits (280 max weight).
+        const truncatedReply = truncateTwitterText(aiResponseText, TWITTER_MAX_WEIGHTED_LENGTH);
+        if (truncatedReply !== aiResponseText) {
+            logger.info('[ReplyTaskUseCase] Truncated AI Reply to fit Twitter weighted limit', {
                 tweetId,
-                replyLength: aiResponseText.length,
+                originalLength: aiResponseText.length,
+                originalWeight: getTwitterTextWeightedLength(aiResponseText),
+                truncatedLength: truncatedReply.length,
+                truncatedWeight: getTwitterTextWeightedLength(truncatedReply),
             });
+            aiResponseText = truncatedReply;
         }
 
         // Publish the reply back to the user on X via unified PostPublisher (thought is private; image is disabled for replies)

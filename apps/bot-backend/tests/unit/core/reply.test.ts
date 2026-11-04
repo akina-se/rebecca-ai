@@ -136,7 +136,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         expect(deps.xApi.replyToMention).toHaveBeenCalledWith('tweet_img_1', '可愛いイラスト！');
     });
 
-    it('should truncate reply if it exceeds 138 characters', async () => {
+    it('should truncate reply if it exceeds Twitter weighted limit (280)', async () => {
         deps.firestore.hasProcessedMention.mockResolvedValue(false);
         deps.firestore.getUserDoc.mockResolvedValue({
             status: 'ACTIVE',
@@ -148,7 +148,7 @@ describe('ReplyTaskUseCase Unit Tests', () => {
         deps.gemini.generateSearchQuery.mockResolvedValue(null);
         deps.gemini.detectLanguage.mockResolvedValue('ja');
         
-        // 150 characters response
+        // 150 characters response in Japanese (300 weight)
         const longReply = 'あ'.repeat(150);
         deps.gemini.generateStructuredReply.mockResolvedValue({ thought: '内省', reply: longReply });
         deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
@@ -159,9 +159,41 @@ describe('ReplyTaskUseCase Unit Tests', () => {
             authorId: 'user_1'
         });
 
+        // 139 full-width characters (278 weight) + '…' (2 weight) = 280 weight
         expect(deps.xApi.replyToMention).toHaveBeenCalledWith(
             'tweet_long',
-            'あ'.repeat(137) + '…'
+            'あ'.repeat(139) + '…'
+        );
+    });
+
+    it('should not truncate English reply between 139 and 280 characters', async () => {
+        deps.firestore.hasProcessedMention.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockResolvedValue({
+            status: 'ACTIVE',
+            episodicBuffer: [],
+            coreProfile: {}
+        });
+        deps.firestore.getExtendedPrompt.mockResolvedValue('');
+        deps.firestore.getTimelineSummary.mockResolvedValue('');
+        deps.gemini.generateSearchQuery.mockResolvedValue(null);
+        deps.gemini.detectLanguage.mockResolvedValue('en');
+        
+        // 200 characters ASCII reply (weight = 200, within 280 limit)
+        const englishReply = 'Hello Master, I am really excited about our project progress today! Everything is moving smoothly and looking super bright. Keep up the amazing work and remember to take good care of yourself always!';
+        expect(englishReply.length).toBeGreaterThan(138);
+        deps.gemini.generateStructuredReply.mockResolvedValue({ thought: 'thinking in en', reply: englishReply });
+        deps.gemini.generateEmbedding.mockResolvedValue([0.1]);
+
+        await usecase.execute({
+            tweetId: 'tweet_en_200',
+            text: 'How is it going?',
+            authorId: 'user_en'
+        });
+
+        // Must NOT be truncated
+        expect(deps.xApi.replyToMention).toHaveBeenCalledWith(
+            'tweet_en_200',
+            englishReply
         );
     });
 

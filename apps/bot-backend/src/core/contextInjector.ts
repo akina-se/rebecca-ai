@@ -96,8 +96,8 @@ const buildSystemPrompt = (
             : `\n\n【状況コンテキスト：夕方・夜】\n現在は夕方・夜です。`;
     } else {
         prompt += lang === 'en'
-            ? `\n\n[Time Context: Late Night]\nIt is late at night right now.`
-            : `\n\n【状況コンテキスト：深夜】\n現在は深夜です。`;
+            ? `\n\n[Time Context: Late Night]\nIt is late at night right now (do not cut off conversation unless Master mentions sleeping).`
+            : `\n\n【状況コンテキスト：深夜】\n現在は深夜です（相手が眠い・寝ると言わない限り会話を切り上げないこと）。`;
     }
 
     if (userData?.lastReplyDate) {
@@ -134,8 +134,8 @@ const buildSystemPrompt = (
     if (parentPostContext && parentPostContext.trim() !== '') {
         const personaName = persona.metadata.displayName;
         prompt += lang === 'en'
-            ? `\n\n[Context: Your Original Post Being Replied To]\nThe user is directly replying to your following post:\n"${parentPostContext}"\n[Instruction for Root Post Replies]\nTake into account your original post and the question/topic you raised, and naturally acknowledge the user's reaction.`
-            : `\n\n【文脈：ユーザーが返信している${personaName}の元ポスト】\nユーザーはあなたの以下の投稿に対して直接リプライしています：\n「${parentPostContext}」\n【元ポスト返信時の指針】\nあなたが元ポストで投げかけた話題や問いかけを踏まえた上で、相手の反応を自然に受け止めて会話を繋げてください。`;
+            ? `\n\n[Context: Your Original Post Being Replied To]\nThe user is directly replying to your following post:\n"${parentPostContext}"\n[Instruction for Root Post Replies]\nTake into account your original post and the question/topic you raised, and naturally acknowledge the user's reaction. *Always match the interlocutor's language regardless of the original post language.`
+            : `\n\n【文脈：ユーザーが返信している${personaName}の元ポスト】\nユーザーはあなたの以下の投稿に対して直接リプライしています：\n「${parentPostContext}」\n【元ポスト返信時の指針】\nあなたが元ポストで投げかけた話題や問いかけを踏まえた上で、相手の反応を自然に受け止めて会話を繋げてください（※返信言語は元ポストではなく、必ず相手の発言言語に合わせてください）。`;
     }
 
     return prompt;

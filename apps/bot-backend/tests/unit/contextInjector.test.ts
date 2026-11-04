@@ -60,11 +60,11 @@ describe('Context Injector', () => {
     it('should inject night context during 22:00-4:00', () => {
         (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(23));
         const prompt = buildSystemPrompt(rebeccaPersona, 'reply', { coreProfile: {}, episodicBuffer: [] }, 'こんばんは');
-        expect(prompt).toContain('【状況コンテキスト：深夜】\n現在は深夜です。');
+        expect(prompt).toContain('【状況コンテキスト：深夜】\n現在は深夜です（相手が眠い・寝ると言わない限り会話を切り上げないこと）。');
 
         (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(3));
         const latePrompt = buildSystemPrompt(rebeccaPersona, 'reply', { coreProfile: {}, episodicBuffer: [] }, '眠れない');
-        expect(latePrompt).toContain('【状況コンテキスト：深夜】\n現在は深夜です。');
+        expect(latePrompt).toContain('【状況コンテキスト：深夜】\n現在は深夜です（相手が眠い・寝ると言わない限り会話を切り上げないこと）。');
     });
 
     it('should inject Rollout Anniversary (birthday) context on April 24 in Japanese and English', () => {
@@ -116,7 +116,7 @@ describe('Context Injector', () => {
     it('should inject English night context during 22:00-4:00 when lang is en', () => {
         (getZonedDateParts as jest.Mock).mockReturnValue(createMockZonedParts(23));
         const prompt = buildSystemPrompt(rebeccaPersona, 'reply', { coreProfile: {}, episodicBuffer: [] }, 'Good evening', '', '', [], 'en');
-        expect(prompt).toContain('[Time Context: Late Night]\nIt is late at night right now.');
+        expect(prompt).toContain('[Time Context: Late Night]\nIt is late at night right now (do not cut off conversation unless Master mentions sleeping).');
     });
 
     it('should inject English absence context if over 3 days when lang is en', () => {
