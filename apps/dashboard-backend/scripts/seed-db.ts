@@ -170,7 +170,7 @@ async function seedFirestore() {
         aiText: `レベッカの回答 #${j + 1}: ${topic}は本当に素晴らしいよね！私も大好きだよ。`,
         thought: `マスターが${topic}に興味持ってくれて嬉しい。もっと深掘りして喜ばせたいな。`,
         timestamp: logTime.toISOString(),
-        expireAt: new Date(logTime.getTime() + 30 * 24 * 3600000).toISOString()
+        expireAt: new Date(logTime.getTime() + 1825 * 24 * 3600000).toISOString()
       });
       totalLogsCount++;
     }
@@ -220,7 +220,7 @@ async function seedFirestore() {
         ? `このニュース、マスターの仕事や関心に関係ありそう。共有して元気出してもらおう。`
         : `ふと浮かんだ本音。マスターがこれ見てちょっとでも笑ってくれたらいいな。`,
       timestamp: postDate.toISOString(),
-      expireAt: new Date(postDate.getTime() + 30 * 24 * 3600000).toISOString(),
+      expireAt: new Date(postDate.getTime() + 1825 * 24 * 3600000).toISOString(),
       status: 'SUCCESS',
       postType,
       ...(newsTitle ? { newsTitle } : {}),

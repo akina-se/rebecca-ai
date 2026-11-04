@@ -20,7 +20,7 @@ const gemini = new GeminiService(config.gemini);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 4, initialDelay = 3000): Promise<T> => {
+const retryAsync = async <T>(fn: () => Promise<T>, maxRetries = 6, initialDelay = 4000): Promise<T> => {
     let delay = initialDelay;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -105,7 +105,7 @@ const runEval = hasApiKey ? describe : describe.skip;
 
 runEval('LLM as a Judge: Prompt Evaluation', () => {
     // LLM calls with retry can take some time, so extend timeout to 120 seconds
-    jest.setTimeout(120000);
+    jest.setTimeout(240000);
 
     const testCases = [
         {

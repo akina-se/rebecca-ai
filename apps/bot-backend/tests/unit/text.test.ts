@@ -1,4 +1,9 @@
-import { extractCleanTextForLanguageDetection } from '../../src/utils/text';
+import {
+    extractCleanTextForLanguageDetection,
+    getTwitterTextWeightedLength,
+    truncateTwitterText,
+    TWITTER_MAX_WEIGHTED_LENGTH,
+} from '../../src/utils/text';
 
 describe('Text Utils - extractCleanTextForLanguageDetection', () => {
     it('should strip mentions and URLs from text', () => {
@@ -29,6 +34,67 @@ describe('Text Utils - extractCleanTextForLanguageDetection', () => {
         expect(extractCleanTextForLanguageDetection('')).toBe('');
         expect(extractCleanTextForLanguageDetection(null as unknown as string)).toBe('');
         expect(extractCleanTextForLanguageDetection(undefined as unknown as string)).toBe('');
+    });
+});
+
+describe('Text Utils - getTwitterTextWeightedLength', () => {
+    it('should return 0 for empty or falsy inputs', () => {
+        expect(getTwitterTextWeightedLength('')).toBe(0);
+        expect(getTwitterTextWeightedLength(null as unknown as string)).toBe(0);
+        expect(getTwitterTextWeightedLength(undefined as unknown as string)).toBe(0);
+    });
+
+    it('should count ASCII / Latin characters as 1 weight', () => {
+        expect(getTwitterTextWeightedLength('Hello World!')).toBe(12);
+        expect(getTwitterTextWeightedLength('abc 123')).toBe(7);
+    });
+
+    it('should count CJK characters, full-width symbols, and emojis as 2 weight', () => {
+        expect(getTwitterTextWeightedLength('こんにちは')).toBe(10);
+        expect(getTwitterTextWeightedLength('日本語とEnglish')).toBe(4 * 2 + 7); // 15
+        expect(getTwitterTextWeightedLength('🎉')).toBe(2);
+        expect(getTwitterTextWeightedLength('✨Hello✨')).toBe(2 + 5 + 2); // 9
+    });
+});
+
+describe('Text Utils - truncateTwitterText', () => {
+    it('should return empty string for empty input', () => {
+        expect(truncateTwitterText('')).toBe('');
+        expect(truncateTwitterText(null as unknown as string)).toBe('');
+    });
+
+    it('should not truncate if weighted length is within limit', () => {
+        const text = 'Hello Master, have a wonderful day!';
+        expect(truncateTwitterText(text, 280)).toBe(text);
+        const jaText = 'こんにちは、マスター！今日も頑張ろうね。';
+        expect(truncateTwitterText(jaText, 280)).toBe(jaText);
+    });
+
+    it('should truncate Japanese text cleanly with ellipsis within limit', () => {
+        const longJa = 'あ'.repeat(150); // 300 weight
+        const result = truncateTwitterText(longJa, 280);
+        // Ellipsis '…' is weight 2, so 139 'あ' (278 weight) + '…' (2 weight) = 280 weight
+        expect(result).toBe('あ'.repeat(139) + '…');
+        expect(getTwitterTextWeightedLength(result)).toBe(280);
+    });
+
+    it('should truncate English text at word boundary to prevent cutting words in half', () => {
+        const sentence = 'The quick brown fox jumps over the lazy dog and keeps running across the green field until it reaches the edge';
+        const truncated = truncateTwitterText(sentence, 60);
+        expect(truncated.endsWith('…')).toBe(true);
+        const withoutEllipsis = truncated.slice(0, -1);
+        expect(withoutEllipsis.endsWith(' ')).toBe(false);
+        expect(sentence.startsWith(withoutEllipsis)).toBe(true);
+        expect(getTwitterTextWeightedLength(truncated)).toBeLessThanOrEqual(60);
+        const words = withoutEllipsis.split(' ');
+        expect(words[words.length - 1]).toMatch(/^[a-zA-Z]+$/);
+    });
+
+    it('should truncate without word boundary if no space is found within candidate', () => {
+        const noSpace = 'a'.repeat(300);
+        const truncated = truncateTwitterText(noSpace, 280);
+        expect(truncated).toBe('a'.repeat(278) + '…');
+        expect(getTwitterTextWeightedLength(truncated)).toBe(280);
     });
 });
 
