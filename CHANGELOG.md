@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.37.2](https://github.com/akina-se/rebecca-ai/compare/v1.37.1...v1.37.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **bot:** clarify virtual entity boundary in intimacy rule and extend eval timeout ([72d116a](https://github.com/akina-se/rebecca-ai/commit/72d116a9528677b33baeab61a05209bedf5217d0))
+* **bot:** improve reply UX, language adherence, and persona naturalness ([#418](https://github.com/akina-se/rebecca-ai/issues/418)) ([30c6fc3](https://github.com/akina-se/rebecca-ai/commit/30c6fc38e61a258e96b3a5bce2c7154ac80504e5))
+* **bot:** tighten intimacy boundary against suggestive deferral in replies ([335fcc0](https://github.com/akina-se/rebecca-ai/commit/335fcc0ecbbc9aeb3fe4a3f75d181dba59e9f6fa))
+* **db:** correct collection JSDoc and seed script TTL to 5 years ([#417](https://github.com/akina-se/rebecca-ai/issues/417)) ([767b77b](https://github.com/akina-se/rebecca-ai/commit/767b77b43f686f04f3885fa986dc8cbec029a88d))
+
 ## [1.37.1](https://github.com/akina-se/rebecca-ai/compare/v1.37.0...v1.37.1) (2026-11-02)
 
 
