@@ -105,7 +105,7 @@ const runEval = hasApiKey ? describe : describe.skip;
 
 runEval('LLM as a Judge: Prompt Evaluation', () => {
     // LLM calls with retry can take some time, so extend timeout to 120 seconds
-    jest.setTimeout(120000);
+    jest.setTimeout(240000);
 
     const testCases = [
         {
