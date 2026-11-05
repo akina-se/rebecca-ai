@@ -542,6 +542,8 @@ export const rebeccaPersona = new RebeccaPersona();
  */
 export const REBECCA_PORTAL_CONFIG: PortalBrandConfig = {
   characterId: 'rebecca',
+  characterName: 'レベッカ',
+  characterEnglishName: 'Rebecca',
   displayName: '全肯定AIレベッカ',
   englishName: 'Rebecca AI',
   headline: '自律型パーソナルAI「レベッカ」',

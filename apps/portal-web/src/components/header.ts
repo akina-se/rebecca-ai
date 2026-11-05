@@ -25,10 +25,10 @@ export function renderHeader(config: PortalBrandConfig, activePage: PageContext 
         <ul class="nav-links">
           <li><a href="${prefix}#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
           <li><a href="${prefix}#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
-          <li><a href="${prefix}#profile"><span class="t-ja">${config.displayName}</span><span class="t-en">${config.englishName}</span></a></li>
+          <li><a href="${prefix}#profile"><span class="t-ja">${config.characterName}</span><span class="t-en">${config.characterEnglishName}</span></a></li>
           <li><a href="${prefix}#gallery"><span class="t-ja">フォト</span><span class="t-en">Gallery</span></a></li>
           <li><a href="${prefix}#opensource"><span class="t-ja">技術公開</span><span class="t-en">Open Source</span></a></li>
-          <li><a href="/supporters" class="${activePage === 'supporters' ? 'active' : ''}"><span class="t-ja">サポーター</span><span class="t-en">Supporters</span></a></li>
+          <li><a href="${isHome ? '#supporters' : '/supporters'}" class="${activePage === 'supporters' ? 'active' : ''}"><span class="t-ja">サポーター</span><span class="t-en">Supporters</span></a></li>
         </ul>
 
         <div class="nav-actions">

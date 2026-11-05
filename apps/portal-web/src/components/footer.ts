@@ -27,7 +27,7 @@ export function renderFooter(config: PortalBrandConfig): string {
           <ul>
             <li><a href="/#news"><span class="t-ja">お知らせ</span><span class="t-en">News</span></a></li>
             <li><a href="/#about"><span class="t-ja">私たちについて</span><span class="t-en">About</span></a></li>
-            <li><a href="/#profile"><span class="t-ja">${config.displayName}</span><span class="t-en">${config.englishName}</span></a></li>
+            <li><a href="/#profile"><span class="t-ja">${config.characterName}</span><span class="t-en">${config.characterEnglishName}</span></a></li>
             <li><a href="/#gallery"><span class="t-ja">フォトギャラリー</span><span class="t-en">Gallery</span></a></li>
           </ul>
         </div>
@@ -69,8 +69,8 @@ export function renderFooter(config: PortalBrandConfig): string {
         </div>
       </div>
       <div class="footer-disclaimer">
-        <span class="t-ja">${config.organizationName} は、自律型パーソナルAI「${config.displayName}」の世界観演出のために設定された研究創作プロジェクトです（運営: AKINA）。米Google LLC 等の実在企業・団体とは提携・関係ありません。</span>
-        <span class="t-en">${config.organizationName} is a research &amp; creative world-building project for the autonomous personal AI "${config.englishName}", operated by AKINA. Not affiliated with Google LLC or any corporate entity.</span>
+        <span class="t-ja">${config.organizationName} は、自律型パーソナルAI「${config.characterName}」の世界観演出のために設定された研究創作プロジェクトです（運営: AKINA）。米Google LLC 等の実在企業・団体とは提携・関係ありません。</span>
+        <span class="t-en">${config.organizationName} is a research &amp; creative world-building project for the autonomous personal AI "${config.characterEnglishName}", operated by AKINA. Not affiliated with Google LLC or any corporate entity.</span>
       </div>
     </div>
   </footer>

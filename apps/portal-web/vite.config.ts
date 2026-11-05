@@ -47,7 +47,9 @@ function portalHtmlPlugin(): Plugin {
 
       // Token replacements
       output = output
-        .replace(/{{CHARACTER_NAME}}/g, activePortalConfig.displayName)
+        .replace(/{{CHARACTER_NAME}}/g, activePortalConfig.characterName)
+        .replace(/{{CHARACTER_ENGLISH_NAME}}/g, activePortalConfig.characterEnglishName)
+        .replace(/{{DISPLAY_NAME}}/g, activePortalConfig.displayName)
         .replace(/{{ENGLISH_NAME}}/g, activePortalConfig.englishName)
         .replace(/{{ORG_NAME}}/g, activePortalConfig.organizationName)
         .replace(/{{CANONICAL_URL}}/g, activePortalConfig.canonicalUrl)

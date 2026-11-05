@@ -912,6 +912,8 @@ export interface PortalSupportSectionConfig {
  */
 export interface PortalBrandConfig {
   characterId: string;
+  characterName: string;
+  characterEnglishName: string;
   displayName: string;
   englishName: string;
   headline: string;
