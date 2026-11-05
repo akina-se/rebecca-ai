@@ -815,3 +815,116 @@ export interface PublicSupporterCreditsResponse {
   limit: number;
   totalPages: number;
 }
+
+/** Individual support plan presented on the public portal */
+export interface PublicSupportPlanDto {
+  tier: SupportTier;
+  amount: number;
+  currency: 'jpy';
+  itemLabel: string;
+  displayName: string;
+  paymentUrl: string | null;
+  available: boolean;
+}
+
+/** Public support plans API response */
+export interface PublicSupportPlansResponse {
+  plans: PublicSupportPlanDto[];
+  contactEmail: string | null;
+}
+
+/** Successful session verification payload for post-checkout reward download */
+export interface VerifySessionSuccessResponse {
+  valid: true;
+  status: 'paid';
+  amount: number;
+  tier: SupportTier;
+  itemLabel: string;
+  supporterName: string;
+  downloadUrl: string;
+  expiresAt: string;
+  paidAt: string;
+  rewardImageId: string;
+}
+
+/** Failed session verification payload */
+export interface VerifySessionErrorResponse {
+  valid: false;
+  error: string;
+}
+
+/** Discriminated union of session verification API response */
+export type VerifySessionResponse = VerifySessionSuccessResponse | VerifySessionErrorResponse;
+
+/** Download reward signed link response */
+export interface DownloadRewardResponse {
+  downloadUrl: string;
+  expiresAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Portal & Character Branding Contracts
+// ---------------------------------------------------------------------------
+
+/** Visual color palette defining character branding on the web portal */
+export interface PortalThemeColors {
+  primary: string;
+  primaryLight: string;
+  primaryGlow: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  backgroundCard: string;
+  textPrimary: string;
+  textSecondary: string;
+}
+
+/** External social media profiles and channels for the character */
+export interface CharacterSocialLinks {
+  xUrl: string;
+  xHandle: string;
+  youtubeUrl?: string;
+  pixivUrl?: string;
+  githubUrl?: string;
+  kofiUrl?: string;
+}
+
+/** Asset paths referenced by the public portal templates */
+export interface PortalAssetPaths {
+  faviconSvg: string;
+  faviconPng: string;
+  ogpBanner: string;
+  cutoutImage: string;
+  portraitImage?: string;
+  logoSvg: string;
+}
+
+/** Supporter section configuration */
+export interface PortalSupportSectionConfig {
+  enabled: boolean;
+  title: string;
+  description: string;
+}
+
+/**
+ * Authoritative character and portal brand configuration.
+ * Consumed by apps/portal-web to render the character-agnostic website.
+ */
+export interface PortalBrandConfig {
+  characterId: string;
+  displayName: string;
+  englishName: string;
+  headline: string;
+  subheadline: string;
+  description: string;
+  organizationName: string;
+  organizationUrl: string;
+  developerLabel: string;
+  canonicalUrl: string;
+  defaultHashtag: string;
+  theme: PortalThemeColors;
+  social: CharacterSocialLinks;
+  assets: PortalAssetPaths;
+  support: PortalSupportSectionConfig;
+}
+
