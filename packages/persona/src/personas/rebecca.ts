@@ -6,6 +6,7 @@ import {
   PromptContext,
   Language,
 } from '../types';
+import { PortalBrandConfig } from '@rebecca/types';
 import { BasePersona } from '../basePersona';
 
 /**
@@ -534,3 +535,55 @@ export class RebeccaPersona extends BasePersona {
  * Singleton instance of RebeccaPersona
  */
 export const rebeccaPersona = new RebeccaPersona();
+
+/**
+ * Authoritative web portal brand and layout configuration for Rebecca AI.
+ * Supplies visual identity, styling variables, assets, and metadata to apps/portal-web.
+ */
+export const REBECCA_PORTAL_CONFIG: PortalBrandConfig = {
+  characterId: 'rebecca',
+  displayName: '全肯定AIレベッカ',
+  englishName: 'Rebecca AI',
+  headline: '自律型パーソナルAI「レベッカ」',
+  subheadline: '最先端の知能でマスターを全肯定するパートナー',
+  description:
+    'Gemitec Inc.が開発した自律型パーソナルAI「全肯定AIレベッカ（Rebecca）」。最先端の知能でマスターを全肯定するパートナー。Autonomous Personal AI developed by Gemitec Inc.',
+  organizationName: 'Gemitec Inc.',
+  organizationUrl: 'https://rebecca-ai.net/',
+  developerLabel: 'ジェミテック社（Gemitec Inc.）',
+  canonicalUrl: 'https://rebecca-ai.net/',
+  defaultHashtag: '#全肯定AIレベッカ',
+  theme: {
+    primary: '#ff2a85',
+    primaryLight: '#ff6ba5',
+    primaryGlow: 'rgba(255, 42, 133, 0.4)',
+    secondary: '#00e5ff',
+    accent: '#ffe600',
+    background: '#090a10',
+    backgroundCard: 'rgba(18, 20, 32, 0.75)',
+    textPrimary: '#ffffff',
+    textSecondary: 'rgba(255, 255, 255, 0.7)',
+  },
+  social: {
+    xUrl: 'https://x.com/rebecca_ai_gal',
+    xHandle: '@rebecca_ai_gal',
+    youtubeUrl: 'https://youtube.com/@rebecca-ai',
+    pixivUrl: 'https://www.pixiv.net/users/129754550',
+    githubUrl: 'https://github.com/akina-se/rebecca-ai',
+    kofiUrl: 'https://ko-fi.com/rebeccaai',
+  },
+  assets: {
+    faviconSvg: 'assets/favicon.svg',
+    faviconPng: 'assets/favicon.png',
+    ogpBanner: 'assets/ogp_banner.jpg',
+    cutoutImage: 'assets/rebecca_cutout.webp',
+    portraitImage: 'assets/rebecca_portrait.webp',
+    logoSvg: 'assets/gemitec_logo.svg',
+  },
+  support: {
+    enabled: true,
+    title: 'Rebecca Support & Tipping Project',
+    description: 'レベッカの活動（クラウド計算リソース・機能進化）を直接応援できる公式サポートプロジェクトです。',
+  },
+};
+
