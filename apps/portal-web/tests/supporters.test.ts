@@ -4,6 +4,7 @@ import {
   escapeHtml,
   getNameFontClass,
   formatDateYMD,
+  initTiersCarousel,
 } from '../src/scripts/supporters';
 
 describe('Client Script - Supporters Roster & Plans', () => {
@@ -189,6 +190,89 @@ describe('Client Script - Supporters Roster & Plans', () => {
       const grid = document.getElementById('roster-grid');
       expect(grid?.innerHTML).toContain('名簿の取得に失敗しました');
       errSpy.mockRestore();
+    });
+  });
+
+  describe('initTiersCarousel', () => {
+    beforeEach(() => {
+      document.body.innerHTML = `
+        <div class="tiers-carousel-wrapper">
+          <div id="tiers-edge-left" class="tiers-edge-indicator left"></div>
+          <div id="tiers-edge-right" class="tiers-edge-indicator right"></div>
+          <div id="tiers-grid" style="width: 300px; overflow-x: auto;">
+            <div class="tier-card" style="width: 250px;">Bronze</div>
+            <div class="tier-card" style="width: 250px;">Silver</div>
+            <div class="tier-card" style="width: 250px;">Gold</div>
+          </div>
+          <div id="tiers-carousel-dots">
+            <span class="carousel-dot active" data-index="0"></span>
+            <span class="carousel-dot" data-index="1"></span>
+            <span class="carousel-dot" data-index="2"></span>
+          </div>
+        </div>
+      `;
+    });
+
+    it('should return early if tiers-grid does not exist', () => {
+      document.body.innerHTML = '';
+      expect(() => initTiersCarousel()).not.toThrow();
+    });
+
+    it('should initialize carousel and scroll listener in mobile mode', () => {
+      // Mock window.innerWidth
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
+
+      const grid = document.getElementById('tiers-grid') as HTMLElement;
+      const edgeLeft = document.getElementById('tiers-edge-left') as HTMLElement;
+      const edgeRight = document.getElementById('tiers-edge-right') as HTMLElement;
+      const cards = grid.querySelectorAll<HTMLElement>('.tier-card');
+      const dots = document.querySelectorAll<HTMLElement>('.carousel-dot');
+
+      // Mock layout properties
+      Object.defineProperty(grid, 'clientWidth', { value: 300, configurable: true });
+      Object.defineProperty(grid, 'scrollWidth', { value: 900, configurable: true });
+      cards.forEach((card, idx) => {
+        Object.defineProperty(card, 'offsetLeft', { value: idx * 260, configurable: true });
+        Object.defineProperty(card, 'offsetWidth', { value: 250, configurable: true });
+        card.scrollIntoView = jest.fn();
+      });
+
+      initTiersCarousel();
+
+      // Test scroll updates
+      grid.scrollLeft = 50;
+      grid.dispatchEvent(new Event('scroll'));
+
+      expect(edgeLeft.classList.contains('active')).toBe(true);
+      expect(edgeRight.classList.contains('active')).toBe(true);
+
+      // Scroll to end
+      grid.scrollLeft = 600;
+      grid.dispatchEvent(new Event('scroll'));
+      expect(edgeRight.classList.contains('active')).toBe(false);
+
+      // Click dot
+      dots[1]?.dispatchEvent(new Event('click'));
+      expect(cards[1]?.scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+
+      // Window resize
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    it('should not update edges if window is desktop (>900px)', () => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1200 });
+      const grid = document.getElementById('tiers-grid') as HTMLElement;
+      const edgeLeft = document.getElementById('tiers-edge-left') as HTMLElement;
+
+      initTiersCarousel();
+      grid.scrollLeft = 100;
+      grid.dispatchEvent(new Event('scroll'));
+
+      expect(edgeLeft.classList.contains('active')).toBe(false);
     });
   });
 });

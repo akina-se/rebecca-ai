@@ -4,10 +4,28 @@ import { PortalBrandConfig } from '@rebecca/types';
  * Renders the shared footer including character profile navigation, media links, and governance terms.
  *
  * @param config - The active portal brand configuration.
+ * @param includeMobileDock - Whether to render the floating mobile dock (typically on index.html).
  * @returns Serialized HTML string for <footer>.
  */
-export function renderFooter(config: PortalBrandConfig): string {
+export function renderFooter(config: PortalBrandConfig, includeMobileDock = false): string {
   const currentYear = new Date().getFullYear();
+
+  const mobileDockHtml = includeMobileDock ? `
+  <!-- Mobile Floating Dock -->
+  <div class="mobile-dock">
+    <div class="mobile-dock-inner">
+      <a href="${config.social.xUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-purple"
+        style="padding: 10px 16px; font-size: 13px;">
+        <span class="t-ja">Xで話しかける</span>
+        <span class="t-en">Talk on X</span>
+      </a>
+      <a href="/supporters" class="btn btn-outline"
+        style="padding: 10px 12px; font-size: 13px; color: #fff;">
+        <span class="t-ja">支援</span>
+        <span class="t-en">Support</span>
+      </a>
+    </div>
+  </div>` : '';
 
   return `
   <footer>
@@ -74,21 +92,6 @@ export function renderFooter(config: PortalBrandConfig): string {
       </div>
     </div>
   </footer>
-
-  <!-- Mobile Floating Dock -->
-  <div class="mobile-dock">
-    <div class="mobile-dock-inner">
-      <a href="${config.social.xUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-purple"
-        style="padding: 10px 16px; font-size: 13px;">
-        <span class="t-ja">Xで話しかける</span>
-        <span class="t-en">Talk on X</span>
-      </a>
-      <a href="/supporters" class="btn btn-outline"
-        style="padding: 10px 12px; font-size: 13px; color: #fff;">
-        <span class="t-ja">支援</span>
-        <span class="t-en">Support</span>
-      </a>
-    </div>
-  </div>
+  ${mobileDockHtml}
 `.trim();
 }

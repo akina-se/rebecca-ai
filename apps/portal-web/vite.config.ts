@@ -40,9 +40,9 @@ function portalHtmlPlugin(): Plugin {
         return renderHeader(activePortalConfig, pageContext);
       });
 
-      // Expand @footer directive: <!-- @footer -->
-      output = output.replace(/<!--\s*@footer\s*-->/g, () => {
-        return renderFooter(activePortalConfig);
+      // Expand @footer directive: <!-- @footer --> or <!-- @footer includeMobileDock="true" -->
+      output = output.replace(/<!--\s*@footer(?:\s+includeMobileDock=["'](.*?)["'])?\s*-->/g, (_match, dock) => {
+        return renderFooter(activePortalConfig, dock === 'true');
       });
 
       // Token replacements

@@ -121,5 +121,80 @@ if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     loadSupportPlans().catch(console.error);
     loadSupporterCredits(1).catch(console.error);
+    initTiersCarousel();
   });
+}
+
+/** Initializes the mobile carousel behavior and dot indicators for sponsorship tiers */
+export function initTiersCarousel(): void {
+  const grid = document.getElementById('tiers-grid') as HTMLElement | null;
+  if (!grid) return;
+  const targetGrid = grid;
+
+  const edgeLeft = document.getElementById('tiers-edge-left') as HTMLElement | null;
+  const edgeRight = document.getElementById('tiers-edge-right') as HTMLElement | null;
+  const dots = document.querySelectorAll<HTMLElement>('#tiers-carousel-dots .carousel-dot');
+  const cards = targetGrid.querySelectorAll<HTMLElement>('.tier-card');
+
+  function updateEdgesAndDots(): void {
+    if (typeof window === 'undefined' || window.innerWidth > 900) return;
+    const scrollLeft = targetGrid.scrollLeft;
+    const maxScroll = targetGrid.scrollWidth - targetGrid.clientWidth;
+
+    if (edgeLeft) {
+      if (scrollLeft > 15) {
+        edgeLeft.classList.add('active');
+      } else {
+        edgeLeft.classList.remove('active');
+      }
+    }
+
+    if (edgeRight) {
+      if (scrollLeft < maxScroll - 15) {
+        edgeRight.classList.add('active');
+      } else {
+        edgeRight.classList.remove('active');
+      }
+    }
+
+    if (cards.length > 0 && dots.length > 0) {
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      const containerCenter = scrollLeft + targetGrid.clientWidth / 2;
+
+      cards.forEach((card, idx) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const diff = Math.abs(containerCenter - cardCenter);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = idx;
+        }
+      });
+
+      dots.forEach((dot, idx) => {
+        if (idx === closestIdx) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.getAttribute('data-index') ?? '0', 10);
+      if (cards[idx]) {
+        cards[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    });
+  });
+
+  targetGrid.addEventListener('scroll', updateEdgesAndDots, { passive: true });
+  window.addEventListener('resize', updateEdgesAndDots, { passive: true });
+  if (typeof window !== 'undefined' && window.innerWidth <= 900 && cards[1]) {
+    const targetScroll = cards[1].offsetLeft - (targetGrid.clientWidth - cards[1].offsetWidth) / 2;
+    targetGrid.scrollLeft = Math.max(0, targetScroll);
+  }
+  setTimeout(updateEdgesAndDots, 100);
 }
