@@ -1,0 +1,242 @@
+/* Legal, Terms, and Privacy Styles */
+
+.page-header {
+  padding: 60px 0 36px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 48px;
+}
+
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gemitec-purple-light);
+  margin-bottom: 16px;
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid var(--border-purple);
+  border-radius: var(--radius-full);
+}
+
+.page-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+
+.page-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 680px;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.legal-content {
+  padding-bottom: 80px;
+}
+
+.legal-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+}
+
+.legal-section:hover {
+  border-color: var(--border-purple);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gemitec-purple-light);
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid var(--border-purple);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.legal-body {
+  font-size: 15px;
+  color: #e2e8f0;
+  line-height: 1.85;
+  margin-bottom: 18px;
+}
+
+.legal-body:last-child {
+  margin-bottom: 0;
+}
+
+.legal-list {
+  margin: 12px 0 18px 24px;
+  list-style-type: none;
+}
+
+.legal-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 10px;
+  font-size: 14.5px;
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.legal-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gemitec-purple-light);
+  box-shadow: 0 0 8px var(--gemitec-purple-glow);
+}
+
+.legal-list-numbered {
+  margin: 12px 0 18px 24px;
+  padding-left: 0;
+}
+
+.legal-list-numbered li {
+  margin-bottom: 10px;
+  font-size: 14.5px;
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.legal-note-banner {
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-left: 3px solid var(--gemitec-purple);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Tokushoho Card & Table */
+.legal-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 36px 40px;
+  margin-bottom: 40px;
+}
+
+.tokushoho-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.tokushoho-table tr {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tokushoho-table tr:last-child {
+  border-bottom: none;
+}
+
+.tokushoho-table th {
+  width: 28%;
+  padding: 18px 20px 18px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  vertical-align: top;
+  text-align: left;
+}
+
+.tokushoho-table td {
+  width: 72%;
+  padding: 18px 0 18px 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  vertical-align: top;
+}
+
+@media (max-width: 768px) {
+  .legal-section {
+    padding: 24px 20px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .tokushoho-table th,
+  .tokushoho-table td {
+    display: block;
+    width: 100%;
+    padding: 10px 0;
+  }
+
+  .tokushoho-table th {
+    padding-top: 14px;
+    padding-bottom: 4px;
+  }
+
+  .tokushoho-table tr {
+    display: block;
+    padding-bottom: 12px;
+  }
+
+  .legal-card {
+    padding: 24px 20px;
+  }
+}

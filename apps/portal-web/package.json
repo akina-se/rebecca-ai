@@ -1,0 +1,32 @@
+{
+  "name": "portal-web",
+  "version": "1.37.2",
+  "description": "Autonomous Personal AI Public Web Portal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "jest --coverage",
+    "lint": "eslint .",
+    "license-check": "license-checker --summary --onlyAllow \"MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC-BY-4.0;BlueOak-1.0.0;CC-BY-3.0;CC0-1.0;Unlicense;0BSD\"",
+    "secret-check": "secretlint \"**/*\"",
+    "audit:fix": "npm audit fix"
+  },
+  "dependencies": {
+    "@rebecca/persona": "*",
+    "@rebecca/types": "*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.6.4",
+    "eslint": "^10.13.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.5"
+  },
+  "license": "MIT"
+}
