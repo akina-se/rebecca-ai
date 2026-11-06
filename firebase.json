@@ -46,7 +46,7 @@
       ]
     },
     {
-      "site": "rebecca-ai-gal",
+      "site": "rebecca-dashboard",
       "public": "apps/dashboard-frontend/dist/dashboard-frontend/browser",
       "ignore": [
         "firebase.json",
