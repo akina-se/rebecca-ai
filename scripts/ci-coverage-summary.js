@@ -33,6 +33,7 @@ const packages = [
   { name: 'apps/dashboard-backend', path: 'apps/dashboard-backend/coverage/coverage-summary.json', requiredGate: true },
   { name: 'apps/functions', path: 'apps/functions/coverage/coverage-summary.json', requiredGate: true },
   { name: 'apps/dashboard-frontend', path: 'apps/dashboard-frontend/coverage/coverage-summary.json', requiredGate: true },
+  { name: 'apps/portal-web', path: 'apps/portal-web/coverage/coverage-summary.json', requiredGate: true },
 ];
 
 /** Quality Gate Threshold (Minimum percentage required for C0/C1 metrics) */

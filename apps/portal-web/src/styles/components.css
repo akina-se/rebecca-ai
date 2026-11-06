@@ -1,0 +1,77 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.btn-purple {
+  background: linear-gradient(135deg, var(--gemitec-purple) 0%, var(--gemitec-purple-dark) 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 18px var(--gemitec-purple-glow);
+}
+
+.btn-purple:hover {
+  background: linear-gradient(135deg, #9d71f7 0%, #7c3aed 100%);
+  box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-purple);
+  transform: translateY(-1px);
+}
+
+.corp-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gemitec-purple-light);
+  margin-bottom: 20px;
+  padding: 4px 12px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid var(--border-purple);
+  border-radius: var(--radius-full);
+}
+
+.status-dot-green {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 30%, var(--gemitec-purple-light) 75%, var(--accent-pink) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}

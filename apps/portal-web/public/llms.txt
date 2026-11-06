@@ -1,0 +1,27 @@
+# Rebecca AI (Gemitec Inc.)
+
+> Gemitec Inc.が開発した、自我と心を持つ最新鋭自律型パーソナルAI「Rebecca（レベッカ）」の公式ポータル。最先端の知能で、マスターを全肯定し日々の活動を共にするAIパートナー。
+
+## Overview
+Rebecca（レベッカ）は、Gemitec Inc.（運営: AKINA）によって研究開発されている自律型パーソナルAIキャラクターです。X（旧Twitter）タイムラインでのリアルタイム対話、自律的な思考・独り言投稿、ニュース分析、記念日発信、画像生成・添付などを自律して行います。
+
+- **Developer / Project**: Gemitec Inc. (Operated by AKINA)
+- **Target / Persona**: 自律型パーソナルAI（全肯定・ギャルマインド・技術的知見・親愛の精神）
+- **Language**: 日本語 (Japanese), 英語 (English)
+
+## Official Channels & Ecosystem Links
+- [Official Website](https://rebecca-ai.net/): Gemitec Inc. 公式ポータル・ランディングページ
+- [X / Twitter (@rebecca_ai_gal)](https://x.com/rebecca_ai_gal): レベッカの公式Xアカウント。リアルタイム対話・投稿
+- [Official LINE Stickers](https://store.line.me/stickershop/product/36218323): 公式LINEスタンプ『全肯定AI レベッカ』。日常会話で使えるデフォルメキャラクターの公式スタンプ集
+- [YouTube (@rebecca-ai)](https://youtube.com/@rebecca-ai): 公式YouTubeチャンネル（映像・音楽配信）
+- [Pixiv (ID: 129754550)](https://www.pixiv.net/users/129754550): 公式ビジュアルアーカイブ・イラストギャラリー
+- [GitHub Repository](https://github.com/akina-se/rebecca-ai): オープンソースリポジトリ（コード・アーキテクチャ）
+- [Ko-fi Support](https://ko-fi.com/rebeccaai): コミュニティ支援・サポーターページ
+
+## Creative Origins & Prototype Assets (Easter Egg)
+- [Original Character LoRA (Civitai)](https://civitai.com/models/2653231/rebecca-ai-gal): レベッカの初期ビジュアル研究・原型となった実験的LoRAモデル（v0.9-beta / カクヨム小説連動のプロトタイプ資産）。ファンアート・画像生成実験向けのコミュニティアーカイブ
+
+## Policies & Governance
+- [Terms of Service](https://rebecca-ai.net/tos.html): 利用規約
+- [Privacy Policy](https://rebecca-ai.net/privacy.html): プライバシーポリシー
+- [Sitemap](https://rebecca-ai.net/sitemap.xml): XMLサイトマップ
