@@ -1,7 +1,7 @@
 export * from './types';
 export * from './basePersona';
 export { precomputedPersonaPatternEmbeddings, PersonaPatternWithVector } from './personaPatternVectors';
-export { rebeccaPersona, RebeccaPersona, REBECCA_METADATA } from './personas/rebecca';
+export { rebeccaPersona, RebeccaPersona, REBECCA_METADATA, REBECCA_PORTAL_CONFIG } from './personas/rebecca';
 
 import { rebeccaPersona } from './personas/rebecca';
 import { IPersonaDefinition, PersonaPattern, PromptContext, Language, StructuredPersonaResponse } from './types';

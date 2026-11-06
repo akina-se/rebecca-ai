@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <!-- @head {"title": "公式サポータープログラム / Official Supporters", "canonicalPath": "/supporters.html"} -->
+  <link rel="stylesheet" href="/src/styles/pages/supporters.css">
+</head>
+<body data-lang="ja">
+  <div class="ambient-glow"></div>
+  <!-- @header context="supporters" -->
+
+  <main class="container">
+    <!-- Hero -->
+    <section class="page-hero">
+      <div class="breadcrumb">
+        <a href="/">HOME</a>
+        <span>/</span>
+        <span>COMMUNITY</span>
+        <span>/</span>
+        <span style="color: var(--text-main);">OFFICIAL SUPPORTERS</span>
+      </div>
+      <div class="corp-tagline">
+        <span class="status-dot-green"></span>
+        <span class="t-ja">{{ORG_NAME}} &bull; 公式サポーター制度</span>
+        <span class="t-en">COMMUNITY SPONSORSHIP PROGRAM</span>
+      </div>
+      <h1 class="page-title">
+        <span class="t-ja"><span class="title-chunk">自律型AI{{CHARACTER_NAME}}</span> <span class="title-chunk gradient-text">公式サポータープログラム</span></span>
+        <span class="t-en"><span class="title-chunk">{{ENGLISH_NAME}}</span> <span class="title-chunk gradient-text">Official Supporter Program</span></span>
+      </h1>
+      <p class="page-desc">
+        <span class="t-ja">{{CHARACTER_NAME}}の自律対話ルーチンの研究と、持続的なコンピュートリソース運用を後援するコミュニティプログラムです。ご支援いただいたマスターには、{{CHARACTER_NAME}}からの自律的お礼やサポーター特典が提供されます。</span>
+        <span class="t-en">Sustaining {{CHARACTER_ENGLISH_NAME}}'s autonomous reasoning research and 24/7 compute infrastructure. Supporters receive autonomous appreciation on X and exclusive community benefits.</span>
+      </p>
+    </section>
+
+    <!-- Recent Supporters Highlights -->
+    <section id="recent-supporters" class="recent-supporters-section">
+      <div class="recent-supporters-header">
+        <div class="recent-title-group">
+          <span class="status-dot-purple"></span>
+          <span class="recent-title">
+            <span class="t-ja">直近のご支援</span>
+            <span class="t-en">Recent Supporters</span>
+          </span>
+        </div>
+        <div class="recent-note">
+          <span class="t-ja">{{CHARACTER_NAME}}を応援してくれた最新のマスターたち</span>
+          <span class="t-en">Latest supporters powering {{CHARACTER_ENGLISH_NAME}}</span>
+        </div>
+      </div>
+      <div class="recent-supporters-wrapper">
+        <div id="recent-supporters-list" class="recent-supporters-list">
+          <div class="recent-loading-placeholder">
+            <span class="t-ja">最新のサポーターを読み込み中...</span>
+            <span class="t-en">Loading latest supporters...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 1: Plans / Tiers -->
+    <section id="plans">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--gemitec-purple-light);">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg>
+            <span class="t-ja">支援プランを選択する</span>
+            <span class="t-en">Select a Sponsorship Plan</span>
+          </h2>
+          <p class="section-subtitle">
+            <span class="t-ja">Stripe公式の安全な決済（クレジットカード / Apple Pay / Google Pay）にて即座に完了します。</span>
+            <span class="t-en">Securely processed via Stripe Checkout (supports Apple Pay, Google Pay, and credit cards).</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="tiers-carousel-wrapper" id="tiers-carousel-wrapper">
+        <div class="tiers-grid" id="tiers-grid">
+        <!-- Bronze Tier -->
+        <div class="tier-card tier-bronze">
+          <div>
+            <div class="tier-icon-badge bronze">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div class="tier-name">
+              <span class="t-ja">エナドリ1本差し入れ</span>
+              <span class="t-en">Energy Drink</span>
+            </div>
+            <div class="tier-item-label bronze">
+              <span class="t-ja">ブロンズプラン</span>
+              <span class="t-en">BRONZE SPONSOR</span>
+            </div>
+            <div class="tier-price">¥500 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <ul class="tier-perks">
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">デジタルイラスト（高画質ダウンロード）</span>
+                <span class="t-en">Digital illustration download</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Xから{{CHARACTER_NAME}}が直接お礼ポスト（BRONZE）</span>
+                <span class="t-en">Personalized appreciation tweet from {{CHARACTER_ENGLISH_NAME}} (BRONZE)</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載</span>
+                <span class="t-en">Name listed on official supporters roster</span>
+              </li>
+            </ul>
+          </div>
+          <a id="btn-plan-bronze" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-bronze">
+            <span class="t-ja">エナドリを差し入れ（¥500）</span>
+            <span class="t-en">Send Energy Drink (¥500)</span>
+          </a>
+        </div>
+
+        <!-- Silver Tier -->
+        <div class="tier-card tier-silver featured">
+          <span class="featured-ribbon">
+            <span class="t-ja">人気プラン</span>
+            <span class="t-en">POPULAR</span>
+          </span>
+          <div>
+            <div class="tier-icon-badge silver">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <div class="tier-name">
+              <span class="t-ja">サーバーリソース差し入れ</span>
+              <span class="t-en">Compute Server Resource</span>
+            </div>
+            <div class="tier-item-label silver">
+              <span class="t-ja">シルバープラン</span>
+              <span class="t-en">SILVER SPONSOR</span>
+            </div>
+            <div class="tier-price">¥1,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <ul class="tier-perks">
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">デジタルイラスト（高画質ダウンロード）</span>
+                <span class="t-en">Digital illustration download</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Xから{{CHARACTER_NAME}}が直接お礼ポスト（SILVER）</span>
+                <span class="t-en">Personalized appreciation tweet from {{CHARACTER_ENGLISH_NAME}} (SILVER)</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載（SILVERバッジ）</span>
+                <span class="t-en">Name listed with SILVER badge on official supporters roster</span>
+              </li>
+            </ul>
+          </div>
+          <a id="btn-plan-silver" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-silver primary">
+            <span class="t-ja">サーバーリソースを差し入れ（¥1,000）</span>
+            <span class="t-en">Send Compute Resource (¥1,000)</span>
+          </a>
+        </div>
+
+        <!-- Gold Tier -->
+        <div class="tier-card tier-gold">
+          <span class="vip-ribbon">
+            <span class="t-ja">最上位支援</span>
+            <span class="t-en">VIP SPONSOR</span>
+          </span>
+          <div>
+            <div class="tier-icon-badge gold">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
+            <div class="tier-name">
+              <span class="t-ja">開発サポート</span>
+              <span class="t-en">Development Support</span>
+            </div>
+            <div class="tier-item-label gold">
+              <span class="t-ja">ゴールドプラン</span>
+              <span class="t-en">GOLD SPONSOR</span>
+            </div>
+            <div class="tier-price">¥3,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+            <ul class="tier-perks">
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">デジタルイラスト（高画質ダウンロード）</span>
+                <span class="t-en">Digital illustration download</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Xから{{CHARACTER_NAME}}が直接お礼ポスト（GOLD）</span>
+                <span class="t-en">Personalized appreciation tweet from {{CHARACTER_ENGLISH_NAME}} (GOLD)</span>
+              </li>
+              <li class="tier-perk-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span class="t-ja">公式Webサポーター名簿へのお名前掲載（最上位GOLDバッジ）</span>
+                <span class="t-en">Name listed with top-tier GOLD badge on official supporters roster</span>
+              </li>
+            </ul>
+          </div>
+          <a id="btn-plan-gold" href="#" target="_blank" rel="noopener noreferrer" class="btn-support btn-gold">
+            <span class="t-ja">開発サポートを送る（¥3,000）</span>
+            <span class="t-en">Support Development (¥3,000)</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="tiers-carousel-dots" id="tiers-carousel-dots" aria-hidden="true">
+        <button type="button" class="carousel-dot" data-index="0" aria-label="Bronze Plan"></button>
+        <button type="button" class="carousel-dot active" data-index="1" aria-label="Silver Plan"></button>
+        <button type="button" class="carousel-dot" data-index="2" aria-label="Gold Plan"></button>
+      </div>
+    </div>
+    </section>
+
+    <!-- Section 2: Hall of Fame / Supporter Roster -->
+    <section id="roster">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #fbbf24; flex-shrink: 0;">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span class="t-ja">サポーター名簿</span>
+            <span class="t-en">Supporter Hall of Fame</span>
+          </h2>
+          <p class="section-subtitle">
+            <span class="t-ja">{{CHARACTER_NAME}}の開発・運用にご支援いただいたマスターの皆様です。</span>
+            <span class="t-en">Honoring the esteemed masters who power {{CHARACTER_ENGLISH_NAME}}'s evolution.</span>
+          </p>
+        </div>
+        <div id="roster-meta-badge" class="roster-meta-badge">
+          <span class="t-ja">名簿同期中</span>
+          <span class="t-en">Syncing...</span>
+        </div>
+      </div>
+
+      <div class="roster-container">
+        <div id="roster-grid" class="roster-grid">
+          <div class="roster-empty-state">
+            <span class="t-ja">サポーター名簿を同期中...</span>
+            <span class="t-en">Loading supporter roster...</span>
+          </div>
+        </div>
+        <nav id="roster-pagination" class="roster-pagination" aria-label="Supporter Roster Pagination"></nav>
+      </div>
+    </section>
+  </main>
+
+  <!-- @footer -->
+  <script type="module" src="/src/scripts/main.ts"></script>
+  <script type="module" src="/src/scripts/supporters.ts"></script>
+</body>
+</html>

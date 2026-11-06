@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <!-- @head {"title": "ご支援ありがとうございます / Thank You", "canonicalPath": "/support/thank-you.html"} -->
+  <link rel="stylesheet" href="/src/styles/pages/thank-you.css">
+</head>
+<body data-lang="ja">
+  <div class="ambient-glow"></div>
+  <!-- @header context="supporters" -->
+
+  <main class="container thank-you-wrapper">
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb">
+      <a href="/">HOME</a>
+      <span>/</span>
+      <a href="/supporters"><span class="t-ja">サポーター</span><span class="t-en">SUPPORTERS</span></a>
+      <span>/</span>
+      <span style="color: var(--text-main);">THANK YOU</span>
+    </div>
+
+    <!-- State 1: Verified Supporter Reward Panel -->
+    <section id="reward-panel" class="reward-panel" style="display: none;">
+      <div class="reward-header">
+        <div class="reward-status-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="reward-meta">
+          <h1>
+            <span class="t-ja">ご支援ありがとうございます、<span id="supporter-name-display">マスター</span>！</span>
+            <span class="t-en">Thank you for your support, <span id="supporter-name-display-en">Master</span>!</span>
+          </h1>
+          <div class="reward-badge-group">
+            <span id="tier-badge-pill" class="tier-badge-pill tier-badge-bronze">BRONZE TIER</span>
+            <span class="status-badge-pill">
+              <span class="status-dot-green"></span>
+              <span class="t-ja">決済完了（Stripe Verified）</span>
+              <span class="t-en">Payment Verified</span>
+            </span>
+            <span class="status-badge-pill">
+              <span class="status-dot-green"></span>
+              <span class="t-ja">公式Xお礼ポスト予約完了</span>
+              <span class="t-en">Appreciation Tweet Queued</span>
+            </span>
+            <span class="status-badge-pill">
+              <span class="status-dot-green"></span>
+              <span class="t-ja">名簿掲載完了</span>
+              <span class="t-en">Roster Updated</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reward-quote-box">
+        <span class="t-ja">「マスター、<span class="item-label-display">温かいご支援</span>ありがと！ Special Thanksへの反映とお礼ポストは順次{{CHARACTER_NAME}}が行うから楽しみに待っててね♡」</span>
+        <span class="t-en">"Master, thank you for your warm support (<span class="item-label-display">Contribution</span>)! The Special Thanks roster update and my appreciation post will be processed sequentially—stay tuned♡"</span>
+      </div>
+
+      <div id="reward-asset-container" class="reward-image-preview-area">
+        <div class="reward-image-actions">
+          <a id="download-reward-btn" href="#" target="_blank" download="{{CHARACTER_NAME}}-exclusive-supporter-artwork.jpg" class="btn-download disabled">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span class="t-ja">高画質イラストをダウンロード</span>
+            <span class="t-en">Download High-Res Illustration</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Expiration Urgency Alert Banner -->
+      <div class="dl-alert-box">
+        <div class="dl-alert-icon-wrap" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="dl-alert-content">
+          <div class="dl-alert-header">
+            <h3 class="dl-alert-title">
+              <span class="t-ja">今すぐ画像を保存してください</span>
+              <span class="t-en">Please Save Your Image Immediately</span>
+            </h3>
+            <span class="dl-alert-chip">
+              <span class="t-ja">有効期限 30分</span>
+              <span class="t-en">30-Min Expiry</span>
+            </span>
+          </div>
+          <p class="dl-alert-body">
+            <span class="t-ja">
+              このダウンロードページの有効期限は<strong>決済完了から30分間</strong>です。<br>
+              ブラウザを閉じたり、別のページに移動すると<strong>再アクセス・再発行ができません</strong>。<br>
+              上の「高画質イラストをダウンロード」ボタンから、今すぐ壁紙データを端末に保存（ダウンロード）してください。
+            </span>
+            <span class="t-en">
+              This download page is valid for <strong>30 minutes after payment completion</strong>.<br>
+              Once expired, or if the page is closed/navigated away, the link <strong>cannot be reissued</strong>.<br>
+              Please download and save the illustration to your device immediately using the button above.
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <div class="action-links">
+        <a href="/supporters" class="btn btn-purple">
+          <span class="t-ja">サポーター名簿を見る</span>
+          <span class="t-en">View Hall of Fame</span>
+        </a>
+        <a href="/" class="btn btn-outline">
+          <span class="t-ja">トップページへ戻る</span>
+          <span class="t-en">Back to Home</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- State 2: Direct Access / Unverified Guidance Card -->
+    <section id="guidance-card" class="guidance-card">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(139, 92, 246, 0.15); border: 1px solid var(--border-purple); color: var(--gemitec-purple-light); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </svg>
+      </div>
+      <h2>
+        <span class="t-ja">サポーター・サンクスページ</span>
+        <span class="t-en">Supporter Thank You Portal</span>
+      </h2>
+      <p>
+        <span class="t-ja">本ページは、Stripeでの支援手続き完了後に自動で転送される専用画面です。{{CHARACTER_NAME}}への支援をご希望のマスターは、公式サポーターページよりお手続きをお願いいたします。</span>
+        <span class="t-en">This portal is securely accessible following Stripe checkout completion. To sponsor {{CHARACTER_ENGLISH_NAME}} and receive supporter perks, please visit our official supporters portal.</span>
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="/supporters" class="btn btn-purple" style="padding: 10px 24px;">
+          <span class="t-ja">サポーター特設ページへ</span>
+          <span class="t-en">Go to Supporters Portal</span>
+        </a>
+        <a href="/" class="btn btn-outline" style="padding: 10px 24px;">
+          <span class="t-ja">トップページへ戻る</span>
+          <span class="t-en">Back to Home</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- @footer -->
+  <script type="module" src="/src/scripts/main.ts"></script>
+  <script type="module" src="/src/scripts/thankYou.ts"></script>
+</body>
+</html>
