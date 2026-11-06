@@ -35,7 +35,6 @@ COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/persona/dist ./packages/persona/dist
 COPY --from=builder /app/packages/logger/dist ./packages/logger/dist
 COPY --from=builder /app/apps/bot-backend/dist ./apps/bot-backend/dist
-COPY --from=builder /app/apps/bot-backend/public ./apps/bot-backend/public
 
 WORKDIR /app/apps/bot-backend
 ENV PORT=8080
