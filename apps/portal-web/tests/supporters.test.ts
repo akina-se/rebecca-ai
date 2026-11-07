@@ -15,9 +15,18 @@ describe('Client Script - Supporters Roster & Plans', () => {
       <div id="roster-grid"></div>
       <div id="roster-meta-badge"></div>
       <div id="roster-pagination"></div>
-      <a id="btn-plan-bronze" class="disabled" href="#">Bronze</a>
-      <a id="btn-plan-silver" class="disabled" href="#">Silver</a>
-      <a id="btn-plan-gold" class="disabled" href="#">Gold</a>
+      <div class="tier-card tier-bronze tier-disabled">
+        <div class="tier-price">¥500 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+        <a id="btn-plan-bronze" class="btn-support btn-bronze btn-disabled disabled" aria-disabled="true">Coming Soon</a>
+      </div>
+      <div class="tier-card tier-silver featured tier-disabled">
+        <div class="tier-price">¥1,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+        <a id="btn-plan-silver" class="btn-support btn-silver primary btn-disabled disabled" aria-disabled="true">Coming Soon</a>
+      </div>
+      <div class="tier-card tier-gold tier-disabled">
+        <div class="tier-price">¥3,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
+        <a id="btn-plan-gold" class="btn-support btn-gold btn-disabled disabled" aria-disabled="true">Coming Soon</a>
+      </div>
     `;
   });
 
@@ -50,13 +59,13 @@ describe('Client Script - Supporters Roster & Plans', () => {
   });
 
   describe('loadSupportPlans', () => {
-    it('should attach payment URLs and enable buttons on success', async () => {
+    it('should attach payment URLs, update formatted prices, and enable buttons on success', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
           plans: [
-            { tier: 'bronze', paymentUrl: 'https://buy.stripe.com/bronze' },
-            { tier: 'silver', paymentUrl: 'https://buy.stripe.com/silver' },
+            { tier: 'bronze', amount: 500, available: true, paymentUrl: 'https://buy.stripe.com/bronze' },
+            { tier: 'silver', amount: 1000, available: true, paymentUrl: 'https://buy.stripe.com/silver' },
           ],
         }),
       } as Response);
@@ -65,26 +74,64 @@ describe('Client Script - Supporters Roster & Plans', () => {
 
       const btnBronze = document.getElementById('btn-plan-bronze') as HTMLAnchorElement;
       const btnSilver = document.getElementById('btn-plan-silver') as HTMLAnchorElement;
+      const cardBronze = btnBronze.closest('.tier-card');
 
       expect(btnBronze.href).toBe('https://buy.stripe.com/bronze');
+      expect(btnBronze.target).toBe('_blank');
+      expect(btnBronze.rel).toBe('noopener noreferrer');
       expect(btnBronze.classList.contains('disabled')).toBe(false);
+      expect(btnBronze.classList.contains('btn-disabled')).toBe(false);
+      expect(btnBronze.hasAttribute('aria-disabled')).toBe(false);
+      expect(cardBronze?.classList.contains('tier-disabled')).toBe(false);
+      expect(btnBronze.innerHTML).toContain('エナドリを差し入れ（¥500）');
       expect(btnSilver.href).toBe('https://buy.stripe.com/silver');
     });
 
-    it('should ignore plans with missing button or missing paymentUrl', async () => {
+    it('should disable button and show Coming Soon state when plan is unavailable or paymentUrl is missing', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
           plans: [
-            { tier: 'nonexistent', paymentUrl: 'https://buy.stripe.com/other' },
-            { tier: 'bronze', paymentUrl: '' },
+            { tier: 'nonexistent', amount: 999, available: true, paymentUrl: 'https://buy.stripe.com/other' },
+            { tier: 'bronze', amount: 500, available: false, paymentUrl: null },
+            { tier: 'silver', amount: 1000, available: true, paymentUrl: '' },
+          ],
+        }),
+      } as Response);
+
+      await loadSupportPlans();
+
+      const btnBronze = document.getElementById('btn-plan-bronze') as HTMLAnchorElement;
+      const cardBronze = btnBronze.closest('.tier-card');
+      expect(btnBronze.classList.contains('disabled')).toBe(true);
+      expect(btnBronze.classList.contains('btn-disabled')).toBe(true);
+      expect(btnBronze.hasAttribute('href')).toBe(false);
+      expect(btnBronze.getAttribute('aria-disabled')).toBe('true');
+      expect(cardBronze?.classList.contains('tier-disabled')).toBe(true);
+      expect(btnBronze.innerHTML).toContain('準備中（受付開始までお待ちください）');
+      expect(btnBronze.innerHTML).toContain('Coming Soon');
+
+      const btnSilver = document.getElementById('btn-plan-silver') as HTMLAnchorElement;
+      expect(btnSilver.classList.contains('btn-disabled')).toBe(true);
+      expect(btnSilver.hasAttribute('href')).toBe(false);
+    });
+
+    it('should handle plans without closest card safely', async () => {
+      document.body.innerHTML = `
+        <a id="btn-plan-bronze" class="btn-support btn-bronze" href="#">Coming Soon</a>
+      `;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          plans: [
+            { tier: 'bronze', amount: 500, available: true, paymentUrl: 'https://buy.stripe.com/bronze' },
           ],
         }),
       } as Response);
 
       await loadSupportPlans();
       const btnBronze = document.getElementById('btn-plan-bronze') as HTMLAnchorElement;
-      expect(btnBronze.classList.contains('disabled')).toBe(true);
+      expect(btnBronze.href).toBe('https://buy.stripe.com/bronze');
     });
 
     it('should handle API errors gracefully without throwing', async () => {
@@ -99,7 +146,6 @@ describe('Client Script - Supporters Roster & Plans', () => {
       expect(warnSpy).toHaveBeenCalled();
       warnSpy.mockRestore();
     });
-
   });
 
   describe('loadSupporterCredits', () => {

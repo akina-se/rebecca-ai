@@ -1,3 +1,5 @@
+import { PublicSupportPlansResponse } from '@rebecca/types';
+
 /**
  * Main application script for the public web portal.
  * Handles bilingual switching, navigation behaviors, and smooth UI transitions.
@@ -38,6 +40,42 @@ export function setLanguage(lang: 'ja' | 'en'): void {
   }
 }
 
+/**
+ * Dynamically binds SSOT support plan links and prices to homepage landing tier cards.
+ */
+export async function initSupportPlanLinks(): Promise<void> {
+  try {
+    const res = await fetch('/api/v1/support/plans');
+    if (!res.ok) return;
+    const data: PublicSupportPlansResponse = await res.json();
+    if (data.plans && Array.isArray(data.plans)) {
+      for (const plan of data.plans) {
+        const el = document.getElementById(`lp-tier-${plan.tier}`) as HTMLAnchorElement | null;
+        if (!el) continue;
+        const statusPill = el.querySelector('.tier-status-pill');
+        const arrowIcon = el.querySelector('.tier-arrow-icon');
+        if (plan.available && plan.paymentUrl) {
+          el.href = plan.paymentUrl;
+          el.target = '_blank';
+          el.rel = 'noopener noreferrer';
+          el.classList.remove('tier-disabled');
+          el.removeAttribute('aria-disabled');
+          if (statusPill) (statusPill as HTMLElement).style.display = 'none';
+          if (arrowIcon) (arrowIcon as HTMLElement).style.display = 'inline-flex';
+        } else {
+          el.removeAttribute('href');
+          el.classList.add('tier-disabled');
+          el.setAttribute('aria-disabled', 'true');
+          if (statusPill) (statusPill as HTMLElement).style.display = 'inline-flex';
+          if (arrowIcon) (arrowIcon as HTMLElement).style.display = 'none';
+        }
+      }
+    }
+  } catch {
+    // Graceful fallback to default disabled state
+  }
+}
+
 // Expose setLanguage globally for inline button onclick handlers
 if (typeof window !== 'undefined') {
   window.setLanguage = setLanguage;
@@ -54,5 +92,6 @@ if (typeof window !== 'undefined') {
       // Fallback to ja
     }
     setLanguage(initialLang);
+    initSupportPlanLinks().catch(() => {});
   });
 }

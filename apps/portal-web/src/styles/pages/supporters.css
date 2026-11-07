@@ -645,7 +645,8 @@
       opacity: 0.5;
     }
 
-    .btn-support.btn-disabled {
+    .btn-support.btn-disabled,
+    .btn-support.disabled {
       cursor: not-allowed;
       pointer-events: none;
       background: rgba(255, 255, 255, 0.02) !important;
@@ -658,7 +659,8 @@
       letter-spacing: 0.02em;
     }
 
-    .btn-support.btn-disabled svg {
+    .btn-support.btn-disabled svg,
+    .btn-support.disabled svg {
       opacity: 0.6;
       width: 14px;
       height: 14px;
