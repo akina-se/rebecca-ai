@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.0](https://github.com/akina-se/rebecca-ai/compare/v1.37.2...v1.38.0) (2026-11-07)
+
+
+### Features
+
+* **portal-web:** isolate public web portal into dedicated Vite MPA workspace ([#422](https://github.com/akina-se/rebecca-ai/issues/422)) ([b11c874](https://github.com/akina-se/rebecca-ai/commit/b11c8744deac8909dc3ec22e9ed337dcee48e6a2))
+
 ## [1.37.2](https://github.com/akina-se/rebecca-ai/compare/v1.37.1...v1.37.2) (2026-11-04)
 
 
