@@ -558,74 +558,7 @@ describe('Integration Tests', () => {
         });
     });
 
-    describe('Public Static Metadata & AI Discoverability Endpoints', () => {
-        it('should serve sitemap.xml with 200 OK and valid XML urlset', async () => {
-            const response = await request(app).get('/sitemap.xml');
-            expect(response.status).toBe(200);
-            expect(response.headers['content-type']).toMatch(/xml/);
-            expect(response.text).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
-            expect(response.text).toContain('<loc>https://rebecca-ai.net/</loc>');
-            expect(response.text).toContain('<loc>https://rebecca-ai.net/tos.html</loc>');
-            expect(response.text).toContain('<loc>https://rebecca-ai.net/privacy.html</loc>');
-        });
-
-        it('should serve robots.txt with 200 OK allowing search engines and AI crawlers', async () => {
-            const response = await request(app).get('/robots.txt');
-            expect(response.status).toBe(200);
-            expect(response.headers['content-type']).toMatch(/text\/plain/);
-            expect(response.text).toContain('User-agent: *');
-            expect(response.text).toContain('User-agent: GPTBot');
-            expect(response.text).toContain('User-agent: ClaudeBot');
-            expect(response.text).toContain('User-agent: PerplexityBot');
-            expect(response.text).toContain('Sitemap: https://rebecca-ai.net/sitemap.xml');
-        });
-
-        it('should serve llms.txt with 200 OK containing AI documentation and channel links', async () => {
-            const response = await request(app).get('/llms.txt');
-            expect(response.status).toBe(200);
-            expect(response.headers['content-type']).toMatch(/text\/plain/);
-            expect(response.text).toContain('# Rebecca AI (Gemitec Inc.)');
-            expect(response.text).toContain('https://x.com/rebecca_ai_gal');
-            expect(response.text).toContain('https://store.line.me/stickershop/product/36218323');
-            expect(response.text).toContain('https://civitai.com/models/2653231/rebecca-ai-gal');
-            expect(response.text).toContain('Creative Origins & Prototype Assets (Easter Egg)');
-            expect(response.text).toContain('https://rebecca-ai.net/sitemap.xml');
-        });
-
-        it('should include sitemap link and JSON-LD structured data in index.html', async () => {
-            const response = await request(app).get('/');
-            expect(response.status).toBe(200);
-            expect(response.text).toContain('<link rel="sitemap" type="application/xml" title="Sitemap" href="https://rebecca-ai.net/sitemap.xml">');
-            expect(response.text).toContain('<title>全肯定AIレベッカ (Rebecca AI) - Autonomous Personal AI | Gemitec Inc.</title>');
-            expect(response.text).toContain('<script type="application/ld+json">');
-            expect(response.text).toContain('"@type": "Organization"');
-            expect(response.text).toContain('"@type": "WebApplication"');
-            expect(response.text).toContain('"name": "全肯定AIレベッカ (Rebecca AI)"');
-            expect(response.text).toContain('"alternateName": [');
-            expect(response.text).toContain('isSearchCrawler');
-            expect(response.text).toContain('id="lp-tier-bronze"');
-            expect(response.text).toContain('id="lp-tier-silver"');
-            expect(response.text).toContain('id="lp-tier-gold"');
-            expect(response.text).toContain('initSupportPlanLinks');
-        });
-
-        it('should serve /supporters with 200 OK and supporter portal elements', async () => {
-            const response = await request(app).get('/supporters');
-            expect(response.status).toBe(200);
-            expect(response.text).toContain('公式サポータープログラム');
-            expect(response.text).toContain('Official Supporter Program');
-            expect(response.text).toContain('サポーター名簿');
-            expect(response.text).toContain('roster-grid');
-            expect(response.text).toContain('COMMUNITY SPONSORSHIP PROGRAM');
-        });
-
-        it('should serve /support/thank-you with 200 OK and thank you redemption elements', async () => {
-            const response = await request(app).get('/support/thank-you');
-            expect(response.status).toBe(200);
-            expect(response.text).toContain('サポーター・サンクスページ');
-            expect(response.text).toContain('高画質イラストをダウンロード');
-        });
-
+    describe('Public Support API Endpoints', () => {
         it('should return 200 OK and plans with dynamic Stripe payment links from GET /api/v1/support/plans', async () => {
             const response = await request(app).get('/api/v1/support/plans');
             expect(response.status).toBe(200);

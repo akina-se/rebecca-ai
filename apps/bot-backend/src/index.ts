@@ -5,8 +5,6 @@
  * mounts routers for batch and worker operations, and starts the HTTP server.
  */
 import express from 'express';
-import path from 'path';
-import fs from 'fs';
 import config from './config';
 import * as firestoreService from './services/firestore';
 import { GeminiService } from './services/gemini';
@@ -58,25 +56,6 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
       },
     }),
   );
-
-  // Serve static files such as Terms of Service and Privacy Policy
-
-
-  const publicDir = fs.existsSync(path.join(__dirname, '../public'))
-    ? path.join(__dirname, '../public')
-    : path.join(process.cwd(), 'public');
-  app.use(express.static(publicDir));
-
-  // Mount public views with rate limiting to protect file system access from DoS (CWE-400 / CWE-770)
-  app.get('/supporters', publicRateLimiter, (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.sendFile(path.join(publicDir, 'supporters.html'));
-  });
-
-  app.get(['/support/thank-you', '/support/thanks'], publicRateLimiter, (_req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.sendFile(path.join(publicDir, 'support', 'thank-you.html'));
-  });
 
   // Mount public API routes (REST v1 standard aligned with dashboard-backend)
   app.use('/api/v1', publicRateLimiter, createPublicRoutes(deps));
