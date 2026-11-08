@@ -2,6 +2,12 @@ import { PublicSupporterCreditsResponse, PublicSupportPlansResponse } from '@reb
 
 const ROSTER_LIMIT = 120;
 
+/** Cache for dynamic support plans to enrich modal details */
+export const supportPlansMap: Record<
+  string,
+  { tier: string; amount: number; itemLabel?: string; displayName?: string }
+> = {};
+
 /** Sanitizes untrusted strings to prevent XSS in dynamic DOM insertions */
 export function escapeHtml(str: string): string {
   const div = document.createElement('div');
@@ -44,6 +50,7 @@ export async function loadSupportPlans(): Promise<void> {
     }
     const data: PublicSupportPlansResponse = await res.json();
     for (const plan of data.plans) {
+      supportPlansMap[plan.tier] = plan;
       const btn = document.getElementById(`btn-plan-${plan.tier}`) as HTMLAnchorElement | null;
       if (!btn) continue;
       const card = btn.closest('.tier-card');
@@ -84,6 +91,169 @@ export async function loadSupportPlans(): Promise<void> {
   }
 }
 
+/** Opens the supporter details modal popup */
+export function openSupporterModal(item: { tier?: string; safeName?: string; createdAt?: string }): void {
+  const modal = document.getElementById('supporter-modal');
+  if (!modal) return;
+  const rawTier = typeof item.tier === 'string' ? item.tier.toLowerCase() : 'bronze';
+  const ALLOWED_TIERS = new Set(['bronze', 'silver', 'gold', 'vip']);
+  const tier = ALLOWED_TIERS.has(rawTier) ? rawTier : 'bronze';
+  const displayName = item.safeName && item.safeName.trim().length > 0 ? item.safeName : 'Anonymous Master';
+  const dateStr = formatDateYMD(item.createdAt);
+
+  const tierBadge = document.getElementById('modal-tier-badge');
+  if (tierBadge) {
+    tierBadge.className = `modal-tier-badge tier-${tier}`;
+  }
+
+  const iconSvg =
+    tier === 'gold'
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+      : tier === 'silver'
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>';
+
+  const rankIconEl = document.getElementById('modal-rank-icon');
+  if (rankIconEl) rankIconEl.innerHTML = iconSvg;
+
+  const tierTextEl = document.getElementById('modal-tier-text');
+  if (tierTextEl) tierTextEl.textContent = `${tier.toUpperCase()} SPONSOR`;
+
+  const nameEl = document.getElementById('modal-supporter-name');
+  if (nameEl) nameEl.textContent = displayName;
+
+  const plan = supportPlansMap[tier];
+  const planNameJa = plan
+    ? `${plan.itemLabel ?? 'ご支援'}（¥${plan.amount.toLocaleString()}）`
+    : tier === 'gold'
+      ? '開発サポート（¥3,000）'
+      : tier === 'silver'
+        ? 'サーバーリソース差し入れ（¥1,000）'
+        : 'エナドリ1本差し入れ（¥500）';
+  const planNameEn = plan
+    ? `${plan.displayName ?? 'Support'} (¥${plan.amount.toLocaleString()})`
+    : tier === 'gold'
+      ? 'Development Support (¥3,000)'
+      : tier === 'silver'
+        ? 'Compute Resource (¥1,000)'
+        : 'Energy Drink (¥500)';
+
+  const planTitleEl = document.getElementById('modal-plan-title');
+  if (planTitleEl) {
+    planTitleEl.innerHTML = `<span class="t-ja">${escapeHtml(planNameJa)}</span><span class="t-en">${escapeHtml(planNameEn)}</span>`;
+  }
+
+  const tierValEl = document.getElementById('modal-tier-val');
+  if (tierValEl) tierValEl.textContent = tier.toUpperCase();
+
+  const dateValEl = document.getElementById('modal-date-val');
+  if (dateValEl) dateValEl.textContent = dateStr;
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+/** Closes the supporter details modal popup */
+export function closeSupporterModal(): void {
+  const modal = document.getElementById('supporter-modal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = '';
+  }
+}
+
+/** Backdrop click handler for closing modal */
+export function onBackdropClick(event: MouseEvent): void {
+  if (event.target && (event.target as HTMLElement).id === 'supporter-modal') {
+    closeSupporterModal();
+  }
+}
+
+/** Navigates to a specific roster page and scrolls to roster */
+export function goToPage(page: number): void {
+  loadSupporterCredits(page).catch(console.error);
+  if (typeof document !== 'undefined') {
+    const rosterSec = document.getElementById('roster');
+    if (rosterSec) {
+      rosterSec.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+}
+
+/** Renders numbered pagination buttons with delta ellipsis */
+export function renderPagination(currentPage: number, totalPages: number, totalCount: number): void {
+  const container = document.getElementById('roster-pagination');
+  if (!container) return;
+
+  if (totalPages <= 1) {
+    container.innerHTML =
+      totalCount > 0
+        ? `<div class="pagination-summary"><span class="t-ja">全 ${totalCount} 名のマスターを表示中</span><span class="t-en">Showing all ${totalCount} masters</span></div>`
+        : '';
+    return;
+  }
+
+  let html = '';
+
+  // Prev button
+  const prevDisabled = currentPage <= 1 ? ' disabled' : '';
+  html += `<button type="button" class="pagination-btn pagination-prev"${prevDisabled} data-page="${currentPage - 1}">&lt; <span class="t-ja">前へ</span><span class="t-en">Prev</span></button>`;
+
+  // Generate page number items with ellipsis
+  const delta = 1;
+  const range: Array<number | string> = [];
+
+  for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+    range.push(i);
+  }
+
+  if (currentPage - delta > 2) {
+    range.unshift('...');
+  }
+  if (currentPage + delta < totalPages - 1) {
+    range.push('...');
+  }
+
+  range.unshift(1);
+  if (totalPages > 1 && !range.includes(totalPages)) {
+    range.push(totalPages);
+  }
+
+  range.forEach((p) => {
+    if (p === '...') {
+      html += '<span class="pagination-ellipsis">...</span>';
+    } else {
+      const activeClass = p === currentPage ? ' active' : '';
+      html += `<button type="button" class="pagination-btn${activeClass}" data-page="${p}">${p}</button>`;
+    }
+  });
+
+  // Next button
+  const nextDisabled = currentPage >= totalPages ? ' disabled' : '';
+  html += `<button type="button" class="pagination-btn pagination-next"${nextDisabled} data-page="${currentPage + 1}"><span class="t-ja">次へ</span><span class="t-en">Next</span> &gt;</button>`;
+
+  const startIdx = (currentPage - 1) * ROSTER_LIMIT + 1;
+  const endIdx = Math.min(currentPage * ROSTER_LIMIT, totalCount);
+  html += `<div class="pagination-summary"><span class="t-ja">${totalCount} 名中 ${startIdx} - ${endIdx} 名を表示（ページ ${currentPage} / ${totalPages}）</span><span class="t-en">Showing ${startIdx} - ${endIdx} of ${totalCount} masters (Page ${currentPage} of ${totalPages})</span></div>`;
+
+  container.innerHTML = html;
+
+  // Bind pagination button events
+  container.querySelectorAll<HTMLButtonElement>('button.pagination-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetPage = parseInt(btn.getAttribute('data-page') ?? '1', 10);
+      if (!isNaN(targetPage) && targetPage > 0 && targetPage !== currentPage && targetPage <= totalPages) {
+        goToPage(targetPage);
+      }
+    });
+  });
+}
+
 /** Fetches paginated public supporter credits and updates the Hall of Fame roster */
 export async function loadSupporterCredits(page = 1): Promise<void> {
   const grid = document.getElementById('roster-grid');
@@ -119,6 +289,8 @@ export async function loadSupporterCredits(page = 1): Promise<void> {
       renderRecentSupporters(credits.slice(0, 10));
     }
 
+    renderPagination(page, totalPages, total);
+
     grid.innerHTML = '';
     const ALLOWED_TIERS = new Set(['bronze', 'silver', 'gold', 'vip']);
     for (const item of credits) {
@@ -137,6 +309,10 @@ export async function loadSupporterCredits(page = 1): Promise<void> {
       const card = document.createElement('div');
       card.className = `roster-card tier-${tier}`;
       card.title = displayName;
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => {
+        openSupporterModal(item);
+      });
       card.innerHTML = `
         <div class="roster-card-header">
           <div class="roster-card-header-left">
@@ -162,7 +338,7 @@ export async function loadSupporterCredits(page = 1): Promise<void> {
  * Renders the top recent supporters horizontal chip list.
  */
 export function renderRecentSupporters(
-  recentItems: Array<{ tier?: string; safeName?: string }>,
+  recentItems: Array<{ tier?: string; safeName?: string; createdAt?: string }>,
 ): void {
   const container = document.getElementById('recent-supporters-list');
   if (!container) return;
@@ -194,6 +370,10 @@ export function renderRecentSupporters(
     const chip = document.createElement('div');
     chip.className = `recent-chip tier-${tier}`;
     chip.title = displayName;
+    chip.style.cursor = 'pointer';
+    chip.addEventListener('click', () => {
+      openSupporterModal(item);
+    });
     chip.innerHTML = `
       <span class="recent-chip-icon">${icon}</span>
       <span class="recent-chip-name">${escapeHtml(displayName)}</span>
@@ -203,12 +383,32 @@ export function renderRecentSupporters(
   }
 }
 
+/** Attaches modal event listeners (close button, backdrop, Escape key) */
+export function initSupportersModalEvents(): void {
+  const modal = document.getElementById('supporter-modal');
+  if (modal) {
+    modal.addEventListener('click', (e) => onBackdropClick(e));
+  }
+  const closeBtn = document.getElementById('modal-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => closeSupporterModal());
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeSupporterModal();
+      }
+    });
+  }
+}
+
 // Auto-initialize when loaded on the supporters page
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     loadSupportPlans().catch(console.error);
     loadSupporterCredits(1).catch(console.error);
     initTiersCarousel();
+    initSupportersModalEvents();
   });
 }
 

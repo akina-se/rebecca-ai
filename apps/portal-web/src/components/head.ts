@@ -19,7 +19,11 @@ export function renderHead(config: PortalBrandConfig, options: HeadOptions = {})
   const pageTitle = options.title ? `${options.title} | ${config.displayName}` : `${config.displayName} (${config.englishName}) - Autonomous Personal AI | ${config.organizationName}`;
   const pageDescription = options.description ?? config.description;
   const canonicalUrl = `${config.canonicalUrl.replace(/\/$/, '')}${options.canonicalPath ?? ''}`;
-  const ogpImage = options.ogpImage ?? `${config.canonicalUrl.replace(/\/$/, '')}/${config.assets.ogpBanner}`;
+  const ogpImage = options.ogpImage
+    ? (options.ogpImage.startsWith('http://') || options.ogpImage.startsWith('https://')
+        ? options.ogpImage
+        : `${config.canonicalUrl.replace(/\/$/, '')}/${options.ogpImage.replace(/^\//, '')}`)
+    : `${config.canonicalUrl.replace(/\/$/, '')}/${config.assets.ogpBanner}`;
 
   return `
   <meta charset="UTF-8">

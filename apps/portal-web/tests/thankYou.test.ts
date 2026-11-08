@@ -12,8 +12,19 @@ describe('thankYou script', () => {
         <span class="item-label-display item-label-display-ja"></span>
         <span class="item-label-display item-label-display-en"></span>
         <span class="item-label-display"></span>
-        <img id="reward-image" style="display: none;" src="" />
-        <a id="download-reward-btn" class="disabled" href="#">Download</a>
+        <div id="reward-asset-container" style="display: none;">
+          <div id="reward-image-frame">
+            <img id="reward-image" style="display: none;" src="" />
+            <div id="reward-placeholder-expired" style="display: none;"></div>
+            <div id="reward-placeholder-error" style="display: none;"></div>
+          </div>
+          <a id="download-reward-btn" class="disabled" href="#">
+            <span class="t-ja">高画質イラストをダウンロード</span>
+            <span class="t-en">Download High-Res Illustration</span>
+          </a>
+          <div id="reward-expiry-timer" style="display: block;"></div>
+        </div>
+        <div class="dl-alert-box" style="display: block;"></div>
       </div>
     `;
     window.history.replaceState({}, '', '/support/thank-you.html?session_id=cs_test_123');
@@ -155,7 +166,7 @@ describe('thankYou script', () => {
     expect(document.querySelector('.item-label-display')?.textContent).toBe('温かいご支援');
   });
 
-  it('Keeps #download-reward-btn disabled when isExpired is true', async () => {
+  it('Shows expired placeholder and updates download button when isExpired is true', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -173,7 +184,69 @@ describe('thankYou script', () => {
 
     const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
     expect(dlBtn.classList.contains('disabled')).toBe(true);
-    expect(dlBtn.getAttribute('href')).toBe('#');
+    expect(dlBtn.hasAttribute('href')).toBe(false);
+    expect(dlBtn.querySelector('.t-ja')?.textContent).toBe('ダウンロード期限終了');
+    expect(dlBtn.querySelector('.t-en')?.textContent).toBe('Download Window Closed');
+
+    const expiredPlaceholder = document.getElementById('reward-placeholder-expired');
+    expect(expiredPlaceholder?.style.display).toBe('flex');
+
+    const alertBox = document.querySelector('.dl-alert-box') as HTMLElement;
+    expect(alertBox?.style.display).toBe('none');
+
+    const timer = document.getElementById('reward-expiry-timer');
+    expect(timer?.style.display).toBe('none');
+  });
+
+  it('Shows error placeholder when reward image loading encounters an error', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'gold',
+        itemLabel: '開発サポート',
+        supporterName: 'テストマスター',
+        reward: {
+          title: 'サポーター特典イラスト',
+          thumbnailUrl: '/invalid/image/path.jpg',
+          downloadUrl: '/valid/download.jpg',
+          expiresAt: '2026-10-25T12:30:00.000Z',
+        },
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    const img = document.getElementById('reward-image') as HTMLImageElement;
+    expect(img.style.display).toBe('block');
+
+    // Trigger image error
+    img.dispatchEvent(new Event('error'));
+
+    const errorPlaceholder = document.getElementById('reward-placeholder-error');
+    expect(errorPlaceholder?.style.display).toBe('flex');
+    expect(img.style.display).toBe('none');
+  });
+
+  it('Displays error guidance card when session verification returns valid: false', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: false,
+        error: 'Invalid session',
+      }),
+    });
+
+    await checkSessionVerification();
+
+    const guidanceCard = document.getElementById('guidance-card');
+    expect(guidanceCard?.style.display).toBe('block');
+    expect(guidanceCard?.innerHTML).toContain('セッション検証エラー');
+    expect(guidanceCard?.innerHTML).toContain('サポーターページへ');
+    expect(document.getElementById('reward-panel')?.style.display).toBe('none');
   });
 
   it('Logs warning when fetch throws a network error', async () => {
@@ -183,5 +256,146 @@ describe('thankYou script', () => {
     await checkSessionVerification();
 
     expect(warnSpy).toHaveBeenCalledWith('[ThankYou] Session verification request failed:', expect.any(Error));
+  });
+
+  it('Falls back to Master when supporterName is 名無しのマスター', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'other_tier',
+        itemLabel: '',
+        supporterName: '名無しのマスター',
+        reward: null,
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    expect(document.getElementById('supporter-name-display')?.textContent).toBe('マスター');
+    expect(document.getElementById('supporter-name-display-en')?.textContent).toBe('Master');
+    expect(document.querySelector('.item-label-display-en')?.textContent).toBe('Contribution');
+  });
+
+  it('Handles reward with only downloadUrl (no previewUrl)', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'gold',
+        itemLabel: '開発サポート',
+        supporterName: 'テストマスター',
+        reward: {
+          title: 'サポーター特典イラスト',
+          thumbnailUrl: '',
+          downloadUrl: '/valid/download.jpg',
+          expiresAt: '2026-10-25T12:30:00.000Z',
+        },
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    const img = document.getElementById('reward-image') as HTMLImageElement;
+    expect(img.style.display).toBe('none');
+    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
+    expect(dlBtn.classList.contains('disabled')).toBe(false);
+  });
+
+  it('Handles reward with neither previewUrl nor downloadUrl', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'gold',
+        itemLabel: '開発サポート',
+        supporterName: 'テストマスター',
+        reward: {
+          title: 'サポーター特典イラスト',
+          thumbnailUrl: '',
+          downloadUrl: '',
+          expiresAt: '2026-10-25T12:30:00.000Z',
+        },
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    const img = document.getElementById('reward-image') as HTMLImageElement;
+    expect(img.style.display).toBe('none');
+  });
+
+  it('Handles DOM gracefully when optional sub-elements in reward-panel are missing', async () => {
+    document.body.innerHTML = `
+      <div id="reward-panel" style="display: none;"></div>
+      <div id="guidance-card" style="display: block;"></div>
+    `;
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'gold',
+        itemLabel: '開発サポート',
+        supporterName: 'テストマスター',
+        reward: {
+          title: 'サポーター特典イラスト',
+          thumbnailUrl: '/valid/thumb.jpg',
+          downloadUrl: '/valid/download.jpg',
+          expiresAt: '2026-10-25T12:30:00.000Z',
+        },
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    expect(document.getElementById('reward-panel')?.style.display).toBe('block');
+    expect(document.getElementById('guidance-card')?.style.display).toBe('none');
+  });
+
+  it('Handles DOM gracefully when optional sub-elements in reward-panel are missing in expired state', async () => {
+    document.body.innerHTML = `
+      <div id="reward-panel" style="display: none;"></div>
+      <div id="guidance-card" style="display: block;"></div>
+    `;
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'silver',
+        itemLabel: '開発サポート',
+        supporterName: 'テストマスター',
+        reward: null,
+        isExpired: true,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    expect(document.getElementById('reward-panel')?.style.display).toBe('block');
+  });
+
+  it('Triggers verification on DOMContentLoaded', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ valid: false }),
+    });
+
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    // Wait for promise resolution
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(global.fetch).toHaveBeenCalled();
   });
 });
