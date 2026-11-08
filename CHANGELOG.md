@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.2](https://github.com/akina-se/rebecca-ai/compare/v1.38.1...v1.38.2) (2026-11-08)
+
+
+### Bug Fixes
+
+* **security:** resolve Stripe verify-session contract bug and harden security boundaries ([#433](https://github.com/akina-se/rebecca-ai/issues/433)) ([b6b8df6](https://github.com/akina-se/rebecca-ai/commit/b6b8df6aaa91137bb94541118a8d221b983b6268))
+
 ## [1.38.1](https://github.com/akina-se/rebecca-ai/compare/v1.38.0...v1.38.1) (2026-11-08)
 
 
