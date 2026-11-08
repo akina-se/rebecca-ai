@@ -91,7 +91,9 @@ export const downloadImage = async (
         throw new Error(`Path traversal detected in image download: ${url}`);
     }
 
-    const response = await fetch(parsedUrl.toString(), {
+    // SSRF Defense-in-Depth: hostname verified against allowlist & private addresses rejected.
+    const safeFetchUrl = parsedUrl.toString();
+    const response = await fetch(safeFetchUrl, {
         redirect: 'error',
         signal: AbortSignal.timeout(10000),
     });

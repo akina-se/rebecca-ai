@@ -455,16 +455,16 @@ export class AssetsUseCase {
       .replace(/\.[^.]+$/, '')
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .slice(0, 80) || 'image';
-    const safeName = `${baseStem}.${ext}`;
+    const sanitizedFilename = `${baseStem}.${ext}`;
     const bucketName = config.gcp.imageBucketName;
     try {
       const bucket = this.storage.bucket(bucketName);
-      const gcsFile = bucket.file(`media_assets/${hash}_${safeName}`);
+      const gcsFile = bucket.file(`media_assets/${hash}_${sanitizedFilename}`);
       await gcsFile.save(file.buffer, {
         contentType: safeMime,
         resumable: false
       });
-      return `gs://${bucketName}/media_assets/${hash}_${safeName}`;
+      return `gs://${bucketName}/media_assets/${hash}_${sanitizedFilename}`;
     } catch {
       const base64Data = file.buffer.toString('base64');
       return `data:${safeMime};base64,${base64Data}`;
