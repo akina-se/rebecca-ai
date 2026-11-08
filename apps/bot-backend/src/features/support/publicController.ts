@@ -11,7 +11,14 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { AppDependencies } from '../../types';
 import { SupportConfig } from './types';
-import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
+import {
+  SUPPORT_TIER_CONFIG,
+  resolveSupportTierFromAmount,
+  SupportTransactionDoc,
+  RewardImageDoc,
+  VerifySessionSuccessResponse,
+  VerifiedSupportRewardInfo,
+} from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
 const REWARD_TICKET_COOKIE_NAME = 'reward_ticket';
@@ -248,6 +255,18 @@ export class PublicSupportController {
         return;
       }
 
+      if (session.currency && session.currency.toLowerCase() !== 'jpy') {
+        logger.warn('[PublicSupportController] Rejecting session with unsupported currency', {
+          maskedSessionId: maskSessionId(sessionId),
+          currency: session.currency,
+        });
+        res.status(403).json({
+          valid: false,
+          error: 'Unsupported payment currency.',
+        });
+        return;
+      }
+
       // Step 3: Resolve the authoritative payment time from Stripe (no local-clock / session.created fallback)
       let paidAtMs: number;
       try {
@@ -269,18 +288,20 @@ export class PublicSupportController {
           const activeRewardForSync = await this.deps.firestore.getActiveRewardImage();
           const transactionDoc = this.buildTransactionDoc(session, paidAtMs, activeRewardForSync?.id);
 
-          await this.deps.firestore.createSupportTransaction(transactionDoc);
-          transaction = transactionDoc;
-          logger.info('[PublicSupportController] Auto-created support transaction on session verification', {
-            transactionId: transactionDoc.id,
-          });
+          const created = await this.deps.firestore.createSupportTransaction(transactionDoc);
+          if (created) {
+            transaction = transactionDoc;
+            logger.info('[PublicSupportController] Auto-created support transaction on session verification', {
+              transactionId: transactionDoc.id,
+            });
 
-          this.triggerAppreciationPost(transactionDoc.id);
+            this.triggerAppreciationPost(transactionDoc.id);
+          } else {
+            transaction = (await this.deps.firestore.getSupportTransactionBySessionId(sessionId)) ?? transactionDoc;
+          }
         } catch (syncErr) {
           logger.warn('[PublicSupportController] Failed to auto-sync transaction from session', { syncErr });
         }
-      } else if (transaction.status === 'pending') {
-        this.triggerAppreciationPost(transaction.id);
       }
 
       // Enforce 30-minute reward download window, anchored to Stripe's payment time
@@ -293,13 +314,12 @@ export class PublicSupportController {
       if (!isExpired) {
         if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
           activeReward = await this.deps.firestore.getRewardImageById(transaction.rewardImageId);
-        }
-        if (!activeReward) {
+        } else if (!transaction?.rewardImageId) {
           activeReward = await this.deps.firestore.getActiveRewardImage();
         }
       }
 
-      let rewardPayload = null;
+      let rewardPayload: VerifiedSupportRewardInfo | null = null;
       if (activeReward && !isExpired) {
         const expiresAtMs = createdAtMs + MAX_WINDOW_MINUTES * 60 * 1000;
         const maxAgeSeconds = Math.max(1, Math.floor((expiresAtMs - Date.now()) / 1000));
@@ -325,7 +345,6 @@ export class PublicSupportController {
 
         rewardPayload = {
           title: activeReward.title,
-          imageUrl: thumbnailUrl,
           thumbnailUrl,
           downloadUrl,
           expiresAt: new Date(expiresAtMs).toISOString(),
@@ -336,19 +355,20 @@ export class PublicSupportController {
       const tierInfo = resolveSupportTierFromAmount(amount);
 
       // Privacy Guard: If supporter opted to hide credit visibility ('hide'),
-      // do not expose safeName in the public verify-session response to prevent
+      // do not expose supporterName in the public verify-session response to prevent
       // disclosure if sessionId is leaked or intercepted via browser history/referrer.
       const isCreditHidden = transaction?.creditVisibility === 'hide';
-      const safeNameForResponse = isCreditHidden ? null : (transaction?.safeName || null);
+      const supporterName = isCreditHidden ? null : (transaction?.safeName || null);
 
-      res.status(200).json({
+      const responsePayload: VerifySessionSuccessResponse = {
         valid: true,
         tier: transaction?.tier ?? tierInfo.tier,
         itemLabel: transaction?.itemLabel ?? tierInfo.itemLabel,
-        safeName: safeNameForResponse,
+        supporterName,
         reward: rewardPayload,
         isExpired,
-      });
+      };
+      res.status(200).json(responsePayload);
     } catch (error) {
       logger.error('[PublicSupportController] Error verifying support session', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -510,12 +530,34 @@ export class PublicSupportController {
         const paidSession = await this.stripeClient.checkout.sessions.retrieve(session.id, {
           expand: PAYMENT_INTENT_EXPAND,
         });
+        if (paidSession.payment_status !== 'paid') {
+          logger.warn('[PublicSupportController] Ignoring webhook for unpaid checkout session', {
+            maskedSessionId: maskSessionId(session.id),
+            paymentStatus: paidSession.payment_status,
+          });
+          res.status(400).json({ error: 'Payment has not been completed or verified.' });
+          return;
+        }
+        const sessionCurrency = (paidSession.currency ?? session.currency ?? 'jpy').toLowerCase();
+        if (sessionCurrency !== 'jpy') {
+          logger.warn('[PublicSupportController] Rejecting webhook with unsupported currency', {
+            maskedSessionId: maskSessionId(session.id),
+            currency: sessionCurrency,
+          });
+          res.status(400).json({ error: 'Unsupported payment currency' });
+          return;
+        }
         const paidAtMs = this.resolvePaidAtMs(paidSession);
 
         const activeReward = await this.deps.firestore.getActiveRewardImage();
-        const transactionDoc = this.buildTransactionDoc(session, paidAtMs, activeReward?.id);
+        const mergedSession: Stripe.Checkout.Session = { ...session, ...paidSession };
+        const transactionDoc = this.buildTransactionDoc(mergedSession, paidAtMs, activeReward?.id);
 
-        await this.deps.firestore.createSupportTransaction(transactionDoc);
+        const created = await this.deps.firestore.createSupportTransaction(transactionDoc);
+        if (!created) {
+          res.status(200).json({ received: true, status: 'already_processed' });
+          return;
+        }
         logger.info('[PublicSupportController] Created support transaction', {
           transactionId: transactionDoc.id,
         });
@@ -622,12 +664,11 @@ export class PublicSupportController {
         return;
       }
 
-      // Step 3: Resolve reward image record
+      // Step 3: Resolve reward image record (do not fall back to a newer reward if a pinned rewardImageId was deleted)
       let rewardDoc: RewardImageDoc | null = null;
       if (transaction?.rewardImageId && transaction.rewardImageId !== 'none') {
         rewardDoc = await this.deps.firestore.getRewardImageById(transaction.rewardImageId);
-      }
-      if (!rewardDoc) {
+      } else if (!transaction?.rewardImageId) {
         rewardDoc = await this.deps.firestore.getActiveRewardImage();
       }
 

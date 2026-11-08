@@ -136,7 +136,7 @@ const upsertJob = (job: SchedulerJobConfig) => {
     // Always attempt `update` first (idempotent). If the job does not yet exist,
     // `update` exits non-zero and we fall through to `create`.
     const baseArgs = [
-        '--schedule', `"${job.schedule}"`,
+        '--schedule', job.schedule,
         '--time-zone', timeZone,
         '--uri', job.url,
         '--http-method', 'GET',
@@ -166,7 +166,7 @@ const upsertJob = (job: SchedulerJobConfig) => {
             ...baseArgs,
             ...buildAuthArgs('--update-headers'),
         ];
-        execFileSync('gcloud', updateArgs, { stdio: 'inherit', shell: true });
+        execFileSync(process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud', updateArgs, { stdio: 'inherit', shell: false });
         console.log(`✅ Successfully updated ${job.name}`);
         return;
     } catch {
@@ -181,7 +181,7 @@ const upsertJob = (job: SchedulerJobConfig) => {
             ...baseArgs,
             ...buildAuthArgs('--headers'),
         ];
-        execFileSync('gcloud', createArgs, { stdio: 'inherit', shell: true });
+        execFileSync(process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud', createArgs, { stdio: 'inherit', shell: false });
         console.log(`✅ Successfully created ${job.name}`);
     } catch {
         console.error(`❌ Failed to create or update job ${job.name}.`);

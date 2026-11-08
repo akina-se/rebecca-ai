@@ -2,8 +2,7 @@ import {
     extractCleanTextForLanguageDetection,
     getTwitterTextWeightedLength,
     truncateTwitterText,
-    TWITTER_MAX_WEIGHTED_LENGTH,
-} from '../../src/utils/text';
+  } from '../../src/utils/text';
 
 describe('Text Utils - extractCleanTextForLanguageDetection', () => {
     it('should strip mentions and URLs from text', () => {

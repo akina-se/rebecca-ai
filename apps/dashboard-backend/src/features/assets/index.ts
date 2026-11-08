@@ -6,7 +6,8 @@ import { AssetsRepository } from './repository';
 import { AssetsUseCase } from './usecase';
 import { AssetsController } from './controller';
 
-// Configure multer with in-memory storage for handling multipart/form-data uploads
+// Configure multer with in-memory storage and size/count limits.
+// Raster MIME validation is enforced in the domain usecase (`resolveRasterImageExtension`).
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {

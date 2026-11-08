@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { generateWebpThumbnail } from '../../utils/image';
+import { generateWebpThumbnail, resolveRasterImageExtension } from '../../utils/image';
 import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
@@ -294,7 +294,13 @@ export class AssetsUseCase {
    * @returns A promise that resolves when the update is complete.
    */
   async updateAsset(id: string, updates: Partial<Asset>): Promise<void> {
-    const repoUpdates: Parameters<AssetsRepository['update']>[1] = { ...updates };
+    const repoUpdates: Parameters<AssetsRepository['update']>[1] = {};
+    if (updates.status !== undefined) {
+      repoUpdates.status = updates.status;
+    }
+    if (typeof updates.caption === 'string') {
+      repoUpdates.caption = updates.caption;
+    }
 
     if (typeof updates.caption === 'string') {
       const trimmedCaption = updates.caption.trim();
@@ -443,18 +449,25 @@ export class AssetsUseCase {
    * Helper: Saves uploaded file buffer to GCS or falls back to data URI.
    */
   private async saveToStorage(file: UploadedFile, hash: string): Promise<string> {
+    const ext = resolveRasterImageExtension(file.mimetype);
+    const safeMime = file.mimetype.trim().toLowerCase();
+    const baseStem = (file.originalname || `image.${ext}`)
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 80) || 'image';
+    const sanitizedFilename = `${baseStem}.${ext}`;
     const bucketName = config.gcp.imageBucketName;
     try {
       const bucket = this.storage.bucket(bucketName);
-      const gcsFile = bucket.file(`media_assets/${hash}_${file.originalname}`);
+      const gcsFile = bucket.file(`media_assets/${hash}_${sanitizedFilename}`);
       await gcsFile.save(file.buffer, {
-        contentType: file.mimetype,
+        contentType: safeMime,
         resumable: false
       });
-      return `gs://${bucketName}/media_assets/${hash}_${file.originalname}`;
+      return `gs://${bucketName}/media_assets/${hash}_${sanitizedFilename}`;
     } catch {
       const base64Data = file.buffer.toString('base64');
-      return `data:${file.mimetype};base64,${base64Data}`;
+      return `data:${safeMime};base64,${base64Data}`;
     }
   }
 

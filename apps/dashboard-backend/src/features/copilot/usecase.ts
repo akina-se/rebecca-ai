@@ -253,11 +253,11 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
 
     if (lower.includes('ブロック') || lower.includes('block') || lower.includes('ミュート')) {
       const match = userMessage.match(/@([a-zA-Z0-9_]+)/);
-      const handle = match ? match[0] : '@toxic_user';
+      const handle = match ? match[0] : '';
       return {
         type: 'BLOCK_USER',
-        title: isEn ? `Block User ${handle}` : `ユーザー ${handle} のブロック`,
-        description: isEn ? `Block ${handle} from interacting with Master or replying.` : `${handle} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
+        title: isEn ? (handle ? `Block User ${handle}` : 'Block User') : (handle ? `ユーザー ${handle} のブロック` : 'ユーザーのブロック'),
+        description: isEn ? `Block ${handle || 'user'} from interacting with Master or replying.` : `${handle || '対象ユーザー'} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
         impactLevel: 'danger',
         requiresConfirmation: true,
         payload: { userId: handle.replace('@', ''), handle }
@@ -265,13 +265,15 @@ ${isEn ? 'CRITICAL: The active UI language is ENGLISH. Every string in reply, ac
     }
 
     if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して')) {
+      const postMatch = userMessage.match(/(?:post|投稿|id|#)\s*([a-zA-Z0-9_-]{3,})/i);
+      const postId = postMatch ? postMatch[1] : '';
       return {
         type: 'DELETE_POST',
         title: isEn ? 'Confirm Post Deletion' : '投稿の削除確認',
         description: isEn ? 'Permanently delete this post from system logs and X (Twitter).' : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。',
         impactLevel: 'danger',
         requiresConfirmation: true,
-        payload: { postId: 'target_post' }
+        payload: { postId }
       };
     }
 

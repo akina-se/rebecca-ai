@@ -21,14 +21,27 @@ export class CopilotController {
    * @returns A promise that resolves when the response is sent.
    */
   async chat(req: Request, res: Response): Promise<void> {
-    const { message, currentContext, history } = req.body;
-    if (!message) {
+    const { message, currentContext, history, language } = req.body;
+    if (!message || typeof message !== 'string') {
       res.status(400).json({ error: 'Message is required' });
       return;
     }
 
+    const boundedMessage = message.slice(0, 2000);
+    const boundedHistory = Array.isArray(history)
+      ? history.slice(-20).map((item: { role?: string; text?: string }) => ({
+          role: item?.role === 'model' ? ('model' as const) : ('user' as const),
+          text: typeof item?.text === 'string' ? item.text.slice(0, 2000) : '',
+        }))
+      : history;
+
     try {
-      const response = await this.useCase.processChat({ message, currentContext, history });
+      const response = await this.useCase.processChat({
+        message: boundedMessage,
+        currentContext,
+        history: boundedHistory,
+        ...(language !== undefined ? { language } : {}),
+      });
       res.json(response);
     } catch (err) {
       logger.error('Failed to process chat', err);

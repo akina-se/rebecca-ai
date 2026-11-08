@@ -114,12 +114,22 @@ export class AssetsController {
         });
       } else if (req.body?.files && Array.isArray(req.body.files)) {
         // 2. Check JSON payload with base64 data
-        for (const item of req.body.files) {
+        const allowedMimes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+        for (const item of req.body.files.slice(0, 20)) {
           if (item.data && item.filename) {
-            const buffer = Buffer.from(item.data.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+            const mime = item.mimetype || 'image/png';
+            if (!allowedMimes.has(mime)) {
+              res.status(400).json({ error: 'Unsupported image MIME type. Allowed: JPEG, PNG, WebP, GIF.' });
+              return;
+            }
+            const buffer = Buffer.from(String(item.data).replace(/^data:image\/\w+;base64,/, ''), 'base64');
+            if (buffer.length > 15 * 1024 * 1024) {
+              res.status(400).json({ error: 'Image size exceeds 15MB limit' });
+              return;
+            }
             filesToProcess.push({
-              originalname: item.filename,
-              mimetype: item.mimetype || 'image/png',
+              originalname: String(item.filename),
+              mimetype: mime,
               buffer
             });
           }

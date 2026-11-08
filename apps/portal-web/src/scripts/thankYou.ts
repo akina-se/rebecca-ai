@@ -38,8 +38,9 @@ export async function checkSessionVerification(): Promise<void> {
       rewardPanel.style.display = 'block';
 
       const isJa = document.body.getAttribute('data-lang') !== 'en';
-      const nameDisplay = data.supporterName && data.supporterName.trim().length > 0
-        ? data.supporterName
+      const trimmedSupporterName = data.supporterName !== null ? data.supporterName.trim() : '';
+      const nameDisplay = trimmedSupporterName.length > 0
+        ? trimmedSupporterName
         : (isJa ? 'マスター' : 'Master');
       const nameEl = document.getElementById('supporter-name-display');
       const nameEnEl = document.getElementById('supporter-name-display-en');
@@ -48,20 +49,21 @@ export async function checkSessionVerification(): Promise<void> {
 
       const badgePill = document.getElementById('tier-badge-pill');
       if (badgePill) {
-        badgePill.className = `tier-badge-pill tier-badge-${data.tier ?? 'bronze'}`;
-        badgePill.textContent = `${(data.tier ?? 'bronze').toUpperCase()} TIER`;
+        badgePill.className = `tier-badge-pill tier-badge-${data.tier}`;
+        badgePill.textContent = `${data.tier.toUpperCase()} TIER`;
       }
 
+      const trimmedItemLabel = data.itemLabel.trim();
       const itemDisplays = document.querySelectorAll('.item-label-display');
       itemDisplays.forEach((el) => {
-        el.textContent = data.itemLabel && data.itemLabel.trim().length > 0
-          ? data.itemLabel
+        el.textContent = trimmedItemLabel.length > 0
+          ? trimmedItemLabel
           : (isJa ? '温かいご支援' : 'Contribution');
       });
 
       const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement | null;
-      if (dlBtn && data.downloadUrl) {
-        dlBtn.href = data.downloadUrl;
+      if (dlBtn && !data.isExpired && data.reward !== null) {
+        dlBtn.href = data.reward.downloadUrl;
         dlBtn.classList.remove('disabled');
       }
     }
