@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { generateWebpThumbnail } from '../../utils/image';
+import { generateWebpThumbnail, resolveRasterImageExtension } from '../../utils/image';
 import { AssetsRepository, AssetQueryParams } from './repository';
 import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
 import { GoogleGenAI } from '@google/genai';
@@ -294,9 +294,13 @@ export class AssetsUseCase {
    * @returns A promise that resolves when the update is complete.
    */
   async updateAsset(id: string, updates: Partial<Asset>): Promise<void> {
-    const { id: _id, url: _url, createdAt: _createdAt, lastUsedAt: _lastUsedAt, ...safeUpdates } = updates;
-    void _id; void _url; void _createdAt; void _lastUsedAt;
-    const repoUpdates: Parameters<AssetsRepository['update']>[1] = { ...safeUpdates };
+    const repoUpdates: Parameters<AssetsRepository['update']>[1] = {};
+    if (updates.status !== undefined) {
+      repoUpdates.status = updates.status;
+    }
+    if (typeof updates.caption === 'string') {
+      repoUpdates.caption = updates.caption;
+    }
 
     if (typeof updates.caption === 'string') {
       const trimmedCaption = updates.caption.trim();
@@ -445,12 +449,13 @@ export class AssetsUseCase {
    * Helper: Saves uploaded file buffer to GCS or falls back to data URI.
    */
   private async saveToStorage(file: UploadedFile, hash: string): Promise<string> {
-    const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-    const safeMime = ALLOWED_MIMES.has(file.mimetype) ? file.mimetype : 'image/png';
-    const safeName = (file.originalname || 'image.png')
-      .replace(/[^a-zA-Z0-9._-]/g, '_')
-      .replace(/\.+/g, '.')
-      .slice(0, 100);
+    const ext = resolveRasterImageExtension(file.mimetype);
+    const safeMime = file.mimetype.trim().toLowerCase();
+    const baseStem = (file.originalname || `image.${ext}`)
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 80) || 'image';
+    const safeName = `${baseStem}.${ext}`;
     const bucketName = config.gcp.imageBucketName;
     try {
       const bucket = this.storage.bucket(bucketName);

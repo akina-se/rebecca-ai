@@ -11,7 +11,14 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { AppDependencies } from '../../types';
 import { SupportConfig } from './types';
-import { SUPPORT_TIER_CONFIG, resolveSupportTierFromAmount, SupportTransactionDoc, RewardImageDoc } from '@rebecca/types';
+import {
+  SUPPORT_TIER_CONFIG,
+  resolveSupportTierFromAmount,
+  SupportTransactionDoc,
+  RewardImageDoc,
+  VerifySessionSuccessResponse,
+  VerifiedSupportRewardInfo,
+} from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
 const REWARD_TICKET_COOKIE_NAME = 'reward_ticket';
@@ -282,7 +289,7 @@ export class PublicSupportController {
           const transactionDoc = this.buildTransactionDoc(session, paidAtMs, activeRewardForSync?.id);
 
           const created = await this.deps.firestore.createSupportTransaction(transactionDoc);
-          if (created !== false) {
+          if (created) {
             transaction = transactionDoc;
             logger.info('[PublicSupportController] Auto-created support transaction on session verification', {
               transactionId: transactionDoc.id,
@@ -312,7 +319,7 @@ export class PublicSupportController {
         }
       }
 
-      let rewardPayload = null;
+      let rewardPayload: VerifiedSupportRewardInfo | null = null;
       if (activeReward && !isExpired) {
         const expiresAtMs = createdAtMs + MAX_WINDOW_MINUTES * 60 * 1000;
         const maxAgeSeconds = Math.max(1, Math.floor((expiresAtMs - Date.now()) / 1000));
@@ -338,7 +345,6 @@ export class PublicSupportController {
 
         rewardPayload = {
           title: activeReward.title,
-          imageUrl: thumbnailUrl,
           thumbnailUrl,
           downloadUrl,
           expiresAt: new Date(expiresAtMs).toISOString(),
@@ -349,21 +355,20 @@ export class PublicSupportController {
       const tierInfo = resolveSupportTierFromAmount(amount);
 
       // Privacy Guard: If supporter opted to hide credit visibility ('hide'),
-      // do not expose safeName in the public verify-session response to prevent
+      // do not expose supporterName in the public verify-session response to prevent
       // disclosure if sessionId is leaked or intercepted via browser history/referrer.
       const isCreditHidden = transaction?.creditVisibility === 'hide';
-      const safeNameForResponse = isCreditHidden ? null : (transaction?.safeName || null);
+      const supporterName = isCreditHidden ? null : (transaction?.safeName || null);
 
-      res.status(200).json({
+      const responsePayload: VerifySessionSuccessResponse = {
         valid: true,
         tier: transaction?.tier ?? tierInfo.tier,
         itemLabel: transaction?.itemLabel ?? tierInfo.itemLabel,
-        safeName: safeNameForResponse,
-        supporterName: safeNameForResponse ?? '',
-        downloadUrl: rewardPayload?.downloadUrl ?? null,
+        supporterName,
         reward: rewardPayload,
         isExpired,
-      });
+      };
+      res.status(200).json(responsePayload);
     } catch (error) {
       logger.error('[PublicSupportController] Error verifying support session', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -549,7 +554,7 @@ export class PublicSupportController {
         const transactionDoc = this.buildTransactionDoc(mergedSession, paidAtMs, activeReward?.id);
 
         const created = await this.deps.firestore.createSupportTransaction(transactionDoc);
-        if (created === false) {
+        if (!created) {
           res.status(200).json({ received: true, status: 'already_processed' });
           return;
         }

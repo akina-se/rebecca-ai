@@ -1,6 +1,41 @@
 import { PhotonImage, resize, SamplingFilter } from '@silvia-odwyer/photon-node';
 
 /**
+ * Allowed raster image MIME types mapped to their canonical file extensions.
+ *
+ * Security Invariant:
+ * Vector formats such as `image/svg+xml` are intentionally excluded because
+ * SVG documents can contain executable `<script>` elements and inline event handlers
+ * that cause Stored XSS if served with an `image/svg+xml` Content-Type.
+ * Additionally, file extensions are derived exclusively from this verified MIME
+ * allowlist rather than untrusted `file.originalname` headers.
+ */
+export const RASTER_MIME_TO_EXTENSION: Readonly<Record<string, string>> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
+/**
+ * Resolves the canonical file extension for a supported raster image MIME type.
+ *
+ * @param mimeType - Raw MIME type string reported by the multipart upload parser.
+ * @returns The canonical lowercase file extension without a leading dot (`png`, `jpg`, `webp`, or `gif`).
+ * @throws Error when the MIME type is missing or not in the raster image allowlist.
+ */
+export function resolveRasterImageExtension(mimeType: string): string {
+  const normalized = mimeType.trim().toLowerCase();
+  const ext = RASTER_MIME_TO_EXTENSION[normalized];
+  if (!ext) {
+    throw new Error(
+      `Only raster image uploads (PNG, JPEG, WebP, GIF) are permitted (received "${mimeType}").`,
+    );
+  }
+  return ext;
+}
+
+/**
  * Resizes an image buffer to a maximum width (maintaining aspect ratio without enlargement)
  * and converts the output to WebP format using WebAssembly (Photon).
  *

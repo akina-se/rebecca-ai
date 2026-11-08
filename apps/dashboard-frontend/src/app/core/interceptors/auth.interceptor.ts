@@ -1,21 +1,28 @@
-﻿import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 /**
- * Checks whether an outgoing request URL targets a same-origin or relative BFF endpoint
- * so Firebase JWT Bearer tokens are never leaked to third-party origins.
+ * Checks whether an outgoing request URL targets a same-origin relative path or the
+ * configured BFF origin (`environment.apiUrl`) so Firebase JWT Bearer tokens are
+ * never leaked to third-party origins, even if a third-party URL path starts with `/api/`.
  */
 function isTrustedApiDestination(url: string): boolean {
   if (url.startsWith('/')) {
     return !url.startsWith('//');
   }
   try {
-    const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
-    if (typeof window !== 'undefined' && parsed.origin === window.location.origin) {
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    const parsed = new URL(url, currentOrigin);
+    if (parsed.origin === currentOrigin) {
       return true;
     }
-    return parsed.pathname.startsWith('/api/');
+    if (environment.apiUrl.startsWith('http://') || environment.apiUrl.startsWith('https://')) {
+      const configuredApiOrigin = new URL(environment.apiUrl).origin;
+      return parsed.origin === configuredApiOrigin;
+    }
+    return false;
   } catch {
     return false;
   }

@@ -5,12 +5,14 @@
 
 const mockDocGet = jest.fn();
 const mockDocSet = jest.fn().mockResolvedValue(undefined);
+const mockDocCreate = jest.fn().mockResolvedValue(undefined);
 const mockDocUpdate = jest.fn().mockResolvedValue(undefined);
 const mockDocDelete = jest.fn().mockResolvedValue(undefined);
 
 const mockDocRef = {
   get: mockDocGet,
   set: mockDocSet,
+  create: mockDocCreate,
   update: mockDocUpdate,
   delete: mockDocDelete,
 };
@@ -782,15 +784,20 @@ describe('Firestore Service Unit Tests', () => {
       );
     });
 
-    it('createSupportTransaction should set document and return false on ALREADY_EXISTS', async () => {
+    it('createSupportTransaction should atomically create document, return false on ALREADY_EXISTS, and rethrow other errors', async () => {
       const dummyTx = { id: 'tx_new', amount: 500 } as any;
       const created = await firestoreService.createSupportTransaction(dummyTx);
       expect(created).toBe(true);
-      expect(mockDocSet).toHaveBeenCalledWith(dummyTx);
+      expect(mockDocCreate).toHaveBeenCalledWith(dummyTx);
 
-      mockDocSet.mockRejectedValueOnce({ code: 6, message: 'ALREADY_EXISTS' });
+      mockDocCreate.mockRejectedValueOnce({ code: 6, message: 'ALREADY_EXISTS' });
       const duplicate = await firestoreService.createSupportTransaction(dummyTx);
       expect(duplicate).toBe(false);
+
+      mockDocCreate.mockRejectedValueOnce(new Error('UNAVAILABLE'));
+      await expect(firestoreService.createSupportTransaction(dummyTx)).rejects.toThrow(
+        'Failed to create support transaction tx_new',
+      );
     });
 
     it('getSupportTransactionBySessionId should return doc if found, null if empty', async () => {

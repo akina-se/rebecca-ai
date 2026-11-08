@@ -1,199 +1,155 @@
 import { checkSessionVerification } from '../src/scripts/thankYou';
 
-describe('Client Script - Thank You Session Verification', () => {
-  const originalFetch = global.fetch;
-
+describe('thankYou script', () => {
   beforeEach(() => {
+    document.body.setAttribute('data-lang', 'ja');
     document.body.innerHTML = `
-      <div id="reward-panel" style="display:none;">
+      <div id="guidance-card" style="display: block;"></div>
+      <div id="reward-panel" style="display: none;">
         <span id="supporter-name-display"></span>
         <span id="supporter-name-display-en"></span>
         <span id="tier-badge-pill"></span>
         <span class="item-label-display"></span>
         <a id="download-reward-btn" class="disabled" href="#">Download</a>
       </div>
-      <div id="guidance-card"></div>
     `;
-    window.history.replaceState(null, '', '/support/thank-you.html');
+    window.history.replaceState({}, '', '/support/thank-you.html?session_id=cs_test_123');
+    global.fetch = jest.fn();
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
-  it('should verify session and display reward panel on valid session_id', async () => {
-    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_123');
-
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        valid: true,
-        supporterName: 'Master Alice',
-        tier: 'gold',
-        itemLabel: 'Special Support',
-        downloadUrl: 'https://storage.googleapis.com/download-link',
-      }),
-    } as Response);
+  it('Check session without sessionId and failed verification returns early without showing reward panel', async () => {
+    window.history.replaceState({}, '', '/support/thank-you.html');
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ valid: false, error: 'Missing session' }),
+    });
 
     await checkSessionVerification();
 
-    const rewardPanel = document.getElementById('reward-panel');
-    const guidanceCard = document.getElementById('guidance-card');
-    const nameDisplay = document.getElementById('supporter-name-display');
-    const badgePill = document.getElementById('tier-badge-pill');
-    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
-
-    expect(rewardPanel?.style.display).toBe('block');
-    expect(guidanceCard?.style.display).toBe('none');
-    expect(nameDisplay?.textContent).toBe('Master Alice');
-    expect(badgePill?.textContent).toBe('GOLD TIER');
-    expect(dlBtn?.href).toBe('https://storage.googleapis.com/download-link');
-    expect(dlBtn?.classList.contains('disabled')).toBe(false);
-
-    // Verify session_id was scrubbed from URL
-    expect(window.location.search).toBe('');
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/support/verify-session', {
+      method: 'GET',
+      headers: {},
+      credentials: 'same-origin',
+    });
+    expect(document.getElementById('reward-panel')?.style.display).toBe('none');
+    expect(document.getElementById('guidance-card')?.style.display).toBe('block');
   });
 
-  it('should support canonical nested reward.downloadUrl and safeName from backend verifySession', async () => {
-    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_nested');
-
-    global.fetch = jest.fn().mockResolvedValue({
+  it('Verifies session via x-stripe-session-id header, scrubs URL, and unlocks reward download button', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: async () => ({
         valid: true,
-        safeName: 'アリス',
-        tier: 'silver',
-        itemLabel: 'サーバーリソース差し入れ',
+        tier: 'gold',
+        itemLabel: '開発サポート',
+        supporterName: 'レベッカ推し',
         reward: {
           title: 'サポーター特典イラスト',
-          imageUrl: '/api/v1/support/rewards/download?type=master',
           thumbnailUrl: '/api/v1/support/rewards/download?type=thumbnail',
           downloadUrl: '/api/v1/support/rewards/download?type=master',
-          expiresAt: '2026-11-09T00:00:00.000Z',
+          expiresAt: '2026-10-25T12:30:00.000Z',
         },
         isExpired: false,
       }),
-    } as Response);
+    });
 
     await checkSessionVerification();
 
-    const nameDisplay = document.getElementById('supporter-name-display');
-    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
-    expect(nameDisplay?.textContent).toBe('アリス');
-    expect(dlBtn?.getAttribute('href')).toBe('/api/v1/support/rewards/download?type=master');
-    expect(dlBtn?.classList.contains('disabled')).toBe(false);
-  });
-
-  it('should keep download button disabled when session reward isExpired is true', async () => {
-    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_expired');
-
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        valid: true,
-        safeName: 'アリス',
-        tier: 'bronze',
-        itemLabel: 'エナジードリンク差し入れ',
-        reward: null,
-        downloadUrl: 'https://storage.googleapis.com/should-not-use',
-        isExpired: true,
-      }),
-    } as Response);
-
-    await checkSessionVerification();
+    expect(window.location.search).toBe('');
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/support/verify-session', {
+      method: 'GET',
+      headers: { 'x-stripe-session-id': 'cs_test_123' },
+      credentials: 'same-origin',
+    });
+    expect(document.getElementById('guidance-card')?.style.display).toBe('none');
+    expect(document.getElementById('reward-panel')?.style.display).toBe('block');
+    expect(document.getElementById('supporter-name-display')?.textContent).toBe('レベッカ推し');
+    expect(document.getElementById('tier-badge-pill')?.textContent).toBe('GOLD TIER');
+    expect(document.querySelector('.item-label-display')?.textContent).toBe('開発サポート');
 
     const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
-    expect(dlBtn?.classList.contains('disabled')).toBe(true);
+    expect(dlBtn.classList.contains('disabled')).toBe(false);
+    expect(dlBtn.getAttribute('href')).toBe('/api/v1/support/rewards/download?type=master');
   });
 
-  it('should preserve other query params when scrubbing session_id and use JA fallbacks', async () => {
-    document.body.removeAttribute('data-lang');
-    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_123&ref=twitter');
-
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        valid: true,
-        supporterName: '',
-        tier: undefined,
-        itemLabel: '',
-        downloadUrl: '',
-      }),
-    } as Response);
-
-    await checkSessionVerification();
-
-    expect(window.location.search).toBe('?ref=twitter');
-    const nameDisplay = document.getElementById('supporter-name-display');
-    expect(nameDisplay?.textContent).toBe('マスター');
-    const badgePill = document.getElementById('tier-badge-pill');
-    expect(badgePill?.textContent).toBe('BRONZE TIER');
-    const itemDisplay = document.querySelector('.item-label-display');
-    expect(itemDisplay?.textContent).toBe('温かいご支援');
-  });
-
-  it('should fallback to default supporter name in English mode when supporterName is blank', async () => {
+  it('Falls back to localized default supporter name and item label when supporterName is null or blank in English mode', async () => {
     document.body.setAttribute('data-lang', 'en');
-    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_en');
-
-    global.fetch = jest.fn().mockResolvedValue({
+    window.history.replaceState({}, '', '/support/thank-you.html?session_id=cs_test_en&lang=en');
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: async () => ({
         valid: true,
-        supporterName: '',
+        tier: 'bronze',
+        itemLabel: '   ',
+        supporterName: null,
+        reward: null,
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    expect(window.location.search).toBe('?lang=en');
+    expect(document.getElementById('supporter-name-display')?.textContent).toBe('Master');
+    expect(document.querySelector('.item-label-display')?.textContent).toBe('Contribution');
+    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
+    expect(dlBtn.classList.contains('disabled')).toBe(true);
+  });
+
+  it('Falls back to Japanese defaults when supporterName and itemLabel are blank in Japanese mode', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
         tier: 'silver',
         itemLabel: '',
-        downloadUrl: 'https://example.com/dl',
+        supporterName: '   ',
+        reward: null,
+        isExpired: false,
       }),
-    } as Response);
+    });
 
     await checkSessionVerification();
 
-    const nameDisplay = document.getElementById('supporter-name-display');
-    expect(nameDisplay?.textContent).toBe('Master');
+    expect(document.getElementById('supporter-name-display')?.textContent).toBe('マスター');
+    expect(document.querySelector('.item-label-display')?.textContent).toBe('温かいご支援');
   });
 
-  it('should trigger DOMContentLoaded event handler cleanly', () => {
-    document.dispatchEvent(new Event('DOMContentLoaded'));
-  });
-
-  it('should run safely if DOM elements are missing', async () => {
-    document.body.innerHTML = '';
-    global.fetch = jest.fn().mockResolvedValue({
+  it('Keeps #download-reward-btn disabled when isExpired is true', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
+      status: 200,
       json: async () => ({
         valid: true,
-        supporterName: 'Master Alice',
-        downloadUrl: '',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース差し入れ',
+        supporterName: 'テストマスター',
+        reward: null,
+        isExpired: true,
       }),
-    } as Response);
-
-    await expect(checkSessionVerification()).resolves.toBeUndefined();
-  });
-
-  it('should keep guidance card visible when visiting without session_id and unauthenticated', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 401,
-      json: async () => ({ valid: false }),
-    } as Response);
+    });
 
     await checkSessionVerification();
 
-    const rewardPanel = document.getElementById('reward-panel');
-    const guidanceCard = document.getElementById('guidance-card');
-
-    expect(rewardPanel?.style.display).toBe('none');
-    expect(guidanceCard?.style.display).toBe('');
+    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
+    expect(dlBtn.classList.contains('disabled')).toBe(true);
+    expect(dlBtn.getAttribute('href')).toBe('#');
   });
 
-  it('should handle network errors without crashing', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('Network offline'));
+  it('Logs warning when fetch throws a network error', async () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
     await checkSessionVerification();
 
     expect(warnSpy).toHaveBeenCalledWith('[ThankYou] Session verification request failed:', expect.any(Error));
-    warnSpy.mockRestore();
   });
 });

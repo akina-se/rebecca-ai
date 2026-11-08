@@ -7,16 +7,26 @@ import { logger } from '../../utils/logger';
  * Controller handling HTTP requests for the supporter management ledger,
  * retry mechanisms, community moderation, and reward asset management.
  */
-const resolveErrorMessage = (error: unknown, status: number, fallback: string): string =>
-  status < 500 ? ((error as Error).message || fallback) : fallback;
+function handleControllerError(
+  res: Response,
+  error: unknown,
+  operation: string,
+  fallbackMessage: string,
+  meta?: Record<string, unknown>,
+): void {
+  const status = (error as { statusCode?: number }).statusCode || 500;
+  if (status < 500) {
+    logger.warn(`[SupportersController] ${operation} rejected`, meta);
+    res.status(status).json({ error: (error as Error).message });
+    return;
+  }
+  logger.error(`[SupportersController] ${operation} failed`, error, meta);
+  res.status(status).json({ error: fallbackMessage });
+}
 
 export class SupportersController {
   constructor(private useCase: SupportersUseCase) {}
 
-  /**
-   * GET /api/v1/supporters
-   * Retrieves paginated transaction records with KPI summary.
-   */
   /**
    * GET /api/v1/supporters/plans
    * Retrieves active support tier plans and pricing configuration.
@@ -88,10 +98,6 @@ export class SupportersController {
   }
 
   /**
-   * PATCH /api/v1/supporters/:id
-   * Updates transaction fields (safeName, tier, isBanned, creditVisibility).
-   */
-  /**
    * DELETE /api/v1/supporters/:id
    * Deletes a support transaction.
    */
@@ -101,21 +107,21 @@ export class SupportersController {
       await this.useCase.deleteTransaction(id);
       res.status(204).send();
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] delete failed', error, { id: req.params.id });
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to delete transaction') });
+      handleControllerError(res, error, 'delete', 'Failed to delete transaction', { id: req.params.id });
     }
   }
 
+  /**
+   * PATCH /api/v1/supporters/:id
+   * Updates transaction fields (safeName, tier, isBanned, creditVisibility).
+   */
   async update(req: Request, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
       const result = await this.useCase.updateTransaction(id, req.body);
       res.status(200).json(result);
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] update failed', error, { id: req.params.id });
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to update transaction') });
+      handleControllerError(res, error, 'update', 'Failed to update transaction', { id: req.params.id });
     }
   }
 
@@ -129,9 +135,7 @@ export class SupportersController {
       const result = await this.useCase.retryTransaction(id);
       res.status(200).json(result);
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] retry failed', error, { id: req.params.id });
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to retry transaction') });
+      handleControllerError(res, error, 'retry', 'Failed to retry transaction', { id: req.params.id });
     }
   }
 
@@ -145,9 +149,9 @@ export class SupportersController {
       const result = await this.useCase.manualResolve(id, req.body);
       res.status(200).json(result);
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] manualResolve failed', error, { id: req.params.id });
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to manually resolve transaction') });
+      handleControllerError(res, error, 'manualResolve', 'Failed to manually resolve transaction', {
+        id: req.params.id,
+      });
     }
   }
 
@@ -160,9 +164,7 @@ export class SupportersController {
       const result = await this.useCase.manualEntry(req.body);
       res.status(201).json(result);
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] manualEntry failed', error);
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to create manual entry') });
+      handleControllerError(res, error, 'manualEntry', 'Failed to create manual entry');
     }
   }
 
@@ -194,9 +196,7 @@ export class SupportersController {
       const result = await this.useCase.uploadReward(req.file, title);
       res.status(201).json(result);
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] uploadReward failed', error);
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to upload reward') });
+      handleControllerError(res, error, 'uploadReward', 'Failed to upload reward');
     }
   }
 
@@ -235,9 +235,7 @@ export class SupportersController {
       const result = await this.useCase.updateReward(id, req.body);
       res.status(200).json(result);
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] updateReward failed', error, { id: req.params.id });
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to update reward') });
+      handleControllerError(res, error, 'updateReward', 'Failed to update reward', { id: req.params.id });
     }
   }
 
@@ -251,9 +249,7 @@ export class SupportersController {
       await this.useCase.deleteReward(id);
       res.status(200).json({ success: true });
     } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode || 500;
-      logger.error('[SupportersController] deleteReward failed', error, { id: req.params.id });
-      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to delete reward') });
+      handleControllerError(res, error, 'deleteReward', 'Failed to delete reward', { id: req.params.id });
     }
   }
 }
