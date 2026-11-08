@@ -7,6 +7,9 @@ import { logger } from '../../utils/logger';
  * Controller handling HTTP requests for the supporter management ledger,
  * retry mechanisms, community moderation, and reward asset management.
  */
+const resolveErrorMessage = (error: unknown, status: number, fallback: string): string =>
+  status < 500 ? ((error as Error).message || fallback) : fallback;
+
 export class SupportersController {
   constructor(private useCase: SupportersUseCase) {}
 
@@ -100,7 +103,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] delete failed', error, { id: req.params.id });
-      res.status(status).json({ error: (error as Error).message || 'Failed to delete transaction' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to delete transaction') });
     }
   }
 
@@ -112,7 +115,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] update failed', error, { id: req.params.id });
-      res.status(status).json({ error: (error as Error).message || 'Failed to update transaction' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to update transaction') });
     }
   }
 
@@ -128,7 +131,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] retry failed', error, { id: req.params.id });
-      res.status(status).json({ error: (error as Error).message || 'Failed to retry transaction' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to retry transaction') });
     }
   }
 
@@ -144,7 +147,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] manualResolve failed', error, { id: req.params.id });
-      res.status(status).json({ error: (error as Error).message || 'Failed to manually resolve transaction' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to manually resolve transaction') });
     }
   }
 
@@ -159,7 +162,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] manualEntry failed', error);
-      res.status(status).json({ error: (error as Error).message || 'Failed to create manual entry' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to create manual entry') });
     }
   }
 
@@ -193,7 +196,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] uploadReward failed', error);
-      res.status(status).json({ error: (error as Error).message || 'Failed to upload reward' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to upload reward') });
     }
   }
 
@@ -234,7 +237,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] updateReward failed', error, { id: req.params.id });
-      res.status(status).json({ error: (error as Error).message || 'Failed to update reward' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to update reward') });
     }
   }
 
@@ -250,7 +253,7 @@ export class SupportersController {
     } catch (error) {
       const status = (error as { statusCode?: number }).statusCode || 500;
       logger.error('[SupportersController] deleteReward failed', error, { id: req.params.id });
-      res.status(status).json({ error: (error as Error).message || 'Failed to delete reward' });
+      res.status(status).json({ error: resolveErrorMessage(error, status, 'Failed to delete reward') });
     }
   }
 }

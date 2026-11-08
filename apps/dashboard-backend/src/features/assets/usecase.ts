@@ -294,7 +294,9 @@ export class AssetsUseCase {
    * @returns A promise that resolves when the update is complete.
    */
   async updateAsset(id: string, updates: Partial<Asset>): Promise<void> {
-    const repoUpdates: Parameters<AssetsRepository['update']>[1] = { ...updates };
+    const { id: _id, url: _url, createdAt: _createdAt, lastUsedAt: _lastUsedAt, ...safeUpdates } = updates;
+    void _id; void _url; void _createdAt; void _lastUsedAt;
+    const repoUpdates: Parameters<AssetsRepository['update']>[1] = { ...safeUpdates };
 
     if (typeof updates.caption === 'string') {
       const trimmedCaption = updates.caption.trim();
@@ -443,18 +445,24 @@ export class AssetsUseCase {
    * Helper: Saves uploaded file buffer to GCS or falls back to data URI.
    */
   private async saveToStorage(file: UploadedFile, hash: string): Promise<string> {
+    const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const safeMime = ALLOWED_MIMES.has(file.mimetype) ? file.mimetype : 'image/png';
+    const safeName = (file.originalname || 'image.png')
+      .replace(/[^a-zA-Z0-9._-]/g, '_')
+      .replace(/\.+/g, '.')
+      .slice(0, 100);
     const bucketName = config.gcp.imageBucketName;
     try {
       const bucket = this.storage.bucket(bucketName);
-      const gcsFile = bucket.file(`media_assets/${hash}_${file.originalname}`);
+      const gcsFile = bucket.file(`media_assets/${hash}_${safeName}`);
       await gcsFile.save(file.buffer, {
-        contentType: file.mimetype,
+        contentType: safeMime,
         resumable: false
       });
-      return `gs://${bucketName}/media_assets/${hash}_${file.originalname}`;
+      return `gs://${bucketName}/media_assets/${hash}_${safeName}`;
     } catch {
       const base64Data = file.buffer.toString('base64');
-      return `data:${file.mimetype};base64,${base64Data}`;
+      return `data:${safeMime};base64,${base64Data}`;
     }
   }
 

@@ -34,8 +34,8 @@ export function renderHeader(config: PortalBrandConfig, activePage: PageContext 
         <div class="nav-actions">
           <!-- Language Switcher -->
           <div class="lang-switcher">
-            <button class="lang-btn active" id="btn-lang-ja" onclick="window.setLanguage('ja')">JA</button>
-            <button class="lang-btn" id="btn-lang-en" onclick="window.setLanguage('en')">EN</button>
+            <button class="lang-btn active" id="btn-lang-ja" type="button">JA</button>
+            <button class="lang-btn" id="btn-lang-en" type="button">EN</button>
           </div>
 
           <a href="${config.social.xUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-purple">

@@ -38,6 +38,7 @@ COPY --from=builder /app/apps/bot-backend/dist ./apps/bot-backend/dist
 
 WORKDIR /app/apps/bot-backend
 ENV PORT=8080
+USER node
 EXPOSE 8080
 
 CMD ["node", "dist/index.js"]

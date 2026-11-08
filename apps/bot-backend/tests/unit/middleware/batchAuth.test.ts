@@ -133,6 +133,22 @@ describe('batchAuth Middleware', () => {
         expect(mockRes.status).not.toHaveBeenCalled();
     });
 
+    it('should allow access when serviceAccountEmail is a comma-separated allowlist containing the caller SA', async () => {
+        config.gcp.serviceAccountEmail = 'scheduler-sa@example.iam.gserviceaccount.com, dashboard-sa@example.iam.gserviceaccount.com';
+        mockReq.headers = { authorization: 'Bearer valid_token' };
+        const mockVerifyIdToken = jest.fn().mockResolvedValue({
+            getPayload: () => ({
+                iss: 'https://accounts.google.com',
+                email: 'dashboard-sa@example.iam.gserviceaccount.com',
+                email_verified: true,
+            })
+        });
+        (OAuth2Client.prototype.verifyIdToken as jest.Mock) = mockVerifyIdToken;
+        await batchAuth(mockReq as Request, mockRes as Response, nextFunction);
+        expect(nextFunction).toHaveBeenCalled();
+        expect(mockRes.status).not.toHaveBeenCalled();
+    });
+
     it('should reject access if OIDC token serviceAccountEmail does not match', async () => {
         config.gcp.serviceAccountEmail = 'expected-sa@example.iam.gserviceaccount.com';
         mockReq.headers = { authorization: 'Bearer valid_token' };

@@ -24,7 +24,10 @@ param (
     [string]$ProjectId = "rebecca-ai-gal",
 
     [Parameter(Mandatory=$false)]
-    [string]$Region = "asia-northeast1"
+    [string]$Region = "asia-northeast1",
+
+    [Parameter(Mandatory=$false)]
+    [string]$PublicSiteUrl = "https://rebecca-ai.net"
 )
 
 $ErrorActionPreference = "Stop"
@@ -67,7 +70,7 @@ gcloud run deploy rebecca-dashboard-bff `
     --image=$BffImage `
     --region=$Region `
     --allow-unauthenticated `
-    --set-env-vars="NODE_ENV=production,GCP_PROJECT_ID=$ProjectId,GCP_LOCATION=$Region,PUBLIC_SITE_URL=https://rebecca-ai.net" `
+    --update-env-vars="NODE_ENV=production,GCP_PROJECT_ID=$ProjectId,GCP_LOCATION=$Region,PUBLIC_SITE_URL=$PublicSiteUrl" `
     --quiet
 
 # Step 6: Firebase Hosting & Functions Deployment

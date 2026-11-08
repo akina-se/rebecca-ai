@@ -26,6 +26,7 @@ set -euo pipefail
 
 PROJECT_ID="${1:-rebecca-ai-gal}"
 REGION="${2:-asia-northeast1}"
+PUBLIC_SITE_URL="${3:-https://rebecca-ai.net}"
 
 export CLOUDSDK_METRICS_ENVIRONMENT="datacloud.antigravity"
 
@@ -66,7 +67,7 @@ gcloud run deploy rebecca-dashboard-bff \
     --image="${BFF_IMAGE}" \
     --region="${REGION}" \
     --allow-unauthenticated \
-    --set-env-vars="NODE_ENV=production,GCP_PROJECT_ID=${PROJECT_ID},GCP_LOCATION=${REGION},PUBLIC_SITE_URL=https://rebecca-ai.net" \
+    --update-env-vars="NODE_ENV=production,GCP_PROJECT_ID=${PROJECT_ID},GCP_LOCATION=${REGION},PUBLIC_SITE_URL=${PUBLIC_SITE_URL}" \
     --quiet
 
 # Step 6: Firebase Hosting & Functions Deployment

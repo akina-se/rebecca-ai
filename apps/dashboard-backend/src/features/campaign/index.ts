@@ -11,10 +11,24 @@ export * from './repository';
 export * from './usecase';
 export * from './controller';
 
+const ALLOWED_RASTER_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 15 * 1024 * 1024, // 15MB max per illustration
+  },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_RASTER_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Unsupported image MIME type. Allowed: JPEG, PNG, WebP, GIF.'));
+    }
   },
 });
 

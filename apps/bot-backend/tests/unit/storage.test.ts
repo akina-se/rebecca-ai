@@ -70,6 +70,14 @@ describe('storage.ts', () => {
             await expect(storageService.downloadImage('hash123'))
                 .rejects.toThrow('download failed');
         });
+
+        it('should reject gs:// URIs from foreign buckets or with path traversal', async () => {
+            const storageService = getStorageModule();
+            await expect(storageService.downloadImage('gs://attacker-bucket/secret.png'))
+                .rejects.toThrow('Disallowed storage bucket');
+            await expect(storageService.downloadImage('gs://rebecca-ai-gal-images/../secret.png'))
+                .rejects.toThrow('Path traversal detected');
+        });
     });
 
     describe('generateSignedUrl', () => {
@@ -93,6 +101,13 @@ describe('storage.ts', () => {
             const url = await storageService.generateSignedUrl('/rewards/card.png');
             expect(url).toBe('https://signed.url/image.png');
             expect(mockBucket.file).toHaveBeenCalledWith('rewards/card.png');
+        });
+
+        it('should throw fail-fast error when getSignedUrl fails instead of returning unsigned URL', async () => {
+            const storageService = getStorageModule();
+            mockFile.getSignedUrl = jest.fn().mockRejectedValue(new Error('IAM signBlob denied'));
+            await expect(storageService.generateSignedUrl('rewards/card.png'))
+                .rejects.toThrow('Failed to generate signed URL for rewards/card.png');
         });
     });
 });

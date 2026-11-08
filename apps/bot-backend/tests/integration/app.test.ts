@@ -294,7 +294,7 @@ describe('Integration Tests', () => {
                 tweetId: 'with_image',
                 text: 'hello image',
                 authorId: 'user_1',
-                mediaUrls: ['https://example.com/image.jpg']
+                mediaUrls: ['https://pbs.twimg.com/media/image.jpg']
             };
             const response = await request(app).post('/worker/reply').set('x-worker-secret', 'test_secret').send(payload);
             

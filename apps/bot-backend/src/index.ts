@@ -48,9 +48,17 @@ export const createApp = (customDeps?: Partial<AppDependencies>): express.Expres
   };
 
   const app = express();
+  app.disable('x-powered-by');
   app.set('trust proxy', 1); // Trust the first proxy (e.g. Google Cloud Run) to fix express-rate-limit errors
+  app.use((_req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
   app.use(
     express.json({
+      limit: '1mb',
       verify: (req, _res, buf) => {
         (req as unknown as { rawBody?: Buffer }).rawBody = buf;
       },

@@ -47,7 +47,17 @@ const uploadImage = async (hash: string, buffer: Buffer, mimeType: string): Prom
  * @returns A promise resolving to the downloaded image as a binary buffer.
  */
 const downloadImage = async (gsUri: string): Promise<Buffer> => {
-    const filePath = gsUri.replace(`gs://${bucketName}/`, '');
+    if (gsUri.includes('..')) {
+        throw new Error(`Path traversal detected in storage URI: ${gsUri}`);
+    }
+    const expectedPrefix = `gs://${bucketName}/`;
+    if (gsUri.startsWith('gs://') && !gsUri.startsWith(expectedPrefix)) {
+        throw new Error(`Disallowed storage bucket in URI: ${gsUri}`);
+    }
+    const filePath = gsUri.replace(expectedPrefix, '').replace(/^\/+/, '');
+    if (!filePath || filePath.includes('..')) {
+        throw new Error(`Invalid storage object path: ${gsUri}`);
+    }
     const file = bucket.file(filePath);
     const [buffer] = await file.download();
     return buffer;
@@ -68,6 +78,9 @@ const generateSignedUrl = async (
     if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
         return `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}/v0/b/${bucket.name}/o/${encodeURIComponent(normalizedPath)}?alt=media`;
     }
+    if (!normalizedPath || normalizedPath.includes('..')) {
+        throw new Error(`Invalid storage path for signed URL: ${storagePathOrGsUri}`);
+    }
     try {
         const file = bucket.file(normalizedPath);
         const [url] = await file.getSignedUrl({
@@ -76,8 +89,8 @@ const generateSignedUrl = async (
             expires: Date.now() + expiresInMinutes * 60 * 1000,
         });
         return url;
-    } catch {
-        return `https://storage.googleapis.com/${bucket.name}/${normalizedPath}`;
+    } catch (err) {
+        throw new Error(`Failed to generate signed URL for ${normalizedPath}`, { cause: err });
     }
 };
 

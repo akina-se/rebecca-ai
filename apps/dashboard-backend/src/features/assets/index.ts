@@ -6,12 +6,26 @@ import { AssetsRepository } from './repository';
 import { AssetsUseCase } from './usecase';
 import { AssetsController } from './controller';
 
-// Configure multer with in-memory storage for handling multipart/form-data uploads
+const ALLOWED_RASTER_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
+// Configure multer with in-memory storage and strict raster MIME filtering
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 15 * 1024 * 1024, // 15MB max per image
     files: 20 // Up to 20 files per upload batch
+  },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_RASTER_MIME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Unsupported image MIME type. Allowed: JPEG, PNG, WebP, GIF.'));
+    }
   }
 });
 

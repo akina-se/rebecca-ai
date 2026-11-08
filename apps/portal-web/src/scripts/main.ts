@@ -92,6 +92,14 @@ if (typeof window !== 'undefined') {
       // Fallback to ja
     }
     setLanguage(initialLang);
+    const btnJa = document.getElementById('btn-lang-ja');
+    const btnEn = document.getElementById('btn-lang-en');
+    if (btnJa) {
+      btnJa.addEventListener('click', () => setLanguage('ja'));
+    }
+    if (btnEn) {
+      btnEn.addEventListener('click', () => setLanguage('en'));
+    }
     initSupportPlanLinks().catch(() => {});
   });
 }

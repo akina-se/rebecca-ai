@@ -414,6 +414,7 @@ export class CampaignsUseCase {
       createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
     };
+    delete (sanitizedUpdates as Record<string, unknown>).id;
 
     return this.repo.update(id, sanitizedUpdates);
   }
@@ -539,16 +540,20 @@ export class CampaignsUseCase {
       throw new Error(`Campaign ${campaignId} not found.`);
     }
 
-    if (!file.mimetype.startsWith('image/')) {
-      throw new Error('Only image uploads are permitted for campaign assets.');
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    const ext = MIME_TO_EXT[file.mimetype];
+    if (!ext) {
+      throw new Error('Only raster image uploads (JPEG, PNG, WebP, GIF) are permitted for campaign assets.');
     }
 
     const bucketName = this.config.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    const ext = file.originalname.includes('.')
-      ? file.originalname.split('.').pop()
-      : 'jpg';
     const cleanFilename = `${Date.now()}_${crypto.randomUUID().slice(0, 6)}.${ext}`;
     const destination = `campaigns/${campaignId}/${cleanFilename}`;
 
@@ -592,8 +597,15 @@ export class CampaignsUseCase {
       throw new Error(`Slot ${slotId} not found in campaign ${campaignId}.`);
     }
 
-    if (!file.mimetype.startsWith('image/')) {
-      throw new Error('Only image uploads are permitted for campaign assets.');
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    const ext = MIME_TO_EXT[file.mimetype];
+    if (!ext) {
+      throw new Error('Only raster image uploads (JPEG, PNG, WebP, GIF) are permitted for campaign assets.');
     }
 
     const targetSlot = campaign.slots[slotIndex];
@@ -610,9 +622,6 @@ export class CampaignsUseCase {
     const bucketName = this.config.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    const ext = file.originalname.includes('.')
-      ? file.originalname.split('.').pop()
-      : 'jpg';
     const cleanFilename = `${Date.now()}_${crypto.randomUUID().slice(0, 6)}.${ext}`;
     const destination = `campaigns/${campaignId}/${cleanFilename}`;
 
