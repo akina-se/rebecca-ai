@@ -31,7 +31,7 @@ export interface SupportConfig {
   /**
    * Safe fallback display name used when submitted name is empty or fails security filtering.
    *
-   * @example '名無しのマスター'
+   * @example 'Anonymous Master'
    */
   fallbackName: string;
 

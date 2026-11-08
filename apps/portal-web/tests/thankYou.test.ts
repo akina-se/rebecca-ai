@@ -9,7 +9,10 @@ describe('thankYou script', () => {
         <span id="supporter-name-display"></span>
         <span id="supporter-name-display-en"></span>
         <span id="tier-badge-pill"></span>
+        <span class="item-label-display item-label-display-ja"></span>
+        <span class="item-label-display item-label-display-en"></span>
         <span class="item-label-display"></span>
+        <img id="reward-image" style="display: none;" src="" />
         <a id="download-reward-btn" class="disabled" href="#">Download</a>
       </div>
     `;
@@ -70,8 +73,14 @@ describe('thankYou script', () => {
     expect(document.getElementById('guidance-card')?.style.display).toBe('none');
     expect(document.getElementById('reward-panel')?.style.display).toBe('block');
     expect(document.getElementById('supporter-name-display')?.textContent).toBe('レベッカ推し');
+    expect(document.getElementById('supporter-name-display-en')?.textContent).toBe('レベッカ推し');
     expect(document.getElementById('tier-badge-pill')?.textContent).toBe('GOLD TIER');
-    expect(document.querySelector('.item-label-display')?.textContent).toBe('開発サポート');
+    expect(document.querySelector('.item-label-display-ja')?.textContent).toBe('開発サポート');
+    expect(document.querySelector('.item-label-display-en')?.textContent).toBe('Development Support');
+
+    const rewardImg = document.getElementById('reward-image') as HTMLImageElement;
+    expect(rewardImg.style.display).toBe('block');
+    expect(rewardImg.src).toContain('/api/v1/support/rewards/download?type=thumbnail');
 
     const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
     expect(dlBtn.classList.contains('disabled')).toBe(false);
@@ -97,10 +106,33 @@ describe('thankYou script', () => {
     await checkSessionVerification();
 
     expect(window.location.search).toBe('?lang=en');
-    expect(document.getElementById('supporter-name-display')?.textContent).toBe('Master');
-    expect(document.querySelector('.item-label-display')?.textContent).toBe('Contribution');
+    expect(document.getElementById('supporter-name-display')?.textContent).toBe('マスター');
+    expect(document.getElementById('supporter-name-display-en')?.textContent).toBe('Master');
+    expect(document.querySelector('.item-label-display-en')?.textContent).toBe('Energy Drink');
+    expect(document.querySelector('.item-label-display-ja')?.textContent).toBe('温かいご支援');
     const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
     expect(dlBtn.classList.contains('disabled')).toBe(true);
+  });
+
+  it('Falls back to Master / マスター when supporterName is Anonymous Master', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        valid: true,
+        tier: 'custom_tier',
+        itemLabel: 'Custom Support',
+        supporterName: 'Anonymous Master',
+        reward: null,
+        isExpired: false,
+      }),
+    });
+
+    await checkSessionVerification();
+
+    expect(document.getElementById('supporter-name-display')?.textContent).toBe('マスター');
+    expect(document.getElementById('supporter-name-display-en')?.textContent).toBe('Master');
+    expect(document.querySelector('.item-label-display-en')?.textContent).toBe('Custom Support');
   });
 
   it('Falls back to Japanese defaults when supporterName and itemLabel are blank in Japanese mode', async () => {

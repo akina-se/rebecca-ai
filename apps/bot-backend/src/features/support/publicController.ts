@@ -21,7 +21,7 @@ import {
 } from '@rebecca/types';
 import { logger } from '../../utils/logger';
 
-const REWARD_TICKET_COOKIE_NAME = 'reward_ticket';
+const REWARD_TICKET_COOKIE_NAME = '__session';
 const MAX_WINDOW_MINUTES = 30;
 /** Shape of a Stripe Checkout Session ID (e.g. `cs_test_a1b2...` / `cs_live_a1b2...`). */
 const SESSION_ID_PATTERN = /^cs_[A-Za-z0-9_]{1,250}$/;
@@ -325,7 +325,7 @@ export class PublicSupportController {
         const maxAgeSeconds = Math.max(1, Math.floor((expiresAtMs - Date.now()) / 1000));
         const cookieAttributes = [
           `${REWARD_TICKET_COOKIE_NAME}=${encodeURIComponent(sessionId)}`,
-          'Path=/api/v1/support',
+          'Path=/',
           `Max-Age=${maxAgeSeconds}`,
           'HttpOnly',
           'SameSite=Lax',
