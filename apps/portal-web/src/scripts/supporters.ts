@@ -29,6 +29,12 @@ export function formatDateYMD(dateInput?: string | null): string {
   return `${y}/${m}/${day}`;
 }
 
+const PLAN_ACTION_LABELS: Record<string, { ja: string; en: string }> = {
+  bronze: { ja: 'エナドリを差し入れ', en: 'Send Energy Drink' },
+  silver: { ja: 'サーバーリソースを差し入れ', en: 'Send Compute Resource' },
+  gold: { ja: '開発サポートを送る', en: 'Support Development' },
+};
+
 /** Loads active support plans from backend and attaches Stripe URLs to payment buttons */
 export async function loadSupportPlans(): Promise<void> {
   try {
@@ -39,9 +45,38 @@ export async function loadSupportPlans(): Promise<void> {
     const data: PublicSupportPlansResponse = await res.json();
     for (const plan of data.plans) {
       const btn = document.getElementById(`btn-plan-${plan.tier}`) as HTMLAnchorElement | null;
-      if (btn && plan.paymentUrl) {
+      if (!btn) continue;
+      const card = btn.closest('.tier-card');
+
+      if (card && plan.amount) {
+        const priceEl = card.querySelector('.tier-price');
+        if (priceEl) {
+          const slotSpan = priceEl.querySelector('span');
+          const slotHtml = slotSpan ? slotSpan.outerHTML : '<span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span>';
+          priceEl.innerHTML = `¥${plan.amount.toLocaleString()} ${slotHtml}`;
+        }
+      }
+
+      if (plan.available && plan.paymentUrl) {
         btn.href = plan.paymentUrl;
-        btn.classList.remove('disabled');
+        btn.target = '_blank';
+        btn.rel = 'noopener noreferrer';
+        btn.classList.remove('btn-disabled', 'disabled');
+        btn.removeAttribute('aria-disabled');
+        if (card) card.classList.remove('tier-disabled');
+
+        const labels = PLAN_ACTION_LABELS[plan.tier];
+        const formattedAmount = plan.amount ? `（¥${plan.amount.toLocaleString()}）` : '';
+        const formattedAmountEn = plan.amount ? ` (¥${plan.amount.toLocaleString()})` : '';
+        if (labels) {
+          btn.innerHTML = `<span class="t-ja">${labels.ja}${formattedAmount}</span><span class="t-en">${labels.en}${formattedAmountEn}</span>`;
+        }
+      } else {
+        btn.removeAttribute('href');
+        btn.classList.add('btn-disabled', 'disabled');
+        btn.setAttribute('aria-disabled', 'true');
+        if (card) card.classList.add('tier-disabled');
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6; flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="t-ja">準備中（受付開始までお待ちください）</span><span class="t-en">Coming Soon</span>';
       }
     }
   } catch (err) {
