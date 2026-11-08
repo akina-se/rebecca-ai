@@ -162,3 +162,9 @@ apps/dashboard-e2e/tests/temp_upload/
 apps/dashboard-e2e/tests/temp_upload*
 screenshots/
 **/screenshots/
+
+# Service Account Keys & Local Credentials
+*service-account*.json
+*credentials*.json
+*-key.json
+gcp-key*.json
