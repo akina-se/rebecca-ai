@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.3](https://github.com/akina-se/rebecca-ai/compare/v1.38.2...v1.38.3) (2026-11-08)
+
+
+### Bug Fixes
+
+* **portal:** resolve reward session cookie, thumbnail, recent supporters, and mobile layout ([#437](https://github.com/akina-se/rebecca-ai/issues/437)) ([1ed1e2d](https://github.com/akina-se/rebecca-ai/commit/1ed1e2deb81d3d9c0c601a76f8e956253a1dd090))
+
 ## [1.38.2](https://github.com/akina-se/rebecca-ai/compare/v1.38.1...v1.38.2) (2026-11-08)
 
 
