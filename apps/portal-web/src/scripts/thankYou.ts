@@ -71,17 +71,75 @@ export async function checkSessionVerification(): Promise<void> {
         el.textContent = trimmedItemLabel.length > 0 ? trimmedItemLabel : '温かいご支援';
       });
 
+      const assetContainer = document.getElementById('reward-asset-container');
       const img = document.getElementById('reward-image') as HTMLImageElement | null;
-      if (img && data.reward !== null && data.reward.thumbnailUrl) {
-        img.src = data.reward.thumbnailUrl;
-        img.style.display = 'block';
-      }
-
       const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement | null;
-      if (dlBtn && !data.isExpired && data.reward !== null) {
-        dlBtn.href = data.reward.downloadUrl;
-        dlBtn.classList.remove('disabled');
+      const expiredPlaceholder = document.getElementById('reward-placeholder-expired');
+      const errorPlaceholder = document.getElementById('reward-placeholder-error');
+      const alertBox = document.querySelector<HTMLElement>('.dl-alert-box');
+      const timerDisplay = document.getElementById('reward-expiry-timer');
+
+      const showExpiredState = () => {
+        if (img) img.style.display = 'none';
+        if (errorPlaceholder) errorPlaceholder.style.display = 'none';
+        if (expiredPlaceholder) expiredPlaceholder.style.display = 'flex';
+        if (dlBtn) {
+          dlBtn.classList.add('disabled');
+          dlBtn.removeAttribute('href');
+          dlBtn.removeAttribute('download');
+          const jaSpan = dlBtn.querySelector('.t-ja');
+          const enSpan = dlBtn.querySelector('.t-en');
+          if (jaSpan) jaSpan.textContent = 'ダウンロード期限終了';
+          if (enSpan) enSpan.textContent = 'Download Window Closed';
+        }
+        if (timerDisplay) timerDisplay.style.display = 'none';
+        if (alertBox) alertBox.style.display = 'none';
+        if (assetContainer) assetContainer.style.display = 'flex';
+      };
+
+      const showErrorState = () => {
+        if (img) img.style.display = 'none';
+        if (expiredPlaceholder) expiredPlaceholder.style.display = 'none';
+        if (errorPlaceholder) errorPlaceholder.style.display = 'flex';
+        if (assetContainer) assetContainer.style.display = 'flex';
+      };
+
+      if (data.isExpired || !data.reward) {
+        showExpiredState();
+      } else {
+        const previewUrl = data.reward.thumbnailUrl;
+        const downloadUrl = data.reward.downloadUrl;
+
+        if (previewUrl || downloadUrl) {
+          if (previewUrl && img) {
+            img.onerror = () => {
+              showErrorState();
+            };
+            img.src = previewUrl;
+            img.style.display = 'block';
+          }
+          if (downloadUrl && dlBtn) {
+            dlBtn.href = downloadUrl;
+            dlBtn.classList.remove('disabled');
+          }
+          if (assetContainer) assetContainer.style.display = 'flex';
+        }
       }
+    } else if (guidanceCard) {
+      guidanceCard.style.display = 'block';
+      guidanceCard.innerHTML = `
+        <div style="padding: 24px; color: #f87171; text-align: center;">
+          <h3><span class="t-ja">セッション検証エラー</span><span class="t-en">Session Verification Error</span></h3>
+          <p style="margin-top: 8px;">
+            <span class="t-ja">セッションの検証に失敗したか、お支払いが完了していません。</span>
+            <span class="t-en">Session verification failed or payment is incomplete.</span>
+            <br>
+            <a href="/supporters" class="btn btn-purple" style="margin-top: 16px;">
+              <span class="t-ja">サポーターページへ</span><span class="t-en">Back to Supporters Page</span>
+            </a>
+          </p>
+        </div>
+      `.trim();
     }
   } catch (err) {
     console.warn('[ThankYou] Session verification request failed:', err);

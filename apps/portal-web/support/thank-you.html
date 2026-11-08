@@ -49,8 +49,37 @@
       </div>
 
       <div id="reward-asset-container" class="reward-image-preview-area">
-        <div class="reward-image-frame">
+        <div class="reward-image-frame" id="reward-image-frame">
           <img id="reward-image" src="" alt="Supporter Reward Illustration" style="display: none;">
+          <div id="reward-placeholder-expired" class="reward-placeholder expired" style="display: none;">
+            <svg class="placeholder-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <div class="placeholder-title">
+              <span class="t-ja">ダウンロード有効期限が終了しました</span>
+              <span class="t-en">Download Window Expired</span>
+            </div>
+            <div class="placeholder-desc">
+              <span class="t-ja">決済完了から30分が経過したため、限定イラストのダウンロード期間は終了しました。</span>
+              <span class="t-en">The 30-minute download window following checkout completion has ended.</span>
+            </div>
+          </div>
+          <div id="reward-placeholder-error" class="reward-placeholder error" style="display: none;">
+            <svg class="placeholder-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="placeholder-title">
+              <span class="t-ja">画像の読み込みに失敗しました</span>
+              <span class="t-en">Failed to Load Image</span>
+            </div>
+            <div class="placeholder-desc">
+              <span class="t-ja">通信環境をご確認の上、ページを再読み込みしてください。</span>
+              <span class="t-en">Please check your network connection and reload the page.</span>
+            </div>
+          </div>
         </div>
         <div class="reward-image-actions">
           <a id="download-reward-btn" href="#" target="_blank" download="{{CHARACTER_NAME}}-exclusive-supporter-artwork.jpg" class="btn-download disabled">
@@ -62,6 +91,7 @@
             <span class="t-ja">高画質イラストをダウンロード</span>
             <span class="t-en">Download High-Res Illustration</span>
           </a>
+          <div id="reward-expiry-timer" class="reward-expiry-timer" style="text-align: center; margin-top: 8px;"><span class="t-ja">有効期限: 約30分間</span><span class="t-en">Valid for: Approx. 30 minutes</span></div>
         </div>
       </div>
 
