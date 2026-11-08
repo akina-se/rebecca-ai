@@ -21,6 +21,21 @@ describe('Portal HTML Template Components', () => {
       expect(html).toContain('<title>利用規約 | 全肯定AIレベッカ</title>');
       expect(html).toContain('href="https://rebecca-ai.net/tos.html"');
     });
+
+    it('resolves relative ogpImage into fully qualified absolute URL', () => {
+      const html = renderHead(activePortalConfig, {
+        ogpImage: 'assets/ogp_supporters.jpg',
+      });
+      expect(html).toContain('content="https://rebecca-ai.net/assets/ogp_supporters.jpg"');
+      expect(html).toContain('<meta name="twitter:image" content="https://rebecca-ai.net/assets/ogp_supporters.jpg">');
+    });
+
+    it('preserves already absolute ogpImage URL', () => {
+      const html = renderHead(activePortalConfig, {
+        ogpImage: 'https://cdn.example.com/custom.png',
+      });
+      expect(html).toContain('content="https://cdn.example.com/custom.png"');
+    });
   });
 
   describe('renderHeader', () => {
