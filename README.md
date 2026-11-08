@@ -85,6 +85,9 @@ graph TD
 
 ## Setup Instructions
 
+> [!TIP]
+> For a comprehensive, step-by-step walkthrough covering credentials generation and permission setup for Google Cloud, Gemini API, X (Twitter) API, and Stripe, see the authoritative [External Integrations Setup Guide](docs/external-integrations-setup.md).
+
 > **Note on Gemini API (Free Tier):**
 > If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
 
@@ -148,6 +151,13 @@ GEMINI_THINKING_LEVEL=MEDIUM
 
 # CORS Configuration (Dashboard BFF)
 CORS_ALLOWED_ORIGINS=http://localhost:4200,https://your-dashboard-app.web.app
+
+# Supporter Appreciation & Tipping System (Stripe)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PAYMENT_LINK_BRONZE=https://buy.stripe.com/test_...
+STRIPE_PAYMENT_LINK_SILVER=https://buy.stripe.com/test_...
+STRIPE_PAYMENT_LINK_GOLD=https://buy.stripe.com/test_...
 
 # Rate Limits & Feature Settings
 GLOBAL_DAILY_LIMIT=500
