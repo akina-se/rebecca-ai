@@ -11,6 +11,8 @@ export * from './repository';
 export * from './usecase';
 export * from './controller';
 
+// Configure multer with in-memory storage and size limit.
+// Raster MIME validation is enforced in the domain usecase (`resolveRasterImageExtension`).
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {

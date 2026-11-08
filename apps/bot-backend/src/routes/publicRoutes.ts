@@ -2,9 +2,9 @@
  * @fileoverview Express router configuring public API endpoints for the Rebecca AI bot.
  *
  * Includes:
- * - Public support session verification: GET /api/support/verify-session
- * - Public special thanks credits: GET /api/support/credits
- * - Public Stripe webhooks: POST /api/webhooks/stripe
+ * - Public support session verification: GET /api/v1/support/verify-session
+ * - Public special thanks credits: GET /api/v1/support/credits
+ * - Public Stripe webhooks: POST /api/v1/webhooks/stripe
  */
 
 import { Router } from 'express';

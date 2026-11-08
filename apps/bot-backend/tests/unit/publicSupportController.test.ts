@@ -193,10 +193,9 @@ describe('PublicSupportController Unit Tests', () => {
           valid: true,
           tier: 'silver',
           itemLabel: 'サーバーリソース差し入れ',
-          safeName: 'アリス',
+          supporterName: 'アリス',
           reward: expect.objectContaining({
             title: 'サポーター特典イラスト',
-            imageUrl: '/api/v1/support/rewards/download?type=thumbnail',
             thumbnailUrl: '/api/v1/support/rewards/download?type=thumbnail',
             downloadUrl: '/api/v1/support/rewards/download?type=master',
           }),
@@ -229,7 +228,7 @@ describe('PublicSupportController Unit Tests', () => {
       );
     });
 
-    it('redacts safeName (returns null) when creditVisibility is hide to protect privacy', async () => {
+    it('redacts supporterName (returns null) when creditVisibility is hide to protect privacy', async () => {
       req.headers = { 'x-stripe-session-id': 'cs_hidden_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_hidden_123',
@@ -252,7 +251,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
           valid: true,
-          safeName: null,
+          supporterName: null,
         }),
       );
     });
@@ -279,7 +278,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
           valid: true,
-          safeName: 'Test2',
+          supporterName: 'Test2',
           reward: null,
           isExpired: true,
         }),
@@ -1074,6 +1073,27 @@ describe('PublicSupportController Unit Tests', () => {
 
       expect(statusMock).toHaveBeenCalledWith(404);
       expect(deps.storage.downloadImage).not.toHaveBeenCalled();
+    });
+
+    it('does not fall back to active reward image when a transaction-pinned rewardImageId was deleted', async () => {
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'reward_ticket=cs_deleted_reward' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_deleted_reward',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'deleted_reward_id',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue(null);
+      deps.firestore.getActiveRewardImage.mockResolvedValue({
+        id: 'newer_reward_id',
+        title: 'Newer Reward',
+        storagePath: 'rewards/newer.png',
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(deps.firestore.getActiveRewardImage).not.toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(404);
     });
   });
 });

@@ -1,0 +1,16 @@
+# Exclude version control, local secrets, IDE state, and build artifacts from Docker build contexts
+.git
+.github
+.agents
+.vscode
+.idea
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*service-account*.json
+**/coverage
+**/playwright-report
+**/test-results
+docs

@@ -59,10 +59,13 @@ export const verifyOidcToken = async (
 
     if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
       const tokenEmail = payload.email?.toLowerCase().trim();
-      const targetEmail = expectedServiceAccountEmail.toLowerCase().trim();
-      if (!tokenEmail || payload.email_verified === false || tokenEmail !== targetEmail) {
+      const allowedEmails = expectedServiceAccountEmail
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+      if (!tokenEmail || payload.email_verified === false || !allowedEmails.includes(tokenEmail)) {
         logger.warn('[Security Alert] OIDC token service account email mismatch', {
-          expected: targetEmail,
+          expected: allowedEmails.join(','),
           received: tokenEmail,
         });
         return false;

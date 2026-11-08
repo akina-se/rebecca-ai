@@ -85,12 +85,15 @@ graph TD
 
 ## Setup Instructions
 
+> [!TIP]
+> For a comprehensive, step-by-step walkthrough covering credentials generation and permission setup for Google Cloud, Gemini API, X (Twitter) API, and Stripe, see the authoritative [External Integrations Setup Guide](docs/external-integrations-setup.md).
+
 > **Note on Gemini API (Free Tier):**
 > If you are using the free tier of the Gemini API (via Google AI Studio), please be aware that your prompts and data may be used by Google to improve their products. Do not send highly confidential personal information unless you are using a paid tier or Vertex AI.
 
 ### 1. GCP Project Setup
 1. Create a new project in the GCP Console and enable billing (required even for the free tier).
-2. Enable the following APIs: `Cloud Run API`, `Cloud Tasks API`, `Cloud Firestore API`, `Cloud Scheduler API`
+2. Enable the required Google Cloud APIs (`run.googleapis.com`, `cloudtasks.googleapis.com`, `firestore.googleapis.com`, `storage.googleapis.com`, `cloudscheduler.googleapis.com`, `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `secretmanager.googleapis.com`, `generativelanguage.googleapis.com`).
 3. Create a Firestore database (Native mode recommended).
 4. Create a Cloud Tasks queue:
    ```bash
@@ -98,10 +101,11 @@ graph TD
    ```
 5. Create a Firestore composite index (for RAG vector search):
    ```bash
-   gcloud alpha firestore indexes composite create \
+   gcloud firestore indexes composite create \
+     --database="(default)" \
      --collection-group=rag_memories \
      --query-scope=COLLECTION \
-     --field-config=field-path=embedding,vector-config='{"dimension":768,"flat": "{}"}' \
+     --field-config=field-path=embedding,vector-config='{"dimension":"768","flat":"{}"}' \
      --field-config=field-path=userId,order=ASCENDING \
      --project=your-gcp-project-id
    ```
@@ -148,6 +152,13 @@ GEMINI_THINKING_LEVEL=MEDIUM
 
 # CORS Configuration (Dashboard BFF)
 CORS_ALLOWED_ORIGINS=http://localhost:4200,https://your-dashboard-app.web.app
+
+# Supporter Appreciation & Tipping System (Stripe - use Restricted API Key `rk_...`)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PAYMENT_LINK_BRONZE=https://buy.stripe.com/test_...
+STRIPE_PAYMENT_LINK_SILVER=https://buy.stripe.com/test_...
+STRIPE_PAYMENT_LINK_GOLD=https://buy.stripe.com/test_...
 
 # Rate Limits & Feature Settings
 GLOBAL_DAILY_LIMIT=500

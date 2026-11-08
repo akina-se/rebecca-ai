@@ -442,6 +442,23 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       expect(useCase.processChat).toHaveBeenCalledWith({ message: 'Hi', currentContext: 'Home', history: [] });
       expect(res.json).toHaveBeenCalledWith({ reply: 'Hi Master!' });
 
+      const { req: reqLang, res: resLang } = createMockReqRes({
+        body: {
+          message: 'Status?',
+          currentContext: 'Home',
+          history: [{ role: 'user', text: 'hi' }, { role: 'model', text: 'hello' }],
+          language: 'en',
+        },
+      });
+      useCase.processChat.mockResolvedValueOnce({ reply: 'All nominal' } as any);
+      await controller.chat(reqLang, resLang);
+      expect(useCase.processChat).toHaveBeenCalledWith({
+        message: 'Status?',
+        currentContext: 'Home',
+        history: [{ role: 'user', text: 'hi' }, { role: 'model', text: 'hello' }],
+        language: 'en',
+      });
+
       useCase.processChat.mockRejectedValueOnce(new Error('Copilot error'));
       await controller.chat(req, res);
       expect(res.status).toHaveBeenCalledWith(500);

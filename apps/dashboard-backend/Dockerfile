@@ -38,6 +38,7 @@ COPY --from=builder /app/apps/dashboard-backend/dist ./apps/dashboard-backend/di
 
 WORKDIR /app/apps/dashboard-backend
 ENV PORT=8080
+USER node
 EXPOSE 8080
 
 CMD ["node", "dist/index.js"]

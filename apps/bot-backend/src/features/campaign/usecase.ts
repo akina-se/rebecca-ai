@@ -354,6 +354,12 @@ ${personaFewShotPrompt ? `\n${personaFewShotPrompt}\n` : ''}
 
     // Direct Cloud Storage URI (gs://...)
     if (trimmed.startsWith('gs://')) {
+      const expectedPrefix = `gs://${this.config.bucketName}/`;
+      if (!trimmed.startsWith(expectedPrefix) || trimmed.includes('..')) {
+        throw new Error(
+          `[CampaignPostUseCase] Disallowed or invalid gs:// bucket in mediaUrl: "${trimmed}".`,
+        );
+      }
       const buffer = await this.deps.storage.downloadImage(trimmed);
       const mimeType = this.resolveImageMimeType(trimmed);
       return { buffer, mimeType };

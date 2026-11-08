@@ -150,6 +150,8 @@ export class Logger {
    * @param payload Structured log payload to serialize and emit.
    */
   private emit(payload: StructuredLogPayload): void {
+    const sanitizedMessage =
+      typeof payload.message === 'string' ? payload.message.replace(/[\r\n]+/g, ' ') : payload.message;
     const entry: StructuredLogPayload = {
       timestamp: new Date().toISOString(),
       serviceContext: {
@@ -157,6 +159,7 @@ export class Logger {
         version: this.serviceVersion,
       },
       ...payload,
+      message: sanitizedMessage,
     };
 
     const serialized = JSON.stringify(entry);

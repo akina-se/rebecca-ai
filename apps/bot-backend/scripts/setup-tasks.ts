@@ -19,7 +19,7 @@ try {
         '--project', projectId
     ];
 
-    execFileSync('gcloud', args, { stdio: 'inherit', shell: true });
+    execFileSync(process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud', args, { stdio: 'inherit', shell: false });
     console.log(`Successfully created queue ${queueName}`);
 } catch (e) {
     console.log(`Queue ${queueName} might already exist or creation failed.`, e);

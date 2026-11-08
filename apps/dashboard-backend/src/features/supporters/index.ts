@@ -6,6 +6,8 @@ import { SupportersRepository } from './repository';
 import { SupportersUseCase } from './usecase';
 import { SupportersController } from './controller';
 
+// Configure multer with in-memory storage and size/count limits.
+// Raster MIME validation is enforced in the domain usecase (`resolveRasterImageExtension`).
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {

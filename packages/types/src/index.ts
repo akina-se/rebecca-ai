@@ -833,34 +833,37 @@ export interface PublicSupportPlansResponse {
   contactEmail: string | null;
 }
 
+/**
+ * Reward download metadata included in a verified support session response.
+ */
+export interface VerifiedSupportRewardInfo {
+  readonly title: string;
+  readonly thumbnailUrl: string;
+  readonly downloadUrl: string;
+  readonly expiresAt: string;
+}
+
 /** Successful session verification payload for post-checkout reward download */
 export interface VerifySessionSuccessResponse {
-  valid: true;
-  status: 'paid';
-  amount: number;
-  tier: SupportTier;
-  itemLabel: string;
-  supporterName: string;
-  downloadUrl: string;
-  expiresAt: string;
-  paidAt: string;
-  rewardImageId: string;
+  readonly valid: true;
+  readonly tier: SupportTier;
+  readonly itemLabel: string;
+  /** Sanitized supporter display name, or null when the supporter opted out of public credit display. */
+  readonly supporterName: string | null;
+  /** Reward illustration metadata and download link when available within the 30-minute window. */
+  readonly reward: VerifiedSupportRewardInfo | null;
+  /** Indicates whether the 30-minute post-checkout reward download window has expired. */
+  readonly isExpired: boolean;
 }
 
 /** Failed session verification payload */
 export interface VerifySessionErrorResponse {
-  valid: false;
-  error: string;
+  readonly valid: false;
+  readonly error: string;
 }
 
 /** Discriminated union of session verification API response */
 export type VerifySessionResponse = VerifySessionSuccessResponse | VerifySessionErrorResponse;
-
-/** Download reward signed link response */
-export interface DownloadRewardResponse {
-  downloadUrl: string;
-  expiresAt: string;
-}
 
 // ---------------------------------------------------------------------------
 // Portal & Character Branding Contracts

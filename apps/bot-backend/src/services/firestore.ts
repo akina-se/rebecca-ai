@@ -1134,13 +1134,25 @@ async function getSupportTransactionById(
  * @param data - The partial fields to update.
  */
 /**
- * Creates a new support transaction document in Firestore.
+ * Atomically creates a new support transaction document in Firestore.
+ * Uses Firestore's atomic `create()` operation so concurrent Stripe webhook and redirect
+ * verification paths cannot overwrite an existing transaction.
  *
- * @param doc - The full SupportTransactionDoc document.
+ * @param doc - The full SupportTransactionDoc document to create.
+ * @returns `true` if the document was newly created, or `false` if it already existed.
  */
-async function createSupportTransaction(doc: SupportTransactionDoc): Promise<void> {
+async function createSupportTransaction(doc: SupportTransactionDoc): Promise<boolean> {
   const docRef = db.supportTransactions.doc(doc.id);
-  await docRef.set(doc);
+  try {
+    await docRef.create(doc);
+    return true;
+  } catch (err: unknown) {
+    const code = (err as { code?: number | string })?.code;
+    if (code === 6 || code === 'ALREADY_EXISTS' || String((err as Error)?.message ?? '').includes('ALREADY_EXISTS')) {
+      return false;
+    }
+    throw new Error(`Failed to create support transaction ${doc.id}`, { cause: err });
+  }
 }
 
 /**
@@ -1163,11 +1175,6 @@ async function getSupportTransactionBySessionId(
   return { id: doc.id, ...doc.data() } as SupportTransactionDoc;
 }
 
-/**
- * Retrieves the currently active reward image from Firestore.
- *
- * @returns The active RewardImageDoc or null if none active.
- */
 /**
  * Retrieves a randomly selected active reward image from the distribution pool.
  *

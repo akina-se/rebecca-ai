@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { generateWebpThumbnail } from '../../utils/image';
+import { generateWebpThumbnail, resolveRasterImageExtension } from '../../utils/image';
 import { Storage } from '@google-cloud/storage';
 import { DateTime } from 'luxon';
 import {
@@ -398,8 +398,10 @@ export class CampaignsUseCase {
     const completedSlotsCount = slots.filter((s) => s.status === 'posted').length;
     const hashtag = updates.hashtag !== undefined ? sanitizeHashtag(updates.hashtag) : existing.hashtag;
 
+    const { id: _ignoredId, ...allowedUpdates } = updates as UpdateCampaignRequest & { id?: unknown };
+    void _ignoredId;
     const sanitizedUpdates: Partial<CampaignDoc> = {
-      ...updates,
+      ...allowedUpdates,
       title: updates.title !== undefined ? updates.title.trim() : existing.title,
       description: updates.description !== undefined ? updates.description.trim() : existing.description,
       hashtag,
@@ -517,18 +519,8 @@ export class CampaignsUseCase {
    *
    * @param campaignId - Document ID of the target campaign.
    * @param file - Uploaded file buffer and metadata.
-   * @returns A Promise resolving to an object containing public URL and clean filename.
-   * @throws Error if campaign is not found or uploaded file is not an image.
-   */
-  /**
-   * Uploads an isolated campaign illustration directly to GCS.
-   * STRICT ASSET SEGREGATION: Stored under gs://<bucket>/campaigns/<campaignId>/...
-   * and NEVER registered into collections.images.
-   *
-   * @param campaignId - Document ID of the target campaign.
-   * @param file - Uploaded file buffer and metadata.
    * @returns A Promise resolving to an object containing backend proxy URL and clean filename.
-   * @throws Error if campaign is not found or uploaded file is not an image.
+   * @throws Error if campaign is not found or uploaded file is not an allowed raster image.
    */
   async uploadCampaignAsset(
     campaignId: string,
@@ -539,16 +531,11 @@ export class CampaignsUseCase {
       throw new Error(`Campaign ${campaignId} not found.`);
     }
 
-    if (!file.mimetype.startsWith('image/')) {
-      throw new Error('Only image uploads are permitted for campaign assets.');
-    }
+    const ext = resolveRasterImageExtension(file.mimetype);
 
     const bucketName = this.config.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    const ext = file.originalname.includes('.')
-      ? file.originalname.split('.').pop()
-      : 'jpg';
     const cleanFilename = `${Date.now()}_${crypto.randomUUID().slice(0, 6)}.${ext}`;
     const destination = `campaigns/${campaignId}/${cleanFilename}`;
 
@@ -592,9 +579,7 @@ export class CampaignsUseCase {
       throw new Error(`Slot ${slotId} not found in campaign ${campaignId}.`);
     }
 
-    if (!file.mimetype.startsWith('image/')) {
-      throw new Error('Only image uploads are permitted for campaign assets.');
-    }
+    const ext = resolveRasterImageExtension(file.mimetype);
 
     const targetSlot = campaign.slots[slotIndex];
 
@@ -610,9 +595,6 @@ export class CampaignsUseCase {
     const bucketName = this.config.imageBucketName;
     const bucket = this.storage.bucket(bucketName);
 
-    const ext = file.originalname.includes('.')
-      ? file.originalname.split('.').pop()
-      : 'jpg';
     const cleanFilename = `${Date.now()}_${crypto.randomUUID().slice(0, 6)}.${ext}`;
     const destination = `campaigns/${campaignId}/${cleanFilename}`;
 

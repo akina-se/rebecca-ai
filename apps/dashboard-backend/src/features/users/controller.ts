@@ -71,8 +71,13 @@ export class UsersController {
   async updateMemory(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const { coreProfile } = req.body;
-    await this.useCase.updateUserMemory(id as string, coreProfile);
-    res.json({ success: true });
+    try {
+      await this.useCase.updateUserMemory(id as string, coreProfile);
+      res.json({ success: true });
+    } catch (err) {
+      logger.error('Failed to update user memory', err, { userId: id });
+      res.status(500).json({ error: 'Failed to update user memory' });
+    }
   }
 
   /**
@@ -102,7 +107,12 @@ export class UsersController {
       return;
     }
 
-    await this.useCase.bulkUpdateStatus(ids, userStatus);
-    res.json({ success: true });
+    try {
+      await this.useCase.bulkUpdateStatus(ids, userStatus);
+      res.json({ success: true });
+    } catch (err) {
+      logger.error('Failed to bulk update user status', err);
+      res.status(500).json({ error: 'Failed to update user status' });
+    }
   }
 }

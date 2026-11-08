@@ -47,4 +47,14 @@ describe('authInterceptor', () => {
     expect(req.request.headers.has('Authorization')).toBeFalse();
     req.flush({ success: true });
   });
+
+  it('should not attach Authorization header to untrusted third-party origins even if path starts with /api/', () => {
+    authServiceSpy.getSyncToken.and.returnValue('mock-firebase-token-xyz');
+
+    httpClient.get('https://evil.example.com/api/v1/users').subscribe();
+
+    const req = httpMock.expectOne('https://evil.example.com/api/v1/users');
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+    req.flush({ ok: true });
+  });
 });

@@ -58,7 +58,10 @@ export function createApp(
           }
         }
 
-        if (config.cors.allowedOrigins.includes('*') || config.cors.allowedOrigins.includes(origin)) {
+        if (
+          (process.env.NODE_ENV !== 'production' && config.cors.allowedOrigins.includes('*')) ||
+          config.cors.allowedOrigins.includes(origin)
+        ) {
           return callback(null, true);
         }
         return callback(null, false);
@@ -66,7 +69,7 @@ export function createApp(
       credentials: true,
     })
   );
-  app.use(express.json());
+  app.use(express.json({ limit: '20mb' }));
 
   // Rate Limiting (Protection for BFF: 100 req/min average, burst up to 1500 per 15m)
   const limiter = rateLimit({
