@@ -154,13 +154,13 @@ describe('SupportTaskUseCase Unit Tests', () => {
     const result = await useCase.execute({ transactionId: 'tx_123' });
 
     expect(result.status).toBe('completed');
-    expect(result.safeName).toBe('名無しのマスター');
+    expect(result.safeName).toBe('Anonymous Master');
     expect(result.isNameSanitized).toBe(true);
 
     // Verify Gemini was instructed with fallback name, not raw mention
     expect(deps.gemini.generateStructuredSupportPost).toHaveBeenCalledWith(
       expect.any(String),
-      expect.stringContaining('名無しのマスター'),
+      expect.stringContaining('Anonymous Master'),
     );
     expect(deps.gemini.generateStructuredSupportPost).toHaveBeenCalledWith(
       expect.any(String),
@@ -170,7 +170,7 @@ describe('SupportTaskUseCase Unit Tests', () => {
     expect(deps.firestore.updateSupportTransaction).toHaveBeenCalledWith(
       'tx_123',
       expect.objectContaining({
-        safeName: '名無しのマスター',
+        safeName: 'Anonymous Master',
         isNameSanitized: true,
       }),
     );

@@ -37,15 +37,17 @@ export async function checkSessionVerification(): Promise<void> {
       guidanceCard.style.display = 'none';
       rewardPanel.style.display = 'block';
 
-      const isJa = document.body.getAttribute('data-lang') !== 'en';
       const trimmedSupporterName = data.supporterName !== null ? data.supporterName.trim() : '';
-      const nameDisplay = trimmedSupporterName.length > 0
-        ? trimmedSupporterName
-        : (isJa ? 'マスター' : 'Master');
+      const isFallback =
+        trimmedSupporterName.length === 0 ||
+        trimmedSupporterName === '名無しのマスター' ||
+        trimmedSupporterName === 'Anonymous Master';
+      const nameDisplayJa = isFallback ? 'マスター' : trimmedSupporterName;
+      const nameDisplayEn = isFallback ? 'Master' : trimmedSupporterName;
       const nameEl = document.getElementById('supporter-name-display');
       const nameEnEl = document.getElementById('supporter-name-display-en');
-      if (nameEl) nameEl.textContent = nameDisplay;
-      if (nameEnEl) nameEnEl.textContent = nameDisplay;
+      if (nameEl) nameEl.textContent = nameDisplayJa;
+      if (nameEnEl) nameEnEl.textContent = nameDisplayEn;
 
       const badgePill = document.getElementById('tier-badge-pill');
       if (badgePill) {
@@ -53,13 +55,27 @@ export async function checkSessionVerification(): Promise<void> {
         badgePill.textContent = `${data.tier.toUpperCase()} TIER`;
       }
 
+      const ITEM_LABELS_EN: Record<string, string> = {
+        bronze: 'Energy Drink',
+        silver: 'Compute Resource',
+        gold: 'Development Support',
+      };
       const trimmedItemLabel = data.itemLabel.trim();
-      const itemDisplays = document.querySelectorAll('.item-label-display');
-      itemDisplays.forEach((el) => {
-        el.textContent = trimmedItemLabel.length > 0
-          ? trimmedItemLabel
-          : (isJa ? '温かいご支援' : 'Contribution');
+      document.querySelectorAll('.item-label-display-ja').forEach((el) => {
+        el.textContent = trimmedItemLabel.length > 0 ? trimmedItemLabel : '温かいご支援';
       });
+      document.querySelectorAll('.item-label-display-en').forEach((el) => {
+        el.textContent = ITEM_LABELS_EN[data.tier] ?? (trimmedItemLabel.length > 0 ? trimmedItemLabel : 'Contribution');
+      });
+      document.querySelectorAll('.item-label-display:not(.item-label-display-ja):not(.item-label-display-en)').forEach((el) => {
+        el.textContent = trimmedItemLabel.length > 0 ? trimmedItemLabel : '温かいご支援';
+      });
+
+      const img = document.getElementById('reward-image') as HTMLImageElement | null;
+      if (img && data.reward !== null && data.reward.thumbnailUrl) {
+        img.src = data.reward.thumbnailUrl;
+        img.style.display = 'block';
+      }
 
       const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement | null;
       if (dlBtn && !data.isExpired && data.reward !== null) {

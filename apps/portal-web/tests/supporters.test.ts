@@ -1,6 +1,7 @@
 import {
   loadSupportPlans,
   loadSupporterCredits,
+  renderRecentSupporters,
   escapeHtml,
   getNameFontClass,
   formatDateYMD,
@@ -12,6 +13,7 @@ describe('Client Script - Supporters Roster & Plans', () => {
 
   beforeEach(() => {
     document.body.innerHTML = `
+      <div id="recent-supporters-list"></div>
       <div id="roster-grid"></div>
       <div id="roster-meta-badge"></div>
       <div id="roster-pagination"></div>
@@ -319,6 +321,39 @@ describe('Client Script - Supporters Roster & Plans', () => {
       grid.dispatchEvent(new Event('scroll'));
 
       expect(edgeLeft.classList.contains('active')).toBe(false);
+    });
+  });
+
+  describe('renderRecentSupporters', () => {
+    it('returns early when #recent-supporters-list is missing', () => {
+      document.body.innerHTML = '';
+      expect(() => renderRecentSupporters([{ tier: 'bronze', safeName: 'Test' }])).not.toThrow();
+    });
+
+    it('renders empty placeholder when list is empty or undefined', () => {
+      renderRecentSupporters([]);
+      const el = document.getElementById('recent-supporters-list');
+      expect(el?.innerHTML).toContain('まだ直近のご支援はありません');
+
+      renderRecentSupporters(undefined as any);
+      expect(el?.innerHTML).toContain('まだ直近のご支援はありません');
+    });
+
+    it('renders chips for gold, silver, bronze tiers with fallback name when empty', () => {
+      renderRecentSupporters([
+        { tier: 'gold', safeName: 'GoldMember' },
+        { tier: 'silver', safeName: 'SilverMember' },
+        { tier: 'bronze', safeName: '' },
+        { tier: 'invalid', safeName: 'Other' },
+      ]);
+      const el = document.getElementById('recent-supporters-list');
+      expect(el?.children.length).toBe(4);
+      expect(el?.innerHTML).toContain('GoldMember');
+      expect(el?.innerHTML).toContain('SilverMember');
+      expect(el?.innerHTML).toContain('Anonymous Master');
+      expect(el?.innerHTML).toContain('tier-gold');
+      expect(el?.innerHTML).toContain('tier-silver');
+      expect(el?.innerHTML).toContain('tier-bronze');
     });
   });
 });

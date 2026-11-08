@@ -100,8 +100,8 @@ describe('PublicSupportController Unit Tests', () => {
       expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
     });
 
-    it('re-verifies on reload using only the reward_ticket cookie (no header, no query)', async () => {
-      req.headers = { cookie: 'reward_ticket=cs_reload_123' };
+    it('re-verifies on reload using only the __session cookie (no header, no query)', async () => {
+      req.headers = { cookie: '__session=cs_reload_123' };
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_reload_123',
         payment_status: 'paid',
@@ -182,7 +182,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(deps.firestore.incrementRewardImageDistributedCount).toHaveBeenCalledWith('reward_2026_10');
       expect(res.setHeader).toHaveBeenCalledWith(
         'Set-Cookie',
-        expect.stringContaining('reward_ticket='),
+        expect.stringContaining('__session='),
       );
       expect(res.setHeader).toHaveBeenCalledWith(
         'Set-Cookie',
@@ -809,7 +809,7 @@ describe('PublicSupportController Unit Tests', () => {
     });
   });
   describe('downloadReward', () => {
-    it('returns 400 when the reward_ticket cookie is missing', async () => {
+    it('returns 400 when the __session cookie is missing', async () => {
       req.query = {};
       await controller.downloadReward(req as Request, res as Response);
       expect(statusMock).toHaveBeenCalledWith(400);
@@ -840,7 +840,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 403 when session is not paid', async () => {
       req.query = {};
-      req.headers = { cookie: 'reward_ticket=cs_unpaid_123' };
+      req.headers = { cookie: '__session=cs_unpaid_123' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_unpaid_123',
@@ -854,7 +854,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 404 when Stripe session retrieval fails', async () => {
       req.query = {};
-      req.headers = { cookie: 'reward_ticket=cs_nonexistent' };
+      req.headers = { cookie: '__session=cs_nonexistent' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockRejectedValue(new Error('Session not found'));
 
@@ -865,7 +865,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 410 Gone when no record exists and Stripe payment time is older than 30 minutes', async () => {
       req.query = {};
-      req.headers = { cookie: 'reward_ticket=cs_old_norec' };
+      req.headers = { cookie: '__session=cs_old_norec' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_old_norec',
@@ -884,7 +884,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 502 when no record exists and the Stripe payment time is unavailable', async () => {
       req.query = {};
-      req.headers = { cookie: 'reward_ticket=cs_nopi_norec' };
+      req.headers = { cookie: '__session=cs_nopi_norec' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockResolvedValue({
         id: 'cs_nopi_norec',
@@ -901,7 +901,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 410 Gone when download window (> 30 mins) has expired', async () => {
       req.query = {};
-      req.headers = { cookie: 'reward_ticket=cs_expired_123' };
+      req.headers = { cookie: '__session=cs_expired_123' };
       const fortyMinutesAgo = new Date(Date.now() - 40 * 60 * 1000).toISOString();
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_expired_123',
@@ -918,7 +918,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 200 and streams binary image within 30-minute window for master download', async () => {
       req.query = { type: 'master' };
-      req.headers = { cookie: 'reward_ticket=cs_valid_123' };
+      req.headers = { cookie: '__session=cs_valid_123' };
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_valid_123',
@@ -945,7 +945,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('streams thumbnail with inline disposition when type=thumbnail', async () => {
       req.query = { type: 'thumbnail' };
-      req.headers = { cookie: 'reward_ticket=cs_valid_thumb' };
+      req.headers = { cookie: '__session=cs_valid_thumb' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_valid_thumb',
         createdAt: new Date().toISOString(),
@@ -972,7 +972,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('returns 404 when reward record does not exist', async () => {
       req.query = {};
-      req.headers = { cookie: 'reward_ticket=cs_no_reward' };
+      req.headers = { cookie: '__session=cs_no_reward' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_no_reward',
         createdAt: new Date().toISOString(),
@@ -1014,7 +1014,7 @@ describe('PublicSupportController Unit Tests', () => {
       expect(setCookieCall).toBeDefined();
       const cookiePair = (setCookieCall![1] as string).split(';')[0];
       // The cookie carries only the opaque session ID: no embedded expiry/payload that the server would have to trust
-      expect(cookiePair).toBe('reward_ticket=cs_cookie_auth_123');
+      expect(cookiePair).toBe('__session=cs_cookie_auth_123');
 
       // Now call downloadReward with only the Cookie header and NO session_id in req.query
       jest.clearAllMocks();
@@ -1041,9 +1041,9 @@ describe('PublicSupportController Unit Tests', () => {
       expect(res.send).toHaveBeenCalledWith(fakeBuffer);
     });
 
-    it('rejects a malformed reward_ticket cookie value without any Firestore or Stripe lookup', async () => {
+    it('rejects a malformed __session cookie value without any Firestore or Stripe lookup', async () => {
       req.query = { type: 'master' };
-      req.headers = { cookie: 'reward_ticket=tampered_payload.invalid_signature' };
+      req.headers = { cookie: '__session=tampered_payload.invalid_signature' };
 
       await controller.downloadReward(req as Request, res as Response);
 
@@ -1053,9 +1053,9 @@ describe('PublicSupportController Unit Tests', () => {
       expect(mockStripe.checkout.sessions.retrieve).not.toHaveBeenCalled();
     });
 
-    it('returns 400 (not 500) for a reward_ticket cookie with invalid percent-encoding', async () => {
+    it('returns 400 (not 500) for a __session cookie with invalid percent-encoding', async () => {
       req.query = { type: 'master' };
-      req.headers = { cookie: 'reward_ticket=%E0%A4%A' };
+      req.headers = { cookie: '__session=%E0%A4%A' };
 
       await controller.downloadReward(req as Request, res as Response);
 
@@ -1065,7 +1065,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('rejects a forged cookie for a session that does not exist in Stripe', async () => {
       req.query = { type: 'master' };
-      req.headers = { cookie: 'reward_ticket=cs_forged_by_attacker' };
+      req.headers = { cookie: '__session=cs_forged_by_attacker' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue(null);
       mockStripe.checkout.sessions.retrieve.mockRejectedValue(new Error('No such checkout session'));
 
@@ -1077,7 +1077,7 @@ describe('PublicSupportController Unit Tests', () => {
 
     it('does not fall back to active reward image when a transaction-pinned rewardImageId was deleted', async () => {
       req.query = { type: 'master' };
-      req.headers = { cookie: 'reward_ticket=cs_deleted_reward' };
+      req.headers = { cookie: '__session=cs_deleted_reward' };
       deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
         id: 'tx_deleted_reward',
         createdAt: new Date().toISOString(),
