@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.4](https://github.com/akina-se/rebecca-ai/compare/v1.38.3...v1.38.4) (2026-11-08)
+
+
+### Bug Fixes
+
+* **portal:** resolve absolute OGP URL and restore supporter modal and thank-you placeholders ([#440](https://github.com/akina-se/rebecca-ai/issues/440)) ([75e1597](https://github.com/akina-se/rebecca-ai/commit/75e1597180e8cf603a992337b2a2e4ac5e78cbff))
+
 ## [1.38.3](https://github.com/akina-se/rebecca-ai/compare/v1.38.2...v1.38.3) (2026-11-08)
 
 
