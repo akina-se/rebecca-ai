@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.1](https://github.com/akina-se/rebecca-ai/compare/v1.38.0...v1.38.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **portal-web:** disable unconfigured supporter plan buttons and show coming soon state ([#429](https://github.com/akina-se/rebecca-ai/issues/429)) ([b5bf7ba](https://github.com/akina-se/rebecca-ai/commit/b5bf7ba7e82ac7791e94573bab12a0c249472f6d))
+
 ## [1.38.0](https://github.com/akina-se/rebecca-ai/compare/v1.37.2...v1.38.0) (2026-11-07)
 
 
