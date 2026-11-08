@@ -34,27 +34,54 @@ Security rule: **Never check in credentials or service account keys to version c
   gcloud auth application-default login
   gcloud config set project <GCP_PROJECT_ID>
   ```
-- **Automated Agents / Headless Environments (Service Account Key)**:
-  If running inside headless containers or CI/CD where interactive browser login is impossible:
-  1. Create a dedicated service account:
-     ```bash
-     gcloud iam service-accounts create rebecca-backend-sa \
-       --description="Rebecca AI Bot Backend Service Account" \
-       --display-name="rebecca-backend-sa" \
-       --project=<GCP_PROJECT_ID>
-     ```
-  2. Grant the **least-privilege roles** only (never assign `Owner` or `Editor`):
-     - `roles/datastore.user` (Cloud Datastore / Firestore data access)
-     - `roles/cloudtasks.enqueuer` (Enqueue reply and appreciation tasks)
-     - `roles/storage.objectAdmin` (Manage image assets and artwork rewards)
-  3. Generate a key file and store it **outside** the workspace root (or ensure it is ignored by `.gitignore`):
-     ```bash
-     gcloud iam service-accounts keys create ~/keys/rebecca-sa-key.json \
-       --iam-account=rebecca-backend-sa@<GCP_PROJECT_ID>.iam.gserviceaccount.com
-     export GOOGLE_APPLICATION_CREDENTIALS="$HOME/keys/rebecca-sa-key.json"
-     ```
-- **Production (Cloud Run)**:
-  Cloud Run automatically receives ambient credentials from its attached runtime service account. Zero key management is required in production.
+- **CI/CD Pipelines (Recommended — Keyless OIDC)**:
+  Use **Workload Identity Federation (WIF)** with short-lived federated OIDC tokens instead of long-lived Service Account JSON keys:
+  ```bash
+  gcloud iam workload-identity-pools create "<WIF_POOL_ID>" \
+    --location="global" \
+    --display-name="CI OIDC Pool" \
+    --project=<GCP_PROJECT_ID>
+
+  gcloud iam workload-identity-pools providers create-oidc "<WIF_PROVIDER_ID>" \
+    --location="global" \
+    --workload-identity-pool="<WIF_POOL_ID>" \
+    --issuer-uri="https://token.actions.githubusercontent.com" \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+    --attribute-condition="assertion.repository=='<GITHUB_OWNER>/<GITHUB_REPO>'" \
+    --project=<GCP_PROJECT_ID>
+  ```
+  Bind only the target repository to impersonate the deploy service account (`roles/iam.workloadIdentityUser`).
+- **Runtime Service Account & Least-Privilege IAM**:
+  Create a dedicated runtime service account and grant strictly the minimum required permissions (never assign `Owner` or `Editor`):
+  ```bash
+  gcloud iam service-accounts create rebecca-backend-sa \
+    --description="Rebecca AI Bot Backend Service Account" \
+    --display-name="rebecca-backend-sa" \
+    --project=<GCP_PROJECT_ID>
+  ```
+  - **Firestore**: `roles/datastore.user`
+  - **Cloud Tasks**: `roles/cloudtasks.enqueuer`
+  - **Cloud Storage (Bucket-Scoped — avoid project-wide Storage Admin)**:
+    ```bash
+    gcloud storage buckets add-iam-policy-binding gs://<IMAGE_BUCKET_NAME> \
+      --member="serviceAccount:rebecca-backend-sa@<GCP_PROJECT_ID>.iam.gserviceaccount.com" \
+      --role="roles/storage.objectAdmin"
+    ```
+  - **Secret Manager (Per-Secret Scoped)**: Grant `roles/secretmanager.secretAccessor` only on the individual secrets required by each service (`gcloud secrets add-iam-policy-binding <SECRET_NAME> ...`).
+  - **Cloud Scheduler / Cloud Tasks OIDC Invocation**: Grant `roles/run.invoker` on the `bot-backend` Cloud Run service and configure `SERVICE_ACCOUNT_EMAIL` so OIDC verification succeeds on `/batch/*` and `/worker/*`.
+- **Headless Agents Fallback (JSON Key — Avoid Whenever Possible)**:
+  Only generate a Service Account JSON key when WIF or interactive ADC is impossible. Store it **outside** the workspace root (never inside the repository) and rotate it regularly:
+  ```bash
+  gcloud iam service-accounts keys create ~/keys/rebecca-sa-key.json \
+    --iam-account=rebecca-backend-sa@<GCP_PROJECT_ID>.iam.gserviceaccount.com
+  export GOOGLE_APPLICATION_CREDENTIALS="$HOME/keys/rebecca-sa-key.json"
+  ```
+- **Production (Cloud Run & Secret Manager)**:
+  Cloud Run automatically receives ambient credentials from its attached runtime service account. Inject third-party credentials (`GEMINI_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, X API tokens) via **Secret Manager** (`--set-secrets` or `--update-secrets` pinned to secret versions) rather than plain `--set-env-vars` (note: `--set-env-vars` overwrites existing environment variables; prefer `--update-env-vars` when updating partial config).
+- **Admin Dashboard Authentication (Firebase Auth)**:
+  1. Enable **Email/Password** (or Google) sign-in in Firebase Authentication and add your production dashboard hostname (`<YOUR_DASHBOARD_DOMAIN>`) under **Authorized domains**.
+  2. Set `FIREBASE_WEB_API_KEY` (public Firebase Web App configuration) on `dashboard-backend` so `/api/v1/config` serves runtime client config.
+  3. Register initial administrators in `admin_users` using `npm run register-admin` against the target Firestore environment (`beforeAdminSignIn` Cloud Function enforces `email_verified`, UID binding, `status === 'ACTIVE'`, and `role === 'ADMIN'`).
 
 ### 1.3 Cloud Tasks Queue Setup
 Create the required task queue in your deployment region (`asia-northeast1` recommended):
@@ -66,16 +93,20 @@ gcloud tasks queues create rebecca-reply-queue \
 ```
 
 ### 1.4 Firestore Composite Index for RAG Vector Search
-Deploy indexes using `firebase deploy --only firestore:indexes` or execute:
+Deploy declarative indexes via `firebase deploy --only firestore:indexes` (recommended SSOT using `packages/db/firestore.indexes.json`), or create via the GA `gcloud` CLI command:
 
 ```bash
-gcloud alpha firestore indexes composite create \
+gcloud firestore indexes composite create \
+  --database="(default)" \
   --collection-group=rag_memories \
   --query-scope=COLLECTION \
-  --field-config=field-path=embedding,vector-config='{"dimension":768,"flat":"{}"}' \
+  --field-config=field-path=embedding,vector-config='{"dimension":"768","flat":"{}"}' \
   --field-config=field-path=userId,order=ASCENDING \
   --project=<GCP_PROJECT_ID>
 ```
+
+> [!TIP]
+> On Windows PowerShell or shells with strict JSON quoting rules, pass `--flags-file=index-config.yaml` (or use `firebase deploy --only firestore:indexes`) instead of inline JSON quotes.
 
 ---
 
@@ -150,8 +181,13 @@ Under the **Keys and Tokens** tab:
 
 Rebecca provides a supporter appreciation portal with 3 tiers (Bronze, Silver, Gold), automated digital artwork reward delivery, public credit roster listing, and autonomous appreciation tweets.
 
-### 4.1 Environments: Test Mode vs. Live Mode
-Always verify end-to-end checkout with Stripe Test Mode (`buy.stripe.com/test_...` and `sk_test_...`) before promoting to Live Mode.
+### 4.1 Environments & Restricted API Keys (Best Practice)
+- **Test Mode vs. Live Mode**: Always verify end-to-end checkout in Stripe Test Mode (`buy.stripe.com/test_...` and `rk_test_...`) before promoting to Live Mode. Keep local `.env` files pointed at **Test Mode** credentials only and store Live/Production keys (`rk_live_...`, live `whsec_...`) strictly in **Google Secret Manager** for Cloud Run.
+- **Use Restricted API Keys (`rk_...`) Instead of Full-Access `sk_...` Keys**:
+  `bot-backend` only retrieves Checkout Sessions (with expanded PaymentIntents) and verifies webhooks locally using the webhook signing secret. Create a **Restricted Key** in Stripe Dashboard (**Developers > API keys > Create restricted key > Custom permissions**):
+  - **Checkout Sessions**: `Read`
+  - **PaymentIntents**: `Read`
+  - **All other permissions**: `None`
 
 ### 4.2 Product Catalog Setup
 Create 3 one-time products in the Stripe Dashboard (JPY, tax included):
@@ -167,9 +203,11 @@ Create 3 one-time products in the Stripe Dashboard (JPY, tax included):
 ### 4.3 Payment Links Configuration
 Create a **Payment Link** for each of the 3 products.
 
-1. **Disable Managed Payments (Important)**:
-   - Uncheck **Managed Payments** and **Automatic Tax**. Leaving this on incurs an extra 3.5% fee and triggers strict product tax code requirements.
-2. **Add Custom Fields**:
+1. **Disable Managed Payments & Automatic Tax (Important)**:
+   - Keep **Managed Payments** disabled (`Settings > Managed Payments`, avoiding the +3.5% MoR fee and strict product tax code constraints) and uncheck **Collect tax automatically** on each Payment Link (avoids +0.5% Stripe Tax fee on already tax-inclusive JPY items).
+2. **Payment Methods**:
+   - Enable immediate-settlement methods (Card, Apple Pay, Google Pay, Link). Avoid delayed/asynchronous methods (e.g. convenience store / bank transfer) unless your webhook handler explicitly handles `payment_status === 'unpaid'` and `checkout.session.async_payment_succeeded`.
+3. **Add Custom Fields**:
    - **Field 1 (Text)**:
      - Type: `Text`
      - Label: `掲載名 / Supporter Name (Nickname)`
@@ -181,30 +219,31 @@ Create a **Payment Link** for each of the 3 products.
      - Key: `credit_visibility`
      - Option 1: Label `掲載する / Show publicly` / Value: `show`
      - Option 2: Label `匿名にする / Keep anonymous` / Value: `hide`
-3. **Confirmation Page (After Payment)**:
+4. **Confirmation Page (After Payment)**:
    - Select **Don't show confirmation page (Redirect to your site)**.
    - Redirect URL:
      ```text
-     https://<YOUR_DOMAIN>/thankyou?session_id={CHECKOUT_SESSION_ID}
+     https://<YOUR_DOMAIN>/support/thank-you?session_id={CHECKOUT_SESSION_ID}
      ```
-     *(The `{CHECKOUT_SESSION_ID}` template variable is required for the thank-you page to verify payment and issue the 30-minute download cookie).*
+     *(The `{CHECKOUT_SESSION_ID}` template variable is required for the thank-you page at `/support/thank-you` to verify payment and issue the 30-minute download cookie).*
 
 ### 4.4 Webhook Endpoint Setup
 In Stripe Dashboard (**Developers > Webhooks**):
 1. Click **Add endpoint**.
-2. **Endpoint URL**: `https://<YOUR_DOMAIN>/api/webhooks/stripe`
-3. **Events to send**: Select `checkout.session.completed` only.
+2. **Endpoint URL**: `https://<YOUR_DOMAIN>/api/v1/webhooks/stripe`
+3. **Events to send**: Select `checkout.session.completed`.
 4. Copy the **Signing secret** (`whsec_...`).
 
 ### 4.5 Environment Configuration
-Populate in `apps/bot-backend/.env` (and Cloud Run environment variables for production):
+Populate Test credentials in `apps/bot-backend/.env` (gitignored) for local verification, and inject Live credentials via Cloud Run **Secret Manager** in production:
 
 ```env
-STRIPE_SECRET_KEY=sk_test_... or sk_live_...
+# Use Restricted API Keys scoped strictly to Checkout Sessions (Read) & PaymentIntents (Read)
+STRIPE_SECRET_KEY=rk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PAYMENT_LINK_BRONZE=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_SILVER=https://buy.stripe.com/...
-STRIPE_PAYMENT_LINK_GOLD=https://buy.stripe.com/...
+STRIPE_PAYMENT_LINK_BRONZE=https://buy.stripe.com/test_...
+STRIPE_PAYMENT_LINK_SILVER=https://buy.stripe.com/test_...
+STRIPE_PAYMENT_LINK_GOLD=https://buy.stripe.com/test_...
 ```
 
 ---
