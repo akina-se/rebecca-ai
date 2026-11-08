@@ -112,7 +112,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'supporters.modal_manual_entry_desc': 'Stripeダッシュボードで直接作成された支払いやオフライン寄付を手動登録します。',
     'supporters.session_id_required': 'Stripe Checkout Session ID (必須)',
     'supporters.supporter_name_label': 'サポーター名',
-    'supporters.anonymous_placeholder': '名無しのマスター',
+    'supporters.anonymous_placeholder': 'Anonymous Master',
     'supporters.amount_jpy': '支援金額 (円)',
     'supporters.toast_fetch_error': 'サポーター台帳の取得に失敗しました',
     'supporters.toast_save_success': 'サポーター設定を保存しました',

@@ -111,7 +111,12 @@ export async function loadSupporterCredits(page = 1): Promise<void> {
     if (credits.length === 0) {
       grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">まだサポーターが登録されていません。最初のサポーターになりませんか？</span><span class="t-en">No supporters recorded yet. Be the first supporter!</span></div>';
       if (pagination) pagination.innerHTML = '';
+      if (page === 1) renderRecentSupporters([]);
       return;
+    }
+
+    if (page === 1) {
+      renderRecentSupporters(credits.slice(0, 10));
     }
 
     grid.innerHTML = '';
@@ -126,7 +131,7 @@ export async function loadSupporterCredits(page = 1): Promise<void> {
           : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>');
 
       const dateFormatted = formatDateYMD(item.createdAt);
-      const displayName = item.safeName && item.safeName.trim().length > 0 ? item.safeName : 'Anonymous';
+      const displayName = item.safeName && item.safeName.trim().length > 0 ? item.safeName : 'Anonymous Master';
       const fontClass = getNameFontClass(displayName);
 
       const card = document.createElement('div');
@@ -150,6 +155,51 @@ export async function loadSupporterCredits(page = 1): Promise<void> {
     console.error('[Supporters] Failed to load supporter roster:', err);
     grid.innerHTML = '<div class="roster-empty-state"><span class="t-ja">名簿の取得に失敗しました</span><span class="t-en">Failed to load supporter roster</span></div>';
     if (pagination) pagination.innerHTML = '';
+  }
+}
+
+/**
+ * Renders the top recent supporters horizontal chip list.
+ */
+export function renderRecentSupporters(
+  recentItems: Array<{ tier?: string; safeName?: string }>,
+): void {
+  const container = document.getElementById('recent-supporters-list');
+  if (!container) return;
+
+  if (!recentItems || recentItems.length === 0) {
+    container.innerHTML = `
+      <div class="recent-loading-placeholder">
+        <span class="t-ja">まだ直近のご支援はありません</span>
+        <span class="t-en">No recent supporters yet</span>
+      </div>
+    `.trim();
+    return;
+  }
+
+  const ALLOWED_TIERS = new Set(['bronze', 'silver', 'gold', 'vip']);
+  container.innerHTML = '';
+
+  for (const item of recentItems) {
+    const rawTier = typeof item.tier === 'string' ? item.tier.toLowerCase() : 'bronze';
+    const tier = ALLOWED_TIERS.has(rawTier) ? rawTier : 'bronze';
+    const icon =
+      tier === 'gold'
+        ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+        : tier === 'silver'
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>'
+          : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>';
+
+    const displayName = item.safeName && item.safeName.trim().length > 0 ? item.safeName : 'Anonymous Master';
+    const chip = document.createElement('div');
+    chip.className = `recent-chip tier-${tier}`;
+    chip.title = displayName;
+    chip.innerHTML = `
+      <span class="recent-chip-icon">${icon}</span>
+      <span class="recent-chip-name">${escapeHtml(displayName)}</span>
+      <span class="recent-chip-badge">${tier.toUpperCase()}</span>
+    `.trim();
+    container.appendChild(chip);
   }
 }
 

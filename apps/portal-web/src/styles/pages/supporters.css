@@ -1338,8 +1338,17 @@
         border-radius: 8px;
       }
       .roster-card-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
         margin-bottom: 4px;
+      }
+      .roster-card-header-left {
+        display: flex;
+        align-items: center;
         gap: 4px;
+        width: 100%;
       }
       .roster-rank-icon {
         width: 16px;
@@ -1353,7 +1362,10 @@
         font-size: 8px;
       }
       .roster-card-date {
-        font-size: 8px;
+        font-size: 7.5px;
+        line-height: 1;
+        color: var(--text-muted);
+        align-self: flex-start;
       }
       .roster-name.font-len-short {
         font-size: 10.5px;
