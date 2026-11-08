@@ -38,8 +38,9 @@ export async function checkSessionVerification(): Promise<void> {
       rewardPanel.style.display = 'block';
 
       const isJa = document.body.getAttribute('data-lang') !== 'en';
-      const nameDisplay = data.supporterName && data.supporterName.trim().length > 0
-        ? data.supporterName
+      const resolvedSupporterName = (data.safeName ?? data.supporterName ?? '').trim();
+      const nameDisplay = resolvedSupporterName.length > 0
+        ? resolvedSupporterName
         : (isJa ? 'マスター' : 'Master');
       const nameEl = document.getElementById('supporter-name-display');
       const nameEnEl = document.getElementById('supporter-name-display-en');
@@ -59,9 +60,12 @@ export async function checkSessionVerification(): Promise<void> {
           : (isJa ? '温かいご支援' : 'Contribution');
       });
 
+      const resolvedDownloadUrl = !data.isExpired
+        ? (data.reward?.downloadUrl ?? data.downloadUrl ?? '')
+        : '';
       const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement | null;
-      if (dlBtn && data.downloadUrl) {
-        dlBtn.href = data.downloadUrl;
+      if (dlBtn && resolvedDownloadUrl) {
+        dlBtn.href = resolvedDownloadUrl;
         dlBtn.classList.remove('disabled');
       }
     }

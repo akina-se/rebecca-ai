@@ -833,18 +833,37 @@ export interface PublicSupportPlansResponse {
   contactEmail: string | null;
 }
 
+/**
+ * Reward download metadata included in a verified support session response.
+ */
+export interface VerifiedSupportRewardInfo {
+  title: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  downloadUrl: string;
+  expiresAt: string;
+}
+
 /** Successful session verification payload for post-checkout reward download */
 export interface VerifySessionSuccessResponse {
   valid: true;
-  status: 'paid';
-  amount: number;
   tier: SupportTier;
   itemLabel: string;
-  supporterName: string;
-  downloadUrl: string;
-  expiresAt: string;
-  paidAt: string;
-  rewardImageId: string;
+  /** Sanitized supporter display name returned by the backend. */
+  safeName?: string | null;
+  /** Alias for `safeName` retained for backward compatibility. */
+  supporterName?: string;
+  /** Direct download URL alias retained for backward compatibility. */
+  downloadUrl?: string | null;
+  /** Reward illustration metadata and download link when a reward is available and unexpired. */
+  reward?: VerifiedSupportRewardInfo | null;
+  /** Indicates whether the 24-hour reward download window has expired. */
+  isExpired?: boolean;
+  status?: 'paid';
+  amount?: number;
+  expiresAt?: string;
+  paidAt?: string;
+  rewardImageId?: string;
 }
 
 /** Failed session verification payload */

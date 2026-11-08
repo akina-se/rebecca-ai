@@ -54,6 +54,58 @@ describe('Client Script - Thank You Session Verification', () => {
     expect(window.location.search).toBe('');
   });
 
+  it('should support canonical nested reward.downloadUrl and safeName from backend verifySession', async () => {
+    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_nested');
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        valid: true,
+        safeName: 'アリス',
+        tier: 'silver',
+        itemLabel: 'サーバーリソース差し入れ',
+        reward: {
+          title: 'サポーター特典イラスト',
+          imageUrl: '/api/v1/support/rewards/download?type=master',
+          thumbnailUrl: '/api/v1/support/rewards/download?type=thumbnail',
+          downloadUrl: '/api/v1/support/rewards/download?type=master',
+          expiresAt: '2026-11-09T00:00:00.000Z',
+        },
+        isExpired: false,
+      }),
+    } as Response);
+
+    await checkSessionVerification();
+
+    const nameDisplay = document.getElementById('supporter-name-display');
+    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
+    expect(nameDisplay?.textContent).toBe('アリス');
+    expect(dlBtn?.getAttribute('href')).toBe('/api/v1/support/rewards/download?type=master');
+    expect(dlBtn?.classList.contains('disabled')).toBe(false);
+  });
+
+  it('should keep download button disabled when session reward isExpired is true', async () => {
+    window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_expired');
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        valid: true,
+        safeName: 'アリス',
+        tier: 'bronze',
+        itemLabel: 'エナジードリンク差し入れ',
+        reward: null,
+        downloadUrl: 'https://storage.googleapis.com/should-not-use',
+        isExpired: true,
+      }),
+    } as Response);
+
+    await checkSessionVerification();
+
+    const dlBtn = document.getElementById('download-reward-btn') as HTMLAnchorElement;
+    expect(dlBtn?.classList.contains('disabled')).toBe(true);
+  });
+
   it('should preserve other query params when scrubbing session_id and use JA fallbacks', async () => {
     document.body.removeAttribute('data-lang');
     window.history.replaceState(null, '', '/support/thank-you.html?session_id=cs_test_123&ref=twitter');

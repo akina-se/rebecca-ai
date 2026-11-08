@@ -1075,5 +1075,26 @@ describe('PublicSupportController Unit Tests', () => {
       expect(statusMock).toHaveBeenCalledWith(404);
       expect(deps.storage.downloadImage).not.toHaveBeenCalled();
     });
+
+    it('does not fall back to active reward image when a transaction-pinned rewardImageId was deleted', async () => {
+      req.query = { type: 'master' };
+      req.headers = { cookie: 'reward_ticket=cs_deleted_reward' };
+      deps.firestore.getSupportTransactionBySessionId.mockResolvedValue({
+        id: 'tx_deleted_reward',
+        createdAt: new Date().toISOString(),
+        rewardImageId: 'deleted_reward_id',
+      });
+      deps.firestore.getRewardImageById.mockResolvedValue(null);
+      deps.firestore.getActiveRewardImage.mockResolvedValue({
+        id: 'newer_reward_id',
+        title: 'Newer Reward',
+        storagePath: 'rewards/newer.png',
+      });
+
+      await controller.downloadReward(req as Request, res as Response);
+
+      expect(deps.firestore.getActiveRewardImage).not.toHaveBeenCalled();
+      expect(statusMock).toHaveBeenCalledWith(404);
+    });
   });
 });

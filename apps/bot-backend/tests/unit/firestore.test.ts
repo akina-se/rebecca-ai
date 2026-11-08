@@ -782,10 +782,15 @@ describe('Firestore Service Unit Tests', () => {
       );
     });
 
-    it('createSupportTransaction should set document', async () => {
+    it('createSupportTransaction should set document and return false on ALREADY_EXISTS', async () => {
       const dummyTx = { id: 'tx_new', amount: 500 } as any;
-      await firestoreService.createSupportTransaction(dummyTx);
+      const created = await firestoreService.createSupportTransaction(dummyTx);
+      expect(created).toBe(true);
       expect(mockDocSet).toHaveBeenCalledWith(dummyTx);
+
+      mockDocSet.mockRejectedValueOnce({ code: 6, message: 'ALREADY_EXISTS' });
+      const duplicate = await firestoreService.createSupportTransaction(dummyTx);
+      expect(duplicate).toBe(false);
     });
 
     it('getSupportTransactionBySessionId should return doc if found, null if empty', async () => {

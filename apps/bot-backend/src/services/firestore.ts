@@ -1138,9 +1138,29 @@ async function getSupportTransactionById(
  *
  * @param doc - The full SupportTransactionDoc document.
  */
-async function createSupportTransaction(doc: SupportTransactionDoc): Promise<void> {
-  const docRef = db.supportTransactions.doc(doc.id);
-  await docRef.set(doc);
+/**
+ * Atomically creates a new support transaction document in Firestore.
+ * Uses `create()` when supported by the document reference so concurrent webhook + redirect
+ * paths cannot overwrite an existing transaction, returning `false` if the document already exists.
+ */
+async function createSupportTransaction(doc: SupportTransactionDoc): Promise<boolean> {
+  const docRef = db.supportTransactions.doc(doc.id) as FirebaseFirestore.DocumentReference<SupportTransactionDoc> & {
+    create?: (data: SupportTransactionDoc) => Promise<unknown>;
+  };
+  try {
+    if (typeof docRef.create === 'function') {
+      await docRef.create(doc);
+    } else {
+      await docRef.set(doc);
+    }
+    return true;
+  } catch (err: unknown) {
+    const code = (err as { code?: number | string })?.code;
+    if (code === 6 || code === 'ALREADY_EXISTS' || String((err as Error)?.message ?? '').includes('ALREADY_EXISTS')) {
+      return false;
+    }
+    throw new Error(`Failed to create support transaction ${doc.id}`, { cause: err });
+  }
 }
 
 /**

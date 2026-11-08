@@ -116,7 +116,7 @@ export interface IFirestoreService {
   updateCampaign(campaignId: string, data: Partial<CampaignDoc>): Promise<void>;
   getSupportTransactionById(transactionId: string): Promise<SupportTransactionDoc | null>;
   updateSupportTransaction(transactionId: string, data: Partial<SupportTransactionDoc>): Promise<void>;
-  createSupportTransaction(doc: SupportTransactionDoc): Promise<void>;
+  createSupportTransaction(doc: SupportTransactionDoc): Promise<boolean | undefined>;
   getSupportTransactionBySessionId(stripeSessionId: string): Promise<SupportTransactionDoc | null>;
   getActiveRewardImage(): Promise<RewardImageDoc | null>;
   getRewardImageById(rewardImageId: string): Promise<RewardImageDoc | null>;
