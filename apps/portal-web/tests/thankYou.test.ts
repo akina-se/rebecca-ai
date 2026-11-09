@@ -4,7 +4,8 @@ describe('thankYou script', () => {
   beforeEach(() => {
     document.body.setAttribute('data-lang', 'ja');
     document.body.innerHTML = `
-      <div id="guidance-card" style="display: block;"></div>
+      <div id="loading-card" style="display: flex;"></div>
+      <div id="guidance-card" style="display: none;"></div>
       <div id="reward-panel" style="display: none;">
         <span id="supporter-name-display"></span>
         <span id="supporter-name-display-en"></span>
@@ -50,6 +51,7 @@ describe('thankYou script', () => {
       headers: {},
       credentials: 'same-origin',
     });
+    expect(document.getElementById('loading-card')?.style.display).toBe('none');
     expect(document.getElementById('reward-panel')?.style.display).toBe('none');
     expect(document.getElementById('guidance-card')?.style.display).toBe('block');
   });
@@ -81,6 +83,7 @@ describe('thankYou script', () => {
       headers: { 'x-stripe-session-id': 'cs_test_123' },
       credentials: 'same-origin',
     });
+    expect(document.getElementById('loading-card')?.style.display).toBe('none');
     expect(document.getElementById('guidance-card')?.style.display).toBe('none');
     expect(document.getElementById('reward-panel')?.style.display).toBe('block');
     expect(document.getElementById('supporter-name-display')?.textContent).toBe('レベッカ推し');
@@ -256,6 +259,9 @@ describe('thankYou script', () => {
     await checkSessionVerification();
 
     expect(warnSpy).toHaveBeenCalledWith('[ThankYou] Session verification request failed:', expect.any(Error));
+    expect(document.getElementById('loading-card')?.style.display).toBe('none');
+    expect(document.getElementById('guidance-card')?.style.display).toBe('block');
+    expect(document.getElementById('reward-panel')?.style.display).toBe('none');
   });
 
   it('Falls back to Master when supporterName is 名無しのマスター', async () => {
@@ -334,7 +340,8 @@ describe('thankYou script', () => {
   it('Handles DOM gracefully when optional sub-elements in reward-panel are missing', async () => {
     document.body.innerHTML = `
       <div id="reward-panel" style="display: none;"></div>
-      <div id="guidance-card" style="display: block;"></div>
+      <div id="loading-card" style="display: flex;"></div>
+      <div id="guidance-card" style="display: none;"></div>
     `;
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -364,7 +371,8 @@ describe('thankYou script', () => {
   it('Handles DOM gracefully when optional sub-elements in reward-panel are missing in expired state', async () => {
     document.body.innerHTML = `
       <div id="reward-panel" style="display: none;"></div>
-      <div id="guidance-card" style="display: block;"></div>
+      <div id="loading-card" style="display: flex;"></div>
+      <div id="guidance-card" style="display: none;"></div>
     `;
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
