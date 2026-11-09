@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.38.5](https://github.com/akina-se/rebecca-ai/compare/v1.38.4...v1.38.5) (2026-11-09)
+
+
+### Bug Fixes
+
+* **portal:** add verification loading state and eliminate thank-you page layout shift ([18abe67](https://github.com/akina-se/rebecca-ai/commit/18abe6772e49247d0069187cbb484e59d8d6bc75))
+* **portal:** add verification loading state and eliminate thank-you page layout shift ([f4478ec](https://github.com/akina-se/rebecca-ai/commit/f4478ec9e76fc67461c853cbdac1cdaf0f4ca728))
+
 ## [1.38.4](https://github.com/akina-se/rebecca-ai/compare/v1.38.3...v1.38.4) (2026-11-08)
 
 
