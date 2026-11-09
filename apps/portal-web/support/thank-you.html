@@ -18,6 +18,15 @@
       <span style="color: var(--text-main);">THANK YOU</span>
     </div>
 
+    <!-- State 0: Verification Loading Card -->
+    <section id="loading-card" class="loading-card">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p class="loading-text">
+        <span class="t-ja">決済セッションを確認中...</span>
+        <span class="t-en">Verifying payment session...</span>
+      </p>
+    </section>
+
     <!-- State 1: Verified Supporter Reward Panel -->
     <section id="reward-panel" class="reward-panel" style="display: none;">
       <div class="reward-header">
@@ -142,7 +151,7 @@
     </section>
 
     <!-- State 2: Direct Access / Unverified Guidance Card -->
-    <section id="guidance-card" class="guidance-card">
+    <section id="guidance-card" class="guidance-card" style="display: none;">
       <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(139, 92, 246, 0.15); border: 1px solid var(--border-purple); color: var(--gemitec-purple-light); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
