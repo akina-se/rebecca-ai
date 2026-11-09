@@ -1000,8 +1000,8 @@
       font-weight: 700;
       color: var(--text-main);
       width: 100%;
-      word-break: break-all;
-      overflow-wrap: anywhere;
+      word-break: normal;
+      overflow-wrap: break-word;
       line-height: 1.25;
       display: -webkit-box;
       -webkit-box-orient: vertical;
@@ -1211,8 +1211,8 @@
       font-weight: 800;
       color: #ffffff;
       margin-bottom: 6px;
-      word-break: break-all;
-      overflow-wrap: anywhere;
+      word-break: normal;
+      overflow-wrap: break-word;
       line-height: 1.35;
       max-width: 100%;
     }
