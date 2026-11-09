@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.38.6](https://github.com/akina-se/rebecca-ai/compare/v1.38.5...v1.38.6) (2026-11-09)
+
+
+### Bug Fixes
+
+* **portal:** preserve word boundaries for supporter names with overflow wrap fallback ([56a5956](https://github.com/akina-se/rebecca-ai/commit/56a5956417e9ead0b68859d8cf34e4af9e281d1b))
+* **portal:** preserve word boundaries for supporter names with overflow wrap fallback ([e51f360](https://github.com/akina-se/rebecca-ai/commit/e51f3605c286c5c4153b50d72294d243be58f0d5))
+
 ## [1.38.5](https://github.com/akina-se/rebecca-ai/compare/v1.38.4...v1.38.5) (2026-11-09)
 
 
