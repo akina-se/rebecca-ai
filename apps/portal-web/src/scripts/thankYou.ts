@@ -13,6 +13,7 @@ export async function checkSessionVerification(): Promise<void> {
     window.history.replaceState(null, '', cleanUrl);
   }
 
+  const loadingCard = document.getElementById('loading-card');
   const rewardPanel = document.getElementById('reward-panel');
   const guidanceCard = document.getElementById('guidance-card');
 
@@ -28,7 +29,14 @@ export async function checkSessionVerification(): Promise<void> {
       credentials: 'same-origin',
     });
 
+    if (loadingCard) {
+      loadingCard.style.display = 'none';
+    }
+
     if (!sessionId && !res.ok) {
+      if (guidanceCard) {
+        guidanceCard.style.display = 'block';
+      }
       return;
     }
 
@@ -142,6 +150,12 @@ export async function checkSessionVerification(): Promise<void> {
       `.trim();
     }
   } catch (err) {
+    if (loadingCard) {
+      loadingCard.style.display = 'none';
+    }
+    if (guidanceCard) {
+      guidanceCard.style.display = 'block';
+    }
     console.warn('[ThankYou] Session verification request failed:', err);
   }
 }
