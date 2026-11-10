@@ -733,9 +733,9 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         message: 'Can you help?',
         language: 'en'
       });
-      expect(res.reply).toContain('A communication error occurred with the AI service');
+      expect(res.reply).toContain('A temporary communication error occurred with the Rebecca AI thinking engine');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page', 'Check system status']);
+      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page']);
     });
 
     it('processChat should return Japanese communication error when Gemini fails in Japanese', async () => {
@@ -744,44 +744,29 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         message: '手伝って',
         language: 'ja'
       });
-      expect(res.reply).toContain('AIモデル（Gemini）との通信中にエラーが発生しました');
+      expect(res.reply).toContain('レベッカAIの思考エンジンとの通信中に一時的なエラーが発生したみたい');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
+      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み']);
     });
 
-    it('processChat should test autonomous fallback intents in Japanese and English', async () => {
+    it('processChat should test unconfigured notification in Japanese and English', async () => {
       (copilot as any).ai = null;
 
-      // 1. Fallback for asset inquiry
       const resAssetJa = await copilot.processChat({
         message: '画像アセットを見せて',
         currentContext: 'Assets Library',
         language: 'ja'
       });
-      expect(resAssetJa.reply).toContain('マスター、最新の画像アセットを確認してきたわよ♡');
-
-      // 2. Fallback for post inquiry
-      const resPostJa = await copilot.processChat({
-        message: 'インプレッション上位の投稿を教えて',
-        currentContext: 'Timeline',
-        language: 'ja'
-      });
-      expect(resPostJa.reply).toContain('インプレッション');
-
-      // 3. Fallback for general conversation in Japanese and English
-      const resJa = await copilot.processChat({
-        message: 'こんにちは！調子はどう？',
-        currentContext: 'Overview',
-        language: 'ja'
-      });
-      expect(resJa.reply).toContain('マスター、お疲れ様〜！');
+      expect(resAssetJa.reply).toContain('レベッカAIの接続キーが設定されていません。');
+      expect(resAssetJa.actionRequired).toBeNull();
 
       const resEn = await copilot.processChat({
-        message: 'Hi there! How are things going?',
-        currentContext: 'Overview',
+        message: 'Show me assets',
+        currentContext: 'Assets Library',
         language: 'en'
       });
-      expect(resEn.reply).toContain('Hello Master!');
+      expect(resEn.reply).toContain('Rebecca AI connection key is not configured.');
+      expect(resEn.actionRequired).toBeNull();
     });
   });
 
@@ -1238,8 +1223,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         currentContext: 'Assets Library',
         language: 'en'
       });
-      expect(resEnAssets.reply).toContain('latest assets');
-      expect(resEnAssets.attachments).toBeDefined();
+      expect(resEnAssets.reply).toContain('Rebecca AI connection key is not configured.');
+      expect(resEnAssets.actionRequired).toBeNull();
 
       const resJaAssets = await copilot.processChat({
         message: '画像アセットを見せて',
@@ -1247,35 +1232,8 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         currentContext: 'Assets',
         language: 'ja'
       });
-      expect(resJaAssets.reply).toContain('画像アセット');
-      expect(resJaAssets.attachments).toBeDefined();
-
-      // 2. ProcessChat with timeline inquiry in JA
-      const resJaPosts = await copilot.processChat({
-        message: '最近の投稿を教えて',
-        history: [],
-        currentContext: 'Timeline',
-        language: 'ja'
-      });
-      expect(resJaPosts.reply).toContain('投稿');
-      expect(resJaPosts.attachments).toBeDefined();
-
-      // 3. ProcessChat with general greeting in EN and JA
-      const resEnHello = await copilot.processChat({
-        message: 'Hello Rebecca!',
-        history: [],
-        currentContext: 'Dashboard',
-        language: 'en'
-      });
-      expect(resEnHello.reply).toContain('Master');
-
-      const resJaHello = await copilot.processChat({
-        message: 'こんにちは！',
-        history: [],
-        currentContext: 'Dashboard',
-        language: 'ja'
-      });
-      expect(resJaHello.reply).toContain('マスター');
+      expect(resJaAssets.reply).toContain('レベッカAIの接続キーが設定されていません。');
+      expect(resJaAssets.actionRequired).toBeNull();
     });
 
     it('AssetsController.getImage branches with sizes, 404, and error handling', async () => {

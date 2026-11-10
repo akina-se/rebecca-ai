@@ -115,6 +115,29 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   });
 
   test('Test 4: Two-Phase HITL Safety Action Approval Flow (Proposal -> Approval -> Execution)', async ({ page }) => {
+    // Intercept copilot backend call to return deterministic HITL action proposal for testing UI rendering & execution
+    await page.route('**/api/v1/copilot', async (route) => {
+      if (route.request().method() === 'POST') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            reply: 'マスター、@toxic_user をブロックするための安全確認カードを用意したわよ♡ 確認して承認してね！',
+            actionRequired: {
+              type: 'BLOCK_USER',
+              title: 'ユーザーブロックの確認',
+              description: '悪質なスパマーアカウント @toxic_user をブロックリストに追加します。',
+              impactLevel: 'danger',
+              requiresConfirmation: true,
+              payload: { userId: 'toxic_user', handle: '@toxic_user' }
+            },
+            suggestionChips: ['ユーザーをブロック', 'プロフィール確認']
+          })
+        });
+      }
+      return route.continue();
+    });
+
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
 

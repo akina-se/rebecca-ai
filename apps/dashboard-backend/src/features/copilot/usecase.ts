@@ -64,25 +64,30 @@ export class CopilotUseCase {
       isEn
     };
 
-    if (this.ai && config.gemini.apiKey) {
-      try {
-        return await this.executeReActLoop(userMessage, currentContext, rawHistory, toolContext, isEn);
-      } catch (err) {
-        logger.error('Gemini autonomous agent loop failed in Copilot', err);
-        return {
-          reply: isEn
-            ? 'A communication error occurred with the AI service (timeout or temporary outage). Please wait a moment and try again.'
-            : 'AIモデル（Gemini）との通信中にエラーが発生しました（一時的な障害またはタイムアウト）。お手数ですが、しばらく待ってから再度お試しください。',
-          actionRequired: null,
-          suggestionChips: isEn
-            ? ['Retry', 'Refresh page', 'Check system status']
-            : ['もう一度試す', 'ページを再読み込み', 'システム状況を確認']
-        };
-      }
+    if (!this.ai || !config.gemini.apiKey) {
+      return {
+        reply: isEn
+          ? 'Rebecca AI connection key is not configured.'
+          : 'レベッカAIの接続キーが設定されていません。',
+        actionRequired: null,
+        suggestionChips: isEn ? ['Retry'] : ['もう一度試す']
+      };
     }
 
-    // In-character fallback when Gemini API is not configured or in offline test mode
-    return this.generateAutonomousFallbackResponse(userMessage, currentContext, toolContext, isEn);
+    try {
+      return await this.executeReActLoop(userMessage, currentContext, rawHistory, toolContext, isEn);
+    } catch (err) {
+      logger.error('Gemini autonomous agent loop failed in Copilot', err);
+      return {
+        reply: isEn
+          ? 'A temporary communication error occurred with the Rebecca AI thinking engine. Please wait a moment and try talking to me again!♡'
+          : 'レベッカAIの思考エンジンとの通信中に一時的なエラーが発生したみたい。少し時間を置いてからもう一度話しかけてね♡',
+        actionRequired: null,
+        suggestionChips: isEn
+          ? ['Retry', 'Refresh page']
+          : ['もう一度試す', 'ページを再読み込み']
+      };
+    }
   }
 
   /**
@@ -272,166 +277,5 @@ ${languageInstruction}
     }
 
     throw new Error('ReAct loop exceeded maximum allowable iterations without synthesizing final response');
-  }
-
-  /**
-   * In-character fallback response when Gemini API is offline or unconfigured.
-   */
-  private async generateAutonomousFallbackResponse(
-    userMessage: string,
-    currentContext: string,
-    toolContext: CopilotToolContext,
-    isEn: boolean
-  ): Promise<CopilotResponse> {
-    const lower = userMessage.toLowerCase();
-    const attachments: CopilotAttachment[] = [];
-
-    if (lower.includes('ブロック') || lower.includes('block') || lower.includes('スパム') || lower.includes('spam')) {
-      const handleMatch = userMessage.match(/@(\w+)/);
-      const targetId = handleMatch ? handleMatch[1] : 'toxic_user';
-      const toolRes = await this.toolRegistry.execute(
-        'propose_destructive_action',
-        { actionType: 'BLOCK_USER', targetId, reason: 'Spam/toxic user violation' },
-        toolContext
-      );
-      return {
-        reply: isEn
-          ? `Master, I prepared the safety confirmation card to block @${targetId}. Please review and approve.`
-          : `マスター、@${targetId} をブロックするための安全確認カードを用意したわよ♡ 確認して承認してね！`,
-        actionRequired: toolRes.actionRequired,
-        suggestionChips: isEn ? ['Block user', 'Check profile'] : ['ユーザーをブロック', 'プロフィール確認']
-      };
-    }
-
-    if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して') || lower.includes('remove')) {
-      const postMatch = userMessage.match(/(?:#|post_?|p)(\w+)/i);
-      const targetId = postMatch ? postMatch[1] : 'p1';
-      const toolRes = await this.toolRegistry.execute(
-        'propose_destructive_action',
-        { actionType: 'DELETE_POST', targetId, reason: 'Post deletion request' },
-        toolContext
-      );
-      return {
-        reply: isEn
-          ? `Master, I prepared the safety confirmation card to delete post #${targetId}. Please review and approve.`
-          : `マスター、投稿 #${targetId} を削除するための安全確認カードを用意したわよ♡ 確認して承認してね！`,
-        actionRequired: toolRes.actionRequired,
-        suggestionChips: isEn ? ['Delete post', 'Cancel'] : ['投稿を削除', 'キャンセル']
-      };
-    }
-
-    if (lower.includes('ドリーミング') || lower.includes('dreaming')) {
-      const toolRes = await this.toolRegistry.execute(
-        'propose_destructive_action',
-        { actionType: 'FORCE_DREAMING', reason: 'Manual dreaming trigger' },
-        toolContext
-      );
-      return {
-        reply: isEn
-          ? 'Master, I prepared the card to trigger the Dreaming memory consolidation process. Please review and approve.'
-          : 'マスター、長期記憶の統合（ドリーミング）を開始するカードを用意したわよ♡ 承認してくれれば始めるね！',
-        actionRequired: toolRes.actionRequired,
-        suggestionChips: isEn ? ['Trigger Dreaming', 'Cancel'] : ['ドリーミング実行', 'キャンセル']
-      };
-    }
-
-    if (lower.includes('キャプション') || lower.includes('caption') || lower.includes('再生成') || lower.includes('retry')) {
-      const toolRes = await this.toolRegistry.execute(
-        'propose_destructive_action',
-        { actionType: 'REGENERATE_CAPTIONS', reason: 'Bulk caption regeneration' },
-        toolContext
-      );
-      return {
-        reply: isEn
-          ? 'Master, I prepared the card to bulk regenerate image captions with Gemini. Please review and approve.'
-          : 'マスター、失敗した画像キャプションを一括再生成するカードを用意したわよ♡ 承認してくれれば始めるね！',
-        actionRequired: toolRes.actionRequired,
-        suggestionChips: isEn ? ['Regenerate', 'Cancel'] : ['一括再生成', 'キャンセル']
-      };
-    }
-
-    if (lower.includes('asset') || lower.includes('画像') || lower.includes('アセット')) {
-      const toolRes = await this.toolRegistry.execute('search_assets', { limit: 3 }, toolContext);
-      if (toolRes.attachments) attachments.push(...toolRes.attachments);
-      return {
-        reply: isEn
-          ? 'Here are the latest assets from the catalog, Master!♡'
-          : 'マスター、最新の画像アセットを確認してきたわよ♡ サムネイルをタップすると高解像度で確認できるからね！',
-        attachments,
-        actionRequired: null,
-        suggestionChips: isEn ? ['Check failed assets', 'Dashboard KPI'] : ['失敗アセットを確認', 'KPIサマリー']
-      };
-    }
-
-    if (lower.includes('post') || lower.includes('投稿') || lower.includes('timeline')) {
-      const toolRes = await this.toolRegistry.execute('search_timeline_posts', { limit: 3, sortBy: 'impressions' }, toolContext);
-      if (toolRes.attachments) attachments.push(...toolRes.attachments);
-      return {
-        reply: isEn
-          ? 'Here are our top-performing posts by impressions, Master!'
-          : 'マスター、インプレッションが特に伸びてる投稿をピックアップしたわよ♡',
-        attachments,
-        actionRequired: null,
-        suggestionChips: isEn ? ['Check users', 'View assets'] : ['アクティブユーザーを見る', 'アセット確認']
-      };
-    }
-
-    if (lower.includes('user') || lower.includes('ユーザー')) {
-      const toolRes = await this.toolRegistry.execute('search_users', { limit: 3 }, toolContext);
-      if (toolRes.attachments) attachments.push(...toolRes.attachments);
-      return {
-        reply: isEn
-          ? 'Here are the latest active users, Master!♡'
-          : 'マスター、最近のアクティブユーザーを確認してきたわよ♡',
-        attachments,
-        actionRequired: null,
-        suggestionChips: isEn ? ['View supporters', 'Inspect posts'] : ['サポーターを見る', '投稿確認']
-      };
-    }
-
-    if (lower.includes('supporter') || lower.includes('サポーター')) {
-      const toolRes = await this.toolRegistry.execute('search_supporters', { limit: 3 }, toolContext);
-      if (toolRes.attachments) attachments.push(...toolRes.attachments);
-      return {
-        reply: isEn
-          ? 'Here are our top supporters, Master!♡'
-          : 'マスター、いつも応援してくれてるサポーターの皆さんよ♡',
-        attachments,
-        actionRequired: null,
-        suggestionChips: isEn ? ['View users', 'Inspect assets'] : ['ユーザー一覧', 'アセット確認']
-      };
-    }
-
-    if (lower.includes('kpi') || lower.includes('指標') || lower.includes('follower') || lower.includes('フォロワー')) {
-      await this.toolRegistry.execute('get_kpi_summary', {}, toolContext);
-      return {
-        reply: isEn
-          ? 'Here is the latest KPI summary for our community, Master!♡'
-          : 'マスター、最新のコミュニティKPIサマリーをまとめておいたわよ♡',
-        actionRequired: null,
-        suggestionChips: isEn ? ['Top posts', 'Active users'] : ['人気投稿', 'アクティブユーザー']
-      };
-    }
-
-    if (lower.includes('使い方') || lower.includes('guide') || lower.includes('help') || lower.includes('ヘルプ')) {
-      await this.toolRegistry.execute('get_feature_guide', { feature: 'copilot' }, toolContext);
-      return {
-        reply: isEn
-          ? 'Here is the guide for our features, Master!♡'
-          : 'マスター、ダッシュボードの機能ガイドよ♡ 何でも聞いてね！',
-        actionRequired: null,
-        suggestionChips: isEn ? ['Dashboard Guide', 'Assets Guide'] : ['ダッシュボードガイド', 'アセットガイド']
-      };
-    }
-
-    return {
-      reply: isEn
-        ? `Hello Master! I'm right here assisting you with ${currentContext}. How can I help you today?♡`
-        : `マスター、お疲れ様〜！ 現在の【${currentContext}】の管理、私がしっかりサポートするわよ♡ 何か調べたいことや相談はあるかしら？`,
-      actionRequired: null,
-      suggestionChips: isEn
-        ? ['Show top posts', 'Find users', 'Inspect assets']
-        : ['人気投稿を表示', 'ユーザー検索', 'アセット確認']
-    };
   }
 }

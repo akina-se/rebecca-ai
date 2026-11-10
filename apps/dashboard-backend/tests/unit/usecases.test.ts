@@ -712,9 +712,9 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         language: 'en'
       });
 
-      expect(res.reply).toContain('A communication error occurred with the AI service');
+      expect(res.reply).toContain('A temporary communication error occurred with the Rebecca AI thinking engine');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page', 'Check system status']);
+      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page']);
     });
 
     it('processChat should return Japanese communication error when Gemini API fails in ja mode', async () => {
@@ -726,42 +726,22 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         language: 'ja'
       });
 
-      expect(res.reply).toContain('AIモデル（Gemini）との通信中にエラーが発生しました');
+      expect(res.reply).toContain('レベッカAIの思考エンジンとの通信中に一時的なエラーが発生したみたい');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
+      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み']);
     });
 
-    it('processChat fallback should generate autonomous in-character replies for assets, posts, and general chat when offline', async () => {
+    it('processChat should return honest unconfigured notification when Gemini is not configured', async () => {
       // Simulate offline / no AI configuration
       (copilotUseCase as any).ai = null;
 
-      // Assets fallback with attachments
-      const assetRes = await copilotUseCase.processChat({
+      const res = await copilotUseCase.processChat({
         message: '画像アセットを見せて',
         currentContext: 'Assets Library',
         language: 'ja'
       });
-      expect(assetRes.reply).toContain('マスター、最新の画像アセットを確認してきたわよ♡');
-      expect(assetRes.attachments).toBeDefined();
-      expect(assetRes.actionRequired).toBeNull();
-
-      // Posts fallback
-      const postRes = await copilotUseCase.processChat({
-        message: 'インプレッション上位の投稿を教えて',
-        currentContext: 'Timeline',
-        language: 'ja'
-      });
-      expect(postRes.reply).toContain('マスター、インプレッションが特に伸びてる投稿をピックアップしたわよ♡');
-      expect(postRes.actionRequired).toBeNull();
-
-      // General greeting fallback
-      const greetingRes = await copilotUseCase.processChat({
-        message: 'こんにちは！',
-        currentContext: 'Dashboard Overview',
-        language: 'ja'
-      });
-      expect(greetingRes.reply).toContain('マスター、お疲れ様〜！');
-      expect(greetingRes.actionRequired).toBeNull();
+      expect(res.reply).toContain('レベッカAIの接続キーが設定されていません');
+      expect(res.actionRequired).toBeNull();
     });
   });
 });

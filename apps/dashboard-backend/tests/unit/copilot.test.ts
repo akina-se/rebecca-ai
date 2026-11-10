@@ -549,8 +549,7 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
         language: 'ja'
       });
 
-      expect(res.reply).toContain('マスター、最新の画像アセットを確認してきたわよ♡');
-      expect(res.attachments).toBeDefined();
+      expect(res.reply).toContain('レベッカAIの接続キーが設定されていません');
       expect(res.actionRequired).toBeNull();
     });
   });
