@@ -179,23 +179,16 @@ ${languageInstruction}
 
     const accumulatedAttachments: CopilotAttachment[] = [];
     let proposedAction: CopilotAction | null = null;
+    let finalCandidateText = '';
 
-    // 3. ReAct loop
+    // 3. Phase 1: Autonomous Reasoning & Tool Execution Loop
     for (let iteration = 0; iteration < MAX_REACT_ITERATIONS; iteration++) {
       const declarations = this.toolRegistry.getFunctionDeclarations();
-
-      const callConfig = iteration === MAX_REACT_ITERATIONS - 1
-        ? {
-            systemInstruction,
-            temperature: 0.7,
-            responseMimeType: 'application/json',
-            responseSchema: finalResponseSchema
-          }
-        : {
-            systemInstruction,
-            temperature: 0.7,
-            tools: [{ functionDeclarations: declarations }]
-          };
+      const callConfig = {
+        systemInstruction,
+        temperature: 0.7,
+        tools: [{ functionDeclarations: declarations }]
+      };
 
       const geminiCall = this.ai.models.generateContent({
         model: config.gemini.model,
@@ -248,19 +241,58 @@ ${languageInstruction}
         continue;
       }
 
-      // No function calls — final response reached
-      const rawText = response.text?.trim() ?? '';
-      const extracted = extractStructuredCopilotResponse(rawText);
-
-      return {
-        reply: extracted.reply,
-        attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
-        actionRequired: proposedAction ?? extracted.actionRequired ?? null,
-        suggestionChips: extracted.suggestionChips
-      };
+      // No more function calls — Phase 1 tool gathering is complete
+      finalCandidateText = response.text?.trim() ?? '';
+      if (response.candidates?.[0]?.content) {
+        contents.push(response.candidates[0].content);
+      }
+      break;
     }
 
-    throw new Error('ReAct loop exceeded maximum allowable iterations without synthesizing final response');
+    // 4. Phase 2: Structured Output Synthesis
+    // Fast path: If the model directly generated valid structured JSON with reply and suggestion chips,
+    // return it immediately to avoid an extra network roundtrip.
+    if (finalCandidateText) {
+      const directExtracted = extractStructuredCopilotResponse(finalCandidateText);
+      if (directExtracted.reply && directExtracted.suggestionChips.length > 0) {
+        return {
+          reply: directExtracted.reply,
+          attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
+          actionRequired: proposedAction ?? directExtracted.actionRequired ?? null,
+          suggestionChips: directExtracted.suggestionChips
+        };
+      }
+    }
+
+    // Constrained Synthesis: Invoke Phase 2 with strict responseSchema and application/json
+    // Because tools are not passed in Phase 2, Gemini's constrained decoding is 100% active.
+    const synthesisConfig = {
+      systemInstruction: `${systemInstruction}\n\nSynthesize your final response and 1-3 relevant suggestionChips strictly in JSON matching the response schema.`,
+      temperature: 0.7,
+      responseMimeType: 'application/json',
+      responseSchema: finalResponseSchema
+    };
+
+    const synthesisCall = this.ai.models.generateContent({
+      model: config.gemini.model,
+      contents,
+      config: synthesisConfig
+    });
+
+    const timeoutGuard = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Gemini API call timed out')), config.gemini.timeoutMs)
+    );
+
+    const synthesisResponse = await Promise.race([synthesisCall, timeoutGuard]);
+    const synthesisText = synthesisResponse.text?.trim() ?? '';
+    const extracted = extractStructuredCopilotResponse(synthesisText);
+
+    return {
+      reply: extracted.reply,
+      attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
+      actionRequired: proposedAction ?? extracted.actionRequired ?? null,
+      suggestionChips: extracted.suggestionChips
+    };
   }
 }
 

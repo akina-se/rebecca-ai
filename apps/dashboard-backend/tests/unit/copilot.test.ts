@@ -534,6 +534,38 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       expect(res.actionRequired?.requiresConfirmation).toBe(true);
     });
 
+    it('should invoke Phase 2 Constrained Synthesis when Phase 1 yields unstructured text without chips', async () => {
+      // Phase 1: Gemini outputs plain text without structured suggestion chips
+      mockGenerateContent.mockResolvedValueOnce({
+        text: 'マスター、今のところシステムは安定してるわ♡'
+      });
+
+      // Phase 2: Constrained synthesis produces verified JSON
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify({
+          reply: 'マスター、今のところシステムは安定してるわ♡',
+          suggestionChips: ['KPIを見る', '最新投稿を確認', 'アセット一覧']
+        })
+      });
+
+      const copilot = new CopilotUseCase(timelineRepo, usersRepo, assetsRepo, memoryRepo, supportersRepo);
+      const res = await copilot.processChat({
+        message: 'システムの様子はどう？',
+        currentContext: 'Overview',
+        language: 'ja'
+      });
+
+      expect(res.reply).toContain('マスター、今のところシステムは安定してるわ♡');
+      expect(res.suggestionChips).toEqual(['KPIを見る', '最新投稿を確認', 'アセット一覧']);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+      expect(mockGenerateContent).toHaveBeenLastCalledWith(expect.objectContaining({
+        config: expect.objectContaining({
+          responseMimeType: 'application/json',
+          responseSchema: expect.any(Object)
+        })
+      }));
+    });
+
     it('should fail fast on empty message', async () => {
       const copilot = new CopilotUseCase();
       await expect(copilot.processChat({ message: '   ' })).rejects.toThrow('User message is required');
