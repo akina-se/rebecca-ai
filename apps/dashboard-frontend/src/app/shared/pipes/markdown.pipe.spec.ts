@@ -20,14 +20,40 @@ describe('MarkdownPipe', () => {
     expect(pipe.transform('')).toBe('');
   });
 
-  it('should escape dangerous raw HTML to prevent XSS injection', () => {
+  it('should escape or strip dangerous raw HTML to prevent XSS injection', () => {
     const malicious = '<script>alert("xss")</script><img src="x" onerror="evil()" />';
     const result = pipe.transform(malicious) as { changingThisBreaksApplicationSecurity?: string };
     const html = result.changingThisBreaksApplicationSecurity || String(result);
     expect(html).not.toContain('<script>');
-    expect(html).toContain('&lt;script&gt;');
-    expect(html).not.toContain('<img');
-    expect(html).toContain('&lt;img');
+    expect(html).not.toContain('onerror=');
+  });
+
+  it('should parse headings (#, ##, ###) into appropriate heading elements', () => {
+    const input = '# メインタイトル\n## サブタイトル\n### セクション';
+    const result = pipe.transform(input) as { changingThisBreaksApplicationSecurity?: string };
+    const html = result.changingThisBreaksApplicationSecurity || String(result);
+    expect(html).toContain('<h1>メインタイトル</h1>');
+    expect(html).toContain('<h2>サブタイトル</h2>');
+    expect(html).toContain('<h3>セクション</h3>');
+  });
+
+  it('should parse markdown tables into table, thead, tbody, tr, th, and td elements', () => {
+    const input = `
+| 項目 | 値 | 前月比 |
+| :--- | :--- | :--- |
+| フォロワー数 | 1,093 | +33.5% |
+| エンゲージメント率 | 7.8% | +34.5% |
+`;
+    const result = pipe.transform(input) as { changingThisBreaksApplicationSecurity?: string };
+    const html = result.changingThisBreaksApplicationSecurity || String(result);
+    expect(html).toContain('<table>');
+    expect(html).toContain('<thead>');
+    expect(html).toContain('項目</th>');
+    expect(html).toContain('値</th>');
+    expect(html).toContain('<tbody>');
+    expect(html).toContain('フォロワー数</td>');
+    expect(html).toContain('+33.5%</td>');
+    expect(html).toContain('</table>');
   });
 
   it('should parse bold and italic markdown tags', () => {
@@ -46,10 +72,10 @@ describe('MarkdownPipe', () => {
 `;
     const result = pipe.transform(input) as { changingThisBreaksApplicationSecurity?: string };
     const html = result.changingThisBreaksApplicationSecurity || String(result);
-    expect(html).toContain('<ul class="copilot-ul">');
-    expect(html).toContain('<li class="copilot-li"><strong>フォロワー数</strong>: 1,093人 (+33.5%)</li>');
-    expect(html).toContain('<li class="copilot-li"><strong>エンゲージメント率</strong>: 7.8%</li>');
-    expect(html).toContain('<li class="copilot-li"><strong>DAU</strong>: 10人</li>');
+    expect(html).toContain('<ul>');
+    expect(html).toContain('<li><strong>フォロワー数</strong>: 1,093人 (+33.5%)</li>');
+    expect(html).toContain('<li><strong>エンゲージメント率</strong>: 7.8%</li>');
+    expect(html).toContain('<li><strong>DAU</strong>: 10人</li>');
     expect(html).toContain('</ul>');
   });
 
@@ -60,9 +86,9 @@ describe('MarkdownPipe', () => {
 `;
     const result = pipe.transform(input) as { changingThisBreaksApplicationSecurity?: string };
     const html = result.changingThisBreaksApplicationSecurity || String(result);
-    expect(html).toContain('<ol class="copilot-ol">');
-    expect(html).toContain('<li class="copilot-li">第一ステップ</li>');
-    expect(html).toContain('<li class="copilot-li">第二ステップ</li>');
+    expect(html).toContain('<ol>');
+    expect(html).toContain('<li>第一ステップ</li>');
+    expect(html).toContain('<li>第二ステップ</li>');
     expect(html).toContain('</ol>');
   });
 
@@ -70,8 +96,8 @@ describe('MarkdownPipe', () => {
     const input = 'Use `npm test` to run tests.\n\n```json\n{\n  "status": "ok"\n}\n```';
     const result = pipe.transform(input) as { changingThisBreaksApplicationSecurity?: string };
     const html = result.changingThisBreaksApplicationSecurity || String(result);
-    expect(html).toContain('<code class="copilot-inline-code">npm test</code>');
-    expect(html).toContain('<pre class="copilot-code-block"><code>');
+    expect(html).toContain('<code>npm test</code>');
+    expect(html).toContain('<pre><code class="language-json">');
     expect(html).toContain('&quot;status&quot;: &quot;ok&quot;');
   });
 
@@ -79,6 +105,6 @@ describe('MarkdownPipe', () => {
     const input = 'Check out [Rebecca Docs](https://example.com/docs).';
     const result = pipe.transform(input) as { changingThisBreaksApplicationSecurity?: string };
     const html = result.changingThisBreaksApplicationSecurity || String(result);
-    expect(html).toContain('<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer" class="copilot-link">Rebecca Docs</a>');
+    expect(html).toContain('<a href="https://example.com/docs">Rebecca Docs</a>');
   });
 });

@@ -272,7 +272,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(postDrawer).not.toHaveClass(/open/, { timeout: 5000 });
   });
 
-  test('Test 8: Copilot Markdown rendering in chat bubbles (bold, Japanese nakaguro lists, and code blocks)', async ({ page }) => {
+  test('Test 8: Copilot Markdown rendering in chat bubbles (headings, tables, bold, Japanese nakaguro lists, and code blocks)', async ({ page }) => {
     // Intercept copilot backend chat call to return markdown formatted text
     await page.route('**/copilot/chat', async (route) => {
       if (route.request().method() === 'POST') {
@@ -280,7 +280,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            reply: 'マスター、今月のKPI推移をサクッと解析してあげたわよ♡\n\n・**フォロワー数**: 1,093人 (前月比 +33.5%)\n・**エンゲージメント率**: 7.8%\n\nテスト実行コマンドは `npm test` よ！',
+            reply: '### 今月のKPIサマリー\n\nマスター、今月のKPI推移をサクッと解析してあげたわよ♡\n\n・**フォロワー数**: 1,093人 (前月比 +33.5%)\n・**エンゲージメント率**: 7.8%\n\n| 指標 | 数値 |\n| :--- | :--- |\n| DAU | 10人 |\n| API | 806回 |\n\nテスト実行コマンドは `npm test` よ！',
             suggestionChips: ['タイムラインの人気投稿を見る', 'サポーターの状況を確認する']
           })
         });
@@ -308,19 +308,29 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     const lastModelBubble = aiDrawer.locator('.model-row:not(.thinking-row) .bubble-text').last();
     await expect(lastModelBubble).toBeVisible({ timeout: 10000 });
 
+    // Verify heading element rendered
+    const heading = lastModelBubble.locator('h3').first();
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveText('今月のKPIサマリー');
+
     // Verify <strong> elements rendered
     const boldElement = lastModelBubble.locator('strong').first();
     await expect(boldElement).toBeVisible();
     await expect(boldElement).toHaveText('フォロワー数');
 
     // Verify <ul> and <li> elements rendered for Japanese nakaguro bullets
-    const listElement = lastModelBubble.locator('ul.copilot-ul');
+    const listElement = lastModelBubble.locator('ul');
     await expect(listElement).toBeVisible();
-    const listItems = listElement.locator('li.copilot-li');
+    const listItems = listElement.locator('li');
     await expect(listItems).toHaveCount(2);
 
+    // Verify markdown table rendered
+    const tableElement = lastModelBubble.locator('table');
+    await expect(tableElement).toBeVisible();
+    await expect(tableElement.locator('th').first()).toHaveText('指標');
+
     // Verify inline code block rendered
-    const codeElement = lastModelBubble.locator('code.copilot-inline-code');
+    const codeElement = lastModelBubble.locator('code').first();
     await expect(codeElement).toBeVisible();
     await expect(codeElement).toHaveText('npm test');
 

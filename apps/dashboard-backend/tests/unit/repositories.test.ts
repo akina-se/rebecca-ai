@@ -219,22 +219,12 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(mockBatchCommit).toHaveBeenCalledTimes(1);
     });
 
-    it('updateMemory and updateStatusBulk should resolve user by username when doc ID is not found directly', async () => {
-      const mockQueryRef = { set: jest.fn().mockResolvedValue(undefined) };
-      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue({
-        get: jest.fn().mockResolvedValue({ exists: false })
-      });
-      (usersRepo as any).collections.users.where = jest.fn().mockReturnValue({
-        limit: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            empty: false,
-            docs: [{ ref: mockQueryRef }]
-          })
-        })
-      });
+    it('updateMemory and updateStatusBulk should update user document directly by exact ID', async () => {
+      const mockDocRef = { set: jest.fn().mockResolvedValue(undefined) };
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue(mockDocRef);
 
-      await usersRepo.updateMemory('se_akina', '{"bio":"updated"}');
-      expect(mockQueryRef.set).toHaveBeenCalledWith({ coreProfile: { bio: 'updated' } }, { merge: true });
+      await usersRepo.updateMemory('user_123', '{"bio":"updated"}');
+      expect(mockDocRef.set).toHaveBeenCalledWith({ coreProfile: { bio: 'updated' } }, { merge: true });
 
       const mockBatchSet = jest.fn();
       const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
@@ -243,8 +233,9 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
         commit: mockBatchCommit
       });
 
-      await usersRepo.updateStatusBulk(['se_akina'], UserStatus.BLOCKED);
-      expect(mockBatchSet).toHaveBeenCalledWith(mockQueryRef, { status: UserStatus.BLOCKED }, { merge: true });
+      await usersRepo.updateStatusBulk(['user_123'], UserStatus.BLOCKED);
+      expect(mockBatchSet).toHaveBeenCalledWith(mockDocRef, { status: UserStatus.BLOCKED }, { merge: true });
+      expect(mockBatchCommit).toHaveBeenCalled();
     });
   });
 

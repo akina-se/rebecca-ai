@@ -364,25 +364,13 @@ export class UsersRepository {
       return;
     }
 
-    const directRef = this.collections.users.doc(rawId);
-    let targetRef = directRef;
-    if (typeof directRef.get === 'function') {
-      const directSnap = await directRef.get();
-      if (!directSnap.exists && typeof this.collections.users.where === 'function') {
-        const snap = await this.collections.users.where('username', '==', rawId).limit(1).get();
-        if (!snap.empty) {
-          targetRef = snap.docs[0].ref;
-        }
-      }
-    }
-    await targetRef.set({ coreProfile: parsed }, { merge: true });
+    await this.collections.users.doc(rawId).set({ coreProfile: parsed }, { merge: true });
   }
 
   /**
-   * Updates status for multiple users in a bulk operation.
-   * Resolves by direct document ID first, falling back to matching username field.
+   * Updates status for multiple users in a bulk operation by exact document ID.
    * 
-   * @param ids - The array of user IDs/handles to update.
+   * @param ids - The array of user IDs to update.
    * @param status - The new status (Active, Blocked, Muted) to apply.
    * @returns A promise that resolves when the batch write is complete.
    */
@@ -392,18 +380,7 @@ export class UsersRepository {
       const rawId = id.replace('@', '').trim();
       if (!rawId) continue;
 
-      const directRef = this.collections.users.doc(rawId);
-      let targetRef = directRef;
-      if (typeof directRef.get === 'function') {
-        const directSnap = await directRef.get();
-        if (!directSnap.exists && typeof this.collections.users.where === 'function') {
-          const snap = await this.collections.users.where('username', '==', rawId).limit(1).get();
-          if (!snap.empty) {
-            targetRef = snap.docs[0].ref;
-          }
-        }
-      }
-      batch.set(targetRef, { status }, { merge: true });
+      batch.set(this.collections.users.doc(rawId), { status }, { merge: true });
     }
     await batch.commit();
   }
