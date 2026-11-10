@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.40.0](https://github.com/akina-se/rebecca-ai/compare/v1.39.0...v1.40.0) (2026-11-10)
+
+
+### Features
+
+* **copilot:** redesign autonomous agent with tool registry and visual preview cards ([#456](https://github.com/akina-se/rebecca-ai/issues/456)) ([1472cae](https://github.com/akina-se/rebecca-ai/commit/1472caedd13489ca13577bcb6e5dcc02644e3ee0))
+
 ## [1.39.0](https://github.com/akina-se/rebecca-ai/compare/v1.38.6...v1.39.0) (2026-11-10)
 
 
