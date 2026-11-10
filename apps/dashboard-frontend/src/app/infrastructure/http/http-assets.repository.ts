@@ -98,9 +98,13 @@ export class HttpAssetsRepository implements AssetsRepository {
 
     return this.http.request(req).pipe(
       tap((event) => {
-        if (event.type === HttpEventType.UploadProgress && event.total) {
-          const percent = Math.round((100 * event.loaded) / event.total);
-          onProgress(percent);
+        if (event.type === HttpEventType.UploadProgress) {
+          if (event.total) {
+            const percent = Math.round((100 * event.loaded) / event.total);
+            onProgress(percent);
+          } else if (event.loaded > 0) {
+            onProgress(50);
+          }
         } else if (event.type === HttpEventType.Response) {
           onProgress(100);
         }

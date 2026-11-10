@@ -17,6 +17,20 @@ import { AssetStatus, UserStatus } from '@rebecca/types';
 const mockGenerateContent = jest.fn();
 const mockEmbedContent = jest.fn();
 
+jest.mock('../../src/config', () => {
+  const actual = jest.requireActual('../../src/config');
+  return {
+    ...actual,
+    config: {
+      ...actual.config,
+      gemini: {
+        ...actual.config.gemini,
+        apiKey: 'test-gemini-api-key'
+      }
+    }
+  };
+});
+
 jest.mock('@google/genai', () => {
   const actual = jest.requireActual('@google/genai');
   return {

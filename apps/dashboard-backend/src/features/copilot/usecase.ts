@@ -28,10 +28,13 @@ export class CopilotUseCase {
     private readonly assetsRepo?: AssetsRepository,
     private readonly memoryRepo?: SystemMemoryRepository,
     private readonly supportersRepo?: SupportersRepository,
-    toolRegistry?: CopilotToolRegistry
+    toolRegistry?: CopilotToolRegistry,
+    aiClient?: GoogleGenAI
   ) {
     this.toolRegistry = toolRegistry ?? new CopilotToolRegistry();
-    if (config.gemini.apiKey) {
+    if (aiClient) {
+      this.ai = aiClient;
+    } else if (config.gemini.apiKey) {
       this.ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
     }
   }

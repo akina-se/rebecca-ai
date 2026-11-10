@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
@@ -26,7 +26,7 @@ import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
   templateUrl: './assets-page.component.html',
   styleUrl: './assets-page.component.css'
 })
-export class AssetsPageComponent implements OnInit {
+export class AssetsPageComponent implements OnInit, OnDestroy {
   readonly isDrawerOpen = signal<boolean>(false);
   readonly selectedAssetId = signal<string | null>(null);
   readonly drawerTitle = signal<string>('');
@@ -52,12 +52,24 @@ export class AssetsPageComponent implements OnInit {
   readonly isProcessing = signal<boolean>(false);
   readonly uploadProgress = signal<number>(0);
   readonly isLoading = signal<boolean>(false);
+  private uploadProgressTimer: ReturnType<typeof setInterval> | null = null;
 
   toastService = inject(ToastService);
   private readonly assetsRepo = inject(ASSETS_REPOSITORY);
 
   ngOnInit() {
     this.loadAssets(1);
+  }
+
+  ngOnDestroy() {
+    this.clearUploadTimer();
+  }
+
+  private clearUploadTimer() {
+    if (this.uploadProgressTimer) {
+      clearInterval(this.uploadProgressTimer);
+      this.uploadProgressTimer = null;
+    }
   }
 
 
@@ -158,17 +170,35 @@ export class AssetsPageComponent implements OnInit {
     this.isProcessing.set(false);
     this.uploadProgress.set(0);
 
-    this.assetsRepo.upload(files, (progress: number) => {
-      // First half: real HTTP upload progress (0-100%)
-      const clamped = Math.max(0, Math.min(100, Math.round(progress)));
-      this.uploadProgress.set(clamped);
+    // Phase 1: Smooth arc animation (0% -> 100% over ~800ms) with real progress coordination
+    this.clearUploadTimer();
+    const startTime = Date.now();
+    const phase1DurationMs = 800;
 
-      // Second half: once HTTP upload completes (100%), switch to spinning while server processes/analyzes
+    this.uploadProgressTimer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const simulated = Math.min(100, Math.round((elapsed / phase1DurationMs) * 100));
+      if (simulated > this.uploadProgress()) {
+        this.uploadProgress.set(simulated);
+      }
+      if (simulated >= 100) {
+        this.clearUploadTimer();
+        this.isProcessing.set(true);
+      }
+    }, 40);
+
+    this.assetsRepo.upload(files, (progress: number) => {
+      const clamped = Math.max(0, Math.min(100, Math.round(progress)));
+      if (clamped > this.uploadProgress()) {
+        this.uploadProgress.set(clamped);
+      }
       if (clamped >= 100) {
+        this.clearUploadTimer();
         this.isProcessing.set(true);
       }
     }).subscribe({
       next: () => {
+        this.clearUploadTimer();
         this.isProcessing.set(false);
         this.uploadProgress.set(100);
         this.toastService.show(`Successfully uploaded asset(s)`, 'success');
@@ -178,6 +208,7 @@ export class AssetsPageComponent implements OnInit {
         this.loadAssets(1);
       },
       error: () => {
+        this.clearUploadTimer();
         this.isProcessing.set(false);
         this.toastService.show('Failed to upload assets', 'error');
         this.isUploading.set(false);
