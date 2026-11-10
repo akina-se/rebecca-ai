@@ -118,16 +118,20 @@ export class ProposeDestructiveActionTool implements CopilotTool {
 
         if (actionType === 'BLOCK_USER') {
           impactLevel = 'danger';
-          title = isEn ? (userLabel ? `Block User ${userLabel}` : 'Block User') : (userLabel ? `ユーザー ${userLabel} のブロック` : 'ユーザーのブロック');
+          title = isEn
+            ? (userLabel ? `Block User ${userLabel}` : 'Block User')
+            : (userLabel ? `ユーザー ${userLabel} のブロック` : 'ユーザーのブロック');
           description = isEn
-            ? `Block ${userLabel || 'user'} from interacting with Master or replying.`
-            : `${userLabel || '対象ユーザー'} をブロックします。今後マスターへのリプライや接触が遮断されます。`;
+            ? (userLabel ? `Block ${userLabel} from interacting with Master or replying.` : 'Block user from interacting with Master or replying.')
+            : (userLabel ? `${userLabel} をブロックします。今後マスターへのリプライや接触が遮断されます。` : '対象ユーザーをブロックします。今後マスターへのリプライや接触が遮断されます。');
         } else {
           impactLevel = 'warning';
-          title = isEn ? (userLabel ? `Unblock User ${userLabel}` : 'Unblock User') : (userLabel ? `ユーザー ${userLabel} のブロック解除` : 'ユーザーのブロック解除');
+          title = isEn
+            ? (userLabel ? `Unblock User ${userLabel}` : 'Unblock User')
+            : (userLabel ? `ユーザー ${userLabel} のブロック解除` : 'ユーザーのブロック解除');
           description = isEn
-            ? `Restore interaction permissions for ${userLabel || 'user'}.`
-            : `${userLabel || '対象ユーザー'} のブロックを解除し、正常な対話権限を復帰させます。`;
+            ? (userLabel ? `Restore interaction permissions for ${userLabel}.` : 'Restore interaction permissions for user.')
+            : (userLabel ? `${userLabel} のブロックを解除し、正常な対話権限を復帰させます。` : '対象ユーザーのブロックを解除し、正常な対話権限を復帰させます。');
         }
 
         payload.userId = resolvedId;

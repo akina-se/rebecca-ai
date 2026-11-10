@@ -250,12 +250,12 @@ ${languageInstruction}
 
       // No function calls — final response reached
       const rawText = response.text?.trim() ?? '';
-      const extracted = extractStructuredCopilotResponse(rawText, currentContext, isEn);
+      const extracted = extractStructuredCopilotResponse(rawText);
 
       return {
         reply: extracted.reply,
         attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
-        actionRequired: proposedAction || extracted.actionRequired || null,
+        actionRequired: proposedAction ?? extracted.actionRequired ?? null,
         suggestionChips: extracted.suggestionChips
       };
     }
@@ -265,51 +265,17 @@ ${languageInstruction}
 }
 
 /**
- * Safely extracts and parses JSON payload containing reply and suggestion chips from Gemini output.
- * Strips code fences, isolates outermost JSON objects, and falls back to dynamic context-aware suggestions.
+ * Safely extracts and parses JSON payload containing reply, suggestion chips, and optional action from Gemini output.
+ * Strips markdown code fences (```json ... ``` or ``` ... ```) and parses the structured response.
+ * If output is not JSON, safely returns the raw message with empty suggestion chips without hardcoded fallbacks.
  */
 export function extractStructuredCopilotResponse(
-  rawText: string,
-  currentContext: string,
-  isEn: boolean
+  rawText: string
 ): {
   reply: string;
   suggestionChips: string[];
   actionRequired?: CopilotAction | null;
 } {
-  const getContextualFallbackChips = (): string[] => {
-    const ctx = (currentContext || '').toLowerCase();
-    if (ctx.includes('supporter')) {
-      return isEn
-        ? ['Supporter overview', 'Check Hall of Fame', 'Reward distribution']
-        : ['サポーターの最新状況を確認', 'Hall of Fameの確認', 'リワード配布状況'];
-    }
-    if (ctx.includes('asset')) {
-      return isEn
-        ? ['Inspect recent assets', 'Check generation status', 'Filter failed uploads']
-        : ['最新の画像アセット一覧', '画像生成ステータス確認', '画像アセットの解析をする'];
-    }
-    if (ctx.includes('user')) {
-      return isEn
-        ? ['Search active users', 'Check interaction history', 'Audit user status']
-        : ['アクティブユーザー検索', '対話ログの確認', 'ユーザーステータス'];
-    }
-    if (ctx.includes('campaign')) {
-      return isEn
-        ? ['Active campaigns', 'Check itinerary slots', 'Event schedule']
-        : ['進行中キャンペーンの確認', 'スロット進捗状況', 'スケジュール確認'];
-    }
-    if (ctx.includes('memory')) {
-      return isEn
-        ? ['Review persona tuning', 'Timeline summary', 'Inspect core prompt']
-        : ['ペルソナ調整状況', 'タイムライン要約確認', 'プロンプト確認'];
-    }
-    // Dashboard / default
-    return isEn
-      ? ['Top performing posts', 'Summarize monthly KPI', 'Chat with Rebecca♡']
-      : ['タイムラインの人気投稿を見る', '今月のKPI推移を要約', 'レベッカとおしゃべり♡'];
-  };
-
   const cleaned = rawText.trim();
   let parsedObj: { reply?: string; suggestionChips?: string[]; actionRequired?: CopilotAction | null } | null = null;
 
@@ -349,7 +315,7 @@ export function extractStructuredCopilotResponse(
     if (typeof parsedObj.reply === 'string' && parsedObj.reply.trim().length > 0) {
       replyText = parsedObj.reply.trim();
     }
-    if (Array.isArray(parsedObj.suggestionChips) && parsedObj.suggestionChips.length > 0) {
+    if (Array.isArray(parsedObj.suggestionChips)) {
       suggestionChips = parsedObj.suggestionChips.filter(s => typeof s === 'string' && s.trim().length > 0);
     }
     if (parsedObj.actionRequired) {
@@ -359,10 +325,6 @@ export function extractStructuredCopilotResponse(
     // If not JSON, but wrapped in code fences, strip them so raw ```json doesn't leak into chat bubble
     const strippedFences = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     replyText = strippedFences;
-  }
-
-  if (suggestionChips.length === 0) {
-    suggestionChips = getContextualFallbackChips();
   }
 
   return {

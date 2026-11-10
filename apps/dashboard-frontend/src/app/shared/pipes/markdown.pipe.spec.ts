@@ -98,7 +98,7 @@ describe('MarkdownPipe', () => {
     const html = result.changingThisBreaksApplicationSecurity || String(result);
     expect(html).toContain('<code>npm test</code>');
     expect(html).toContain('<pre><code class="language-json">');
-    expect(html).toContain('&quot;status&quot;: &quot;ok&quot;');
+    expect(html).toContain('"status": "ok"');
   });
 
   it('should convert safe external links into anchor tags', () => {

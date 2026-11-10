@@ -554,12 +554,10 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
     });
   });
 
-  describe('extractStructuredCopilotResponse Robust Parsing & Dynamic Context Fallbacks', () => {
+  describe('extractStructuredCopilotResponse Robust JSON Extraction & Unwrapping', () => {
     it('should parse raw JSON properly', () => {
       const res = extractStructuredCopilotResponse(
-        '{"reply": "Hello Master♡", "suggestionChips": ["A", "B"]}',
-        'Dashboard',
-        true
+        '{"reply": "Hello Master♡", "suggestionChips": ["A", "B"]}'
       );
       expect(res.reply).toBe('Hello Master♡');
       expect(res.suggestionChips).toEqual(['A', 'B']);
@@ -567,57 +565,36 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
 
     it('should unwrap markdown-fenced json (```json ... ```)', () => {
       const raw = '```json\n{\n  "reply": "こんにちはマスター♡",\n  "suggestionChips": ["人気投稿", "アセット"]\n}\n```';
-      const res = extractStructuredCopilotResponse(raw, 'Dashboard', false);
+      const res = extractStructuredCopilotResponse(raw);
       expect(res.reply).toBe('こんにちはマスター♡');
       expect(res.suggestionChips).toEqual(['人気投稿', 'アセット']);
     });
 
     it('should unwrap markdown fences without language identifier (``` ... ```)', () => {
       const raw = '```\n{\n  "reply": "Analyzed successfully",\n  "suggestionChips": ["Next"]\n}\n```';
-      const res = extractStructuredCopilotResponse(raw, 'Dashboard', true);
+      const res = extractStructuredCopilotResponse(raw);
       expect(res.reply).toBe('Analyzed successfully');
       expect(res.suggestionChips).toEqual(['Next']);
     });
 
     it('should extract JSON embedded inside conversational text', () => {
       const raw = 'Here is what you asked for:\n{"reply": "KPI is growing!", "suggestionChips": ["Export"]}\nHope that helps!';
-      const res = extractStructuredCopilotResponse(raw, 'Dashboard', true);
+      const res = extractStructuredCopilotResponse(raw);
       expect(res.reply).toBe('KPI is growing!');
       expect(res.suggestionChips).toEqual(['Export']);
     });
 
-    it('should strip markdown fences and apply contextual fallbacks when JSON is malformed', () => {
+    it('should strip markdown fences and return clean text with empty chips when JSON is malformed', () => {
       const raw = '```json\nThis is not valid JSON at all\n```';
-      const res = extractStructuredCopilotResponse(raw, 'Dashboard', false);
+      const res = extractStructuredCopilotResponse(raw);
       expect(res.reply).toBe('This is not valid JSON at all');
-      expect(res.suggestionChips.length).toBeGreaterThan(0);
+      expect(res.suggestionChips).toEqual([]);
     });
 
-    it('should generate context-specific suggestion chips for different page views in JA and EN', () => {
-      const contexts = ['supporters', 'assets', 'users', 'campaigns', 'memory', 'overview'];
-      for (const ctx of contexts) {
-        const resEn = extractStructuredCopilotResponse('Raw text without chips', ctx, true);
-        const resJa = extractStructuredCopilotResponse('チップなしテキスト', ctx, false);
-        expect(resEn.suggestionChips.length).toBe(3);
-        expect(resJa.suggestionChips.length).toBe(3);
-      }
-    });
-
-    it('should forward actionRequired if present in structured JSON', () => {
-      const raw = JSON.stringify({
-        reply: 'Proposing action',
-        actionRequired: {
-          type: 'BLOCK_USER',
-          title: 'Block User',
-          description: 'Desc',
-          impactLevel: 'danger',
-          requiresConfirmation: true,
-          payload: { userId: '123' }
-        },
-        suggestionChips: ['Confirm']
-      });
-      const res = extractStructuredCopilotResponse(raw, 'Users', true);
-      expect(res.actionRequired?.type).toBe('BLOCK_USER');
+    it('should return empty suggestion chips when input text has no structured JSON', () => {
+      const res = extractStructuredCopilotResponse('マスター、お疲れ様♡ 今日は何をする？');
+      expect(res.reply).toBe('マスター、お疲れ様♡ 今日は何をする？');
+      expect(res.suggestionChips).toEqual([]);
     });
   });
 
