@@ -3,6 +3,7 @@ import { loginWithEmulatorAndSeedDB } from './auth-helper';
 
 test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
     await loginWithEmulatorAndSeedDB(page);
   });
 
@@ -296,10 +297,10 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await rebeccaBtn.click();
 
     const aiDrawer = page.locator('.ai-drawer');
-    await expect(aiDrawer).toHaveClass(/open/);
+    await expect(aiDrawer).toHaveClass(/open/, { timeout: 5000 });
 
     // Send a message
-    const inputField = aiDrawer.locator('#ai-input-field');
+    const inputField = aiDrawer.locator('#ai-input');
     await inputField.fill('KPI推移を要約して');
     const sendBtn = aiDrawer.locator('#ai-send-btn');
     await sendBtn.click();
@@ -383,23 +384,25 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await userRow.click();
 
     // Verify user drawer opens
+    const rightDrawer = page.locator('app-right-drawer .right-drawer');
+    await expect(rightDrawer).toHaveClass(/open/, { timeout: 5000 });
+
     const userDrawer = page.locator('app-user-drawer');
-    await expect(userDrawer.locator('.right-drawer')).toHaveClass(/open/, { timeout: 5000 });
 
     // Verify initial block button state (initially not blocked)
     const blockButton = userDrawer.locator('.danger-btn, .block-btn').filter({ hasText: /ブロック|Block/ });
     await expect(blockButton).toBeVisible();
     await expect(blockButton).toContainText(/ユーザーをブロック|Block User/);
 
-    // Click Analyze button from User Drawer to open Copilot with focused user context
-    const analyzeBtn = userDrawer.locator('.drawer-header .sparkle-btn');
+    // Click Analyze button from Right Drawer header to open Copilot with focused user context
+    const analyzeBtn = rightDrawer.locator('.drawer-header .sparkle-btn');
     await analyzeBtn.click();
 
     const aiDrawer = page.locator('app-ai-drawer .ai-drawer');
     await expect(aiDrawer).toHaveClass(/open/, { timeout: 5000 });
 
     // Send a block request via Copilot
-    const inputField = aiDrawer.locator('#ai-input-field');
+    const inputField = aiDrawer.locator('#ai-input');
     await inputField.fill(`${targetUsername}をブロックして`);
     const sendBtn = aiDrawer.locator('#ai-send-btn');
     await sendBtn.click();
@@ -429,6 +432,6 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
     // Close Copilot and User Drawer
     await aiDrawer.locator('#ai-close-btn').click();
-    await userDrawer.locator('.drawer-header .close-btn').click();
+    await rightDrawer.locator('.drawer-header .close-btn').click();
   });
 });
