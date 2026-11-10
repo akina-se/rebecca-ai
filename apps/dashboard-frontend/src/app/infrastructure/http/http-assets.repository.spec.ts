@@ -68,6 +68,10 @@ describe('HttpAssetsRepository', () => {
     req.event({ type: HttpEventType.UploadProgress, loaded: 50, total: 100 } as any);
     expect(progressSpy).toHaveBeenCalledWith(50);
 
+    // Also test uncomputable total fallback on mobile/proxies
+    req.event({ type: HttpEventType.UploadProgress, loaded: 1024, total: undefined } as any);
+    expect(progressSpy).toHaveBeenCalledWith(50);
+
     req.flush({ success: true });
     expect(progressSpy).toHaveBeenCalledWith(100);
   });

@@ -6,7 +6,10 @@ import { CopilotService } from '../../core/services/copilot.service';
 import { CopilotContextService } from '../../core/services/copilot-context.service';
 import { ConfigService } from '../../core/services/config.service';
 import { TranslationService } from '../../core/services/translation.service';
+import { Router } from '@angular/router';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { AuthUrlPipe } from '../../shared/pipes/auth-url.pipe';
+import { LightboxComponent } from '../../shared/components/organisms/lightbox/lightbox.component';
 import { CopilotAction } from '@rebecca/types';
 
 /**
@@ -16,7 +19,7 @@ import { CopilotAction } from '@rebecca/types';
 @Component({
   selector: 'app-ai-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, AuthUrlPipe, LightboxComponent],
   templateUrl: './ai-drawer.component.html',
   styleUrls: ['./ai-drawer.component.css']
 })
@@ -26,6 +29,10 @@ export class AiDrawerComponent implements OnInit, AfterViewChecked {
   contextService = inject(CopilotContextService);
   private readonly configService = inject(ConfigService);
   private readonly translationService = inject(TranslationService);
+  private readonly router = inject(Router);
+
+  readonly isLightboxOpen = signal<boolean>(false);
+  readonly lightboxImageUrl = signal<string>('');
 
   get personaName(): string {
     return this.configService.getPersonaName(this.translationService.currentLang());
@@ -53,6 +60,19 @@ export class AiDrawerComponent implements OnInit, AfterViewChecked {
     if (this.shouldScrollToBottom) {
       this.scrollToBottom();
       this.shouldScrollToBottom = false;
+    }
+  }
+
+  onOpenLightbox(url?: string): void {
+    if (url) {
+      this.lightboxImageUrl.set(url);
+      this.isLightboxOpen.set(true);
+    }
+  }
+
+  onNavigate(path?: string): void {
+    if (path) {
+      this.router.navigate([path]);
     }
   }
 

@@ -1,10 +1,11 @@
 .circular-progress-arc {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   transform: rotate(-90deg);
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
+  transform-origin: center;
 }
 
 .circular-progress-arc .arc-track {
@@ -19,17 +20,29 @@
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 56.55;
-  transition: stroke-dashoffset 0.25s ease-out;
+  transition: stroke-dashoffset 0.15s ease-out;
 }
 
 .circular-progress-arc.spinning {
-  animation: arc-spin 0.9s linear infinite;
+  -webkit-animation: arc-spin 0.85s linear infinite;
+  animation: arc-spin 0.85s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
 }
 
 .circular-progress-arc.spinning .arc-fill {
-  stroke-dasharray: 38 56.55;
+  stroke-dasharray: 35 56.55;
   stroke-dashoffset: 0 !important;
-  transition: stroke-dasharray 0.3s ease-out;
+  transition: none;
+}
+
+@-webkit-keyframes arc-spin {
+  0% {
+    -webkit-transform: rotate(-90deg);
+  }
+  100% {
+    -webkit-transform: rotate(270deg);
+  }
 }
 
 @keyframes arc-spin {

@@ -25,6 +25,79 @@
           <div class="ai-content model-bubble">
             <div class="bubble-text" style="white-space: pre-wrap;">{{ msg.text }}</div>
 
+            <!-- Visual Attachments (Image previews, Post cards, User pills) -->
+            @if (msg.attachments && msg.attachments.length > 0) {
+              <div class="attachments-container">
+                <div class="attachment-image-grid">
+                  @for (att of msg.attachments; track att.id) {
+                    @if (att.type === 'image') {
+                      <div class="attachment-image-item" (click)="onOpenLightbox(att.imageUrl || att.thumbnailUrl)" [title]="att.title">
+                        <div class="attachment-thumb-wrap">
+                          <img [src]="(att.thumbnailUrl || att.imageUrl || '') | authUrl" [alt]="att.title" class="attachment-thumb" loading="lazy" />
+                          <div class="attachment-thumb-overlay">
+                            <span class="material-icons" style="font-size: 1.25rem;">zoom_in</span>
+                          </div>
+                        </div>
+                        <span class="attachment-caption">{{ att.title }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+
+                @for (att of msg.attachments; track att.id) {
+                  @if (att.type === 'post') {
+                    <div class="attachment-card attachment-post-card">
+                      <div class="attachment-card-header">
+                        <span class="material-icons" style="font-size: 1rem; color: var(--color-primary);">dynamic_feed</span>
+                        <span class="attachment-card-title">{{ att.title }}</span>
+                      </div>
+                      <div class="attachment-card-meta">
+                        @if (att.metrics?.impressions !== undefined) {
+                          <span class="metric-badge">
+                            <span class="material-icons" style="font-size: 0.85rem;">visibility</span>
+                            {{ att.metrics.impressions }}
+                          </span>
+                        }
+                        @if (att.navigationPath) {
+                          <button type="button" class="attachment-nav-btn" (click)="onNavigate(att.navigationPath)">
+                            <span class="material-icons" style="font-size: 0.85rem;">open_in_new</span>
+                            <span>View</span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  @if (att.type === 'user') {
+                    <div class="attachment-card attachment-user-card">
+                      <div class="attachment-user-info">
+                        <span class="material-icons" style="font-size: 1.1rem; color: var(--color-primary);">account_circle</span>
+                        <span class="attachment-card-title">{{ att.title }}</span>
+                        @if (att.statusBadge) {
+                          <span class="user-status-tag" [ngClass]="att.statusBadge.toLowerCase()">{{ att.statusBadge }}</span>
+                        }
+                      </div>
+                      @if (att.navigationPath) {
+                        <button type="button" class="attachment-nav-btn" (click)="onNavigate(att.navigationPath)">
+                          <span class="material-icons" style="font-size: 0.85rem;">open_in_new</span>
+                          <span>Audit</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+
+            <!-- Turn Suggestion Chips -->
+            @if (msg.suggestionChips && msg.suggestionChips.length > 0) {
+              <div class="msg-chips-wrap">
+                @for (chip of msg.suggestionChips; track chip) {
+                  <button type="button" class="action-chip" (click)="onChipClick(chip)" [disabled]="copilotService.isLoading()">{{ chip }}</button>
+                }
+              </div>
+            }
+
             <!-- HITL Safety Action Confirmation Card -->
             @if (msg.actionRequired) {
               <div class="action-card" [ngClass]="msg.actionRequired.impactLevel">
@@ -120,4 +193,6 @@
       <span class="material-icons">send</span>
     </button>
   </div>
+
+  <app-lightbox [isOpen]="isLightboxOpen()" [imageUrl]="lightboxImageUrl()" (lightboxClose)="isLightboxOpen.set(false)"></app-lightbox>
 </div>
