@@ -15,8 +15,6 @@ export interface CopilotToolContext {
   readonly assetsRepo?: AssetsRepository;
   readonly memoryRepo?: SystemMemoryRepository;
   readonly supportersRepo?: SupportersRepository;
-  readonly geminiApiKey?: string;
-  readonly geminiModel?: string;
   readonly isEn: boolean;
 }
 

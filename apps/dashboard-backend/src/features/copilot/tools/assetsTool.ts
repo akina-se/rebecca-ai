@@ -2,6 +2,7 @@ import { FunctionDeclaration, GoogleGenAI, Type } from '@google/genai';
 import { Asset, CopilotAttachment } from '@rebecca/types';
 import { CopilotTool, CopilotToolContext, CopilotToolExecutionResult } from '../types';
 import { logger } from '../../../utils/logger';
+import { config } from '../../../config';
 
 /**
  * Tool for semantic vector search and status filtering of media image assets.
@@ -43,12 +44,13 @@ export class SearchAssetsTool implements CopilotTool {
     let matchedAssets: Asset[] = [];
 
     // 1. Semantic Vector Search if semanticQuery is provided
-    if (semanticQuery.length > 0 && context.geminiApiKey) {
+    if (semanticQuery.length > 0 && config.gemini.apiKey) {
       try {
-        const ai = new GoogleGenAI({ apiKey: context.geminiApiKey });
+        const ai = new GoogleGenAI({ apiKey: config.gemini.apiKey });
         const embedRes = await ai.models.embedContent({
-          model: 'gemini-embedding-2',
-          contents: semanticQuery
+          model: config.gemini.embeddingModel,
+          contents: semanticQuery,
+          config: { outputDimensionality: 768 }
         });
         const vector = embedRes.embeddings?.[0]?.values;
         if (Array.isArray(vector) && vector.length > 0) {

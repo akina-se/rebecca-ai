@@ -170,20 +170,20 @@ export class AssetsPageComponent implements OnInit, OnDestroy {
     this.isProcessing.set(false);
     this.uploadProgress.set(0);
 
-    // Phase 1: Smooth arc animation (0% -> 100% over ~800ms) with real progress coordination
+    // Phase 1: Smooth arc animation (0% -> 80% over ~800ms) capped to synchronize with real network upload
     this.clearUploadTimer();
     const startTime = Date.now();
     const phase1DurationMs = 800;
+    const simulatedCap = 80;
 
     this.uploadProgressTimer = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const simulated = Math.min(100, Math.round((elapsed / phase1DurationMs) * 100));
+      const simulated = Math.min(simulatedCap, Math.round((elapsed / phase1DurationMs) * simulatedCap));
       if (simulated > this.uploadProgress()) {
         this.uploadProgress.set(simulated);
       }
-      if (simulated >= 100) {
+      if (simulated >= simulatedCap) {
         this.clearUploadTimer();
-        this.isProcessing.set(true);
       }
     }, 40);
 

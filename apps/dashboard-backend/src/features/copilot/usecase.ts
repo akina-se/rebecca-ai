@@ -61,8 +61,6 @@ export class CopilotUseCase {
       assetsRepo: this.assetsRepo,
       memoryRepo: this.memoryRepo,
       supportersRepo: this.supportersRepo,
-      geminiApiKey: config.gemini.apiKey,
-      geminiModel: config.gemini.model,
       isEn
     };
 

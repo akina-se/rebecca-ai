@@ -25,7 +25,8 @@ jest.mock('../../src/config', () => {
       ...actual.config,
       gemini: {
         ...actual.config.gemini,
-        apiKey: 'test-gemini-api-key'
+        apiKey: 'test-gemini-api-key',
+        embeddingModel: 'gemini-embedding-2'
       }
     }
   };
@@ -192,10 +193,13 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       const tool = new SearchAssetsTool();
       const res = await tool.execute(
         { semanticQuery: 'cyberpunk neon street' },
-        { assetsRepo, geminiApiKey: 'test-key', isEn: false }
+        { assetsRepo, isEn: false }
       );
 
-      expect(mockEmbedContent).toHaveBeenCalled();
+      expect(mockEmbedContent).toHaveBeenCalledWith(expect.objectContaining({
+        model: 'gemini-embedding-2',
+        contents: 'cyberpunk neon street'
+      }));
       expect(assetsRepo.findByVector).toHaveBeenCalled();
       expect(res.attachments?.[0].type).toBe('image');
       expect(res.attachments?.[0].title).toBe('neon_tokyo.png');
@@ -207,7 +211,7 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       const tool = new SearchAssetsTool();
       const res = await tool.execute(
         { semanticQuery: 'cafe terrace' },
-        { assetsRepo, geminiApiKey: 'test-key', isEn: false }
+        { assetsRepo, isEn: false }
       );
 
       expect(assetsRepo.getPaginated).toHaveBeenCalledWith(expect.objectContaining({ search: 'cafe terrace' }));
@@ -379,7 +383,7 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       const tool = new SearchAssetsTool();
       const res = await tool.execute(
         { semanticQuery: 'art', status: AssetStatus.FAILED },
-        { assetsRepo, geminiApiKey: 'key', isEn: false }
+        { assetsRepo, isEn: false }
       );
 
       expect(res.attachments?.length).toBe(1);
