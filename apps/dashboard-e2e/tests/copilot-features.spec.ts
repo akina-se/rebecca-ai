@@ -116,7 +116,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
   test('Test 4: Two-Phase HITL Safety Action Approval Flow (Proposal -> Approval -> Execution)', async ({ page }) => {
     // Intercept copilot backend call to return deterministic HITL action proposal for testing UI rendering & execution
-    await page.route('**/api/v1/copilot', async (route) => {
+    await page.route('**/copilot/chat', async (route) => {
       if (route.request().method() === 'POST') {
         return route.fulfill({
           status: 200,
