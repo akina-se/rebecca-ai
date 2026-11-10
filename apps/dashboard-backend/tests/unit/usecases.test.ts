@@ -660,7 +660,14 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       assetsRepo = {
         getAll: jest.fn().mockResolvedValue([
           { id: 'a1', filename: 'failed.png', caption: '', status: AssetStatus.FAILED, useCount: 0, url: 'http://test' }
-        ])
+        ]),
+        getPaginated: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'a1', filename: 'failed.png', caption: '', status: AssetStatus.FAILED, useCount: 0, url: 'http://test' }
+          ],
+          pagination: { total: 1, page: 1, limit: 10, totalPages: 1 }
+        }),
+        findByVector: jest.fn().mockResolvedValue([])
       } as unknown as jest.Mocked<AssetsRepository>;
 
       memoryRepo = {} as unknown as jest.Mocked<SystemMemoryRepository>;
@@ -724,34 +731,37 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
     });
 
-    it('processChat fallback should generate autonomous actions for assets, dreaming, and KPI when offline', async () => {
+    it('processChat fallback should generate autonomous in-character replies for assets, posts, and general chat when offline', async () => {
       // Simulate offline / no AI configuration
       (copilotUseCase as any).ai = null;
 
-      // Failed Captions fallback
+      // Assets fallback with attachments
       const assetRes = await copilotUseCase.processChat({
-        message: 'キャプションの再生成をお願い',
+        message: '画像アセットを見せて',
         currentContext: 'Assets Library',
         language: 'ja'
       });
-      expect(assetRes.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
+      expect(assetRes.reply).toContain('マスター、最新の画像アセットを確認してきたわよ♡');
+      expect(assetRes.attachments).toBeDefined();
+      expect(assetRes.actionRequired).toBeNull();
 
-      // Dreaming fallback
-      const dreamRes = await copilotUseCase.processChat({
-        message: 'ドリーミングを実行してペルソナを最適化して',
-        currentContext: 'System Memory',
+      // Posts fallback
+      const postRes = await copilotUseCase.processChat({
+        message: 'インプレッション上位の投稿を教えて',
+        currentContext: 'Timeline',
         language: 'ja'
       });
-      expect(dreamRes.actionRequired?.type).toBe('FORCE_DREAMING');
+      expect(postRes.reply).toContain('マスター、インプレッションが特に伸びてる投稿をピックアップしたわよ♡');
+      expect(postRes.actionRequired).toBeNull();
 
-      // KPI telemetry query fallback
-      const kpiRes = await copilotUseCase.processChat({
-        message: '今月のKPI分析を教えて',
+      // General greeting fallback
+      const greetingRes = await copilotUseCase.processChat({
+        message: 'こんにちは！',
         currentContext: 'Dashboard Overview',
         language: 'ja'
       });
-      expect(kpiRes.reply).toContain('パフォーマンスログを分析しました');
-      expect(kpiRes.actionRequired).toBeNull();
+      expect(greetingRes.reply).toContain('マスター、お疲れ様〜！');
+      expect(greetingRes.actionRequired).toBeNull();
     });
   });
 });

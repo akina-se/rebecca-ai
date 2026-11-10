@@ -6,6 +6,7 @@ import { TimelineRepository } from '../timeline/repository';
 import { UsersRepository } from '../users/repository';
 import { AssetsRepository } from '../assets/repository';
 import { SystemMemoryRepository } from '../system-memory/repository';
+import { SupportersRepository } from '../supporters/repository';
 
 /**
  * Initializes the Copilot feature module, setting up dependencies and routes.
@@ -20,15 +21,17 @@ export function initializeCopilotModule(firestore?: Firestore): Router {
   let usersRepo: UsersRepository | undefined;
   let assetsRepo: AssetsRepository | undefined;
   let memoryRepo: SystemMemoryRepository | undefined;
+  let supportersRepo: SupportersRepository | undefined;
 
   if (firestore) {
     timelineRepo = new TimelineRepository(firestore);
     usersRepo = new UsersRepository(firestore);
     assetsRepo = new AssetsRepository(firestore);
     memoryRepo = new SystemMemoryRepository(firestore);
+    supportersRepo = new SupportersRepository(firestore);
   }
 
-  const useCase = new CopilotUseCase(timelineRepo, usersRepo, assetsRepo, memoryRepo);
+  const useCase = new CopilotUseCase(timelineRepo, usersRepo, assetsRepo, memoryRepo, supportersRepo);
   const controller = new CopilotController(useCase);
 
   router.post('/chat', controller.chat.bind(controller));
