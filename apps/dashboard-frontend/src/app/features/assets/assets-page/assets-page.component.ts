@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
@@ -26,7 +26,7 @@ import { Asset, AssetStatus, PaginatedResponse } from '@rebecca/types';
   templateUrl: './assets-page.component.html',
   styleUrl: './assets-page.component.css'
 })
-export class AssetsPageComponent implements OnInit, OnDestroy {
+export class AssetsPageComponent implements OnInit {
   readonly isDrawerOpen = signal<boolean>(false);
   readonly selectedAssetId = signal<string | null>(null);
   readonly drawerTitle = signal<string>('');
@@ -48,9 +48,9 @@ export class AssetsPageComponent implements OnInit, OnDestroy {
 
   isDeletingBulk = false;
   isRetryingBulk = false;
-  isUploading = false;
+  readonly isUploading = signal<boolean>(false);
+  readonly isProcessing = signal<boolean>(false);
   readonly uploadProgress = signal<number>(0);
-  private analysisTimer: ReturnType<typeof setInterval> | null = null;
   readonly isLoading = signal<boolean>(false);
 
   toastService = inject(ToastService);
@@ -60,12 +60,6 @@ export class AssetsPageComponent implements OnInit, OnDestroy {
     this.loadAssets(1);
   }
 
-  ngOnDestroy() {
-    if (this.analysisTimer) {
-      clearInterval(this.analysisTimer);
-      this.analysisTimer = null;
-    }
-  }
 
   loadAssets(page = 1) {
     this.isLoading.set(true);
@@ -160,45 +154,33 @@ export class AssetsPageComponent implements OnInit, OnDestroy {
     if (!target.files || target.files.length === 0) return;
 
     const files: File[] = Array.from(target.files);
-    this.isUploading = true;
-    this.uploadProgress.set(5);
-
-    if (this.analysisTimer) {
-      clearInterval(this.analysisTimer);
-      this.analysisTimer = null;
-    }
+    this.isUploading.set(true);
+    this.isProcessing.set(false);
+    this.uploadProgress.set(0);
 
     this.assetsRepo.upload(files, (progress: number) => {
-      const mapped = Math.min(75, Math.max(5, Math.round(progress * 0.75)));
-      this.uploadProgress.set(mapped);
+      // First half: real HTTP upload progress (0-100%)
+      const clamped = Math.max(0, Math.min(100, Math.round(progress)));
+      this.uploadProgress.set(clamped);
 
-      if (progress >= 100 && !this.analysisTimer) {
-        this.analysisTimer = setInterval(() => {
-          if (this.uploadProgress() < 94) {
-            this.uploadProgress.update(v => v + 1);
-          }
-        }, 250);
+      // Second half: once HTTP upload completes (100%), switch to spinning while server processes/analyzes
+      if (clamped >= 100) {
+        this.isProcessing.set(true);
       }
     }).subscribe({
       next: () => {
-        if (this.analysisTimer) {
-          clearInterval(this.analysisTimer);
-          this.analysisTimer = null;
-        }
+        this.isProcessing.set(false);
         this.uploadProgress.set(100);
         this.toastService.show(`Successfully uploaded asset(s)`, 'success');
-        this.isUploading = false;
+        this.isUploading.set(false);
         this.uploadProgress.set(0);
         fileInput.value = '';
         this.loadAssets(1);
       },
       error: () => {
-        if (this.analysisTimer) {
-          clearInterval(this.analysisTimer);
-          this.analysisTimer = null;
-        }
+        this.isProcessing.set(false);
         this.toastService.show('Failed to upload assets', 'error');
-        this.isUploading = false;
+        this.isUploading.set(false);
         this.uploadProgress.set(0);
         fileInput.value = '';
       }
