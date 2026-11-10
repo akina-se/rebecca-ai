@@ -286,6 +286,70 @@ ${languageInstruction}
     const lower = userMessage.toLowerCase();
     const attachments: CopilotAttachment[] = [];
 
+    if (lower.includes('ブロック') || lower.includes('block') || lower.includes('スパム') || lower.includes('spam')) {
+      const handleMatch = userMessage.match(/@(\w+)/);
+      const targetId = handleMatch ? handleMatch[1] : 'toxic_user';
+      const toolRes = await this.toolRegistry.execute(
+        'propose_destructive_action',
+        { actionType: 'BLOCK_USER', targetId, reason: 'Spam/toxic user violation' },
+        toolContext
+      );
+      return {
+        reply: isEn
+          ? `Master, I prepared the safety confirmation card to block @${targetId}. Please review and approve.`
+          : `マスター、@${targetId} をブロックするための安全確認カードを用意したわよ♡ 確認して承認してね！`,
+        actionRequired: toolRes.actionRequired,
+        suggestionChips: isEn ? ['Block user', 'Check profile'] : ['ユーザーをブロック', 'プロフィール確認']
+      };
+    }
+
+    if (lower.includes('削除') || lower.includes('delete') || lower.includes('消して') || lower.includes('remove')) {
+      const postMatch = userMessage.match(/(?:#|post_?|p)(\w+)/i);
+      const targetId = postMatch ? postMatch[1] : 'p1';
+      const toolRes = await this.toolRegistry.execute(
+        'propose_destructive_action',
+        { actionType: 'DELETE_POST', targetId, reason: 'Post deletion request' },
+        toolContext
+      );
+      return {
+        reply: isEn
+          ? `Master, I prepared the safety confirmation card to delete post #${targetId}. Please review and approve.`
+          : `マスター、投稿 #${targetId} を削除するための安全確認カードを用意したわよ♡ 確認して承認してね！`,
+        actionRequired: toolRes.actionRequired,
+        suggestionChips: isEn ? ['Delete post', 'Cancel'] : ['投稿を削除', 'キャンセル']
+      };
+    }
+
+    if (lower.includes('ドリーミング') || lower.includes('dreaming')) {
+      const toolRes = await this.toolRegistry.execute(
+        'propose_destructive_action',
+        { actionType: 'FORCE_DREAMING', reason: 'Manual dreaming trigger' },
+        toolContext
+      );
+      return {
+        reply: isEn
+          ? 'Master, I prepared the card to trigger the Dreaming memory consolidation process. Please review and approve.'
+          : 'マスター、長期記憶の統合（ドリーミング）を開始するカードを用意したわよ♡ 承認してくれれば始めるね！',
+        actionRequired: toolRes.actionRequired,
+        suggestionChips: isEn ? ['Trigger Dreaming', 'Cancel'] : ['ドリーミング実行', 'キャンセル']
+      };
+    }
+
+    if (lower.includes('キャプション') || lower.includes('caption') || lower.includes('再生成') || lower.includes('retry')) {
+      const toolRes = await this.toolRegistry.execute(
+        'propose_destructive_action',
+        { actionType: 'REGENERATE_CAPTIONS', reason: 'Bulk caption regeneration' },
+        toolContext
+      );
+      return {
+        reply: isEn
+          ? 'Master, I prepared the card to bulk regenerate image captions with Gemini. Please review and approve.'
+          : 'マスター、失敗した画像キャプションを一括再生成するカードを用意したわよ♡ 承認してくれれば始めるね！',
+        actionRequired: toolRes.actionRequired,
+        suggestionChips: isEn ? ['Regenerate', 'Cancel'] : ['一括再生成', 'キャンセル']
+      };
+    }
+
     if (lower.includes('asset') || lower.includes('画像') || lower.includes('アセット')) {
       const toolRes = await this.toolRegistry.execute('search_assets', { limit: 3 }, toolContext);
       if (toolRes.attachments) attachments.push(...toolRes.attachments);
@@ -309,6 +373,54 @@ ${languageInstruction}
         attachments,
         actionRequired: null,
         suggestionChips: isEn ? ['Check users', 'View assets'] : ['アクティブユーザーを見る', 'アセット確認']
+      };
+    }
+
+    if (lower.includes('user') || lower.includes('ユーザー')) {
+      const toolRes = await this.toolRegistry.execute('search_users', { limit: 3 }, toolContext);
+      if (toolRes.attachments) attachments.push(...toolRes.attachments);
+      return {
+        reply: isEn
+          ? 'Here are the latest active users, Master!♡'
+          : 'マスター、最近のアクティブユーザーを確認してきたわよ♡',
+        attachments,
+        actionRequired: null,
+        suggestionChips: isEn ? ['View supporters', 'Inspect posts'] : ['サポーターを見る', '投稿確認']
+      };
+    }
+
+    if (lower.includes('supporter') || lower.includes('サポーター')) {
+      const toolRes = await this.toolRegistry.execute('search_supporters', { limit: 3 }, toolContext);
+      if (toolRes.attachments) attachments.push(...toolRes.attachments);
+      return {
+        reply: isEn
+          ? 'Here are our top supporters, Master!♡'
+          : 'マスター、いつも応援してくれてるサポーターの皆さんよ♡',
+        attachments,
+        actionRequired: null,
+        suggestionChips: isEn ? ['View users', 'Inspect assets'] : ['ユーザー一覧', 'アセット確認']
+      };
+    }
+
+    if (lower.includes('kpi') || lower.includes('指標') || lower.includes('follower') || lower.includes('フォロワー')) {
+      await this.toolRegistry.execute('get_kpi_summary', {}, toolContext);
+      return {
+        reply: isEn
+          ? 'Here is the latest KPI summary for our community, Master!♡'
+          : 'マスター、最新のコミュニティKPIサマリーをまとめておいたわよ♡',
+        actionRequired: null,
+        suggestionChips: isEn ? ['Top posts', 'Active users'] : ['人気投稿', 'アクティブユーザー']
+      };
+    }
+
+    if (lower.includes('使い方') || lower.includes('guide') || lower.includes('help') || lower.includes('ヘルプ')) {
+      await this.toolRegistry.execute('get_feature_guide', { feature: 'copilot' }, toolContext);
+      return {
+        reply: isEn
+          ? 'Here is the guide for our features, Master!♡'
+          : 'マスター、ダッシュボードの機能ガイドよ♡ 何でも聞いてね！',
+        actionRequired: null,
+        suggestionChips: isEn ? ['Dashboard Guide', 'Assets Guide'] : ['ダッシュボードガイド', 'アセットガイド']
       };
     }
 
