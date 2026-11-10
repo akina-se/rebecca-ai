@@ -1,4 +1,4 @@
-import { CopilotUseCase } from '../../src/features/copilot/usecase';
+import { CopilotUseCase, extractStructuredCopilotResponse } from '../../src/features/copilot/usecase';
 import { CopilotToolRegistry } from '../../src/features/copilot/toolRegistry';
 import { SearchTimelinePostsTool } from '../../src/features/copilot/tools/postsTool';
 import { SearchUsersTool } from '../../src/features/copilot/tools/usersTool';
@@ -551,6 +551,182 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
 
       expect(res.reply).toContain('レベッカAIの接続キーが設定されていません');
       expect(res.actionRequired).toBeNull();
+    });
+  });
+
+  describe('extractStructuredCopilotResponse Robust Parsing & Dynamic Context Fallbacks', () => {
+    it('should parse raw JSON properly', () => {
+      const res = extractStructuredCopilotResponse(
+        '{"reply": "Hello Master♡", "suggestionChips": ["A", "B"]}',
+        'Dashboard',
+        true
+      );
+      expect(res.reply).toBe('Hello Master♡');
+      expect(res.suggestionChips).toEqual(['A', 'B']);
+    });
+
+    it('should unwrap markdown-fenced json (```json ... ```)', () => {
+      const raw = '```json\n{\n  "reply": "こんにちはマスター♡",\n  "suggestionChips": ["人気投稿", "アセット"]\n}\n```';
+      const res = extractStructuredCopilotResponse(raw, 'Dashboard', false);
+      expect(res.reply).toBe('こんにちはマスター♡');
+      expect(res.suggestionChips).toEqual(['人気投稿', 'アセット']);
+    });
+
+    it('should unwrap markdown fences without language identifier (``` ... ```)', () => {
+      const raw = '```\n{\n  "reply": "Analyzed successfully",\n  "suggestionChips": ["Next"]\n}\n```';
+      const res = extractStructuredCopilotResponse(raw, 'Dashboard', true);
+      expect(res.reply).toBe('Analyzed successfully');
+      expect(res.suggestionChips).toEqual(['Next']);
+    });
+
+    it('should extract JSON embedded inside conversational text', () => {
+      const raw = 'Here is what you asked for:\n{"reply": "KPI is growing!", "suggestionChips": ["Export"]}\nHope that helps!';
+      const res = extractStructuredCopilotResponse(raw, 'Dashboard', true);
+      expect(res.reply).toBe('KPI is growing!');
+      expect(res.suggestionChips).toEqual(['Export']);
+    });
+
+    it('should strip markdown fences and apply contextual fallbacks when JSON is malformed', () => {
+      const raw = '```json\nThis is not valid JSON at all\n```';
+      const res = extractStructuredCopilotResponse(raw, 'Dashboard', false);
+      expect(res.reply).toBe('This is not valid JSON at all');
+      expect(res.suggestionChips.length).toBeGreaterThan(0);
+    });
+
+    it('should generate context-specific suggestion chips for different page views in JA and EN', () => {
+      const contexts = ['supporters', 'assets', 'users', 'campaigns', 'memory', 'overview'];
+      for (const ctx of contexts) {
+        const resEn = extractStructuredCopilotResponse('Raw text without chips', ctx, true);
+        const resJa = extractStructuredCopilotResponse('チップなしテキスト', ctx, false);
+        expect(resEn.suggestionChips.length).toBe(3);
+        expect(resJa.suggestionChips.length).toBe(3);
+      }
+    });
+
+    it('should forward actionRequired if present in structured JSON', () => {
+      const raw = JSON.stringify({
+        reply: 'Proposing action',
+        actionRequired: {
+          type: 'BLOCK_USER',
+          title: 'Block User',
+          description: 'Desc',
+          impactLevel: 'danger',
+          requiresConfirmation: true,
+          payload: { userId: '123' }
+        },
+        suggestionChips: ['Confirm']
+      });
+      const res = extractStructuredCopilotResponse(raw, 'Users', true);
+      expect(res.actionRequired?.type).toBe('BLOCK_USER');
+    });
+  });
+
+  describe('ProposeDestructiveActionTool Target Existence & Disambiguation', () => {
+    it('should return error when target user does not exist in usersRepo', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockUsersRepo = {
+        getById: jest.fn().mockResolvedValue(null),
+        getAll: jest.fn().mockResolvedValue({ data: [] })
+      } as unknown as UsersRepository;
+
+      const jaRes = await tool.execute(
+        { actionType: 'BLOCK_USER', targetId: '@ghost_user' },
+        { usersRepo: mockUsersRepo, isEn: false }
+      );
+      expect((jaRes.data as any).error).toContain('データベースに見つかりませんでした');
+      expect(jaRes.actionRequired).toBeUndefined();
+
+      const enRes = await tool.execute(
+        { actionType: 'UNBLOCK_USER', targetId: 'ghost_user' },
+        { usersRepo: mockUsersRepo, isEn: true }
+      );
+      expect((enRes.data as any).error).toContain('was not found in the database');
+      expect(enRes.actionRequired).toBeUndefined();
+    });
+
+    it('should resolve user handle and display name when searched via getAll', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockUsersRepo = {
+        getById: jest.fn().mockResolvedValue(null),
+        getAll: jest.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'doc_123',
+              username: 'se_akina',
+              name: 'AKINA',
+              status: UserStatus.ACTIVE,
+              interactions: 50
+            }
+          ]
+        })
+      } as unknown as UsersRepository;
+
+      const res = await tool.execute(
+        { actionType: 'BLOCK_USER', targetId: 'AKINA' },
+        { usersRepo: mockUsersRepo, isEn: false }
+      );
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.payload['userId']).toBe('doc_123');
+      expect(res.actionRequired?.payload['handle']).toBe('@se_akina');
+      expect(res.actionRequired?.title).toContain('AKINA (@se_akina)');
+    });
+
+    it('should resolve user directly when getById returns matching user with name', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockUsersRepo = {
+        getById: jest.fn().mockResolvedValue({
+          id: 'user_999',
+          username: 'vip_user',
+          name: 'VIP Member',
+          status: UserStatus.ACTIVE
+        })
+      } as unknown as UsersRepository;
+
+      const res = await tool.execute(
+        { actionType: 'UNBLOCK_USER', targetId: '@vip_user' },
+        { usersRepo: mockUsersRepo, isEn: false }
+      );
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.payload['userId']).toBe('user_999');
+      expect(res.actionRequired?.payload['handle']).toBe('@vip_user');
+    });
+
+    it('should return error when DELETE_POST target is empty or not found in timelineRepo', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const emptyRes = await tool.execute({ actionType: 'DELETE_POST', targetId: '' }, { isEn: false });
+      expect((emptyRes.data as any).error).toContain('投稿の削除には対象の投稿ID');
+
+      const mockTimelineRepo = {
+        getPostById: jest.fn().mockResolvedValue(null)
+      } as unknown as TimelineRepository;
+
+      const notFoundRes = await tool.execute(
+        { actionType: 'DELETE_POST', targetId: 'missing_post_123' },
+        { timelineRepo: mockTimelineRepo, isEn: false }
+      );
+      expect((notFoundRes.data as any).error).toContain('データベースに見つかりませんでした');
+      expect(notFoundRes.actionRequired).toBeUndefined();
+
+      const notFoundEn = await tool.execute(
+        { actionType: 'DELETE_POST', targetId: 'missing_post_123' },
+        { timelineRepo: mockTimelineRepo, isEn: true }
+      );
+      expect((notFoundEn.data as any).error).toContain('was not found in the database');
+    });
+
+    it('should create DELETE_POST action card when post exists in timelineRepo', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockTimelineRepo = {
+        getPostById: jest.fn().mockResolvedValue({ id: 'post_valid_100', snippet: 'Post content' })
+      } as unknown as TimelineRepository;
+
+      const res = await tool.execute(
+        { actionType: 'DELETE_POST', targetId: 'post_valid_100' },
+        { timelineRepo: mockTimelineRepo, isEn: false }
+      );
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.type).toBe('DELETE_POST');
+      expect(res.actionRequired?.payload['postId']).toBe('post_valid_100');
     });
   });
 });

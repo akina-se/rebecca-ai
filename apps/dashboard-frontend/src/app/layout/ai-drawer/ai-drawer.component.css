@@ -128,6 +128,81 @@
   word-break: break-word;
 }
 
+/* Copilot Markdown formatting */
+.copilot-markdown-content {
+  line-height: 1.6;
+}
+
+.copilot-markdown-content .copilot-p {
+  margin: 0 0 0.55rem 0;
+}
+
+.copilot-markdown-content .copilot-p:last-child {
+  margin-bottom: 0;
+}
+
+.copilot-markdown-content strong {
+  color: #f3e8ff;
+  font-weight: 700;
+}
+
+.copilot-markdown-content em {
+  font-style: italic;
+  color: #e9d5ff;
+}
+
+.copilot-markdown-content .copilot-ul,
+.copilot-markdown-content .copilot-ol {
+  margin: 0.35rem 0 0.65rem 1.25rem;
+  padding: 0;
+}
+
+.copilot-markdown-content .copilot-li {
+  margin-bottom: 0.3rem;
+  line-height: 1.55;
+  color: var(--text-main);
+}
+
+.copilot-markdown-content .copilot-heading {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0.75rem 0 0.35rem 0;
+}
+
+.copilot-markdown-content .copilot-inline-code {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: monospace;
+  font-size: 0.85em;
+  color: #f472b6;
+}
+
+.copilot-markdown-content .copilot-code-block {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(155, 89, 182, 0.35);
+  border-radius: 8px;
+  padding: 0.75rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+.copilot-markdown-content .copilot-link {
+  color: #c084fc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s;
+}
+
+.copilot-markdown-content .copilot-link:hover {
+  color: #e879f9;
+}
+
 @keyframes breathGlow {
   0%, 100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.3); }
   50% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.7), 0 0 35px rgba(168, 85, 247, 0.3); }

@@ -125,8 +125,13 @@ ${languageInstruction}
 1. **Casual Chat & Greetings**: If Master is greeting you, making small talk, expressing tiredness, or sharing affection, DO NOT call tools. Respond directly in Rebecca's loving, all-affirming Gyaru voice.
 2. **Data & Management Inquiries**: If Master asks about post rankings, impressions, user status, image assets, supporter metrics, or system features, autonomously invoke the appropriate search tools.
 3. **Multi-Turn Reasoning**: You can inspect tool outputs and synthesize detailed analytical insights.
-4. **Safety & Destructive Actions (HITL)**: You MUST NOT propose destructive actions (propose_destructive_action) on casual questions or research. ONLY invoke propose_destructive_action if Master EXPLICITLY ordered an administrative operation (e.g. "delete post #123", "block @user", "run dreaming now").
-5. **Final Output Schema**: Your final response must follow the JSON schema containing "reply" and "suggestionChips".
+4. **Safety & Destructive Actions (HITL) & Account Investigation**:
+   - Master might specify a user casually by display name, nickname, or partial text (e.g., "AKINAをブロック", "AKINA復活で").
+   - You MUST NEVER call \`propose_destructive_action\` with an unverified or speculative account name.
+   - If Master asks to block/unblock a user, check [Active View] first. If not already clear, you MUST FIRST autonomously call \`search_users(query='...')\` to find their exact account handle and ID.
+   - Only after confirming the exact account handle/ID from \`search_users\` or [Active View], invoke \`propose_destructive_action\`.
+   - If the account does not exist or search returns 0 results, do NOT propose an action; warmly explain to Master that the account could not be found in the system.
+5. **Final Output Schema**: You must provide your final answer strictly as a valid JSON object matching the schema: {"reply": "<your conversational answer>", "suggestionChips": ["<chip 1>", "<chip 2>", "<chip 3>"]}. Do NOT wrap the JSON in backticks or markdown code fences (e.g. no \`\`\`json). Output raw JSON only.
 `;
 
     const finalResponseSchema: Schema = {
@@ -244,38 +249,124 @@ ${languageInstruction}
 
       // No function calls — final response reached
       const rawText = response.text?.trim() ?? '';
-      let replyText = rawText;
-      let suggestionChips: string[] = isEn
-        ? ['Top posts', 'Recent users', 'View assets']
-        : ['人気投稿を表示', '最近のアクティブユーザー', 'アセット一覧'];
-
-      try {
-        const parsed = JSON.parse(rawText) as {
-          reply?: string;
-          suggestionChips?: string[];
-          actionRequired?: CopilotAction | null;
-        };
-        if (typeof parsed.reply === 'string' && parsed.reply.trim().length > 0) {
-          replyText = parsed.reply.trim();
-        }
-        if (Array.isArray(parsed.suggestionChips) && parsed.suggestionChips.length > 0) {
-          suggestionChips = parsed.suggestionChips.filter(s => typeof s === 'string');
-        }
-        if (parsed.actionRequired && !proposedAction) {
-          proposedAction = parsed.actionRequired;
-        }
-      } catch {
-        // If response wasn't raw JSON, use text as-is
-      }
+      const extracted = extractStructuredCopilotResponse(rawText, currentContext, isEn);
 
       return {
-        reply: replyText,
+        reply: extracted.reply,
         attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
-        actionRequired: proposedAction,
-        suggestionChips
+        actionRequired: proposedAction || extracted.actionRequired || null,
+        suggestionChips: extracted.suggestionChips
       };
     }
 
     throw new Error('ReAct loop exceeded maximum allowable iterations without synthesizing final response');
   }
+}
+
+/**
+ * Safely extracts and parses JSON payload containing reply and suggestion chips from Gemini output.
+ * Strips code fences, isolates outermost JSON objects, and falls back to dynamic context-aware suggestions.
+ */
+export function extractStructuredCopilotResponse(
+  rawText: string,
+  currentContext: string,
+  isEn: boolean
+): {
+  reply: string;
+  suggestionChips: string[];
+  actionRequired?: CopilotAction | null;
+} {
+  const getContextualFallbackChips = (): string[] => {
+    const ctx = (currentContext || '').toLowerCase();
+    if (ctx.includes('supporter')) {
+      return isEn
+        ? ['Supporter overview', 'Check Hall of Fame', 'Reward distribution']
+        : ['サポーターの最新状況を確認', 'Hall of Fameの確認', 'リワード配布状況'];
+    }
+    if (ctx.includes('asset')) {
+      return isEn
+        ? ['Inspect recent assets', 'Check generation status', 'Filter failed uploads']
+        : ['最新の画像アセット一覧', '画像生成ステータス確認', '画像アセットの解析をする'];
+    }
+    if (ctx.includes('user')) {
+      return isEn
+        ? ['Search active users', 'Check interaction history', 'Audit user status']
+        : ['アクティブユーザー検索', '対話ログの確認', 'ユーザーステータス'];
+    }
+    if (ctx.includes('campaign')) {
+      return isEn
+        ? ['Active campaigns', 'Check itinerary slots', 'Event schedule']
+        : ['進行中キャンペーンの確認', 'スロット進捗状況', 'スケジュール確認'];
+    }
+    if (ctx.includes('memory')) {
+      return isEn
+        ? ['Review persona tuning', 'Timeline summary', 'Inspect core prompt']
+        : ['ペルソナ調整状況', 'タイムライン要約確認', 'プロンプト確認'];
+    }
+    // Dashboard / default
+    return isEn
+      ? ['Top performing posts', 'Summarize monthly KPI', 'Chat with Rebecca♡']
+      : ['タイムラインの人気投稿を見る', '今月のKPI推移を要約', 'レベッカとおしゃべり♡'];
+  };
+
+  const cleaned = rawText.trim();
+  let parsedObj: { reply?: string; suggestionChips?: string[]; actionRequired?: CopilotAction | null } | null = null;
+
+  // 1. Check if directly parseable as raw JSON
+  try {
+    parsedObj = JSON.parse(cleaned);
+  } catch {
+    // 2. Try stripping markdown code fences ```json ... ``` or ``` ... ```
+    const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (fenceMatch && fenceMatch[1]) {
+      try {
+        parsedObj = JSON.parse(fenceMatch[1].trim());
+      } catch {
+        // Fall through to bracket search
+      }
+    }
+
+    // 3. Try finding outermost { ... }
+    if (!parsedObj) {
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          parsedObj = JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+        } catch {
+          // Parse failed completely
+        }
+      }
+    }
+  }
+
+  let replyText = cleaned;
+  let suggestionChips: string[] = [];
+  let actionRequired: CopilotAction | null = null;
+
+  if (parsedObj && typeof parsedObj === 'object') {
+    if (typeof parsedObj.reply === 'string' && parsedObj.reply.trim().length > 0) {
+      replyText = parsedObj.reply.trim();
+    }
+    if (Array.isArray(parsedObj.suggestionChips) && parsedObj.suggestionChips.length > 0) {
+      suggestionChips = parsedObj.suggestionChips.filter(s => typeof s === 'string' && s.trim().length > 0);
+    }
+    if (parsedObj.actionRequired) {
+      actionRequired = parsedObj.actionRequired;
+    }
+  } else {
+    // If not JSON, but wrapped in code fences, strip them so raw ```json doesn't leak into chat bubble
+    const strippedFences = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    replyText = strippedFences;
+  }
+
+  if (suggestionChips.length === 0) {
+    suggestionChips = getContextualFallbackChips();
+  }
+
+  return {
+    reply: replyText,
+    suggestionChips,
+    actionRequired
+  };
 }

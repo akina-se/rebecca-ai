@@ -9,6 +9,7 @@ import { TranslationService } from '../../core/services/translation.service';
 import { Router } from '@angular/router';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { AuthUrlPipe } from '../../shared/pipes/auth-url.pipe';
+import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
 import { LightboxComponent } from '../../shared/components/organisms/lightbox/lightbox.component';
 import { CopilotAction } from '@rebecca/types';
 
@@ -19,7 +20,7 @@ import { CopilotAction } from '@rebecca/types';
 @Component({
   selector: 'app-ai-drawer',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, AuthUrlPipe, LightboxComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, AuthUrlPipe, MarkdownPipe, LightboxComponent],
   templateUrl: './ai-drawer.component.html',
   styleUrls: ['./ai-drawer.component.css']
 })
