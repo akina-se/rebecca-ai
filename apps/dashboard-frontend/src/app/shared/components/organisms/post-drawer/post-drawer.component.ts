@@ -38,8 +38,9 @@ export class PostDrawerComponent implements OnChanges {
 
   @Input() postId: string | null = null;
   @Output() openLightbox = new EventEmitter<string>();
+  @Output() postDeleted = new EventEmitter<string>();
 
-  isDeleting = false;
+  readonly isDeleting = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
 
   readonly postData = signal<PostDataModel | null>(null);
@@ -136,15 +137,16 @@ export class PostDrawerComponent implements OnChanges {
     const data = this.postData();
     if (!data) return;
 
-    this.isDeleting = true;
+    this.isDeleting.set(true);
     this.dashboardRepo.deletePosts([data.id]).subscribe({
       next: () => {
         this.toastService.show('Post deleted successfully', 'success');
-        this.isDeleting = false;
+        this.isDeleting.set(false);
+        this.postDeleted.emit(data.id);
       },
       error: () => {
         this.toastService.show('Failed to delete post', 'error');
-        this.isDeleting = false;
+        this.isDeleting.set(false);
       }
     });
   }

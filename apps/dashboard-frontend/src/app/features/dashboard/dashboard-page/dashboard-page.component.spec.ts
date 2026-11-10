@@ -146,16 +146,28 @@ describe('DashboardPageComponent', () => {
     await component.executeBulkDelete();
     expect(dashboardRepoSpy.deletePosts).toHaveBeenCalledWith(['p1']);
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Successfully deleted/), 'success');
+    expect(component.isDeleting()).toBeFalse();
 
     // Error case
     component.selectedRows.add('p1');
     dashboardRepoSpy.deletePosts.and.returnValue(throwError(() => new Error('Delete failed')));
     await component.executeBulkDelete();
     expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to delete posts', 'error');
+    expect(component.isDeleting()).toBeFalse();
 
     // Empty selection
     component.selectedRows.clear();
     await component.executeBulkDelete();
+  });
+
+  it('should handle onPostDeleted by closing drawer and reloading timeline', () => {
+    component.isDrawerOpen.set(true);
+    spyOn(component, 'loadTimeline');
+
+    component.onPostDeleted('p1');
+
+    expect(component.isDrawerOpen()).toBeFalse();
+    expect(component.loadTimeline).toHaveBeenCalledWith(1);
   });
 
   it('should execute bulk archive on selected posts', async () => {

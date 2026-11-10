@@ -93,6 +93,7 @@ describe('PostDrawerComponent', () => {
   });
 
   it('should delete post on onDelete', () => {
+    spyOn(component.postDeleted, 'emit');
     component.postData.set({
       id: 'p123',
       time: '2026-08-15',
@@ -110,6 +111,8 @@ describe('PostDrawerComponent', () => {
 
     expect(dashboardRepoSpy.deletePosts).toHaveBeenCalledWith(['p123']);
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/deleted successfully/), 'success');
+    expect(component.postDeleted.emit).toHaveBeenCalledWith('p123');
+    expect(component.isDeleting()).toBeFalse();
   });
 
   it('should handle delete post error', () => {
@@ -129,6 +132,7 @@ describe('PostDrawerComponent', () => {
     component.onDelete();
 
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to delete/), 'error');
+    expect(component.isDeleting()).toBeFalse();
   });
 
   it('should open lightbox on onMediaClick', () => {
