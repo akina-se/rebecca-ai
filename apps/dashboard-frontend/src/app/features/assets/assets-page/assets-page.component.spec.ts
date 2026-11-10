@@ -87,11 +87,43 @@ describe('AssetsPageComponent', () => {
 
     expect(assetsRepoSpy.upload).toHaveBeenCalled();
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Successfully uploaded/), 'success');
+    expect(component.isUploading()).toBeFalse();
+    expect(component.isProcessing()).toBeFalse();
+    expect(component.uploadProgress()).toBe(0);
 
     // Error case
     assetsRepoSpy.upload.and.returnValue(throwError(() => new Error('Upload err')));
     component.onFilesSelected(mockEvent, mockInput);
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Failed to upload/), 'error');
+    expect(component.isUploading()).toBeFalse();
+    expect(component.isProcessing()).toBeFalse();
+    expect(component.uploadProgress()).toBe(0);
+  });
+
+  it('should track real HTTP progress in the first half and switch to spinning in the second half', () => {
+    let capturedProgressCallback: ((p: number) => void) | undefined;
+    assetsRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
+    assetsRepoSpy.upload.and.callFake((_files: any, onProgress: any) => {
+      capturedProgressCallback = onProgress;
+      return of({ uploaded: 1 });
+    });
+
+    const mockFile = new File(['content'], 'sample.png', { type: 'image/png' });
+    const mockInput = { value: '', files: [mockFile] } as any;
+    const mockEvent = { target: mockInput } as any;
+
+    component.onFilesSelected(mockEvent, mockInput);
+
+    expect(capturedProgressCallback).toBeDefined();
+    // Simulate first half: HTTP byte transmission progress (e.g. 45%)
+    capturedProgressCallback?.(45);
+    expect(component.uploadProgress()).toBe(45);
+    expect(component.isProcessing()).toBeFalse();
+
+    // Simulate second half: HTTP byte upload finishes (100%), enters server processing phase
+    capturedProgressCallback?.(100);
+    expect(component.uploadProgress()).toBe(100);
+    expect(component.isProcessing()).toBeTrue();
   });
 
   it('should calculate correct stroke-dashoffset based on uploadProgress', () => {

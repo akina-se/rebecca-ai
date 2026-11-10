@@ -471,37 +471,42 @@ export class DashboardPageComponent implements OnInit {
     }
   }
 
-  isDeleting = false;
-  isArchiving = false;
+  readonly isDeleting = signal<boolean>(false);
+  readonly isArchiving = signal<boolean>(false);
   actionHelper = inject(ActionHelperService);
 
   async executeBulkDelete() {
     if (this.selectedRows.size === 0) return;
-    this.isDeleting = true;
+    this.isDeleting.set(true);
     
     const ids = Array.from(this.selectedRows);
     this.dashboardRepo.deletePosts(ids).subscribe({
       next: () => {
         this.toastService.show(`Successfully deleted ${ids.length} posts`, 'success');
-        this.isDeleting = false;
+        this.isDeleting.set(false);
         this.selectedRows.clear();
         this.selectAll = false;
         this.loadTimeline(1); // reload timeline
       },
       error: () => {
         this.toastService.show(`Failed to delete posts`, 'error');
-        this.isDeleting = false;
+        this.isDeleting.set(false);
       }
     });
   }
 
   async executeBulkArchive() {
     if (this.selectedRows.size === 0) return;
-    this.isArchiving = true;
+    this.isArchiving.set(true);
     await this.actionHelper.executeMockAction(`Successfully archived ${this.selectedRows.size} posts`);
-    this.isArchiving = false;
+    this.isArchiving.set(false);
     this.selectedRows.clear();
     this.selectAll = false;
+  }
+
+  onPostDeleted(_postId: string): void {
+    this.isDrawerOpen.set(false);
+    this.loadTimeline(1);
   }
 
   mockAlert(msg: string) {

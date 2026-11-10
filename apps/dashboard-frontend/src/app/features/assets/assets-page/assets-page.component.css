@@ -21,3 +21,22 @@
   stroke-dasharray: 56.55;
   transition: stroke-dashoffset 0.25s ease-out;
 }
+
+.circular-progress-arc.spinning {
+  animation: arc-spin 0.9s linear infinite;
+}
+
+.circular-progress-arc.spinning .arc-fill {
+  stroke-dasharray: 38 56.55;
+  stroke-dashoffset: 0 !important;
+  transition: stroke-dasharray 0.3s ease-out;
+}
+
+@keyframes arc-spin {
+  0% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(270deg);
+  }
+}

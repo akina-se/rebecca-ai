@@ -23,9 +23,13 @@
       <button
         class="btn btn-primary"
         (click)="triggerFileUpload(fileInput)"
-        [disabled]="isUploading">
-        @if (isUploading) {
-          <svg class="circular-progress-arc" viewBox="0 0 24 24" aria-hidden="true">
+        [disabled]="isUploading()">
+        @if (isUploading()) {
+          <svg
+            class="circular-progress-arc"
+            [class.spinning]="isProcessing()"
+            viewBox="0 0 24 24"
+            aria-hidden="true">
             <circle class="arc-track" cx="12" cy="12" r="9" />
             <circle
               class="arc-fill"
@@ -38,7 +42,7 @@
         } @else {
           <span class="material-icons">upload_file</span>
         }
-        {{ isUploading ? ('assets.uploading' | translate) : ('assets.upload' | translate) }}
+        {{ isUploading() ? ('assets.uploading' | translate) : ('assets.upload' | translate) }}
       </button>
     </div>
   </div>

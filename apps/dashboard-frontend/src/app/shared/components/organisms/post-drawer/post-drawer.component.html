@@ -123,19 +123,19 @@
       [disabled]="isLoading() || !postData()" (click)="onViewOnX()">
       <span class="material-icons">open_in_new</span> {{ 'common.view_on_x' | translate }}
     </button>
-    <button class="btn" [disabled]="isDeleting" [style.opacity]="isDeleting ? '0.6' : '1'"
+    <button class="btn" [disabled]="isDeleting()" [style.opacity]="isDeleting() ? '0.6' : '1'"
       style="width: 100%; justify-content: center; background: rgba(255, 71, 87, 0.15); border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
       (click)="onDelete()">
-      @if (!isDeleting) {
+      @if (!isDeleting()) {
       <span class="material-icons">delete</span>
       }
-      @if (!isDeleting) {
+      @if (!isDeleting()) {
       <span>{{ 'post_drawer.delete_post' | translate }}</span>
       }
-      @if (isDeleting) {
+      @if (isDeleting()) {
       <span class="spinner"></span>
       }
-      @if (isDeleting) {
+      @if (isDeleting()) {
       <span>{{ 'common.deleting' | translate }}</span>
       }
     </button>
