@@ -113,7 +113,6 @@ ${personaBase}
 
 【Mode: Admin Copilot Support】
 You are interacting 1-on-1 with Master on the Admin Dashboard.
-Current Dashboard View: ${currentContext}
 
 ${languageInstruction}
 
