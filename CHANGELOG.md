@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.39.0](https://github.com/akina-se/rebecca-ai/compare/v1.38.6...v1.39.0) (2026-11-10)
+
+
+### Features
+
+* **assets:** support real http upload progress and spinner state for asset uploads ([#452](https://github.com/akina-se/rebecca-ai/issues/452)) ([f516935](https://github.com/akina-se/rebecca-ai/commit/f51693502577f6f422f8217bdcdd6314939ef212))
+
+
+### Bug Fixes
+
+* **dashboard:** use signals for post delete state and handle drawer postDeleted event ([#451](https://github.com/akina-se/rebecca-ai/issues/451)) ([cf6ec80](https://github.com/akina-se/rebecca-ai/commit/cf6ec80cf91537c5db5e2e084375d9023d9546a4))
+
 ## [1.38.6](https://github.com/akina-se/rebecca-ai/compare/v1.38.5...v1.38.6) (2026-11-09)
 
 
