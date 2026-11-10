@@ -676,13 +676,30 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(mockGenerateContent).toHaveBeenCalled();
     });
 
-    it('processChat normalizeCopilotResponse should normalize missing actionRequired when keywords match', async () => {
-      // 1. Gemini returned no actionRequired, but message requested BLOCK
+    it('processChat should handle tool calling with propose_destructive_action and final synthesis', async () => {
+      // 1. Tool call turn
+      mockGenerateContent.mockResolvedValueOnce({
+        functionCalls: [
+          {
+            name: 'propose_destructive_action',
+            args: { actionType: 'BLOCK_USER', targetId: '@spammer_user' }
+          }
+        ],
+        candidates: [
+          {
+            content: {
+              role: 'model',
+              parts: [{ functionCall: { name: 'propose_destructive_action', args: { actionType: 'BLOCK_USER', targetId: '@spammer_user' } } }]
+            }
+          }
+        ]
+      });
+
+      // 2. Final response turn
       mockGenerateContent.mockResolvedValueOnce({
         text: JSON.stringify({
-          reply: 'ユーザーをブロックするわね！',
-          actionRequired: null,
-          suggestionChips: []
+          reply: 'ユーザー @spammer_user をブロックする承認カードを用意したわよ！',
+          suggestionChips: ['承認する', 'キャンセル']
         })
       });
 
@@ -691,25 +708,7 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         language: 'ja'
       });
       expect(resBlock.actionRequired?.type).toBe('BLOCK_USER');
-      expect(resBlock.actionRequired?.payload).toEqual({ userId: 'spammer_user', handle: '@spammer_user' });
-
-      // 2. Gemini returned action with warning impactLevel
-      mockGenerateContent.mockResolvedValueOnce({
-        text: JSON.stringify({
-          reply: '投稿を削除します',
-          actionRequired: {
-            type: 'DELETE_POST',
-            impactLevel: 'WARNING'
-          },
-          suggestionChips: []
-        })
-      });
-
-      const resDelete = await copilot.processChat({
-        message: 'この投稿を削除して',
-        language: 'ja'
-      });
-      expect(resDelete.actionRequired?.impactLevel).toBe('warning');
+      expect(resBlock.actionRequired?.payload).toEqual(expect.objectContaining({ userId: 'spammer_user', handle: '@spammer_user' }));
     });
 
     it('processChat should gather telemetry when asking about system memory and dreaming', async () => {
@@ -734,9 +733,9 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         message: 'Can you help?',
         language: 'en'
       });
-      expect(res.reply).toContain('A communication error occurred with the AI service');
+      expect(res.reply).toContain('A temporary communication error occurred with the Rebecca AI thinking engine');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page', 'Check system status']);
+      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page']);
     });
 
     it('processChat should return Japanese communication error when Gemini fails in Japanese', async () => {
@@ -745,101 +744,29 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         message: '手伝って',
         language: 'ja'
       });
-      expect(res.reply).toContain('AIモデル（Gemini）との通信中にエラーが発生しました');
+      expect(res.reply).toContain('レベッカAIの思考エンジンとの通信中に一時的なエラーが発生したみたい');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
+      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み']);
     });
 
-    it('processChat should test autonomous fallback intents in Japanese and English', async () => {
+    it('processChat should test unconfigured notification in Japanese and English', async () => {
       (copilot as any).ai = null;
 
-      // 1. Block user without @ in English
-      const resBlockEn = await copilot.processChat({
-        message: 'Please block spammer_999 from replying',
-        currentContext: 'User List',
-        language: 'en'
-      });
-      expect(resBlockEn.actionRequired?.type).toBe('BLOCK_USER');
-      expect(resBlockEn.actionRequired?.payload).toEqual({ userId: 'spammer_999', handle: '@spammer_999' });
-
-      // 2. Delete post in Japanese and English
-      const resDelJa = await copilot.processChat({
-        message: '投稿 12345 を削除してちょうだい',
-        currentContext: 'Timeline',
-        language: 'ja'
-      });
-      expect(resDelJa.actionRequired?.type).toBe('DELETE_POST');
-
-      // 3. Caption regeneration in Japanese and English
-      const resCapJa = await copilot.processChat({
-        message: '失敗したキャプションの再生成をして',
+      const resAssetJa = await copilot.processChat({
+        message: '画像アセットを見せて',
         currentContext: 'Assets Library',
         language: 'ja'
       });
-      expect(resCapJa.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
+      expect(resAssetJa.reply).toContain('レベッカAIの接続キーが設定されていません。');
+      expect(resAssetJa.actionRequired).toBeNull();
 
-      const resCapEn = await copilot.processChat({
-        message: 'Please regenerate failed captions for image assets',
-        currentContext: 'Assets Library',
-        language: 'en'
-      });
-      expect(resCapEn.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
-
-      // 4. Force dreaming in Japanese and English
-      const resDreamJa = await copilot.processChat({
-        message: 'ドリーミングプロセスを開始して',
-        currentContext: 'System Memory',
-        language: 'ja'
-      });
-      expect(resDreamJa.actionRequired?.type).toBe('FORCE_DREAMING');
-
-      const resDreamEn = await copilot.processChat({
-        message: 'Trigger autonomous dreaming evolution now',
-        currentContext: 'System Memory',
-        language: 'en'
-      });
-      expect(resDreamEn.actionRequired?.type).toBe('FORCE_DREAMING');
-
-      // 5. KPI trend in English
-      const resKpiEn = await copilot.processChat({
-        message: 'What is our follower growth trend and KPI metric?',
-        currentContext: 'Dashboard Overview',
-        language: 'en'
-      });
-      expect(resKpiEn.reply).toContain('Analyzed the latest performance metrics for you');
-    });
-
-    it('processChat should handle general conversation fallback in Japanese and English', async () => {
-      (copilot as any).ai = null;
-
-      // General Japanese conversation fallback
-      const resJa = await copilot.processChat({
-        message: 'こんにちは！調子はどう？',
-        currentContext: 'Overview',
-        language: 'ja'
-      });
-      expect(resJa.reply).toContain('お呼びでしょうか');
-
-      // General English conversation fallback
       const resEn = await copilot.processChat({
-        message: 'Hi there! How are things going?',
-        currentContext: 'Overview',
+        message: 'Show me assets',
+        currentContext: 'Assets Library',
         language: 'en'
       });
-      expect(resEn.reply).toContain('How can I help you');
-    });
-
-    it('processChat should recover gracefully from top-level exception in telemetry gathering', async () => {
-      (copilot as any).ai = null;
-      timelineRepo.getMetrics.mockRejectedValueOnce(new Error('Fatal telemetry error'));
-
-      const res = await copilot.processChat({
-        message: 'Hello Rebecca!',
-        currentContext: 'Overview',
-        language: 'ja'
-      });
-
-      expect(res.reply).toContain('お呼びでしょうか');
+      expect(resEn.reply).toContain('Rebecca AI connection key is not configured.');
+      expect(resEn.actionRequired).toBeNull();
     });
   });
 
@@ -1272,68 +1199,41 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
         updateStatus: jest.fn().mockResolvedValue(undefined)
       } as any;
       const timelineRepo = {
-        getPosts: jest.fn().mockResolvedValue({ data: [{ id: 'post_abc', impressions: 42, snippet: 'Hello' }] }),
+        getPosts: jest.fn().mockResolvedValue({ data: [{ id: 'post_abc', impressions: 42, snippet: 'Hello', time: '2026-11-10T00:00:00Z' }] }),
         getMetrics: jest.fn().mockResolvedValue({ followers: 100 }),
         deletePosts: jest.fn().mockResolvedValue(undefined)
       } as any;
       const assetsRepo = {
-        getAll: jest.fn().mockResolvedValue([{ id: 'a1', status: 'FAILED' }])
+        getAll: jest.fn().mockResolvedValue([{ id: 'a1', status: 'FAILED' }]),
+        getPaginated: jest.fn().mockResolvedValue({ data: [{ id: 'a1', filename: 'failed.png', status: 'FAILED', url: '/img' }] }),
+        findByVector: jest.fn().mockResolvedValue([])
       } as any;
       const memoryRepo = {
         getMemoryLayers: jest.fn().mockResolvedValue([]),
         triggerDreaming: jest.fn().mockResolvedValue(undefined)
       } as any;
 
-      const copilot = new CopilotUseCase(usersRepo, timelineRepo, assetsRepo, memoryRepo);
+      const copilot = new CopilotUseCase(timelineRepo, usersRepo, assetsRepo, memoryRepo);
       (copilot as any).ai = null;
 
-      // 1. ProcessChat with block intent in EN and JA
-      const resEnBlock = await copilot.processChat({
-        message: 'Block user @spammer_123',
-        history: [],
-        currentContext: 'User Profile',
-        language: 'en'
-      });
-      expect(resEnBlock.actionRequired?.type).toBe('BLOCK_USER');
-      expect(resEnBlock.actionRequired?.title).toContain('Block User @spammer_123');
-
-      const resJaBlock = await copilot.processChat({
-        message: 'ユーザー @bad_actor をブロックして',
-        history: [],
-        currentContext: 'User Relations',
-        language: 'ja'
-      });
-      expect(resJaBlock.actionRequired?.type).toBe('BLOCK_USER');
-      expect(resJaBlock.actionRequired?.title).toContain('ブロック');
-
-      // 2. ProcessChat with delete post intent in EN
-      const resEnDelete = await copilot.processChat({
-        message: 'Please delete post #post_abc',
-        history: [],
-        currentContext: 'Timeline Post History',
-        language: 'en'
-      });
-      expect(resEnDelete.actionRequired?.type).toBe('DELETE_POST');
-      expect(resEnDelete.actionRequired?.title).toContain('Post Deletion');
-
-      // 3. ProcessChat with dreaming intent in JA
-      const resJaDream = await copilot.processChat({
-        message: '長期記憶のドリーミングを実行して',
-        history: [],
-        currentContext: 'Memory Management',
-        language: 'ja'
-      });
-      expect(resJaDream.actionRequired?.type).toBe('FORCE_DREAMING');
-      expect(resJaDream.actionRequired?.title).toContain('ドリーミング');
-
-      // 4. ProcessChat with Assets context telemetry gathering
-      const resAssets = await copilot.processChat({
-        message: 'Check failed asset captions',
+      // 1. ProcessChat with asset inquiry in EN and JA
+      const resEnAssets = await copilot.processChat({
+        message: 'Show me latest assets',
         history: [],
         currentContext: 'Assets Library',
         language: 'en'
       });
-      expect(resAssets.reply).toBeDefined();
+      expect(resEnAssets.reply).toContain('Rebecca AI connection key is not configured.');
+      expect(resEnAssets.actionRequired).toBeNull();
+
+      const resJaAssets = await copilot.processChat({
+        message: '画像アセットを見せて',
+        history: [],
+        currentContext: 'Assets',
+        language: 'ja'
+      });
+      expect(resJaAssets.reply).toContain('レベッカAIの接続キーが設定されていません。');
+      expect(resJaAssets.actionRequired).toBeNull();
     });
 
     it('AssetsController.getImage branches with sizes, 404, and error handling', async () => {
@@ -1711,112 +1611,50 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       expect(result2?.contentType).toBe('image/jpeg');
     });
 
-    it('CopilotUseCase detectExplicitUserAction and localizeActionCard branches in JA and EN', async () => {
-      const copilotUseCase = new (await import('../../src/features/copilot/usecase')).CopilotUseCase();
+    it('CopilotUseCase and tools cover bilingual and parameter branches', async () => {
+      const { ProposeDestructiveActionTool } = await import('../../src/features/copilot/tools/actionTool');
+      const { GetFeatureGuideTool } = await import('../../src/features/copilot/tools/featureGuideTool');
+      const { SearchUsersTool } = await import('../../src/features/copilot/tools/usersTool');
+      const { SearchTimelinePostsTool } = await import('../../src/features/copilot/tools/postsTool');
 
-      // detectExplicitUserAction: block in EN (no @handle → default)
-      const blockNoHandle = (copilotUseCase as any).detectExplicitUserAction('please block this user', true);
-      expect(blockNoHandle?.type).toBe('BLOCK_USER');
-      expect(blockNoHandle?.title).toContain('Block User');
+      const actionTool = new ProposeDestructiveActionTool();
+      // UNBLOCK in EN
+      const unblockEn = await actionTool.execute({ actionType: 'UNBLOCK_USER', targetId: 'user1' }, { isEn: true });
+      expect(unblockEn.actionRequired?.type).toBe('UNBLOCK_USER');
+      expect(unblockEn.actionRequired?.title).toContain('Unblock User');
 
-      // detectExplicitUserAction: block with @handle in JA
-      const blockWithHandle = (copilotUseCase as any).detectExplicitUserAction('ユーザー @spammer をブロックして', false);
-      expect(blockWithHandle?.type).toBe('BLOCK_USER');
-      expect(blockWithHandle?.title).toContain('spammer');
+      // UNBLOCK in JA
+      const unblockJa = await actionTool.execute({ actionType: 'UNBLOCK_USER', targetId: 'user1' }, { isEn: false });
+      expect(unblockJa.actionRequired?.title).toContain('ブロック解除');
 
-      // detectExplicitUserAction: delete in JA (消して)
-      const deleteJa = (copilotUseCase as any).detectExplicitUserAction('この投稿を消して', false);
-      expect(deleteJa?.type).toBe('DELETE_POST');
-      expect(deleteJa?.title).toBe('投稿の削除確認');
+      // FORCE_DREAMING in EN
+      const dreamEn = await actionTool.execute({ actionType: 'FORCE_DREAMING' }, { isEn: true });
+      expect(dreamEn.actionRequired?.type).toBe('FORCE_DREAMING');
+      expect(dreamEn.actionRequired?.title).toContain('Memory Consolidation');
 
-      // detectExplicitUserAction: dreaming in JA (記憶)
-      const dreamJa = (copilotUseCase as any).detectExplicitUserAction('記憶を整理して', false);
-      expect(dreamJa?.type).toBe('FORCE_DREAMING');
-      expect(dreamJa?.title).toBe('長期記憶の統合（ドリーミング）実行');
+      // REGENERATE_CAPTIONS in JA and EN
+      const regenJa = await actionTool.execute({ actionType: 'REGENERATE_CAPTIONS' }, { isEn: false });
+      expect(regenJa.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
+      const regenEn = await actionTool.execute({ actionType: 'REGENERATE_CAPTIONS' }, { isEn: true });
+      expect(regenEn.actionRequired?.title).toContain('Caption Regeneration');
 
-      // detectExplicitUserAction: no match returns null
-      const noMatch = (copilotUseCase as any).detectExplicitUserAction('こんにちは', false);
-      expect(noMatch).toBeNull();
+      // Invalid action type
+      const invalidAction = await actionTool.execute({ actionType: 'UNKNOWN_ACTION' as any }, { isEn: true });
+      expect((invalidAction.data as any).error).toContain('Invalid action type');
 
-      // localizeActionCard: FORCE_DREAMING in EN
-      const dreamCard = (copilotUseCase as any).localizeActionCard({
-        type: 'FORCE_DREAMING', title: 'Dream', description: 'run', impactLevel: 'warning',
-        requiresConfirmation: true, payload: {}
-      }, true);
-      expect(dreamCard.title).toBe('Trigger Memory Consolidation (Dreaming)');
+      // Feature guide unknown topic fallback
+      const guideTool = new GetFeatureGuideTool();
+      const unknownGuide = await guideTool.execute({ topic: 'invalid_topic' as any }, { isEn: false });
+      expect((unknownGuide.data as any).documentation).toBeDefined();
 
-      // localizeActionCard: BLOCK_USER EN but title has Japanese (containsJa=true, isEn=true → localize)
-      const blockCardLocalized = (copilotUseCase as any).localizeActionCard({
-        type: 'BLOCK_USER', title: 'ユーザーのブロック', description: '...', impactLevel: 'danger',
-        requiresConfirmation: true, payload: { handle: '@spammer' }
-      }, true);
-      expect(blockCardLocalized.title).toBe('Block User @spammer');
+      // Tool unconfigured repo safety
+      const userTool = new SearchUsersTool();
+      const noUserRepo = await userTool.execute({}, { isEn: false });
+      expect((noUserRepo.data as any).error).toContain('not configured');
 
-      // localizeActionCard: BLOCK_USER JA but title is English (containsJa=false, isEn=false → localize to JA)
-      const blockCardJa = (copilotUseCase as any).localizeActionCard({
-        type: 'BLOCK_USER', title: 'Block User', description: '...', impactLevel: 'danger',
-        requiresConfirmation: true, payload: { userId: 'spammer' }
-      }, false);
-      expect(blockCardJa.title).toBe('ユーザー @spammer のブロック');
-
-      // localizeActionCard: DELETE_POST EN title has JA → localize to EN
-      const deleteCardEn = (copilotUseCase as any).localizeActionCard({
-        type: 'DELETE_POST', title: '投稿の削除確認', description: '...', impactLevel: 'danger',
-        requiresConfirmation: true, payload: { postId: 'abc123' }
-      }, true);
-      expect(deleteCardEn.title).toBe('Confirm Deletion of Post #abc123');
-
-      // localizeActionCard: DELETE_POST JA title is English → localize to JA
-      const deleteCardJa = (copilotUseCase as any).localizeActionCard({
-        type: 'DELETE_POST', title: 'Confirm Post Deletion', description: '...', impactLevel: 'danger',
-        requiresConfirmation: true, payload: { id: 'post99' }
-      }, false);
-      expect(deleteCardJa.title).toBe('投稿 #post99 の削除確認');
-
-      // localizeActionCard: impactLevel branch - no impactLevel provided (type includes BLOCK → danger)
-      const cardNullImpact = (copilotUseCase as any).localizeActionCard({
-        type: 'BLOCK_USER', title: 'Block someone', description: 'desc', impactLevel: null,
-        requiresConfirmation: true, payload: {}
-      }, true);
-      expect(cardNullImpact.impactLevel).toBe('danger');
-
-      // localizeActionCard: impactLevel = 'info'
-      const cardInfoImpact = (copilotUseCase as any).localizeActionCard({
-        type: 'NAVIGATE_PAGE', title: 'Go to page', description: 'navigate', impactLevel: 'info',
-        requiresConfirmation: false, payload: {}
-      }, true);
-      expect(cardInfoImpact.impactLevel).toBe('info');
-    });
-
-    it('CopilotUseCase generateAutonomousFallbackResponse covers all branches', async () => {
-      const copilotUseCase = new (await import('../../src/features/copilot/usecase')).CopilotUseCase();
-
-      // caption/asset fallback in EN
-      const captionEn = (copilotUseCase as any).generateAutonomousFallbackResponse('check caption status', 'Assets', '', true);
-      expect(captionEn.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
-      expect(captionEn.reply).toContain('Master');
-
-      // caption/asset fallback in JA
-      const captionJa = (copilotUseCase as any).generateAutonomousFallbackResponse('アセットの状況を確認', 'Assets', '', false);
-      expect(captionJa.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
-
-      // KPI/metric fallback in EN
-      const kpiEn = (copilotUseCase as any).generateAutonomousFallbackResponse('show me kpi metrics', 'Dashboard', '', true);
-      expect(kpiEn.actionRequired).toBeNull();
-      expect(kpiEn.suggestionChips).toContain('Engagement breakdown');
-
-      // KPI/metric fallback in JA
-      const kpiJa = (copilotUseCase as any).generateAutonomousFallbackResponse('フォロワーの推移を見せて', 'Dashboard', '', false);
-      expect(kpiJa.actionRequired).toBeNull();
-
-      // Default greeting fallback in EN
-      const defaultEn = (copilotUseCase as any).generateAutonomousFallbackResponse('hello', 'Dashboard', '', true);
-      expect(defaultEn.reply).toContain('Master');
-      expect(defaultEn.actionRequired).toBeNull();
-
-      // Default greeting fallback in JA
-      const defaultJa = (copilotUseCase as any).generateAutonomousFallbackResponse('こんにちは', 'Dashboard', '', false);
-      expect(defaultJa.reply).toContain('マスター');
+      const postTool = new SearchTimelinePostsTool();
+      const noPostRepo = await postTool.execute({}, { isEn: false });
+      expect((noPostRepo.data as any).error).toContain('not configured');
     });
   });
 });

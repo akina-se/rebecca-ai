@@ -1344,6 +1344,10 @@ components:
         reply:
           type: string
           example: "マスター、最近のアクティブユーザーの傾向を分析したわよ♡"
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CopilotAttachment'
         actionRequired:
           $ref: '#/components/schemas/CopilotAction'
         suggestionChips:
@@ -1351,6 +1355,50 @@ components:
           items:
             type: string
           example: ["失敗アセットを確認", "KPIメトリクスを表示"]
+
+    CopilotAttachment:
+      type: object
+      required:
+        - type
+        - id
+        - title
+      properties:
+        type:
+          type: string
+          enum: [image, post, user]
+          example: "image"
+        id:
+          type: string
+          example: "img_001"
+        title:
+          type: string
+          example: "cyberpunk_neon.png"
+        subtitle:
+          type: string
+          example: "A futuristic cyberpunk cityscape at night."
+        imageUrl:
+          type: string
+          example: "/api/v1/assets/img_001/image"
+        thumbnailUrl:
+          type: string
+          example: "/api/v1/assets/img_001/image?size=thumbnail"
+        statusBadge:
+          type: string
+          example: "SUCCESS"
+        metrics:
+          type: object
+          properties:
+            impressions:
+              type: integer
+            likes:
+              type: integer
+            replies:
+              type: integer
+            interactions:
+              type: integer
+        navigationPath:
+          type: string
+          example: "/assets"
 
     CopilotAction:
       type: object
@@ -1363,7 +1411,7 @@ components:
       properties:
         type:
           type: string
-          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS, NAVIGATE_PAGE]
+          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS]
           example: "BLOCK_USER"
         title:
           type: string

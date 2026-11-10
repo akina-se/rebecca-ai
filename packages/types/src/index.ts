@@ -493,8 +493,27 @@ export type CopilotActionType =
   | 'UNBLOCK_USER'
   | 'DELETE_POST'
   | 'FORCE_DREAMING'
-  | 'REGENERATE_CAPTIONS'
-  | 'NAVIGATE_PAGE';
+  | 'REGENERATE_CAPTIONS';
+
+/**
+ * Represents a rich visual, statistical, or entity attachment for a Copilot message.
+ */
+export interface CopilotAttachment {
+  type: 'image' | 'post' | 'user';
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  statusBadge?: string;
+  metrics?: {
+    impressions?: number;
+    likes?: number;
+    replies?: number;
+    interactions?: number;
+  };
+  navigationPath?: string;
+}
 
 export interface CopilotAction {
   type: CopilotActionType;
@@ -510,6 +529,7 @@ export interface CopilotChatMessage {
   role: 'user' | 'model';
   text: string;
   time?: string;
+  attachments?: CopilotAttachment[];
   actionRequired?: CopilotAction;
   suggestionChips?: string[];
   actionStatus?: 'pending' | 'executed' | 'cancelled';
@@ -524,6 +544,7 @@ export interface CopilotRequest {
 
 export interface CopilotResponse {
   reply: string;
+  attachments?: CopilotAttachment[];
   actionRequired?: CopilotAction | null;
   suggestionChips: string[];
 }

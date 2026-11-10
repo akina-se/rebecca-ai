@@ -378,40 +378,32 @@ describe('CopilotService', () => {
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.any(String), 'error');
   });
 
-  it('should execute NAVIGATE_PAGE action on HITL approval in JA and EN', () => {
-    currentLangSignal.set('ja');
-    service.approveAction(0, {
-      type: 'NAVIGATE_PAGE',
-      title: 'Go to Settings',
-      description: 'Navigate to settings page',
-      impactLevel: 'info',
-      requiresConfirmation: false,
-      payload: { path: '/settings' }
-    });
+  it('should handle model response with attachments', () => {
+    copilotRepoSpy.chat.and.returnValue(of({
+      reply: 'Found assets and users for you!',
+      suggestionChips: ['Show more'],
+      attachments: [
+        {
+          type: 'image',
+          id: 'img_1',
+          title: 'Neon Tokyo',
+          imageUrl: '/assets/img_1.png',
+          thumbnailUrl: '/assets/img_1_thumb.png'
+        },
+        {
+          type: 'post',
+          id: 'post_1',
+          title: 'Rebecca post',
+          navigationPath: '/dashboard'
+        }
+      ]
+    }));
 
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/settings']);
-    expect(toastServiceSpy.show).toHaveBeenCalled();
-
-    currentLangSignal.set('en');
-    service.approveAction(0, {
-      type: 'NAVIGATE_PAGE',
-      title: 'Go to Users',
-      description: 'Navigate to users page',
-      impactLevel: 'info',
-      requiresConfirmation: false,
-      payload: { url: '/users' }
-    });
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/users']);
-
-    service.approveAction(0, {
-      type: 'NAVIGATE_PAGE',
-      title: 'Go to Memory',
-      description: 'Navigate to memory page',
-      impactLevel: 'info',
-      requiresConfirmation: false,
-      payload: { route: '/memory' }
-    });
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/memory']);
+    service.sendMessage('Find assets');
+    const msgs = service.messages();
+    const lastMsg = msgs[msgs.length - 1];
+    expect(lastMsg.attachments?.length).toBe(2);
+    expect(lastMsg.attachments?.[0].type).toBe('image');
   });
 
   it('should cancel proposed action when cancelAction is called in JA and EN', () => {

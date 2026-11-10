@@ -1,4 +1,4 @@
-﻿import { Injectable, inject, signal, effect, untracked } from '@angular/core';
+import { Injectable, inject, signal, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { COPILOT_REPOSITORY } from '../ports/copilot.repository';
 import { USERS_REPOSITORY } from '../ports/users.repository';
@@ -137,9 +137,10 @@ export class CopilotService {
           role: 'model',
           text: res.reply,
           time: new Date().toISOString(),
-          actionRequired: res.actionRequired || undefined,
-          suggestionChips: res.suggestionChips || [],
-          actionStatus: res.actionRequired ? 'pending' : undefined
+          actionRequired: res.actionRequired ?? undefined,
+          suggestionChips: res.suggestionChips ?? [],
+          actionStatus: res.actionRequired ? 'pending' : undefined,
+          attachments: res.attachments ?? []
         };
 
         this.messages.update(prev => [...prev, modelMsg]);
@@ -263,12 +264,6 @@ export class CopilotService {
         break;
       }
 
-      case 'NAVIGATE_PAGE': {
-        const path = String(payload['path'] || payload['url'] || payload['route'] || '/dashboard');
-        this.router.navigate([path]);
-        this.toastService.show(isEn ? `Navigated to ${path}` : `${path} へ移動しました`, 'info');
-        break;
-      }
 
       default:
         console.warn('Unknown action type:', action.type);

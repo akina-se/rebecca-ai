@@ -660,7 +660,14 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       assetsRepo = {
         getAll: jest.fn().mockResolvedValue([
           { id: 'a1', filename: 'failed.png', caption: '', status: AssetStatus.FAILED, useCount: 0, url: 'http://test' }
-        ])
+        ]),
+        getPaginated: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'a1', filename: 'failed.png', caption: '', status: AssetStatus.FAILED, useCount: 0, url: 'http://test' }
+          ],
+          pagination: { total: 1, page: 1, limit: 10, totalPages: 1 }
+        }),
+        findByVector: jest.fn().mockResolvedValue([])
       } as unknown as jest.Mocked<AssetsRepository>;
 
       memoryRepo = {} as unknown as jest.Mocked<SystemMemoryRepository>;
@@ -705,9 +712,9 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         language: 'en'
       });
 
-      expect(res.reply).toContain('A communication error occurred with the AI service');
+      expect(res.reply).toContain('A temporary communication error occurred with the Rebecca AI thinking engine');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page', 'Check system status']);
+      expect(res.suggestionChips).toEqual(['Retry', 'Refresh page']);
     });
 
     it('processChat should return Japanese communication error when Gemini API fails in ja mode', async () => {
@@ -719,39 +726,22 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
         language: 'ja'
       });
 
-      expect(res.reply).toContain('AIモデル（Gemini）との通信中にエラーが発生しました');
+      expect(res.reply).toContain('レベッカAIの思考エンジンとの通信中に一時的なエラーが発生したみたい');
       expect(res.actionRequired).toBeNull();
-      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み', 'システム状況を確認']);
+      expect(res.suggestionChips).toEqual(['もう一度試す', 'ページを再読み込み']);
     });
 
-    it('processChat fallback should generate autonomous actions for assets, dreaming, and KPI when offline', async () => {
+    it('processChat should return honest unconfigured notification when Gemini is not configured', async () => {
       // Simulate offline / no AI configuration
       (copilotUseCase as any).ai = null;
 
-      // Failed Captions fallback
-      const assetRes = await copilotUseCase.processChat({
-        message: 'キャプションの再生成をお願い',
+      const res = await copilotUseCase.processChat({
+        message: '画像アセットを見せて',
         currentContext: 'Assets Library',
         language: 'ja'
       });
-      expect(assetRes.actionRequired?.type).toBe('REGENERATE_CAPTIONS');
-
-      // Dreaming fallback
-      const dreamRes = await copilotUseCase.processChat({
-        message: 'ドリーミングを実行してペルソナを最適化して',
-        currentContext: 'System Memory',
-        language: 'ja'
-      });
-      expect(dreamRes.actionRequired?.type).toBe('FORCE_DREAMING');
-
-      // KPI telemetry query fallback
-      const kpiRes = await copilotUseCase.processChat({
-        message: '今月のKPI分析を教えて',
-        currentContext: 'Dashboard Overview',
-        language: 'ja'
-      });
-      expect(kpiRes.reply).toContain('パフォーマンスログを分析しました');
-      expect(kpiRes.actionRequired).toBeNull();
+      expect(res.reply).toContain('レベッカAIの接続キーが設定されていません');
+      expect(res.actionRequired).toBeNull();
     });
   });
 });

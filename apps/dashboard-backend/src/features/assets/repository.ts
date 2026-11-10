@@ -225,6 +225,36 @@ export class AssetsRepository {
   }
 
   /**
+   * Searches assets by semantic vector embedding using Firestore Vector Search (findNearest).
+   * Falls back gracefully to empty array if the emulator or environment does not support vector indexing.
+   * 
+   * @param queryVector - 768-dimensional text embedding vector.
+   * @param limit - Maximum candidates to return (default: 5, capped at 20).
+   * @returns Array of matching Assets ordered by semantic cosine similarity.
+   */
+  async findByVector(queryVector: number[], limit = 5): Promise<Asset[]> {
+    try {
+      const col = this.firestore.collection(COLLECTIONS.IMAGES);
+      if (typeof (col as unknown as { findNearest?: unknown }).findNearest !== 'function') {
+        return [];
+      }
+      const snapshot = await col
+        .findNearest({
+          vectorField: 'embedding',
+          queryVector: FieldValue.vector(queryVector),
+          limit: Math.max(1, Math.min(limit, 20)),
+          distanceMeasure: 'COSINE',
+        })
+        .get();
+
+      if (snapshot.empty) return [];
+      return snapshot.docs.map(doc => this.mapDocToAsset(doc.id, doc.data() as unknown as Record<string, unknown>));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Deletes multiple assets by their IDs.
    * 
    * @param ids - The array of asset IDs to delete.
