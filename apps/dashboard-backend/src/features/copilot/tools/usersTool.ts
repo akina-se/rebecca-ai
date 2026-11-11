@@ -58,19 +58,37 @@ export class SearchUsersTool implements CopilotTool {
       users = users.filter((u: UserDetail) => u.status === targetStatus);
     }
 
-    const attachments: CopilotAttachment[] = users.map((u: UserDetail) => ({
+    // 1. Filter out orphan records that lack user identifiers (neither username nor name)
+    const validUsers = users.filter((u: UserDetail) => Boolean(u.username || u.name));
+
+    // 2. If a cleanQuery was provided, prioritize exact match over partial hits
+    let candidateUsers = validUsers;
+    if (cleanQuery.length > 0) {
+      const exactMatch = validUsers.find(
+        u => u.username?.toLowerCase() === cleanQuery.toLowerCase() ||
+             u.id?.toLowerCase() === cleanQuery.toLowerCase() ||
+             u.name?.toLowerCase() === cleanQuery.toLowerCase()
+      );
+      if (exactMatch) {
+        candidateUsers = [exactMatch];
+      }
+    }
+
+    const attachments: CopilotAttachment[] = candidateUsers.map((u: UserDetail) => ({
       type: 'user',
       id: u.id,
-      title: u.name && u.name.length > 0 ? `${u.name} (@${u.username})` : `@${u.username}`,
-      subtitle: `@${u.username}`,
+      title: u.name && u.name.length > 0
+        ? (u.username ? `${u.name} (@${u.username})` : u.name)
+        : (u.username ? `@${u.username}` : `User ${u.id}`),
+      subtitle: u.username ? `@${u.username}` : u.id,
       statusBadge: u.status,
       metrics: {
         interactions: u.interactions
       },
-      navigationPath: '/users'
+      navigationPath: `/users?userId=${u.id}`
     }));
 
-    const summary = users.map((u: UserDetail) => ({
+    const summary = candidateUsers.map((u: UserDetail) => ({
       id: u.id,
       username: u.username,
       name: u.name,

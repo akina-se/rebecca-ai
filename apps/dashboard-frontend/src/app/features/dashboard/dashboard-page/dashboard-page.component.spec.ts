@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { DASHBOARD_REPOSITORY } from '../../../core/ports/dashboard.repository';
@@ -47,6 +48,7 @@ describe('DashboardPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardPageComponent, HttpClientTestingModule],
       providers: [
+        provideRouter([]),
         { provide: DASHBOARD_REPOSITORY, useValue: dashboardRepoSpy },
         { provide: ToastService, useValue: toastServiceSpy },
         { provide: ActionHelperService, useValue: actionHelperSpy }

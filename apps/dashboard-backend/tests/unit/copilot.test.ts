@@ -737,5 +737,144 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       expect(res.actionRequired?.type).toBe('DELETE_POST');
       expect(res.actionRequired?.payload['postId']).toBe('post_valid_100');
     });
+
+    it('should filter out orphan users and prioritize exact match in SearchUsersTool', async () => {
+      const tool = new SearchUsersTool();
+      const mockUsersRepo = {
+        getAll: jest.fn().mockResolvedValue({
+          data: [
+            { id: '1934600616791482369', username: 'se_akina', name: 'AKINA', status: UserStatus.BLOCKED, interactions: 10 },
+            { id: 'orphan_1', username: '', name: '', status: UserStatus.BLOCKED, interactions: 0 },
+            { id: 'orphan_2', username: '', name: '', status: UserStatus.BLOCKED, interactions: 0 },
+            { id: 'other_user', username: 'other', name: 'Other User', status: UserStatus.BLOCKED, interactions: 5 }
+          ]
+        })
+      } as unknown as UsersRepository;
+
+      const res = await tool.execute(
+        { query: 'AKINA', status: 'BLOCKED' },
+        { usersRepo: mockUsersRepo, isEn: true }
+      );
+
+      expect(res.attachments).toBeDefined();
+      expect(res.attachments?.length).toBe(1);
+      expect(res.attachments?.[0].id).toBe('1934600616791482369');
+      expect(res.attachments?.[0].title).toBe('AKINA (@se_akina)');
+      expect(res.attachments?.[0].navigationPath).toBe('/users?userId=1934600616791482369');
+    });
+
+    it('should format navigationPath correctly in SearchTimelinePostsTool and SearchAssetsTool', async () => {
+      const postsTool = new SearchTimelinePostsTool();
+      const mockTimelineRepo = {
+        getPosts: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'post_xyz', snippet: 'Top viral post', impressions: 7158, time: '2026-11-11T10:00:00Z', likes: 200, replies: 15 }
+          ]
+        })
+      } as unknown as TimelineRepository;
+
+      const postsRes = await postsTool.execute({}, { timelineRepo: mockTimelineRepo, isEn: true });
+      expect(postsRes.attachments?.[0].navigationPath).toBe('/dashboard?postId=post_xyz');
+
+      const assetsTool = new SearchAssetsTool();
+      const mockAssetsRepo = {
+        getPaginated: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'asset_abc', filename: 'cyberpunk.png', status: AssetStatus.SUCCESS, url: 'https://example.com/asset.png' }
+          ]
+        })
+      } as unknown as AssetsRepository;
+
+      const assetsRes = await assetsTool.execute({ query: 'cyberpunk' }, { assetsRepo: mockAssetsRepo, isEn: true });
+      expect(assetsRes.attachments?.[0].navigationPath).toBe('/assets?assetId=asset_abc');
+    });
+
+    it('should scope attachments to proposed action target in CopilotUseCase', async () => {
+      const mockTimeline = {} as any;
+      const mockUsers = {
+        getAll: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'target_u1', username: 'target_user', name: 'Target User', status: UserStatus.BLOCKED, interactions: 10 },
+            { id: 'other_u2', username: 'other_user', name: 'Other User', status: UserStatus.BLOCKED, interactions: 5 }
+          ]
+        }),
+        getById: jest.fn().mockResolvedValue({ id: 'target_u1', username: 'target_user', name: 'Target User', status: UserStatus.BLOCKED })
+      } as any;
+      const mockAssets = {} as any;
+      const mockMemory = {} as any;
+      const mockSupporters = {} as any;
+
+      const copilot = new CopilotUseCase(mockTimeline, mockUsers, mockAssets, mockMemory, mockSupporters);
+
+      // Turn 1: Gemini calls propose_destructive_action with target target_u1
+      mockGenerateContent
+        .mockResolvedValueOnce({
+          functionCalls: [
+            {
+              name: 'search_users',
+              args: { query: 'target_user' }
+            },
+            {
+              name: 'propose_destructive_action',
+              args: { actionType: 'UNBLOCK_USER', targetId: 'target_u1' }
+            }
+          ],
+          candidates: [{ content: { role: 'model', parts: [{ text: 'Investigating...' }] } }]
+        })
+        .mockResolvedValueOnce({
+          // Phase 2 synthesis
+          text: JSON.stringify({
+            reply: 'Target user unblock prepared♡',
+            suggestionChips: ['Check status', 'Audit']
+          })
+        });
+
+      const res = await copilot.processChat({
+        message: 'target_userのブロック解除して',
+        currentContext: 'Users',
+        language: 'ja'
+      });
+
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.payload['userId']).toBe('target_u1');
+      // Should filter out other_u2 and only keep target_u1
+      expect(res.attachments?.length).toBe(1);
+      expect(res.attachments?.[0].id).toBe('target_u1');
+    });
+
+    it('should scope post attachments to proposed action target in CopilotUseCase', async () => {
+      const mockTimeline = {
+        getPosts: jest.fn().mockResolvedValue({
+          data: [
+            { id: 'p1', snippet: 'Target post', impressions: 100 },
+            { id: 'p2', snippet: 'Other post', impressions: 50 }
+          ]
+        }),
+        getPostById: jest.fn().mockResolvedValue({ id: 'p1', snippet: 'Target post' })
+      } as any;
+      const copilot = new CopilotUseCase(mockTimeline, {} as any, {} as any, {} as any, {} as any);
+
+      mockGenerateContent
+        .mockResolvedValueOnce({
+          functionCalls: [
+            { name: 'search_timeline_posts', args: {} },
+            { name: 'propose_destructive_action', args: { actionType: 'DELETE_POST', targetId: 'p1' } }
+          ],
+          candidates: [{ content: { role: 'model', parts: [{ text: 'Found post' }] } }]
+        })
+        .mockResolvedValueOnce({
+          text: JSON.stringify({ reply: 'Post deletion ready', suggestionChips: ['Confirm'] })
+        });
+
+      const res = await copilot.processChat({
+        message: 'p1を削除して',
+        currentContext: 'Timeline',
+        language: 'ja'
+      });
+
+      expect(res.actionRequired?.payload['postId']).toBe('p1');
+      expect(res.attachments?.length).toBe(1);
+      expect(res.attachments?.[0].id).toBe('p1');
+    });
   });
 });

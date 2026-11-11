@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AssetsPageComponent } from './assets-page.component';
 import { ASSETS_REPOSITORY } from '../../../core/ports/assets.repository';
@@ -24,6 +25,7 @@ describe('AssetsPageComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AssetsPageComponent, HttpClientTestingModule],
       providers: [
+        provideRouter([]),
         { provide: ASSETS_REPOSITORY, useValue: assetsRepoSpy },
         { provide: ToastService, useValue: toastServiceSpy }
       ]

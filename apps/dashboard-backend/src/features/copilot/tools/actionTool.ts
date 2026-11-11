@@ -136,6 +136,7 @@ export class ProposeDestructiveActionTool implements CopilotTool {
 
         payload.userId = resolvedId;
         payload.handle = resolvedHandle;
+        payload.name = resolvedName;
         break;
       }
 

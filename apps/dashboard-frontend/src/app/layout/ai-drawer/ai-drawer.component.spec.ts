@@ -24,7 +24,7 @@ describe('AiDrawerComponent', () => {
   beforeEach(async () => {
     isLoadingSignal = signal(false);
     messagesSignal = signal<any[]>([]);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate'], { url: '/dashboard' });
+    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl'], { url: '/dashboard' });
 
     copilotServiceSpy = jasmine.createSpyObj('CopilotService', [
       'sendMessage',
@@ -141,20 +141,14 @@ describe('AiDrawerComponent', () => {
   });
 
   it('should navigate when onNavigate is called with path', () => {
-    const router = TestBed.inject(Router);
-    spyOn(router, 'navigate');
-
     component.onNavigate('/assets');
-    expect(router.navigate).toHaveBeenCalledWith(['/assets']);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/assets');
 
     component.onNavigate();
-    expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledTimes(1);
   });
 
   it('should render attachments and handle lightbox/navigation clicks', () => {
-    const router = TestBed.inject(Router);
-    spyOn(router, 'navigate');
-
     messagesSignal.set([
       {
         id: 'msg-model-1',
@@ -196,6 +190,6 @@ describe('AiDrawerComponent', () => {
     const navBtns = fixture.nativeElement.querySelectorAll('.attachment-nav-btn');
     expect(navBtns.length).toBe(2);
     navBtns[0].click();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/dashboard');
   });
 });
