@@ -189,6 +189,13 @@ export class CopilotService {
         if (cleanId) {
           this.usersRepo.bulkUpdateStatus([cleanId], UserStatus.BLOCKED).subscribe({
             next: () => {
+              const currentFocus = this.contextService.focusedEntity();
+              if (currentFocus && currentFocus.type === 'user') {
+                this.contextService.setFocusedEntity({
+                  ...currentFocus,
+                  details: { ...(currentFocus.details || {}), status: UserStatus.BLOCKED }
+                });
+              }
               this.toastService.show(isEn ? `Blocked user @${cleanId}` : `ユーザー @${cleanId} を正常にブロックしました`, 'success');
               this.appendSystemAck(isEn ? `Following your approval, I've blocked user @${cleanId}♡` : `マスターの承認に基づき、ユーザー @${cleanId} をブロック（除外）したわよ♡`);
             },
@@ -210,6 +217,13 @@ export class CopilotService {
         if (cleanId) {
           this.usersRepo.bulkUpdateStatus([cleanId], UserStatus.ACTIVE).subscribe({
             next: () => {
+              const currentFocus = this.contextService.focusedEntity();
+              if (currentFocus && currentFocus.type === 'user') {
+                this.contextService.setFocusedEntity({
+                  ...currentFocus,
+                  details: { ...(currentFocus.details || {}), status: UserStatus.ACTIVE }
+                });
+              }
               this.toastService.show(isEn ? `Unblocked user @${cleanId}` : `ユーザー @${cleanId} のブロックを解除しました`, 'success');
               this.appendSystemAck(isEn ? `Unblocked user @${cleanId}.` : `ユーザー @${cleanId} のブロックを解除したわ。`);
             },

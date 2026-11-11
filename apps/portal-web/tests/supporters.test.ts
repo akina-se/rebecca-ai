@@ -24,17 +24,29 @@ describe('Client Script - Supporters Roster & Plans', () => {
       <div id="roster-grid"></div>
       <div id="roster-meta-badge"></div>
       <div id="roster-pagination"></div>
-      <div class="tier-card tier-bronze tier-disabled">
+      <div class="tier-card tier-bronze">
         <div class="tier-price">¥500 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
-        <a id="btn-plan-bronze" class="btn-support btn-bronze btn-disabled disabled" aria-disabled="true">Coming Soon</a>
+        <a id="btn-plan-bronze" class="btn-support btn-bronze btn-loading disabled" aria-disabled="true">
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span class="t-ja">プラン読込中...</span>
+          <span class="t-en">Loading...</span>
+        </a>
       </div>
-      <div class="tier-card tier-silver featured tier-disabled">
+      <div class="tier-card tier-silver featured">
         <div class="tier-price">¥1,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
-        <a id="btn-plan-silver" class="btn-support btn-silver primary btn-disabled disabled" aria-disabled="true">Coming Soon</a>
+        <a id="btn-plan-silver" class="btn-support btn-silver primary btn-loading disabled" aria-disabled="true">
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span class="t-ja">プラン読込中...</span>
+          <span class="t-en">Loading...</span>
+        </a>
       </div>
-      <div class="tier-card tier-gold tier-disabled">
+      <div class="tier-card tier-gold">
         <div class="tier-price">¥3,000 <span><span class="t-ja">/ 一口</span><span class="t-en">/ slot</span></span></div>
-        <a id="btn-plan-gold" class="btn-support btn-gold btn-disabled disabled" aria-disabled="true">Coming Soon</a>
+        <a id="btn-plan-gold" class="btn-support btn-gold btn-loading disabled" aria-disabled="true">
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span class="t-ja">プラン読込中...</span>
+          <span class="t-en">Loading...</span>
+        </a>
       </div>
       <div id="supporter-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
         <div class="modal-card">
@@ -162,7 +174,7 @@ describe('Client Script - Supporters Roster & Plans', () => {
       expect(btnBronze.href).toBe('https://buy.stripe.com/bronze');
     });
 
-    it('should handle API errors gracefully without throwing', async () => {
+    it('should handle API errors gracefully and fallback buttons to Coming Soon', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
@@ -172,6 +184,14 @@ describe('Client Script - Supporters Roster & Plans', () => {
       await loadSupportPlans();
 
       expect(warnSpy).toHaveBeenCalled();
+      const btnBronze = document.getElementById('btn-plan-bronze') as HTMLAnchorElement;
+      const cardBronze = btnBronze.closest('.tier-card');
+      expect(btnBronze.classList.contains('btn-loading')).toBe(false);
+      expect(btnBronze.classList.contains('btn-disabled')).toBe(true);
+      expect(btnBronze.getAttribute('aria-disabled')).toBe('true');
+      expect(cardBronze?.classList.contains('tier-disabled')).toBe(true);
+      expect(btnBronze.innerHTML).toContain('準備中（受付開始までお待ちください）');
+
       warnSpy.mockRestore();
     });
   });

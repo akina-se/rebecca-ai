@@ -1,5 +1,5 @@
 import { FunctionDeclaration, Type } from '@google/genai';
-import { CopilotAction, CopilotActionType } from '@rebecca/types';
+import { CopilotAction, CopilotActionType, UserDetail } from '@rebecca/types';
 import { CopilotTool, CopilotToolContext, CopilotToolExecutionResult } from '../types';
 
 const VALID_ACTIONS = new Set<CopilotActionType>([
@@ -15,7 +15,7 @@ const VALID_ACTIONS = new Set<CopilotActionType>([
  */
 export class ProposeDestructiveActionTool implements CopilotTool {
   readonly name = 'propose_destructive_action';
-  readonly description = 'Proposes a safety-gated administrative operation (BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS) requiring explicit confirmation from Master. ONLY call this when Master explicitly commanded to execute an operation.';
+  readonly description = 'Proposes a safety-gated administrative operation (BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS) requiring explicit confirmation from Master. For BLOCK_USER and UNBLOCK_USER, you MUST FIRST investigate the account using search_users to obtain the exact username/ID before calling this function. If the target account does not exist in the database, this function returns an error.';
 
   readonly declaration: FunctionDeclaration = {
     name: this.name,
@@ -30,7 +30,7 @@ export class ProposeDestructiveActionTool implements CopilotTool {
         },
         targetId: {
           type: Type.STRING,
-          description: 'Target identifier: user handle/ID for BLOCK/UNBLOCK, postId for DELETE_POST, or empty for system actions.'
+          description: 'Target identifier: exact verified user handle/ID for BLOCK/UNBLOCK (must be investigated with search_users first), postId for DELETE_POST, or empty for system actions.'
         },
         reason: {
           type: Type.STRING,
@@ -60,29 +60,116 @@ export class ProposeDestructiveActionTool implements CopilotTool {
 
     switch (actionType) {
       case 'BLOCK_USER':
-        impactLevel = 'danger';
-        title = isEn ? (cleanTarget ? `Block User ${cleanTarget}` : 'Block User') : (cleanTarget ? `ユーザー ${cleanTarget} のブロック` : 'ユーザーのブロック');
-        description = isEn
-          ? `Block ${cleanTarget || 'user'} from interacting with Master or replying.`
-          : `${cleanTarget || '対象ユーザー'} をブロックします。今後マスターへのリプライや接触が遮断されます。`;
-        payload.userId = cleanTarget.replace(/^@/, '');
-        payload.handle = cleanTarget.startsWith('@') ? cleanTarget : `@${cleanTarget}`;
-        break;
+      case 'UNBLOCK_USER': {
+        let resolvedId = cleanTarget.replace(/^@/, '');
+        let resolvedHandle = cleanTarget.startsWith('@') ? cleanTarget : `@${cleanTarget}`;
+        let resolvedName = cleanTarget;
 
-      case 'UNBLOCK_USER':
-        impactLevel = 'warning';
-        title = isEn ? (cleanTarget ? `Unblock User ${cleanTarget}` : 'Unblock User') : (cleanTarget ? `ユーザー ${cleanTarget} のブロック解除` : 'ユーザーのブロック解除');
-        description = isEn ? `Restore interaction permissions for ${cleanTarget}.` : `${cleanTarget} のブロックを解除し、正常な対話権限を復帰させます。`;
-        payload.userId = cleanTarget.replace(/^@/, '');
-        payload.handle = cleanTarget.startsWith('@') ? cleanTarget : `@${cleanTarget}`;
-        break;
+        if (cleanTarget && context.usersRepo) {
+          let directUser: UserDetail | null = null;
+          if (typeof context.usersRepo.getById === 'function') {
+            try {
+              directUser = await context.usersRepo.getById(resolvedId);
+            } catch {
+              directUser = null;
+            }
+          }
 
-      case 'DELETE_POST':
+          if (directUser) {
+            resolvedId = directUser.id;
+            resolvedHandle = directUser.username ? `@${directUser.username}` : `@${directUser.id}`;
+            resolvedName = directUser.name && directUser.name.length > 0 ? directUser.name : resolvedHandle;
+          } else if (typeof context.usersRepo.getAll === 'function') {
+            const searchRes = await context.usersRepo.getAll({ search: resolvedId, limit: 5 });
+            const candidates = searchRes.data ?? [];
+            if (candidates.length === 0) {
+              return {
+                data: {
+                  error: isEn
+                    ? `User "${cleanTarget}" was not found in the database. Please verify the account name with search_users first.`
+                    : `ユーザー「${cleanTarget}」はデータベースに見つかりませんでした。事前にsearch_usersで正しいアカウント名を調査してください。`
+                }
+              };
+            }
+            const exactMatch = candidates.find(
+              c => c.username?.toLowerCase() === resolvedId.toLowerCase() ||
+                   c.id?.toLowerCase() === resolvedId.toLowerCase() ||
+                   c.name?.toLowerCase() === resolvedId.toLowerCase()
+            );
+
+            if (exactMatch) {
+              resolvedId = exactMatch.id;
+              resolvedHandle = exactMatch.username ? `@${exactMatch.username}` : `@${exactMatch.id}`;
+              resolvedName = exactMatch.name && exactMatch.name.length > 0 ? exactMatch.name : resolvedHandle;
+            }
+          }
+        }
+
+        const hasDistinctName = Boolean(
+          resolvedName &&
+          resolvedName !== resolvedHandle &&
+          resolvedName.toLowerCase() !== resolvedId.toLowerCase() &&
+          resolvedName.toLowerCase() !== resolvedHandle.replace(/^@/, '').toLowerCase()
+        );
+
+        const userLabel = hasDistinctName
+          ? `${resolvedName} (${resolvedHandle})`
+          : cleanTarget;
+
+        if (actionType === 'BLOCK_USER') {
+          impactLevel = 'danger';
+          title = isEn
+            ? (userLabel ? `Block User ${userLabel}` : 'Block User')
+            : (userLabel ? `ユーザー ${userLabel} のブロック` : 'ユーザーのブロック');
+          description = isEn
+            ? (userLabel ? `Block ${userLabel} from interacting with Master or replying.` : 'Block user from interacting with Master or replying.')
+            : (userLabel ? `${userLabel} をブロックします。今後マスターへのリプライや接触が遮断されます。` : '対象ユーザーをブロックします。今後マスターへのリプライや接触が遮断されます。');
+        } else {
+          impactLevel = 'warning';
+          title = isEn
+            ? (userLabel ? `Unblock User ${userLabel}` : 'Unblock User')
+            : (userLabel ? `ユーザー ${userLabel} のブロック解除` : 'ユーザーのブロック解除');
+          description = isEn
+            ? (userLabel ? `Restore interaction permissions for ${userLabel}.` : 'Restore interaction permissions for user.')
+            : (userLabel ? `${userLabel} のブロックを解除し、正常な対話権限を復帰させます。` : '対象ユーザーのブロックを解除し、正常な対話権限を復帰させます。');
+        }
+
+        payload.userId = resolvedId;
+        payload.handle = resolvedHandle;
+        break;
+      }
+
+      case 'DELETE_POST': {
+        const cleanPostId = cleanTarget.replace(/^#/, '');
+        if (!cleanPostId) {
+          return {
+            data: {
+              error: isEn
+                ? 'targetId (postId) is required to delete a post.'
+                : '投稿の削除には対象の投稿ID（targetId）が必要です。'
+            }
+          };
+        }
+        if (context.timelineRepo && typeof context.timelineRepo.getPostById === 'function') {
+          const post = await context.timelineRepo.getPostById(cleanPostId);
+          if (!post) {
+            return {
+              data: {
+                error: isEn
+                  ? `Post "${cleanPostId}" was not found in the database. Please check the post ID using search_timeline_posts first.`
+                  : `投稿「${cleanPostId}」はデータベースに見つかりませんでした。事前にsearch_timeline_postsで投稿IDを確認してください。`
+              }
+            };
+          }
+        }
         impactLevel = 'danger';
         title = isEn ? 'Confirm Post Deletion' : '投稿の削除確認';
-        description = isEn ? 'Permanently delete this post from system logs and X (Twitter).' : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。';
-        payload.postId = cleanTarget.replace(/^#/, '');
+        description = isEn
+          ? 'Permanently delete this post from system logs and X (Twitter).'
+          : '対象の投稿をシステムおよびX（Twitter）から完全に削除します。';
+        payload.postId = cleanPostId;
         break;
+      }
 
       case 'FORCE_DREAMING':
         impactLevel = 'warning';

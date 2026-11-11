@@ -3,6 +3,7 @@ import { loginWithEmulatorAndSeedDB } from './auth-helper';
 
 test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
     await loginWithEmulatorAndSeedDB(page);
   });
 
@@ -270,5 +271,165 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
 
     // Verify Post Details closed returning to dashboard
     await expect(postDrawer).not.toHaveClass(/open/, { timeout: 5000 });
+  });
+
+  test('Test 8: Copilot Markdown rendering in chat bubbles (headings, tables, bold, Japanese nakaguro lists, and code blocks)', async ({ page }) => {
+    // Intercept copilot backend chat call to return markdown formatted text
+    await page.route('**/copilot/chat', async (route) => {
+      if (route.request().method() === 'POST') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            reply: '### 今月のKPIサマリー\n\nマスター、今月のKPI推移をサクッと解析してあげたわよ♡\n\n・**フォロワー数**: 1,093人 (前月比 +33.5%)\n・**エンゲージメント率**: 7.8%\n\n| 指標 | 数値 |\n| :--- | :--- |\n| DAU | 10人 |\n| API | 806回 |\n\nテスト実行コマンドは `npm test` よ！',
+            suggestionChips: ['タイムラインの人気投稿を見る', 'サポーターの状況を確認する']
+          })
+        });
+      }
+      return route.continue();
+    });
+
+    await page.goto('/dashboard');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Open AI Drawer
+    const rebeccaBtn = page.locator('#header-rebecca-btn');
+    await rebeccaBtn.click();
+
+    const aiDrawer = page.locator('.ai-drawer');
+    await expect(aiDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    // Send a message
+    const inputField = aiDrawer.locator('#ai-input');
+    await inputField.fill('KPI推移を要約して');
+    const sendBtn = aiDrawer.locator('#ai-send-btn');
+    await sendBtn.click();
+
+    // Verify rendered markdown in the last model bubble
+    const lastModelBubble = aiDrawer.locator('.model-row:not(.thinking-row) .bubble-text').last();
+    await expect(lastModelBubble).toBeVisible({ timeout: 10000 });
+
+    // Verify heading element rendered
+    const heading = lastModelBubble.locator('h3').first();
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveText('今月のKPIサマリー');
+
+    // Verify <strong> elements rendered
+    const boldElement = lastModelBubble.locator('strong').first();
+    await expect(boldElement).toBeVisible();
+    await expect(boldElement).toHaveText('フォロワー数');
+
+    // Verify <ul> and <li> elements rendered for Japanese nakaguro bullets
+    const listElement = lastModelBubble.locator('ul');
+    await expect(listElement).toBeVisible();
+    const listItems = listElement.locator('li');
+    await expect(listItems).toHaveCount(2);
+
+    // Verify markdown table rendered
+    const tableElement = lastModelBubble.locator('table');
+    await expect(tableElement).toBeVisible();
+    await expect(tableElement.locator('th').first()).toHaveText('指標');
+
+    // Verify inline code block rendered
+    const codeElement = lastModelBubble.locator('code').first();
+    await expect(codeElement).toBeVisible();
+    await expect(codeElement).toHaveText('npm test');
+
+    // Close AI drawer
+    await aiDrawer.locator('#ai-close-btn').click();
+  });
+
+  test('Test 9: Real-time User Drawer synchronization and Firestore Emulator state verification when Copilot executes BLOCK_USER action', async ({ page }) => {
+    // Intercept copilot chat to simulate proposing BLOCK_USER for the target user
+    await page.route('**/copilot/chat', async (route) => {
+      if (route.request().method() === 'POST') {
+        const postData = route.request().postDataJSON() || {};
+        const msg = String(postData.message || '');
+        const targetUsername = msg.includes('tech_geek_tokyo') ? 'tech_geek_tokyo' : 'rebecca_oshi';
+
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            reply: `マスターの指示通り、ユーザー @${targetUsername} のブロック準備ができたわよ♡`,
+            actionRequired: {
+              type: 'BLOCK_USER',
+              title: `ユーザー ${targetUsername} のブロック`,
+              description: `${targetUsername} をブロックします。今後マスターへのリプライや接触が遮断されます。`,
+              impactLevel: 'danger',
+              requiresConfirmation: true,
+              payload: { userId: targetUsername, handle: targetUsername }
+            },
+            suggestionChips: ['ブロックを実行', 'キャンセル']
+          })
+        });
+      }
+      return route.continue();
+    });
+
+    // Note: We DO NOT intercept /api/v1/users/status or /api/v1/copilot/actions/execute.
+    // We let the real Dashboard Backend and Firestore Emulator process the status update!
+
+    // Navigate to Users view
+    await page.goto('/users');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Target deterministic test user 'tech_geek_tokyo'
+    const targetUsername = 'tech_geek_tokyo';
+    const userRow = page.locator('#users-table tbody tr, .data-table tbody tr.clickable').filter({ hasText: /tech_geek_tokyo|Tech Geek Tokyo/i }).first();
+    await expect(userRow).toBeVisible({ timeout: 10000 });
+    await userRow.click();
+
+    // Verify user drawer opens
+    const rightDrawer = page.locator('app-right-drawer .right-drawer');
+    await expect(rightDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    const userDrawer = page.locator('app-user-drawer');
+    await expect(userDrawer.locator('.profile-name')).toBeVisible({ timeout: 10000 });
+
+    // Verify initial block button state (initially not blocked)
+    const blockButton = userDrawer.locator('.action-buttons button').last();
+    await expect(blockButton).toBeVisible();
+    await expect(blockButton).toContainText(/ユーザーをブロック|Block User/i);
+
+    // Click Analyze button from Right Drawer header to open Copilot with focused user context
+    const analyzeBtn = rightDrawer.locator('.drawer-header .sparkle-btn');
+    await analyzeBtn.click();
+
+    const aiDrawer = page.locator('app-ai-drawer .ai-drawer');
+    await expect(aiDrawer).toHaveClass(/open/, { timeout: 5000 });
+
+    // Send a block request via Copilot
+    const inputField = aiDrawer.locator('#ai-input');
+    await inputField.fill(`${targetUsername}をブロックして`);
+    const sendBtn = aiDrawer.locator('#ai-send-btn');
+    await sendBtn.click();
+
+    // Action card should appear in Copilot chat
+    const actionCard = aiDrawer.locator('.action-card');
+    await expect(actionCard).toBeVisible({ timeout: 10000 });
+
+    // Approve the action - triggers real backend call to /api/v1/users/status
+    const approveBtn = actionCard.locator('button.approve-btn');
+    await expect(approveBtn).toBeVisible();
+    await approveBtn.click();
+
+    // Verify Copilot action marks as completed
+    await expect(actionCard.locator('.action-status-badge.executed')).toBeVisible({ timeout: 10000 });
+
+    // 1. VERIFY USER DRAWER REAL-TIME SYNCHRONIZATION:
+    // The User Drawer's block button must reactively update to "ブロックを解除 / Unblock"
+    await expect(blockButton).toContainText(/ブロックを解除|ブロック.*解除|Unblock/i, { timeout: 10000 });
+
+    // 2. VERIFY FIRESTORE EMULATOR / BACKEND PERSISTENCE:
+    // Query the backend API directly to guarantee Firestore Emulator status is genuinely updated to BLOCKED
+    const verifyResponse = await page.request.get(`http://127.0.0.1:8081/api/v1/users/${targetUsername}`);
+    expect(verifyResponse.status()).toBe(200);
+    const updatedUserData = await verifyResponse.json();
+    expect(updatedUserData.status).toBe('BLOCKED');
+
+    // Close Copilot and User Drawer
+    await aiDrawer.locator('#ai-close-btn').click();
+    await rightDrawer.locator('.drawer-header .close-btn').click();
   });
 });

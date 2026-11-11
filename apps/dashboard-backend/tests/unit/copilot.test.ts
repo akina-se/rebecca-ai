@@ -1,4 +1,4 @@
-import { CopilotUseCase } from '../../src/features/copilot/usecase';
+import { CopilotUseCase, extractStructuredCopilotResponse } from '../../src/features/copilot/usecase';
 import { CopilotToolRegistry } from '../../src/features/copilot/toolRegistry';
 import { SearchTimelinePostsTool } from '../../src/features/copilot/tools/postsTool';
 import { SearchUsersTool } from '../../src/features/copilot/tools/usersTool';
@@ -534,6 +534,38 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       expect(res.actionRequired?.requiresConfirmation).toBe(true);
     });
 
+    it('should invoke Phase 2 Constrained Synthesis when Phase 1 yields unstructured text without chips', async () => {
+      // Phase 1: Gemini outputs plain text without structured suggestion chips
+      mockGenerateContent.mockResolvedValueOnce({
+        text: 'マスター、今のところシステムは安定してるわ♡'
+      });
+
+      // Phase 2: Constrained synthesis produces verified JSON
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify({
+          reply: 'マスター、今のところシステムは安定してるわ♡',
+          suggestionChips: ['KPIを見る', '最新投稿を確認', 'アセット一覧']
+        })
+      });
+
+      const copilot = new CopilotUseCase(timelineRepo, usersRepo, assetsRepo, memoryRepo, supportersRepo);
+      const res = await copilot.processChat({
+        message: 'システムの様子はどう？',
+        currentContext: 'Overview',
+        language: 'ja'
+      });
+
+      expect(res.reply).toContain('マスター、今のところシステムは安定してるわ♡');
+      expect(res.suggestionChips).toEqual(['KPIを見る', '最新投稿を確認', 'アセット一覧']);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+      expect(mockGenerateContent).toHaveBeenLastCalledWith(expect.objectContaining({
+        config: expect.objectContaining({
+          responseMimeType: 'application/json',
+          responseSchema: expect.any(Object)
+        })
+      }));
+    });
+
     it('should fail fast on empty message', async () => {
       const copilot = new CopilotUseCase();
       await expect(copilot.processChat({ message: '   ' })).rejects.toThrow('User message is required');
@@ -551,6 +583,159 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
 
       expect(res.reply).toContain('レベッカAIの接続キーが設定されていません');
       expect(res.actionRequired).toBeNull();
+    });
+  });
+
+  describe('extractStructuredCopilotResponse Robust JSON Extraction & Unwrapping', () => {
+    it('should parse raw JSON properly', () => {
+      const res = extractStructuredCopilotResponse(
+        '{"reply": "Hello Master♡", "suggestionChips": ["A", "B"]}'
+      );
+      expect(res.reply).toBe('Hello Master♡');
+      expect(res.suggestionChips).toEqual(['A', 'B']);
+    });
+
+    it('should unwrap markdown-fenced json (```json ... ```)', () => {
+      const raw = '```json\n{\n  "reply": "こんにちはマスター♡",\n  "suggestionChips": ["人気投稿", "アセット"]\n}\n```';
+      const res = extractStructuredCopilotResponse(raw);
+      expect(res.reply).toBe('こんにちはマスター♡');
+      expect(res.suggestionChips).toEqual(['人気投稿', 'アセット']);
+    });
+
+    it('should unwrap markdown fences without language identifier (``` ... ```)', () => {
+      const raw = '```\n{\n  "reply": "Analyzed successfully",\n  "suggestionChips": ["Next"]\n}\n```';
+      const res = extractStructuredCopilotResponse(raw);
+      expect(res.reply).toBe('Analyzed successfully');
+      expect(res.suggestionChips).toEqual(['Next']);
+    });
+
+    it('should extract JSON embedded inside conversational text', () => {
+      const raw = 'Here is what you asked for:\n{"reply": "KPI is growing!", "suggestionChips": ["Export"]}\nHope that helps!';
+      const res = extractStructuredCopilotResponse(raw);
+      expect(res.reply).toBe('KPI is growing!');
+      expect(res.suggestionChips).toEqual(['Export']);
+    });
+
+    it('should strip markdown fences and return clean text with empty chips when JSON is malformed', () => {
+      const raw = '```json\nThis is not valid JSON at all\n```';
+      const res = extractStructuredCopilotResponse(raw);
+      expect(res.reply).toBe('This is not valid JSON at all');
+      expect(res.suggestionChips).toEqual([]);
+    });
+
+    it('should return empty suggestion chips when input text has no structured JSON', () => {
+      const res = extractStructuredCopilotResponse('マスター、お疲れ様♡ 今日は何をする？');
+      expect(res.reply).toBe('マスター、お疲れ様♡ 今日は何をする？');
+      expect(res.suggestionChips).toEqual([]);
+    });
+  });
+
+  describe('ProposeDestructiveActionTool Target Existence & Disambiguation', () => {
+    it('should return error when target user does not exist in usersRepo', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockUsersRepo = {
+        getById: jest.fn().mockResolvedValue(null),
+        getAll: jest.fn().mockResolvedValue({ data: [] })
+      } as unknown as UsersRepository;
+
+      const jaRes = await tool.execute(
+        { actionType: 'BLOCK_USER', targetId: '@ghost_user' },
+        { usersRepo: mockUsersRepo, isEn: false }
+      );
+      expect((jaRes.data as any).error).toContain('データベースに見つかりませんでした');
+      expect(jaRes.actionRequired).toBeUndefined();
+
+      const enRes = await tool.execute(
+        { actionType: 'UNBLOCK_USER', targetId: 'ghost_user' },
+        { usersRepo: mockUsersRepo, isEn: true }
+      );
+      expect((enRes.data as any).error).toContain('was not found in the database');
+      expect(enRes.actionRequired).toBeUndefined();
+    });
+
+    it('should resolve user handle and display name when searched via getAll', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockUsersRepo = {
+        getById: jest.fn().mockResolvedValue(null),
+        getAll: jest.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'doc_123',
+              username: 'se_akina',
+              name: 'AKINA',
+              status: UserStatus.ACTIVE,
+              interactions: 50
+            }
+          ]
+        })
+      } as unknown as UsersRepository;
+
+      const res = await tool.execute(
+        { actionType: 'BLOCK_USER', targetId: 'AKINA' },
+        { usersRepo: mockUsersRepo, isEn: false }
+      );
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.payload['userId']).toBe('doc_123');
+      expect(res.actionRequired?.payload['handle']).toBe('@se_akina');
+      expect(res.actionRequired?.title).toContain('AKINA (@se_akina)');
+    });
+
+    it('should resolve user directly when getById returns matching user with name', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockUsersRepo = {
+        getById: jest.fn().mockResolvedValue({
+          id: 'user_999',
+          username: 'vip_user',
+          name: 'VIP Member',
+          status: UserStatus.ACTIVE
+        })
+      } as unknown as UsersRepository;
+
+      const res = await tool.execute(
+        { actionType: 'UNBLOCK_USER', targetId: '@vip_user' },
+        { usersRepo: mockUsersRepo, isEn: false }
+      );
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.payload['userId']).toBe('user_999');
+      expect(res.actionRequired?.payload['handle']).toBe('@vip_user');
+    });
+
+    it('should return error when DELETE_POST target is empty or not found in timelineRepo', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const emptyRes = await tool.execute({ actionType: 'DELETE_POST', targetId: '' }, { isEn: false });
+      expect((emptyRes.data as any).error).toContain('投稿の削除には対象の投稿ID');
+
+      const mockTimelineRepo = {
+        getPostById: jest.fn().mockResolvedValue(null)
+      } as unknown as TimelineRepository;
+
+      const notFoundRes = await tool.execute(
+        { actionType: 'DELETE_POST', targetId: 'missing_post_123' },
+        { timelineRepo: mockTimelineRepo, isEn: false }
+      );
+      expect((notFoundRes.data as any).error).toContain('データベースに見つかりませんでした');
+      expect(notFoundRes.actionRequired).toBeUndefined();
+
+      const notFoundEn = await tool.execute(
+        { actionType: 'DELETE_POST', targetId: 'missing_post_123' },
+        { timelineRepo: mockTimelineRepo, isEn: true }
+      );
+      expect((notFoundEn.data as any).error).toContain('was not found in the database');
+    });
+
+    it('should create DELETE_POST action card when post exists in timelineRepo', async () => {
+      const tool = new ProposeDestructiveActionTool();
+      const mockTimelineRepo = {
+        getPostById: jest.fn().mockResolvedValue({ id: 'post_valid_100', snippet: 'Post content' })
+      } as unknown as TimelineRepository;
+
+      const res = await tool.execute(
+        { actionType: 'DELETE_POST', targetId: 'post_valid_100' },
+        { timelineRepo: mockTimelineRepo, isEn: false }
+      );
+      expect(res.actionRequired).toBeDefined();
+      expect(res.actionRequired?.type).toBe('DELETE_POST');
+      expect(res.actionRequired?.payload['postId']).toBe('post_valid_100');
     });
   });
 });

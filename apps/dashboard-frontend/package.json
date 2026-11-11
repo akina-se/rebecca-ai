@@ -27,9 +27,12 @@
     "@angular/platform-browser-dynamic": "^22.2.3",
     "@angular/router": "^22.2.3",
     "@rebecca/types": "*",
+    "@types/dompurify": "^3.0.5",
     "@types/luxon": "^3.7.6",
+    "dompurify": "^3.4.17",
     "firebase": "^13.1.0",
     "luxon": "^3.7.2",
+    "marked": "^18.2.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.8.1",
     "zone.js": "~0.16.3"
