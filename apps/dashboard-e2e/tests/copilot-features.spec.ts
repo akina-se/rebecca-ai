@@ -388,9 +388,9 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(userDrawer.locator('.profile-name')).toBeVisible({ timeout: 10000 });
 
     // Verify initial block button state (initially not blocked)
-    const blockButton = userDrawer.locator('.action-buttons button').filter({ hasText: /ブロック|Block/ });
+    const blockButton = userDrawer.locator('.action-buttons button').last();
     await expect(blockButton).toBeVisible();
-    await expect(blockButton).toContainText(/ユーザーをブロック|Block User/);
+    await expect(blockButton).toContainText(/ユーザーをブロック|Block User/i);
 
     // Click Analyze button from Right Drawer header to open Copilot with focused user context
     const analyzeBtn = rightDrawer.locator('.drawer-header .sparkle-btn');
