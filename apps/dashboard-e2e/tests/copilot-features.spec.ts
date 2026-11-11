@@ -374,13 +374,10 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await page.goto('/users');
     await page.waitForLoadState('domcontentloaded');
 
-    // Click on active user item in table to open User Drawer
-    const userRow = page.locator('#users-table tbody tr, .data-table tbody tr.clickable').first();
+    // Target deterministic test user 'tech_geek_tokyo'
+    const targetUsername = 'tech_geek_tokyo';
+    const userRow = page.locator('#users-table tbody tr, .data-table tbody tr.clickable').filter({ hasText: /tech_geek_tokyo|Tech Geek Tokyo/i }).first();
     await expect(userRow).toBeVisible({ timeout: 10000 });
-    
-    // Extract target user handle from the table row
-    const userHandleText = await userRow.innerText();
-    const targetUsername = userHandleText.includes('tech_geek_tokyo') ? 'tech_geek_tokyo' : 'rebecca_oshi';
     await userRow.click();
 
     // Verify user drawer opens
