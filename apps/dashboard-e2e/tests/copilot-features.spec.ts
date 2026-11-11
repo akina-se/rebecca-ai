@@ -418,7 +418,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await approveBtn.click();
 
     // Verify Copilot action marks as completed
-    await expect(actionCard.locator('.action-completed')).toBeVisible({ timeout: 10000 });
+    await expect(actionCard.locator('.action-status-badge.executed')).toBeVisible({ timeout: 10000 });
 
     // 1. VERIFY USER DRAWER REAL-TIME SYNCHRONIZATION:
     // The User Drawer's block button must reactively update to "ブロック解除 / Unblock"
