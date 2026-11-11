@@ -54,6 +54,7 @@ describe('ConfigService', () => {
     expect(service.version()).toBe('1.7.0');
     expect(service.isEmulator).toBeFalse();
 
+    mockConfig.production = false;
     mockConfig.useEmulators = true;
     const loadPromise2 = service.loadAppConfig();
     const req2 = httpMock.expectOne('/api/v1/config');
