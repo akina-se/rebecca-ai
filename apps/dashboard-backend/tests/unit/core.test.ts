@@ -5,7 +5,12 @@ jest.mock('google-auth-library', () => ({
   })),
 }));
 
-import { getJstDateRangeInUtc, getTimelinePeriodRangeInUtc } from '../../src/core/dateUtils';
+import {
+  getJstDateRangeInUtc,
+  getTimelinePeriodRangeInUtc,
+  parseRelativeDuration,
+  StandardTimePeriod
+} from '../../src/core/dateUtils';
 import { deleteTweetViaBotService, getBotServiceHeaders } from '../../src/core/botServiceClient';
 import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
@@ -39,38 +44,73 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
     });
   });
 
+  describe('dateUtils - parseRelativeDuration', () => {
+    it('should parse valid relative duration strings', () => {
+      expect(parseRelativeDuration('7d')).toEqual({ count: 7, unit: 'days' });
+      expect(parseRelativeDuration('14D')).toEqual({ count: 14, unit: 'days' });
+      expect(parseRelativeDuration('2w')).toEqual({ count: 2, unit: 'weeks' });
+      expect(parseRelativeDuration('3m')).toEqual({ count: 3, unit: 'months' });
+      expect(parseRelativeDuration('1y')).toEqual({ count: 1, unit: 'years' });
+    });
+
+    it('should return null for invalid duration strings', () => {
+      expect(parseRelativeDuration('')).toBeNull();
+      expect(parseRelativeDuration('0d')).toBeNull();
+      expect(parseRelativeDuration('-5d')).toBeNull();
+      expect(parseRelativeDuration('abc')).toBeNull();
+      expect(parseRelativeDuration('10x')).toBeNull();
+    });
+  });
+
   describe('dateUtils - getTimelinePeriodRangeInUtc', () => {
     it('should return null for empty, undefined, all-time, or unknown period', () => {
       expect(getTimelinePeriodRangeInUtc(undefined)).toBeNull();
       expect(getTimelinePeriodRangeInUtc('')).toBeNull();
-      expect(getTimelinePeriodRangeInUtc('all-time')).toBeNull();
+      expect(getTimelinePeriodRangeInUtc(StandardTimePeriod.ALL_TIME)).toBeNull();
       expect(getTimelinePeriodRangeInUtc('unknown-period')).toBeNull();
     });
 
-    it('should return range for today', () => {
-      const res = getTimelinePeriodRangeInUtc('today');
-      expect(res).not.toBeNull();
-      expect(res?.start).toBeDefined();
-      expect(res?.end).toBeDefined();
+    it('should return range for standard presets', () => {
+      const resToday = getTimelinePeriodRangeInUtc(StandardTimePeriod.TODAY);
+      expect(resToday).not.toBeNull();
+      expect(resToday?.start).toBeDefined();
+      expect(resToday?.end).toBeDefined();
+
+      const resWeekly = getTimelinePeriodRangeInUtc(StandardTimePeriod.WEEKLY);
+      expect(resWeekly).not.toBeNull();
+      expect(new Date(resWeekly!.start).getTime()).toBeLessThan(new Date(resWeekly!.end!).getTime());
+
+      const resMonthlyDefault = getTimelinePeriodRangeInUtc(StandardTimePeriod.MONTHLY);
+      expect(resMonthlyDefault).not.toBeNull();
+
+      const resYearlyDefault = getTimelinePeriodRangeInUtc(StandardTimePeriod.YEARLY);
+      expect(resYearlyDefault).not.toBeNull();
     });
 
-    it('should return range for 7d and weekly', () => {
+    it('should return range for arbitrary relative durations (7d, 14d, 2w, 3m, 1y)', () => {
       const res7d = getTimelinePeriodRangeInUtc('7d');
       expect(res7d).not.toBeNull();
       expect(new Date(res7d!.start).getTime()).toBeLessThan(new Date(res7d!.end!).getTime());
 
-      const resWeekly = getTimelinePeriodRangeInUtc('weekly');
-      expect(resWeekly).not.toBeNull();
-      expect(new Date(resWeekly!.start).getTime()).toBeLessThan(new Date(resWeekly!.end!).getTime());
+      const res14d = getTimelinePeriodRangeInUtc('14d');
+      expect(res14d).not.toBeNull();
+
+      const res2w = getTimelinePeriodRangeInUtc('2w');
+      expect(res2w).not.toBeNull();
+
+      const res3m = getTimelinePeriodRangeInUtc('3m');
+      expect(res3m).not.toBeNull();
+
+      const res1y = getTimelinePeriodRangeInUtc('1y');
+      expect(res1y).not.toBeNull();
     });
 
-    it('should return range for 30d, monthly, and yearly', () => {
-      const res30d = getTimelinePeriodRangeInUtc('30d');
-      expect(res30d).not.toBeNull();
-      expect(getTimelinePeriodRangeInUtc('monthly')).not.toBeNull();
-      expect(getTimelinePeriodRangeInUtc('yearly')).not.toBeNull();
-      expect(getTimelinePeriodRangeInUtc('monthly', '2026-11')).not.toBeNull();
-      expect(getTimelinePeriodRangeInUtc('yearly', '2026')).not.toBeNull();
+    it('should return range with calendar isoDate', () => {
+      const resMonthlyWithDate = getTimelinePeriodRangeInUtc('monthly', '2026-11');
+      expect(resMonthlyWithDate).not.toBeNull();
+
+      const resYearlyWithDate = getTimelinePeriodRangeInUtc('yearly', '2026');
+      expect(resYearlyWithDate).not.toBeNull();
     });
   });
 
