@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ConfigService } from './config.service';
+import { environment } from '../../../environments/environment';
 
 describe('ConfigService', () => {
   let service: ConfigService;
@@ -108,14 +109,13 @@ describe('ConfigService', () => {
   });
 
   it('should return isEmulator false when environment.production is true', () => {
-    const envModule = require('../../../environments/environment');
-    const originalProd = envModule.environment.production;
+    const originalProd = environment.production;
     try {
-      envModule.environment.production = true;
+      (environment as { production: boolean }).production = true;
       (service as any).config = { useEmulators: true };
       expect(service.isEmulator).toBeFalse();
     } finally {
-      envModule.environment.production = originalProd;
+      (environment as { production: boolean }).production = originalProd;
     }
   });
 

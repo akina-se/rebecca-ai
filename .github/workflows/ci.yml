@@ -158,8 +158,7 @@ jobs:
 
       - name: Install Playwright Chromium & Japanese Fonts
         run: |
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends fonts-noto-cjk fonts-ipafont-gothic fonts-vlgothic
+          (for i in 1 2 3; do sudo apt-get update -y && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends fonts-noto-cjk fonts-ipafont-gothic fonts-vlgothic && break || sleep 5; done) || true
           npx --yes --workspace=dashboard-e2e playwright install chromium
 
       - name: Run Playwright E2E Tests with Firebase Emulators
