@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 import { FormsModule } from '@angular/forms';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
@@ -56,9 +57,17 @@ export class AssetsPageComponent implements OnInit, OnDestroy {
 
   toastService = inject(ToastService);
   private readonly assetsRepo = inject(ASSETS_REPOSITORY);
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit() {
     this.loadAssets(1);
+
+    this.route.queryParamMap.subscribe(params => {
+      const assetId = params.get('assetId');
+      if (assetId) {
+        this.openAssetDrawer(assetId);
+      }
+    });
   }
 
   ngOnDestroy() {

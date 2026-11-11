@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { DASHBOARD_REPOSITORY } from '../../../core/ports/dashboard.repository';
 import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert } from '@rebecca/types';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -72,6 +72,7 @@ export class DashboardPageComponent implements OnInit {
   timelineItemsPerPage = 10;
   isLoadingTimeline = false;
   private readonly dashboardRepo = inject(DASHBOARD_REPOSITORY);
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.dashboardRepo.getKpiMetrics('monthly').subscribe(metrics => {
@@ -82,6 +83,16 @@ export class DashboardPageComponent implements OnInit {
     this.loadTimeline();
     this.dashboardRepo.getAlerts().subscribe(alerts => {
       this.systemAlerts.set(alerts);
+    });
+
+    this.route.queryParamMap.subscribe(params => {
+      const postId = params.get('postId');
+      const userId = params.get('userId');
+      if (postId) {
+        this.openPostDrawer(postId);
+      } else if (userId) {
+        this.openUserDrawer(userId);
+      }
     });
   }
 

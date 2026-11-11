@@ -232,6 +232,62 @@ textarea.form-control,
 .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-radius: 16px 16px 0 0; }
 .modal-body { padding: 0; overflow-y: auto; flex: 1; }
 
+/* Copilot Markdown Tables (Neon Purple Glass Styling) */
+.bubble-text table,
+.copilot-markdown-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.85rem 0;
+  font-size: 0.84rem;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+  background: rgba(20, 15, 28, 0.65);
+}
+
+.bubble-text th,
+.copilot-markdown-content th,
+.bubble-text td,
+.copilot-markdown-content td {
+  padding: 8px 12px;
+  border-right: 1px solid rgba(168, 85, 247, 0.2);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+  text-align: left;
+}
+
+.bubble-text th:last-child,
+.copilot-markdown-content th:last-child,
+.bubble-text td:last-child,
+.copilot-markdown-content td:last-child {
+  border-right: none;
+}
+
+.bubble-text tr:last-child td,
+.copilot-markdown-content tr:last-child td {
+  border-bottom: none;
+}
+
+.bubble-text th,
+.copilot-markdown-content th {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(192, 132, 252, 0.25));
+  color: #faf5ff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.bubble-text tr:nth-child(even) td,
+.copilot-markdown-content tr:nth-child(even) td {
+  background: rgba(168, 85, 247, 0.06);
+}
+
+.bubble-text tr:hover td,
+.copilot-markdown-content tr:hover td {
+  background: rgba(168, 85, 247, 0.14);
+}
+
 /* ============================================================
    Global Mobile Responsive Overrides (<= 1024px)
    ============================================================ */

@@ -747,44 +747,70 @@
   font-style: italic;
 }
 
-/* Markdown Tables */
-.bubble-text table {
+/* Markdown Tables & InnerHTML Styling */
+:host ::ng-deep .bubble-text table,
+:host ::ng-deep .copilot-markdown-content table {
   width: 100%;
-  border-collapse: collapse;
-  margin: 0.8rem 0;
-  font-size: 0.82rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.85rem 0;
+  font-size: 0.84rem;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+  background: rgba(20, 15, 28, 0.65);
 }
 
-.bubble-text th,
-.bubble-text td {
-  padding: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+:host ::ng-deep .bubble-text th,
+:host ::ng-deep .copilot-markdown-content th,
+:host ::ng-deep .bubble-text td,
+:host ::ng-deep .copilot-markdown-content td {
+  padding: 8px 12px;
+  border-right: 1px solid rgba(168, 85, 247, 0.2);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
   text-align: left;
 }
 
-.bubble-text th {
-  background: rgba(168, 85, 247, 0.2);
-  color: #f3e8ff;
+:host ::ng-deep .bubble-text th:last-child,
+:host ::ng-deep .copilot-markdown-content th:last-child,
+:host ::ng-deep .bubble-text td:last-child,
+:host ::ng-deep .copilot-markdown-content td:last-child {
+  border-right: none;
+}
+
+:host ::ng-deep .bubble-text tr:last-child td,
+:host ::ng-deep .copilot-markdown-content tr:last-child td {
+  border-bottom: none;
+}
+
+:host ::ng-deep .bubble-text th,
+:host ::ng-deep .copilot-markdown-content th {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(192, 132, 252, 0.25));
+  color: #faf5ff;
   font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
 }
 
-.bubble-text tr:nth-child(even) td {
-  background: rgba(255, 255, 255, 0.02);
+:host ::ng-deep .bubble-text tr:nth-child(even) td,
+:host ::ng-deep .copilot-markdown-content tr:nth-child(even) td {
+  background: rgba(168, 85, 247, 0.06);
 }
 
-.bubble-text tr:hover td {
-  background: rgba(168, 85, 247, 0.08);
+:host ::ng-deep .bubble-text tr:hover td,
+:host ::ng-deep .copilot-markdown-content tr:hover td {
+  background: rgba(168, 85, 247, 0.14);
 }
 
-.bubble-text a {
+:host ::ng-deep .bubble-text a,
+:host ::ng-deep .copilot-markdown-content a {
   color: #c084fc;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.bubble-text a:hover {
+:host ::ng-deep .bubble-text a:hover,
+:host ::ng-deep .copilot-markdown-content a:hover {
   color: #e9d5ff;
 }

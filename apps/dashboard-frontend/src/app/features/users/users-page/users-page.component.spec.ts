@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { UsersPageComponent } from './users-page.component';
 import { USERS_REPOSITORY } from '../../../core/ports/users.repository';
@@ -13,12 +14,14 @@ describe('UsersPageComponent', () => {
   let toastServiceSpy: jasmine.SpyObj<ToastService>;
 
   beforeEach(async () => {
-    usersRepoSpy = jasmine.createSpyObj('UsersRepository', ['getAll', 'bulkUpdateStatus']);
+    usersRepoSpy = jasmine.createSpyObj('UsersRepository', ['getAll', 'bulkUpdateStatus', 'getById']);
+    usersRepoSpy.getById.and.returnValue(of(null));
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['show']);
 
     await TestBed.configureTestingModule({
       imports: [UsersPageComponent, HttpClientTestingModule],
       providers: [
+        provideRouter([]),
         { provide: USERS_REPOSITORY, useValue: usersRepoSpy },
         { provide: ToastService, useValue: toastServiceSpy }
       ]
@@ -170,5 +173,28 @@ describe('UsersPageComponent', () => {
     component.toggleUserSort('lastSeen');
     expect(component.userSortBy).toBe('lastSeen');
     expect(component.userSortOrder).toBe('desc');
+  });
+
+  it('should fetch user by id when openUserDrawer is called with unknown id', () => {
+    usersRepoSpy.getById.and.returnValue(of({ id: 'u_ext', username: 'ext_user', name: 'External User' }));
+    component.openUserDrawer('u_ext');
+    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.selectedUserId).toBe('u_ext');
+    expect(component.drawerTitle).toBe('@ext_user');
+  });
+
+  it('should handle openUserDrawer with user object and name fallback', () => {
+    component.openUserDrawer({ id: 'u_obj', username: 'obj_user' } as any);
+    expect(component.isDrawerOpen).toBeTrue();
+    expect(component.selectedUserId).toBe('u_obj');
+    expect(component.drawerTitle).toBe('@obj_user');
+
+    usersRepoSpy.getById.and.returnValue(of({ id: 'u_noname', name: 'Fallback Name' }));
+    component.openUserDrawer('u_noname');
+    expect(component.drawerTitle).toBe('@Fallback Name');
+
+    usersRepoSpy.getAll.and.returnValue(of({ data: [], meta: { totalItems: 0, totalPages: 1 } }));
+    component.onUserUpdated();
+    expect(usersRepoSpy.getAll).toHaveBeenCalled();
   });
 });
