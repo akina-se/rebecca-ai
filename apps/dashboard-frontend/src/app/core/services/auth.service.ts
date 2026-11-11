@@ -117,6 +117,9 @@ export class AuthService {
    * Logs in with Email & Password against Firebase Auth (used for Emulators & E2E tests).
    */
   async loginWithEmail(email: string, password: string): Promise<void> {
+    if (!this.configService.isEmulator) {
+      throw new Error('Email/password login is strictly disabled outside local emulator environments.');
+    }
     const auth = this.ensureAuth();
     const cred = await signInWithEmailAndPassword(auth, email, password);
     await cred.user.getIdToken(true);

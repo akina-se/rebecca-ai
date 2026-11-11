@@ -45,11 +45,20 @@ export class TopNavComponent {
     return this.configService.getPersonaName(this.translationService.currentLang());
   }
 
+  /**
+   * Derives a single uppercase initial for the user avatar when photoURL is absent.
+   * Precedence: displayName -> email -> 'A' (Administrator fallback).
+   */
   get userInitial(): string {
-    const rawName = this.user?.displayName || this.user?.email || 'A';
-    const trimmed = rawName.trim();
-    if (!trimmed) return 'A';
-    return trimmed.charAt(0).toUpperCase();
+    const displayName = this.user?.displayName?.trim();
+    if (displayName && displayName.length > 0) {
+      return displayName.charAt(0).toUpperCase();
+    }
+    const email = this.user?.email?.trim();
+    if (email && email.length > 0) {
+      return email.charAt(0).toUpperCase();
+    }
+    return 'A';
   }
 
   get userAvatarUrl(): string {

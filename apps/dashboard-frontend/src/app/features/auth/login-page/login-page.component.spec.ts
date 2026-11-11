@@ -3,11 +3,13 @@ import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { LoginPageComponent } from './login-page.component';
 import { AuthService } from '../../../core/services/auth.service';
+import { ConfigService } from '../../../core/services/config.service';
 
 describe('LoginPageComponent', () => {
   let component: LoginPageComponent;
   let fixture: ComponentFixture<LoginPageComponent>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
+  let configServiceSpy: jasmine.SpyObj<ConfigService>;
   let routerSpy: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
@@ -17,9 +19,14 @@ describe('LoginPageComponent', () => {
       'handleRedirectResult',
       'waitForInit'
     ], {
-      isEmulator: false,
       currentUser: null
     });
+    configServiceSpy = jasmine.createSpyObj('ConfigService', ['adminTitle', 'brandName'], {
+      isEmulator: false
+    });
+    configServiceSpy.adminTitle.and.returnValue('REBECCA AI CORE ADMIN');
+    configServiceSpy.brandName.and.returnValue('Rebecca AI');
+
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     authServiceSpy.loginWithEmail.and.returnValue(Promise.resolve());
     authServiceSpy.loginWithGoogle.and.returnValue(Promise.resolve({ uid: 'admin_123' } as any));
@@ -30,6 +37,7 @@ describe('LoginPageComponent', () => {
       imports: [LoginPageComponent, RouterTestingModule],
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
+        { provide: ConfigService, useValue: configServiceSpy },
         { provide: Router, useValue: routerSpy }
       ]
     }).compileComponents();
@@ -63,7 +71,7 @@ describe('LoginPageComponent', () => {
   it('should skip redirect check on init when running against emulator', async () => {
     (routerSpy.navigate as any).mockClear?.();
     (authServiceSpy.handleRedirectResult as any).mockClear?.();
-    Object.defineProperty(authServiceSpy, 'isEmulator', { value: true, configurable: true });
+    Object.defineProperty(configServiceSpy, 'isEmulator', { value: true, configurable: true });
     await component.ngOnInit();
     expect(authServiceSpy.handleRedirectResult).not.toHaveBeenCalled();
     expect(routerSpy.navigate).not.toHaveBeenCalled();
@@ -103,7 +111,7 @@ describe('LoginPageComponent', () => {
   });
 
   it('should login with email and navigate when emulator is enabled', async () => {
-    Object.defineProperty(authServiceSpy, 'isEmulator', { value: true, configurable: true });
+    Object.defineProperty(configServiceSpy, 'isEmulator', { value: true, configurable: true });
     authServiceSpy.loginWithEmail.and.returnValue(Promise.resolve());
 
     await component.loginWithGoogle();

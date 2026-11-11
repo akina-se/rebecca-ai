@@ -107,6 +107,18 @@ describe('ConfigService', () => {
     expect(service.isEmulator).toBeFalse();
   });
 
+  it('should return isEmulator false when environment.production is true', () => {
+    const envModule = require('../../../environments/environment');
+    const originalProd = envModule.environment.production;
+    try {
+      envModule.environment.production = true;
+      (service as any).config = { useEmulators: true };
+      expect(service.isEmulator).toBeFalse();
+    } finally {
+      envModule.environment.production = originalProd;
+    }
+  });
+
   it('should support localized persona names with getPersonaName', async () => {
     expect(service.personaDisplayName()).toBe('レベッカ');
     expect(service.personaEnglishName()).toBe('Rebecca');

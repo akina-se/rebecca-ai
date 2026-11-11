@@ -18,7 +18,7 @@ export class LoginPageComponent implements OnInit {
   private readonly router = inject(Router);
 
   async ngOnInit(): Promise<void> {
-    if (this.authService.isEmulator) {
+    if (this.configService.isEmulator) {
       return;
     }
     this.isLoading = true;
@@ -45,7 +45,8 @@ export class LoginPageComponent implements OnInit {
     this.isLoading = true;
     this.error = null;
     try {
-      if (this.authService.isEmulator) {
+      if (this.configService.isEmulator) {
+        // Local emulator mode: Google popup is unsupported by emulator, authenticate via emulator test credentials
         await this.authService.loginWithEmail('admin@example.com', 'password123');
         await this.router.navigate(['/dashboard']);
         this.isLoading = false;

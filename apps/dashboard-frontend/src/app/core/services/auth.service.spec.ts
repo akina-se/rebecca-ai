@@ -170,6 +170,27 @@ describe('AuthService', () => {
     }
   });
 
+  it('should reject loginWithEmail when isEmulator is false', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        AuthService,
+        {
+          provide: ConfigService,
+          useValue: {
+            firebaseConfig: { apiKey: 'mock-key' },
+            isEmulator: false
+          }
+        }
+      ]
+    });
+    const nonEmuService = TestBed.inject(AuthService);
+    await expect(nonEmuService.loginWithEmail('admin@example.com', 'password123')).rejects.toThrow(
+      'Email/password login is strictly disabled outside local emulator environments.'
+    );
+  });
+
   it('should initialize when isEmulator is false', async () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({

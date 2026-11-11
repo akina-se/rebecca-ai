@@ -111,6 +111,9 @@ export class ConfigService {
   }
 
   get isEmulator(): boolean {
+    if (environment.production) {
+      return false;
+    }
     return this.config?.useEmulators ?? false;
   }
 }
