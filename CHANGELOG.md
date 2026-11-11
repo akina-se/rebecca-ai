@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.41.0](https://github.com/akina-se/rebecca-ai/compare/v1.40.0...v1.41.0) (2026-11-11)
+
+
+### Features
+
+* **copilot:** dynamic user resolution, real-time drawer sync, and robust markdown rendering ([974282f](https://github.com/akina-se/rebecca-ai/commit/974282f3dff24e27fe5933e9748e374950cc84a1))
+* **copilot:** dynamic user resolution, real-time drawer sync, and robust markdown rendering ([4aba343](https://github.com/akina-se/rebecca-ai/commit/4aba3438e2f04b3730ef6c73d2d797c73cb315dd))
+* **copilot:** implement 2-phase architecture with constrained output synthesis ([4b4dd00](https://github.com/akina-se/rebecca-ai/commit/4b4dd00d8cfaacba52fcdacd39a2e631b36a7a79))
+* **copilot:** integrate marked parser for markdown tables and headings, and enforce numeric id resolution ([7975a37](https://github.com/akina-se/rebecca-ai/commit/7975a37c4111e084f5fe945a7d890c8f8b8ea40c))
+
+
+### Bug Fixes
+
+* **portal-web:** show loading spinner for donation tier buttons until plans are fetched ([d7f42d0](https://github.com/akina-se/rebecca-ai/commit/d7f42d0a7d1c777c0ccc4fe334f0f49dac5606c5))
+
 ## [1.40.0](https://github.com/akina-se/rebecca-ai/compare/v1.39.0...v1.40.0) (2026-11-10)
 
 
