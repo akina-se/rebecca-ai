@@ -421,8 +421,8 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
     await expect(actionCard.locator('.action-status-badge.executed')).toBeVisible({ timeout: 10000 });
 
     // 1. VERIFY USER DRAWER REAL-TIME SYNCHRONIZATION:
-    // The User Drawer's block button must reactively update to "ブロック解除 / Unblock"
-    await expect(blockButton).toContainText(/ブロック解除|Unblock/i, { timeout: 10000 });
+    // The User Drawer's block button must reactively update to "ブロックを解除 / Unblock"
+    await expect(blockButton).toContainText(/ブロックを解除|ブロック.*解除|Unblock/i, { timeout: 10000 });
 
     // 2. VERIFY FIRESTORE EMULATOR / BACKEND PERSISTENCE:
     // Query the backend API directly to guarantee Firestore Emulator status is genuinely updated to BLOCKED
