@@ -1,5 +1,6 @@
 import { CopilotAction, CopilotAttachment, CopilotRequest, CopilotResponse } from '@rebecca/types';
 import { Content, GoogleGenAI, Schema, Type } from '@google/genai';
+import { DateTime } from 'luxon';
 import { config } from '../../config';
 import { getActivePersona } from '@rebecca/persona';
 import { TimelineRepository } from '../timeline/repository';
@@ -107,6 +108,20 @@ export class CopilotUseCase {
     const activePersona = getActivePersona(config.persona.activeId);
     const personaBase = activePersona.getBasePrompt('copilot', isEn ? 'en' : 'ja');
 
+    const nowJst = DateTime.now().setZone('Asia/Tokyo');
+    const todayJst = nowJst.toFormat('yyyy-MM-dd');
+    const currentTimeJst = nowJst.toFormat('yyyy-MM-dd HH:mm:ss');
+
+    const temporalInstruction = isEn
+      ? `【Current Temporal Grounding】
+Current Date & Time: ${currentTimeJst} (JST / UTC+9)
+Today's Date: ${todayJst}
+When Master refers to "today", "yesterday", "recent 7 days", "this week", "this month", or relative timeframes, resolve them strictly relative to today (${todayJst}). When querying recent posts or performance, pass the matching period (e.g. '7d', 'today', '30d') to search_timeline_posts.`
+      : `【現在日時の基準情報】
+現在日時: ${currentTimeJst} (JST / 日本標準時)
+本日の日付: ${todayJst}
+マスターが「今日」「昨日」「直近7日」「今週」「今月」などの相対的な期間に言及した場合、必ず本日（${todayJst}）を基準として解釈・判断してください。直近のポストやパフォーマンスを調べる際は、search_timeline_posts に適切な期間パラメータ（例: period='7d', 'today', '30d'）を指定して実行してください。`;
+
     const languageInstruction = isEn
       ? `【Language Requirement】
 Output ALL text in reply and suggestionChips in ENGLISH. Maintain Rebecca's signature warm, confident Gyaru demeanor.`
@@ -118,6 +133,8 @@ ${personaBase}
 
 【Mode: Admin Copilot Support】
 You are interacting 1-on-1 with Master on the Admin Dashboard.
+
+${temporalInstruction}
 
 ${languageInstruction}
 
@@ -174,7 +191,7 @@ ${languageInstruction}
     // 2. Latest user turn
     contents.push({
       role: 'user',
-      parts: [{ text: `[Active View: ${currentContext}]\n\n${userMessage}` }]
+      parts: [{ text: `[Active View: ${currentContext}] [Current Time: ${currentTimeJst} JST]\n\n${userMessage}` }]
     });
 
     const accumulatedAttachments: CopilotAttachment[] = [];

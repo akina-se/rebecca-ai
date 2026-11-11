@@ -25,6 +25,7 @@ describe('TopNavComponent', () => {
       currentUserSignal: userSignal,
       currentUser$: of({ displayName: 'Test User', email: 'test@example.com' })
     });
+    mockAuthService.logout.and.returnValue(Promise.resolve());
     mockRouter = jasmine.createSpyObj('Router', ['navigate'], { url: '/dashboard' });
 
     await TestBed.configureTestingModule({
@@ -119,8 +120,8 @@ describe('TopNavComponent', () => {
     expect(component.isUserDropdownOpen).toBeFalse();
   });
 
-  it('should navigate to /login on logout', () => {
-    component.logout();
+  it('should navigate to /login on logout', async () => {
+    await component.logout();
     expect(mockAuthService.logout).toHaveBeenCalled();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
   });

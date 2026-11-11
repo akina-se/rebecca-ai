@@ -176,6 +176,18 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       expect(res.attachments?.[0].metrics?.impressions).toBe(45000);
     });
 
+    it('SearchTimelinePostsTool should pass period parameter to timelineRepo.getPosts', async () => {
+      const tool = new SearchTimelinePostsTool();
+      const res = await tool.execute({ period: '7d', sortBy: 'impressions', limit: 5 }, { timelineRepo, isEn: false });
+
+      expect(timelineRepo.getPosts).toHaveBeenCalledWith(expect.objectContaining({
+        period: '7d',
+        sortBy: 'impressions',
+        limit: 5
+      }));
+      expect((res.data as any).period).toBe('7d');
+    });
+
     it('SearchUsersTool should query users and filter by status', async () => {
       const tool = new SearchUsersTool();
       const res = await tool.execute({ query: '@cyber', status: 'ACTIVE' }, { usersRepo, isEn: false });

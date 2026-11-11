@@ -4,6 +4,8 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { 
   getAuth, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
   User, 
@@ -62,6 +64,20 @@ export class AuthService {
   }
 
   /**
+   * Detects whether the current environment is a mobile browser (iOS, Android)
+   * where popup windows are frequently blocked or suppressed.
+   */
+  isMobileDevice(): boolean {
+    if (typeof navigator === 'undefined') {
+      return false;
+    }
+    const userAgent = navigator.userAgent;
+    const isMobileUA = /iPhone|iPad|iPod|Android/i.test(userAgent);
+    const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return isMobileUA || isIPadOS;
+  }
+
+  /**
    * Waits for Firebase Auth to complete its initial authentication state check.
    */
   async waitForInit(): Promise<void> {
@@ -72,6 +88,28 @@ export class AuthService {
     const user = this.auth?.currentUser ?? null;
     if (this.currentUserSignal() !== user) {
       this.currentUserSignal.set(user);
+    }
+  }
+
+  /**
+   * Checks for and processes the result of a previous signInWithRedirect flow.
+   * Should be invoked on application or login page initialization.
+   *
+   * @returns The authenticated User if a redirect sign-in just completed, or null otherwise.
+   */
+  async handleRedirectResult(): Promise<User | null> {
+    const auth = this.ensureAuth();
+    try {
+      const result = await getRedirectResult(auth);
+      if (result?.user) {
+        await result.user.getIdToken(true);
+        this.currentUserSignal.set(result.user);
+        return result.user;
+      }
+      return null;
+    } catch (error) {
+      console.error('Redirect sign-in error', error);
+      throw error;
     }
   }
 
@@ -87,19 +125,43 @@ export class AuthService {
 
   /**
    * Initiates a login flow using Google as the authentication provider.
+   * On mobile devices (iOS Safari, Android Chrome), uses signInWithRedirect to avoid
+   * silent popup suppression. On desktop, uses signInWithPopup with a timeout guard
+   * and fallback to signInWithRedirect if popups are blocked.
+   *
+   * @returns The authenticated User if resolved via popup, or null if redirect was triggered.
    */
-  async loginWithGoogle(): Promise<User> {
+  async loginWithGoogle(): Promise<User | null> {
     const auth = this.ensureAuth();
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account'
     });
+
+    if (this.isMobileDevice()) {
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+
     try {
-      const result = await signInWithPopup(auth, provider);
+      const popupPromise = signInWithPopup(auth, provider);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Authentication popup timed out or was blocked by browser. Please try again.')),
+          25000
+        )
+      );
+      const result = await Promise.race([popupPromise, timeoutPromise]);
       await result.user.getIdToken(true);
       this.currentUserSignal.set(result.user);
       return result.user;
-    } catch (error) {
+    } catch (error: unknown) {
+      const authError = error as { code?: string };
+      if (authError?.code === 'auth/popup-blocked') {
+        console.warn('Authentication popup was blocked by browser, falling back to signInWithRedirect.');
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
       console.error('Google login error', error);
       throw error;
     }
@@ -118,7 +180,7 @@ export class AuthService {
    * Retrieves the currently authenticated user.
    */
   get currentUser(): User | null {
-    return this.currentUserSignal() || this.auth?.currentUser || null;
+    return this.currentUserSignal() ?? this.auth?.currentUser ?? null;
   }
 
   /**
@@ -128,7 +190,7 @@ export class AuthService {
     const user = this.currentUser;
     if (!user) return null;
     const userObj = user as unknown as { accessToken?: string; stsTokenManager?: { accessToken?: string } };
-    return userObj.accessToken || userObj.stsTokenManager?.accessToken || null;
+    return userObj.accessToken ?? userObj.stsTokenManager?.accessToken ?? null;
   }
 
   /**

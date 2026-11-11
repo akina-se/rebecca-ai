@@ -27,7 +27,7 @@ export class SearchTimelinePostsTool implements CopilotTool {
         },
         period: {
           type: Type.STRING,
-          description: 'Time window for posts: today, 7d, 30d, or all-time.',
+          description: 'Time window for posts: today, 7d, 30d, or all-time. Default is all-time.',
           enum: ['today', '7d', '30d', 'all-time']
         },
         limit: {
@@ -46,10 +46,12 @@ export class SearchTimelinePostsTool implements CopilotTool {
     const limit = Math.max(1, Math.min(Number(params.limit) || 5, 20));
     const sortBy = typeof params.sortBy === 'string' ? params.sortBy : 'impressions';
     const sortOrder = params.sortOrder === 'asc' ? 'asc' : 'desc';
+    const period = typeof params.period === 'string' ? params.period : 'all-time';
 
     const result = await context.timelineRepo.getPosts({
       sortBy,
       sortOrder,
+      period,
       limit,
       page: 1
     });
@@ -80,6 +82,7 @@ export class SearchTimelinePostsTool implements CopilotTool {
 
     return {
       data: {
+        period,
         totalFound: posts.length,
         posts: summary
       },

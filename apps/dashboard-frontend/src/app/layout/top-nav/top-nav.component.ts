@@ -31,7 +31,7 @@ export class TopNavComponent {
   }
 
   get pageTitle(): string {
-    const url = this.router.url || '';
+    const url = this.router.url ?? '';
     if (url.includes('/campaigns')) return this.translationService.t('nav.campaigns');
     if (url.includes('/memory')) return this.translationService.t('nav.memory');
     if (url.includes('/assets')) return this.translationService.t('nav.assets');
@@ -75,10 +75,10 @@ export class TopNavComponent {
     this.router.navigate(['/settings']);
   }
 
-  logout() {
+  async logout() {
     this.isUserDropdownOpen = false;
-    this.authService.logout();
-    this.router.navigate(['/login']);
+    await this.authService.logout();
+    await this.router.navigate(['/login']);
   }
 
   @HostListener('document:click', ['$event'])

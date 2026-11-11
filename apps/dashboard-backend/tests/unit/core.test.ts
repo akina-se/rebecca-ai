@@ -5,7 +5,7 @@ jest.mock('google-auth-library', () => ({
   })),
 }));
 
-import { getJstDateRangeInUtc } from '../../src/core/dateUtils';
+import { getJstDateRangeInUtc, getTimelinePeriodRangeInUtc } from '../../src/core/dateUtils';
 import { deleteTweetViaBotService, getBotServiceHeaders } from '../../src/core/botServiceClient';
 import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
@@ -36,6 +36,41 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
 
       // Invalid format
       expect(getJstDateRangeInUtc('monthly', 'invalid-month')).toBeNull();
+    });
+  });
+
+  describe('dateUtils - getTimelinePeriodRangeInUtc', () => {
+    it('should return null for empty, undefined, all-time, or unknown period', () => {
+      expect(getTimelinePeriodRangeInUtc(undefined)).toBeNull();
+      expect(getTimelinePeriodRangeInUtc('')).toBeNull();
+      expect(getTimelinePeriodRangeInUtc('all-time')).toBeNull();
+      expect(getTimelinePeriodRangeInUtc('unknown-period')).toBeNull();
+    });
+
+    it('should return range for today', () => {
+      const res = getTimelinePeriodRangeInUtc('today');
+      expect(res).not.toBeNull();
+      expect(res?.start).toBeDefined();
+      expect(res?.end).toBeDefined();
+    });
+
+    it('should return range for 7d and weekly', () => {
+      const res7d = getTimelinePeriodRangeInUtc('7d');
+      expect(res7d).not.toBeNull();
+      expect(new Date(res7d!.start).getTime()).toBeLessThan(new Date(res7d!.end!).getTime());
+
+      const resWeekly = getTimelinePeriodRangeInUtc('weekly');
+      expect(resWeekly).not.toBeNull();
+      expect(new Date(resWeekly!.start).getTime()).toBeLessThan(new Date(resWeekly!.end!).getTime());
+    });
+
+    it('should return range for 30d, monthly, and yearly', () => {
+      const res30d = getTimelinePeriodRangeInUtc('30d');
+      expect(res30d).not.toBeNull();
+      expect(getTimelinePeriodRangeInUtc('monthly')).not.toBeNull();
+      expect(getTimelinePeriodRangeInUtc('yearly')).not.toBeNull();
+      expect(getTimelinePeriodRangeInUtc('monthly', '2026-11')).not.toBeNull();
+      expect(getTimelinePeriodRangeInUtc('yearly', '2026')).not.toBeNull();
     });
   });
 

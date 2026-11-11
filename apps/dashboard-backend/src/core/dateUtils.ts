@@ -41,3 +41,58 @@ export function getJstDateRangeInUtc(period: string, isoDate?: string): { start:
   
   return null;
 }
+
+/**
+ * Calculates start and end UTC timestamps for relative periods ('today', '7d', '30d')
+ * or JST calendar periods ('monthly', 'yearly') aligned with JST boundaries.
+ * Returns null if the period is 'all-time', undefined, or unsupported.
+ *
+ * @param period - The period window ('today', '7d', 'weekly', '30d', 'monthly', 'yearly', 'all-time').
+ * @param isoDate - Optional specific calendar date ('yyyy-MM' or 'yyyy').
+ * @returns Object with start and end ISO strings in UTC, or null.
+ */
+export function getTimelinePeriodRangeInUtc(period?: string, isoDate?: string): { start: string; end?: string } | null {
+  if (!period || period === 'all-time') {
+    return null;
+  }
+
+  const ZONE_JST = 'Asia/Tokyo';
+  const nowJst = DateTime.now().setZone(ZONE_JST);
+
+  if (period === 'today') {
+    const start = nowJst.startOf('day').toUTC().toISO();
+    const end = nowJst.endOf('day').toUTC().toISO();
+    return { start: start!, end: end! };
+  }
+
+  if (period === '7d' || period === 'weekly') {
+    const start = nowJst.minus({ days: 7 }).startOf('day').toUTC().toISO();
+    const end = nowJst.endOf('day').toUTC().toISO();
+    return { start: start!, end: end! };
+  }
+
+  if (period === '30d') {
+    const start = nowJst.minus({ days: 30 }).startOf('day').toUTC().toISO();
+    const end = nowJst.endOf('day').toUTC().toISO();
+    return { start: start!, end: end! };
+  }
+
+  if (isoDate) {
+    const jstRange = getJstDateRangeInUtc(period, isoDate);
+    if (jstRange) return jstRange;
+  }
+
+  if (period === 'monthly') {
+    const start = nowJst.startOf('month').toUTC().toISO();
+    const end = nowJst.endOf('month').toUTC().toISO();
+    return { start: start!, end: end! };
+  }
+
+  if (period === 'yearly') {
+    const start = nowJst.startOf('year').toUTC().toISO();
+    const end = nowJst.endOf('year').toUTC().toISO();
+    return { start: start!, end: end! };
+  }
+
+  return null;
+}
