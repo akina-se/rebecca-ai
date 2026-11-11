@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.41.2](https://github.com/akina-se/rebecca-ai/compare/v1.41.1...v1.41.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* **auth,copilot:** support mobile safari redirect login and ground copilot relative date filtering ([#468](https://github.com/akina-se/rebecca-ai/issues/468)) ([c965a24](https://github.com/akina-se/rebecca-ai/commit/c965a24533c96595aa2c6a67ee31e4bc605e1c24))
+
 ## [1.41.1](https://github.com/akina-se/rebecca-ai/compare/v1.41.0...v1.41.1) (2026-11-11)
 
 
