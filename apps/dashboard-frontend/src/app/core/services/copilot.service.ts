@@ -181,11 +181,14 @@ export class CopilotService {
     switch (action.type) {
       case 'BLOCK_USER': {
         const focused = this.contextService.focusedEntity();
-        let userId = String(payload['userId'] || payload['handle'] || payload['id'] || payload['user'] || payload['target'] || '');
-        if (!userId && focused?.type === 'user') {
-          userId = focused.id;
+        let targetId = typeof payload['userId'] === 'string' ? payload['userId'].trim() : '';
+        if (!targetId && focused?.type === 'user') {
+          targetId = focused.id;
         }
-        const cleanId = userId.replace(/^@/, '').trim();
+        const cleanId = targetId.replace(/^@/, '').trim();
+        const handle = typeof payload['handle'] === 'string' ? payload['handle'].trim() : '';
+        const name = typeof payload['name'] === 'string' ? payload['name'].trim() : '';
+        const displayLabel = handle || (name ? `@${name}` : (cleanId ? `@${cleanId}` : ''));
         if (cleanId) {
           this.usersRepo.bulkUpdateStatus([cleanId], UserStatus.BLOCKED).subscribe({
             next: () => {
@@ -196,8 +199,9 @@ export class CopilotService {
                   details: { ...(currentFocus.details || {}), status: UserStatus.BLOCKED }
                 });
               }
-              this.toastService.show(isEn ? `Blocked user @${cleanId}` : `ユーザー @${cleanId} を正常にブロックしました`, 'success');
-              this.appendSystemAck(isEn ? `Following your approval, I've blocked user @${cleanId}♡` : `マスターの承認に基づき、ユーザー @${cleanId} をブロック（除外）したわよ♡`);
+              const label = displayLabel || `@${cleanId}`;
+              this.toastService.show(isEn ? `Blocked user ${label}` : `ユーザー ${label} を正常にブロックしました`, 'success');
+              this.appendSystemAck(isEn ? `Following your approval, I've blocked user ${label}♡` : `マスターの承認に基づき、ユーザー ${label} をブロック（除外）したわよ♡`);
             },
             error: () => this.toastService.show(isEn ? `Failed to block user` : `ブロック操作に失敗しました`, 'error')
           });
@@ -209,11 +213,14 @@ export class CopilotService {
 
       case 'UNBLOCK_USER': {
         const focused = this.contextService.focusedEntity();
-        let userId = String(payload['userId'] || payload['handle'] || payload['id'] || payload['user'] || payload['target'] || '');
-        if (!userId && focused?.type === 'user') {
-          userId = focused.id;
+        let targetId = typeof payload['userId'] === 'string' ? payload['userId'].trim() : '';
+        if (!targetId && focused?.type === 'user') {
+          targetId = focused.id;
         }
-        const cleanId = userId.replace(/^@/, '').trim();
+        const cleanId = targetId.replace(/^@/, '').trim();
+        const handle = typeof payload['handle'] === 'string' ? payload['handle'].trim() : '';
+        const name = typeof payload['name'] === 'string' ? payload['name'].trim() : '';
+        const displayLabel = handle || (name ? `@${name}` : (cleanId ? `@${cleanId}` : ''));
         if (cleanId) {
           this.usersRepo.bulkUpdateStatus([cleanId], UserStatus.ACTIVE).subscribe({
             next: () => {
@@ -224,8 +231,9 @@ export class CopilotService {
                   details: { ...(currentFocus.details || {}), status: UserStatus.ACTIVE }
                 });
               }
-              this.toastService.show(isEn ? `Unblocked user @${cleanId}` : `ユーザー @${cleanId} のブロックを解除しました`, 'success');
-              this.appendSystemAck(isEn ? `Unblocked user @${cleanId}.` : `ユーザー @${cleanId} のブロックを解除したわ。`);
+              const label = displayLabel || `@${cleanId}`;
+              this.toastService.show(isEn ? `Unblocked user ${label}` : `ユーザー ${label} のブロックを解除しました`, 'success');
+              this.appendSystemAck(isEn ? `Following your approval, I've unblocked user ${label}♡` : `マスターの承認に基づき、ユーザー ${label} のブロックを解除したわ♡`);
             },
             error: () => this.toastService.show(isEn ? `Failed to unblock user` : `ブロック解除に失敗しました`, 'error')
           });
@@ -237,11 +245,11 @@ export class CopilotService {
 
       case 'DELETE_POST': {
         const focused = this.contextService.focusedEntity();
-        let postId = String(payload['postId'] || payload['id'] || payload['post_id'] || payload['targetPost'] || '');
-        if (!postId && focused?.type === 'post') {
-          postId = focused.id;
+        let targetId = typeof payload['postId'] === 'string' ? payload['postId'].trim() : '';
+        if (!targetId && focused?.type === 'post') {
+          targetId = focused.id;
         }
-        const cleanPostId = postId.replace(/^#/, '').trim();
+        const cleanPostId = targetId.replace(/^#/, '').trim();
         if (cleanPostId) {
           this.dashboardRepo.deletePosts([cleanPostId]).subscribe({
             next: () => {

@@ -87,7 +87,7 @@ export class SearchAssetsTool implements CopilotTool {
       imageUrl: a.url,
       thumbnailUrl: a.thumbnailUrl ?? a.url,
       statusBadge: a.status,
-      navigationPath: '/assets'
+      navigationPath: `/assets?assetId=${a.id}`
     }));
 
     const summary = finalAssets.map((a: Asset) => ({

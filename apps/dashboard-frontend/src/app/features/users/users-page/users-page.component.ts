@@ -1,6 +1,7 @@
-﻿import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { UserDrawerComponent } from '../../../shared/components/organisms/user-drawer/user-drawer.component';
 import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
@@ -43,9 +44,17 @@ export class UsersPageComponent implements OnInit {
 
   toastService = inject(ToastService);
   private readonly usersRepo = inject(USERS_REPOSITORY);
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit() {
     this.loadUsers(1);
+
+    this.route.queryParamMap.subscribe(params => {
+      const userId = params.get('userId');
+      if (userId) {
+        this.openUserDrawer(userId);
+      }
+    });
   }
 
   loadUsers(page = 1) {
@@ -117,6 +126,15 @@ export class UsersPageComponent implements OnInit {
       const user = this.users().find(u => u.id === userOrId);
       this.selectedUserId = userOrId;
       this.drawerTitle = `@${user?.username || userOrId}`;
+      if (!user) {
+        this.usersRepo.getById(userOrId).subscribe({
+          next: (fetchedUser) => {
+            if (fetchedUser && this.selectedUserId === userOrId) {
+              this.drawerTitle = `@${fetchedUser.username || fetchedUser.name || userOrId}`;
+            }
+          }
+        });
+      }
     } else {
       this.selectedUserId = userOrId.id;
       this.drawerTitle = `@${userOrId.username || userOrId.id}`;

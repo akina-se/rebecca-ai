@@ -73,7 +73,8 @@ export class AiDrawerComponent implements OnInit, AfterViewChecked {
 
   onNavigate(path?: string): void {
     if (path) {
-      this.router.navigate([path]);
+      this.close();
+      this.router.navigateByUrl(path);
     }
   }
 

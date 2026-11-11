@@ -14,6 +14,7 @@ import { ToastService } from '../../shared/services/toast.service';
 import { TranslationService } from './translation.service';
 import { SettingsService } from './settings.service';
 import { CopilotContextService } from './copilot-context.service';
+import { UserStatus } from '@rebecca/types';
 
 describe('CopilotService', () => {
   let service: CopilotService;
@@ -232,6 +233,80 @@ describe('CopilotService', () => {
       payload: {}
     });
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.any(String), 'error');
+
+    // Handle and name display label
+    usersRepoSpy.bulkUpdateStatus.and.returnValue(of({ success: true, count: 1 }));
+    service.approveAction(0, {
+      type: 'UNBLOCK_USER',
+      title: 'Unblock User',
+      description: '',
+      impactLevel: 'warning',
+      requiresConfirmation: true,
+      payload: { userId: '1934600616791482369', handle: '@se_akina', name: 'AKINA' }
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Unblocked user @se_akina', 'success');
+
+    // BLOCK_USER with handle and name
+    service.approveAction(0, {
+      type: 'BLOCK_USER',
+      title: 'Block User',
+      description: '',
+      impactLevel: 'danger',
+      requiresConfirmation: true,
+      payload: { userId: '1934600616791482369', handle: '@se_akina' }
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Blocked user @se_akina', 'success');
+
+    // BLOCK_USER with name only and focused user update
+    contextService.setFocusedEntity({ type: 'user', id: '1934600616791482369', label: 'AKINA', details: { status: UserStatus.ACTIVE } });
+    service.approveAction(0, {
+      type: 'BLOCK_USER',
+      title: 'Block User',
+      description: '',
+      impactLevel: 'danger',
+      requiresConfirmation: true,
+      payload: { userId: '1934600616791482369', name: 'AKINA' }
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Blocked user @AKINA', 'success');
+    expect(contextService.focusedEntity()?.details?.status).toBe(UserStatus.BLOCKED);
+
+    // BLOCK_USER error handling
+    usersRepoSpy.bulkUpdateStatus.and.returnValue(throwError(() => new Error('Block failed')));
+    service.approveAction(0, {
+      type: 'BLOCK_USER',
+      title: 'Block User',
+      description: '',
+      impactLevel: 'danger',
+      requiresConfirmation: true,
+      payload: { userId: 'err_user' }
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to block user', 'error');
+
+    // BLOCK_USER without target
+    contextService.clearFocusedEntity();
+    service.approveAction(0, {
+      type: 'BLOCK_USER',
+      title: 'Block User',
+      description: '',
+      impactLevel: 'danger',
+      requiresConfirmation: true,
+      payload: {}
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('No target user specified to block', 'error');
+
+    // UNBLOCK_USER with name only and focused user update
+    usersRepoSpy.bulkUpdateStatus.and.returnValue(of({ success: true, count: 1 }));
+    contextService.setFocusedEntity({ type: 'user', id: '1934600616791482369', label: 'AKINA', details: { status: UserStatus.BLOCKED } });
+    service.approveAction(0, {
+      type: 'UNBLOCK_USER',
+      title: 'Unblock User',
+      description: '',
+      impactLevel: 'warning',
+      requiresConfirmation: true,
+      payload: { userId: '1934600616791482369', name: 'AKINA' }
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Unblocked user @AKINA', 'success');
+    expect(contextService.focusedEntity()?.details?.status).toBe(UserStatus.ACTIVE);
   });
 
   it('should execute DELETE_POST action on HITL approval in JA and EN and handle missing post and errors', () => {

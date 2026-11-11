@@ -252,13 +252,43 @@ ${languageInstruction}
     // 4. Phase 2: Structured Output Synthesis
     // Fast path: If the model directly generated valid structured JSON with reply and suggestion chips,
     // return it immediately to avoid an extra network roundtrip.
+    const resolveFinalAttachments = (
+      accumulated: CopilotAttachment[],
+      action: CopilotAction | null
+    ): CopilotAttachment[] | undefined => {
+      if (accumulated.length === 0) return undefined;
+
+      // Deduplicate by type and id
+      const unique = Array.from(
+        new Map(accumulated.map(a => [`${a.type}:${a.id}`, a])).values()
+      );
+
+      // If an administrative action is proposed targeting a specific entity, isolate to that targeted entity
+      if (action?.payload?.userId) {
+        const targetUserId = String(action.payload.userId);
+        const hasTargetUser = unique.some(a => a.type === 'user' && a.id === targetUserId);
+        if (hasTargetUser) {
+          return unique.filter(a => a.type !== 'user' || a.id === targetUserId);
+        }
+      } else if (action?.payload?.postId) {
+        const targetPostId = String(action.payload.postId);
+        const hasTargetPost = unique.some(a => a.type === 'post' && a.id === targetPostId);
+        if (hasTargetPost) {
+          return unique.filter(a => a.type !== 'post' || a.id === targetPostId);
+        }
+      }
+
+      return unique;
+    };
+
     if (finalCandidateText) {
       const directExtracted = extractStructuredCopilotResponse(finalCandidateText);
       if (directExtracted.reply && directExtracted.suggestionChips.length > 0) {
+        const action = proposedAction ?? directExtracted.actionRequired ?? null;
         return {
           reply: directExtracted.reply,
-          attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
-          actionRequired: proposedAction ?? directExtracted.actionRequired ?? null,
+          attachments: resolveFinalAttachments(accumulatedAttachments, action),
+          actionRequired: action,
           suggestionChips: directExtracted.suggestionChips
         };
       }
@@ -286,11 +316,12 @@ ${languageInstruction}
     const synthesisResponse = await Promise.race([synthesisCall, timeoutGuard]);
     const synthesisText = synthesisResponse.text?.trim() ?? '';
     const extracted = extractStructuredCopilotResponse(synthesisText);
+    const action = proposedAction ?? extracted.actionRequired ?? null;
 
     return {
       reply: extracted.reply,
-      attachments: accumulatedAttachments.length > 0 ? accumulatedAttachments : undefined,
-      actionRequired: proposedAction ?? extracted.actionRequired ?? null,
+      attachments: resolveFinalAttachments(accumulatedAttachments, action),
+      actionRequired: action,
       suggestionChips: extracted.suggestionChips
     };
   }
