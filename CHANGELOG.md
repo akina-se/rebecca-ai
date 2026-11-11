@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.41.1](https://github.com/akina-se/rebecca-ai/compare/v1.41.0...v1.41.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* **copilot:** resolve candidate filtering, drawer deep-linking, handle display, and neon table styles ([#463](https://github.com/akina-se/rebecca-ai/issues/463)) ([#464](https://github.com/akina-se/rebecca-ai/issues/464)) ([647e829](https://github.com/akina-se/rebecca-ai/commit/647e82900252ea7e8cf1b00898a76ba552c7d4f6))
+
 ## [1.41.0](https://github.com/akina-se/rebecca-ai/compare/v1.40.0...v1.41.0) (2026-11-11)
 
 
