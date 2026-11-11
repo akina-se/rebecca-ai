@@ -34,10 +34,6 @@ export class AuthService {
   readonly currentUserSignal = signal<User | null>(null);
   public currentUser$: Observable<User | null> = toObservable(this.currentUserSignal);
 
-  get isEmulator(): boolean {
-    return this.configService.isEmulator;
-  }
-
   private ensureAuth(): Auth {
     if (!this.auth) {
       const firebaseConfig = this.configService.firebaseConfig;

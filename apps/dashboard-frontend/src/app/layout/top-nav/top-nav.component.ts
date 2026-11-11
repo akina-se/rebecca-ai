@@ -1,5 +1,4 @@
 import { Component, Output, EventEmitter, HostListener, ElementRef, inject } from '@angular/core';
-
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DrawerService } from '../../core/services/drawer.service';
