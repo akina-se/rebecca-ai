@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ConfigService } from './config.service';
-import { environment } from '../../../environments/environment';
 
 describe('ConfigService', () => {
   let service: ConfigService;
@@ -108,15 +107,14 @@ describe('ConfigService', () => {
     expect(service.isEmulator).toBeFalse();
   });
 
-  it('should return isEmulator false when environment.production is true', () => {
-    const originalProd = environment.production;
-    try {
-      (environment as { production: boolean }).production = true;
-      (service as any).config = { useEmulators: true };
-      expect(service.isEmulator).toBeFalse();
-    } finally {
-      (environment as { production: boolean }).production = originalProd;
-    }
+  it('should return isEmulator false when config.production is true', () => {
+    (service as any).config = { production: true, useEmulators: true };
+    expect(service.isEmulator).toBeFalse();
+  });
+
+  it('should return isEmulator true when config.production is false and useEmulators is true', () => {
+    (service as any).config = { production: false, useEmulators: true };
+    expect(service.isEmulator).toBeTrue();
   });
 
   it('should support localized persona names with getPersonaName', async () => {
