@@ -22,7 +22,7 @@ module.exports = {
       },
     ],
   },
-  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$|@firebase|firebase)'],
+  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$|@firebase|firebase|marked)'],
   moduleNameMapper: {
     '^@rebecca/types$': '<rootDir>/../../packages/types/src/index.ts',
     '^firebase/app$': '<rootDir>/../../node_modules/@firebase/app',

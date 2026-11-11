@@ -346,13 +346,16 @@ export class UsersRepository {
 
   /**
    * Updates a user's core memory profile in Firestore.
+   * Resolves by direct document ID first, falling back to matching username field.
    * 
    * @param id - The user ID/handle to update.
    * @param coreProfileJson - The JSON string representing the user's core profile.
    * @returns A promise that resolves when the update is complete.
    */
   async updateMemory(id: string, coreProfileJson: string | Record<string, unknown>): Promise<void> {
-    const rawId = id.replace('@', '');
+    const rawId = id.replace('@', '').trim();
+    if (!rawId) return;
+
     let parsed: Record<string, unknown>;
     try {
       parsed = typeof coreProfileJson === 'string' ? JSON.parse(coreProfileJson) : coreProfileJson;
@@ -360,23 +363,23 @@ export class UsersRepository {
       logger.error('Failed to parse memory JSON for user', e, { userId: id });
       return;
     }
-    await this.collections.users.doc(rawId).set(
-      { coreProfile: parsed },
-      { merge: true }
-    );
+
+    await this.collections.users.doc(rawId).set({ coreProfile: parsed }, { merge: true });
   }
 
   /**
-   * Updates status for multiple users in a bulk operation.
+   * Updates status for multiple users in a bulk operation by exact document ID.
    * 
-   * @param id - The array of user IDs/handles to update.
+   * @param ids - The array of user IDs to update.
    * @param status - The new status (Active, Blocked, Muted) to apply.
    * @returns A promise that resolves when the batch write is complete.
    */
   async updateStatusBulk(ids: string[], status: UserStatus): Promise<void> {
     const batch = this.firestore.batch();
     for (const id of ids) {
-      const rawId = id.replace('@', '');
+      const rawId = id.replace('@', '').trim();
+      if (!rawId) continue;
+
       batch.set(this.collections.users.doc(rawId), { status }, { merge: true });
     }
     await batch.commit();

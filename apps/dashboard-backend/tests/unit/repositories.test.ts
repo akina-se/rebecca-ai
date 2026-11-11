@@ -218,6 +218,25 @@ describe('Dashboard Backend Repositories Unit Tests', () => {
       expect(mockBatchSet).toHaveBeenCalledTimes(2);
       expect(mockBatchCommit).toHaveBeenCalledTimes(1);
     });
+
+    it('updateMemory and updateStatusBulk should update user document directly by exact ID', async () => {
+      const mockDocRef = { set: jest.fn().mockResolvedValue(undefined) };
+      (usersRepo as any).collections.users.doc = jest.fn().mockReturnValue(mockDocRef);
+
+      await usersRepo.updateMemory('user_123', '{"bio":"updated"}');
+      expect(mockDocRef.set).toHaveBeenCalledWith({ coreProfile: { bio: 'updated' } }, { merge: true });
+
+      const mockBatchSet = jest.fn();
+      const mockBatchCommit = jest.fn().mockResolvedValue(undefined);
+      (usersRepo as any).firestore.batch = jest.fn().mockReturnValue({
+        set: mockBatchSet,
+        commit: mockBatchCommit
+      });
+
+      await usersRepo.updateStatusBulk(['user_123'], UserStatus.BLOCKED);
+      expect(mockBatchSet).toHaveBeenCalledWith(mockDocRef, { status: UserStatus.BLOCKED }, { merge: true });
+      expect(mockBatchCommit).toHaveBeenCalled();
+    });
   });
 
   describe('AssetsRepository', () => {

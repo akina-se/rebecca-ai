@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, inject, signal } from '@angular/core';
+import { Component, Input, OnChanges, inject, signal, effect } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { DrawerService } from '../../../../core/services/drawer.service';
@@ -56,6 +56,30 @@ export class UserDrawerComponent implements OnChanges {
   /** Indicates if a profile save operation is currently in progress. */
   readonly isSavingProfile = signal<boolean>(false);
   private readonly usersRepo = inject(USERS_REPOSITORY);
+
+  constructor() {
+    // Reactively sync blocked state if user status changes via Copilot HITL action execution
+    effect(() => {
+      const focused = this.contextService.focusedEntity();
+      const currentUser = this.user();
+      if (focused && focused.type === 'user' && currentUser) {
+        const isSameUser = focused.id === currentUser.id ||
+          focused.id === this.userId ||
+          focused.label.replace(/^@/, '').toLowerCase() === (currentUser.username || '').toLowerCase();
+
+        if (isSameUser) {
+          const newStatus = focused.details?.['status'] as UserStatus | undefined;
+          if (newStatus === UserStatus.BLOCKED || newStatus === UserStatus.ACTIVE) {
+            const isNowBlocked = newStatus === UserStatus.BLOCKED;
+            if (this.isBlocked() !== isNowBlocked) {
+              this.isBlocked.set(isNowBlocked);
+              this.user.set({ ...currentUser, status: newStatus });
+            }
+          }
+        }
+      }
+    });
+  }
 
   /**
    * Lifecycle hook that is called when any data-bound property of a directive changes.
@@ -155,12 +179,19 @@ export class UserDrawerComponent implements OnChanges {
     if (!u) return;
     const targetStatus = this.isBlocked() ? UserStatus.ACTIVE : UserStatus.BLOCKED;
     this.isActionLoading.set(true);
-    this.usersRepo.bulkUpdateStatus([this.userId], targetStatus).subscribe({
+    const targetId = u.id || this.userId;
+    this.usersRepo.bulkUpdateStatus([targetId], targetStatus).subscribe({
       next: () => {
         this.isBlocked.set(targetStatus === UserStatus.BLOCKED);
         this.user.set({ ...u, status: targetStatus });
+        this.contextService.setFocusedEntity({
+          type: 'user',
+          id: u.id,
+          label: u.username ? `@${u.username}` : (u.name || u.id),
+          details: { interactions: u.interactions, status: targetStatus, firstSeen: u.firstSeen, lastSeen: u.lastSeen }
+        });
         this.isActionLoading.set(false);
-        this.toastService.show(`Successfully ${targetStatus === UserStatus.BLOCKED ? 'blocked' : 'unblocked'} user ${this.userId}`, 'success');
+        this.toastService.show(`Successfully ${targetStatus === UserStatus.BLOCKED ? 'blocked' : 'unblocked'} user ${targetId}`, 'success');
       },
       error: (err) => {
         console.error('Failed to update user status:', err);

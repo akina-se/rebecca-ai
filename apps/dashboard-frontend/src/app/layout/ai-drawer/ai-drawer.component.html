@@ -23,7 +23,7 @@
         <div class="ai-message model-row">
           <img src="rebecca_icon.png" alt="Rebecca" class="ai-avatar">
           <div class="ai-content model-bubble">
-            <div class="bubble-text" style="white-space: pre-wrap;">{{ msg.text }}</div>
+            <div class="bubble-text copilot-markdown-content" [innerHTML]="msg.text | markdown"></div>
 
             <!-- Visual Attachments (Image previews, Post cards, User pills) -->
             @if (msg.attachments && msg.attachments.length > 0) {

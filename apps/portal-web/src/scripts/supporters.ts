@@ -68,7 +68,7 @@ export async function loadSupportPlans(): Promise<void> {
         btn.href = plan.paymentUrl;
         btn.target = '_blank';
         btn.rel = 'noopener noreferrer';
-        btn.classList.remove('btn-disabled', 'disabled');
+        btn.classList.remove('btn-loading', 'btn-disabled', 'disabled');
         btn.removeAttribute('aria-disabled');
         if (card) card.classList.remove('tier-disabled');
 
@@ -80,6 +80,7 @@ export async function loadSupportPlans(): Promise<void> {
         }
       } else {
         btn.removeAttribute('href');
+        btn.classList.remove('btn-loading');
         btn.classList.add('btn-disabled', 'disabled');
         btn.setAttribute('aria-disabled', 'true');
         if (card) card.classList.add('tier-disabled');
@@ -88,6 +89,19 @@ export async function loadSupportPlans(): Promise<void> {
     }
   } catch (err) {
     console.warn('[Supporters] Failed to load support plans:', err);
+    // Fallback: Transition all loading tier buttons to coming soon state on error
+    const tiers = ['bronze', 'silver', 'gold'];
+    for (const tier of tiers) {
+      const btn = document.getElementById(`btn-plan-${tier}`) as HTMLAnchorElement | null;
+      if (!btn) continue;
+      const card = btn.closest('.tier-card');
+      btn.removeAttribute('href');
+      btn.classList.remove('btn-loading');
+      btn.classList.add('btn-disabled', 'disabled');
+      btn.setAttribute('aria-disabled', 'true');
+      if (card) card.classList.add('tier-disabled');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6; flex-shrink: 0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="t-ja">準備中（受付開始までお待ちください）</span><span class="t-en">Coming Soon</span>';
+    }
   }
 }
 
