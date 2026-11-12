@@ -127,7 +127,7 @@ jobs:
 
   e2e-test:
     name: Playwright Dashboard E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: [build-and-test]
     permissions:
@@ -158,8 +158,8 @@ jobs:
 
       - name: Install Playwright Chromium & Japanese Fonts
         run: |
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends fonts-noto-cjk fonts-ipafont-gothic fonts-vlgothic
+          sudo apt-get update -y --quiet || true
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends --quiet fonts-noto-cjk fonts-ipafont-gothic fonts-vlgothic || true
           npx --yes --workspace=dashboard-e2e playwright install chromium
 
       - name: Run Playwright E2E Tests with Firebase Emulators
