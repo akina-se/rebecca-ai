@@ -15,7 +15,7 @@ const VALID_ACTIONS = new Set<CopilotActionType>([
  */
 export class ProposeDestructiveActionTool implements CopilotTool {
   readonly name = 'propose_destructive_action';
-  readonly description = 'Proposes a safety-gated administrative operation (BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS) requiring explicit confirmation from the operator. For BLOCK_USER and UNBLOCK_USER, you MUST FIRST investigate the account using search_users to obtain the exact username/ID before calling this function. If the target account does not exist in the database, this function returns an error.';
+  readonly description = 'Proposes a safety-gated administrative operation (BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS) requiring explicit confirmation from Master. For BLOCK_USER and UNBLOCK_USER, you MUST FIRST investigate the account using search_users to obtain the exact username/ID before calling this function. If the target account does not exist in the database, this function returns an error.';
 
   readonly declaration: FunctionDeclaration = {
     name: this.name,
@@ -122,8 +122,8 @@ export class ProposeDestructiveActionTool implements CopilotTool {
             ? (userLabel ? `Block User ${userLabel}` : 'Block User')
             : (userLabel ? `ユーザー ${userLabel} のブロック` : 'ユーザーのブロック');
           description = isEn
-            ? (userLabel ? `Block ${userLabel} from interacting with the bot or replying.` : 'Block user from interacting with the bot or replying.')
-            : (userLabel ? `${userLabel} をブロックします。今後アカウントへのリプライや接触が遮断されます。` : '対象ユーザーをブロックします。今後アカウントへのリプライや接触が遮断されます。');
+            ? (userLabel ? `Block ${userLabel} from interacting with Master or replying.` : 'Block user from interacting with Master or replying.')
+            : (userLabel ? `${userLabel} をブロックします。今後マスターへのリプライや接触が遮断されます。` : '対象ユーザーをブロックします。今後マスターへのリプライや接触が遮断されます。');
         } else {
           impactLevel = 'warning';
           title = isEn
