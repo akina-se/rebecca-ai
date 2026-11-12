@@ -54,7 +54,6 @@ describe('ConfigService', () => {
     expect(service.version()).toBe('1.7.0');
     expect(service.isEmulator).toBeFalse();
 
-    mockConfig.production = false;
     mockConfig.useEmulators = true;
     const loadPromise2 = service.loadAppConfig();
     const req2 = httpMock.expectOne('/api/v1/config');
@@ -106,16 +105,6 @@ describe('ConfigService', () => {
     expect(service.firebaseConfig).toBeDefined();
     expect(service.apiUrl).toBeDefined();
     expect(service.isEmulator).toBeFalse();
-  });
-
-  it('should return isEmulator false when config.production is true', () => {
-    (service as any).config = { production: true, useEmulators: true };
-    expect(service.isEmulator).toBeFalse();
-  });
-
-  it('should return isEmulator true when config.production is false and useEmulators is true', () => {
-    (service as any).config = { production: false, useEmulators: true };
-    expect(service.isEmulator).toBeTrue();
   });
 
   it('should support localized persona names with getPersonaName', async () => {

@@ -92,7 +92,7 @@ export class ConfigService {
         apiUrl: environment.apiUrl,
         publicSiteUrl: 'https://rebecca-ai.net',
         production: environment.production,
-        useEmulators: ((environment as Record<string, unknown>)['useEmulators'] as boolean | undefined) ?? false,
+        useEmulators: (environment as Record<string, unknown>)['useEmulators'] as boolean || false,
       };
       this.publicSiteUrl.set('https://rebecca-ai.net');
     }
@@ -103,17 +103,14 @@ export class ConfigService {
   }
 
   get firebaseConfig() {
-    return this.config?.firebase ?? environment.firebase;
+    return this.config?.firebase || environment.firebase;
   }
 
   get apiUrl(): string {
-    return this.config?.apiUrl ?? environment.apiUrl;
+    return this.config?.apiUrl || environment.apiUrl;
   }
 
   get isEmulator(): boolean {
-    if (this.config?.production === true) {
-      return false;
-    }
-    return this.config?.useEmulators === true;
+    return this.config?.useEmulators ?? false;
   }
 }
