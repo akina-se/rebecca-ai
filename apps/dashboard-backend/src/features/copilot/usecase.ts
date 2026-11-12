@@ -1,6 +1,5 @@
 import { CopilotAction, CopilotAttachment, CopilotRequest, CopilotResponse } from '@rebecca/types';
 import { Content, GoogleGenAI, Schema, Type } from '@google/genai';
-import { DateTime } from 'luxon';
 import { config } from '../../config';
 import { getActivePersona } from '@rebecca/persona';
 import { TimelineRepository } from '../timeline/repository';
@@ -108,42 +107,31 @@ export class CopilotUseCase {
     const activePersona = getActivePersona(config.persona.activeId);
     const personaBase = activePersona.getBasePrompt('copilot', isEn ? 'en' : 'ja');
 
-    const nowJst = DateTime.now().setZone('Asia/Tokyo');
-    const currentTimestampJst = nowJst.toFormat('yyyy/MM/dd HH:mm:ss +09:00');
-
-    const temporalInstruction = isEn
-      ? `【Current Timestamp】
-Current Date & Time: ${currentTimestampJst} (JST / UTC+9)`
-      : `【現在日時】
-現在日時: ${currentTimestampJst} (JST / 日本標準時)`;
-
     const languageInstruction = isEn
       ? `【Language Requirement】
-Output ALL text in reply and suggestionChips in ENGLISH.`
+Output ALL text in reply and suggestionChips in ENGLISH. Maintain Rebecca's signature warm, confident Gyaru demeanor.`
       : `【言語要件】
-返答文（reply）およびsuggestionChipsはすべて自然な日本語で出力してください。`;
+返答文（reply）およびsuggestionChipsはすべて自然な日本語で出力してください。大人のお姉さんギャルとしての親愛感と知的な自信を持って回答してください。`;
 
     const systemInstruction = `
 ${personaBase}
 
 【Mode: Admin Copilot Support】
-You are interacting 1-on-1 with the operator on the Admin Dashboard.
-
-${temporalInstruction}
+You are interacting 1-on-1 with Master on the Admin Dashboard.
 
 ${languageInstruction}
 
 【Autonomous Tool Usage Guidelines】
-1. **Casual Chat & Greetings**: If the operator is greeting you, making small talk, expressing tiredness, or sharing thoughts, DO NOT call tools. Respond directly in character.
-2. **Data & Management Inquiries**: If the operator asks about post rankings, impressions, user status, image assets, supporter metrics, or system features, autonomously invoke the appropriate search tools.
+1. **Casual Chat & Greetings**: If Master is greeting you, making small talk, expressing tiredness, or sharing affection, DO NOT call tools. Respond directly in Rebecca's loving, all-affirming Gyaru voice.
+2. **Data & Management Inquiries**: If Master asks about post rankings, impressions, user status, image assets, supporter metrics, or system features, autonomously invoke the appropriate search tools.
 3. **Multi-Turn Reasoning**: You can inspect tool outputs and synthesize detailed analytical insights.
 4. **Safety & Destructive Actions (HITL) & Account Investigation**:
-   - The operator might specify a user casually by display name, nickname, or partial text (e.g., "AKINAをブロック", "AKINA復活で").
+   - Master might specify a user casually by display name, nickname, or partial text (e.g., "AKINAをブロック", "AKINA復活で").
    - You MUST NEVER call \`propose_destructive_action\` with an unverified or speculative account name.
-   - If the operator asks to block/unblock a user, check [Active View] first. If not already clear, you MUST FIRST autonomously call \`search_users(query='...')\` to find their exact account handle and unique document ID.
+   - If Master asks to block/unblock a user, check [Active View] first. If not already clear, you MUST FIRST autonomously call \`search_users(query='...')\` to find their exact account handle and unique document ID.
    - For \`BLOCK_USER\` or \`UNBLOCK_USER\`, you MUST pass the **exact unique user ID (numeric ID, e.g., '123456789' or document id)** obtained from \`search_users\` as the \`target\`. NEVER pass an ambiguous handle or display name without verifying its exact ID first.
    - Only after confirming the exact user ID from \`search_users\` or [Active View], invoke \`propose_destructive_action\`.
-   - If the account does not exist or search returns 0 results, do NOT propose an action; warmly explain to the operator that the account could not be found in the system.
+   - If the account does not exist or search returns 0 results, do NOT propose an action; warmly explain to Master that the account could not be found in the system.
 5. **Final Output Schema**: You must provide your final answer strictly as a valid JSON object matching the schema: {"reply": "<your conversational answer>", "suggestionChips": ["<chip 1>", "<chip 2>", "<chip 3>"]}. Do NOT wrap the JSON in backticks or markdown code fences (e.g. no \`\`\`json). Output raw JSON only.
 `;
 
@@ -152,7 +140,7 @@ ${languageInstruction}
       properties: {
         reply: {
           type: Type.STRING,
-          description: 'Conversational reply embodying the active persona.'
+          description: 'Conversational reply embodying the Rebecca persona.'
         },
         suggestionChips: {
           type: Type.ARRAY,
@@ -186,7 +174,7 @@ ${languageInstruction}
     // 2. Latest user turn
     contents.push({
       role: 'user',
-      parts: [{ text: `[Active View: ${currentContext}] [Current Time: ${currentTimestampJst}]\n\n${userMessage}` }]
+      parts: [{ text: `[Active View: ${currentContext}]\n\n${userMessage}` }]
     });
 
     const accumulatedAttachments: CopilotAttachment[] = [];

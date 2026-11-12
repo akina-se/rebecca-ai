@@ -1,4 +1,5 @@
 import { Component, Output, EventEmitter, HostListener, ElementRef, inject } from '@angular/core';
+
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DrawerService } from '../../core/services/drawer.service';
@@ -30,7 +31,7 @@ export class TopNavComponent {
   }
 
   get pageTitle(): string {
-    const url = this.router.url ?? '';
+    const url = this.router.url || '';
     if (url.includes('/campaigns')) return this.translationService.t('nav.campaigns');
     if (url.includes('/memory')) return this.translationService.t('nav.memory');
     if (url.includes('/assets')) return this.translationService.t('nav.assets');
@@ -44,20 +45,11 @@ export class TopNavComponent {
     return this.configService.getPersonaName(this.translationService.currentLang());
   }
 
-  /**
-   * Derives a single uppercase initial for the user avatar when photoURL is absent.
-   * Precedence: displayName -> email -> 'A' (Administrator fallback).
-   */
   get userInitial(): string {
-    const displayName = this.user?.displayName?.trim();
-    if (displayName && displayName.length > 0) {
-      return displayName.charAt(0).toUpperCase();
-    }
-    const email = this.user?.email?.trim();
-    if (email && email.length > 0) {
-      return email.charAt(0).toUpperCase();
-    }
-    return 'A';
+    const rawName = this.user?.displayName || this.user?.email || 'A';
+    const trimmed = rawName.trim();
+    if (!trimmed) return 'A';
+    return trimmed.charAt(0).toUpperCase();
   }
 
   get userAvatarUrl(): string {
@@ -83,10 +75,10 @@ export class TopNavComponent {
     this.router.navigate(['/settings']);
   }
 
-  async logout() {
+  logout() {
     this.isUserDropdownOpen = false;
-    await this.authService.logout();
-    await this.router.navigate(['/login']);
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   @HostListener('document:click', ['$event'])

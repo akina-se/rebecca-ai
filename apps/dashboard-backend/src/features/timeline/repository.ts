@@ -2,7 +2,6 @@ import { Firestore, Query } from '@google-cloud/firestore';
 import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginatedResponse, TimelinePost } from '@rebecca/types';
 import { getCollections } from '@rebecca/db';
 import { extractGcsObjectPath } from '../../utils/gcs';
-import { getTimelinePeriodRangeInUtc } from '../../core/dateUtils';
 
 /**
  * Computes the relative percentage change between current and baseline metrics.
@@ -273,14 +272,24 @@ export class TimelineRepository {
   async getPosts(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; period?: string; date?: string; }): Promise<PaginatedResponse<PostLeaderboard>> {
     let query = this.collections.timelineHistory as Query<TimelinePost>;
 
-    const dateRange = getTimelinePeriodRangeInUtc(params?.period, params?.date);
-    if (dateRange) {
-      if (dateRange.start) {
-        query = query.where('timestamp', '>=', dateRange.start);
+    let startDate = '';
+    let endDate = '';
+    if (params?.period && params?.date && params.period !== 'all-time') {
+      if (params.period === 'monthly') {
+        startDate = `${params.date}-01T00:00:00.000Z`;
+        const dateObj = new Date(startDate);
+        dateObj.setMonth(dateObj.getMonth() + 1);
+        endDate = dateObj.toISOString();
+      } else if (params.period === 'yearly') {
+        startDate = `${params.date}-01-01T00:00:00.000Z`;
+        const dateObj = new Date(startDate);
+        dateObj.setFullYear(dateObj.getFullYear() + 1);
+        endDate = dateObj.toISOString();
       }
-      if (dateRange.end) {
-        query = query.where('timestamp', '<=', dateRange.end);
-      }
+    }
+
+    if (startDate && endDate) {
+      query = query.where('timestamp', '>=', startDate).where('timestamp', '<', endDate);
     }
 
     const sortBy = params?.sortBy || 'impressions';
