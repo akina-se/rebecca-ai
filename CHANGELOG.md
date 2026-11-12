@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.41.3](https://github.com/akina-se/rebecca-ai/compare/v1.41.2...v1.41.3) (2026-11-12)
+
+
+### Bug Fixes
+
+* **auth,copilot:** safeguard google login against mobile lockup and enhance date range parsing ([#475](https://github.com/akina-se/rebecca-ai/issues/475)) ([b9cdc79](https://github.com/akina-se/rebecca-ai/commit/b9cdc79e0acb02f1b2cbdb1186e42582620dbc5e))
+* **auth:** rollback v1.41.2 to restore login page stability ([#472](https://github.com/akina-se/rebecca-ai/issues/472)) ([90c64df](https://github.com/akina-se/rebecca-ai/commit/90c64dfa8a4276b892bcee6b47764916256eaa62))
+
 ## [1.41.2](https://github.com/akina-se/rebecca-ai/compare/v1.41.1...v1.41.2) (2026-11-11)
 
 
