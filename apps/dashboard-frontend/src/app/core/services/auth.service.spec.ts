@@ -49,12 +49,42 @@ describe('AuthService', () => {
     expect(token).toBeNull();
   });
 
-  it('should handle loginWithEmail and handle errors gracefully in test environment', async () => {
+  it('should handle loginWithEmail and handle errors gracefully in test environment when isEmulator is true', async () => {
     try {
       await service.loginWithEmail('test@example.com', 'password123');
     } catch {
       // Expected in node/jsdom test environment
     }
+  });
+
+  it('should throw Error when loginWithEmail is called and isEmulator is false', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        AuthService,
+        {
+          provide: ConfigService,
+          useValue: {
+            firebaseConfig: {
+              apiKey: 'mock-key-prod',
+              authDomain: 'mock-prod.firebaseapp.com',
+              projectId: 'mock-prod-project'
+            },
+            isEmulator: false
+          }
+        }
+      ]
+    });
+    const prodAuthService = TestBed.inject(AuthService);
+    let caughtError: Error | null = null;
+    try {
+      await prodAuthService.loginWithEmail('test@example.com', 'password123');
+    } catch (err) {
+      caughtError = err as Error;
+    }
+    expect(caughtError).not.toBeNull();
+    expect(caughtError?.message).toBe('Email/password authentication is disabled in production environments.');
   });
 
   it('should initialize when isEmulator is false', async () => {
@@ -88,9 +118,36 @@ describe('AuthService', () => {
     }
   });
 
-  it('should attempt loginWithGoogle and handle errors if any', async () => {
+  it('should attempt loginWithGoogle in emulator mode', async () => {
     try {
       await service.loginWithGoogle();
+    } catch {
+      // Expected in node/jsdom environment without auth emulator running
+    }
+  });
+
+  it('should attempt loginWithGoogle in production mode and handle errors if any', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        AuthService,
+        {
+          provide: ConfigService,
+          useValue: {
+            firebaseConfig: {
+              apiKey: 'mock-key-no-emu',
+              authDomain: 'mock-no-emu.firebaseapp.com',
+              projectId: 'mock-no-emu-project'
+            },
+            isEmulator: false
+          }
+        }
+      ]
+    });
+    const nonEmuService = TestBed.inject(AuthService);
+    try {
+      await nonEmuService.loginWithGoogle();
     } catch {
       // Expected in node/jsdom environment without popup support
     }
