@@ -23,7 +23,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  private configService = inject(ConfigService);
+  private readonly configService = inject(ConfigService);
   private auth: Auth | null = null;
   private app: FirebaseApp | null = null;
   private authReadyPromise: Promise<void> | null = null;
@@ -31,10 +31,6 @@ export class AuthService {
   /** Native Angular Signal for current authenticated user */
   readonly currentUserSignal = signal<User | null>(null);
   public currentUser$: Observable<User | null> = toObservable(this.currentUserSignal);
-
-  get isEmulator(): boolean {
-    return this.configService.isEmulator;
-  }
 
   private ensureAuth(): Auth {
     if (!this.auth) {
@@ -76,9 +72,15 @@ export class AuthService {
   }
 
   /**
-   * Logs in with Email & Password against Firebase Auth (used for Emulators & E2E tests).
+   * Logs in with Email & Password against Firebase Auth (used ONLY for local Emulators & E2E tests).
+   * Strictly guarded to prevent execution against non-emulator/production environments.
+   *
+   * @throws Error if called in a production or non-emulator environment.
    */
   async loginWithEmail(email: string, password: string): Promise<void> {
+    if (!this.configService.isEmulator) {
+      throw new Error('Email/password authentication is disabled in production environments.');
+    }
     const auth = this.ensureAuth();
     const cred = await signInWithEmailAndPassword(auth, email, password);
     await cred.user.getIdToken(true);
@@ -87,18 +89,37 @@ export class AuthService {
 
   /**
    * Initiates a login flow using Google as the authentication provider.
+   * In emulator mode, automatically authenticates using the seeded test administrator credentials.
+   * In production mode, opens the standard Google OAuth popup guarded by a 25-second timeout.
    */
   async loginWithGoogle(): Promise<User> {
+    if (this.configService.isEmulator) {
+      await this.loginWithEmail('admin@example.com', 'password123');
+      const user = this.currentUser;
+      if (!user) {
+        throw new Error('Emulator authentication failed to return an authenticated user.');
+      }
+      return user;
+    }
+
     const auth = this.ensureAuth();
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account'
     });
     try {
-      const result = await signInWithPopup(auth, provider);
-      await result.user.getIdToken(true);
-      this.currentUserSignal.set(result.user);
-      return result.user;
+      const loginPromise = (async () => {
+        const result = await signInWithPopup(auth, provider);
+        await result.user.getIdToken(true);
+        this.currentUserSignal.set(result.user);
+        return result.user;
+      })();
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Google sign-in timed out. Please try again.')), 25000)
+      );
+
+      return await Promise.race([loginPromise, timeoutPromise]);
     } catch (error) {
       console.error('Google login error', error);
       throw error;
@@ -118,7 +139,7 @@ export class AuthService {
    * Retrieves the currently authenticated user.
    */
   get currentUser(): User | null {
-    return this.currentUserSignal() || this.auth?.currentUser || null;
+    return this.currentUserSignal() ?? this.auth?.currentUser ?? null;
   }
 
   /**
@@ -128,7 +149,7 @@ export class AuthService {
     const user = this.currentUser;
     if (!user) return null;
     const userObj = user as unknown as { accessToken?: string; stsTokenManager?: { accessToken?: string } };
-    return userObj.accessToken || userObj.stsTokenManager?.accessToken || null;
+    return userObj.accessToken ?? userObj.stsTokenManager?.accessToken ?? null;
   }
 
   /**
