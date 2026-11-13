@@ -23,7 +23,20 @@ jobs:
         with:
           fetch-depth: 0 # Gitleaks needs the full history to scan properly
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v3
+      - name: Run Gitleaks CLI (MIT)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: "8.30.1"
+        run: |
+          set -euo pipefail
+          TMP_DIR="${{ runner.temp }}/gitleaks"
+          mkdir -p "${TMP_DIR}"
+          ARCHIVE="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          CHECKSUMS="gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          BASE_URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          curl -fsSL "${BASE_URL}/${ARCHIVE}" -o "${TMP_DIR}/${ARCHIVE}"
+          curl -fsSL "${BASE_URL}/${CHECKSUMS}" -o "${TMP_DIR}/${CHECKSUMS}"
+          (cd "${TMP_DIR}" && grep " ${ARCHIVE}$" "${CHECKSUMS}" | sha256sum -c -)
+          tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "${TMP_DIR}" gitleaks
+          chmod +x "${TMP_DIR}/gitleaks"
+          "${TMP_DIR}/gitleaks" git --verbose --redact
+          rm -rf "${TMP_DIR}"
