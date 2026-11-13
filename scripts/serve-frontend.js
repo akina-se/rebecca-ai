@@ -24,6 +24,7 @@ const path = require('path');
 const PORT = 4200;
 const BFF_PORT = 8081;
 const DIST_DIR = path.resolve(__dirname, '../apps/dashboard-frontend/dist/dashboard-frontend/browser');
+const E2E_ASSETS_DIR = path.resolve(__dirname, '../apps/dashboard-e2e/test-assets');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -35,6 +36,34 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
 };
+
+/**
+ * Safely resolves and serves a static file from `baseDir` without TOCTOU races.
+ * Returns 'served', 'forbidden', or 'missing'.
+ */
+function tryServeStaticFile(baseDir, rawRelativeUrl, res) {
+  const safeRelativePath = path.normalize(rawRelativeUrl).replace(/^(\.\.[\/\\])+/, '');
+  const filePath = path.resolve(baseDir, '.' + path.sep + safeRelativePath);
+
+  if (filePath !== baseDir && !filePath.startsWith(baseDir + path.sep)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return 'forbidden';
+  }
+
+  try {
+    const content = fs.readFileSync(filePath);
+    const ext = path.extname(filePath);
+    res.writeHead(200, {
+      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+      'Content-Length': content.length
+    });
+    res.end(content);
+    return 'served';
+  } catch (_err) {
+    return 'missing';
+  }
+}
 
 const server = http.createServer((req, res) => {
   // 1. Reverse Proxy: forward /api/* requests to BFF backend running on port 8081
@@ -67,32 +96,25 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 2. Static File Resolution: resolve safe path within DIST_DIR
   const rawUrl = (req.url || '/').split('?')[0];
-  const safeRelativePath = path.normalize(rawUrl).replace(/^(\.\.[\/\\])+/, '');
-  const filePath = path.resolve(DIST_DIR, '.' + path.sep + safeRelativePath);
 
-  // Security Guard: Prevent directory/path traversal attacks
-  if (!filePath.startsWith(DIST_DIR)) {
-    res.writeHead(403);
-    res.end('Forbidden');
+  // 2. Serve deterministic E2E fixture assets (no external network dependencies in tests)
+  if (rawUrl.startsWith('/e2e-assets/')) {
+    const e2eResult = tryServeStaticFile(E2E_ASSETS_DIR, rawUrl.slice('/e2e-assets/'.length), res);
+    if (e2eResult === 'missing') {
+      res.writeHead(404);
+      res.end('Not found');
+    }
     return;
   }
 
-  // Attempt direct file read (atomic operation without TOCTOU race conditions)
-  try {
-    const content = fs.readFileSync(filePath);
-    const ext = path.extname(filePath);
-    res.writeHead(200, {
-      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-      'Content-Length': content.length
-    });
-    return res.end(content);
-  } catch (_err) {
-    // Fall through to SPA fallback if file not found, directory, or not readable
+  // 3. Static File Resolution: resolve safe path within DIST_DIR
+  const distResult = tryServeStaticFile(DIST_DIR, rawUrl, res);
+  if (distResult === 'served' || distResult === 'forbidden') {
+    return;
   }
 
-  // 3. SPA Fallback: return index.html for Angular client-side router navigation
+  // 4. SPA Fallback: return index.html for Angular client-side router navigation
   const indexPath = path.join(DIST_DIR, 'index.html');
   try {
     const content = fs.readFileSync(indexPath);

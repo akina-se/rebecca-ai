@@ -245,7 +245,7 @@ async function seedFirestore() {
       likes: Math.floor(150 + (120 - i) * 10 + Math.cos(i) * 80 + Math.random() * 50),
       reposts: Math.floor(20 + (120 - i) * 2 + Math.random() * 10),
       replies: Math.floor(8 + (120 - i) * 1 + Math.random() * 5),
-      mediaUrls: i % 4 === 0 ? [`https://picsum.photos/seed/post${i}/600/400`] : [],
+      mediaUrls: i % 4 === 0 ? ['/e2e-assets/dummy-white.png'] : [],
       authorId: author.id,
       authorName: author.name,
       authorHandle: author.handle,
