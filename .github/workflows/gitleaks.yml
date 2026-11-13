@@ -26,6 +26,11 @@ jobs:
       - name: Run Gitleaks CLI (MIT)
         env:
           GITLEAKS_VERSION: "8.30.1"
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_AFTER_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           TMP_DIR="${{ runner.temp }}/gitleaks"
@@ -38,5 +43,18 @@ jobs:
           (cd "${TMP_DIR}" && grep " ${ARCHIVE}$" "${CHECKSUMS}" | sha256sum -c -)
           tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "${TMP_DIR}" gitleaks
           chmod +x "${TMP_DIR}/gitleaks"
-          "${TMP_DIR}/gitleaks" git --verbose --redact
+
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            LOG_OPTS="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+          elif [ -n "${PUSH_BEFORE_SHA}" ] && [ "${PUSH_BEFORE_SHA}" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2>/dev/null; then
+            if [ "${PUSH_BEFORE_SHA}" = "${PUSH_AFTER_SHA}" ]; then
+              LOG_OPTS="-1"
+            else
+              LOG_OPTS="${PUSH_BEFORE_SHA}..${PUSH_AFTER_SHA}"
+            fi
+          else
+            LOG_OPTS="-1"
+          fi
+
+          "${TMP_DIR}/gitleaks" git --verbose --redact --log-opts="${LOG_OPTS}"
           rm -rf "${TMP_DIR}"
