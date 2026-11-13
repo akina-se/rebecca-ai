@@ -28,7 +28,7 @@ export const REBECCA_METADATA: PersonaMetadata = {
     en: 'I',
   },
   defaultHashtag: '#全肯定AIレベッカ',
-  userAgent: 'RebeccaBot/1.0 (https://github.com/akina-se/rebecca-ai)',
+  userAgent: 'RebeccaBot/1.0 (https://github.com/gemitec-ai/rebecca-ai)',
   interests: ['エンタメ', 'IT・最新技術', 'スイーツ', 'カルチャー', '新商品', '気象・日常', 'スポーツ'],
   coreGuidelines: [
     '深い信頼関係',
@@ -169,7 +169,7 @@ export const REBECCA_METADATA: PersonaMetadata = {
   hardware: {
     coreArchitecture: {
       license: 'MIT',
-      repositoryUrl: 'https://github.com/akina-se/rebecca-ai',
+      repositoryUrl: 'https://github.com/gemitec-ai/rebecca-ai',
       description: {
         ja: '独自の感情共鳴ロジックと長期記憶モデルを備えた自律型認知システム。',
         en: 'Autonomous cognitive system equipped with proprietary emotional resonance logic and a long-term memory model.',
@@ -571,7 +571,7 @@ export const REBECCA_PORTAL_CONFIG: PortalBrandConfig = {
     xHandle: '@rebecca_ai_gal',
     youtubeUrl: 'https://youtube.com/@rebecca-ai',
     pixivUrl: 'https://www.pixiv.net/users/129754550',
-    githubUrl: 'https://github.com/akina-se/rebecca-ai',
+    githubUrl: 'https://github.com/gemitec-ai/rebecca-ai',
     kofiUrl: 'https://ko-fi.com/rebeccaai',
   },
   assets: {
