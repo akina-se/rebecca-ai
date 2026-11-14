@@ -21,7 +21,7 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     // Verify pagination controls are present
     const pagination = page.locator('app-pagination');
     await expect(pagination).toBeVisible();
-    await expect(page.locator('.pagination-container .total-items-text')).toContainText(/Showing|表示中|全.*件/);
+    await expect(page.locator('.pagination-container .total-items-text')).toContainText(/Showing|表示中|全.*(件|名)/);
     await page.screenshot({ path: 'screenshots/05_users_management_page.png' });
   });
 
@@ -175,8 +175,8 @@ test.describe('User Relations & Settings Features E2E Tests', () => {
     const layer1Date = await memoryRows.nth(1).locator('td').nth(2).innerText();
     expect(layer1Date).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/);
 
-    // 4. Verify Dashboard Timeline timestamps format
-    await page.goto('/dashboard');
+    // 4. Verify Posts Management Timeline timestamps format
+    await page.goto('/posts');
     await expect(page.locator('.topbar')).toBeVisible({ timeout: 15000 });
     const timelineRows = page.locator('#timeline-table tbody tr.clickable');
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });

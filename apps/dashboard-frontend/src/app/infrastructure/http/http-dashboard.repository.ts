@@ -2,7 +2,15 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse, PostDetail } from '@rebecca/types';
+import {
+  KpiMetrics,
+  PostLeaderboard,
+  UserLeaderboard,
+  SystemAlert,
+  PaginatedResponse,
+  PostDetail,
+  BatchTriggerResponse,
+} from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -95,5 +103,23 @@ export class HttpDashboardRepository implements DashboardRepository {
 
   deletePosts(ids: string[]): Observable<void> {
     return this.http.request('DELETE', this.postsBaseUrl, { body: { ids } }) as unknown as Observable<void>;
+  }
+
+  /**
+   * Triggers manual timeline post synchronization via the BFF endpoint.
+   *
+   * @returns Observable resolving to synchronization status.
+   */
+  syncPosts(): Observable<BatchTriggerResponse> {
+    return this.http.post<BatchTriggerResponse>(`${this.postsBaseUrl}/sync`, {});
+  }
+
+  /**
+   * Triggers manual mentions polling and reply execution via the BFF endpoint.
+   *
+   * @returns Observable resolving to reply execution status.
+   */
+  triggerReply(): Observable<BatchTriggerResponse> {
+    return this.http.post<BatchTriggerResponse>(`${this.postsBaseUrl}/reply`, {});
   }
 }

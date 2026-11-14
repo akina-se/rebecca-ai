@@ -11,6 +11,7 @@ export const createMentionsRouter = (controller: MentionsController): Router => 
     const router = Router();
     
     router.get('/', controller.pollMentions);
+    router.post('/', controller.pollMentions);
     
     return router;
 };

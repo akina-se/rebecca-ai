@@ -12,7 +12,7 @@ const GUIDES_JA: Record<FeatureTopic, string> = {
   supporters: '【サポーター名簿と特典】Stripe経由での支援実績と名簿掲載希望を管理します。デジタル特典画像の登録、サムネイル生成、公開名簿プレビューが可能です。',
   campaigns: '【キャンペーン管理】旅程（Itinerary）や期間限定イベントの投稿スケジュール、画像スロット、プロモーション設定を管理・実行します。',
   users: '【ユーザー管理】フォロー・インタラクション履歴、アカウント状態（ACTIVE, MUTED, BLOCKED）、および個別のRAG記憶生成ステータスを一覧・詳細確認できます。',
-  timeline: '【タイムライン分析】X（旧Twitter）への自発的ポストやリプライ実績のKPI（インプレッション、いいね、リプライ、エンゲージメント率）を期間別に集計・ランキング表示します。'
+  timeline: '【ポスト＆タイムライン分析】「ポスト」画面（/posts）にてX（旧Twitter）への投稿履歴の検索・一括削除、手動での「ポスト同期（SYNC_POSTS）」および「リプライ実行（TRIGGER_REPLY）」を行えます。ダッシュボードではインプレッション・エンゲージメント率のKPI推移やランキングを集計表示します。'
 };
 
 const GUIDES_EN: Record<FeatureTopic, string> = {
@@ -21,7 +21,7 @@ const GUIDES_EN: Record<FeatureTopic, string> = {
   supporters: '[Supporter Ledger & Rewards] Tracks Stripe contributions, digital reward catalogs, and public supporter roster visibility.',
   campaigns: '[Campaign Management] Configures scheduled itineraries, promotional themes, and event slots for autonomous timeline campaigns.',
   users: '[User Management] Audits followers, interaction history, account moderation status (ACTIVE, MUTED, BLOCKED), and individual RAG profile states.',
-  timeline: '[Timeline Analytics] Aggregates performance metrics (impressions, likes, retweets, engagement rate) for posts on X across customizable time windows.'
+  timeline: '[Posts & Timeline Analytics] The Posts page (/posts) provides timeline post history search, bulk deletion from X, manual Post Sync (SYNC_POSTS), and manual Reply Execution (TRIGGER_REPLY), while the Dashboard aggregates KPI trends and top post rankings.'
 };
 
 /**

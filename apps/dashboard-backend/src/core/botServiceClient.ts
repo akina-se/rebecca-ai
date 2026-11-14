@@ -1,4 +1,5 @@
 import { GoogleAuth } from 'google-auth-library';
+import { BatchTriggerResponse } from '@rebecca/types';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
@@ -48,9 +49,142 @@ export async function getBotServiceHeaders(botUrl: string): Promise<Record<strin
 
   if (config.services.batchSecret) {
     headers['x-worker-secret'] = config.services.batchSecret;
+    headers['x-batch-secret'] = config.services.batchSecret;
   }
 
   return headers;
+}
+
+/**
+ * Parses an HTTP response body that may be either JSON (`{ message, error, count }`) or plain text.
+ *
+ * @param res - Fetch Response object.
+ * @returns Trimmed message string extracted from the payload, or empty string if none.
+ */
+async function extractResponseMessage(res: Response): Promise<string> {
+  const rawText = await res.text().catch(() => '');
+  const trimmed = rawText.trim();
+  if (!trimmed) {
+    return '';
+  }
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (typeof parsed === 'object' && parsed !== null) {
+      if ('message' in parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message.trim();
+      }
+      if ('error' in parsed && typeof parsed.error === 'string' && parsed.error.trim()) {
+        return parsed.error.trim();
+      }
+      if ('count' in parsed && typeof parsed.count === 'number') {
+        return `OK: Processed ${parsed.count} mentions.`;
+      }
+      return '';
+    }
+    return '';
+  } catch {
+    // Plain-text response from batch endpoint
+  }
+  return trimmed;
+}
+
+/**
+ * Triggers the manual Timeline Post Sync batch job (`batchTimelineSync` Cloud Function)
+ * via an authenticated server-to-server HTTP request.
+ *
+ * In Firestore Emulator environments without a configured `FUNCTIONS_URL`, returns a
+ * deterministic emulator success response so local E2E verification can run offline.
+ *
+ * @returns Promise resolving to a standardized `BatchTriggerResponse`.
+ */
+export async function syncPostsViaBotService(): Promise<BatchTriggerResponse> {
+  const functionsUrl = config.services.functionsUrl;
+  if (process.env.FIRESTORE_EMULATOR_HOST && !functionsUrl) {
+    logger.info('[Emulator Fallback] Skipping external batchTimelineSync trigger in emulator mode.');
+    return { success: true, message: 'OK: Timeline synced successfully (emulator mode).' };
+  }
+
+  if (!functionsUrl) {
+    logger.warn('FUNCTIONS_URL is not configured; skipping remote timeline sync');
+    return { success: false, message: 'FUNCTIONS_URL not configured' };
+  }
+
+  const endpoint = functionsUrl.replace(/\/+$/, '');
+  const headers = await getBotServiceHeaders(endpoint);
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+    });
+    const message = await extractResponseMessage(res);
+    if (!res.ok) {
+      const errMsg = message || `HTTP ${res.status}`;
+      logger.error('Failed to trigger timeline sync via Cloud Functions HTTP', new Error(errMsg), {
+        status: res.status,
+      });
+      return { success: false, message: errMsg };
+    }
+
+    return {
+      success: true,
+      message: message || 'OK: Timeline synced successfully.',
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    logger.error('Failed to trigger timeline sync via Cloud Functions HTTP', err);
+    return { success: false, message };
+  }
+}
+
+/**
+ * Triggers the manual Mentions Reply Execution batch job (`/batch/mentions` on `bot-backend`)
+ * via an authenticated server-to-server HTTP request.
+ *
+ * In Firestore Emulator environments, returns a deterministic emulator success response
+ * so local E2E verification can run without live X API credentials.
+ *
+ * @returns Promise resolving to a standardized `BatchTriggerResponse`.
+ */
+export async function triggerReplyViaBotService(): Promise<BatchTriggerResponse> {
+  const botUrl = config.services.botBackendUrl;
+  if (process.env.FIRESTORE_EMULATOR_HOST) {
+    logger.info('[Emulator Fallback] Skipping external /batch/mentions trigger in emulator mode.');
+    return { success: true, message: 'OK: Reply batch executed successfully (emulator mode).' };
+  }
+
+  if (!botUrl) {
+    logger.warn('BOT_BACKEND_URL is not configured; skipping remote reply batch trigger');
+    return { success: false, message: 'BOT_BACKEND_URL not configured' };
+  }
+
+  const normalizedBaseUrl = botUrl.replace(/\/+$/, '');
+  const endpoint = `${normalizedBaseUrl}/batch/mentions`;
+  const headers = await getBotServiceHeaders(normalizedBaseUrl);
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+    });
+    const message = await extractResponseMessage(res);
+    if (!res.ok) {
+      const errMsg = message || `HTTP ${res.status}`;
+      logger.error('Failed to trigger reply batch via bot-backend HTTP', new Error(errMsg), {
+        status: res.status,
+      });
+      return { success: false, message: errMsg };
+    }
+
+    return {
+      success: true,
+      message: message || 'OK: Reply batch executed successfully.',
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    logger.error('Failed to trigger reply batch via bot-backend HTTP', err);
+    return { success: false, message };
+  }
 }
 
 /**
@@ -59,7 +193,7 @@ export async function getBotServiceHeaders(botUrl: string): Promise<Record<strin
  * @param tweetId - The unique identifier of the tweet to be deleted.
  * @returns A promise that resolves to an object indicating the success status and a descriptive message.
  */
-export async function deleteTweetViaBotService(tweetId: string): Promise<{ success: boolean; message: string }> {
+export async function deleteTweetViaBotService(tweetId: string): Promise<BatchTriggerResponse> {
   const botUrl = config.services.botBackendUrl;
   if (!botUrl) {
     logger.warn('BOT_BACKEND_URL is not configured; skipping remote tweet deletion', { tweetId });

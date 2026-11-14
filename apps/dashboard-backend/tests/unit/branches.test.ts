@@ -1638,6 +1638,17 @@ describe('Dashboard Backend Exhaustive Branch Coverage Tests', () => {
       const regenEn = await actionTool.execute({ actionType: 'REGENERATE_CAPTIONS' }, { isEn: true });
       expect(regenEn.actionRequired?.title).toContain('Caption Regeneration');
 
+      // SYNC_POSTS & TRIGGER_REPLY in JA and EN
+      const syncJa = await actionTool.execute({ actionType: 'SYNC_POSTS' }, { isEn: false });
+      expect(syncJa.actionRequired?.type).toBe('SYNC_POSTS');
+      const syncEn = await actionTool.execute({ actionType: 'SYNC_POSTS' }, { isEn: true });
+      expect(syncEn.actionRequired?.title).toBe('Trigger Timeline Post Sync');
+
+      const replyJa = await actionTool.execute({ actionType: 'TRIGGER_REPLY' }, { isEn: false });
+      expect(replyJa.actionRequired?.type).toBe('TRIGGER_REPLY');
+      const replyEn = await actionTool.execute({ actionType: 'TRIGGER_REPLY' }, { isEn: true });
+      expect(replyEn.actionRequired?.title).toBe('Trigger Mentions Reply Batch');
+
       // Invalid action type
       const invalidAction = await actionTool.execute({ actionType: 'UNKNOWN_ACTION' as any }, { isEn: true });
       expect((invalidAction.data as any).error).toContain('Invalid action type');

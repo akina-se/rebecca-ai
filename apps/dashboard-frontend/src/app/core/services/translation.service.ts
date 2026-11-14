@@ -9,6 +9,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     // Navigation & Global
     'nav.admin': 'Admin Console',
     'nav.dashboard': 'ダッシュボード',
+    'nav.posts': 'ポスト',
     'nav.memory': 'メモリ',
     'nav.assets': 'アセット',
     'nav.users': 'ユーザー',
@@ -190,7 +191,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'dashboard.filter_yearly': '年間',
     'dashboard.filter_monthly': '月間',
     'dashboard.timeline_history': 'タイムライン投稿履歴',
-    'dashboard.search_placeholder': 'ログを検索...',
+    'dashboard.search_placeholder': 'ポストを検索...',
     'dashboard.select_all': 'すべて選択',
     'dashboard.items_selected': '件の項目を選択中',
     'dashboard.select_items_hint': '操作する項目を選択してください',
@@ -437,12 +438,25 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'copilot.status_cancelled': '承認がキャンセルされました',
     'copilot.chips_kpi': 'KPI推移を要約して',
     'copilot.chips_engagement': 'エンゲージメント低下の原因は？',
-    'copilot.chips_alert': 'システムアラートを確認'
+    'copilot.chips_alert': 'システムアラートを確認',
+
+    // Posts Management Page
+    'posts.title': 'タイムライン投稿履歴',
+    'dashboard.no_posts': '投稿履歴が見つかりません。',
+    'posts.sync_btn': 'ポスト同期',
+    'posts.syncing': 'ポスト同期中...',
+    'posts.reply_btn': 'リプライ実行',
+    'posts.replying': 'リプライ実行中...',
+    'toast.sync_posts_success': 'タイムラインのポスト同期が完了しました。',
+    'toast.sync_posts_failed': 'ポスト同期に失敗しました。',
+    'toast.trigger_reply_success': 'リプライ処理の実行を開始しました。',
+    'toast.trigger_reply_failed': 'リプライ実行に失敗しました。'
   },
   en: {
     // Navigation & Global
     'nav.admin': 'Admin Console',
     'nav.dashboard': 'Dashboard',
+    'nav.posts': 'Posts',
     'nav.memory': 'Memory',
     'nav.assets': 'Assets',
     'nav.users': 'Users',
@@ -623,7 +637,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'dashboard.filter_yearly': 'Yearly',
     'dashboard.filter_monthly': 'Monthly',
     'dashboard.timeline_history': 'Timeline Post History',
-    'dashboard.search_placeholder': 'Search logs...',
+    'dashboard.search_placeholder': 'Search posts...',
     'dashboard.select_all': 'Select All',
     'dashboard.items_selected': 'items selected',
     'dashboard.select_items_hint': 'Select items to perform actions',
@@ -870,7 +884,19 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     'copilot.status_cancelled': 'Action Cancelled',
     'copilot.chips_kpi': 'Summarize KPI trends',
     'copilot.chips_engagement': 'Why did engagement drop?',
-    'copilot.chips_alert': 'Check system alerts'
+    'copilot.chips_alert': 'Check system alerts',
+
+    // Posts Management Page
+    'posts.title': 'Timeline Post History',
+    'dashboard.no_posts': 'No timeline posts found.',
+    'posts.sync_btn': 'Sync Posts',
+    'posts.syncing': 'Syncing Posts...',
+    'posts.reply_btn': 'Execute Replies',
+    'posts.replying': 'Executing Replies...',
+    'toast.sync_posts_success': 'Timeline post synchronization completed.',
+    'toast.sync_posts_failed': 'Failed to synchronize timeline posts.',
+    'toast.trigger_reply_success': 'Reply batch execution triggered.',
+    'toast.trigger_reply_failed': 'Failed to trigger reply execution.'
   }
 };
 

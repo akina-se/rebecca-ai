@@ -23,6 +23,8 @@ export function initializeTimelineModule(firestore: Firestore): { dashboardRoute
 
   postsRouter.get('/', controller.getPosts.bind(controller));
   postsRouter.delete('/', controller.deletePosts.bind(controller));
+  postsRouter.post('/sync', controller.syncPosts.bind(controller));
+  postsRouter.post('/reply', controller.triggerReply.bind(controller));
   postsRouter.get('/:id', controller.getPostById.bind(controller));
 
   return { dashboardRouter, postsRouter };

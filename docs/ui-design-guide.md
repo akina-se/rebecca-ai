@@ -36,7 +36,7 @@ We adhere to an Atomic Design-like component architecture to maximize reusabilit
 - **Examples**: `<app-right-drawer>` (Generic sliding drawer container), `<app-bulk-action-bar>`.
 
 ### D. Templates & Pages (Views)
-- Page components (`DashboardPageComponent`, `MemoryPageComponent`) assemble Organisms.
+- Page components (`DashboardPageComponent`, `PostsPageComponent`, `MemoryPageComponent`) assemble Organisms.
 - Pages should act as "Smart Components", handling repository injections, API calls, and passing data down to "Dumb Components" (Molecules/Organisms) via `@Input()` and `@Output()`.
 
 ## 4. Interaction & Feedback Guidelines

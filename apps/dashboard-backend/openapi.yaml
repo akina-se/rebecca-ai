@@ -305,6 +305,68 @@ paths:
                     type: integer
                     example: 3
 
+  /posts/sync:
+    post:
+      summary: Trigger manual timeline post synchronization
+      description: Invokes the batchTimelineSync Cloud Function via authenticated BFF server-to-server request to sync latest timeline posts and metrics from X into Firestore.
+      responses:
+        '200':
+          description: Timeline synchronization completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OK: Timeline synced successfully."
+        '500':
+          description: Failed to synchronize timeline posts
+
+  /posts/reply:
+    post:
+      summary: Trigger manual mentions polling and reply execution
+      description: Invokes the bot-backend /batch/mentions endpoint via authenticated BFF server-to-server request to poll recent mentions and enqueue autonomous replies.
+      responses:
+        '200':
+          description: Mentions reply batch executed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "OK: Processed mentions."
+        '500':
+          description: Failed to trigger reply execution
+
+  /posts/{id}:
+    get:
+      summary: Retrieve single post details by ID
+      description: Retrieves full content, media attachments, and engagement metrics for a specific timeline post.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimelinePost'
+        '404':
+          description: Post not found
+
   /images:
     get:
       summary: Retrieve library image assets
@@ -1411,7 +1473,7 @@ components:
       properties:
         type:
           type: string
-          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS]
+          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS, SYNC_POSTS, TRIGGER_REPLY]
           example: "BLOCK_USER"
         title:
           type: string

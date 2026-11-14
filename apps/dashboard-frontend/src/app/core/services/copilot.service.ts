@@ -286,6 +286,28 @@ export class CopilotService {
         break;
       }
 
+      case 'SYNC_POSTS': {
+        this.dashboardRepo.syncPosts().subscribe({
+          next: () => {
+            this.toastService.show(isEn ? 'Timeline post synchronization completed' : 'タイムラインのポスト同期が完了しました。', 'success');
+            this.appendSystemAck(isEn ? 'Timeline post synchronization completed successfully♡' : 'タイムラインのポスト同期が正常に完了したわよ♡');
+          },
+          error: () => this.toastService.show(isEn ? 'Failed to synchronize timeline posts' : 'ポスト同期に失敗しました。', 'error')
+        });
+        break;
+      }
+
+      case 'TRIGGER_REPLY': {
+        this.dashboardRepo.triggerReply().subscribe({
+          next: () => {
+            this.toastService.show(isEn ? 'Reply batch execution triggered' : 'リプライ処理の実行を開始しました。', 'success');
+            this.appendSystemAck(isEn ? 'Started the mentions polling and reply batch execution!' : 'メンション取得とリプライ処理バッチを起動したわよ！');
+          },
+          error: () => this.toastService.show(isEn ? 'Failed to trigger reply execution' : 'リプライ実行に失敗しました。', 'error')
+        });
+        break;
+      }
+
 
       default:
         console.warn('Unknown action type:', action.type);

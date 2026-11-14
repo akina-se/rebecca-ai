@@ -11,11 +11,15 @@ import { UserStatus, AssetStatus, PostLeaderboard, PostDetail, SystemAlert, KpiM
 import { config } from '../../src/config';
 
 // Mock Bot Service Client
+const mockSyncPostsViaBotService = jest.fn();
+const mockTriggerReplyViaBotService = jest.fn();
 jest.mock('../../src/core/botServiceClient', () => ({
   deleteTweetViaBotService: jest.fn().mockImplementation(async (id: string) => {
     if (id === 'error_post') throw new Error('Bot service HTTP connection timeout');
     return { success: true, message: 'Deleted' };
-  })
+  }),
+  syncPostsViaBotService: (...args: any[]) => mockSyncPostsViaBotService(...args),
+  triggerReplyViaBotService: (...args: any[]) => mockTriggerReplyViaBotService(...args),
 }));
 
 // Mock Google Cloud Storage
@@ -527,6 +531,30 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       const res = await useCase.getAlerts();
       expect(repo.getAlerts).toHaveBeenCalled();
       expect(res).toEqual(mockAlerts);
+    });
+
+    it('syncPosts should return result on success and throw on failure', async () => {
+      mockSyncPostsViaBotService.mockResolvedValueOnce({ success: true, message: 'Synced' });
+      const res = await useCase.syncPosts();
+      expect(res).toEqual({ success: true, message: 'Synced' });
+
+      mockSyncPostsViaBotService.mockResolvedValueOnce({ success: false, message: 'Sync error' });
+      await expect(useCase.syncPosts()).rejects.toThrow('Sync error');
+
+      mockSyncPostsViaBotService.mockResolvedValueOnce({ success: false, message: '' });
+      await expect(useCase.syncPosts()).rejects.toThrow('Failed to synchronize timeline posts');
+    });
+
+    it('triggerReply should return result on success and throw on failure', async () => {
+      mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: true, message: 'Replied' });
+      const res = await useCase.triggerReply();
+      expect(res).toEqual({ success: true, message: 'Replied' });
+
+      mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: false, message: 'Reply error' });
+      await expect(useCase.triggerReply()).rejects.toThrow('Reply error');
+
+      mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: false, message: '' });
+      await expect(useCase.triggerReply()).rejects.toThrow('Failed to trigger reply execution');
     });
   });
 

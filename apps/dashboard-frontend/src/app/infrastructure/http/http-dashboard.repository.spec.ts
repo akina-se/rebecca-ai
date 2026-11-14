@@ -110,4 +110,24 @@ describe('HttpDashboardRepository', () => {
     expect(req.request.body).toEqual({ ids: ['post_1', 'post_2'] });
     req.flush({ success: true });
   });
+
+  it('should trigger manual post sync via POST /posts/sync', () => {
+    repository.syncPosts().subscribe((res) => {
+      expect(res.success).toBeTrue();
+    });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/posts/sync') && r.method === 'POST');
+    expect(req.request.body).toEqual({});
+    req.flush({ success: true, message: 'OK: Timeline synced successfully.' });
+  });
+
+  it('should trigger manual reply execution via POST /posts/reply', () => {
+    repository.triggerReply().subscribe((res) => {
+      expect(res.success).toBeTrue();
+    });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/posts/reply') && r.method === 'POST');
+    expect(req.request.body).toEqual({});
+    req.flush({ success: true, message: 'OK: Reply batch executed successfully.' });
+  });
 });
