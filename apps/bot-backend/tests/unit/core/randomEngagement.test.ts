@@ -6,6 +6,8 @@ import { createMockDeps } from './testUtils';
 jest.mock('../../../src/core/rateLimiter');
 jest.mock('../../../src/utils/image');
 
+const testConfig = { cooldownDays: 365 };
+
 describe('Random Engagement Batch', () => {
     let deps: any;
 
@@ -42,7 +44,7 @@ describe('Random Engagement Batch', () => {
             reply: 'Hey @target_user, playing games again?'
         });
 
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('target_user');
@@ -81,7 +83,7 @@ describe('Random Engagement Batch', () => {
             reply: '@active_u2 Hello!'
         });
 
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('active_u2');
@@ -101,7 +103,7 @@ describe('Random Engagement Batch', () => {
             ]),
         );
 
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBeUndefined();
@@ -110,7 +112,7 @@ describe('Random Engagement Batch', () => {
 
     it('should return success immediately if list cache is empty', async () => {
         deps.firestore.getListMembersFromCache.mockResolvedValue([]);
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
         expect(result.status).toBe('success');
         expect(result.processedUser).toBeUndefined();
     });
@@ -120,7 +122,7 @@ describe('Random Engagement Batch', () => {
         deps.firestore.getAllListInteractions.mockResolvedValue(new Map());
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: false, reason: 'limit' });
 
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
         expect(result.status).toBe('skipped');
     });
 
@@ -144,7 +146,7 @@ describe('Random Engagement Batch', () => {
             reply: '@fresh_user nice to meet you!',
         });
 
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('fresh_user');
@@ -174,7 +176,7 @@ describe('Random Engagement Batch', () => {
             reply: '@returning_user long time no see!',
         });
 
-        const result = await new RandomEngagementUseCase(deps).execute();
+        const result = await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(result.status).toBe('success');
         expect(result.processedUser).toBe('returning_user');
@@ -224,7 +226,7 @@ describe('Random Engagement Batch', () => {
             reply: 'Hello without mention'
         }); // missing @target2
 
-        await new RandomEngagementUseCase(deps).execute();
+        await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(deps.xApi.tweet).toHaveBeenCalledWith('@target2\nHello without mention', { mediaIds: [] });
     });
@@ -255,7 +257,7 @@ describe('Random Engagement Batch', () => {
             reply: '@media_user cool photo!'
         });
 
-        await new RandomEngagementUseCase(deps).execute();
+        await new RandomEngagementUseCase(deps, testConfig).execute();
 
         expect(deps.gemini.analyzeImageCaption).toHaveBeenCalled();
         expect(deps.xApi.tweet).toHaveBeenCalledWith('@media_user cool photo!', { mediaIds: [] });

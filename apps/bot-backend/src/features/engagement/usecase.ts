@@ -7,14 +7,13 @@ import { downloadImage } from '../../utils/image';
 import { logger } from '../../utils/logger';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const DEFAULT_COOLDOWN_DAYS = 365;
 
 /**
  * Configuration options for {@link RandomEngagementUseCase}.
  */
 export interface RandomEngagementConfig {
-  /** Minimum days before re-engaging a previously contacted follower (defaults to 365). */
-  cooldownDays?: number;
+  /** Minimum days before re-engaging a previously contacted follower (injected from config). */
+  cooldownDays: number;
 }
 
 /**
@@ -40,11 +39,11 @@ export class RandomEngagementUseCase {
    * Instantiates the RandomEngagementUseCase.
    *
    * @param deps - The application dependencies required to execute the engagement workflow.
-   * @param config - Optional engagement configuration (e.g. cooldown window).
+   * @param config - Engagement configuration injected from the central app config.
    */
   constructor(
     private deps: AppDependencies,
-    private config: RandomEngagementConfig = {},
+    private config: RandomEngagementConfig,
   ) {}
 
   /**
@@ -196,8 +195,7 @@ ${description}
     members: Pick<XApiUser, 'id'>[],
   ): Promise<Pick<XApiUser, 'id'> | null> {
     const interactions = await this.deps.firestore.getAllListInteractions();
-    const cooldownDays = this.config.cooldownDays ?? DEFAULT_COOLDOWN_DAYS;
-    const cooldownCutoffMs = Date.now() - cooldownDays * MS_PER_DAY;
+    const cooldownCutoffMs = Date.now() - this.config.cooldownDays * MS_PER_DAY;
 
     const untouched: Pick<XApiUser, 'id'>[] = [];
     const cooldownEligible: Pick<XApiUser, 'id'>[] = [];
