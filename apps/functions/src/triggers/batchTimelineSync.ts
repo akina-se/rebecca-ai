@@ -3,7 +3,7 @@ import { onRequest } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { getConfig, FUNCTION_SECRET_KEYS } from '../config';
-import { XApiService } from '../services/xApi';
+import { toXApiError, XApiService } from '../services/xApi';
 import { SyncTimelineUseCase } from '../usecases/syncTimelineUseCase';
 
 const oidcClient = new OAuth2Client();
@@ -145,12 +145,24 @@ export const batchTimelineSync = onRequest(
         data: result,
       });
     } catch (error: unknown) {
-      logger.error('[batchTimelineSync] Execution failed', { error });
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during timeline synchronization.';
-      res.status(500).json({
+      const xError = toXApiError(error);
+      const statusCode = xError.statusCode ?? 500;
+      const errorLabel =
+        statusCode === 403 ? 'Forbidden' : statusCode < 500 ? 'Client Error' : 'Internal Server Error';
+      const message =
+        error instanceof Error
+          ? xError.message
+          : 'An unexpected error occurred during timeline synchronization.';
+
+      if (statusCode < 500) {
+        logger.warn('[batchTimelineSync] Upstream request rejected', { statusCode, message });
+      } else {
+        logger.error('[batchTimelineSync] Execution failed', { error });
+      }
+      res.status(statusCode).json({
         success: false,
-        error: 'Internal Server Error',
-        message: errorMessage,
+        error: errorLabel,
+        message,
       });
     }
   }

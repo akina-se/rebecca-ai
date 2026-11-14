@@ -1,10 +1,3 @@
-export class HttpError extends Error {
-  constructor(message: string, public readonly statusCode: number) {
-    super(message);
-    this.name = 'HttpError';
-  }
-}
-
 import { Storage } from '@google-cloud/storage';
 import {
   SupportTransactionDoc,
@@ -16,11 +9,13 @@ import {
   ManualEntrySupportDto,
 } from './types';
 import { SupportersRepository } from './repository';
-import { resolveSupportTierFromAmount } from '@rebecca/types';
+import { resolveSupportTierFromAmount, UpstreamApiError } from '@rebecca/types';
 import { config } from '../../config';
 import { getBotServiceHeaders } from '../../core/botServiceClient';
 import { logger } from '../../utils/logger';
 import { generateWebpThumbnail, stripImageMetadata } from '../../utils/image';
+
+export { UpstreamApiError as HttpError };
 
 /**
  * UseCase coordinating business logic for supporter transactions,
@@ -55,7 +50,7 @@ export class SupportersUseCase {
   async deleteTransaction(id: string): Promise<void> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      throw new HttpError(`Support transaction with ID "${id}" not found`, 404);
+      throw new UpstreamApiError(`Support transaction with ID "${id}" not found`, 404);
     }
     await this.repo.deleteTransaction(id);
   }
@@ -63,7 +58,7 @@ export class SupportersUseCase {
   async updateTransaction(id: string, dto: UpdateSupportTransactionDto): Promise<SupportTransactionDoc> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      throw new HttpError(`Transaction with ID "${id}" not found`, 404);
+      throw new UpstreamApiError(`Transaction with ID "${id}" not found`, 404);
     }
 
     const updates: Partial<SupportTransactionDoc> = {
@@ -95,11 +90,11 @@ export class SupportersUseCase {
   async retryTransaction(id: string): Promise<{ success: boolean; message: string; transaction: SupportTransactionDoc }> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      throw new HttpError(`Transaction with ID "${id}" not found`, 404);
+      throw new UpstreamApiError(`Transaction with ID "${id}" not found`, 404);
     }
 
     if (existing.status === 'completed') {
-      throw new HttpError('Cannot retry a completed transaction', 400);
+      throw new UpstreamApiError('Cannot retry a completed transaction', 400);
     }
 
     // Reset status to pending and clear error
@@ -127,7 +122,7 @@ export class SupportersUseCase {
   async manualResolve(id: string, dto: ManualResolveSupportDto): Promise<SupportTransactionDoc> {
     const existing = await this.repo.getTransactionById(id);
     if (!existing) {
-      throw new HttpError(`Transaction with ID "${id}" not found`, 404);
+      throw new UpstreamApiError(`Transaction with ID "${id}" not found`, 404);
     }
 
     await this.repo.updateTransaction(id, {
@@ -147,7 +142,7 @@ export class SupportersUseCase {
    */
   async manualEntry(dto: ManualEntrySupportDto): Promise<SupportTransactionDoc> {
     if (!dto.stripeSessionId || !dto.rawName || !dto.amount || dto.amount <= 0) {
-      throw new HttpError('stripeSessionId, rawName, and positive amount are required', 400);
+      throw new UpstreamApiError('stripeSessionId, rawName, and positive amount are required', 400);
     }
 
     const { tier, itemLabel } = resolveSupportTierFromAmount(dto.amount);
@@ -194,7 +189,7 @@ export class SupportersUseCase {
    */
   async uploadReward(file: Express.Multer.File, title?: string): Promise<RewardImageDoc> {
     if (!file || !file.buffer) {
-      throw new HttpError('Image file is required', 400);
+      throw new UpstreamApiError('Image file is required', 400);
     }
 
     // 1. Calculate sequential number and ensure privacy-safe title
@@ -314,7 +309,7 @@ export class SupportersUseCase {
   async updateReward(id: string, data: { title?: string; isActive?: boolean }): Promise<RewardImageDoc> {
     const existing = await this.repo.getRewardImageById(id);
     if (!existing) {
-      throw new HttpError(`Reward asset with ID "${id}" not found`, 404);
+      throw new UpstreamApiError(`Reward asset with ID "${id}" not found`, 404);
     }
 
     await this.repo.updateRewardImage(id, data);
@@ -328,7 +323,7 @@ export class SupportersUseCase {
   async deleteReward(id: string): Promise<void> {
     const existing = await this.repo.getRewardImageById(id);
     if (!existing) {
-      throw new HttpError(`Reward asset with ID "${id}" not found`, 404);
+      throw new UpstreamApiError(`Reward asset with ID "${id}" not found`, 404);
     }
 
     const pathsToDelete = [existing.storagePath, existing.thumbnailStoragePath].filter(

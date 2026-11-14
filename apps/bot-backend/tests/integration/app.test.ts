@@ -220,6 +220,34 @@ describe('Integration Tests', () => {
                 expect.any(Number)
             );
         });
+
+        it('should return 403 with detail when X API rejects getMentions with spend cap reached', async () => {
+            const forbiddenErr = Object.assign(new Error('HTTP 403: Forbidden'), {
+                status: 403,
+                data: { detail: 'Your monthly spend cap has been reached.' },
+            });
+            (xApi.getMentions as jest.Mock).mockRejectedValueOnce(forbiddenErr);
+
+            const response = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
+            expect(response.status).toBe(403);
+            expect(response.body).toEqual({
+                error: 'Your monthly spend cap has been reached.',
+            });
+        });
+
+        it('should preserve upstream 503 status code and return 500 for unclassified errors', async () => {
+            const unavailableErr = Object.assign(new Error('Service Unavailable'), { statusCode: 503 });
+            (xApi.getMentions as jest.Mock).mockRejectedValueOnce(unavailableErr);
+
+            const res503 = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
+            expect(res503.status).toBe(503);
+            expect(res503.body).toEqual({ error: 'Service Unavailable' });
+
+            (xApi.getMentions as jest.Mock).mockRejectedValueOnce(new Error('Database failure'));
+            const res500 = await request(app).get('/batch/mentions').set('x-batch-secret', 'test_secret');
+            expect(res500.status).toBe(500);
+            expect(res500.body).toEqual({ error: 'Internal Server Error' });
+        });
     });
 
     describe('POST /worker/reply', () => {

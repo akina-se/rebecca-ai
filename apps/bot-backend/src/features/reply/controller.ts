@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ReplyTaskUseCase } from './usecase';
-import { logger } from '../../utils/logger';
 import { isAllowedDomain } from '../../utils/image';
+import { handleControllerError } from '../../utils/httpError';
 import config from '../../config';
 
 /**
@@ -59,8 +59,7 @@ export class ReplyTaskController {
             });
             res.status(200).json(result);
         } catch (e) {
-            logger.error('reply error', e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            handleControllerError(res, e, 'reply error');
         }
     };
 }

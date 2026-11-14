@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { SelfReflectionUseCase } from './usecase';
-import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Handles HTTP requests for the self-reflection batch process.
@@ -21,11 +21,7 @@ export class SelfReflectionController {
       const result = await this.useCase.execute();
       res.status(200).json(result);
     } catch (error) {
-      logger.error('[SelfReflectionController] Execution failed', error);
-      res.status(500).json({
-        error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : 'Unknown error during self-reflection.',
-      });
+      handleControllerError(res, error, '[SelfReflectionController] Execution failed');
     }
   };
 }

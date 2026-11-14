@@ -29,107 +29,103 @@ export class SyncTimelineUseCase {
    * @param userId - Optional. Target author's X user ID. Auto-resolved via getMyUserId if omitted.
    * @param limit - Optional max tweets to fetch. Defaults to configured limit.
    * @returns Aggregated synchronization metrics.
+   * @throws When fetching tweets from the X API or committing Firestore writes fails.
    */
   async execute(userId?: string, limit?: number): Promise<SyncTimelineResult> {
-    try {
-      // 1. Fetch normalized tweets from external service adapter (auto-resolves userId if omitted)
-      const tweets = await this.xApiService.fetchRecentTimelineTweets(userId, limit);
-      if (tweets.length === 0) {
-        logger.info('[SyncTimelineUseCase] No tweets retrieved from X API');
-        return { processed: 0, updated: 0, created: 0, errors: 0 };
-      }
-
-      // 2. Fetch only existing Firestore documents matching fetched tweet IDs in chunks of up to 30
-      const timelineRef = this.db.collection(COLLECTIONS.TIMELINE_HISTORY);
-      const tweetIds = tweets.map((t) => t.id).filter((id): id is string => Boolean(id));
-
-      const existingByTweetId = new Map<string, { id: string; data: Record<string, unknown> }>();
-
-      if (tweetIds.length > 0) {
-        const chunkSize = 30;
-        for (let i = 0; i < tweetIds.length; i += chunkSize) {
-          const chunk = tweetIds.slice(i, i + chunkSize);
-          const chunkSnap = await timelineRef.where('tweetId', 'in', chunk).get();
-          chunkSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data.tweetId) existingByTweetId.set(String(data.tweetId), { id: doc.id, data });
-            if (data.tweet_id) existingByTweetId.set(String(data.tweet_id), { id: doc.id, data });
-          });
-        }
-      }
-
-      let updatedCount = 0;
-      let createdCount = 0;
-      const batch = this.db.batch();
-
-      for (const tweet of tweets) {
-        // Look up strictly by unique tweet ID
-        const existing = existingByTweetId.get(tweet.id);
-
-        if (existing) {
-          // Update existing document with verified metrics & ensure tweetId is set
-          const docRef = timelineRef.doc(existing.id);
-          const updatePayload: Record<string, unknown> = {
-            impressions: tweet.impressions,
-            likes: tweet.likes,
-            reposts: tweet.reposts,
-            replies: tweet.replies,
-            tweetId: tweet.id,
-            tweet_id: tweet.id,
-            lastSyncedAt: new Date().toISOString(),
-          };
-
-          // If mediaUrls were missing in Firestore, populate them
-          const existingMedia = (existing.data.mediaUrls || existing.data.media_urls || []) as string[];
-          if (existingMedia.length === 0 && tweet.mediaUrls.length > 0) {
-            updatePayload.mediaUrls = tweet.mediaUrls;
-            updatePayload.media_urls = tweet.mediaUrls;
-          }
-
-          if (tweet.poll) {
-            updatePayload.poll = tweet.poll;
-          }
-
-          batch.set(docRef, updatePayload, { merge: true });
-          updatedCount++;
-        } else {
-          // Create new document for untracked tweet
-          const newDocRef = timelineRef.doc();
-          const tweetDate = tweet.createdAt ? new Date(tweet.createdAt) : new Date();
-          const expireAt = new Date(tweetDate);
-          expireAt.setFullYear(expireAt.getFullYear() + 5); // 5-year TTL
-
-          batch.set(newDocRef, {
-            text: tweet.text,
-            content: tweet.text,
-            timestamp: tweetDate.toISOString(),
-            created_at: tweetDate.toISOString(),
-            expireAt: expireAt.toISOString(),
-            mediaUrls: tweet.mediaUrls,
-            media_urls: tweet.mediaUrls,
-            impressions: tweet.impressions,
-            likes: tweet.likes,
-            reposts: tweet.reposts,
-            replies: tweet.replies,
-            status: 'SUCCESS',
-            tweetId: tweet.id,
-            tweet_id: tweet.id,
-            lastSyncedAt: new Date().toISOString(),
-            ...(tweet.poll ? { postType: 'poll', poll: tweet.poll } : {}),
-          });
-          createdCount++;
-        }
-      }
-
-      if (updatedCount > 0 || createdCount > 0) {
-        await batch.commit();
-      }
-
-      logger.info('[SyncTimelineUseCase] Processed tweets', { count: tweets.length, updated: updatedCount, created: createdCount });
-      return { processed: tweets.length, updated: updatedCount, created: createdCount, errors: 0 };
-    } catch (error) {
-      logger.error('[SyncTimelineUseCase] Sync workflow encountered an error', { error });
-      return { processed: 0, updated: 0, created: 0, errors: 1 };
+    // 1. Fetch normalized tweets from external service adapter (auto-resolves userId if omitted)
+    const tweets = await this.xApiService.fetchRecentTimelineTweets(userId, limit);
+    if (tweets.length === 0) {
+      logger.info('[SyncTimelineUseCase] No tweets retrieved from X API');
+      return { processed: 0, updated: 0, created: 0, errors: 0 };
     }
+
+    // 2. Fetch only existing Firestore documents matching fetched tweet IDs in chunks of up to 30
+    const timelineRef = this.db.collection(COLLECTIONS.TIMELINE_HISTORY);
+    const tweetIds = tweets.map((t) => t.id).filter((id): id is string => Boolean(id));
+
+    const existingByTweetId = new Map<string, { id: string; data: Record<string, unknown> }>();
+
+    if (tweetIds.length > 0) {
+      const chunkSize = 30;
+      for (let i = 0; i < tweetIds.length; i += chunkSize) {
+        const chunk = tweetIds.slice(i, i + chunkSize);
+        const chunkSnap = await timelineRef.where('tweetId', 'in', chunk).get();
+        chunkSnap.forEach((doc) => {
+          const data = doc.data();
+          if (data.tweetId) existingByTweetId.set(String(data.tweetId), { id: doc.id, data });
+          if (data.tweet_id) existingByTweetId.set(String(data.tweet_id), { id: doc.id, data });
+        });
+      }
+    }
+
+    let updatedCount = 0;
+    let createdCount = 0;
+    const batch = this.db.batch();
+
+    for (const tweet of tweets) {
+      // Look up strictly by unique tweet ID
+      const existing = existingByTweetId.get(tweet.id);
+
+      if (existing) {
+        // Update existing document with verified metrics & ensure tweetId is set
+        const docRef = timelineRef.doc(existing.id);
+        const updatePayload: Record<string, unknown> = {
+          impressions: tweet.impressions,
+          likes: tweet.likes,
+          reposts: tweet.reposts,
+          replies: tweet.replies,
+          tweetId: tweet.id,
+          tweet_id: tweet.id,
+          lastSyncedAt: new Date().toISOString(),
+        };
+
+        // If mediaUrls were missing in Firestore, populate them
+        const existingMedia = (existing.data.mediaUrls || existing.data.media_urls || []) as string[];
+        if (existingMedia.length === 0 && tweet.mediaUrls.length > 0) {
+          updatePayload.mediaUrls = tweet.mediaUrls;
+          updatePayload.media_urls = tweet.mediaUrls;
+        }
+
+        if (tweet.poll) {
+          updatePayload.poll = tweet.poll;
+        }
+
+        batch.set(docRef, updatePayload, { merge: true });
+        updatedCount++;
+      } else {
+        // Create new document for untracked tweet
+        const newDocRef = timelineRef.doc();
+        const tweetDate = tweet.createdAt ? new Date(tweet.createdAt) : new Date();
+        const expireAt = new Date(tweetDate);
+        expireAt.setFullYear(expireAt.getFullYear() + 5); // 5-year TTL
+
+        batch.set(newDocRef, {
+          text: tweet.text,
+          content: tweet.text,
+          timestamp: tweetDate.toISOString(),
+          created_at: tweetDate.toISOString(),
+          expireAt: expireAt.toISOString(),
+          mediaUrls: tweet.mediaUrls,
+          media_urls: tweet.mediaUrls,
+          impressions: tweet.impressions,
+          likes: tweet.likes,
+          reposts: tweet.reposts,
+          replies: tweet.replies,
+          status: 'SUCCESS',
+          tweetId: tweet.id,
+          tweet_id: tweet.id,
+          lastSyncedAt: new Date().toISOString(),
+          ...(tweet.poll ? { postType: 'poll', poll: tweet.poll } : {}),
+        });
+        createdCount++;
+      }
+    }
+
+    if (updatedCount > 0 || createdCount > 0) {
+      await batch.commit();
+    }
+
+    logger.info('[SyncTimelineUseCase] Processed tweets', { count: tweets.length, updated: updatedCount, created: createdCount });
+    return { processed: tweets.length, updated: updatedCount, created: createdCount, errors: 0 };
   }
 }

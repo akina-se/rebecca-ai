@@ -1,4 +1,5 @@
 import { Client, OAuth1 } from '@xdevplatform/xdk';
+import { UpstreamApiError } from '@rebecca/types';
 import type { 
   XApiCreateResponse, 
   XApiMentionResponse, 
@@ -8,6 +9,7 @@ import type {
   IXApiService
 } from '../types';
 import { logger } from '../utils/logger';
+import { rethrowUpstreamApiError } from '../utils/httpError';
 
 /**
  * Configuration options required by XApiService.
@@ -82,8 +84,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;
     } catch (error) {
-      logger.error('Error replying to mention', error, { tweetId });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error replying to mention', { tweetId });
     }
   }
 
@@ -104,8 +105,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.posts.getById>[1]);
       return response as unknown as XApiTweetDetailsResponse;
     } catch (error) {
-      logger.error('Error getting tweet details', error, { tweetId });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error getting tweet details', { tweetId });
     }
   }
 
@@ -138,12 +138,11 @@ export class XApiService implements IXApiService {
       
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(`Upload failed: ${JSON.stringify(data)}`);
+        throw new UpstreamApiError(`Upload failed: ${JSON.stringify(data)}`, response.status);
       }
       return data.media_id_string;
     } catch (error) {
-      logger.error('Error uploading media to X', error);
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error uploading media to X');
     }
   }
 
@@ -183,8 +182,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;
     } catch (error) {
-      logger.error('Error posting tweet', error);
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error posting tweet');
     }
   }
 
@@ -202,8 +200,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.users.getById>[1]);
       return response as unknown as { data: XApiUser };
     } catch (error) {
-      logger.error('Error getting user profile', error, { userId });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error getting user profile', { userId });
     }
   }
 
@@ -247,8 +244,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.users.getMentions(userId, params as Parameters<typeof this.client.users.getMentions>[1]);
       return response as unknown as XApiMentionResponse;
     } catch (error) {
-      logger.error('Error fetching mentions', error, { sinceId });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error fetching mentions', { sinceId });
     }
   }
 
@@ -274,8 +270,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.users.getFollowers(userId, params as Parameters<typeof this.client.users.getFollowers>[1]);
       return response as unknown as XApiFollowersResponse;
     } catch (error) {
-      logger.error('Error getting followers', error, { userId, paginationToken });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error getting followers', { userId, paginationToken });
     }
   }
 
@@ -302,12 +297,11 @@ export class XApiService implements IXApiService {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(`Failed to add list member: ${JSON.stringify(errData)}`);
+        throw new UpstreamApiError(`Failed to add list member: ${JSON.stringify(errData)}`, res.status);
       }
       return true;
     } catch (error) {
-      logger.error('Error adding list member', error, { listId, userId });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error adding list member', { listId, userId });
     }
   }
 
@@ -329,8 +323,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.users.getPosts>[1]);
       return response as unknown as XApiMentionResponse;
     } catch (error) {
-      logger.error('Error getting user tweets', error, { userId, maxResults });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error getting user tweets', { userId, maxResults });
     }
   }
 
@@ -366,14 +359,13 @@ export class XApiService implements IXApiService {
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw new Error(`Failed to delete tweet: ${JSON.stringify(errData)}`);
+          throw new UpstreamApiError(`Failed to delete tweet: ${JSON.stringify(errData)}`, res.status);
         }
         return true;
       }
       throw new Error('No client or oauth1Client available to delete tweet');
     } catch (error) {
-      logger.error('Error deleting tweet', error, { tweetId });
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error deleting tweet', { tweetId });
     }
   }
 }

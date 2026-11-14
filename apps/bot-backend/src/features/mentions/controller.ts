@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PollMentionsUseCase } from './usecase';
-import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller responsible for handling HTTP requests related to the Mentions feature.
@@ -27,8 +27,7 @@ export class MentionsController {
             const result = await this.useCase.execute();
             res.status(200).json(result);
         } catch (e) {
-            logger.error('Batch error (mentions)', e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            handleControllerError(res, e, 'Batch error (mentions)');
         }
     };
 }

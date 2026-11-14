@@ -60,6 +60,23 @@ describe('Worker Routes - Tweets Management', () => {
             .set('x-worker-secret', 'test-secret');
 
         expect(res.status).toBe(500);
-        expect(res.body).toEqual({ success: false, message: 'X API Error: Tweet not found' });
+        expect(res.body).toEqual({ error: 'Internal Server Error' });
+    });
+
+    it('DELETE /worker/tweets/:id should preserve upstream 403 status and detail', async () => {
+        const forbiddenErr = Object.assign(new Error('HTTP 403: Forbidden'), {
+            status: 403,
+            data: { detail: 'Your monthly spend cap has been reached.' },
+        });
+        mockXApi.deleteTweet.mockRejectedValueOnce(forbiddenErr);
+
+        const res = await request(app)
+            .delete('/worker/tweets/123456789')
+            .set('x-worker-secret', 'test-secret');
+
+        expect(res.status).toBe(403);
+        expect(res.body).toEqual({
+            error: 'Your monthly spend cap has been reached.',
+        });
     });
 });

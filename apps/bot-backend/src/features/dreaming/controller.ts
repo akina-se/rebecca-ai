@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { GlobalDreamingUseCase } from './usecase';
-import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Handles incoming HTTP requests for the global dreaming process.
@@ -33,8 +33,7 @@ export class GlobalDreamingController {
             }
             res.status(200).json(result);
         } catch (e) {
-            logger.error('dreaming error', e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            handleControllerError(res, e, 'dreaming error');
         }
     };
 }

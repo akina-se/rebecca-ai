@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { GlobalEvolutionUseCase } from './usecase';
-import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller responsible for handling global evolution HTTP requests.
@@ -26,8 +26,7 @@ export class GlobalEvolutionController {
             const result = await this.useCase.execute();
             res.status(200).json(result);
         } catch (e) {
-            logger.error('evolution error', e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            handleControllerError(res, e, 'evolution error');
         }
     };
 }

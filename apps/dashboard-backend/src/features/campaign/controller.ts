@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { CloneCampaignRequest } from '@rebecca/types';
 import { CampaignsUseCase } from './usecase';
-import { logger } from '../../utils/logger';
+import { handleControllerError as handleHttpError } from '../../utils/httpError';
 
 /**
  * Validates and extracts a required non-empty string ID from request params.
@@ -18,7 +18,7 @@ const extractRequiredId = (param: unknown): string => {
 /**
  * Error response handler for CampaignsController.
  * Maps domain/validation errors to standard HTTP status codes,
- * and masks unexpected server errors to prevent internal system leakage.
+ * and delegates upstream/unexpected errors to the shared HTTP error handler.
  */
 const handleControllerError = (res: Response, err: unknown, context: string): void => {
   const message = err instanceof Error ? err.message : String(err);
@@ -44,8 +44,7 @@ const handleControllerError = (res: Response, err: unknown, context: string): vo
     return;
   }
 
-  logger.error('[CampaignsController] Unexpected server error', err, { context });
-  res.status(500).json({ error: 'Internal server error' });
+  handleHttpError(res, err, 'Internal server error', { context });
 };
 
 /**

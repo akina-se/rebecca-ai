@@ -6,6 +6,7 @@ import { Request, Response } from 'express';
 import { PollUseCase } from './usecase';
 import { CampaignGuard } from '../campaign';
 import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller for the X Poll & Result Reaction feature.
@@ -47,8 +48,7 @@ export class PollController {
       const result = await this.useCase.executeCreatePoll();
       res.status(200).json(result);
     } catch (e) {
-      logger.error('[PollController] Error in handleCreate', e);
-      res.status(500).json({ error: 'Internal Server Error' });
+      handleControllerError(res, e, '[PollController] Error in handleCreate');
     }
   };
 
@@ -78,8 +78,7 @@ export class PollController {
       const result = await this.useCase.executePollResult();
       res.status(200).json(result);
     } catch (e) {
-      logger.error('[PollController] Error in handleResult', e);
-      res.status(500).json({ error: 'Internal Server Error' });
+      handleControllerError(res, e, '[PollController] Error in handleResult');
     }
   };
 }

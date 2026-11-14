@@ -1,3 +1,4 @@
+import { UpstreamApiError } from '@rebecca/types';
 import { StealthOnboardingUseCase } from '../../../src/features/onboarding/usecase';
 import { createMockDeps } from './testUtils';
 
@@ -141,7 +142,7 @@ describe('Stealth Onboarding Batch', () => {
         deps.firestore.hasProcessedFollower.mockResolvedValue(false);
         deps.xApi.addListMember.mockImplementation(async (_listId: string, userId: string) => {
             if (userId === 'user_403') {
-                throw new Error('{"detail":"You are not allowed to add members to this List.","status":403,"title":"Forbidden"}');
+                throw new UpstreamApiError('You are not allowed to add members to this List.', 403);
             }
             return true;
         });
@@ -162,7 +163,7 @@ describe('Stealth Onboarding Batch', () => {
         });
 
         deps.firestore.hasProcessedFollower.mockResolvedValue(false);
-        deps.xApi.addListMember.mockRejectedValue(new Error('{"detail":"Too Many Requests","status":429}'));
+        deps.xApi.addListMember.mockRejectedValue(new UpstreamApiError('Too Many Requests', 429));
 
         const result = await new StealthOnboardingUseCase(deps, testConfig).execute();
 
@@ -179,7 +180,7 @@ describe('Stealth Onboarding Batch', () => {
 
         deps.xApi.addListMember.mockImplementation(async (_listId: string, userId: string) => {
             if (userId === 'failed_retry_403') {
-                throw new Error('{"status":403,"title":"Forbidden"}');
+                throw new UpstreamApiError('Forbidden', 403);
             }
             return true;
         });
