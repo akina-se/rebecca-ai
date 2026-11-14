@@ -8,8 +8,8 @@ import { logger } from '../../utils/logger';
 export interface StealthOnboardingConfig {
   myUserId?: string;
   targetListId?: string;
-  followersPageSize?: number;
-  followersMaxResults?: number;
+  followersPageSize: number;
+  followersMaxResults: number;
 }
 
 /**
@@ -123,8 +123,8 @@ export class StealthOnboardingUseCase {
    * When `targetListId` is omitted, followers are recorded as `SKIPPED` without calling X list APIs.
    */
   private async ingestNewFollowers(myUserId: string, targetListId?: string): Promise<number> {
-    const pageSize = this.config.followersPageSize ?? 20;
-    const maxResults = this.config.followersMaxResults ?? 1000;
+    const pageSize = this.config.followersPageSize;
+    const maxResults = this.config.followersMaxResults;
 
     let processedCount = 0;
     let fetchedCount = 0;
@@ -145,7 +145,7 @@ export class StealthOnboardingUseCase {
         throw fetchErr;
       }
 
-      const followers = followersResp.data || [];
+      const followers = followersResp.data ?? [];
       if (followers.length === 0) {
         logger.info('[StealthOnboardingUseCase] No more followers retrieved');
         break;
@@ -254,6 +254,12 @@ export class StealthOnboardingUseCase {
           username: follower.username,
         });
         await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
+      } else if (listErr instanceof UpstreamApiError && listErr.statusCode === 429) {
+        logger.warn('[StealthOnboardingUseCase] X API rate limit (429) adding follower to list. Marking FAILED', {
+          userId: follower.id,
+          username: follower.username,
+        });
+        await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
       } else {
         logger.error('[StealthOnboardingUseCase] Error adding follower to list. Marking FAILED', listErr, {
           userId: follower.id,
