@@ -704,6 +704,9 @@ describe('Firestore Service Unit Tests', () => {
       await firestoreService.markFollowerProcessed('f1');
       expect(mockDocSet).toHaveBeenCalled();
 
+      await firestoreService.markFollowerProcessed('f_skip', 'SKIPPED');
+      expect(mockDocSet).toHaveBeenCalledWith(expect.objectContaining({ userId: 'f_skip', listStatus: 'SKIPPED' }));
+
       mockDocGet.mockResolvedValueOnce({
         exists: true,
         data: () => ({ userId: 'l1', lastInteractionAt: { toDate: () => new Date() } }),
@@ -713,6 +716,17 @@ describe('Firestore Service Unit Tests', () => {
 
       mockDocGet.mockResolvedValueOnce({ exists: false });
       expect(await firestoreService.getLastListInteraction('l2')).toBeNull();
+
+      mockQueryGet.mockResolvedValueOnce({
+        docs: [
+          { id: 'u1', data: () => ({ userId: 'u1', lastInteractionAt: '2026-01-10T00:00:00.000Z' }) },
+          { id: 'u2', data: () => ({ userId: 'u2', lastInteractionAt: '' }) },
+        ],
+      });
+      const allInteractions = await firestoreService.getAllListInteractions();
+      expect(allInteractions.size).toBe(1);
+      expect(allInteractions.get('u1')).toEqual(new Date('2026-01-10T00:00:00.000Z'));
+      expect(allInteractions.has('u2')).toBe(false);
 
       await firestoreService.updateLastListInteraction('l1');
       expect(mockDocSet).toHaveBeenCalled();

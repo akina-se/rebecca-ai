@@ -1,4 +1,4 @@
-import { UpstreamApiError } from '@rebecca/types';
+import { UpstreamApiError, XApiFollowersResponse, XApiUser } from '@rebecca/types';
 import { AppDependencies } from '../../types';
 import { logger } from '../../utils/logger';
 
@@ -8,8 +8,8 @@ import { logger } from '../../utils/logger';
 export interface StealthOnboardingConfig {
   myUserId?: string;
   targetListId?: string;
-  followersPageSize?: number;
-  followersMaxResults?: number;
+  followersPageSize: number;
+  followersMaxResults: number;
 }
 
 /**
@@ -43,14 +43,15 @@ export class StealthOnboardingUseCase {
         return { status: 'failed', processed: 0, reason: 'Missing X_MY_USER_ID' };
       }
 
-      const targetListId = this.config.targetListId;
+      const targetListId = this.config.targetListId?.trim() || undefined;
       if (!targetListId) {
-        logger.error('[StealthOnboardingUseCase] X_TARGET_LIST_ID is not set in config');
-        return { status: 'failed', processed: 0, reason: 'Missing X_TARGET_LIST_ID' };
+        logger.warn(
+          '[StealthOnboardingUseCase] X_TARGET_LIST_ID is not set. List addition and failed-list retries are disabled; continuing follower ingestion with SKIPPED status.',
+        );
       }
 
-      // 1. Retry list addition for previously FAILED followers
-      const retriedCount = await this.retryFailedFollowers(targetListId);
+      // 1. Retry list addition for previously FAILED followers only when list curation is enabled
+      const retriedCount = targetListId ? await this.retryFailedFollowers(targetListId) : 0;
 
       // 2. Ingest new followers with pagination
       const ingestedCount = await this.ingestNewFollowers(myUserId, targetListId);
@@ -118,20 +119,33 @@ export class StealthOnboardingUseCase {
   }
 
   /**
-   * Fetches new followers paginated from X API and adds eligible followers to the curated list.
+   * Fetches new followers paginated from X API and ingests eligible followers.
+   * When `targetListId` is omitted, followers are recorded as `SKIPPED` without calling X list APIs.
    */
-  private async ingestNewFollowers(myUserId: string, targetListId: string): Promise<number> {
-    const pageSize = this.config.followersPageSize ?? 10;
-    const maxResults = this.config.followersMaxResults ?? 30;
+  private async ingestNewFollowers(myUserId: string, targetListId?: string): Promise<number> {
+    const pageSize = this.config.followersPageSize;
+    const maxResults = this.config.followersMaxResults;
 
     let processedCount = 0;
     let fetchedCount = 0;
     let nextToken: string | undefined = undefined;
     while (fetchedCount < maxResults) {
       const batchLimit = Math.min(pageSize, maxResults - fetchedCount);
-      const followersResp = await this.deps.xApi.getFollowers(myUserId, nextToken, batchLimit);
-      const followers = followersResp.data || [];
+      let followersResp: XApiFollowersResponse;
+      try {
+        followersResp = await this.deps.xApi.getFollowers(myUserId, nextToken, batchLimit);
+      } catch (fetchErr: unknown) {
+        if (fetchErr instanceof UpstreamApiError && fetchErr.statusCode === 429) {
+          logger.warn(
+            '[StealthOnboardingUseCase] X API rate limit (429) reached during follower ingestion. Stopping pagination cleanly with partial progress',
+            { fetchedCount, processedCount },
+          );
+          break;
+        }
+        throw fetchErr;
+      }
 
+      const followers = followersResp.data ?? [];
       if (followers.length === 0) {
         logger.info('[StealthOnboardingUseCase] No more followers retrieved');
         break;
@@ -147,77 +161,31 @@ export class StealthOnboardingUseCase {
             userId: follower.id,
             username: follower.username,
           });
-          if (fetchedCount >= maxResults) {
-            logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
-              maxResults,
-            });
-            break;
-          }
-          continue;
-        }
-
-        batchHasNewFollower = true;
-        logger.info('[StealthOnboardingUseCase] New follower detected', {
-          userId: follower.id,
-          username: follower.username,
-        });
-        const userDoc = await this.deps.firestore.getUserDoc(follower.id);
-        if (userDoc?.status === 'BLOCKED') {
-          logger.info('[StealthOnboardingUseCase] Follower is blocked by admin. Skipping list addition', {
-            userId: follower.id,
-            username: follower.username,
-          });
-          await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
-          if (fetchedCount >= maxResults) {
-            logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
-              maxResults,
-            });
-            break;
-          }
-          continue;
-        }
-
-        try {
-          const added = await this.deps.xApi.addListMember(targetListId, follower.id);
-          if (added) {
-            await this.deps.firestore.markFollowerProcessed(follower.id, 'ADDED');
-            logger.info('[StealthOnboardingUseCase] Successfully onboarded (added to list)', {
-              userId: follower.id,
-              username: follower.username,
-            });
+        } else {
+          batchHasNewFollower = true;
+          const processed = await this.processNewFollower(follower, targetListId);
+          if (processed) {
             processedCount++;
-          } else {
-            logger.error('[StealthOnboardingUseCase] Failed to add user to list: addListMember returned false', undefined, {
-              userId: follower.id,
-              username: follower.username,
-            });
-            await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
-          }
-        } catch (listErr: unknown) {
-          if (listErr instanceof UpstreamApiError && listErr.statusCode === 403) {
-            logger.info('[StealthOnboardingUseCase] Follower rejected list addition (403). Marking REJECTED', {
-              userId: follower.id,
-              username: follower.username,
-            });
-            await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
-          } else {
-            logger.error('[StealthOnboardingUseCase] Error adding follower to list. Marking FAILED', listErr, {
-              userId: follower.id,
-              username: follower.username,
-            });
-            await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
           }
         }
 
         if (fetchedCount >= maxResults) {
-          logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
-            maxResults,
-          });
           break;
         }
       }
 
+      nextToken = followersResp.meta?.nextToken;
       if (fetchedCount >= maxResults) {
+        if (nextToken && batchHasNewFollower) {
+          logger.warn('[StealthOnboardingUseCase] Reached maximum followers fetch limit before exhausting pagination', {
+            maxResults,
+            fetchedCount,
+          });
+        } else {
+          logger.info('[StealthOnboardingUseCase] Reached maximum followers fetch limit. Stopping batch', {
+            maxResults,
+          });
+        }
         break;
       }
 
@@ -226,7 +194,6 @@ export class StealthOnboardingUseCase {
         break;
       }
 
-      nextToken = followersResp.meta?.next_token;
       if (!nextToken) {
         logger.info('[StealthOnboardingUseCase] No nextToken found. Reached end of followers list');
         break;
@@ -234,6 +201,74 @@ export class StealthOnboardingUseCase {
     }
 
     return processedCount;
+  }
+
+  /**
+   * Processes a single newly detected follower, optionally adding them to the curated X list.
+   * Returns true if the follower was newly onboarded (`ADDED` or `SKIPPED`), false otherwise.
+   */
+  private async processNewFollower(follower: XApiUser, targetListId?: string): Promise<boolean> {
+    logger.info('[StealthOnboardingUseCase] New follower detected', {
+      userId: follower.id,
+      username: follower.username,
+    });
+    const userDoc = await this.deps.firestore.getUserDoc(follower.id);
+    if (userDoc?.status === 'BLOCKED') {
+      logger.info('[StealthOnboardingUseCase] Follower is blocked by admin. Skipping onboarding', {
+        userId: follower.id,
+        username: follower.username,
+      });
+      await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
+      return false;
+    }
+
+    if (!targetListId) {
+      await this.deps.firestore.markFollowerProcessed(follower.id, 'SKIPPED');
+      logger.info('[StealthOnboardingUseCase] New follower recorded without list addition (SKIPPED)', {
+        userId: follower.id,
+        username: follower.username,
+      });
+      return true;
+    }
+
+    try {
+      const added = await this.deps.xApi.addListMember(targetListId, follower.id);
+      if (added) {
+        await this.deps.firestore.markFollowerProcessed(follower.id, 'ADDED');
+        logger.info('[StealthOnboardingUseCase] Successfully onboarded (added to list)', {
+          userId: follower.id,
+          username: follower.username,
+        });
+        return true;
+      }
+      logger.error('[StealthOnboardingUseCase] Failed to add user to list: addListMember returned false', undefined, {
+        userId: follower.id,
+        username: follower.username,
+      });
+      await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
+      return false;
+    } catch (listErr: unknown) {
+      if (listErr instanceof UpstreamApiError && listErr.statusCode === 403) {
+        logger.info('[StealthOnboardingUseCase] Follower rejected list addition (403). Marking REJECTED', {
+          userId: follower.id,
+          username: follower.username,
+        });
+        await this.deps.firestore.markFollowerProcessed(follower.id, 'REJECTED');
+      } else if (listErr instanceof UpstreamApiError && listErr.statusCode === 429) {
+        logger.warn('[StealthOnboardingUseCase] X API rate limit (429) adding follower to list. Marking FAILED', {
+          userId: follower.id,
+          username: follower.username,
+        });
+        await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
+      } else {
+        logger.error('[StealthOnboardingUseCase] Error adding follower to list. Marking FAILED', listErr, {
+          userId: follower.id,
+          username: follower.username,
+        });
+        await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
+      }
+      return false;
+    }
   }
 
   /**

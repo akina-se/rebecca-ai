@@ -240,12 +240,21 @@ describe('XApiService Unit Tests', () => {
     });
 
     describe('getFollowers', () => {
-        it('should return followers successfully with default pageSize', async () => {
-            const api = createService({ followersPageSize: 10 });
-            mockClientInstance.users.getFollowers.mockResolvedValueOnce({ data: [{ id: 'user1' }], meta: { resultCount: 1 } });
-            const result = await api.getFollowers('123');
-            expect(result.data).toEqual([{ id: 'user1' }]);
+        it('should return followers with configured pageSize and fail fast if pageSize is missing', async () => {
+            const configuredApi = createService({ followersPageSize: 10 });
+            mockClientInstance.users.getFollowers.mockResolvedValueOnce({
+                data: [{ id: 'user1' }],
+                meta: { resultCount: 1, nextToken: 'tok_next' },
+            });
+            const configuredResult = await configuredApi.getFollowers('123');
+            expect(configuredResult.data).toEqual([{ id: 'user1' }]);
+            expect(configuredResult.meta?.nextToken).toBe('tok_next');
             expect(mockClientInstance.users.getFollowers).toHaveBeenCalledWith('123', expect.objectContaining({ max_results: 10 }));
+
+            const unconfiguredApi = createService({ followersPageSize: undefined });
+            await expect(unconfiguredApi.getFollowers('123')).rejects.toThrow(
+                'followersPageSize must be configured or provided to getFollowers',
+            );
         });
 
         it('should pass paginationToken and custom pageSize if provided', async () => {

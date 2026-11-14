@@ -244,8 +244,8 @@ export interface ImageDocWithId extends ImageDoc {
 // Social Graph Models
 // ---------------------------------------------------------------------------
 
-/** Membership status of a follower in the curated X List. */
-export type FollowerListStatus = 'ADDED' | 'FAILED' | 'REJECTED';
+/** Membership status of a follower in the curated X List (SKIPPED when list curation is disabled). */
+export type FollowerListStatus = 'ADDED' | 'FAILED' | 'REJECTED' | 'SKIPPED';
 
 /** Tracks a follower that has been processed by the onboarding pipeline. */
 export interface ProcessedFollower {
@@ -326,12 +326,12 @@ export interface XApiTweetDetailsResponse {
   };
 }
 
-/** Response envelope for follower list endpoints. */
+/** Response envelope for follower list endpoints (`@xdevplatform/xdk` camelCases response keys). */
 export interface XApiFollowersResponse {
   data?: XApiUser[];
   meta?: {
     resultCount: number;
-    next_token?: string;
+    nextToken?: string;
   };
 }
 

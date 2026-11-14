@@ -1,3 +1,4 @@
+import { XApiUser } from '@rebecca/types';
 import { AppDependencies } from '../../types';
 import { getBasePrompt } from '@rebecca/persona';
 import { checkAndIncrementRateLimits } from '../../core/rateLimiter';
@@ -5,28 +6,55 @@ import { executePostPipeline } from '../../core/postPipeline';
 import { downloadImage } from '../../utils/image';
 import { logger } from '../../utils/logger';
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Configuration options for {@link RandomEngagementUseCase}.
+ */
+export interface RandomEngagementConfig {
+  /** Minimum days before re-engaging a previously contacted follower (injected from config). */
+  cooldownDays: number;
+}
+
+/**
+ * Returns a uniformly shuffled shallow copy using Fisher-Yates.
+ */
+function shuffleArray<T>(items: readonly T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 /**
  * Encapsulates the business logic for the random engagement background job.
- * Responsible for randomly selecting a target user, analyzing their profile and recent activity,
+ * Responsible for selecting an eligible target user (prioritizing untouched followers before
+ * falling back to long-term cooldown-eligible followers), analyzing their profile and recent activity,
  * and generating a contextually relevant, AI-driven interaction.
  */
 export class RandomEngagementUseCase {
   /**
    * Instantiates the RandomEngagementUseCase.
-   * 
+   *
    * @param deps - The application dependencies required to execute the engagement workflow.
+   * @param config - Engagement configuration injected from the central app config.
    */
-  constructor(private deps: AppDependencies) {}
+  constructor(
+    private deps: AppDependencies,
+    private config: RandomEngagementConfig,
+  ) {}
 
   /**
    * Executes the random engagement workflow.
-   * 
-   * This process retrieves a list of target users, filters for those who haven't been engaged recently,
-   * analyzes their profile and recent posts to build context, and generates a tailored response using AI.
-   * The generated message is then posted as an @mention.
-   * 
-   * @returns A promise resolving to an object detailing the operation's outcome, 
-   *          including the status, the username of the engaged user (if successful), 
+   *
+   * This process retrieves cached followers, prioritizes users who have never been engaged before
+   * (falling back to users past the configured cooldown window only once all non-blocked users have
+   * been reached), analyzes their profile and recent posts to build context, and posts an @mention.
+   *
+   * @returns A promise resolving to an object detailing the operation's outcome,
+   *          including the status, the username of the engaged user (if successful),
    *          and an optional reason string (if skipped or failed).
    */
   async execute(): Promise<{ status: string; processedUser?: string; reason?: string }> {
@@ -39,29 +67,7 @@ export class RandomEngagementUseCase {
         return { status: 'success' };
       }
 
-      // Fisher-Yates (Knuth) in-place shuffle for uniform randomness
-      const shuffled = [...members];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-
-      let targetUser = null;
-
-      for (const user of shuffled) {
-        const userDoc = await this.deps.firestore.getUserDoc(user.id);
-        if (userDoc?.status === 'BLOCKED') {
-          logger.info('[RandomEngagementUseCase] User is blocked by admin. Skipping random engagement', {
-            userId: user.id,
-          });
-          continue;
-        }
-        const lastInteraction = await this.deps.firestore.getLastListInteraction(user.id);
-        if (!lastInteraction) {
-          targetUser = user;
-          break;
-        }
-      }
+      const targetUser = await this.selectTargetUser(members);
 
       if (!targetUser) {
         logger.info('[RandomEngagementUseCase] No eligible users found for random engagement');
@@ -176,5 +182,43 @@ ${description}
       logger.error('[RandomEngagementUseCase] Error in RandomEngagementUseCase.execute', e);
       throw e;
     }
+  }
+
+  /**
+   * Selects a non-blocked engagement target from cached followers.
+   *
+   * Strictly prioritizes followers who have never been engaged before (`lastInteraction` absent),
+   * falling back to followers whose last interaction is older than `cooldownDays` only after all
+   * non-blocked untouched followers have been exhausted.
+   */
+  private async selectTargetUser(
+    members: Pick<XApiUser, 'id'>[],
+  ): Promise<Pick<XApiUser, 'id'> | null> {
+    const interactions = await this.deps.firestore.getAllListInteractions();
+    const cooldownCutoffMs = Date.now() - this.config.cooldownDays * MS_PER_DAY;
+
+    const untouched: Pick<XApiUser, 'id'>[] = [];
+    const cooldownEligible: Pick<XApiUser, 'id'>[] = [];
+
+    for (const member of members) {
+      const lastInteraction = interactions.get(member.id);
+      if (!lastInteraction) {
+        untouched.push(member);
+      } else if (lastInteraction.getTime() <= cooldownCutoffMs) {
+        cooldownEligible.push(member);
+      }
+    }
+
+    const tiers = [shuffleArray(untouched), shuffleArray(cooldownEligible)];
+    for (const candidates of tiers) {
+      for (const candidate of candidates) {
+        const userDoc = await this.deps.firestore.getUserDoc(candidate.id);
+        if (userDoc?.status !== 'BLOCKED') {
+          return candidate;
+        }
+      }
+    }
+
+    return null;
   }
 }

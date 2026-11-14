@@ -26,6 +26,7 @@
     "simulate": "npx ts-node scripts/simulate.ts",
     "tool:upload-images": "npx ts-node scripts/upload-images.ts",
     "tool:get-lists": "ts-node scripts/get-lists.ts",
+    "tool:import-followers-archive": "npx ts-node scripts/import-followers-archive.ts",
     "secret-check": "secretlint \"**/*\""
   },
   "keywords": [],

@@ -970,6 +970,24 @@ const getLastListInteraction = async (userId: string): Promise<Date | null> => {
 };
 
 /**
+ * Retrieves all recorded list interaction timestamps keyed by X user ID.
+ * Enables single-query candidate filtering in RandomEngagementUseCase without N+1 point reads.
+ *
+ * @returns Map of userId to their most recent interaction `Date`.
+ */
+const getAllListInteractions = async (): Promise<Map<string, Date>> => {
+  const snapshot = await db.listInteractionHistory.get();
+  const interactions = new Map<string, Date>();
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    if (data.lastInteractionAt) {
+      interactions.set(doc.id, new Date(data.lastInteractionAt));
+    }
+  }
+  return interactions;
+};
+
+/**
  * Retrieves the total count of processed followers in Firestore.
  *
  * @returns The total number of processed followers.
@@ -1373,6 +1391,7 @@ export {
   getProcessedFollowersCount,
   updateTotalFollowers,
   getLastListInteraction,
+  getAllListInteractions,
   updateLastListInteraction,
   getListMembersFromCache,
   getActiveCampaign,

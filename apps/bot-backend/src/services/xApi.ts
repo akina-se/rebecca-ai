@@ -258,8 +258,11 @@ export class XApiService implements IXApiService {
    */
   async getFollowers(userId: string, paginationToken?: string, pageSize?: number): Promise<XApiFollowersResponse> {
     if (!this.client) return { data: [], meta: { resultCount: 0 } };
+    const effectivePageSize = pageSize ?? this.config.followersPageSize;
+    if (effectivePageSize === undefined) {
+      throw new Error('followersPageSize must be configured or provided to getFollowers');
+    }
     try {
-      const effectivePageSize = pageSize ?? this.config.followersPageSize ?? 10;
       const params: Record<string, unknown> = {
         max_results: effectivePageSize
       };

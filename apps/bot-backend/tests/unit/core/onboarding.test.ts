@@ -81,9 +81,49 @@ describe('Stealth Onboarding Batch', () => {
         expect(result.status).toBe('failed');
     });
 
-    it('should return failed if targetListId is not set', async () => {
-        const result = await new StealthOnboardingUseCase(deps, { ...testConfig, targetListId: '' }).execute();
-        expect(result.status).toBe('failed');
+    it('should skip list additions and record followers as SKIPPED when targetListId is omitted', async () => {
+        deps.xApi.getFollowers.mockResolvedValue({
+            data: [
+                { id: 'user_new', username: 'alice' },
+                { id: 'user_blocked', username: 'mallory' },
+            ],
+        });
+        deps.firestore.hasProcessedFollower.mockResolvedValue(false);
+        deps.firestore.getUserDoc.mockImplementation(async (id: string) =>
+            id === 'user_blocked' ? { status: 'BLOCKED' } : { status: 'ACTIVE' },
+        );
+        deps.firestore.getProcessedFollowersCount.mockResolvedValue(42);
+
+        const result = await new StealthOnboardingUseCase(deps, {
+            ...testConfig,
+            targetListId: undefined,
+        }).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(1);
+        expect(deps.firestore.getFailedFollowers).not.toHaveBeenCalled();
+        expect(deps.xApi.addListMember).not.toHaveBeenCalled();
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_new', 'SKIPPED');
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_blocked', 'REJECTED');
+        expect(deps.firestore.updateTotalFollowers).toHaveBeenCalledWith(42);
+    });
+
+    it('should also treat blank targetListId as optional and skip list API calls', async () => {
+        deps.xApi.getFollowers.mockResolvedValue({
+            data: [{ id: 'user_blank_cfg', username: 'bob' }],
+        });
+        deps.firestore.hasProcessedFollower.mockResolvedValue(false);
+
+        const result = await new StealthOnboardingUseCase(deps, {
+            ...testConfig,
+            targetListId: '   ',
+        }).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(1);
+        expect(deps.firestore.getFailedFollowers).not.toHaveBeenCalled();
+        expect(deps.xApi.addListMember).not.toHaveBeenCalled();
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_blank_cfg', 'SKIPPED');
     });
 
     it('should mark follower as FAILED if addListMember fails', async () => {
@@ -98,13 +138,13 @@ describe('Stealth Onboarding Batch', () => {
     });
 
     it('should paginate with nextToken, skip processed followers in mixed batch, and stop when an entire batch is already processed', async () => {
-        // Page 1: 1 new user, 1 already processed user -> batch has new user, proceeds with next_token
+        // Page 1: 1 new user, 1 already processed user -> batch has new user, proceeds with nextToken
         deps.xApi.getFollowers.mockResolvedValueOnce({
             data: [
                 { id: 'user_p1_old', username: 'p1_old' },
                 { id: 'user_p1_new', username: 'p1_new' }
             ],
-            meta: { next_token: 'next_page_token' }
+            meta: { nextToken: 'next_page_token' }
         });
         // Page 2: 2 already processed users -> batch has NO new user, stops pagination!
         deps.xApi.getFollowers.mockResolvedValueOnce({
@@ -112,7 +152,7 @@ describe('Stealth Onboarding Batch', () => {
                 { id: 'user_p2_old1', username: 'p2_old1' },
                 { id: 'user_p2_old2', username: 'p2_old2' }
             ],
-            meta: { next_token: 'should_not_reach_token' }
+            meta: { nextToken: 'should_not_reach_token' }
         });
 
         deps.firestore.hasProcessedFollower.mockImplementation(async (id: string) => {
@@ -126,6 +166,7 @@ describe('Stealth Onboarding Batch', () => {
         expect(result.status).toBe('success');
         expect(result.processed).toBe(1); // only user_p1_new
         expect(deps.xApi.getFollowers).toHaveBeenCalledTimes(2);
+        expect(deps.xApi.getFollowers).toHaveBeenNthCalledWith(2, '123', 'next_page_token', 10);
         expect(deps.xApi.addListMember).toHaveBeenCalledWith('list_abc', 'user_p1_new');
         expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_p1_new', 'ADDED');
         expect(deps.firestore.updateTotalFollowers).toHaveBeenCalledWith(10);
@@ -200,8 +241,8 @@ describe('Stealth Onboarding Batch', () => {
         const page1Data = Array.from({ length: 10 }, (_, i) => ({ id: `user_p1_${i}`, username: `p1_${i}` }));
         const page2Data = Array.from({ length: 10 }, (_, i) => ({ id: `user_p2_${i}`, username: `p2_${i}` }));
 
-        deps.xApi.getFollowers.mockResolvedValueOnce({ data: page1Data, meta: { next_token: 'token_2' } });
-        deps.xApi.getFollowers.mockResolvedValueOnce({ data: page2Data, meta: { next_token: 'token_3' } });
+        deps.xApi.getFollowers.mockResolvedValueOnce({ data: page1Data, meta: { nextToken: 'token_2' } });
+        deps.xApi.getFollowers.mockResolvedValueOnce({ data: page2Data, meta: { nextToken: 'token_3' } });
 
         deps.firestore.hasProcessedFollower.mockResolvedValue(false);
         deps.xApi.addListMember.mockResolvedValue(true);
@@ -215,6 +256,28 @@ describe('Stealth Onboarding Batch', () => {
         expect(result.status).toBe('success');
         expect(result.processed).toBe(15); // stopped at 15 exactly
         expect(deps.xApi.getFollowers).toHaveBeenCalledTimes(2);
+    });
+
+    it('should stop pagination gracefully with partial progress when X API returns 429 on a subsequent page', async () => {
+        deps.xApi.getFollowers
+            .mockResolvedValueOnce({
+                data: [{ id: 'user_p1_1', username: 'p1_1' }],
+                meta: { nextToken: 'token_page_2' },
+            })
+            .mockRejectedValueOnce(new UpstreamApiError('Too Many Requests', 429));
+
+        deps.firestore.hasProcessedFollower.mockResolvedValue(false);
+        deps.firestore.getProcessedFollowersCount.mockResolvedValue(20);
+
+        const result = await new StealthOnboardingUseCase(deps, {
+            ...testConfig,
+            targetListId: undefined,
+        }).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processed).toBe(1);
+        expect(deps.firestore.markFollowerProcessed).toHaveBeenCalledWith('user_p1_1', 'SKIPPED');
+        expect(deps.firestore.updateTotalFollowers).toHaveBeenCalledWith(20);
     });
 
     it('should throw error if underlying api throws', async () => {

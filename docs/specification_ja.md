@@ -36,7 +36,7 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 
 | エンドポイント | メソッド | 定期実行スケジュール (JST) | 制限時間 | 主な処理内容・仕様 |
 |---|---|---|---|---|
-| `/batch/stealth-onboarding` | `GET` | 03:15 (毎日) | 180秒 | 新規フォロワーを自動検知し、特別扱いリストへ追加。 |
+| `/batch/stealth-onboarding` | `GET` | 03:15 (毎週月・木) | 180秒 | 新規フォロワーを自動検知して `processed_followers` に蓄積（`X_TARGET_LIST_ID` 設定時はリストへも追加、未設定時は `SKIPPED`）。 |
 | `batchTimelineSync` (Functions) | `GET`/`POST` | 04:00 (毎日) | 120秒 | **タイムライン同期**: X APIからタイムライン投稿実績・エンゲージメントメトリクスをFirestoreへ同期。 |
 | `/batch/self-reflection` | `GET` | 04:05 (毎日) | 180秒 | **自己内省 (Layer 2)**: タイムライン全体の投稿から最新要約（`system/persona.timeline_summary`）を生成。フェイルファスト設計（クォータ枯渇や空文字時の上書き破壊防止）。 |
 | `/batch/dreaming` | `GET` | 04:30 (毎日) | 900秒 | **記憶統合 (Layer 3)**: 各ユーザーの未統合ログ（`episodicBuffer`）を `coreProfile` に圧縮統合。ユーザー間4,500msスロットリングおよび個別ユーザーのトランザクション障害隔離を実施。 |
@@ -44,7 +44,7 @@ Bot実行基盤 (`bot-backend`) は、Cloud SchedulerやBFFトリガーから呼
 | `/batch/anniversary-post` | `GET` | 07:00 (毎日) | 180秒 | Wikipediaから当日の「◯◯の日」を抽出し、共感性の高い記念日ポストを投稿（失敗時は独り言へフォールバック）。 |
 | `/batch/mentions` | `GET` | 03:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 (計10回/日) | 180秒 | 新規メンションを一括メディア取得付きでポーリングし、DAUおよびユーザー別レートリミット（最大5件/日/ユーザー）を判定した上で Cloud Tasks に返信タスクを登録。 |
 | `/batch/news-post` | `GET` | 12:11 (毎日) | 180秒 | RSSニュースを取得・ベクトル重複排除（コサイン類似度 >= 0.82）し、画像付きギャル視点ポストを生成・投稿。 |
-| `/batch/random-engagement` | `GET` | 18:00 (毎日) | 180秒 | 特別扱いリストの未絡みユーザーから1名を抽出し、不意打ちメンションを送信。 |
+| `/batch/random-engagement` | `GET` | 18:00 (毎日) | 180秒 | キャッシュされたフォロワーから未交流優先・長期クールダウン（デフォルト365日）で1名を抽出し、不意打ちメンションを送信。 |
 | `/batch/soliloquy-post` | `GET` | 21:00 (毎日) | 180秒 | タイムライン要約、自己進化プロンプト、時間帯を反映した自律独り言ポストを生成・投稿。 |
 | `/batch/asset-embeddings` | `GET` | 03:30, 09:30, 15:30, 21:30 (計4回/日) | 300秒 | アップロードされた画像のうち、埋め込み未生成の画像アセットに対してベクトルをバッチ自己修復生成。 |
 | `/batch/campaign-post` | `GET` | 毎時00分 (1時間刻み) | 180秒 | **キャンペーン投稿バッチ**: 進行中キャンペーンの当日スロットを判定し、世界観・演出ヒントに基づいたストーリー投稿をXへ自動パブリッシュ。 |
@@ -225,10 +225,10 @@ Xタイムラインへ投稿された自発ポスト・キャンペーンポス�
 - **Format** (`ProcessedFollower`):
   - `userId` (String): ユーザーID
   - `timestamp` (String - ISO 8601): 検出・オンボーディング日時
-  - `listStatus` (`'ADDED' | 'FAILED' | 'REJECTED'`): リスト追加状態
+  - `listStatus` (`'ADDED' | 'FAILED' | 'REJECTED' | 'SKIPPED'`): リスト追加状態（`X_TARGET_LIST_ID` 未設定またはアーカイブ補完時は `'SKIPPED'`）
 
 ### Collection: `list_interaction_history`
-リストメンバーへのランダムエンゲージメント履歴。
+ランダムエンゲージメント送信履歴・長期クールダウン管理。
 - **Document ID**: XのユーザーID
 - **Format** (`ListInteraction`):
   - `userId` (String): ユーザーID
@@ -274,20 +274,20 @@ Cloud Functions用 Eventarc イベント重複実行防止ログ。
 6. **記憶の保存**: `working_memory` (スライド更新)、`episodicBuffer` (追記)、RAGベクトル保存を並行して行う。
 
 ### 5.2 ステルスオンボーディング (Stealth Onboarding Flow)
-1. 定期バッチとしてエンドポイントがトリガーされる。
-2. X APIからレベッカ自身のフォロワー一覧 (`getFollowers`) を取得。
-3. 取得したフォロワーごとに Firestoreの `processed_followers` コレクションを確認する。
+1. 週2回（月・木 03:15 JST）定期バッチとしてエンドポイントがトリガーされる。
+2. `X_TARGET_LIST_ID` が設定されている場合は、`listStatus == 'FAILED'` のユーザーに対する自己修復リトライを先行実施（未設定時は WARN ログを出してスキップ）。
+3. X APIからレベッカ自身のフォロワー一覧 (`getFollowers`, `meta.nextToken` でページネーション) を新着順に取得する（デフォルト `X_FOLLOWERS_PAGE_SIZE=20`, `X_FOLLOWERS_MAX_RESULTS=1000`）。ページ内全員が既に処理済みの時点で早期停止する。
 4. 未処理のフォロワーがいる場合：
-   - X API (`addListMember`) を使用し、対象ユーザーを「特別扱い (Special Treatment)」リストへ追加。
-   - Firestoreに `processed_followers` として記録し、次回以降スキップする。
+   - `BLOCKED` ユーザーは `listStatus: 'REJECTED'` で記録しリスト追加をスキップする。
+   - `X_TARGET_LIST_ID` 設定時は X API (`addListMember`) を呼び出して `'ADDED'` / `'FAILED'` / `'REJECTED'` として記録し、未設定時は X List API を呼ばず `'SKIPPED'` として Firestore `processed_followers` に蓄積する。
 
 ### 5.3 ランダムエンゲージメント (Random Engagement Flow)
 1. 定期バッチとしてエンドポイントがトリガーされる。
-2. X APIから「特別扱い」リストのメンバー一覧 (`getListMembers`) を取得。
-3. ランダムに並び替え、Firestoreの `list_interaction_history` を確認し、**まだ1度も絡んでいない**メンバーを1名選出。
+2. Firestoreの `processed_followers` キャッシュ（`getListMembersFromCache`）から全フォロワー候補を取得し、`list_interaction_history`（一括取得 `getAllListInteractions`）と照合する。
+3. `BLOCKED` ユーザーを除外しつつ、**未交流（履歴なし）のフォロワーを最優先**でランダム選出し、非ブロック未交流者が全員完了した場合のみクールダウン期間（`RANDOM_ENGAGEMENT_COOLDOWN_DAYS`、デフォルト **365日**）を経過したフォロワーへフォールバックする。
 4. 対象者のプロフィール文、および**直近のツイート（画像が添付されていればGemini Visionで内容も解析）**をX APIで取得し、Geminiに総合的に分析させる（趣味、属性、最近の活動など）。
 5. 分析結果と直近のタイムライン状況をもとに `random_engagement` 用の不意打ちコンテキストプロンプトを構築し、メンション文章を生成。
-6. 対象者の最新ツイートを「引用/リプライ」するのではなく、API制限を回避するため、文脈を含めた**独立した新規ツイート（@メンション付き）**としてXへ投稿し、対象者を `list_interaction_history` に記録して完了（1ユーザーにつき1回のみ実行）。
+6. 対象者の最新ツイートを「引用/リプライ」するのではなく、API制限を回避するため、文脈を含めた**独立した新規ツイート（@メンション付き）**としてXへ投稿し、対象者の `list_interaction_history` を更新して完了。
 
 ### 5.4 自己内省バッチ (Self-Reflection Flow)
 1. 毎日深夜4時05分（JST）に Cloud Scheduler (`rebecca-self-reflection-batch`) が起動（04:00のタイムライン同期バッチ完了後に実行）。

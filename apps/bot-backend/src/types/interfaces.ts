@@ -108,6 +108,7 @@ export interface IFirestoreService {
   getProcessedFollowersCount(): Promise<number>;
   updateTotalFollowers(count: number): Promise<void>;
   getLastListInteraction(userId: string): Promise<Date | null>;
+  getAllListInteractions(): Promise<Map<string, Date>>;
   updateLastListInteraction(userId: string): Promise<void>;
   getListMembersFromCache(): Promise<Pick<XApiUser, 'id'>[]>;
   getActiveCampaign(): Promise<CampaignDoc | null>;

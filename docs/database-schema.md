@@ -139,7 +139,7 @@ erDiagram
         string timestamp "ISO 8601 detected"
         string processedAt "ISO 8601 onboarded"
         string source "auto_sync"
-        string listStatus "ADDED | REJECTED | FAILED"
+        string listStatus "ADDED | REJECTED | FAILED | SKIPPED"
     }
 
     LIST_INTERACTION_HISTORY {
@@ -397,14 +397,14 @@ Onboarding status and list curation idempotency tracking for account followers.
 | :--- | :--- | :--- |
 | `userId` | `string` | Target follower's X user ID (matches document ID). |
 | `timestamp` | `string` (ISO 8601) | Timestamp when follower was detected and onboarded. |
-| `listStatus` | `'ADDED' \| 'FAILED' \| 'REJECTED'` | Curation list membership status. |
+| `listStatus` | `'ADDED' \| 'FAILED' \| 'REJECTED' \| 'SKIPPED'` | Curation list membership status (`'SKIPPED'` when `X_TARGET_LIST_ID` is unset or backfilled from archive). |
 
-*Self-healing*: Followers with `listStatus == 'FAILED'` are automatically retried via `getFailedFollowers` during batch cycles.
+*Self-healing*: When `X_TARGET_LIST_ID` is configured, followers with `listStatus == 'FAILED'` are automatically retried via `getFailedFollowers` during batch cycles.
 
 ---
 
 ### 4.10 `list_interaction_history`
-Cooldown tracker for automated interactions with curated X list members in `RandomEngagementUseCase`.
+Cooldown tracker for automated interactions with cached followers in `RandomEngagementUseCase` (default cooldown: 365 days via `RANDOM_ENGAGEMENT_COOLDOWN_DAYS`, strictly prioritizing untouched followers first).
 - **Document ID**: Target member's X User ID (`userId`).
 - **Converter**: `listInteractionConverter` in `@rebecca/db`.
 

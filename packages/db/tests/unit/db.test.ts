@@ -324,6 +324,10 @@ describe('@rebecca/db Unit Tests', () => {
       const follower: ProcessedFollower = { userId: 'f1', timestamp: '2026-04-01T00:00:00Z', listStatus: 'ADDED' };
       expect(processedFollowerConverter.toFirestore(follower)).toEqual(follower);
       expect(processedFollowerConverter.fromFirestore({ data: () => follower } as any)).toEqual(follower);
+
+      const skippedFollower: ProcessedFollower = { userId: 'f2', timestamp: '2026-01-01T00:00:00Z', listStatus: 'SKIPPED' };
+      expect(processedFollowerConverter.toFirestore(skippedFollower)).toEqual(skippedFollower);
+      expect(processedFollowerConverter.fromFirestore({ data: () => skippedFollower } as any)).toEqual(skippedFollower);
     });
 
     it('listInteractionConverter should convert lastInteractionAt correctly', () => {
