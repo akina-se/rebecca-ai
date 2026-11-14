@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.0](https://github.com/gemitec-ai/rebecca-ai/compare/v1.41.3...v1.42.0) (2026-11-14)
+
+
+### Features
+
+* **dashboard:** add posts management page and manual sync/reply batch triggers ([#479](https://github.com/gemitec-ai/rebecca-ai/issues/479)) ([#480](https://github.com/gemitec-ai/rebecca-ai/issues/480)) ([8d341aa](https://github.com/gemitec-ai/rebecca-ai/commit/8d341aaacfecfd66371b6410f329da051dd2f788))
+
 ## [1.41.3](https://github.com/akina-se/rebecca-ai/compare/v1.41.2...v1.41.3) (2026-11-12)
 
 
