@@ -10,6 +10,8 @@ export interface DashboardRepository {
   getTimelineHistory(page: number, limit: number, sortBy?: string, sortOrder?: 'asc' | 'desc'): Observable<PaginatedResponse<PostLeaderboard>>;
   getPostById(id: string): Observable<PostDetail>;
   deletePosts(ids: string[]): Observable<void>;
+  syncPosts(): Observable<{ success: boolean; message?: string }>;
+  triggerReply(): Observable<{ success: boolean; message?: string }>;
 }
 
 export const DASHBOARD_REPOSITORY = new InjectionToken<DashboardRepository>('DashboardRepository');

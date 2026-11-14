@@ -96,4 +96,22 @@ export class HttpDashboardRepository implements DashboardRepository {
   deletePosts(ids: string[]): Observable<void> {
     return this.http.request('DELETE', this.postsBaseUrl, { body: { ids } }) as unknown as Observable<void>;
   }
+
+  /**
+   * Triggers manual timeline post synchronization via the BFF endpoint.
+   *
+   * @returns Observable resolving to synchronization status.
+   */
+  syncPosts(): Observable<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(`${this.postsBaseUrl}/sync`, {});
+  }
+
+  /**
+   * Triggers manual mentions polling and reply execution via the BFF endpoint.
+   *
+   * @returns Observable resolving to reply execution status.
+   */
+  triggerReply(): Observable<{ success: boolean; message?: string }> {
+    return this.http.post<{ success: boolean; message?: string }>(`${this.postsBaseUrl}/reply`, {});
+  }
 }

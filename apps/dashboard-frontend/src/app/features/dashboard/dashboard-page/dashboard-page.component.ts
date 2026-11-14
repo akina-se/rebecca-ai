@@ -10,20 +10,17 @@ import { DatePickerPopoverComponent } from '../../../shared/components/molecules
 import { RightDrawerComponent } from '../../../shared/components/organisms/right-drawer/right-drawer.component';
 import { PostDrawerComponent } from '../../../shared/components/organisms/post-drawer/post-drawer.component';
 import { UserDrawerComponent } from '../../../shared/components/organisms/user-drawer/user-drawer.component';
-import { ActionHelperService } from '../../../shared/services/action-helper.service';
 import { LightboxComponent } from '../../../shared/components/organisms/lightbox/lightbox.component';
 import { RankingModalComponent } from '../../../shared/components/organisms/ranking-modal/ranking-modal.component';
-import { PaginationComponent } from '../../../shared/components/molecules/pagination/pagination.component';
 import { KpiCardComponent } from '../../../shared/components/molecules/kpi-card/kpi-card.component';
 import { TzDatePipe } from '../../../shared/pipes/tz-date.pipe';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
-import { AuthUrlPipe } from '../../../shared/pipes/auth-url.pipe';
 import { TranslationService } from '../../../core/services/translation.service';
 
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, PaginationComponent, KpiCardComponent, TzDatePipe, TranslatePipe, AuthUrlPipe],
+  imports: [CommonModule, FormsModule, RouterLink, DropdownComponent, DatePickerPopoverComponent, RightDrawerComponent, PostDrawerComponent, UserDrawerComponent, LightboxComponent, RankingModalComponent, KpiCardComponent, TzDatePipe, TranslatePipe],
   templateUrl: './dashboard-page.component.html',
   styleUrls: ['./dashboard-page.component.css']
 })
@@ -60,17 +57,6 @@ export class DashboardPageComponent implements OnInit {
   readonly isLightboxOpen = signal<boolean>(false);
   readonly lightboxImageUrl = signal<string>('');
 
-  // Timeline State
-  selectAll = false;
-  selectedRows = new Set<string>();
-  readonly timelinePosts = signal<PostLeaderboard[]>([]);
-  readonly filteredTimelinePosts = signal<PostLeaderboard[]>([]);
-  searchQuery = '';
-  timelinePage = 1;
-  timelineTotalPages = 1;
-  timelineTotalItems = 0;
-  timelineItemsPerPage = 10;
-  isLoadingTimeline = false;
   private readonly dashboardRepo = inject(DASHBOARD_REPOSITORY);
   private readonly route = inject(ActivatedRoute);
 
@@ -80,7 +66,6 @@ export class DashboardPageComponent implements OnInit {
     });
     this.loadTopPosts();
     this.loadTopUsers();
-    this.loadTimeline();
     this.dashboardRepo.getAlerts().subscribe(alerts => {
       this.systemAlerts.set(alerts);
     });
@@ -96,57 +81,6 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
-  // Timeline Sort State
-  timelineSortBy: 'time' | 'impressions' = 'time';
-  timelineSortOrder: 'asc' | 'desc' = 'desc';
-
-  loadTimeline(page = 1) {
-    if (this.isLoadingTimeline) return;
-
-    this.isLoadingTimeline = true;
-    this.timelinePage = page;
-    const backendSortBy = this.timelineSortBy === 'time' ? 'created_at' : 'impressions';
-    
-    this.dashboardRepo.getTimelineHistory(this.timelinePage, this.timelineItemsPerPage, backendSortBy, this.timelineSortOrder).subscribe({
-      next: (response) => {
-        const posts = response.data;
-        const meta = response.meta;
-        
-        this.timelineTotalPages = meta.totalPages;
-        this.timelineTotalItems = meta.totalItems;
-
-        const mapped = posts.map(p => ({
-          id: p.id,
-          time: p.time,
-          snippet: p.snippet || '',
-          text: p.snippet || '',
-          impressions: p.impressions,
-          status: p.status || 'SUCCESS',
-          hasMedia: p.hasMedia,
-          mediaUrls: p.mediaUrls || []
-        }));
-        
-        this.timelinePosts.set(mapped);
-        this.applyTimelineFilter();
-        this.isLoadingTimeline = false;
-      },
-      error: () => {
-        this.isLoadingTimeline = false;
-        this.toastService.show('Failed to load timeline', 'error');
-      }
-    });
-  }
-
-  toggleTimelineSort(column: 'time' | 'impressions') {
-    if (this.timelineSortBy === column) {
-      this.timelineSortOrder = this.timelineSortOrder === 'desc' ? 'asc' : 'desc';
-    } else {
-      this.timelineSortBy = column;
-      this.timelineSortOrder = 'desc';
-    }
-    this.loadTimeline(1);
-  }
-
   onDatePicked(target: 'posts' | 'users', date: string) {
     if (target === 'posts') {
       this.topPostsDate = date;
@@ -154,15 +88,6 @@ export class DashboardPageComponent implements OnInit {
     } else {
       this.topUsersDate = date;
       this.loadTopUsers();
-    }
-  }
-
-  applyTimelineFilter() {
-    if (!this.searchQuery) {
-      this.filteredTimelinePosts.set([...this.timelinePosts()]);
-    } else {
-      const q = this.searchQuery.toLowerCase();
-      this.filteredTimelinePosts.set(this.timelinePosts().filter(p => p.text?.toLowerCase().includes(q)));
     }
   }
 
@@ -245,15 +170,6 @@ export class DashboardPageComponent implements OnInit {
     if (!history || history.length === 0) return `0,${height} ${width},${height}`;
     const polyline = this.getSparklinePoints(history, height, width);
     return `0,${height} ${polyline} ${width},${height}`;
-  }
-
-  getThumbnailUrl(url: string | undefined): string {
-    if (!url) return '';
-    if (url.startsWith('/api/v1/')) {
-      const sep = url.includes('?') ? '&' : '?';
-      return `${url}${sep}size=thumbnail`;
-    }
-    return url;
   }
 
   openLightbox(imageUrl = '') {
@@ -460,64 +376,9 @@ export class DashboardPageComponent implements OnInit {
     this.isDrawerOpen.set(true);
   }
 
-  toggleSelectAll() {
-    this.selectAll = !this.selectAll;
-    if (this.selectAll) {
-      this.timelinePosts().forEach(p => this.selectedRows.add(p.id));
-    } else {
-      this.selectedRows.clear();
-    }
-  }
-
-  toggleRowSelection(id: string, event: Event) {
-    event.stopPropagation();
-    if (this.selectedRows.has(id)) {
-      this.selectedRows.delete(id);
-      this.selectAll = false;
-    } else {
-      this.selectedRows.add(id);
-      if (this.selectedRows.size === this.timelinePosts().length) {
-        this.selectAll = true;
-      }
-    }
-  }
-
-  readonly isDeleting = signal<boolean>(false);
-  readonly isArchiving = signal<boolean>(false);
-  actionHelper = inject(ActionHelperService);
-
-  async executeBulkDelete() {
-    if (this.selectedRows.size === 0) return;
-    this.isDeleting.set(true);
-    
-    const ids = Array.from(this.selectedRows);
-    this.dashboardRepo.deletePosts(ids).subscribe({
-      next: () => {
-        this.toastService.show(`Successfully deleted ${ids.length} posts`, 'success');
-        this.isDeleting.set(false);
-        this.selectedRows.clear();
-        this.selectAll = false;
-        this.loadTimeline(1); // reload timeline
-      },
-      error: () => {
-        this.toastService.show(`Failed to delete posts`, 'error');
-        this.isDeleting.set(false);
-      }
-    });
-  }
-
-  async executeBulkArchive() {
-    if (this.selectedRows.size === 0) return;
-    this.isArchiving.set(true);
-    await this.actionHelper.executeMockAction(`Successfully archived ${this.selectedRows.size} posts`);
-    this.isArchiving.set(false);
-    this.selectedRows.clear();
-    this.selectAll = false;
-  }
-
   onPostDeleted(_postId: string): void {
     this.isDrawerOpen.set(false);
-    this.loadTimeline(1);
+    this.loadTopPosts();
   }
 
   mockAlert(msg: string) {

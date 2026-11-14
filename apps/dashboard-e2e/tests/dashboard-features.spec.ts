@@ -78,18 +78,25 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario B: Timeline Pagination & Column Sorting
-   * - Scroll to Timeline Post History.
+   * Scenario B: Timeline Pagination & Column Sorting (on /posts page)
+   * - Navigate to /posts via sidebar (positioned between Dashboard and Memory).
    * - Test interactive column sorting for TIME and IMPRESSIONS with indicator icons.
    * - Test pagination controls (< 1 2 3 ... > Page 1 / X).
    */
-  test('Scenario B: Timeline Pagination & Sorting - should toggle sort by Time/Impressions and paginate properly', async ({ page }) => {
-    // 1. Scroll to Timeline Post History
+  test('Scenario B: Timeline Pagination & Sorting - should navigate to /posts, toggle sort by Time/Impressions, and paginate properly', async ({ page }) => {
+    // 1. Verify sidebar navigation order: Dashboard -> Posts -> Memory, and navigate to /posts
+    const navItems = page.locator('.sidebar .nav-item');
+    await expect(navItems.nth(0)).toContainText(/Dashboard|ダッシュボード/);
+    await expect(navItems.nth(1)).toContainText(/Posts|ポスト管理/);
+    await expect(navItems.nth(2)).toContainText(/Memory|メモリ/);
+
+    await navItems.nth(1).click();
+    await expect(page).toHaveURL(/\/posts/);
+
     const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
-    await timelineHeading.scrollIntoViewIfNeeded();
     await expect(timelineHeading).toBeVisible();
 
-    const timelineTable = page.locator('table.data-table').nth(2);
+    const timelineTable = page.locator('#timeline-table');
     const timelineRows = timelineTable.locator('tbody tr');
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -139,16 +146,17 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario B2: Timeline Media Lightbox
+   * Scenario B2: Timeline Media Lightbox (on /posts page)
    * - Locate post row with media.
    * - Click media thumbnail icon.
    * - Verify full-size Lightbox modal opens with real image URL and closes cleanly.
    */
   test('Scenario B2: Timeline Media Lightbox - should open lightbox modal with real image on thumbnail click', async ({ page }) => {
+    await page.goto('/posts');
     const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
-    await timelineHeading.scrollIntoViewIfNeeded();
+    await expect(timelineHeading).toBeVisible();
 
-    const timelineTable = page.locator('table.data-table').nth(2);
+    const timelineTable = page.locator('#timeline-table');
     // Find row with media thumbnail
     const mediaThumb = timelineTable.locator('tbody tr td div[title="Click to view image"]').first();
     await expect(mediaThumb).toBeVisible({ timeout: 10000 });
@@ -173,20 +181,21 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario C: Timeline Keyword Search
+   * Scenario C: Timeline Keyword Search (on /posts page)
    * - Type a dynamic keyword from the first row into the search bar.
    * - Assert table row count is reduced to match filtered results.
    * - Clear the search bar and assert all original rows return.
    */
   test('Scenario C: Timeline Keyword Search - should filter timeline posts by search keyword', async ({ page }) => {
+    await page.goto('/posts');
     // 1. Locate Timeline Post History and search input
     const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
-    await timelineHeading.scrollIntoViewIfNeeded();
+    await expect(timelineHeading).toBeVisible();
 
-    const searchInput = page.locator('.block-header input.form-control').first();
+    const searchInput = page.locator('#timeline-search-input');
     await expect(searchInput).toBeVisible();
 
-    const timelineTable = page.locator('table.data-table').nth(2);
+    const timelineTable = page.locator('#timeline-table');
     const timelineRows = timelineTable.locator('tbody tr');
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -211,17 +220,18 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario D: Bulk Actions (Delete)
+   * Scenario D: Bulk Actions (Delete) on /posts page
    * - Select checkboxes next to first 2 rows.
    * - Assert "Delete from X" button becomes visible in the bulk actions bar.
    * - Click "Delete from X".
    * - Assert success toast appears, network call succeeds, and deleted rows disappear.
    */
   test('Scenario D: Bulk Actions (Delete) - should select rows, execute bulk delete, and show success toast', async ({ page }) => {
+    await page.goto('/posts');
     const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
-    await timelineHeading.scrollIntoViewIfNeeded();
+    await expect(timelineHeading).toBeVisible();
 
-    const timelineTable = page.locator('table.data-table').nth(2);
+    const timelineTable = page.locator('#timeline-table');
     const timelineRows = timelineTable.locator('tbody tr');
     await expect(timelineRows.first()).toBeVisible({ timeout: 10000 });
 
@@ -323,11 +333,12 @@ test.describe('Dashboard Features E2E Tests', () => {
     await closeBtn.click();
     await expect(drawer).not.toHaveClass(/open/);
 
-    // 3. Open Post Details drawer from Timeline Post History
+    // 3. Open Post Details drawer from Timeline Post History on /posts
+    await page.goto('/posts');
     const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
-    await timelineHeading.scrollIntoViewIfNeeded();
+    await expect(timelineHeading).toBeVisible();
 
-    const timelineTable = page.locator('table.data-table').nth(2);
+    const timelineTable = page.locator('#timeline-table');
     const firstTimelineRow = timelineTable.locator('tbody tr').first();
     await expect(firstTimelineRow).toBeVisible({ timeout: 10000 });
 
@@ -526,18 +537,31 @@ test.describe('Dashboard Features E2E Tests', () => {
   });
 
   /**
-   * Scenario I: Timeline Selection & Delete from X Action
-   * - Select post rows in Timeline history using checkboxes.
-   * - Verify bulk action bar with "Delete from X" button appears.
-   * - Click "Delete from X" and verify confirmation modal / state.
-   * - Capture high-res screenshot of selection state.
+   * Scenario I: Timeline Selection, Delete from X Action, and Manual Post Sync / Reply Execution Buttons
+   * - Navigate to /posts.
+   * - Verify Post Sync and Reply Execution buttons trigger BFF batch endpoints and show success toasts.
+   * - Select post rows in Timeline history using checkboxes and verify bulk delete action bar.
    */
-  test('Scenario I: Timeline Selection & Delete from X Action - should display delete action on row selection', async ({ page }) => {
+  test('Scenario I: Timeline Selection & Batch Action Buttons - should trigger Post Sync & Reply Execution and display delete action on row selection', async ({ page }) => {
+    await page.goto('/posts');
     const timelineHeading = page.locator('h2', { hasText: /Timeline Post History|タイムライン投稿履歴/ });
-    await timelineHeading.scrollIntoViewIfNeeded();
     await expect(timelineHeading).toBeVisible();
 
-    const timelineTable = page.locator('table.data-table').nth(2);
+    // 1. Verify Manual Post Sync button (#sync-posts-btn)
+    const syncBtn = page.locator('#sync-posts-btn');
+    await expect(syncBtn).toBeVisible();
+    await expect(syncBtn).toContainText(/Sync Posts|ポスト同期/);
+    await syncBtn.click();
+    await expect(page.locator('.toast')).toContainText(/Timeline post synchronization completed|タイムラインのポスト同期が完了しました/, { timeout: 10000 });
+
+    // 2. Verify Manual Reply Execution button (#trigger-reply-btn)
+    const replyBtn = page.locator('#trigger-reply-btn');
+    await expect(replyBtn).toBeVisible();
+    await expect(replyBtn).toContainText(/Execute Replies|リプライ実行/);
+    await replyBtn.click();
+    await expect(page.locator('.toast').last()).toContainText(/Reply batch execution triggered|リプライ処理の実行を開始しました/, { timeout: 10000 });
+
+    const timelineTable = page.locator('#timeline-table');
     const firstCheckbox = timelineTable.locator('tbody tr input[type="checkbox"]').first();
 
     if (await firstCheckbox.isVisible()) {

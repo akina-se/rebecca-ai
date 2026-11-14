@@ -72,6 +72,7 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/posts')) return this.translationService.t('nav.posts');
     if (route.includes('/supporters')) return this.translationService.t('nav.supporters');
     if (route.includes('/campaigns')) return this.translationService.t('nav.campaigns');
     if (route.includes('/assets')) return this.translationService.t('nav.assets');
@@ -91,6 +92,7 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/posts')) return 'Page: Posts Management (Timeline Post History, search, bulk delete from X, manual post synchronization, and manual reply execution)';
     if (route.includes('/supporters')) return 'Page: Supporters & Tipping (Managing sponsor donations, Hall of Fame credits, digital reward distribution, and appreciation posts)';
     if (route.includes('/campaigns')) return 'Page: Campaign Narrative (Managing multi-day event campaigns, itinerary slots, AI storytelling prompts, and scheduled posts)';
     if (route.includes('/assets')) return 'Page: Assets Library (Managing image assets, caption embeddings, and bulk retries)';
@@ -131,6 +133,11 @@ export class CopilotContextService {
     }
 
     const route = this.currentRoute();
+    if (route.includes('/posts')) {
+      return isEn
+        ? ['Show top 5 viral posts', 'Recent post performance', 'High engagement post patterns']
+        : ['直近で伸びた投稿TOP5は？', '最近のポストの反響を分析', 'エンゲージメントが高い投稿の特徴'];
+    }
         if (route.includes('/supporters')) {
       return isEn 
         ? ['Supporter revenue overview', 'Check failed appreciation posts', 'Manage reward illustration pool']

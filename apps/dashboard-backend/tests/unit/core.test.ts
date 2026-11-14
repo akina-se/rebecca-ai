@@ -11,7 +11,12 @@ import {
   parseRelativeDuration,
   StandardTimePeriod
 } from '../../src/core/dateUtils';
-import { deleteTweetViaBotService, getBotServiceHeaders } from '../../src/core/botServiceClient';
+import {
+  deleteTweetViaBotService,
+  getBotServiceHeaders,
+  syncPostsViaBotService,
+  triggerReplyViaBotService,
+} from '../../src/core/botServiceClient';
 import { initializeSettingsModule } from '../../src/features/settings/index';
 import { config } from '../../src/config';
 import { Request, Response } from 'express';
@@ -155,7 +160,7 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       });
     });
 
-    it('getBotServiceHeaders should fall back to x-worker-secret when OIDC token acquisition fails', async () => {
+    it('getBotServiceHeaders should fall back to x-worker-secret and x-batch-secret when OIDC token acquisition fails', async () => {
       const origSecret = config.services.batchSecret;
       (config.services as any).batchSecret = 'fallback_secret';
       mockGetIdTokenClient.mockRejectedValueOnce(new Error('Metadata server unavailable'));
@@ -164,8 +169,111 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       expect(headers).toEqual({
         'Content-Type': 'application/json',
         'x-worker-secret': 'fallback_secret',
+        'x-batch-secret': 'fallback_secret',
       });
       (config.services as any).batchSecret = origSecret;
+    });
+
+    it('syncPostsViaBotService should handle emulator fallback, missing URL, success (plain text & JSON), HTTP error, and network error', async () => {
+      const origUrl = config.services.functionsUrl;
+      const origEmulator = process.env.FIRESTORE_EMULATOR_HOST;
+
+      // 1. Emulator fallback when functionsUrl is empty
+      (config.services as any).functionsUrl = '';
+      process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      const emuRes = await syncPostsViaBotService();
+      expect(emuRes.success).toBe(true);
+      expect(emuRes.message).toContain('emulator mode');
+
+      // 2. Missing URL outside emulator
+      delete process.env.FIRESTORE_EMULATOR_HOST;
+      const missingRes = await syncPostsViaBotService();
+      expect(missingRes).toEqual({ success: false, message: 'FUNCTIONS_URL not configured' });
+
+      // 3. Successful call with plain text response
+      (config.services as any).functionsUrl = 'http://localhost:5001/batchTimelineSync';
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => 'OK: Timeline synced successfully.',
+      } as any);
+      const okRes = await syncPostsViaBotService();
+      expect(okRes).toEqual({ success: true, message: 'OK: Timeline synced successfully.' });
+
+      // 4. Successful call with JSON response
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ message: 'Synced 5 posts' }),
+      } as any);
+      const jsonRes = await syncPostsViaBotService();
+      expect(jsonRes).toEqual({ success: true, message: 'Synced 5 posts' });
+
+      // 5. HTTP error response with JSON error field
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => JSON.stringify({ error: 'Upstream X API error' }),
+      } as any);
+      const errHttpRes = await syncPostsViaBotService();
+      expect(errHttpRes).toEqual({ success: false, message: 'Upstream X API error' });
+
+      // 6. Network exception
+      global.fetch = jest.fn().mockRejectedValueOnce(new Error('Connection refused'));
+      const netErrRes = await syncPostsViaBotService();
+      expect(netErrRes).toEqual({ success: false, message: 'Connection refused' });
+
+      (config.services as any).functionsUrl = origUrl;
+      if (origEmulator !== undefined) {
+        process.env.FIRESTORE_EMULATOR_HOST = origEmulator;
+      } else {
+        delete process.env.FIRESTORE_EMULATOR_HOST;
+      }
+    });
+
+    it('triggerReplyViaBotService should handle emulator fallback, missing URL, success, HTTP error, and network error', async () => {
+      const origUrl = config.services.botBackendUrl;
+      const origEmulator = process.env.FIRESTORE_EMULATOR_HOST;
+
+      // 1. Emulator fallback
+      process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
+      const emuRes = await triggerReplyViaBotService();
+      expect(emuRes.success).toBe(true);
+      expect(emuRes.message).toContain('emulator mode');
+
+      // 2. Missing URL outside emulator
+      delete process.env.FIRESTORE_EMULATOR_HOST;
+      (config.services as any).botBackendUrl = '';
+      const missingRes = await triggerReplyViaBotService();
+      expect(missingRes).toEqual({ success: false, message: 'BOT_BACKEND_URL not configured' });
+
+      // 3. Successful call with empty body fallback
+      (config.services as any).botBackendUrl = 'http://localhost:8080/';
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => '',
+      } as any);
+      const okRes = await triggerReplyViaBotService();
+      expect(okRes).toEqual({ success: true, message: 'OK: Reply batch executed successfully.' });
+
+      // 4. HTTP error response with empty body
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        text: async () => '',
+      } as any);
+      const errHttpRes = await triggerReplyViaBotService();
+      expect(errHttpRes).toEqual({ success: false, message: 'HTTP 503' });
+
+      // 5. Network exception
+      global.fetch = jest.fn().mockRejectedValueOnce(new Error('Bot backend unreachable'));
+      const netErrRes = await triggerReplyViaBotService();
+      expect(netErrRes).toEqual({ success: false, message: 'Bot backend unreachable' });
+
+      (config.services as any).botBackendUrl = origUrl;
+      if (origEmulator !== undefined) {
+        process.env.FIRESTORE_EMULATOR_HOST = origEmulator;
+      } else {
+        delete process.env.FIRESTORE_EMULATOR_HOST;
+      }
     });
   });
 

@@ -1,6 +1,10 @@
 import { TimelineRepository } from './repository';
 import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginationMeta } from '@rebecca/types';
-import { deleteTweetViaBotService } from '../../core/botServiceClient';
+import {
+  deleteTweetViaBotService,
+  syncPostsViaBotService,
+  triggerReplyViaBotService,
+} from '../../core/botServiceClient';
 import { logger } from '../../utils/logger';
 
 /**
@@ -73,5 +77,33 @@ export class TimelineUseCase {
    */
   async getAlerts(): Promise<SystemAlert[]> {
     return this.repo.getAlerts();
+  }
+
+  /**
+   * Triggers manual timeline synchronization via the `batchTimelineSync` Cloud Function.
+   *
+   * @returns A promise that resolves to the synchronization status and message.
+   * @throws Error when the upstream synchronization request fails.
+   */
+  async syncPosts(): Promise<{ success: boolean; message: string }> {
+    const result = await syncPostsViaBotService();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to synchronize timeline posts');
+    }
+    return result;
+  }
+
+  /**
+   * Triggers manual mentions polling and reply execution via the `bot-backend` batch endpoint.
+   *
+   * @returns A promise that resolves to the reply execution status and message.
+   * @throws Error when the upstream reply execution request fails.
+   */
+  async triggerReply(): Promise<{ success: boolean; message: string }> {
+    const result = await triggerReplyViaBotService();
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to trigger reply execution');
+    }
+    return result;
   }
 }

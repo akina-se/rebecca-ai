@@ -1,18 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { DashboardPageComponent } from './dashboard-page.component';
 import { DASHBOARD_REPOSITORY } from '../../../core/ports/dashboard.repository';
 import { ToastService } from '../../../shared/services/toast.service';
-import { ActionHelperService } from '../../../shared/services/action-helper.service';
 
 describe('DashboardPageComponent', () => {
   let component: DashboardPageComponent;
   let fixture: ComponentFixture<DashboardPageComponent>;
   let dashboardRepoSpy: jasmine.SpyObj<any>;
   let toastServiceSpy: jasmine.SpyObj<ToastService>;
-  let actionHelperSpy: jasmine.SpyObj<ActionHelperService>;
 
   beforeEach(async () => {
     dashboardRepoSpy = jasmine.createSpyObj('DashboardRepository', [
@@ -24,7 +22,6 @@ describe('DashboardPageComponent', () => {
       'deletePosts'
     ]);
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['show']);
-    actionHelperSpy = jasmine.createSpyObj('ActionHelperService', ['executeMockAction']);
 
     dashboardRepoSpy.getKpiMetrics.and.returnValue(of({
       followers: 1200,
@@ -50,8 +47,7 @@ describe('DashboardPageComponent', () => {
       providers: [
         provideRouter([]),
         { provide: DASHBOARD_REPOSITORY, useValue: dashboardRepoSpy },
-        { provide: ToastService, useValue: toastServiceSpy },
-        { provide: ActionHelperService, useValue: actionHelperSpy }
+        { provide: ToastService, useValue: toastServiceSpy }
       ]
     }).compileComponents();
 
@@ -64,7 +60,6 @@ describe('DashboardPageComponent', () => {
     expect(dashboardRepoSpy.getKpiMetrics).toHaveBeenCalled();
     expect(dashboardRepoSpy.getTopPosts).toHaveBeenCalled();
     expect(dashboardRepoSpy.getTopUsers).toHaveBeenCalled();
-    expect(dashboardRepoSpy.getTimelineHistory).toHaveBeenCalled();
     expect(component.kpiMetrics()?.followers).toBe(1200);
   });
 
@@ -121,67 +116,14 @@ describe('DashboardPageComponent', () => {
     expect(component.getSparklinePolygon([])).toBe('0,20 100,20');
   });
 
-  it('should toggle selection for timeline posts', () => {
-    component.timelinePosts.set([
-      { id: 'p1', time: '2026-08-15', snippet: 'Post 1', impressions: 10, status: 'SUCCESS' } as any,
-      { id: 'p2', time: '2026-08-15', snippet: 'Post 2', impressions: 20, status: 'SUCCESS' } as any
-    ]);
-
-    component.toggleSelectAll();
-    expect(component.selectAll).toBeTrue();
-    expect(component.selectedRows.size).toBe(2);
-
-    const mockEvent = { stopPropagation: jasmine.createSpy() } as any;
-    component.toggleRowSelection('p1', mockEvent);
-    expect(component.selectedRows.has('p1')).toBeFalse();
-    expect(component.selectAll).toBeFalse();
-
-    component.toggleRowSelection('p1', mockEvent);
-    expect(component.selectedRows.has('p1')).toBeTrue();
-    expect(component.selectAll).toBeTrue();
-  });
-
-  it('should execute bulk delete on selected posts and handle errors', async () => {
-    dashboardRepoSpy.deletePosts.and.returnValue(of({ success: true, count: 1 }));
-    component.selectedRows.add('p1');
-
-    await component.executeBulkDelete();
-    expect(dashboardRepoSpy.deletePosts).toHaveBeenCalledWith(['p1']);
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.stringMatching(/Successfully deleted/), 'success');
-    expect(component.isDeleting()).toBeFalse();
-
-    // Error case
-    component.selectedRows.add('p1');
-    dashboardRepoSpy.deletePosts.and.returnValue(throwError(() => new Error('Delete failed')));
-    await component.executeBulkDelete();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to delete posts', 'error');
-    expect(component.isDeleting()).toBeFalse();
-
-    // Empty selection
-    component.selectedRows.clear();
-    await component.executeBulkDelete();
-  });
-
-  it('should handle onPostDeleted by closing drawer and reloading timeline', () => {
+  it('should handle onPostDeleted by closing drawer and reloading top posts', () => {
     component.isDrawerOpen.set(true);
-    spyOn(component, 'loadTimeline');
+    spyOn(component, 'loadTopPosts');
 
     component.onPostDeleted('p1');
 
     expect(component.isDrawerOpen()).toBeFalse();
-    expect(component.loadTimeline).toHaveBeenCalledWith(1);
-  });
-
-  it('should execute bulk archive on selected posts', async () => {
-    actionHelperSpy.executeMockAction.and.returnValue(Promise.resolve());
-    component.selectedRows.add('p1');
-
-    await component.executeBulkArchive();
-    expect(actionHelperSpy.executeMockAction).toHaveBeenCalled();
-
-    // Empty selection
-    component.selectedRows.clear();
-    await component.executeBulkArchive();
+    expect(component.loadTopPosts).toHaveBeenCalled();
   });
 
   it('should open ranking modal for posts and users', () => {
@@ -228,22 +170,9 @@ describe('DashboardPageComponent', () => {
     expect(dashboardRepoSpy.getKpiMetrics).toHaveBeenCalledWith('yearly');
   });
 
-  it('should handle timeline sorting, date picking, search filtering, and alerts', () => {
-    component.toggleTimelineSort('time');
-    expect(component.timelineSortOrder).toBe('asc');
-    component.toggleTimelineSort('impressions');
-    expect(component.timelineSortBy).toBe('impressions');
-
+  it('should handle date picking and alerts', () => {
     component.onDatePicked('posts', '2026');
     component.onDatePicked('users', '2026');
-
-    component.searchQuery = 'cool';
-    component.timelinePosts.set([
-      { id: '1', snippet: 'cool post', text: 'cool post' } as any,
-      { id: '2', snippet: 'other', text: 'other' } as any
-    ]);
-    component.applyTimelineFilter();
-    expect(component.filteredTimelinePosts().length).toBe(1);
 
     component.mockAlert('System message');
     expect(toastServiceSpy.show).toHaveBeenCalledWith('System message', 'info');

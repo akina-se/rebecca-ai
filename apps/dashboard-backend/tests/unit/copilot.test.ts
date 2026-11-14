@@ -798,7 +798,7 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       } as unknown as TimelineRepository;
 
       const postsRes = await postsTool.execute({}, { timelineRepo: mockTimelineRepo, isEn: true });
-      expect(postsRes.attachments?.[0].navigationPath).toBe('/dashboard?postId=post_xyz');
+      expect(postsRes.attachments?.[0].navigationPath).toBe('/posts?postId=post_xyz');
 
       const assetsTool = new SearchAssetsTool();
       const mockAssetsRepo = {

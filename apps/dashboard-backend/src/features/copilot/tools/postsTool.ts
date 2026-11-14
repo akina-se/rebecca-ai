@@ -68,7 +68,7 @@ export class SearchTimelinePostsTool implements CopilotTool {
         metrics: {
           impressions: p.impressions
         },
-        navigationPath: `/dashboard?postId=${p.id}`
+        navigationPath: `/posts?postId=${p.id}`
       };
     });
 

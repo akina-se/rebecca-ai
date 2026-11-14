@@ -31,6 +31,7 @@ export class TopNavComponent {
 
   get pageTitle(): string {
     const url = this.router.url ?? '';
+    if (url.includes('/posts')) return this.translationService.t('nav.posts');
     if (url.includes('/campaigns')) return this.translationService.t('nav.campaigns');
     if (url.includes('/memory')) return this.translationService.t('nav.memory');
     if (url.includes('/assets')) return this.translationService.t('nav.assets');

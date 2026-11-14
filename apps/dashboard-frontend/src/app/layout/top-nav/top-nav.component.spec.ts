@@ -50,6 +50,9 @@ describe('TopNavComponent', () => {
   it('should calculate pageTitle properly based on router url', () => {
     expect(component.pageTitle).toBeDefined();
 
+    Object.defineProperty(mockRouter, 'url', { value: '/posts', configurable: true });
+    expect(component.pageTitle).toBe('ポスト管理');
+
     Object.defineProperty(mockRouter, 'url', { value: '/campaigns', configurable: true });
     expect(component.pageTitle).toBe('キャンペーン');
 
