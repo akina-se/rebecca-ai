@@ -352,6 +352,7 @@ export interface XApiCreateResponse {
 export interface BatchTriggerResponse {
   readonly success: boolean;
   readonly message: string;
+  readonly statusCode?: number;
 }
 
 export interface PaginationMeta {
@@ -961,4 +962,67 @@ export interface PortalBrandConfig {
   assets: PortalAssetPaths;
   support: PortalSupportSectionConfig;
 }
+
+// ---------------------------------------------------------------------------
+// Upstream External API Error Contracts
+// ---------------------------------------------------------------------------
+
+/**
+ * Structured error representing an HTTP failure from an upstream external API
+ * (such as the X API v2) or an internal microservice boundary.
+ */
+export class UpstreamApiError extends Error {
+  /** HTTP status code returned by the upstream API (400-599). */
+  readonly statusCode: number;
+
+  /**
+   * Initializes an UpstreamApiError with a status code and optional cause.
+   * @param message Human-readable error message.
+   * @param statusCode HTTP status code in the 400-599 range.
+   * @param options Optional underlying Error cause.
+   */
+  constructor(message: string, statusCode: number, options?: { cause?: unknown }) {
+    super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
+    this.name = 'UpstreamApiError';
+    this.statusCode = statusCode;
+  }
+}
+
+/**
+ * Extracts an {@link UpstreamApiError} from an unknown caught value when it carries
+ * a valid HTTP error status code (400-599), such as an SDK `ApiError`.
+ * Returns `null` for internal exceptions without an HTTP 4xx/5xx status code.
+ *
+ * @param error Caught error value from an SDK or service boundary.
+ */
+export function parseUpstreamApiError(error: unknown): UpstreamApiError | null {
+  if (error instanceof UpstreamApiError) {
+    return error;
+  }
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+  const { status, statusCode, message, data } = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    message?: unknown;
+    data?: { detail?: unknown; error?: unknown };
+  };
+  const code = typeof statusCode === 'number' ? statusCode : status;
+  if (typeof code !== 'number' || !Number.isInteger(code) || code < 400 || code > 599) {
+    return null;
+  }
+
+  const rawDetail =
+    typeof data?.detail === 'string' && data.detail.trim()
+      ? data.detail.trim()
+      : typeof data?.error === 'string' && data.error.trim()
+        ? data.error.trim()
+        : undefined;
+  const resolvedMessage =
+    rawDetail ?? (typeof message === 'string' && message.trim() ? message.trim() : '');
+
+  return new UpstreamApiError(resolvedMessage, code, { cause: error });
+}
+
 

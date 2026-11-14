@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { SystemMemoryUseCase } from './usecase';
 import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller for managing Rebecca's system memory layers.
@@ -25,8 +26,7 @@ export class SystemMemoryController {
       const layers = await this.useCase.getLayers();
       res.json(layers);
     } catch (err) {
-      logger.error('Failed to fetch memory layers', err);
-      res.status(500).json({ error: 'Failed to fetch memory layers' });
+      handleControllerError(res, err, 'Failed to fetch memory layers');
     }
   }
 
@@ -42,8 +42,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getCoreMemory();
       res.json(content);
     } catch (err) {
-      logger.error('Failed to fetch core memory', err);
-      res.status(500).json({ error: 'Failed to fetch core memory' });
+      handleControllerError(res, err, 'Failed to fetch core memory');
     }
   }
 
@@ -59,8 +58,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getExtendedMemory();
       res.json(content);
     } catch (err) {
-      logger.error('Failed to fetch extended memory', err);
-      res.status(500).json({ error: 'Failed to fetch extended memory' });
+      handleControllerError(res, err, 'Failed to fetch extended memory');
     }
   }
 
@@ -81,8 +79,7 @@ export class SystemMemoryController {
       await this.useCase.updateExtendedMemory(content);
       res.json({ success: true });
     } catch (err) {
-      logger.error('Failed to update extended memory', err);
-      res.status(500).json({ error: 'Failed to update extended memory' });
+      handleControllerError(res, err, 'Failed to update extended memory');
     }
   }
 
@@ -98,8 +95,7 @@ export class SystemMemoryController {
       const content = await this.useCase.getGlobalMemory();
       res.json(content);
     } catch (err) {
-      logger.error('Failed to fetch global memory', err);
-      res.status(500).json({ error: 'Failed to fetch global memory' });
+      handleControllerError(res, err, 'Failed to fetch global memory');
     }
   }
 

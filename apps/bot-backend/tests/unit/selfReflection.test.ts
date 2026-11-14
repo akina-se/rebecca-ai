@@ -1,3 +1,4 @@
+import { UpstreamApiError } from '@rebecca/types';
 import { SelfReflectionUseCase } from '../../src/features/self-reflection/usecase';
 import { SelfReflectionController } from '../../src/features/self-reflection/controller';
 import { createSelfReflectionModule } from '../../src/features/self-reflection';
@@ -126,18 +127,23 @@ describe('SelfReflection Feature Tests', () => {
       expect(res.json).toHaveBeenCalledWith(mockResult);
     });
 
-    it('should return 500 when useCase throws', async () => {
-      useCase.execute.mockRejectedValue(new Error('Gemini 429'));
+    it('should return 500 when useCase throws and preserve upstream 429 status', async () => {
+      useCase.execute.mockRejectedValueOnce(new Error('Database error'));
 
       await controller.handle(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'Internal Server Error',
-          message: 'Gemini 429',
-        }),
-      );
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Internal Server Error',
+      });
+
+      useCase.execute.mockRejectedValueOnce(new UpstreamApiError('Quota exceeded', 429));
+      await controller.handle(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(429);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Quota exceeded',
+      });
     });
   });
 

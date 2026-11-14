@@ -1,3 +1,4 @@
+import { UpstreamApiError } from '@rebecca/types';
 import { GeminiService, GeminiServiceConfig } from '../../src/services/gemini';
 import { ThinkingLevel } from '@google/genai';
 
@@ -585,6 +586,26 @@ describe('GeminiService Unit Tests', () => {
 
             mockGenerateContent.mockResolvedValueOnce({ text: '{"thought":123,"reply":"abc","selectedTitle":"title1"}' });
             await expect(gemini.generateStructuredNewsPost('sys', 'prompt', ['title1'])).rejects.toThrow('malformed response schema');
+        });
+    });
+
+    describe('Upstream HTTP 4xx/5xx Normalization', () => {
+        it('should normalize Gemini SDK HTTP 429 errors into UpstreamApiError', async () => {
+            const gemini = getGeminiService();
+            mockGenerateContent.mockRejectedValueOnce(
+                Object.assign(new Error('Resource exhausted'), { status: 429 }),
+            );
+
+            await expect(gemini.generateStructuredReply('System', [], 'Hello')).rejects.toMatchObject({
+                name: 'UpstreamApiError',
+                statusCode: 429,
+                message: 'Resource exhausted',
+            });
+
+            mockGenerateContent.mockRejectedValueOnce(
+                Object.assign(new Error('Resource exhausted'), { status: 429 }),
+            );
+            await expect(gemini.generateTimelineSummary(['post'])).rejects.toBeInstanceOf(UpstreamApiError);
         });
     });
 

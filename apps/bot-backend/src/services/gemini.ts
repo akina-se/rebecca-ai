@@ -12,6 +12,7 @@ import { StructuredNewsPostResponse } from '../features/news/types';
 import { StructuredPollPostResponse } from '../features/poll/types';
 import { StructuredSupportPostResponse } from '../features/support/types';
 import { logger } from '../utils/logger';
+import { rethrowUpstreamApiError } from '../utils/httpError';
 
 /**
  * Creates the JSON schema for structured news post generation with enum-constrained candidate title selection.
@@ -175,8 +176,7 @@ export class GeminiService implements IGeminiService {
 
       return JSON.parse(response.text || '{}');
     } catch (error) {
-      logger.error('Error in Dreaming generation', error);
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error in Dreaming generation');
     }
   }
 
@@ -199,8 +199,7 @@ export class GeminiService implements IGeminiService {
       });
       return response.text?.trim() || '';
     } catch (e) {
-      logger.error('Error in Evolution generation', e);
-      throw e;
+      return rethrowUpstreamApiError(e, 'Error in Evolution generation');
     }
   }
 
@@ -300,8 +299,7 @@ export class GeminiService implements IGeminiService {
       }
       return parsed;
     } catch (e) {
-      logger.error('Error generating structured timeline post', e);
-      throw e;
+      return rethrowUpstreamApiError(e, 'Error generating structured timeline post');
     }
   }
 
@@ -377,8 +375,7 @@ export class GeminiService implements IGeminiService {
         reply: trimmedReply,
       };
     } catch (e) {
-      logger.error('Error generating structured news post', e);
-      throw e;
+      return rethrowUpstreamApiError(e, 'Error generating structured news post');
     }
   }
 
@@ -455,8 +452,7 @@ export class GeminiService implements IGeminiService {
         options: validOptions,
       };
     } catch (e) {
-      logger.error('Error generating structured poll post', e);
-      throw e;
+      return rethrowUpstreamApiError(e, 'Error generating structured poll post');
     }
   }
 
@@ -520,10 +516,9 @@ export class GeminiService implements IGeminiService {
         replyBody: trimmedReply,
       };
     } catch (error) {
-      logger.error('Failed to generate structured support post via Gemini', error, {
+      return rethrowUpstreamApiError(error, 'Failed to generate structured support post via Gemini', {
         promptLength: prompt.length,
       });
-      throw error;
     }
   }
 
@@ -566,8 +561,7 @@ export class GeminiService implements IGeminiService {
       }
       return summary;
     } catch (e) {
-      logger.error('[GeminiService] Failed to generate timeline summary', e);
-      throw e;
+      return rethrowUpstreamApiError(e, '[GeminiService] Failed to generate timeline summary');
     }
   }
 
@@ -696,8 +690,7 @@ export class GeminiService implements IGeminiService {
       const result = response.text?.trim() || null;
       return result === 'null' ? null : result;
     } catch (e) {
-      logger.error('Error inferring image search query', e);
-      throw e;
+      return rethrowUpstreamApiError(e, 'Error inferring image search query');
     }
   }
 
@@ -752,8 +745,7 @@ ${imageCaption}
       const parsed = JSON.parse(cleaned);
       return Boolean(parsed.relevant);
     } catch (e) {
-      logger.error('Error verifying image relevance', e);
-      throw e;
+      return rethrowUpstreamApiError(e, 'Error verifying image relevance');
     }
   }
 
@@ -887,8 +879,7 @@ ${imageCaption}
       }
       return parsed;
     } catch (error) {
-      logger.error('Error generating structured reply with Gemini', error);
-      throw error;
+      return rethrowUpstreamApiError(error, 'Error generating structured reply with Gemini');
     }
   }
 }

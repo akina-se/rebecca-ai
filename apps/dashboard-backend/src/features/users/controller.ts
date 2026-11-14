@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UsersUseCase } from './usecase';
 import { UserStatus } from '@rebecca/types';
-import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller responsible for handling HTTP requests related to user management and profiles.
@@ -34,8 +34,7 @@ export class UsersController {
       const users = await this.useCase.getAllUsers({ page, limit, search, sortBy, sortOrder, period, date });
       res.json(users);
     } catch (err) {
-      logger.error('Failed to fetch users', err);
-      res.status(500).json({ error: 'Failed to fetch users' });
+      handleControllerError(res, err, 'Failed to fetch users');
     }
   }
 
@@ -56,8 +55,7 @@ export class UsersController {
       }
       res.json(user);
     } catch (err) {
-      logger.error('Failed to fetch user details', err, { userId: id });
-      res.status(500).json({ error: 'Failed to fetch user details' });
+      handleControllerError(res, err, 'Failed to fetch user details', { userId: id });
     }
   }
 
@@ -75,8 +73,7 @@ export class UsersController {
       await this.useCase.updateUserMemory(id as string, coreProfile);
       res.json({ success: true });
     } catch (err) {
-      logger.error('Failed to update user memory', err, { userId: id });
-      res.status(500).json({ error: 'Failed to update user memory' });
+      handleControllerError(res, err, 'Failed to update user memory', { userId: id });
     }
   }
 
@@ -111,8 +108,7 @@ export class UsersController {
       await this.useCase.bulkUpdateStatus(ids, userStatus);
       res.json({ success: true });
     } catch (err) {
-      logger.error('Failed to bulk update user status', err);
-      res.status(500).json({ error: 'Failed to update user status' });
+      handleControllerError(res, err, 'Failed to update user status');
     }
   }
 }

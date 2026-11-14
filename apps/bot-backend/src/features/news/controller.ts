@@ -3,6 +3,7 @@ import { ProactiveNewsUseCase } from './usecase';
 import { SoliloquyUseCase } from '../soliloquy';
 import { CampaignGuard } from '../campaign';
 import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller for the Proactive News feature.
@@ -52,8 +53,7 @@ export class ProactiveNewsController {
             }
             res.status(200).json(result);
         } catch (error) {
-            logger.error('[ProactiveNewsController] Batch execution failed', error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            handleControllerError(res, error, '[ProactiveNewsController] Batch execution failed');
         }
     };
 }

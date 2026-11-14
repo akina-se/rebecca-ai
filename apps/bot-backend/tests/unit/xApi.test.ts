@@ -1,3 +1,4 @@
+import { UpstreamApiError } from '@rebecca/types';
 import { XApiService, XApiServiceConfig } from '../../src/services/xApi';
 
 describe('XApiService Unit Tests', () => {
@@ -284,7 +285,7 @@ describe('XApiService Unit Tests', () => {
         it('should throw error if fetch not ok', async () => {
             const api = createService();
             const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'failed' }) });
+            global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400, json: () => Promise.resolve({ error: 'failed' }) });
             await expect(api.addListMember('list1', 'user1')).rejects.toThrow(/Failed to add list member/);
             global.fetch = originalFetch;
         });
@@ -358,6 +359,7 @@ describe('XApiService Unit Tests', () => {
             try {
                 global.fetch = jest.fn().mockResolvedValueOnce({
                     ok: false,
+                    status: 403,
                     json: async () => ({ error: 'Forbidden' }),
                 });
                 await expect(api.deleteTweet('9999999999999999999')).rejects.toThrow('Failed to delete tweet');
@@ -376,6 +378,67 @@ describe('XApiService Unit Tests', () => {
                 accessSecret: 'secret',
             });
             expect(api).toBeDefined();
+        });
+    });
+
+    describe('Upstream HTTP 4xx/5xx Boundary Normalization (UpstreamApiError)', () => {
+        it('should normalize X SDK 403 ApiError in getMentions and replyToMention into UpstreamApiError', async () => {
+            const api = createService({ myUserId: '999999' });
+            const spendCapErr = Object.assign(new Error('HTTP 403: Forbidden'), {
+                status: 403,
+                data: { detail: 'Your monthly spend cap has been reached.' },
+            });
+            mockClientInstance.users.getMentions.mockRejectedValueOnce(spendCapErr);
+
+            await expect(api.getMentions()).rejects.toMatchObject({
+                name: 'UpstreamApiError',
+                statusCode: 403,
+                message: 'Your monthly spend cap has been reached.',
+            });
+
+            mockClientInstance.posts.create.mockRejectedValueOnce(spendCapErr);
+            await expect(api.replyToMention('12345', 'Hello')).rejects.toBeInstanceOf(UpstreamApiError);
+        });
+
+        it('should throw UpstreamApiError with statusCode 403 when fetch returns HTTP 403 in uploadMedia, addListMember, and deleteTweet', async () => {
+            const api = createService();
+            delete mockClientInstance.posts.destroy;
+            delete mockClientInstance.posts.delete;
+
+            const originalFetch = global.fetch;
+            try {
+                global.fetch = jest.fn().mockResolvedValueOnce({
+                    ok: false,
+                    status: 403,
+                    json: async () => ({ error: 'Forbidden' }),
+                }) as any;
+                await expect(api.uploadMedia(Buffer.from('img'), 'image/jpeg')).rejects.toMatchObject({
+                    name: 'UpstreamApiError',
+                    statusCode: 403,
+                });
+
+                global.fetch = jest.fn().mockResolvedValueOnce({
+                    ok: false,
+                    status: 403,
+                    json: async () => ({ detail: 'Forbidden list addition' }),
+                }) as any;
+                await expect(api.addListMember('list1', 'user1')).rejects.toMatchObject({
+                    name: 'UpstreamApiError',
+                    statusCode: 403,
+                });
+
+                global.fetch = jest.fn().mockResolvedValueOnce({
+                    ok: false,
+                    status: 403,
+                    json: async () => ({ detail: 'Forbidden delete' }),
+                }) as any;
+                await expect(api.deleteTweet('9999999999999999999')).rejects.toMatchObject({
+                    name: 'UpstreamApiError',
+                    statusCode: 403,
+                });
+            } finally {
+                global.fetch = originalFetch;
+            }
         });
     });
 });

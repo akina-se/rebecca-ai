@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { CopilotUseCase } from './usecase';
-import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller for handling Copilot-related requests.
@@ -44,8 +44,7 @@ export class CopilotController {
       });
       res.json(response);
     } catch (err) {
-      logger.error('Failed to process chat', err);
-      res.status(500).json({ error: 'Failed to process chat' });
+      handleControllerError(res, err, 'Failed to process chat');
     }
   }
 }

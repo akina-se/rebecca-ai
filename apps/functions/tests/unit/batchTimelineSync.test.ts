@@ -21,9 +21,13 @@ jest.mock('../../src/usecases/syncTimelineUseCase', () => ({
   })),
 }));
 
-jest.mock('../../src/services/xApi', () => ({
-  XApiService: jest.fn(),
-}));
+jest.mock('../../src/services/xApi', () => {
+  const actual = jest.requireActual('../../src/services/xApi');
+  return {
+    ...actual,
+    XApiService: jest.fn(),
+  };
+});
 
 import { batchTimelineSync, validateAuth, verifyOidcToken } from '../../src/triggers/batchTimelineSync';
 
@@ -303,6 +307,49 @@ describe('batchTimelineSync HTTP trigger', () => {
     expect(res.jsonData.success).toBe(false);
     expect(res.jsonData.error).toBe('Internal Server Error');
     expect(res.jsonData.message).toBe('X API rate limit exceeded');
+  });
+
+  it('should return 403 with Forbidden detail when X API rejects with spend cap reached', async () => {
+    const forbiddenErr = Object.assign(new Error('HTTP 403: Forbidden'), {
+      status: 403,
+      data: { detail: 'Your monthly spend cap has been reached.' },
+    });
+    mockExecute.mockRejectedValueOnce(forbiddenErr);
+
+    const { req, res } = createMockReqRes({
+      method: 'POST',
+      headers: { 'x-batch-secret': 'valid_batch_secret' },
+    });
+
+    await requestHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.jsonData).toEqual({
+      success: false,
+      error: 'Forbidden',
+      message: 'Your monthly spend cap has been reached.',
+    });
+  });
+
+  it('should preserve non-403 4xx statusCode with Client Error label', async () => {
+    const rateLimitErr = Object.assign(new Error('Too Many Requests'), {
+      statusCode: 429,
+    });
+    mockExecute.mockRejectedValueOnce(rateLimitErr);
+
+    const { req, res } = createMockReqRes({
+      method: 'POST',
+      headers: { 'x-batch-secret': 'valid_batch_secret' },
+    });
+
+    await requestHandler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.jsonData).toEqual({
+      success: false,
+      error: 'Client Error',
+      message: 'Too Many Requests',
+    });
   });
 
   it('should handle non-Error objects thrown gracefully', async () => {
