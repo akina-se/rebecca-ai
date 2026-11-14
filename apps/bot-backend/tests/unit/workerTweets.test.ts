@@ -60,7 +60,7 @@ describe('Worker Routes - Tweets Management', () => {
             .set('x-worker-secret', 'test-secret');
 
         expect(res.status).toBe(500);
-        expect(res.body).toEqual({ success: false, message: 'X API Error: Tweet not found' });
+        expect(res.body).toEqual({ error: 'Internal Server Error' });
     });
 
     it('DELETE /worker/tweets/:id should preserve upstream 403 status and detail', async () => {
@@ -76,8 +76,7 @@ describe('Worker Routes - Tweets Management', () => {
 
         expect(res.status).toBe(403);
         expect(res.body).toEqual({
-            success: false,
-            message: 'Your monthly spend cap has been reached.',
+            error: 'Your monthly spend cap has been reached.',
         });
     });
 });

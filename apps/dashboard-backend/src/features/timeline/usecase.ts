@@ -79,7 +79,9 @@ export class TimelineUseCase {
           logger.info('deleteTweetViaBotService response received', { tweetId: id, response });
           if (!response.success && response.statusCode !== undefined) {
             throw new UpstreamApiError(
-              response.message || `Failed to delete tweet ${id} on X`,
+              response.message.trim()
+                ? response.message
+                : `Failed to delete tweet ${id} on X`,
               response.statusCode
             );
           }
@@ -113,7 +115,7 @@ export class TimelineUseCase {
     const result = await syncPostsViaBotService();
     if (!result.success) {
       throw new UpstreamApiError(
-        result.message || 'Failed to synchronize timeline posts',
+        result.message.trim() ? result.message : 'Failed to synchronize timeline posts',
         result.statusCode ?? 500
       );
     }
@@ -130,7 +132,7 @@ export class TimelineUseCase {
     const result = await triggerReplyViaBotService();
     if (!result.success) {
       throw new UpstreamApiError(
-        result.message || 'Failed to trigger reply execution',
+        result.message.trim() ? result.message : 'Failed to trigger reply execution',
         result.statusCode ?? 500
       );
     }

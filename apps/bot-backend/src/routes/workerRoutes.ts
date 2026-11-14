@@ -21,7 +21,7 @@ export const createWorkerRoutes = (deps: AppDependencies): Router => {
             await deps.xApi.deleteTweet(tweetId);
             res.status(200).json({ success: true, message: 'Tweet successfully deleted' });
         } catch (err) {
-            handleControllerError(res, err, 'Worker Error: Failed to delete tweet', 'message');
+            handleControllerError(res, err, 'Worker Error: Failed to delete tweet');
         }
     });
 

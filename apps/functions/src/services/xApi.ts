@@ -40,29 +40,23 @@ export interface IXApiService {
 export class XApiError extends Error {
   /** HTTP status code returned by the X API (400-599), if available. */
   readonly statusCode?: number;
-  /** Optional raw detail string returned in the X API error payload. */
-  readonly detail?: string;
 
   /**
    * Initializes an XApiError instance.
    * @param message Human-readable error message.
-   * @param options Optional HTTP status code, detail message, and underlying cause.
+   * @param statusCode Optional HTTP status code in the 400-599 range.
+   * @param cause Optional underlying cause.
    */
-  constructor(
-    message: string,
-    options?: { statusCode?: number; detail?: string; cause?: unknown }
-  ) {
-    super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
+  constructor(message: string, statusCode?: number, cause?: unknown) {
+    super(message, cause !== undefined ? { cause } : undefined);
     this.name = 'XApiError';
-    this.statusCode = options?.statusCode;
-    this.detail = options?.detail;
+    this.statusCode = statusCode;
   }
 }
 
 /**
  * Normalizes an unknown error thrown by `@xdevplatform/xdk` into an {@link XApiError},
- * preserving HTTP 4xx/5xx status codes and upstream detail fields (`data.detail`,
- * `data.error`, or `data.title`).
+ * preserving HTTP 4xx/5xx status codes and upstream detail fields (`data.detail` / `data.error`).
  *
  * @param error Unknown caught error from the X SDK.
  */
@@ -70,58 +64,46 @@ export function toXApiError(error: unknown): XApiError {
   if (error instanceof XApiError) {
     return error;
   }
-  if (error && typeof error === 'object') {
-    const candidate = error as {
-      status?: unknown;
-      statusCode?: unknown;
-      message?: unknown;
-      data?: unknown;
-    };
-    const rawStatus =
-      typeof candidate.statusCode === 'number'
-        ? candidate.statusCode
-        : typeof candidate.status === 'number'
-          ? candidate.status
-          : undefined;
-    const statusCode =
-      typeof rawStatus === 'number' &&
-      Number.isInteger(rawStatus) &&
-      rawStatus >= 400 &&
-      rawStatus <= 599
-        ? rawStatus
-        : undefined;
-
-    let detail: string | undefined;
-    if (candidate.data && typeof candidate.data === 'object') {
-      const dataObj = candidate.data as {
-        detail?: unknown;
-        error?: unknown;
-        title?: unknown;
-      };
-      if (typeof dataObj.detail === 'string' && dataObj.detail.trim()) {
-        detail = dataObj.detail.trim();
-      } else if (typeof dataObj.error === 'string' && dataObj.error.trim()) {
-        detail = dataObj.error.trim();
-      } else if (typeof dataObj.title === 'string' && dataObj.title.trim()) {
-        detail = dataObj.title.trim();
-      }
-    }
-
-    const baseMessage =
-      typeof candidate.message === 'string' && candidate.message.trim()
-        ? candidate.message.trim()
-        : statusCode !== undefined
-          ? `HTTP ${statusCode}`
-          : 'X API request failed';
-
-    const message =
-      detail && !baseMessage.includes(detail)
-        ? `${baseMessage}: ${detail}`
-        : detail ?? baseMessage;
-
-    return new XApiError(message, { statusCode, detail, cause: error });
+  if (!error || typeof error !== 'object') {
+    return new XApiError(String(error), undefined, error);
   }
-  return new XApiError(String(error), { cause: error });
+  const { status, statusCode, message, data } = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    message?: unknown;
+    data?: { detail?: unknown; error?: unknown };
+  };
+  const code = typeof statusCode === 'number' ? statusCode : status;
+  const validStatus =
+    typeof code === 'number' && Number.isInteger(code) && code >= 400 && code <= 599
+      ? code
+      : undefined;
+
+  const detail =
+    typeof data?.detail === 'string' && data.detail.trim()
+      ? data.detail.trim()
+      : typeof data?.error === 'string' && data.error.trim()
+        ? data.error.trim()
+        : undefined;
+  const resolvedMessage =
+    detail ??
+    (typeof message === 'string' && message.trim()
+      ? message.trim()
+      : validStatus !== undefined
+        ? `HTTP ${validStatus}`
+        : 'X API request failed');
+
+  return new XApiError(resolvedMessage, validStatus, error);
+}
+
+function logAndRethrowXApiError(error: unknown, warnContext: string, errContext: string): never {
+  const xError = toXApiError(error);
+  if (xError.statusCode !== undefined && xError.statusCode < 500) {
+    logger.warn(warnContext, { statusCode: xError.statusCode, message: xError.message });
+  } else {
+    logger.error(errContext, { error: xError });
+  }
+  throw xError;
 }
 
 interface XdkTweetResponse {
@@ -221,18 +203,11 @@ export class XApiService implements IXApiService {
       }
       return null;
     } catch (error: unknown) {
-      const xError = toXApiError(error);
-      if (xError.statusCode !== undefined && xError.statusCode < 500) {
-        logger.warn('[XApiService] Upstream rejected getMe request', {
-          statusCode: xError.statusCode,
-          message: xError.message,
-        });
-      } else {
-        logger.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe', {
-          error: xError,
-        });
-      }
-      throw xError;
+      logAndRethrowXApiError(
+        error,
+        '[XApiService] Upstream rejected getMe request',
+        '[XApiService] Failed to auto-resolve authenticated user ID via getMe'
+      );
     }
   }
 
@@ -250,7 +225,8 @@ export class XApiService implements IXApiService {
       return [];
     }
 
-    const targetUserId = userId || this.cachedMyUserId || (await this.getMyUserId());
+    const normalizedUserId = userId && userId.trim() ? userId.trim() : null;
+    const targetUserId = normalizedUserId ?? this.cachedMyUserId ?? (await this.getMyUserId());
     if (!targetUserId) {
       logger.warn('[XApiService] Target userId is not specified and could not be resolved');
       return [];
@@ -269,19 +245,14 @@ export class XApiService implements IXApiService {
         pollFields: ['duration_minutes', 'end_datetime', 'id', 'options', 'voting_status'],
       } as Parameters<typeof this.client.users.getPosts>[1])) as XdkTweetResponse;
     } catch (error: unknown) {
-      const xError = toXApiError(error);
-      if (xError.statusCode !== undefined && xError.statusCode < 500) {
-        logger.warn('[XApiService] Upstream rejected getPosts request', {
-          statusCode: xError.statusCode,
-          message: xError.message,
-        });
-      } else {
-        logger.error('[XApiService] Failed to fetch recent timeline tweets', { error: xError });
-      }
-      throw xError;
+      logAndRethrowXApiError(
+        error,
+        '[XApiService] Upstream rejected getPosts request',
+        '[XApiService] Failed to fetch recent timeline tweets'
+      );
     }
 
-    const tweets = response?.data || [];
+    const tweets = response?.data ?? [];
     if (tweets.length === 0) {
       return [];
     }
@@ -290,7 +261,7 @@ export class XApiService implements IXApiService {
     const mediaMap = new Map<string, string>();
     if (response.includes?.media) {
       for (const media of response.includes.media) {
-        const mediaUrl = media.url || media.previewImageUrl;
+        const mediaUrl = media.url ?? media.previewImageUrl;
         if (media.mediaKey && mediaUrl) {
           mediaMap.set(media.mediaKey, mediaUrl);
         }
@@ -305,9 +276,9 @@ export class XApiService implements IXApiService {
           pollMap.set(poll.id, {
             id: poll.id,
             options: poll.options.map((opt) => ({
-              position: Number(opt.position) || 0,
-              label: String(opt.label || ''),
-              votes: Number(opt.votes) || 0,
+              position: Number.isFinite(Number(opt.position)) ? Number(opt.position) : 0,
+              label: opt.label ?? '',
+              votes: Number.isFinite(Number(opt.votes)) ? Number(opt.votes) : 0,
             })),
             ...(typeof poll.durationMinutes === 'number' ? { durationMinutes: poll.durationMinutes } : {}),
             ...(poll.endDatetime ? { endDatetime: poll.endDatetime } : {}),

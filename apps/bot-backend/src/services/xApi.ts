@@ -1,5 +1,5 @@
 import { Client, OAuth1 } from '@xdevplatform/xdk';
-import { UpstreamApiError, parseUpstreamApiError } from '@rebecca/types';
+import { UpstreamApiError } from '@rebecca/types';
 import type { 
   XApiCreateResponse, 
   XApiMentionResponse, 
@@ -9,42 +9,7 @@ import type {
   IXApiService
 } from '../types';
 import { logger } from '../utils/logger';
-
-/**
- * Wraps non-OK `fetch` responses into {@link UpstreamApiError} when a valid
- * HTTP 4xx/5xx status code is present so callers retain upstream status fidelity.
- */
-function createFetchHttpError(status: unknown, message: string): Error {
-  if (typeof status === 'number' && Number.isInteger(status) && status >= 400 && status <= 599) {
-    return new UpstreamApiError(message, status);
-  }
-  return new Error(message);
-}
-
-/**
- * Normalizes caught SDK/HTTP errors at the XApiService boundary and logs them
- * using Cloud Logging severity matching (`WARN` for 4xx, `ERROR` for 5xx/unclassified).
- */
-function normalizeAndRethrowXApiError(
-  error: unknown,
-  logMessage: string,
-  context?: Record<string, unknown>
-): never {
-  const upstream = parseUpstreamApiError(error);
-  if (upstream) {
-    if (upstream.statusCode < 500) {
-      logger.warn(`${logMessage}: ${upstream.message}`, {
-        statusCode: upstream.statusCode,
-        ...context,
-      });
-    } else {
-      logger.error(logMessage, upstream, context);
-    }
-    throw upstream;
-  }
-  logger.error(logMessage, error, context);
-  throw error;
-}
+import { rethrowUpstreamApiError } from '../utils/httpError';
 
 /**
  * Configuration options required by XApiService.
@@ -119,7 +84,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error replying to mention', { tweetId });
+      return rethrowUpstreamApiError(error, 'Error replying to mention', { tweetId });
     }
   }
 
@@ -140,7 +105,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.posts.getById>[1]);
       return response as unknown as XApiTweetDetailsResponse;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error getting tweet details', { tweetId });
+      return rethrowUpstreamApiError(error, 'Error getting tweet details', { tweetId });
     }
   }
 
@@ -173,11 +138,11 @@ export class XApiService implements IXApiService {
       
       const data = await response.json();
       if (!response.ok) {
-        throw createFetchHttpError(response.status, `Upload failed: ${JSON.stringify(data)}`);
+        throw new UpstreamApiError(`Upload failed: ${JSON.stringify(data)}`, response.status);
       }
       return data.media_id_string;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error uploading media to X');
+      return rethrowUpstreamApiError(error, 'Error uploading media to X');
     }
   }
 
@@ -217,7 +182,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.posts.create(payload as Parameters<typeof this.client.posts.create>[0]);
       return response as unknown as XApiCreateResponse;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error posting tweet');
+      return rethrowUpstreamApiError(error, 'Error posting tweet');
     }
   }
 
@@ -235,7 +200,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.users.getById>[1]);
       return response as unknown as { data: XApiUser };
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error getting user profile', { userId });
+      return rethrowUpstreamApiError(error, 'Error getting user profile', { userId });
     }
   }
 
@@ -279,7 +244,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.users.getMentions(userId, params as Parameters<typeof this.client.users.getMentions>[1]);
       return response as unknown as XApiMentionResponse;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error fetching mentions', { sinceId });
+      return rethrowUpstreamApiError(error, 'Error fetching mentions', { sinceId });
     }
   }
 
@@ -305,7 +270,7 @@ export class XApiService implements IXApiService {
       const response = await this.client.users.getFollowers(userId, params as Parameters<typeof this.client.users.getFollowers>[1]);
       return response as unknown as XApiFollowersResponse;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error getting followers', { userId, paginationToken });
+      return rethrowUpstreamApiError(error, 'Error getting followers', { userId, paginationToken });
     }
   }
 
@@ -332,11 +297,11 @@ export class XApiService implements IXApiService {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw createFetchHttpError(res.status, `Failed to add list member: ${JSON.stringify(errData)}`);
+        throw new UpstreamApiError(`Failed to add list member: ${JSON.stringify(errData)}`, res.status);
       }
       return true;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error adding list member', { listId, userId });
+      return rethrowUpstreamApiError(error, 'Error adding list member', { listId, userId });
     }
   }
 
@@ -358,7 +323,7 @@ export class XApiService implements IXApiService {
       } as Parameters<typeof this.client.users.getPosts>[1]);
       return response as unknown as XApiMentionResponse;
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error getting user tweets', { userId, maxResults });
+      return rethrowUpstreamApiError(error, 'Error getting user tweets', { userId, maxResults });
     }
   }
 
@@ -394,13 +359,13 @@ export class XApiService implements IXApiService {
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw createFetchHttpError(res.status, `Failed to delete tweet: ${JSON.stringify(errData)}`);
+          throw new UpstreamApiError(`Failed to delete tweet: ${JSON.stringify(errData)}`, res.status);
         }
         return true;
       }
       throw new Error('No client or oauth1Client available to delete tweet');
     } catch (error) {
-      return normalizeAndRethrowXApiError(error, 'Error deleting tweet', { tweetId });
+      return rethrowUpstreamApiError(error, 'Error deleting tweet', { tweetId });
     }
   }
 }

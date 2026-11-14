@@ -31,9 +31,9 @@ export async function getBotServiceHeaders(botUrl: string): Promise<Record<strin
       const authHeaders = await client.getRequestHeaders();
       const authHeader =
         authHeaders instanceof Headers
-          ? authHeaders.get('Authorization') || authHeaders.get('authorization')
-          : (authHeaders as Record<string, string>)['Authorization'] ||
-            (authHeaders as Record<string, string>)['authorization'];
+          ? (authHeaders.get('Authorization') ?? authHeaders.get('authorization'))
+          : ((authHeaders as Record<string, string>)['Authorization'] ??
+            (authHeaders as Record<string, string>)['authorization']);
 
       if (authHeader) {
         headers['Authorization'] = authHeader;
@@ -119,7 +119,7 @@ export async function syncPostsViaBotService(): Promise<BatchTriggerResponse> {
     });
     const message = await extractResponseMessage(res);
     if (!res.ok) {
-      const errMsg = message || `HTTP ${res.status}`;
+      const errMsg = message ? message : `HTTP ${res.status}`;
       if (res.status >= 400 && res.status < 500) {
         logger.warn('Timeline sync rejected by Cloud Functions HTTP', {
           status: res.status,
@@ -135,7 +135,7 @@ export async function syncPostsViaBotService(): Promise<BatchTriggerResponse> {
 
     return {
       success: true,
-      message: message || 'OK: Timeline synced successfully.',
+      message: message ? message : 'OK: Timeline synced successfully.',
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -176,7 +176,7 @@ export async function triggerReplyViaBotService(): Promise<BatchTriggerResponse>
     });
     const message = await extractResponseMessage(res);
     if (!res.ok) {
-      const errMsg = message || `HTTP ${res.status}`;
+      const errMsg = message ? message : `HTTP ${res.status}`;
       if (res.status >= 400 && res.status < 500) {
         logger.warn('Reply batch rejected by bot-backend HTTP', {
           status: res.status,
@@ -192,7 +192,7 @@ export async function triggerReplyViaBotService(): Promise<BatchTriggerResponse>
 
     return {
       success: true,
-      message: message || 'OK: Reply batch executed successfully.',
+      message: message ? message : 'OK: Reply batch executed successfully.',
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
@@ -222,9 +222,19 @@ export async function deleteTweetViaBotService(tweetId: string): Promise<BatchTr
       method: 'DELETE',
       headers,
     });
-    const data = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
+    const data = (await res.json().catch(() => ({}))) as {
+      success?: boolean;
+      error?: string;
+      message?: string;
+    };
     if (!res.ok) {
-      const msg = typeof data.message === 'string' && data.message.trim() ? data.message : `HTTP ${res.status}`;
+      const rawMsg =
+        typeof data.error === 'string' && data.error.trim()
+          ? data.error.trim()
+          : typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : undefined;
+      const msg = rawMsg ?? `HTTP ${res.status}`;
       if (res.status >= 400 && res.status < 500) {
         logger.warn('Tweet deletion rejected by bot-backend HTTP', { tweetId, status: res.status, msg });
       } else {

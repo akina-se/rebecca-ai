@@ -82,34 +82,6 @@ export const verifyOidcToken = async (
 };
 
 /**
- * Extracts HTTP status code, short error label, and diagnostic message from an upstream failure
- * using {@link toXApiError}.
- */
-function extractErrorDetails(error: unknown): {
-  statusCode: number;
-  errorLabel: string;
-  message: string;
-} {
-  const xError = toXApiError(error);
-  const statusCode = xError.statusCode ?? 500;
-
-  const errorLabel =
-    statusCode === 403
-      ? 'Forbidden'
-      : statusCode >= 400 && statusCode < 500
-        ? 'Client Error'
-        : 'Internal Server Error';
-
-  const message =
-    xError.detail ??
-    (error instanceof Error
-      ? error.message
-      : 'An unexpected error occurred during timeline synchronization.');
-
-  return { statusCode, errorLabel, message };
-}
-
-/**
  * Cloud Function HTTPS endpoint invoked by Cloud Scheduler or manual trigger.
  * Executes SyncTimelineUseCase to synchronize X posts and engagement metrics into Firestore.
  */
@@ -173,8 +145,16 @@ export const batchTimelineSync = onRequest(
         data: result,
       });
     } catch (error: unknown) {
-      const { statusCode, errorLabel, message } = extractErrorDetails(error);
-      if (statusCode >= 400 && statusCode < 500) {
+      const xError = toXApiError(error);
+      const statusCode = xError.statusCode ?? 500;
+      const errorLabel =
+        statusCode === 403 ? 'Forbidden' : statusCode < 500 ? 'Client Error' : 'Internal Server Error';
+      const message =
+        error instanceof Error
+          ? xError.message
+          : 'An unexpected error occurred during timeline synchronization.';
+
+      if (statusCode < 500) {
         logger.warn('[batchTimelineSync] Upstream request rejected', { statusCode, message });
       } else {
         logger.error('[batchTimelineSync] Execution failed', { error });

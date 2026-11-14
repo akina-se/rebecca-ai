@@ -142,8 +142,7 @@ describe('XApiService', () => {
     await expect(service.getMyUserId()).rejects.toMatchObject({
       name: 'XApiError',
       statusCode: 403,
-      detail: 'Your monthly spend cap has been reached.',
-      message: 'HTTP 403: Forbidden: Your monthly spend cap has been reached.',
+      message: 'Your monthly spend cap has been reached.',
     });
   });
 
@@ -202,7 +201,7 @@ describe('XApiService', () => {
     await expect(service.fetchRecentTimelineTweets('12345')).rejects.toMatchObject({
       name: 'XApiError',
       statusCode: 403,
-      detail: 'Client Forbidden',
+      message: 'Client Forbidden',
     });
   });
 
@@ -404,23 +403,27 @@ describe('XApiService', () => {
 
   describe('toXApiError boundary normalization', () => {
     it('returns the same instance if already an XApiError', () => {
-      const original = new XApiError('Already normalized', { statusCode: 403 });
+      const original = new XApiError('Already normalized', 403);
       expect(toXApiError(original)).toBe(original);
     });
 
-    it('extracts statusCode, data.error, and data.title fallbacks accurately', () => {
+    it('extracts statusCode, data.error, and fallback messages accurately', () => {
       const errWithError = { statusCode: 429, data: { error: 'Rate limited' } };
       expect(toXApiError(errWithError)).toMatchObject({
         statusCode: 429,
-        detail: 'Rate limited',
-        message: 'HTTP 429: Rate limited',
+        message: 'Rate limited',
       });
 
-      const errWithTitle = { status: 403, message: '   ', data: { title: 'Forbidden' } };
-      expect(toXApiError(errWithTitle)).toMatchObject({
+      const errNoMessage = { status: 403, message: '   ' };
+      expect(toXApiError(errNoMessage)).toMatchObject({
         statusCode: 403,
-        detail: 'Forbidden',
-        message: 'HTTP 403: Forbidden',
+        message: 'HTTP 403',
+      });
+
+      const errGenericNoStatus = {};
+      expect(toXApiError(errGenericNoStatus)).toMatchObject({
+        statusCode: undefined,
+        message: 'X API request failed',
       });
     });
 

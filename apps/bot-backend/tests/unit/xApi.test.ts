@@ -285,7 +285,7 @@ describe('XApiService Unit Tests', () => {
         it('should throw error if fetch not ok', async () => {
             const api = createService();
             const originalFetch = global.fetch;
-            global.fetch = jest.fn().mockResolvedValue({ ok: false, json: () => Promise.resolve({ error: 'failed' }) });
+            global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400, json: () => Promise.resolve({ error: 'failed' }) });
             await expect(api.addListMember('list1', 'user1')).rejects.toThrow(/Failed to add list member/);
             global.fetch = originalFetch;
         });
@@ -359,6 +359,7 @@ describe('XApiService Unit Tests', () => {
             try {
                 global.fetch = jest.fn().mockResolvedValueOnce({
                     ok: false,
+                    status: 403,
                     json: async () => ({ error: 'Forbidden' }),
                 });
                 await expect(api.deleteTweet('9999999999999999999')).rejects.toThrow('Failed to delete tweet');
@@ -392,7 +393,7 @@ describe('XApiService Unit Tests', () => {
             await expect(api.getMentions()).rejects.toMatchObject({
                 name: 'UpstreamApiError',
                 statusCode: 403,
-                detail: 'Your monthly spend cap has been reached.',
+                message: 'Your monthly spend cap has been reached.',
             });
 
             mockClientInstance.posts.create.mockRejectedValueOnce(spendCapErr);

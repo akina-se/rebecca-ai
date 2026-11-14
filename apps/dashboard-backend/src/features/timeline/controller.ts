@@ -1,14 +1,7 @@
 import { Request, Response } from 'express';
-import { BatchTriggerResponse, parseUpstreamApiError } from '@rebecca/types';
+import { BatchTriggerResponse } from '@rebecca/types';
 import { TimelineUseCase } from './usecase';
-import { logger } from '../../utils/logger';
-
-function getTraceHeader(req: Request): string | undefined {
-  if (typeof req.header === 'function') {
-    return req.header('x-cloud-trace-context');
-  }
-  return req.headers?.['x-cloud-trace-context'] as string | undefined;
-}
+import { getTraceHeader, handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller responsible for handling HTTP requests related to the timeline and system metrics.
@@ -36,8 +29,7 @@ export class TimelineController {
       const metrics = await this.useCase.getMetrics(period);
       res.json(metrics);
     } catch (err) {
-      logger.error('Failed to fetch metrics', err, { period: req.query.period }, traceHeader);
-      res.status(500).json({ error: 'Failed to fetch metrics' });
+      handleControllerError(res, err, 'Failed to fetch metrics', { period: req.query.period }, traceHeader);
     }
   }
 
@@ -61,8 +53,7 @@ export class TimelineController {
       const result = await this.useCase.getPosts({ page, limit, sortBy, sortOrder, period, date });
       res.json(result);
     } catch (err) {
-      logger.error('Failed to fetch posts', err, { query: req.query }, traceHeader);
-      res.status(500).json({ error: 'Failed to fetch posts' });
+      handleControllerError(res, err, 'Failed to fetch posts', { query: req.query }, traceHeader);
     }
   }
 
@@ -84,8 +75,7 @@ export class TimelineController {
       }
       res.json(post);
     } catch (err) {
-      logger.error('Failed to fetch post details', err, { postId: id }, traceHeader);
-      res.status(500).json({ error: 'Failed to fetch post details' });
+      handleControllerError(res, err, 'Failed to fetch post details', { postId: id }, traceHeader);
     }
   }
 
@@ -107,7 +97,7 @@ export class TimelineController {
       await this.useCase.deletePosts(ids);
       res.json({ success: true });
     } catch (err) {
-      this.handleBatchTriggerError(res, err, 'Failed to delete posts', traceHeader);
+      handleControllerError(res, err, 'Failed to delete posts', undefined, traceHeader);
     }
   }
 
@@ -124,8 +114,7 @@ export class TimelineController {
       const alerts = await this.useCase.getAlerts();
       res.json(alerts);
     } catch (err) {
-      logger.error('Failed to fetch alerts', err, undefined, traceHeader);
-      res.status(500).json({ error: 'Failed to fetch alerts' });
+      handleControllerError(res, err, 'Failed to fetch alerts', undefined, traceHeader);
     }
   }
 
@@ -142,7 +131,7 @@ export class TimelineController {
       const result: BatchTriggerResponse = await this.useCase.syncPosts();
       res.json(result);
     } catch (err) {
-      this.handleBatchTriggerError(res, err, 'Failed to sync timeline posts', traceHeader);
+      handleControllerError(res, err, 'Failed to sync timeline posts', undefined, traceHeader);
     }
   }
 
@@ -159,26 +148,7 @@ export class TimelineController {
       const result: BatchTriggerResponse = await this.useCase.triggerReply();
       res.json(result);
     } catch (err) {
-      this.handleBatchTriggerError(res, err, 'Failed to trigger reply execution', traceHeader);
+      handleControllerError(res, err, 'Failed to trigger reply execution', undefined, traceHeader);
     }
-  }
-
-  private handleBatchTriggerError(
-    res: Response,
-    err: unknown,
-    defaultMessage: string,
-    traceHeader?: string
-  ): void {
-    const upstream = parseUpstreamApiError(err);
-    const statusCode = upstream?.statusCode ?? 500;
-    const errorMessage =
-      upstream && upstream.message.trim() ? upstream.message : defaultMessage;
-
-    if (upstream && statusCode >= 400 && statusCode < 500) {
-      logger.warn(defaultMessage, { statusCode, errorMessage }, traceHeader);
-    } else {
-      logger.error(defaultMessage, err, undefined, traceHeader);
-    }
-    res.status(statusCode).json({ error: errorMessage });
   }
 }

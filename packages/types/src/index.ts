@@ -974,37 +974,26 @@ export interface PortalBrandConfig {
 export class UpstreamApiError extends Error {
   /** HTTP status code returned by the upstream API (400-599). */
   readonly statusCode: number;
-  /** Optional raw upstream error detail string. */
-  readonly detail?: string;
 
   /**
    * Initializes an UpstreamApiError with a status code and optional cause.
    * @param message Human-readable error message.
    * @param statusCode HTTP status code in the 400-599 range.
-   * @param options Optional detail string and underlying Error cause.
+   * @param options Optional underlying Error cause.
    */
-  constructor(
-    message: string,
-    statusCode: number,
-    options?: { detail?: string; cause?: unknown }
-  ) {
+  constructor(message: string, statusCode: number, options?: { cause?: unknown }) {
     super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
     this.name = 'UpstreamApiError';
     this.statusCode = statusCode;
-    this.detail = options?.detail;
   }
 }
 
 /**
- * Parses an unknown caught error at an external SDK or HTTP boundary into a
- * normalized {@link UpstreamApiError} when it carries a valid HTTP error status
- * code (400-599), such as `@xdevplatform/xdk` `ApiError`.
+ * Extracts an {@link UpstreamApiError} from an unknown caught value when it carries
+ * a valid HTTP error status code (400-599), such as an SDK `ApiError`.
+ * Returns `null` for internal exceptions without an HTTP 4xx/5xx status code.
  *
- * Returns `null` if the error does not carry a valid HTTP 4xx/5xx status code
- * (for example, a plain internal `new Error('Database failed')`), preventing
- * internal exceptions from being misclassified as upstream HTTP 500 responses.
- *
- * @param error Caught error value from an SDK or service call.
+ * @param error Caught error value from an SDK or service boundary.
  */
 export function parseUpstreamApiError(error: unknown): UpstreamApiError | null {
   if (error instanceof UpstreamApiError) {
@@ -1013,55 +1002,27 @@ export function parseUpstreamApiError(error: unknown): UpstreamApiError | null {
   if (!error || typeof error !== 'object') {
     return null;
   }
-  const candidate = error as {
+  const { status, statusCode, message, data } = error as {
     status?: unknown;
     statusCode?: unknown;
     message?: unknown;
-    data?: unknown;
+    data?: { detail?: unknown; error?: unknown };
   };
-  const rawStatus =
-    typeof candidate.statusCode === 'number'
-      ? candidate.statusCode
-      : typeof candidate.status === 'number'
-        ? candidate.status
-        : undefined;
-
-  if (
-    rawStatus === undefined ||
-    !Number.isInteger(rawStatus) ||
-    rawStatus < 400 ||
-    rawStatus > 599
-  ) {
+  const code = typeof statusCode === 'number' ? statusCode : status;
+  if (typeof code !== 'number' || !Number.isInteger(code) || code < 400 || code > 599) {
     return null;
   }
 
-  let detail: string | undefined;
-  if (candidate.data && typeof candidate.data === 'object') {
-    const dataObj = candidate.data as {
-      detail?: unknown;
-      error?: unknown;
-      title?: unknown;
-    };
-    if (typeof dataObj.detail === 'string' && dataObj.detail.trim()) {
-      detail = dataObj.detail.trim();
-    } else if (typeof dataObj.error === 'string' && dataObj.error.trim()) {
-      detail = dataObj.error.trim();
-    } else if (typeof dataObj.title === 'string' && dataObj.title.trim()) {
-      detail = dataObj.title.trim();
-    }
-  }
+  const rawDetail =
+    typeof data?.detail === 'string' && data.detail.trim()
+      ? data.detail.trim()
+      : typeof data?.error === 'string' && data.error.trim()
+        ? data.error.trim()
+        : undefined;
+  const resolvedMessage =
+    rawDetail ?? (typeof message === 'string' && message.trim() ? message.trim() : '');
 
-  const baseMessage =
-    typeof candidate.message === 'string' && candidate.message.trim()
-      ? candidate.message.trim()
-      : `HTTP ${rawStatus}`;
-
-  const message =
-    detail && !baseMessage.includes(detail)
-      ? `${baseMessage}: ${detail}`
-      : detail ?? baseMessage;
-
-  return new UpstreamApiError(message, rawStatus, { detail, cause: error });
+  return new UpstreamApiError(resolvedMessage, code, { cause: error });
 }
 
 

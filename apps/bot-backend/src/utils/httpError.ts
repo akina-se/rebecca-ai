@@ -3,47 +3,66 @@ import { parseUpstreamApiError } from '@rebecca/types';
 import { logger } from './logger';
 
 /**
+ * Normalizes caught SDK/HTTP errors at external service boundaries (`XApiService`,
+ * `GeminiService`), logging with matching severity (`WARN` for 4xx, `ERROR` for 5xx/unclassified),
+ * and rethrows the normalized error.
+ *
+ * @param error Caught error from an external SDK or HTTP request.
+ * @param logMessage Descriptive log label.
+ * @param context Optional structured metadata for logging.
+ */
+export function rethrowUpstreamApiError(
+  error: unknown,
+  logMessage: string,
+  context?: Record<string, unknown>
+): never {
+  const upstream = parseUpstreamApiError(error);
+  if (upstream) {
+    if (upstream.statusCode < 500) {
+      logger.warn(`${logMessage}: ${upstream.message}`, {
+        statusCode: upstream.statusCode,
+        ...context,
+      });
+    } else {
+      logger.error(logMessage, upstream, context);
+    }
+    throw upstream;
+  }
+  logger.error(logMessage, error, context);
+  throw error;
+}
+
+/**
  * Handles uncaught controller errors uniformly by propagating structured upstream
  * HTTP status codes (4xx/5xx) and emitting matching Cloud Logging severities
  * (`WARN` for client/upstream 4xx rejections, `ERROR` for 5xx/unclassified failures).
  *
- * When the error does not originate from an upstream HTTP boundary, `errorKey: 'error'`
- * returns HTTP 500 with a sanitized `{ error: 'Internal Server Error' }` payload to
- * prevent internal detail leakage, while `errorKey: 'message'` preserves the worker JSON
- * envelope (`{ success: false, message }`).
+ * Unclassified internal errors return HTTP 500 with `{ error: 'Internal Server Error' }`
+ * so internal exception details are never leaked to callers.
  *
  * @param res Express response instance.
  * @param err Caught exception value from the use case or service layer.
  * @param logLabel Context message for structured logs.
- * @param errorKey Response body envelope style (`'error'` for batch/worker controllers, `'message'` for tweet deletion worker).
  */
 export function handleControllerError(
   res: Response,
   err: unknown,
-  logLabel: string,
-  errorKey: 'error' | 'message' = 'error'
+  logLabel: string
 ): void {
   const upstreamError = parseUpstreamApiError(err);
   if (upstreamError) {
-    const message = upstreamError.detail ?? upstreamError.message;
-    if (upstreamError.statusCode >= 400 && upstreamError.statusCode < 500) {
+    const message = upstreamError.message.trim()
+      ? upstreamError.message
+      : `HTTP ${upstreamError.statusCode}`;
+    if (upstreamError.statusCode < 500) {
       logger.warn(`${logLabel}: ${message}`, { statusCode: upstreamError.statusCode });
     } else {
       logger.error(logLabel, upstreamError, { statusCode: upstreamError.statusCode });
-    }
-    if (errorKey === 'message') {
-      res.status(upstreamError.statusCode).json({ success: false, message });
-      return;
     }
     res.status(upstreamError.statusCode).json({ error: message });
     return;
   }
 
   logger.error(logLabel, err);
-  if (errorKey === 'message') {
-    const fallbackMessage = err instanceof Error ? err.message : 'Unknown error';
-    res.status(500).json({ success: false, message: fallbackMessage });
-    return;
-  }
   res.status(500).json({ error: 'Internal Server Error' });
 }

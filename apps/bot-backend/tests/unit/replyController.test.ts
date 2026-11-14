@@ -171,9 +171,7 @@ describe('ReplyTaskController', () => {
 
     it('should return 403 when useCase throws an UpstreamApiError with statusCode 403', async () => {
         mockUseCase.execute.mockRejectedValueOnce(
-            new UpstreamApiError('HTTP 403: Forbidden', 403, {
-                detail: 'Your monthly spend cap has been reached.',
-            })
+            new UpstreamApiError('Your monthly spend cap has been reached.', 403)
         );
 
         mockReq = {

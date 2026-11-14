@@ -1,4 +1,4 @@
-import { parseUpstreamApiError } from '@rebecca/types';
+import { UpstreamApiError } from '@rebecca/types';
 import { AppDependencies } from '../../types';
 import { logger } from '../../utils/logger';
 
@@ -96,14 +96,12 @@ export class StealthOnboardingUseCase {
             retriedCount++;
           }
         } catch (retryErr: unknown) {
-          const upstreamStatus = parseUpstreamApiError(retryErr)?.statusCode;
-          const errStr = String(retryErr);
-          if (upstreamStatus === 403 || errStr.includes('"status":403')) {
+          if (retryErr instanceof UpstreamApiError && retryErr.statusCode === 403) {
             await this.deps.firestore.updateFollowerListStatus(failed.userId, 'REJECTED');
             logger.info('[StealthOnboardingUseCase] Self-healing retry for follower got 403: transitioned to REJECTED', {
               userId: failed.userId,
             });
-          } else if (upstreamStatus === 429 || errStr.includes('"status":429')) {
+          } else if (retryErr instanceof UpstreamApiError && retryErr.statusCode === 429) {
             logger.warn('[StealthOnboardingUseCase] X API rate limit (429) encountered during self-healing retry. Halting retry phase');
             break;
           } else {
@@ -196,9 +194,7 @@ export class StealthOnboardingUseCase {
             await this.deps.firestore.markFollowerProcessed(follower.id, 'FAILED');
           }
         } catch (listErr: unknown) {
-          const upstreamStatus = parseUpstreamApiError(listErr)?.statusCode;
-          const errStr = String(listErr);
-          if (upstreamStatus === 403 || errStr.includes('"status":403')) {
+          if (listErr instanceof UpstreamApiError && listErr.statusCode === 403) {
             logger.info('[StealthOnboardingUseCase] Follower rejected list addition (403). Marking REJECTED', {
               userId: follower.id,
               username: follower.username,

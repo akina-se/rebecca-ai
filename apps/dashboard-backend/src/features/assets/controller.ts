@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AssetsUseCase, UploadedFile } from './usecase';
 import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller for handling asset-related HTTP requests.
@@ -30,8 +31,7 @@ export class AssetsController {
       const result = await this.useCase.getPaginatedAssets({ page, limit, search, status });
       res.json(result);
     } catch (err) {
-      logger.error('Failed to fetch assets', err);
-      res.status(500).json({ error: 'Failed to fetch assets' });
+      handleControllerError(res, err, 'Failed to fetch assets');
     }
   }
 
@@ -51,8 +51,7 @@ export class AssetsController {
       }
       res.json(asset);
     } catch (err) {
-      logger.error('Failed to fetch asset', err, { assetId: req.params.id });
-      res.status(500).json({ error: 'Failed to fetch asset' });
+      handleControllerError(res, err, 'Failed to fetch asset', { assetId: req.params.id });
     }
   }
 
@@ -148,8 +147,7 @@ export class AssetsController {
         data: createdAssets
       });
     } catch (err) {
-      logger.error('Failed to upload assets', err);
-      res.status(500).json({ error: 'Failed to upload assets' });
+      handleControllerError(res, err, 'Failed to upload assets');
     }
   }
 
@@ -166,8 +164,7 @@ export class AssetsController {
       await this.useCase.updateAsset(id as string, req.body);
       res.json({ success: true });
     } catch (err) {
-      logger.error('Failed to update asset', err, { assetId: req.params.id });
-      res.status(500).json({ error: 'Failed to update asset' });
+      handleControllerError(res, err, 'Failed to update asset', { assetId: req.params.id });
     }
   }
 
@@ -198,8 +195,7 @@ export class AssetsController {
       await this.useCase.deleteAssets(ids);
       res.json({ success: true });
     } catch (err) {
-      logger.error('Failed to delete assets', err);
-      res.status(500).json({ error: 'Failed to delete assets' });
+      handleControllerError(res, err, 'Failed to delete assets');
     }
   }
 
@@ -220,11 +216,7 @@ export class AssetsController {
       await this.useCase.regenerateCaptions(ids);
       res.json({ success: true });
     } catch (err: unknown) {
-      logger.error('Failed to regenerate captions', err);
-      const isRateLimit = (typeof err === 'object' && err !== null && 'status' in err && (err as { status: unknown }).status === 429);
-      const statusCode = isRateLimit ? 429 : 500;
-      const errorMessage = isRateLimit ? 'Gemini API rate limit exceeded. Please try again later.' : 'Failed to regenerate captions';
-      res.status(statusCode).json({ error: errorMessage });
+      handleControllerError(res, err, 'Failed to regenerate captions');
     }
   }
 }
