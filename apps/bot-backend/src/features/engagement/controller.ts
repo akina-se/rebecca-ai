@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { RandomEngagementUseCase } from './usecase';
 import { CampaignGuard } from '../campaign';
 import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller responsible for handling random engagement HTTP requests.
@@ -43,8 +44,7 @@ export class RandomEngagementController {
             const result = await this.useCase.execute();
             res.status(200).json(result);
         } catch (e) {
-            logger.error('engagement error', e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            handleControllerError(res, e, 'engagement error');
         }
     };
 }

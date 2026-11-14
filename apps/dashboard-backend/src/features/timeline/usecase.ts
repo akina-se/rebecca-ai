@@ -6,6 +6,7 @@ import {
   SystemAlert,
   PaginationMeta,
   BatchTriggerResponse,
+  UpstreamApiError,
 } from '@rebecca/types';
 import {
   deleteTweetViaBotService,
@@ -15,17 +16,10 @@ import {
 import { logger } from '../../utils/logger';
 
 /**
- * Error thrown when an upstream service responds with an explicit non-2xx HTTP status code.
+ * Re-exported alias for {@link UpstreamApiError} representing explicit non-2xx
+ * HTTP responses from downstream bot/function services.
  */
-export class UpstreamServiceError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number = 500
-  ) {
-    super(message);
-    this.name = 'UpstreamServiceError';
-  }
-}
+export { UpstreamApiError as UpstreamServiceError } from '@rebecca/types';
 
 /**
  * Contains business logic and orchestrates operations related to the timeline and system metrics.
@@ -69,10 +63,11 @@ export class TimelineUseCase {
   }
 
   /**
-   * Deletes multiple posts by their IDs, coordinating database removal and X API tweet deletion via gRPC.
-   * 
+   * Deletes multiple posts by their IDs, coordinating database removal and X API tweet deletion.
+   *
    * @param ids - The array of post IDs to delete.
    * @returns A promise that resolves when the deletion is complete.
+   * @throws UpstreamApiError when bot-backend rejects tweet deletion with an explicit HTTP error status.
    */
   async deletePosts(ids: string[]): Promise<void> {
     // Call bot-backend via authenticated internal HTTP API to delete the tweets on X prior to database removal
@@ -82,7 +77,16 @@ export class TimelineUseCase {
           logger.info('Triggering deleteTweetViaBotService', { tweetId: id });
           const response = await deleteTweetViaBotService(id);
           logger.info('deleteTweetViaBotService response received', { tweetId: id, response });
+          if (!response.success && response.statusCode !== undefined) {
+            throw new UpstreamApiError(
+              response.message || `Failed to delete tweet ${id} on X`,
+              response.statusCode
+            );
+          }
         } catch (err) {
+          if (err instanceof UpstreamApiError) {
+            throw err;
+          }
           logger.error('Failed to delete tweet via bot service', err, { tweetId: id });
         }
       })
@@ -103,12 +107,12 @@ export class TimelineUseCase {
    * Triggers manual timeline synchronization via the `batchTimelineSync` Cloud Function.
    *
    * @returns A promise that resolves to the synchronization status and message.
-   * @throws UpstreamServiceError when the upstream synchronization request fails.
+   * @throws UpstreamApiError when the upstream synchronization request fails.
    */
   async syncPosts(): Promise<BatchTriggerResponse> {
     const result = await syncPostsViaBotService();
     if (!result.success) {
-      throw new UpstreamServiceError(
+      throw new UpstreamApiError(
         result.message || 'Failed to synchronize timeline posts',
         result.statusCode ?? 500
       );
@@ -120,12 +124,12 @@ export class TimelineUseCase {
    * Triggers manual mentions polling and reply execution via the `bot-backend` batch endpoint.
    *
    * @returns A promise that resolves to the reply execution status and message.
-   * @throws UpstreamServiceError when the upstream reply execution request fails.
+   * @throws UpstreamApiError when the upstream reply execution request fails.
    */
   async triggerReply(): Promise<BatchTriggerResponse> {
     const result = await triggerReplyViaBotService();
     if (!result.success) {
-      throw new UpstreamServiceError(
+      throw new UpstreamApiError(
         result.message || 'Failed to trigger reply execution',
         result.statusCode ?? 500
       );

@@ -9,6 +9,7 @@ import { SystemMemoryRepository } from '../../src/features/system-memory/reposit
 import { CopilotUseCase } from '../../src/features/copilot/usecase';
 import { UserStatus, AssetStatus, PostLeaderboard, PostDetail, SystemAlert, KpiMetrics, Asset, MemoryLayer, MemoryContent, UserDetail } from '@rebecca/types';
 import { config } from '../../src/config';
+import { deleteTweetViaBotService } from '../../src/core/botServiceClient';
 
 // Mock Bot Service Client
 const mockSyncPostsViaBotService = jest.fn();
@@ -512,11 +513,26 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res).toEqual(mockPost);
     });
 
-    it('deletePosts should call repository and gRPC client, handling errors gracefully', async () => {
+    it('deletePosts should call repository and gRPC client, handling non-HTTP errors gracefully', async () => {
       repo.deletePosts.mockResolvedValueOnce(undefined);
 
       await useCase.deletePosts(['p1', 'error_post']);
       expect(repo.deletePosts).toHaveBeenCalledWith(['p1', 'error_post']);
+    });
+
+    it('deletePosts should throw UpstreamServiceError with statusCode 403 and abort Firestore deletion when X deletion returns HTTP 403', async () => {
+      (deleteTweetViaBotService as jest.Mock).mockResolvedValueOnce({
+        success: false,
+        message: 'Your monthly spend cap has been reached.',
+        statusCode: 403,
+      });
+
+      await expect(useCase.deletePosts(['p1'])).rejects.toMatchObject({
+        name: 'UpstreamApiError',
+        statusCode: 403,
+        message: 'Your monthly spend cap has been reached.',
+      });
+      expect(repo.deletePosts).not.toHaveBeenCalled();
     });
 
     it('getAlerts should delegate to repository', async () => {

@@ -12,7 +12,7 @@ jest.mock('@xdevplatform/xdk', () => ({
   })),
 }));
 
-import { XApiService } from '../../../src/services/xApi';
+import { XApiError, XApiService, toXApiError } from '../../../src/services/xApi';
 import { XApiConfig } from '../../../src/config';
 
 describe('XApiService', () => {
@@ -88,8 +88,8 @@ describe('XApiService', () => {
     expect(mockGetMe).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle getMyUserId error gracefully and return null', async () => {
-    mockGetMe.mockRejectedValueOnce(new Error('Auth failed'));
+  it('should return null when getMe resolves without a user id', async () => {
+    mockGetMe.mockResolvedValueOnce({ data: {} });
 
     const cfg: XApiConfig = {
       apiKey: 'k',
@@ -104,7 +104,26 @@ describe('XApiService', () => {
     expect(userId).toBeNull();
   });
 
-  it('should rethrow HTTP 403 error from getMyUserId instead of swallowing as null', async () => {
+  it('should throw XApiError when getMe rejects with a network or unclassified error', async () => {
+    mockGetMe.mockRejectedValueOnce(new Error('Auth failed'));
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '',
+    };
+    const service = new XApiService(cfg);
+    await expect(service.getMyUserId()).rejects.toMatchObject({
+      name: 'XApiError',
+      message: 'Auth failed',
+      statusCode: undefined,
+    });
+  });
+
+  it('should rethrow XApiError with statusCode 403 when getMe rejects with HTTP 403', async () => {
     const forbiddenErr = Object.assign(new Error('HTTP 403: Forbidden'), {
       status: 403,
       data: { detail: 'Your monthly spend cap has been reached.' },
@@ -120,7 +139,12 @@ describe('XApiService', () => {
       myUserId: '',
     };
     const service = new XApiService(cfg);
-    await expect(service.getMyUserId()).rejects.toThrow('HTTP 403: Forbidden');
+    await expect(service.getMyUserId()).rejects.toMatchObject({
+      name: 'XApiError',
+      statusCode: 403,
+      detail: 'Your monthly spend cap has been reached.',
+      message: 'HTTP 403: Forbidden: Your monthly spend cap has been reached.',
+    });
   });
 
   it('should auto-resolve userId when fetching tweets if userId argument is omitted', async () => {
@@ -143,8 +167,8 @@ describe('XApiService', () => {
     expect(tweets[0].id).toBe('tweet_auto');
   });
 
-  it('should return empty array if userId is omitted and cannot be resolved', async () => {
-    mockGetMe.mockRejectedValueOnce(new Error('Network error'));
+  it('should return empty array if userId is omitted and getMe resolves without an id', async () => {
+    mockGetMe.mockResolvedValueOnce({ data: {} });
 
     const cfg: XApiConfig = {
       apiKey: 'k',
@@ -157,6 +181,29 @@ describe('XApiService', () => {
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('');
     expect(tweets).toEqual([]);
+  });
+
+  it('should rethrow XApiError with statusCode 403 when getPosts rejects with HTTP 403', async () => {
+    const forbiddenErr = Object.assign(new Error('HTTP 403'), {
+      status: 403,
+      data: { detail: 'Client Forbidden' },
+    });
+    mockGetPosts.mockRejectedValueOnce(forbiddenErr);
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '12345',
+    };
+    const service = new XApiService(cfg);
+    await expect(service.fetchRecentTimelineTweets('12345')).rejects.toMatchObject({
+      name: 'XApiError',
+      statusCode: 403,
+      detail: 'Client Forbidden',
+    });
   });
 
   it('should correctly pass postFields and parse SDK camelCase publicMetrics and attachments', async () => {
@@ -353,5 +400,39 @@ describe('XApiService', () => {
     const service = new XApiService(cfg);
     const tweets = await service.fetchRecentTimelineTweets('12345');
     expect(tweets).toEqual([]);
+  });
+
+  describe('toXApiError boundary normalization', () => {
+    it('returns the same instance if already an XApiError', () => {
+      const original = new XApiError('Already normalized', { statusCode: 403 });
+      expect(toXApiError(original)).toBe(original);
+    });
+
+    it('extracts statusCode, data.error, and data.title fallbacks accurately', () => {
+      const errWithError = { statusCode: 429, data: { error: 'Rate limited' } };
+      expect(toXApiError(errWithError)).toMatchObject({
+        statusCode: 429,
+        detail: 'Rate limited',
+        message: 'HTTP 429: Rate limited',
+      });
+
+      const errWithTitle = { status: 403, message: '   ', data: { title: 'Forbidden' } };
+      expect(toXApiError(errWithTitle)).toMatchObject({
+        statusCode: 403,
+        detail: 'Forbidden',
+        message: 'HTTP 403: Forbidden',
+      });
+    });
+
+    it('ignores out-of-range HTTP status codes and normalizes primitives', () => {
+      expect(toXApiError({ status: 200, message: 'OK' })).toMatchObject({
+        statusCode: undefined,
+        message: 'OK',
+      });
+      expect(toXApiError('string failure')).toMatchObject({
+        statusCode: undefined,
+        message: 'string failure',
+      });
+    });
   });
 });

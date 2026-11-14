@@ -1,3 +1,4 @@
+import { UpstreamApiError } from '@rebecca/types';
 import { ReplyTaskController } from '../../src/features/reply/controller';
 import { ReplyTaskUseCase } from '../../src/features/reply/usecase';
 import { Request, Response } from 'express';
@@ -166,5 +167,24 @@ describe('ReplyTaskController', () => {
 
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+    });
+
+    it('should return 403 when useCase throws an UpstreamApiError with statusCode 403', async () => {
+        mockUseCase.execute.mockRejectedValueOnce(
+            new UpstreamApiError('HTTP 403: Forbidden', 403, {
+                detail: 'Your monthly spend cap has been reached.',
+            })
+        );
+
+        mockReq = {
+            body: { tweetId: '123', text: 'hello', authorId: 'user_1' },
+        };
+
+        await controller.handle(mockReq as Request, mockRes as Response);
+
+        expect(mockRes.status).toHaveBeenCalledWith(403);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: 'Your monthly spend cap has been reached.',
+        });
     });
 });

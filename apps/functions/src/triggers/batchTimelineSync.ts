@@ -3,7 +3,7 @@ import { onRequest } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { getConfig, FUNCTION_SECRET_KEYS } from '../config';
-import { XApiService } from '../services/xApi';
+import { toXApiError, XApiService } from '../services/xApi';
 import { SyncTimelineUseCase } from '../usecases/syncTimelineUseCase';
 
 const oidcClient = new OAuth2Client();
@@ -82,34 +82,16 @@ export const verifyOidcToken = async (
 };
 
 /**
- * Extracts HTTP status code, short error label, and diagnostic message from an upstream failure.
+ * Extracts HTTP status code, short error label, and diagnostic message from an upstream failure
+ * using {@link toXApiError}.
  */
 function extractErrorDetails(error: unknown): {
   statusCode: number;
   errorLabel: string;
   message: string;
 } {
-  let statusCode = 500;
-  let detailMessage: string | undefined;
-
-  if (typeof error === 'object' && error !== null) {
-    const rawStatus =
-      'status' in error && typeof error.status === 'number'
-        ? error.status
-        : 'statusCode' in error && typeof error.statusCode === 'number'
-          ? error.statusCode
-          : undefined;
-    if (rawStatus !== undefined && rawStatus >= 400 && rawStatus <= 599) {
-      statusCode = rawStatus;
-    }
-
-    if ('data' in error && typeof error.data === 'object' && error.data !== null && 'detail' in error.data) {
-      const rawDetail = error.data.detail;
-      if (typeof rawDetail === 'string' && rawDetail.trim()) {
-        detailMessage = rawDetail.trim();
-      }
-    }
-  }
+  const xError = toXApiError(error);
+  const statusCode = xError.statusCode ?? 500;
 
   const errorLabel =
     statusCode === 403
@@ -119,7 +101,7 @@ function extractErrorDetails(error: unknown): {
         : 'Internal Server Error';
 
   const message =
-    detailMessage ??
+    xError.detail ??
     (error instanceof Error
       ? error.message
       : 'An unexpected error occurred during timeline synchronization.');

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { BatchTriggerResponse } from '@rebecca/types';
-import { TimelineUseCase, UpstreamServiceError } from './usecase';
+import { BatchTriggerResponse, parseUpstreamApiError } from '@rebecca/types';
+import { TimelineUseCase } from './usecase';
 import { logger } from '../../utils/logger';
 
 function getTraceHeader(req: Request): string | undefined {
@@ -107,8 +107,7 @@ export class TimelineController {
       await this.useCase.deletePosts(ids);
       res.json({ success: true });
     } catch (err) {
-      logger.error('Failed to delete posts', err, { ids }, traceHeader);
-      res.status(500).json({ error: 'Failed to delete posts' });
+      this.handleBatchTriggerError(res, err, 'Failed to delete posts', traceHeader);
     }
   }
 
@@ -170,19 +169,12 @@ export class TimelineController {
     defaultMessage: string,
     traceHeader?: string
   ): void {
-    const rawStatus =
-      err instanceof UpstreamServiceError
-        ? err.statusCode
-        : typeof err === 'object' && err !== null && 'statusCode' in err && typeof err.statusCode === 'number'
-          ? err.statusCode
-          : undefined;
-    const statusCode = rawStatus !== undefined && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
+    const upstream = parseUpstreamApiError(err);
+    const statusCode = upstream?.statusCode ?? 500;
     const errorMessage =
-      rawStatus !== undefined && err instanceof Error && err.message.trim()
-        ? err.message
-        : defaultMessage;
+      upstream && upstream.message.trim() ? upstream.message : defaultMessage;
 
-    if (statusCode >= 400 && statusCode < 500) {
+    if (upstream && statusCode >= 400 && statusCode < 500) {
       logger.warn(defaultMessage, { statusCode, errorMessage }, traceHeader);
     } else {
       logger.error(defaultMessage, err, undefined, traceHeader);

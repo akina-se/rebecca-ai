@@ -225,8 +225,12 @@ export async function deleteTweetViaBotService(tweetId: string): Promise<BatchTr
     const data = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string };
     if (!res.ok) {
       const msg = typeof data.message === 'string' && data.message.trim() ? data.message : `HTTP ${res.status}`;
-      logger.error('Failed to delete tweet via bot-backend HTTP', { tweetId, status: res.status, msg });
-      return { success: false, message: msg };
+      if (res.status >= 400 && res.status < 500) {
+        logger.warn('Tweet deletion rejected by bot-backend HTTP', { tweetId, status: res.status, msg });
+      } else {
+        logger.error('Failed to delete tweet via bot-backend HTTP', new Error(msg), { tweetId, status: res.status });
+      }
+      return { success: false, message: msg, statusCode: res.status };
     }
 
     if (typeof data.success !== 'boolean') {

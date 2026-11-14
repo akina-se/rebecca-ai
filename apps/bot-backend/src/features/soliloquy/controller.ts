@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { SoliloquyUseCase } from './usecase';
 import { CampaignGuard } from '../campaign';
 import { logger } from '../../utils/logger';
+import { handleControllerError } from '../../utils/httpError';
 
 /**
  * Controller for the Autonomous Soliloquy feature.
@@ -30,8 +31,7 @@ export class SoliloquyController {
       const result = await this.useCase.execute();
       res.status(200).json(result);
     } catch (e) {
-      logger.error('soliloquy error', e);
-      res.status(500).json({ error: 'Internal Server Error' });
+      handleControllerError(res, e, 'soliloquy error');
     }
   };
 }

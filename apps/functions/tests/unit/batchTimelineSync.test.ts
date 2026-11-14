@@ -21,9 +21,13 @@ jest.mock('../../src/usecases/syncTimelineUseCase', () => ({
   })),
 }));
 
-jest.mock('../../src/services/xApi', () => ({
-  XApiService: jest.fn(),
-}));
+jest.mock('../../src/services/xApi', () => {
+  const actual = jest.requireActual('../../src/services/xApi');
+  return {
+    ...actual,
+    XApiService: jest.fn(),
+  };
+});
 
 import { batchTimelineSync, validateAuth, verifyOidcToken } from '../../src/triggers/batchTimelineSync';
 

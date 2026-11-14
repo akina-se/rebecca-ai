@@ -312,7 +312,7 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it('deletePosts should validate ids array and delete', async () => {
+    it('deletePosts should validate ids array, delete, and propagate upstream 403/500 errors', async () => {
       const { req: reqInvalid, res: resInvalid } = createMockReqRes({ body: {} });
       await controller.deletePosts(reqInvalid, resInvalid);
       expect(resInvalid.status).toHaveBeenCalledWith(400);
@@ -321,6 +321,20 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       await controller.deletePosts(req, res);
       expect(useCase.deletePosts).toHaveBeenCalledWith(['p1']);
       expect(res.json).toHaveBeenCalledWith({ success: true });
+
+      const { req: reqForbidden, res: resForbidden } = createMockReqRes({ body: { ids: ['p1'] } });
+      useCase.deletePosts.mockRejectedValueOnce(
+        new UpstreamServiceError('Your monthly spend cap has been reached.', 403)
+      );
+      await controller.deletePosts(reqForbidden, resForbidden);
+      expect(resForbidden.status).toHaveBeenCalledWith(403);
+      expect(resForbidden.json).toHaveBeenCalledWith({ error: 'Your monthly spend cap has been reached.' });
+
+      const { req: reqErr, res: resErr } = createMockReqRes({ body: { ids: ['p1'] } });
+      useCase.deletePosts.mockRejectedValueOnce(new Error('DB failure'));
+      await controller.deletePosts(reqErr, resErr);
+      expect(resErr.status).toHaveBeenCalledWith(500);
+      expect(resErr.json).toHaveBeenCalledWith({ error: 'Failed to delete posts' });
     });
 
     it('getAlerts should return alerts and handle error', async () => {

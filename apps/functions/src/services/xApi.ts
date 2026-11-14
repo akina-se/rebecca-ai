@@ -34,6 +34,96 @@ export interface IXApiService {
   cachedMyUserId: string | null;
 }
 
+/**
+ * Structured error representing an X API failure normalized at the SDK boundary.
+ */
+export class XApiError extends Error {
+  /** HTTP status code returned by the X API (400-599), if available. */
+  readonly statusCode?: number;
+  /** Optional raw detail string returned in the X API error payload. */
+  readonly detail?: string;
+
+  /**
+   * Initializes an XApiError instance.
+   * @param message Human-readable error message.
+   * @param options Optional HTTP status code, detail message, and underlying cause.
+   */
+  constructor(
+    message: string,
+    options?: { statusCode?: number; detail?: string; cause?: unknown }
+  ) {
+    super(message, options?.cause !== undefined ? { cause: options.cause } : undefined);
+    this.name = 'XApiError';
+    this.statusCode = options?.statusCode;
+    this.detail = options?.detail;
+  }
+}
+
+/**
+ * Normalizes an unknown error thrown by `@xdevplatform/xdk` into an {@link XApiError},
+ * preserving HTTP 4xx/5xx status codes and upstream detail fields (`data.detail`,
+ * `data.error`, or `data.title`).
+ *
+ * @param error Unknown caught error from the X SDK.
+ */
+export function toXApiError(error: unknown): XApiError {
+  if (error instanceof XApiError) {
+    return error;
+  }
+  if (error && typeof error === 'object') {
+    const candidate = error as {
+      status?: unknown;
+      statusCode?: unknown;
+      message?: unknown;
+      data?: unknown;
+    };
+    const rawStatus =
+      typeof candidate.statusCode === 'number'
+        ? candidate.statusCode
+        : typeof candidate.status === 'number'
+          ? candidate.status
+          : undefined;
+    const statusCode =
+      typeof rawStatus === 'number' &&
+      Number.isInteger(rawStatus) &&
+      rawStatus >= 400 &&
+      rawStatus <= 599
+        ? rawStatus
+        : undefined;
+
+    let detail: string | undefined;
+    if (candidate.data && typeof candidate.data === 'object') {
+      const dataObj = candidate.data as {
+        detail?: unknown;
+        error?: unknown;
+        title?: unknown;
+      };
+      if (typeof dataObj.detail === 'string' && dataObj.detail.trim()) {
+        detail = dataObj.detail.trim();
+      } else if (typeof dataObj.error === 'string' && dataObj.error.trim()) {
+        detail = dataObj.error.trim();
+      } else if (typeof dataObj.title === 'string' && dataObj.title.trim()) {
+        detail = dataObj.title.trim();
+      }
+    }
+
+    const baseMessage =
+      typeof candidate.message === 'string' && candidate.message.trim()
+        ? candidate.message.trim()
+        : statusCode !== undefined
+          ? `HTTP ${statusCode}`
+          : 'X API request failed';
+
+    const message =
+      detail && !baseMessage.includes(detail)
+        ? `${baseMessage}: ${detail}`
+        : detail ?? baseMessage;
+
+    return new XApiError(message, { statusCode, detail, cause: error });
+  }
+  return new XApiError(String(error), { cause: error });
+}
+
 interface XdkTweetResponse {
   data?: Array<{
     id: string;
@@ -110,9 +200,10 @@ export class XApiService implements IXApiService {
   }
 
   /**
-   * Resolves the authenticated user ID via getMe() and caches it.
+   * Resolves the authenticated user ID via `getMe()` and caches it.
+   * Returns `null` only when the X client is unconfigured or the API payload omits an ID.
    *
-   * @throws When the upstream X API responds with an HTTP 4xx/5xx status (e.g., 403 Forbidden).
+   * @throws When the upstream X API request fails (normalized to {@link XApiError}).
    */
   async getMyUserId(): Promise<string | null> {
     if (this.cachedMyUserId) {
@@ -128,14 +219,21 @@ export class XApiService implements IXApiService {
         this.cachedMyUserId = resolvedId;
         return resolvedId;
       }
-    } catch (error) {
-      logger.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe', { error });
-      const status = typeof error === 'object' && error !== null && 'status' in error ? error.status : undefined;
-      if (typeof status === 'number' && status >= 400 && status < 600) {
-        throw error;
+      return null;
+    } catch (error: unknown) {
+      const xError = toXApiError(error);
+      if (xError.statusCode !== undefined && xError.statusCode < 500) {
+        logger.warn('[XApiService] Upstream rejected getMe request', {
+          statusCode: xError.statusCode,
+          message: xError.message,
+        });
+      } else {
+        logger.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe', {
+          error: xError,
+        });
       }
+      throw xError;
     }
-    return null;
   }
 
   /**
@@ -144,6 +242,7 @@ export class XApiService implements IXApiService {
    * @param userId - Optional. The X user ID whose tweets are to be fetched. If omitted, auto-resolves via getMyUserId().
    * @param limit - Maximum number of tweets to fetch (defaults to configured syncMaxResults, max 100).
    * @returns Array of normalized TimelineTweetDto items.
+   * @throws When the upstream X API request fails (normalized to {@link XApiError}).
    */
   async fetchRecentTimelineTweets(userId?: string, limit?: number): Promise<TimelineTweetDto[]> {
     if (!this.client) {
@@ -159,14 +258,28 @@ export class XApiService implements IXApiService {
 
     const effectiveLimit = limit ?? this.xApiConfig.syncMaxResults ?? 30;
 
-    const response = (await this.client.users.getPosts(targetUserId, {
-      maxResults: effectiveLimit,
-      exclude: ['retweets', 'replies'],
-      postFields: ['created_at', 'public_metrics', 'attachments', 'text'],
-      expansions: ['attachments.media_keys', 'attachments.poll_ids'],
-      mediaFields: ['url', 'preview_image_url', 'type'],
-      pollFields: ['duration_minutes', 'end_datetime', 'id', 'options', 'voting_status'],
-    } as Parameters<typeof this.client.users.getPosts>[1])) as XdkTweetResponse;
+    let response: XdkTweetResponse;
+    try {
+      response = (await this.client.users.getPosts(targetUserId, {
+        maxResults: effectiveLimit,
+        exclude: ['retweets', 'replies'],
+        postFields: ['created_at', 'public_metrics', 'attachments', 'text'],
+        expansions: ['attachments.media_keys', 'attachments.poll_ids'],
+        mediaFields: ['url', 'preview_image_url', 'type'],
+        pollFields: ['duration_minutes', 'end_datetime', 'id', 'options', 'voting_status'],
+      } as Parameters<typeof this.client.users.getPosts>[1])) as XdkTweetResponse;
+    } catch (error: unknown) {
+      const xError = toXApiError(error);
+      if (xError.statusCode !== undefined && xError.statusCode < 500) {
+        logger.warn('[XApiService] Upstream rejected getPosts request', {
+          statusCode: xError.statusCode,
+          message: xError.message,
+        });
+      } else {
+        logger.error('[XApiService] Failed to fetch recent timeline tweets', { error: xError });
+      }
+      throw xError;
+    }
 
     const tweets = response?.data || [];
     if (tweets.length === 0) {

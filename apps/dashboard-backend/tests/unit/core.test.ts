@@ -138,6 +138,37 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       (config.services as any).botBackendUrl = origUrl;
     });
 
+    it('should return error object with HTTP statusCode when bot-backend returns 403 or 5xx', async () => {
+      const origUrl = config.services.botBackendUrl;
+      (config.services as any).botBackendUrl = 'http://localhost:8080';
+
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: async () => ({ success: false, message: 'Your monthly spend cap has been reached.' }),
+      } as any);
+      const res403 = await deleteTweetViaBotService('123456');
+      expect(res403).toEqual({
+        success: false,
+        message: 'Your monthly spend cap has been reached.',
+        statusCode: 403,
+      });
+
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        json: async () => ({}),
+      } as any);
+      const res503 = await deleteTweetViaBotService('123456');
+      expect(res503).toEqual({
+        success: false,
+        message: 'HTTP 503',
+        statusCode: 503,
+      });
+
+      (config.services as any).botBackendUrl = origUrl;
+    });
+
     it('should return error object on network failure', async () => {
       const origUrl = config.services.botBackendUrl;
       (config.services as any).botBackendUrl = 'http://localhost:8080';
