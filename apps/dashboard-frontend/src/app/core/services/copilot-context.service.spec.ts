@@ -76,6 +76,11 @@ describe('CopilotContextService', () => {
   it('should change suggestion chips and badge based on route in JA and EN', () => {
     service.clearFocusedEntity();
 
+    service.currentRoute.set('/posts');
+    expect(service.contextBadge()).toBe(translationService.t('nav.posts'));
+    expect(service.fullContextDescription()).toContain('Posts Management');
+    expect(service.suggestionChips().length).toBe(3);
+
     service.currentRoute.set('/campaigns');
     expect(service.contextBadge()).toBe(translationService.t('nav.campaigns'));
     expect(service.fullContextDescription()).toContain('Campaign Narrative');
@@ -119,6 +124,11 @@ describe('CopilotContextService', () => {
     settingsService.setLanguage('en');
     service.currentRoute.set('/dashboard');
     expect(service.suggestionChips().length).toBe(3);
+    service.currentRoute.set('/posts');
+    expect(service.contextBadge()).toBe(translationService.t('nav.posts'));
+    expect(service.fullContextDescription()).toContain('Posts Management');
+    expect(service.suggestionChips().length).toBe(3);
+
     service.currentRoute.set('/campaigns');
     expect(service.contextBadge()).toBe('Campaigns');
     expect(service.suggestionChips().length).toBe(3);

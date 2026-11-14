@@ -35,7 +35,7 @@ describe('CopilotService', () => {
 
     copilotRepoSpy = jasmine.createSpyObj('CopilotRepository', ['chat']);
     usersRepoSpy = jasmine.createSpyObj('UsersRepository', ['bulkUpdateStatus']);
-    dashboardRepoSpy = jasmine.createSpyObj('DashboardRepository', ['deletePosts']);
+    dashboardRepoSpy = jasmine.createSpyObj('DashboardRepository', ['deletePosts', 'syncPosts', 'triggerReply']);
     memoryRepoSpy = jasmine.createSpyObj('MemoryRepository', ['triggerDreaming']);
     assetsRepoSpy = jasmine.createSpyObj('AssetsRepository', ['regenerateCaptions']);
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['show']);
@@ -451,6 +451,88 @@ describe('CopilotService', () => {
       payload: {}
     });
     expect(toastServiceSpy.show).toHaveBeenCalledWith(jasmine.any(String), 'error');
+  });
+
+  it('should execute SYNC_POSTS action on HITL approval in JA and EN and handle error', () => {
+    currentLangSignal.set('ja');
+    dashboardRepoSpy.syncPosts.and.returnValue(of({ success: true, message: 'OK' }));
+
+    service.approveAction(0, {
+      type: 'SYNC_POSTS',
+      title: 'Sync Posts',
+      description: 'Sync timeline posts',
+      impactLevel: 'info',
+      requiresConfirmation: true,
+      payload: {}
+    });
+
+    expect(dashboardRepoSpy.syncPosts).toHaveBeenCalled();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('タイムラインのポスト同期が完了しました。', 'success');
+
+    // English mode
+    currentLangSignal.set('en');
+    service.approveAction(0, {
+      type: 'SYNC_POSTS',
+      title: 'Sync Posts',
+      description: 'Sync timeline posts',
+      impactLevel: 'info',
+      requiresConfirmation: true,
+      payload: {}
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Timeline post synchronization completed', 'success');
+
+    // Error case
+    dashboardRepoSpy.syncPosts.and.returnValue(throwError(() => new Error('Err')));
+    service.approveAction(0, {
+      type: 'SYNC_POSTS',
+      title: 'Sync Posts',
+      description: 'Sync timeline posts',
+      impactLevel: 'info',
+      requiresConfirmation: true,
+      payload: {}
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to synchronize timeline posts', 'error');
+  });
+
+  it('should execute TRIGGER_REPLY action on HITL approval in JA and EN and handle error', () => {
+    currentLangSignal.set('ja');
+    dashboardRepoSpy.triggerReply.and.returnValue(of({ success: true, message: 'OK' }));
+
+    service.approveAction(0, {
+      type: 'TRIGGER_REPLY',
+      title: 'Trigger Reply',
+      description: 'Trigger mentions reply',
+      impactLevel: 'warning',
+      requiresConfirmation: true,
+      payload: {}
+    });
+
+    expect(dashboardRepoSpy.triggerReply).toHaveBeenCalled();
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('リプライ処理の実行を開始しました。', 'success');
+
+    // English mode
+    currentLangSignal.set('en');
+    service.approveAction(0, {
+      type: 'TRIGGER_REPLY',
+      title: 'Trigger Reply',
+      description: 'Trigger mentions reply',
+      impactLevel: 'warning',
+      requiresConfirmation: true,
+      payload: {}
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Reply batch execution triggered', 'success');
+
+    // Error case
+    dashboardRepoSpy.triggerReply.and.returnValue(throwError(() => new Error('Err')));
+    service.approveAction(0, {
+      type: 'TRIGGER_REPLY',
+      title: 'Trigger Reply',
+      description: 'Trigger mentions reply',
+      impactLevel: 'warning',
+      requiresConfirmation: true,
+      payload: {}
+    });
+    expect(toastServiceSpy.show).toHaveBeenCalledWith('Failed to trigger reply execution', 'error');
   });
 
   it('should handle model response with attachments', () => {

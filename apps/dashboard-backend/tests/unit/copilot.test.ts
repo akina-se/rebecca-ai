@@ -311,6 +311,24 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
 
       const regenJa = await tool.execute({ actionType: 'REGENERATE_CAPTIONS' }, { isEn: false });
       expect(regenJa.actionRequired?.title).toContain('キャプション再生成ジョブ実行');
+
+      // SYNC_POSTS (en & ja)
+      const syncEn = await tool.execute({ actionType: 'SYNC_POSTS' }, { isEn: true });
+      expect(syncEn.actionRequired?.type).toBe('SYNC_POSTS');
+      expect(syncEn.actionRequired?.impactLevel).toBe('info');
+      expect(syncEn.actionRequired?.title).toBe('Trigger Timeline Post Sync');
+
+      const syncJa = await tool.execute({ actionType: 'SYNC_POSTS' }, { isEn: false });
+      expect(syncJa.actionRequired?.title).toBe('タイムラインのポスト同期を実行');
+
+      // TRIGGER_REPLY (en & ja)
+      const replyEn = await tool.execute({ actionType: 'TRIGGER_REPLY' }, { isEn: true });
+      expect(replyEn.actionRequired?.type).toBe('TRIGGER_REPLY');
+      expect(replyEn.actionRequired?.impactLevel).toBe('warning');
+      expect(replyEn.actionRequired?.title).toBe('Trigger Mentions Reply Batch');
+
+      const replyJa = await tool.execute({ actionType: 'TRIGGER_REPLY' }, { isEn: false });
+      expect(replyJa.actionRequired?.title).toBe('メンション取得＆リプライ処理を実行');
     });
 
     it('GetFeatureGuideTool should handle all topics and unknown fallback in en and ja', async () => {
@@ -798,7 +816,7 @@ describe('Copilot Autonomous Agent Suite (Redesign v3)', () => {
       } as unknown as TimelineRepository;
 
       const postsRes = await postsTool.execute({}, { timelineRepo: mockTimelineRepo, isEn: true });
-      expect(postsRes.attachments?.[0].navigationPath).toBe('/dashboard?postId=post_xyz');
+      expect(postsRes.attachments?.[0].navigationPath).toBe('/posts?postId=post_xyz');
 
       const assetsTool = new SearchAssetsTool();
       const mockAssetsRepo = {

@@ -272,7 +272,9 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
         getPosts: jest.fn(),
         getPostById: jest.fn(),
         deletePosts: jest.fn(),
-        getAlerts: jest.fn()
+        getAlerts: jest.fn(),
+        syncPosts: jest.fn(),
+        triggerReply: jest.fn(),
       } as unknown as jest.Mocked<TimelineUseCase>;
       controller = new TimelineController(useCase);
     });
@@ -330,6 +332,34 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       useCase.getAlerts.mockRejectedValueOnce(new Error('err'));
       await controller.getAlerts(req, res);
       expect(res.status).toHaveBeenCalledWith(500);
+    });
+
+    it('syncPosts should return sync result and handle error with 500', async () => {
+      const { req, res } = createMockReqRes();
+      useCase.syncPosts.mockResolvedValueOnce({ success: true, message: 'OK: Timeline synced successfully.' });
+      await controller.syncPosts(req, res);
+      expect(useCase.syncPosts).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'OK: Timeline synced successfully.' });
+
+      const { req: reqErr, res: resErr } = createMockReqRes();
+      useCase.syncPosts.mockRejectedValueOnce(new Error('Sync failed'));
+      await controller.syncPosts(reqErr, resErr);
+      expect(resErr.status).toHaveBeenCalledWith(500);
+      expect(resErr.json).toHaveBeenCalledWith({ error: 'Failed to sync timeline posts' });
+    });
+
+    it('triggerReply should return reply execution result and handle error with 500', async () => {
+      const { req, res } = createMockReqRes();
+      useCase.triggerReply.mockResolvedValueOnce({ success: true, message: 'OK: Processed 2 mentions.' });
+      await controller.triggerReply(req, res);
+      expect(useCase.triggerReply).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'OK: Processed 2 mentions.' });
+
+      const { req: reqErr, res: resErr } = createMockReqRes();
+      useCase.triggerReply.mockRejectedValueOnce(new Error('Reply failed'));
+      await controller.triggerReply(reqErr, resErr);
+      expect(resErr.status).toHaveBeenCalledWith(500);
+      expect(resErr.json).toHaveBeenCalledWith({ error: 'Failed to trigger reply execution' });
     });
   });
 

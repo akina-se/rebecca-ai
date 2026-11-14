@@ -1,6 +1,14 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse, PostDetail } from '@rebecca/types';
+import {
+  KpiMetrics,
+  PostLeaderboard,
+  UserLeaderboard,
+  SystemAlert,
+  PaginatedResponse,
+  PostDetail,
+  BatchTriggerResponse,
+} from '@rebecca/types';
 
 export interface DashboardRepository {
   getKpiMetrics(period: string): Observable<KpiMetrics>;
@@ -10,6 +18,8 @@ export interface DashboardRepository {
   getTimelineHistory(page: number, limit: number, sortBy?: string, sortOrder?: 'asc' | 'desc'): Observable<PaginatedResponse<PostLeaderboard>>;
   getPostById(id: string): Observable<PostDetail>;
   deletePosts(ids: string[]): Observable<void>;
+  syncPosts(): Observable<BatchTriggerResponse>;
+  triggerReply(): Observable<BatchTriggerResponse>;
 }
 
 export const DASHBOARD_REPOSITORY = new InjectionToken<DashboardRepository>('DashboardRepository');

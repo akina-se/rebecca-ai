@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { BatchTriggerResponse } from '@rebecca/types';
 import { TimelineUseCase } from './usecase';
 import { logger } from '../../utils/logger';
 
@@ -126,6 +127,42 @@ export class TimelineController {
     } catch (err) {
       logger.error('Failed to fetch alerts', err, undefined, traceHeader);
       res.status(500).json({ error: 'Failed to fetch alerts' });
+    }
+  }
+
+  /**
+   * Triggers manual timeline synchronization from X into Firestore via Cloud Functions.
+   *
+   * @param req - The Express Request object.
+   * @param res - The Express Response object.
+   * @returns A promise that resolves when the response is sent.
+   */
+  async syncPosts(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
+    try {
+      const result: BatchTriggerResponse = await this.useCase.syncPosts();
+      res.json(result);
+    } catch (err) {
+      logger.error('Failed to sync timeline posts', err, undefined, traceHeader);
+      res.status(500).json({ error: 'Failed to sync timeline posts' });
+    }
+  }
+
+  /**
+   * Triggers manual mentions polling and reply execution via bot-backend.
+   *
+   * @param req - The Express Request object.
+   * @param res - The Express Response object.
+   * @returns A promise that resolves when the response is sent.
+   */
+  async triggerReply(req: Request, res: Response): Promise<void> {
+    const traceHeader = getTraceHeader(req);
+    try {
+      const result: BatchTriggerResponse = await this.useCase.triggerReply();
+      res.json(result);
+    } catch (err) {
+      logger.error('Failed to trigger reply execution', err, undefined, traceHeader);
+      res.status(500).json({ error: 'Failed to trigger reply execution' });
     }
   }
 }

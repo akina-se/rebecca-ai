@@ -10,6 +10,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   test('Test 1: Global Header "✨ Rebecca" button opens AI Drawer with route-aware context across all pages', async ({ page }) => {
     const pagesToTest = [
       { path: '/dashboard', expectedContext: /Performance Overview|パフォーマンス概要|Performance Dashboard/ },
+      { path: '/posts', expectedContext: /Posts|ポスト/ },
       { path: '/assets', expectedContext: /Assets|アセット/ },
       { path: '/users', expectedContext: /Users|ユーザー/ },
       { path: '/memory', expectedContext: /Memory|メモリ/ },
@@ -44,7 +45,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   });
 
   test('Test 2: Detail drawer "Analyze" button opens Copilot with focused entity context', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/posts');
     await page.waitForLoadState('domcontentloaded');
 
     // Click on a timeline post item to open post detail drawer
