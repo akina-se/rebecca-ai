@@ -39,7 +39,7 @@ const jobs: SchedulerJobConfig[] = [
     },
     {
         name: 'rebecca-stealth-onboarding',
-        schedule: process.env.STEALTH_ONBOARDING_SCHEDULE || '15 3 * * *', // Daily at 3:15 AM JST (once per day)
+        schedule: process.env.STEALTH_ONBOARDING_SCHEDULE ?? '15 3 * * 1,4', // Twice weekly on Mondays and Thursdays at 3:15 AM JST
         url: `${serviceUrl}/batch/stealth-onboarding`
     },
     {

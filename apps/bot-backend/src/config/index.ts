@@ -39,6 +39,32 @@ export const getValidatedTimezone = (tz?: string): string => {
 };
 
 /**
+ * Parses an integer environment value with explicit min/max clamping.
+ * Falls back to `defaultValue` when the input is undefined, blank, or non-numeric.
+ *
+ * @param raw - Raw environment variable string.
+ * @param defaultValue - Fallback value when input is absent or invalid.
+ * @param min - Inclusive lower bound.
+ * @param max - Inclusive upper bound.
+ * @returns Clamped integer value within `[min, max]`.
+ */
+export const parseBoundedInt = (
+  raw: string | undefined,
+  defaultValue: number,
+  min: number,
+  max: number,
+): number => {
+  if (raw === undefined || raw.trim() === '') {
+    return defaultValue;
+  }
+  const parsed = Number.parseInt(raw.trim(), 10);
+  if (!Number.isFinite(parsed)) {
+    return defaultValue;
+  }
+  return Math.max(min, Math.min(max, parsed));
+};
+
+/**
  * Application configuration settings.
  */
 export default { 
@@ -78,9 +104,16 @@ export default {
     accessToken: process.env.X_ACCESS_TOKEN,
     accessSecret: process.env.X_ACCESS_SECRET,
     myUserId: process.env.X_MY_USER_ID,
-    targetListId: process.env.X_TARGET_LIST_ID,
-    followersPageSize: Math.max(5, Math.min(100, parseInt(process.env.X_FOLLOWERS_PAGE_SIZE || '10', 10) || 10)),
-    followersMaxResults: Math.max(5, Math.min(1000, parseInt(process.env.X_FOLLOWERS_MAX_RESULTS || '30', 10) || 30)),
+    targetListId: process.env.X_TARGET_LIST_ID?.trim() || undefined,
+    followersPageSize: parseBoundedInt(process.env.X_FOLLOWERS_PAGE_SIZE, 20, 5, 1000),
+    followersMaxResults: parseBoundedInt(process.env.X_FOLLOWERS_MAX_RESULTS, 1000, 5, 2000),
+  },
+
+  /**
+   * Configuration for proactive random follower engagement outreach.
+   */
+  engagement: {
+    cooldownDays: parseBoundedInt(process.env.RANDOM_ENGAGEMENT_COOLDOWN_DAYS, 365, 1, 3650),
   },
 
   /**
