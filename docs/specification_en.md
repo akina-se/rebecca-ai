@@ -33,7 +33,7 @@ The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes tri
 
 | Endpoint | Method | Schedule (JST) | Deadline | Description |
 |---|---|---|---|---|
-| `/batch/stealth-onboarding` | `GET` | 03:15 Daily | 180s | Detects new followers and adds them to the "Special Treatment" private list. |
+| `/batch/stealth-onboarding` | `GET` | 03:15 Mon & Thu | 180s | Detects new followers into `processed_followers` (optionally adds to X list if `X_TARGET_LIST_ID` is set; otherwise records `'SKIPPED'`). |
 | `batchTimelineSync` (Functions) | `GET`/`POST` | 04:00 Daily | 120s | **Timeline Sync**: Synchronizes published post records and engagement metrics from X API into Firestore. |
 | `/batch/self-reflection` | `GET` | 04:05 Daily | 180s | **Layer 2 Global Timeline Summary**: Distills recent timeline posts into `system/persona.timeline_summary`. Fail-fast on Gemini quota exhaustion or empty responses. |
 | `/batch/dreaming` | `GET` | 04:30 Daily | 900s | **User Memory Consolidation (Layer 3)**: Compresses user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and per-user failure isolation. |
@@ -41,7 +41,7 @@ The core bot service (`bot-backend`) exposes authenticated `/batch/*` routes tri
 | `/batch/anniversary-post` | `GET` | 07:00 Daily | 180s | Sources memorial days ("◯◯の日") from Wikipedia and posts themed commentary. Falls back to soliloquy on error. |
 | `/batch/mentions` | `GET` | 03:00, 08:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 (10x/day) | 180s | Polls new mentions with batch media retrieval, checks dynamic DAU & user rate limits (max 5/day/user), and enqueues delayed reply tasks to Cloud Tasks. |
 | `/batch/news-post` | `GET` | 12:11 Daily | 180s | Ingests news via RSS, performs vector deduplication (cosine >= 0.82), and posts Gyaru commentary with KNN images. |
-| `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Randomly selects an untouched user from the special treatment list and sends a surprise mention. |
+| `/batch/random-engagement` | `GET` | 18:00 Daily | 180s | Randomly selects a cached follower (prioritizing untouched users before a 365-day default cooldown) and sends a surprise mention. |
 | `/batch/soliloquy-post` | `GET` | 21:00 Daily | 180s | Posts autonomous thoughts reflecting time-of-day, timeline summary, and evolved personality traits. |
 | `/batch/asset-embeddings` | `GET` | 03:30, 09:30, 15:30, 21:30 (4x/day) | 300s | Generates vector embeddings for image assets missing representations (self-healing backfill). |
 | `/batch/campaign-post` | `GET` | Hourly at :00 | 180s | **Campaign Slot Dispatcher**: Evaluates active campaign itinerary slots and publishes narrative story tweets with grounded persona anchors. |
@@ -220,10 +220,10 @@ Onboarding status and list curation tracking for followers.
 - **Format** (`ProcessedFollower`):
   - `userId` (string): Follower X ID
   - `timestamp` (string - ISO 8601): Detection timestamp
-  - `listStatus` (`'ADDED' | 'FAILED' | 'REJECTED'`): Curation membership status
+  - `listStatus` (`'ADDED' | 'FAILED' | 'REJECTED' | 'SKIPPED'`): Curation membership status (`'SKIPPED'` when `X_TARGET_LIST_ID` is unset or backfilled from archive)
 
 ### Collection: `list_interaction_history`
-Cooldown tracker for random engagement targeting list members.
+Long-term cooldown tracker for random engagement targeting cached followers.
 - **Document ID**: X User ID
 - **Format** (`ListInteraction`):
   - `userId` (string): Target user ID
@@ -269,20 +269,20 @@ Global system configuration and operational state singletons.
 6. **Memory Save**: Updates `working_memory`, appends to `episodicBuffer`, and saves RAG vectors concurrently.
 
 ### 5.2 Stealth Onboarding Flow
-1. Endpoint triggered as a scheduled batch.
-2. Fetches Rebecca's follower list (`getFollowers`) via X API.
-3. Checks the `processed_followers` collection in Firestore for each follower.
-4. For unprocessed followers:
-   - Adds them to the "Special Treatment" list via X API (`addListMember`).
-   - Records them in `processed_followers` to skip them in the future.
+1. Triggered twice weekly (Monday & Thursday at 03:15 JST) by Cloud Scheduler.
+2. When `X_TARGET_LIST_ID` is configured, executes self-healing retries for followers marked `'FAILED'` (when omitted, logs a `WARN` and skips list operations).
+3. Paginates through Rebecca's newest followers via X API (`getFollowers`, continuing across `meta.nextToken` until an entire page consists of previously recorded followers or `X_FOLLOWERS_MAX_RESULTS` = `1000` is reached; default page size `X_FOLLOWERS_PAGE_SIZE` = `20`).
+4. For each unprocessed follower:
+   - `BLOCKED` users are recorded with `listStatus: 'REJECTED'` and excluded from list additions.
+   - When `X_TARGET_LIST_ID` is configured, calls `addListMember` and records `'ADDED'`, `'FAILED'`, or `'REJECTED'`; when omitted, skips the X List API call and persists `listStatus: 'SKIPPED'` in `processed_followers`.
 
 ### 5.3 Random Engagement Flow
-1. Endpoint triggered as a scheduled batch.
-2. Fetches the members of the "Special Treatment" list (`getListMembers`).
-3. Shuffles the members and checks `list_interaction_history` to select **one user who has never been engaged with before**.
+1. Triggered daily as a scheduled batch.
+2. Loads cached followers from Firestore `processed_followers` (`getListMembersFromCache`) and batch-reads `list_interaction_history` (`getAllListInteractions`).
+3. Excludes `BLOCKED` users and **strictly prioritizes untouched followers** (never engaged yet), falling back to followers past the configured cooldown (`RANDOM_ENGAGEMENT_COOLDOWN_DAYS`, default `365` days) only after all non-blocked untouched followers have been reached.
 4. Retrieves their profile description and **most recent tweets (including analyzing attached images via Gemini Vision)** via X API, and has Gemini analyze their overall context (hobbies, traits, recent activities).
 5. Builds a surprise `random_engagement` context prompt based on the analysis and recent timeline, then generates a mention text.
-6. To bypass X API Free Tier limitations on Quote Tweets/Replies, posts the generated text as a **standalone new tweet** with an @mention, and records the user in `list_interaction_history` (ensuring this happens only once per user).
+6. Posts the generated text as a **standalone new tweet** with an @mention, and updates `list_interaction_history` for the selected user.
 
 ### 5.4 Self-Reflection Flow (Timeline Summary)
 1. Triggered daily at 4:05 AM JST by Cloud Scheduler (`rebecca-self-reflection-batch`), executing after the 4:00 AM timeline sync completes.

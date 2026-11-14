@@ -65,14 +65,14 @@ All `/worker/*` routes require a verified OIDC Bearer Token dispatched by Cloud 
 
 | Endpoint | Method | Schedule (JST) | Deadline | Description |
 |---|---|---|---|---|
-| `/batch/stealth-onboarding` | `GET` | `03:15` Daily | 180s | Detects new followers and enrolls them into the special engagement list. |
+| `/batch/stealth-onboarding` | `GET` | `03:15` Mon & Thu | 180s | Detects new followers into `processed_followers` (`'SKIPPED'` if `X_TARGET_LIST_ID` is unset; adds to X list if configured). |
 | `/batch/self-reflection` | `GET` | `04:05` Daily | 180s | **Layer 2 Global Timeline Summary**: Distills Rebecca's recent timeline context into `system/persona.timeline_summary`. Runs after 04:00 timeline sync. Fail-fast on Gemini errors or empty outputs. |
 | `/batch/dreaming` | `GET` | `04:30` Daily | 900s | **User Memory Consolidation**: Consolidates user `episodicBuffer` into `coreProfile`. Enforces 4,500ms inter-user throttling and isolated per-user failure boundaries. |
 | `/batch/evolution` | `GET` | `05:00` Daily | 300s | **Layer 1 Self-Evolution**: Analyzes collective conversation trends and updates the dynamic behavioral prompt (`system/persona.extended_prompt`). |
 | `/batch/anniversary-post` | `GET` | `07:00` Daily | 180s | Sources real-world memorial days ("◯◯の日") from Wikipedia and posts contextual commentary. |
 | `/batch/mentions` | `GET` | `03:00`, `07:00-23:00` Hourly (18x/day) | 180s | Polls recent X mentions, verifies DAU rate limits, and enqueues reply tasks to Cloud Tasks. |
 | `/batch/news-post` | `GET` | `12:11` Daily | 180s | Ingests RSS news, applies vector deduplication, and posts Gyaru commentary with KNN-matched images. |
-| `/batch/random-engagement` | `GET` | `18:00` Daily | 180s | Sends surprise spontaneous mentions to enrolled special treatment list members. |
+| `/batch/random-engagement` | `GET` | `18:00` Daily | 180s | Sends surprise spontaneous mentions to cached followers (prioritizes untouched users before a 365-day default cooldown). |
 | `/batch/soliloquy-post` | `GET` | `21:00` Daily | 180s | Posts autonomous thoughts/affirmations reflecting time-of-day, timeline summary, and evolved traits. |
 | `/batch/asset-embeddings` | `GET` | `03:30, 09:30, 15:30, 21:30` (4x/day) | 300s | Generates text embeddings for newly uploaded images missing vector representation (self-healing backfill). |
 | `/batch/campaign-post` | `GET` | Hourly at `:00` | 180s | **Campaign Slot Dispatcher**: Evaluates active narrative campaign slots and publishes episodic story posts. |
@@ -117,6 +117,7 @@ The following helper scripts are available to developers for manual maintenance 
 | `npm run batch:onboard` | Triggers greeting messages to newly configured users |
 | `npm run batch:engage` | Runs proactive engagement targeting list members |
 | `npm run tool:upload-images` | Bulk uploads local images to GCS and triggers captioning |
+| `npm run tool:import-followers-archive -- --file <path> [--apply] [--timestamp <iso>]` | Backfills `processed_followers` (`listStatus: 'SKIPPED'`) from an X Data Archive `follower.js` file at $0 X API cost (defaults to `--dry-run`) |
 
 ---
 
@@ -154,4 +155,9 @@ X_API_SECRET=
 X_ACCESS_TOKEN=
 X_ACCESS_SECRET=
 X_MY_USER_ID=
+# Optional list curation & follower polling / engagement tuning
+# X_TARGET_LIST_ID=
+X_FOLLOWERS_PAGE_SIZE=20
+X_FOLLOWERS_MAX_RESULTS=1000
+RANDOM_ENGAGEMENT_COOLDOWN_DAYS=365
 ```
