@@ -4,7 +4,7 @@ import { UsersUseCase } from '../../src/features/users/usecase';
 import { AssetsController } from '../../src/features/assets/controller';
 import { AssetsUseCase } from '../../src/features/assets/usecase';
 import { TimelineController } from '../../src/features/timeline/controller';
-import { TimelineUseCase } from '../../src/features/timeline/usecase';
+import { TimelineUseCase, UpstreamServiceError } from '../../src/features/timeline/usecase';
 import { SystemMemoryController } from '../../src/features/system-memory/controller';
 import { SystemMemoryUseCase } from '../../src/features/system-memory/usecase';
 import { CopilotController } from '../../src/features/copilot/controller';
@@ -334,12 +334,20 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it('syncPosts should return sync result and handle error with 500', async () => {
+    it('syncPosts should return sync result and propagate upstream 403/500 errors', async () => {
       const { req, res } = createMockReqRes();
       useCase.syncPosts.mockResolvedValueOnce({ success: true, message: 'OK: Timeline synced successfully.' });
       await controller.syncPosts(req, res);
       expect(useCase.syncPosts).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ success: true, message: 'OK: Timeline synced successfully.' });
+
+      const { req: reqForbidden, res: resForbidden } = createMockReqRes();
+      useCase.syncPosts.mockRejectedValueOnce(
+        new UpstreamServiceError('Your monthly spend cap has been reached.', 403)
+      );
+      await controller.syncPosts(reqForbidden, resForbidden);
+      expect(resForbidden.status).toHaveBeenCalledWith(403);
+      expect(resForbidden.json).toHaveBeenCalledWith({ error: 'Your monthly spend cap has been reached.' });
 
       const { req: reqErr, res: resErr } = createMockReqRes();
       useCase.syncPosts.mockRejectedValueOnce(new Error('Sync failed'));
@@ -348,12 +356,28 @@ describe('Dashboard Backend Controllers Unit Tests', () => {
       expect(resErr.json).toHaveBeenCalledWith({ error: 'Failed to sync timeline posts' });
     });
 
-    it('triggerReply should return reply execution result and handle error with 500', async () => {
+    it('triggerReply should return reply execution result and propagate upstream 403/503/500 errors', async () => {
       const { req, res } = createMockReqRes();
       useCase.triggerReply.mockResolvedValueOnce({ success: true, message: 'OK: Processed 2 mentions.' });
       await controller.triggerReply(req, res);
       expect(useCase.triggerReply).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ success: true, message: 'OK: Processed 2 mentions.' });
+
+      const { req: reqForbidden, res: resForbidden } = createMockReqRes();
+      useCase.triggerReply.mockRejectedValueOnce(
+        new UpstreamServiceError('Your monthly spend cap has been reached.', 403)
+      );
+      await controller.triggerReply(reqForbidden, resForbidden);
+      expect(resForbidden.status).toHaveBeenCalledWith(403);
+      expect(resForbidden.json).toHaveBeenCalledWith({ error: 'Your monthly spend cap has been reached.' });
+
+      const { req: req503, res: res503 } = createMockReqRes();
+      useCase.triggerReply.mockRejectedValueOnce(
+        Object.assign(new Error('Backend unavailable'), { statusCode: 503 })
+      );
+      await controller.triggerReply(req503, res503);
+      expect(res503.status).toHaveBeenCalledWith(503);
+      expect(res503.json).toHaveBeenCalledWith({ error: 'Backend unavailable' });
 
       const { req: reqErr, res: resErr } = createMockReqRes();
       useCase.triggerReply.mockRejectedValueOnce(new Error('Reply failed'));

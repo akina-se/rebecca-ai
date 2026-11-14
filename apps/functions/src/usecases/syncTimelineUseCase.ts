@@ -29,6 +29,7 @@ export class SyncTimelineUseCase {
    * @param userId - Optional. Target author's X user ID. Auto-resolved via getMyUserId if omitted.
    * @param limit - Optional max tweets to fetch. Defaults to configured limit.
    * @returns Aggregated synchronization metrics.
+   * @throws When fetching tweets from the X API or committing Firestore writes fails.
    */
   async execute(userId?: string, limit?: number): Promise<SyncTimelineResult> {
     try {
@@ -129,7 +130,7 @@ export class SyncTimelineUseCase {
       return { processed: tweets.length, updated: updatedCount, created: createdCount, errors: 0 };
     } catch (error) {
       logger.error('[SyncTimelineUseCase] Sync workflow encountered an error', { error });
-      return { processed: 0, updated: 0, created: 0, errors: 1 };
+      throw error;
     }
   }
 }

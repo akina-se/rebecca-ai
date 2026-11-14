@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { BatchTriggerResponse } from '@rebecca/types';
-import { TimelineUseCase } from './usecase';
+import { TimelineUseCase, UpstreamServiceError } from './usecase';
 import { logger } from '../../utils/logger';
 
 function getTraceHeader(req: Request): string | undefined {
@@ -143,8 +143,7 @@ export class TimelineController {
       const result: BatchTriggerResponse = await this.useCase.syncPosts();
       res.json(result);
     } catch (err) {
-      logger.error('Failed to sync timeline posts', err, undefined, traceHeader);
-      res.status(500).json({ error: 'Failed to sync timeline posts' });
+      this.handleBatchTriggerError(res, err, 'Failed to sync timeline posts', traceHeader);
     }
   }
 
@@ -161,8 +160,33 @@ export class TimelineController {
       const result: BatchTriggerResponse = await this.useCase.triggerReply();
       res.json(result);
     } catch (err) {
-      logger.error('Failed to trigger reply execution', err, undefined, traceHeader);
-      res.status(500).json({ error: 'Failed to trigger reply execution' });
+      this.handleBatchTriggerError(res, err, 'Failed to trigger reply execution', traceHeader);
     }
+  }
+
+  private handleBatchTriggerError(
+    res: Response,
+    err: unknown,
+    defaultMessage: string,
+    traceHeader?: string
+  ): void {
+    const rawStatus =
+      err instanceof UpstreamServiceError
+        ? err.statusCode
+        : typeof err === 'object' && err !== null && 'statusCode' in err && typeof err.statusCode === 'number'
+          ? err.statusCode
+          : undefined;
+    const statusCode = rawStatus !== undefined && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
+    const errorMessage =
+      rawStatus !== undefined && err instanceof Error && err.message.trim()
+        ? err.message
+        : defaultMessage;
+
+    if (statusCode >= 400 && statusCode < 500) {
+      logger.warn(defaultMessage, { statusCode, errorMessage }, traceHeader);
+    } else {
+      logger.error(defaultMessage, err, undefined, traceHeader);
+    }
+    res.status(statusCode).json({ error: errorMessage });
   }
 }

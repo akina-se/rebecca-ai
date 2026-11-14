@@ -2,7 +2,7 @@ import { UsersUseCase } from '../../src/features/users/usecase';
 import { UsersRepository } from '../../src/features/users/repository';
 import { AssetsUseCase, UploadedFile } from '../../src/features/assets/usecase';
 import { AssetsRepository } from '../../src/features/assets/repository';
-import { TimelineUseCase } from '../../src/features/timeline/usecase';
+import { TimelineUseCase, UpstreamServiceError } from '../../src/features/timeline/usecase';
 import { TimelineRepository } from '../../src/features/timeline/repository';
 import { SystemMemoryUseCase } from '../../src/features/system-memory/usecase';
 import { SystemMemoryRepository } from '../../src/features/system-memory/repository';
@@ -533,25 +533,59 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res).toEqual(mockAlerts);
     });
 
-    it('syncPosts should return result on success and throw on failure', async () => {
+    it('syncPosts should return result on success and throw UpstreamServiceError with statusCode on failure', async () => {
       mockSyncPostsViaBotService.mockResolvedValueOnce({ success: true, message: 'Synced' });
       const res = await useCase.syncPosts();
       expect(res).toEqual({ success: true, message: 'Synced' });
 
       mockSyncPostsViaBotService.mockResolvedValueOnce({ success: false, message: 'Sync error' });
-      await expect(useCase.syncPosts()).rejects.toThrow('Sync error');
+      await expect(useCase.syncPosts()).rejects.toMatchObject({
+        message: 'Sync error',
+        statusCode: 500,
+      });
+
+      mockSyncPostsViaBotService.mockResolvedValueOnce({
+        success: false,
+        message: 'Your monthly spend cap has been reached.',
+        statusCode: 403,
+      });
+      try {
+        await useCase.syncPosts();
+        fail('Expected syncPosts to throw UpstreamServiceError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(UpstreamServiceError);
+        expect((err as UpstreamServiceError).statusCode).toBe(403);
+        expect((err as UpstreamServiceError).message).toBe('Your monthly spend cap has been reached.');
+      }
 
       mockSyncPostsViaBotService.mockResolvedValueOnce({ success: false, message: '' });
       await expect(useCase.syncPosts()).rejects.toThrow('Failed to synchronize timeline posts');
     });
 
-    it('triggerReply should return result on success and throw on failure', async () => {
+    it('triggerReply should return result on success and throw UpstreamServiceError with statusCode on failure', async () => {
       mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: true, message: 'Replied' });
       const res = await useCase.triggerReply();
       expect(res).toEqual({ success: true, message: 'Replied' });
 
       mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: false, message: 'Reply error' });
-      await expect(useCase.triggerReply()).rejects.toThrow('Reply error');
+      await expect(useCase.triggerReply()).rejects.toMatchObject({
+        message: 'Reply error',
+        statusCode: 500,
+      });
+
+      mockTriggerReplyViaBotService.mockResolvedValueOnce({
+        success: false,
+        message: 'Your monthly spend cap has been reached.',
+        statusCode: 403,
+      });
+      try {
+        await useCase.triggerReply();
+        fail('Expected triggerReply to throw UpstreamServiceError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(UpstreamServiceError);
+        expect((err as UpstreamServiceError).statusCode).toBe(403);
+        expect((err as UpstreamServiceError).message).toBe('Your monthly spend cap has been reached.');
+      }
 
       mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: false, message: '' });
       await expect(useCase.triggerReply()).rejects.toThrow('Failed to trigger reply execution');

@@ -352,6 +352,7 @@ export interface XApiCreateResponse {
 export interface BatchTriggerResponse {
   readonly success: boolean;
   readonly message: string;
+  readonly statusCode?: number;
 }
 
 export interface PaginationMeta {

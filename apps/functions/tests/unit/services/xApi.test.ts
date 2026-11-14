@@ -104,6 +104,25 @@ describe('XApiService', () => {
     expect(userId).toBeNull();
   });
 
+  it('should rethrow HTTP 403 error from getMyUserId instead of swallowing as null', async () => {
+    const forbiddenErr = Object.assign(new Error('HTTP 403: Forbidden'), {
+      status: 403,
+      data: { detail: 'Your monthly spend cap has been reached.' },
+    });
+    mockGetMe.mockRejectedValueOnce(forbiddenErr);
+
+    const cfg: XApiConfig = {
+      apiKey: 'k',
+      apiSecret: 's',
+      accessToken: 't',
+      accessSecret: 'sec',
+      bearerToken: '',
+      myUserId: '',
+    };
+    const service = new XApiService(cfg);
+    await expect(service.getMyUserId()).rejects.toThrow('HTTP 403: Forbidden');
+  });
+
   it('should auto-resolve userId when fetching tweets if userId argument is omitted', async () => {
     mockGetMe.mockResolvedValueOnce({ data: { id: 'auto_id_123' } });
     mockGetPosts.mockResolvedValueOnce({ data: [{ id: 'tweet_auto', text: 'Auto resolved text' }] });

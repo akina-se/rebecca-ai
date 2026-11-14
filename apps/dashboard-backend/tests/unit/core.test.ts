@@ -214,7 +214,20 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
         text: async () => JSON.stringify({ error: 'Upstream X API error' }),
       } as any);
       const errHttpRes = await syncPostsViaBotService();
-      expect(errHttpRes).toEqual({ success: false, message: 'Upstream X API error' });
+      expect(errHttpRes).toEqual({ success: false, message: 'Upstream X API error', statusCode: 500 });
+
+      // 5b. HTTP 403 response preserves 403 statusCode and message
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => JSON.stringify({ success: false, error: 'Forbidden', message: 'Your monthly spend cap has been reached.' }),
+      } as any);
+      const errForbiddenRes = await syncPostsViaBotService();
+      expect(errForbiddenRes).toEqual({
+        success: false,
+        message: 'Your monthly spend cap has been reached.',
+        statusCode: 403,
+      });
 
       // 6. Network exception
       global.fetch = jest.fn().mockRejectedValueOnce(new Error('Connection refused'));
@@ -284,7 +297,20 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
         text: async () => '',
       } as any);
       const errHttpRes = await triggerReplyViaBotService();
-      expect(errHttpRes).toEqual({ success: false, message: 'HTTP 503' });
+      expect(errHttpRes).toEqual({ success: false, message: 'HTTP 503', statusCode: 503 });
+
+      // 4b. HTTP 403 response preserves 403 statusCode and error message
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => JSON.stringify({ error: 'Your monthly spend cap has been reached.' }),
+      } as any);
+      const errForbiddenRes = await triggerReplyViaBotService();
+      expect(errForbiddenRes).toEqual({
+        success: false,
+        message: 'Your monthly spend cap has been reached.',
+        statusCode: 403,
+      });
 
       // 5. Network exception
       global.fetch = jest.fn().mockRejectedValueOnce(new Error('Bot backend unreachable'));

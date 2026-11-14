@@ -120,10 +120,17 @@ export async function syncPostsViaBotService(): Promise<BatchTriggerResponse> {
     const message = await extractResponseMessage(res);
     if (!res.ok) {
       const errMsg = message || `HTTP ${res.status}`;
-      logger.error('Failed to trigger timeline sync via Cloud Functions HTTP', new Error(errMsg), {
-        status: res.status,
-      });
-      return { success: false, message: errMsg };
+      if (res.status >= 400 && res.status < 500) {
+        logger.warn('Timeline sync rejected by Cloud Functions HTTP', {
+          status: res.status,
+          message: errMsg,
+        });
+      } else {
+        logger.error('Failed to trigger timeline sync via Cloud Functions HTTP', new Error(errMsg), {
+          status: res.status,
+        });
+      }
+      return { success: false, message: errMsg, statusCode: res.status };
     }
 
     return {
@@ -170,10 +177,17 @@ export async function triggerReplyViaBotService(): Promise<BatchTriggerResponse>
     const message = await extractResponseMessage(res);
     if (!res.ok) {
       const errMsg = message || `HTTP ${res.status}`;
-      logger.error('Failed to trigger reply batch via bot-backend HTTP', new Error(errMsg), {
-        status: res.status,
-      });
-      return { success: false, message: errMsg };
+      if (res.status >= 400 && res.status < 500) {
+        logger.warn('Reply batch rejected by bot-backend HTTP', {
+          status: res.status,
+          message: errMsg,
+        });
+      } else {
+        logger.error('Failed to trigger reply batch via bot-backend HTTP', new Error(errMsg), {
+          status: res.status,
+        });
+      }
+      return { success: false, message: errMsg, statusCode: res.status };
     }
 
     return {

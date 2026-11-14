@@ -82,6 +82,52 @@ export const verifyOidcToken = async (
 };
 
 /**
+ * Extracts HTTP status code, short error label, and diagnostic message from an upstream failure.
+ */
+function extractErrorDetails(error: unknown): {
+  statusCode: number;
+  errorLabel: string;
+  message: string;
+} {
+  let statusCode = 500;
+  let detailMessage: string | undefined;
+
+  if (typeof error === 'object' && error !== null) {
+    const rawStatus =
+      'status' in error && typeof error.status === 'number'
+        ? error.status
+        : 'statusCode' in error && typeof error.statusCode === 'number'
+          ? error.statusCode
+          : undefined;
+    if (rawStatus !== undefined && rawStatus >= 400 && rawStatus <= 599) {
+      statusCode = rawStatus;
+    }
+
+    if ('data' in error && typeof error.data === 'object' && error.data !== null && 'detail' in error.data) {
+      const rawDetail = error.data.detail;
+      if (typeof rawDetail === 'string' && rawDetail.trim()) {
+        detailMessage = rawDetail.trim();
+      }
+    }
+  }
+
+  const errorLabel =
+    statusCode === 403
+      ? 'Forbidden'
+      : statusCode >= 400 && statusCode < 500
+        ? 'Client Error'
+        : 'Internal Server Error';
+
+  const message =
+    detailMessage ??
+    (error instanceof Error
+      ? error.message
+      : 'An unexpected error occurred during timeline synchronization.');
+
+  return { statusCode, errorLabel, message };
+}
+
+/**
  * Cloud Function HTTPS endpoint invoked by Cloud Scheduler or manual trigger.
  * Executes SyncTimelineUseCase to synchronize X posts and engagement metrics into Firestore.
  */
@@ -145,12 +191,16 @@ export const batchTimelineSync = onRequest(
         data: result,
       });
     } catch (error: unknown) {
-      logger.error('[batchTimelineSync] Execution failed', { error });
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during timeline synchronization.';
-      res.status(500).json({
+      const { statusCode, errorLabel, message } = extractErrorDetails(error);
+      if (statusCode >= 400 && statusCode < 500) {
+        logger.warn('[batchTimelineSync] Upstream request rejected', { statusCode, message });
+      } else {
+        logger.error('[batchTimelineSync] Execution failed', { error });
+      }
+      res.status(statusCode).json({
         success: false,
-        error: 'Internal Server Error',
-        message: errorMessage,
+        error: errorLabel,
+        message,
       });
     }
   }

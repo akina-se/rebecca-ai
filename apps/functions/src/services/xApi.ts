@@ -111,6 +111,8 @@ export class XApiService implements IXApiService {
 
   /**
    * Resolves the authenticated user ID via getMe() and caches it.
+   *
+   * @throws When the upstream X API responds with an HTTP 4xx/5xx status (e.g., 403 Forbidden).
    */
   async getMyUserId(): Promise<string | null> {
     if (this.cachedMyUserId) {
@@ -128,6 +130,10 @@ export class XApiService implements IXApiService {
       }
     } catch (error) {
       logger.error('[XApiService] Failed to auto-resolve authenticated user ID via getMe', { error });
+      const status = typeof error === 'object' && error !== null && 'status' in error ? error.status : undefined;
+      if (typeof status === 'number' && status >= 400 && status < 600) {
+        throw error;
+      }
     }
     return null;
   }

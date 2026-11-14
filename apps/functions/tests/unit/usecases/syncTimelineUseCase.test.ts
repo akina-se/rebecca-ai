@@ -231,10 +231,22 @@ describe('SyncTimelineUseCase', () => {
     expect(mockXApiService.fetchRecentTimelineTweets).toHaveBeenCalledWith('12345', 30);
   });
 
-  it('should catch error and return error metric if exception occurs', async () => {
+  it('should rethrow errors thrown by xApiService instead of swallowing them', async () => {
     mockXApiService.fetchRecentTimelineTweets.mockRejectedValueOnce(new Error('Firestore connection failure'));
 
-    const result = await useCase.execute('12345');
-    expect(result).toEqual({ processed: 0, updated: 0, created: 0, errors: 1 });
+    await expect(useCase.execute('12345')).rejects.toThrow('Firestore connection failure');
+  });
+
+  it('should propagate HTTP 403 ApiError with status and data intact', async () => {
+    const forbiddenError = Object.assign(new Error('HTTP 403: Forbidden'), {
+      status: 403,
+      data: { detail: 'Your monthly spend cap has been reached.' },
+    });
+    mockXApiService.fetchRecentTimelineTweets.mockRejectedValueOnce(forbiddenError);
+
+    await expect(useCase.execute('12345')).rejects.toMatchObject({
+      status: 403,
+      data: { detail: 'Your monthly spend cap has been reached.' },
+    });
   });
 });

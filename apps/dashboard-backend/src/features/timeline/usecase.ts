@@ -15,6 +15,19 @@ import {
 import { logger } from '../../utils/logger';
 
 /**
+ * Error thrown when an upstream service responds with an explicit non-2xx HTTP status code.
+ */
+export class UpstreamServiceError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number = 500
+  ) {
+    super(message);
+    this.name = 'UpstreamServiceError';
+  }
+}
+
+/**
  * Contains business logic and orchestrates operations related to the timeline and system metrics.
  * Coordinates between the repository for data access and external services (like gRPC) for actions.
  */
@@ -90,12 +103,15 @@ export class TimelineUseCase {
    * Triggers manual timeline synchronization via the `batchTimelineSync` Cloud Function.
    *
    * @returns A promise that resolves to the synchronization status and message.
-   * @throws Error when the upstream synchronization request fails.
+   * @throws UpstreamServiceError when the upstream synchronization request fails.
    */
   async syncPosts(): Promise<BatchTriggerResponse> {
     const result = await syncPostsViaBotService();
     if (!result.success) {
-      throw new Error(result.message || 'Failed to synchronize timeline posts');
+      throw new UpstreamServiceError(
+        result.message || 'Failed to synchronize timeline posts',
+        result.statusCode ?? 500
+      );
     }
     return result;
   }
@@ -104,12 +120,15 @@ export class TimelineUseCase {
    * Triggers manual mentions polling and reply execution via the `bot-backend` batch endpoint.
    *
    * @returns A promise that resolves to the reply execution status and message.
-   * @throws Error when the upstream reply execution request fails.
+   * @throws UpstreamServiceError when the upstream reply execution request fails.
    */
   async triggerReply(): Promise<BatchTriggerResponse> {
     const result = await triggerReplyViaBotService();
     if (!result.success) {
-      throw new Error(result.message || 'Failed to trigger reply execution');
+      throw new UpstreamServiceError(
+        result.message || 'Failed to trigger reply execution',
+        result.statusCode ?? 500
+      );
     }
     return result;
   }

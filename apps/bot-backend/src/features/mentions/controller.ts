@@ -27,8 +27,40 @@ export class MentionsController {
             const result = await this.useCase.execute();
             res.status(200).json(result);
         } catch (e) {
-            logger.error('Batch error (mentions)', e);
-            res.status(500).json({ error: 'Internal Server Error' });
+            const { statusCode, errorMessage } = this.resolvePollError(e);
+            if (statusCode >= 400 && statusCode < 500) {
+                logger.warn('Upstream API rejected mentions batch', { statusCode, errorMessage });
+            } else {
+                logger.error('Batch error (mentions)', e, { statusCode });
+            }
+            res.status(statusCode).json({ error: errorMessage });
         }
     };
+
+    private resolvePollError(err: unknown): { statusCode: number; errorMessage: string } {
+        if (typeof err !== 'object' || err === null) {
+            return { statusCode: 500, errorMessage: 'Internal Server Error' };
+        }
+        const rawStatus =
+            'status' in err && typeof err.status === 'number'
+                ? err.status
+                : 'statusCode' in err && typeof err.statusCode === 'number'
+                    ? err.statusCode
+                    : undefined;
+        const statusCode = rawStatus !== undefined && rawStatus >= 400 && rawStatus <= 599 ? rawStatus : 500;
+
+        if (statusCode === 500) {
+            return { statusCode: 500, errorMessage: 'Internal Server Error' };
+        }
+
+        let detail: string | undefined;
+        if ('data' in err && typeof err.data === 'object' && err.data !== null && 'detail' in err.data) {
+            const rawDetail = err.data.detail;
+            if (typeof rawDetail === 'string' && rawDetail.trim()) {
+                detail = rawDetail.trim();
+            }
+        }
+        const errorMessage = detail ?? (err instanceof Error && err.message.trim() ? err.message.trim() : 'Upstream API Error');
+        return { statusCode, errorMessage };
+    }
 }
