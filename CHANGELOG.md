@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.42.1](https://github.com/gemitec-ai/rebecca-ai/compare/v1.42.0...v1.42.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **posts:** propagate 403 and upstream errors instead of swallowing as 200 ([#482](https://github.com/gemitec-ai/rebecca-ai/issues/482)) ([f960e72](https://github.com/gemitec-ai/rebecca-ai/commit/f960e72b9e464b525b807c8526ad0606abd639c8))
+
 ## [1.42.0](https://github.com/gemitec-ai/rebecca-ai/compare/v1.41.3...v1.42.0) (2026-11-14)
 
 
