@@ -336,7 +336,7 @@ When the daily reply limit is reached (either the global budget or the 5 replies
 3. **Posts Management Page (`/posts`) & Manual Batch Triggers**:
    - Dedicated Posts Management page positioned between Dashboard and Memory in the navigation bar, providing timeline post history search, sorting, bulk deletion from X, and one-click manual triggers for Post Sync (`POST /api/v1/posts/sync`) and Reply Execution (`POST /api/v1/posts/reply`) via the BFF.
 4. **Two-Phase Human-In-The-Loop (HITL) Safety Approval Flow**:
-   - For destructive actions (e.g., blocking a user, deleting a post, forcing memory dreaming, bulk caption regeneration), Rebecca generates an interactive Action Card rather than executing directly.
+   - For destructive or batch actions (blocking/unblocking a user, deleting a post, manual Post Sync `SYNC_POSTS`, manual Reply Execution `TRIGGER_REPLY`, forcing memory dreaming, and bulk caption regeneration), Rebecca generates an interactive Action Card rather than executing directly.
    - Operations are executed only when the administrator (Master) clicks the "Approve & Execute" button.
 5. **Global 1-Hour Timezone Spectrum**:
    - Supports 29 standard 1-hour interval timezones (UTC-12:00 through UTC+14:00).

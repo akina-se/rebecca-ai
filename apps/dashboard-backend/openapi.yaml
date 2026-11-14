@@ -1473,7 +1473,7 @@ components:
       properties:
         type:
           type: string
-          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS]
+          enum: [BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS, SYNC_POSTS, TRIGGER_REPLY]
           example: "BLOCK_USER"
         title:
           type: string

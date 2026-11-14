@@ -499,7 +499,9 @@ export type CopilotActionType =
   | 'UNBLOCK_USER'
   | 'DELETE_POST'
   | 'FORCE_DREAMING'
-  | 'REGENERATE_CAPTIONS';
+  | 'REGENERATE_CAPTIONS'
+  | 'SYNC_POSTS'
+  | 'TRIGGER_REPLY';
 
 /**
  * Represents a rich visual, statistical, or entity attachment for a Copilot message.

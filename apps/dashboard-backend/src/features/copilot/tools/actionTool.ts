@@ -7,7 +7,9 @@ const VALID_ACTIONS = new Set<CopilotActionType>([
   'UNBLOCK_USER',
   'DELETE_POST',
   'FORCE_DREAMING',
-  'REGENERATE_CAPTIONS'
+  'REGENERATE_CAPTIONS',
+  'SYNC_POSTS',
+  'TRIGGER_REPLY'
 ]);
 
 /**
@@ -15,7 +17,7 @@ const VALID_ACTIONS = new Set<CopilotActionType>([
  */
 export class ProposeDestructiveActionTool implements CopilotTool {
   readonly name = 'propose_destructive_action';
-  readonly description = 'Proposes a safety-gated administrative operation (BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS) requiring explicit confirmation from the operator. For BLOCK_USER and UNBLOCK_USER, you MUST FIRST investigate the account using search_users to obtain the exact username/ID before calling this function. If the target account does not exist in the database, this function returns an error.';
+  readonly description = 'Proposes a safety-gated administrative operation (BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS, SYNC_POSTS, TRIGGER_REPLY) requiring explicit confirmation from the operator. For BLOCK_USER and UNBLOCK_USER, you MUST FIRST investigate the account using search_users to obtain the exact username/ID before calling this function. If the target account does not exist in the database, this function returns an error.';
 
   readonly declaration: FunctionDeclaration = {
     name: this.name,
@@ -25,8 +27,8 @@ export class ProposeDestructiveActionTool implements CopilotTool {
       properties: {
         actionType: {
           type: Type.STRING,
-          description: 'Type of administrative operation: BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, or REGENERATE_CAPTIONS.',
-          enum: ['BLOCK_USER', 'UNBLOCK_USER', 'DELETE_POST', 'FORCE_DREAMING', 'REGENERATE_CAPTIONS']
+          description: 'Type of administrative operation: BLOCK_USER, UNBLOCK_USER, DELETE_POST, FORCE_DREAMING, REGENERATE_CAPTIONS, SYNC_POSTS, or TRIGGER_REPLY.',
+          enum: ['BLOCK_USER', 'UNBLOCK_USER', 'DELETE_POST', 'FORCE_DREAMING', 'REGENERATE_CAPTIONS', 'SYNC_POSTS', 'TRIGGER_REPLY']
         },
         targetId: {
           type: Type.STRING,
@@ -182,6 +184,22 @@ export class ProposeDestructiveActionTool implements CopilotTool {
         impactLevel = 'warning';
         title = isEn ? 'Trigger Caption Regeneration' : 'キャプション再生成ジョブ実行';
         description = isEn ? 'Start a background task to regenerate Vision captions and embeddings for failed assets.' : 'キャプション生成に失敗している画像アセットの再解析ジョブをバックグラウンドで起動します。';
+        break;
+
+      case 'SYNC_POSTS':
+        impactLevel = 'info';
+        title = isEn ? 'Trigger Timeline Post Sync' : 'タイムラインのポスト同期を実行';
+        description = isEn
+          ? 'Synchronize latest timeline posts and engagement metrics from X into Firestore.'
+          : 'X（旧Twitter）から最新のタイムライン投稿履歴とインプレッション指標をFirestoreへ同期します。';
+        break;
+
+      case 'TRIGGER_REPLY':
+        impactLevel = 'warning';
+        title = isEn ? 'Trigger Mentions Reply Batch' : 'メンション取得＆リプライ処理を実行';
+        description = isEn
+          ? 'Poll latest mentions from X and enqueue autonomous reply generation tasks.'
+          : 'Xから最新メンションを取得し、自律リプライ生成タスクをキューへ投入します。';
         break;
     }
 

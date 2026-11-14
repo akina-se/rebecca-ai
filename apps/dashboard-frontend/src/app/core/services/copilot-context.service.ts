@@ -99,7 +99,7 @@ export class CopilotContextService {
     if (route.includes('/users')) return 'Page: User Relations (Managing followers, interaction metrics, RAG memory status, and blocklist)';
     if (route.includes('/memory')) return 'Page: Memory Management (Managing Persona Core Prompt, Extended Tuning, and Global Timeline Summary)';
     if (route.includes('/settings')) return 'Page: System Settings (Global Timezones and Language Preferences)';
-    return 'Page: Performance Dashboard (KPI Overview, Leaderboards, and Timeline Post History)';
+    return 'Page: Performance Dashboard (KPI Overview and Leaderboards)';
   });
 
   /**
@@ -135,8 +135,8 @@ export class CopilotContextService {
     const route = this.currentRoute();
     if (route.includes('/posts')) {
       return isEn
-        ? ['Show top 5 viral posts', 'Recent post performance', 'High engagement post patterns']
-        : ['直近で伸びた投稿TOP5は？', '最近のポストの反響を分析', 'エンゲージメントが高い投稿の特徴'];
+        ? ['Show top 5 viral posts', 'Trigger Post Sync', 'Execute Replies']
+        : ['直近で伸びた投稿TOP5は？', 'ポスト同期を実行', 'リプライ処理を実行'];
     }
         if (route.includes('/supporters')) {
       return isEn 
