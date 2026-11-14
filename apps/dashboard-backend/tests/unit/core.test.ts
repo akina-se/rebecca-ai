@@ -254,6 +254,29 @@ describe('Dashboard Backend Core & Settings Unit Tests', () => {
       const okRes = await triggerReplyViaBotService();
       expect(okRes).toEqual({ success: true, message: 'OK: Reply batch executed successfully.' });
 
+      // 3b. Successful call with /batch/mentions JSON count payload
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ count: 3, newestId: '999' }),
+      } as any);
+      const countRes = await triggerReplyViaBotService();
+      expect(countRes).toEqual({ success: true, message: 'OK: Processed 3 mentions.' });
+
+      // 3c. Successful call with unrelated JSON object or primitive JSON falls back cleanly
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ ok: true }),
+      } as any);
+      const objRes = await triggerReplyViaBotService();
+      expect(objRes).toEqual({ success: true, message: 'OK: Reply batch executed successfully.' });
+
+      global.fetch = jest.fn().mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify(123),
+      } as any);
+      const primRes = await triggerReplyViaBotService();
+      expect(primRes).toEqual({ success: true, message: 'OK: Reply batch executed successfully.' });
+
       // 4. HTTP error response with empty body
       global.fetch = jest.fn().mockResolvedValueOnce({
         ok: false,

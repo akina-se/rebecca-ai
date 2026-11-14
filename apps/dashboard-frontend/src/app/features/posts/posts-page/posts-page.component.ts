@@ -109,12 +109,12 @@ export class PostsPageComponent implements OnInit {
           const mapped = posts.map((p) => ({
             id: p.id,
             time: p.time,
-            snippet: p.snippet || '',
-            text: p.snippet || '',
+            snippet: p.snippet ?? '',
+            text: p.snippet ?? '',
             impressions: p.impressions,
-            status: p.status || 'SUCCESS',
+            status: p.status ?? 'SUCCESS',
             hasMedia: p.hasMedia,
-            mediaUrls: p.mediaUrls || [],
+            mediaUrls: p.mediaUrls ?? [],
           }));
 
           this.timelinePosts.set(mapped);

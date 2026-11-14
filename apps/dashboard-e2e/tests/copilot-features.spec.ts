@@ -10,7 +10,7 @@ test.describe('Rebecca Copilot AI Chat Drawer & Autonomous Toolchain', () => {
   test('Test 1: Global Header "✨ Rebecca" button opens AI Drawer with route-aware context across all pages', async ({ page }) => {
     const pagesToTest = [
       { path: '/dashboard', expectedContext: /Performance Overview|パフォーマンス概要|Performance Dashboard/ },
-      { path: '/posts', expectedContext: /Posts|ポスト管理/ },
+      { path: '/posts', expectedContext: /Posts|ポスト/ },
       { path: '/assets', expectedContext: /Assets|アセット/ },
       { path: '/users', expectedContext: /Users|ユーザー/ },
       { path: '/memory', expectedContext: /Memory|メモリ/ },

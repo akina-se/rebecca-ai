@@ -69,13 +69,15 @@ export const config = {
     botBackendUrl: process.env.BOT_BACKEND_URL || '',
     functionsUrl:
       process.env.FUNCTIONS_URL ||
-      (process.env.GCP_PROJECT_ID && process.env.GCP_PROJECT_ID !== 'rebecca-ai-gal-local'
+      (!process.env.FIRESTORE_EMULATOR_HOST &&
+      process.env.GCP_PROJECT_ID &&
+      process.env.GCP_PROJECT_ID !== 'rebecca-ai-gal-local'
         ? `https://${process.env.GCP_LOCATION || 'asia-northeast1'}-${process.env.GCP_PROJECT_ID}.cloudfunctions.net/batchTimelineSync`
         : ''),
     batchSecret:
       process.env.NODE_ENV === 'production'
         ? ''
-        : process.env.BATCH_SECRET || process.env.BATCH_SECRET_KEY || '',
+        : process.env.BATCH_SECRET || '',
   },
   /** Gemini API Configuration */
   gemini: {

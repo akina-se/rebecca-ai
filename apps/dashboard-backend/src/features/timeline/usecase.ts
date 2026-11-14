@@ -1,5 +1,12 @@
 import { TimelineRepository } from './repository';
-import { KpiMetrics, PostLeaderboard, PostDetail, SystemAlert, PaginationMeta } from '@rebecca/types';
+import {
+  KpiMetrics,
+  PostLeaderboard,
+  PostDetail,
+  SystemAlert,
+  PaginationMeta,
+  BatchTriggerResponse,
+} from '@rebecca/types';
 import {
   deleteTweetViaBotService,
   syncPostsViaBotService,
@@ -85,7 +92,7 @@ export class TimelineUseCase {
    * @returns A promise that resolves to the synchronization status and message.
    * @throws Error when the upstream synchronization request fails.
    */
-  async syncPosts(): Promise<{ success: boolean; message: string }> {
+  async syncPosts(): Promise<BatchTriggerResponse> {
     const result = await syncPostsViaBotService();
     if (!result.success) {
       throw new Error(result.message || 'Failed to synchronize timeline posts');
@@ -99,7 +106,7 @@ export class TimelineUseCase {
    * @returns A promise that resolves to the reply execution status and message.
    * @throws Error when the upstream reply execution request fails.
    */
-  async triggerReply(): Promise<{ success: boolean; message: string }> {
+  async triggerReply(): Promise<BatchTriggerResponse> {
     const result = await triggerReplyViaBotService();
     if (!result.success) {
       throw new Error(result.message || 'Failed to trigger reply execution');

@@ -348,6 +348,12 @@ export interface XApiCreateResponse {
 // Dashboard BFF & Frontend Shared Models (DTOs)
 // ---------------------------------------------------------------------------
 
+/** Standardized response payload for manual batch trigger endpoints on the Dashboard BFF. */
+export interface BatchTriggerResponse {
+  readonly success: boolean;
+  readonly message: string;
+}
+
 export interface PaginationMeta {
   totalItems: number;
   totalPages: number;

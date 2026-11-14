@@ -2,7 +2,15 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DashboardRepository } from '../../core/ports/dashboard.repository';
-import { KpiMetrics, PostLeaderboard, UserLeaderboard, SystemAlert, PaginatedResponse, PostDetail } from '@rebecca/types';
+import {
+  KpiMetrics,
+  PostLeaderboard,
+  UserLeaderboard,
+  SystemAlert,
+  PaginatedResponse,
+  PostDetail,
+  BatchTriggerResponse,
+} from '@rebecca/types';
 import { environment } from '../../../environments/environment';
 
 /**
@@ -102,8 +110,8 @@ export class HttpDashboardRepository implements DashboardRepository {
    *
    * @returns Observable resolving to synchronization status.
    */
-  syncPosts(): Observable<{ success: boolean; message?: string }> {
-    return this.http.post<{ success: boolean; message?: string }>(`${this.postsBaseUrl}/sync`, {});
+  syncPosts(): Observable<BatchTriggerResponse> {
+    return this.http.post<BatchTriggerResponse>(`${this.postsBaseUrl}/sync`, {});
   }
 
   /**
@@ -111,7 +119,7 @@ export class HttpDashboardRepository implements DashboardRepository {
    *
    * @returns Observable resolving to reply execution status.
    */
-  triggerReply(): Observable<{ success: boolean; message?: string }> {
-    return this.http.post<{ success: boolean; message?: string }>(`${this.postsBaseUrl}/reply`, {});
+  triggerReply(): Observable<BatchTriggerResponse> {
+    return this.http.post<BatchTriggerResponse>(`${this.postsBaseUrl}/reply`, {});
   }
 }

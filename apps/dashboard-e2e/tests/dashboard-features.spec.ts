@@ -87,7 +87,7 @@ test.describe('Dashboard Features E2E Tests', () => {
     // 1. Verify sidebar navigation order: Dashboard -> Posts -> Memory, and navigate to /posts
     const navItems = page.locator('.sidebar .nav-item');
     await expect(navItems.nth(0)).toContainText(/Dashboard|ダッシュボード/);
-    await expect(navItems.nth(1)).toContainText(/Posts|ポスト管理/);
+    await expect(navItems.nth(1)).toContainText(/Posts|ポスト/);
     await expect(navItems.nth(2)).toContainText(/Memory|メモリ/);
 
     await navItems.nth(1).click();

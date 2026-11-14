@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { BatchTriggerResponse } from '@rebecca/types';
 import { TimelineUseCase } from './usecase';
 import { logger } from '../../utils/logger';
 
@@ -139,7 +140,7 @@ export class TimelineController {
   async syncPosts(req: Request, res: Response): Promise<void> {
     const traceHeader = getTraceHeader(req);
     try {
-      const result = await this.useCase.syncPosts();
+      const result: BatchTriggerResponse = await this.useCase.syncPosts();
       res.json(result);
     } catch (err) {
       logger.error('Failed to sync timeline posts', err, undefined, traceHeader);
@@ -157,7 +158,7 @@ export class TimelineController {
   async triggerReply(req: Request, res: Response): Promise<void> {
     const traceHeader = getTraceHeader(req);
     try {
-      const result = await this.useCase.triggerReply();
+      const result: BatchTriggerResponse = await this.useCase.triggerReply();
       res.json(result);
     } catch (err) {
       logger.error('Failed to trigger reply execution', err, undefined, traceHeader);

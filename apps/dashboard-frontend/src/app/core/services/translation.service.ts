@@ -9,7 +9,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
     // Navigation & Global
     'nav.admin': 'Admin Console',
     'nav.dashboard': 'ダッシュボード',
-    'nav.posts': 'ポスト管理',
+    'nav.posts': 'ポスト',
     'nav.memory': 'メモリ',
     'nav.assets': 'アセット',
     'nav.users': 'ユーザー',
@@ -442,6 +442,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
 
     // Posts Management Page
     'posts.title': 'タイムライン投稿履歴',
+    'dashboard.no_posts': '投稿履歴が見つかりません。',
     'posts.sync_btn': 'ポスト同期',
     'posts.syncing': 'ポスト同期中...',
     'posts.reply_btn': 'リプライ実行',
@@ -887,6 +888,7 @@ const TRANSLATIONS: Record<'ja' | 'en', Record<string, string>> = {
 
     // Posts Management Page
     'posts.title': 'Timeline Post History',
+    'dashboard.no_posts': 'No timeline posts found.',
     'posts.sync_btn': 'Sync Posts',
     'posts.syncing': 'Syncing Posts...',
     'posts.reply_btn': 'Execute Replies',

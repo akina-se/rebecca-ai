@@ -1,7 +1,7 @@
 <div class="view-section active">
   <div class="block-header" style="margin-top: 0;">
     <h2><span class="material-icons">history</span> {{ 'dashboard.timeline_history' | translate }}</h2>
-    <div style="display: flex; gap: 10px; align-items: center;">
+    <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
       <input
         type="text"
         class="form-control"
@@ -80,7 +80,7 @@
       </tr>
     </thead>
     <tbody>
-      @for (post of filteredTimelinePosts(); track post) {
+      @for (post of filteredTimelinePosts(); track post.id) {
         <tr class="clickable" (click)="openPostDrawer(post.id)">
           <td (click)="$event.stopPropagation()">
             <label class="checkbox-container" (click)="$event.stopPropagation()">
@@ -102,6 +102,16 @@
           <td>{{ post.text }}</td>
           <td>{{ post.impressions | number }}</td>
           <td><span class="badge">{{ post.status }}</span></td>
+        </tr>
+      }
+      @if (filteredTimelinePosts().length === 0 && !isLoadingTimeline) {
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted)">{{ 'dashboard.no_posts' | translate }}</td>
+        </tr>
+      }
+      @if (isLoadingTimeline) {
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted)">{{ 'common.loading' | translate }}</td>
         </tr>
       }
     </tbody>
