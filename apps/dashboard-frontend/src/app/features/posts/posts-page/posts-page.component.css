@@ -1,3 +1,7 @@
+#timeline-table th {
+  white-space: nowrap;
+}
+
 @media (max-width: 1024px) {
   .block-header .header-actions .btn {
     width: auto;
