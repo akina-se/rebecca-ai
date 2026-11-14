@@ -20,10 +20,10 @@ describe('Random Engagement Batch', () => {
             { id: 'user2' }
         ]);
 
-        // user1 is already engaged, user2 is not
-        deps.firestore.getLastListInteraction.mockImplementation(async (id: string) => {
-            return id === 'user1' ? new Date() : null;
-        });
+        // user1 is already engaged recently, user2 is untouched
+        deps.firestore.getAllListInteractions.mockResolvedValue(
+            new Map([['user1', new Date()]]),
+        );
 
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
 
@@ -68,7 +68,7 @@ describe('Random Engagement Batch', () => {
             return { status: 'ACTIVE' };
         });
 
-        deps.firestore.getLastListInteraction.mockResolvedValue(null);
+        deps.firestore.getAllListInteractions.mockResolvedValue(new Map());
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
         deps.xApi.getUserProfile.mockResolvedValue({
             data: { id: 'active_u2', username: 'active_u2', name: 'Active', description: '' }
@@ -88,13 +88,18 @@ describe('Random Engagement Batch', () => {
         expect(deps.xApi.tweet).toHaveBeenCalledWith('@active_u2 Hello!', { mediaIds: [] });
     });
 
-    it('should skip if all users have already been engaged', async () => {
+    it('should skip if all users are still within the cooldown window', async () => {
         deps.firestore.getListMembersFromCache.mockResolvedValue([
             { id: 'user1' },
             { id: 'user2' }
         ]);
 
-        deps.firestore.getLastListInteraction.mockResolvedValue(new Date()); // All engaged
+        deps.firestore.getAllListInteractions.mockResolvedValue(
+            new Map([
+                ['user1', new Date()],
+                ['user2', new Date(Date.now() - 364 * 24 * 60 * 60 * 1000)],
+            ]),
+        );
 
         const result = await new RandomEngagementUseCase(deps).execute();
 
@@ -112,16 +117,101 @@ describe('Random Engagement Batch', () => {
 
     it('should return skipped if rate limit hit', async () => {
         deps.firestore.getListMembersFromCache.mockResolvedValue([{ id: 'u1' }]);
-        deps.firestore.getLastListInteraction.mockResolvedValue(null);
+        deps.firestore.getAllListInteractions.mockResolvedValue(new Map());
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: false, reason: 'limit' });
 
         const result = await new RandomEngagementUseCase(deps).execute();
         expect(result.status).toBe('skipped');
     });
 
+    it('should prioritize untouched followers before falling back to cooldown-eligible followers', async () => {
+        deps.firestore.getListMembersFromCache.mockResolvedValue([
+            { id: 'cooldown_ready' },
+            { id: 'untouched_user' },
+        ]);
+        deps.firestore.getAllListInteractions.mockResolvedValue(
+            new Map([['cooldown_ready', new Date(Date.now() - 400 * 24 * 60 * 60 * 1000)]]),
+        );
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
+        deps.xApi.getUserProfile.mockResolvedValue({
+            data: { id: 'untouched_user', username: 'fresh_user', name: 'Fresh', description: '' },
+        });
+        deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't_fresh', text: 'hi' }] });
+        deps.gemini.analyzeUserProfile.mockResolvedValue({});
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '初接触のフォロワーに挨拶する',
+            reply: '@fresh_user nice to meet you!',
+        });
+
+        const result = await new RandomEngagementUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processedUser).toBe('fresh_user');
+        expect(deps.firestore.updateLastListInteraction).toHaveBeenCalledWith('untouched_user');
+    });
+
+    it('should fall back to cooldown-eligible followers when only untouched users are blocked', async () => {
+        deps.firestore.getListMembersFromCache.mockResolvedValue([
+            { id: 'blocked_untouched' },
+            { id: 'cooldown_ready' },
+        ]);
+        deps.firestore.getUserDoc.mockImplementation(async (id: string) =>
+            id === 'blocked_untouched' ? { status: 'BLOCKED' } : { status: 'ACTIVE' },
+        );
+        deps.firestore.getAllListInteractions.mockResolvedValue(
+            new Map([['cooldown_ready', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000 - 1000)]]),
+        );
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
+        deps.xApi.getUserProfile.mockResolvedValue({
+            data: { id: 'cooldown_ready', username: 'returning_user', name: 'Returning', description: '' },
+        });
+        deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't_ret', text: 'hi' }] });
+        deps.gemini.analyzeUserProfile.mockResolvedValue({});
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: '1年ぶりの再交流',
+            reply: '@returning_user long time no see!',
+        });
+
+        const result = await new RandomEngagementUseCase(deps).execute();
+
+        expect(result.status).toBe('success');
+        expect(result.processedUser).toBe('returning_user');
+        expect(deps.firestore.updateLastListInteraction).toHaveBeenCalledWith('cooldown_ready');
+    });
+
+    it('should respect custom cooldownDays boundary', async () => {
+        deps.firestore.getListMembersFromCache.mockResolvedValue([{ id: 'u_custom' }]);
+        deps.firestore.getAllListInteractions.mockResolvedValue(
+            new Map([['u_custom', new Date(Date.now() - 89 * 24 * 60 * 60 * 1000)]]),
+        );
+
+        const skipped = await new RandomEngagementUseCase(deps, { cooldownDays: 90 }).execute();
+        expect(skipped.processedUser).toBeUndefined();
+
+        deps.firestore.getAllListInteractions.mockResolvedValue(
+            new Map([['u_custom', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000 - 1000)]]),
+        );
+        (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
+        deps.xApi.getUserProfile.mockResolvedValue({
+            data: { id: 'u_custom', username: 'custom_user', name: 'Custom', description: '' },
+        });
+        deps.xApi.getUserTweets.mockResolvedValue({ data: [{ id: 't_c', text: 'hi' }] });
+        deps.gemini.analyzeUserProfile.mockResolvedValue({});
+        deps.gemini.detectLanguage.mockResolvedValue('ja');
+        deps.gemini.generateStructuredReply.mockResolvedValue({
+            thought: 'カスタムクールダウン後の返信',
+            reply: '@custom_user hey!',
+        });
+
+        const engaged = await new RandomEngagementUseCase(deps, { cooldownDays: 90 }).execute();
+        expect(engaged.processedUser).toBe('custom_user');
+    });
+
     it('should prepend username if not included in generated text', async () => {
         deps.firestore.getListMembersFromCache.mockResolvedValue([{ id: 'u2' }]);
-        deps.firestore.getLastListInteraction.mockResolvedValue(null);
+        deps.firestore.getAllListInteractions.mockResolvedValue(new Map());
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
         deps.xApi.getUserProfile.mockResolvedValue({
             data: { id: 'u2', username: 'target2', name: 'Target2', description: '' }
@@ -141,7 +231,7 @@ describe('Random Engagement Batch', () => {
 
     it('should handle tweets with attached media and analyze them', async () => {
         deps.firestore.getListMembersFromCache.mockResolvedValue([{ id: 'u3' }]);
-        deps.firestore.getLastListInteraction.mockResolvedValue(null);
+        deps.firestore.getAllListInteractions.mockResolvedValue(new Map());
         (checkAndIncrementRateLimits as jest.Mock).mockResolvedValue({ allowed: true });
         deps.xApi.getUserProfile.mockResolvedValue({
             data: { id: 'u3', username: 'media_user', name: 'Media User', description: '' }

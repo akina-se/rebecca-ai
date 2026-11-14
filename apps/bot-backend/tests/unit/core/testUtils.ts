@@ -32,6 +32,7 @@ export const createMockDeps = (): AppDependencies => {
             getProcessedFollowersCount: jest.fn().mockResolvedValue(0),
             updateTotalFollowers: jest.fn().mockResolvedValue(undefined),
             getLastListInteraction: jest.fn(),
+            getAllListInteractions: jest.fn().mockResolvedValue(new Map()),
             updateLastListInteraction: jest.fn(),
             getListMembersFromCache: jest.fn().mockResolvedValue([]),
             findImagesByVector: jest.fn().mockResolvedValue([]),

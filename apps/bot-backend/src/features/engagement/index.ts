@@ -4,6 +4,7 @@ import { RandomEngagementUseCase } from './usecase';
 import { AppDependencies } from '../../types';
 import { createRandomEngagementRouter } from './routes';
 import { CampaignGuard } from '../campaign';
+import config from '../../config';
 
 /**
  * Initializes and configures the random engagement module.
@@ -13,7 +14,9 @@ import { CampaignGuard } from '../campaign';
  * @returns A fully configured Express Router instance for the random engagement module.
  */
 export const createRandomEngagementModule = (deps: AppDependencies): Router => {
-    const useCase = new RandomEngagementUseCase(deps);
+    const useCase = new RandomEngagementUseCase(deps, {
+        cooldownDays: config.engagement.cooldownDays,
+    });
     const campaignGuard = new CampaignGuard(deps.firestore);
     const controller = new RandomEngagementController(useCase, campaignGuard);
     return createRandomEngagementRouter(controller);
