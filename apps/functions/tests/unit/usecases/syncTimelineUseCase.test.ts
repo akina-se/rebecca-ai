@@ -28,6 +28,13 @@ const mockDb: any = {
   }),
 };
 
+jest.mock('firebase-functions/logger', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+}));
+
+import * as logger from 'firebase-functions/logger';
 import { SyncTimelineUseCase } from '../../../src/usecases/syncTimelineUseCase';
 import { IXApiService, TimelineTweetDto } from '../../../src/services/xApi';
 
@@ -237,7 +244,7 @@ describe('SyncTimelineUseCase', () => {
     await expect(useCase.execute('12345')).rejects.toThrow('Firestore connection failure');
   });
 
-  it('should propagate HTTP 403 ApiError with status and data intact', async () => {
+  it('should propagate HTTP 403 ApiError with status and data intact without logging ERROR', async () => {
     const forbiddenError = Object.assign(new Error('HTTP 403: Forbidden'), {
       status: 403,
       data: { detail: 'Your monthly spend cap has been reached.' },
@@ -248,5 +255,6 @@ describe('SyncTimelineUseCase', () => {
       status: 403,
       data: { detail: 'Your monthly spend cap has been reached.' },
     });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

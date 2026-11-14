@@ -549,16 +549,20 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       expect(res).toEqual(mockAlerts);
     });
 
-    it('syncPosts should return result on success and throw UpstreamServiceError with statusCode on failure', async () => {
+    it('syncPosts should return result on success, throw Error without statusCode on internal failure, and throw UpstreamServiceError on HTTP failure', async () => {
       mockSyncPostsViaBotService.mockResolvedValueOnce({ success: true, message: 'Synced' });
       const res = await useCase.syncPosts();
       expect(res).toEqual({ success: true, message: 'Synced' });
 
       mockSyncPostsViaBotService.mockResolvedValueOnce({ success: false, message: 'Sync error' });
-      await expect(useCase.syncPosts()).rejects.toMatchObject({
-        message: 'Sync error',
-        statusCode: 500,
-      });
+      try {
+        await useCase.syncPosts();
+        fail('Expected syncPosts to throw Error');
+      } catch (err) {
+        expect(err).toBeInstanceOf(Error);
+        expect(err).not.toBeInstanceOf(UpstreamServiceError);
+        expect((err as Error).message).toBe('Sync error');
+      }
 
       mockSyncPostsViaBotService.mockResolvedValueOnce({
         success: false,
@@ -578,16 +582,20 @@ describe('Dashboard Backend UseCases Unit Tests', () => {
       await expect(useCase.syncPosts()).rejects.toThrow('Failed to synchronize timeline posts');
     });
 
-    it('triggerReply should return result on success and throw UpstreamServiceError with statusCode on failure', async () => {
+    it('triggerReply should return result on success, throw Error without statusCode on internal failure, and throw UpstreamServiceError on HTTP failure', async () => {
       mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: true, message: 'Replied' });
       const res = await useCase.triggerReply();
       expect(res).toEqual({ success: true, message: 'Replied' });
 
       mockTriggerReplyViaBotService.mockResolvedValueOnce({ success: false, message: 'Reply error' });
-      await expect(useCase.triggerReply()).rejects.toMatchObject({
-        message: 'Reply error',
-        statusCode: 500,
-      });
+      try {
+        await useCase.triggerReply();
+        fail('Expected triggerReply to throw Error');
+      } catch (err) {
+        expect(err).toBeInstanceOf(Error);
+        expect(err).not.toBeInstanceOf(UpstreamServiceError);
+        expect((err as Error).message).toBe('Reply error');
+      }
 
       mockTriggerReplyViaBotService.mockResolvedValueOnce({
         success: false,
